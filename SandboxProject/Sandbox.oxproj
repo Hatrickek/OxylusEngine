@@ -1,0 +1,4 @@
+Project:
+  Name: Sandbox
+  StartScene: "Scenes/Forest.oxscene"
+  AssetDirectory: "Assets"

@@ -1,0 +1,25 @@
+[submodule "Oxylus/vendor/imgui"]
+	path = Oxylus/vendor/imgui
+	url = https://github.com/ocornut/imgui.git
+	branch = docking
+[submodule "Oxylus/vendor/ktx"]
+	path = Oxylus/vendor/ktx
+	url = https://github.com/KhronosGroup/KTX-Software
+[submodule "Oxylus/vendor/tinygltf"]
+	path = Oxylus/vendor/tinygltf
+	url = https://github.com/syoyo/tinygltf.git
+[submodule "Oxylus/vendor/miniaudio"]
+	path = Oxylus/vendor/miniaudio
+	url = https://github.com/mackron/miniaudio.git
+[submodule "Oxylus/vendor/PhysX"]
+	path = Oxylus/vendor/PhysX
+	url = https://github.com/Hatrickek/PhysX.git
+[submodule "Oxylus/vendor/glm"]
+	path = Oxylus/vendor/glm
+	url = https://github.com/g-truc/glm.git
+[submodule "Oxylus/vendor/ImGuizmo"]
+	path = Oxylus/vendor/ImGuizmo
+	url = https://github.com/CedricGuillemet/ImGuizmo.git
+[submodule "Oxylus/vendor/tracy"]
+	path = Oxylus/vendor/tracy
+	url = https://github.com/wolfpld/tracy

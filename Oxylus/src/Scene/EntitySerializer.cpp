@@ -1,0 +1,338 @@
+#include "oxpch.h"
+#include "EntitySerializer.h"
+
+#include <fstream>
+#include <ranges>
+
+#include "Assets/AssetManager.h"
+#include "Assets/MaterialSerializer.h"
+
+#include "Core/Entity.h"
+#include "Core/YamlHelpers.h"
+
+#include "Utils/FileUtils.h"
+#include "Utils/StringUtils.h"
+
+namespace Oxylus {
+  template <typename T> void SetEnum(const ryml::ConstNodeRef& node, T& data) {
+    int type = 0;
+    node >> type;
+    data = (T)type;
+  }
+
+  void EntitySerializer::SerializeEntity(ryml::NodeRef& entities, Entity entity) {
+    ryml::NodeRef entityNode = entities.append_child({ryml::MAP});
+
+    if (entity.HasComponent<TagComponent>()) {
+      const auto& tag = entity.GetComponent<TagComponent>();
+
+      entityNode["Entity"] << entity.GetUUID();
+      auto node = entityNode["TagComponent"];
+      node |= ryml::MAP;
+      node["Tag"] << tag.Tag;
+    }
+
+    if (entity.HasComponent<RelationshipComponent>()) {
+      const auto& [Parent, Children] = entity.GetComponent<RelationshipComponent>();
+
+      auto node = entityNode["RelationshipComponent"];
+      node |= ryml::MAP;
+      node["Parent"] << Parent;
+      node["ChildCount"] << (uint32_t)Children.size();
+      auto childrenNode = node["Children"];
+      childrenNode |= ryml::SEQ;
+      for (size_t i = 0; i < Children.size(); i++) {
+        childrenNode.append_child() << Children[i];
+      }
+    }
+
+    if (entity.HasComponent<TransformComponent>()) {
+      const auto& tc = entity.GetComponent<TransformComponent>();
+      auto node = entityNode["TransformComponent"];
+      node |= ryml::MAP;
+      auto translation = node["Translation"];
+      auto rotation = node["Rotation"];
+      auto scale = node["Scale"];
+      glm::write(&translation, tc.Translation);
+      glm::write(&rotation, tc.Rotation);
+      glm::write(&scale, tc.Scale);
+    }
+
+    if (entity.HasComponent<MeshRendererComponent>()) {
+      const auto& mrc = entity.GetComponent<MeshRendererComponent>();
+      auto node = entityNode["MeshRendererComponent"];
+      node |= ryml::MAP;
+      node["Mesh"] << mrc.MeshGeometry->Path;
+      node["SubmeshIndex"] << mrc.SubmesIndex;
+    }
+
+    if (entity.HasComponent<MaterialComponent>()) {
+      const auto& mc = entity.GetComponent<MaterialComponent>();
+      auto node = entityNode["MaterialComponent"];
+      node |= ryml::MAP;
+      if (mc.UsingMaterialAsset)
+        node["Path"] << mc.Materials[0]->Path;
+    }
+
+    if (entity.HasComponent<LightComponent>()) {
+      const auto& light = entity.GetComponent<LightComponent>();
+      auto node = entityNode["LightComponent"];
+      node |= ryml::MAP;
+      auto colorNode = node["Color"];
+      node["Type"] << (int)light.Type;
+      node["UseColorTemperatureMode"] << light.UseColorTemperatureMode;
+      node["Temperature"] << light.Temperature;
+      glm::write(&colorNode, light.Color);
+      node["Intensity"] << light.Intensity;
+      node["Range"] << light.Range;
+      node["CutOffAngle"] << light.CutOffAngle;
+      node["OuterCutOffAngle"] << light.OuterCutOffAngle;
+      node["ShadowQuality"] << (int)light.ShadowQuality;
+    }
+
+    if (entity.HasComponent<SkyLightComponent>()) {
+      const auto& light = entity.GetComponent<SkyLightComponent>();
+      auto node = entityNode["SkyLightComponent"];
+      node |= ryml::MAP;
+      node["ImagePath"] << light.Cubemap->GetDesc().Path;
+      node["CubemapLodBias"] << light.CubemapLodBias;
+    }
+
+    if (entity.HasComponent<CameraComponent>()) {
+      const auto& camera = entity.GetComponent<CameraComponent>();
+      auto node = entityNode["CameraComponent"];
+      node |= ryml::MAP;
+      node["FOV"] << camera.System->Fov;
+      node["NearClip"] << camera.System->NearClip;
+      node["FarClip"] << camera.System->FarClip;
+    }
+
+    if (entity.HasComponent<NamedComponent>()){
+      const auto& script = entity.GetComponent<NamedComponent>();
+      auto node = entityNode["NamedComponent"];
+      node |= ryml::MAP;
+      node["ComponentName"] << script.ComponentName;
+    }
+  }
+
+  UUID EntitySerializer::DeserializeEntity(ryml::ConstNodeRef entityNode, Scene& scene, bool preserveUUID) {
+    const auto st = std::string(entityNode["Entity"].val().data());
+    const uint64_t uuid = std::stoull(st.substr(0, st.find('\n')));
+
+    std::string name;
+    if (entityNode.has_child("TagComponent"))
+      entityNode["TagComponent"]["Tag"] >> name;
+
+    Entity deserializedEntity;
+    if (preserveUUID)
+      deserializedEntity = scene.CreateEntityWithUUID(uuid, name);
+    else
+      deserializedEntity = scene.CreateEntity(name);
+
+    if (entityNode.has_child("TransformComponent")) {
+      auto& tc = deserializedEntity.GetComponent<TransformComponent>();
+      const auto& node = entityNode["TransformComponent"];
+
+      glm::read(node["Translation"], &tc.Translation);
+      glm::read(node["Rotation"], &tc.Rotation);
+      glm::read(node["Scale"], &tc.Scale);
+    }
+
+    if (entityNode.has_child("RelationshipComponent")) {
+      auto& rc = deserializedEntity.GetComponent<RelationshipComponent>();
+      const auto node = entityNode["RelationshipComponent"];
+      uint64_t parentID = 0;
+      node["Parent"] >> parentID;
+      rc.Parent = parentID;
+
+      size_t childCount = 0;
+      node["ChildCount"] >> childCount;
+      rc.Children.clear();
+      rc.Children.reserve(childCount);
+      const auto children = node["Children"];
+
+      if (children.num_children() == childCount) {
+        for (size_t i = 0; i < childCount; i++) {
+          uint64_t childID = 0;
+          children[i] >> childID;
+          UUID child = childID;
+          if (child)
+            rc.Children.push_back(child);
+        }
+      }
+    }
+
+    if (entityNode.has_child("MeshRendererComponent")) {
+      const auto& node = entityNode["MeshRendererComponent"];
+
+      std::string meshPath;
+      uint32_t submeshIndex = 0;
+      node["Mesh"] >> meshPath;
+      node["SubmeshIndex"] >> submeshIndex;
+
+      deserializedEntity.AddComponentI<MeshRendererComponent>(AssetManager::GetMeshAsset(meshPath).Data).SubmesIndex =
+        submeshIndex;
+    }
+
+    if (entityNode.has_child("MaterialComponent")) {
+      MaterialComponent* mc{};
+      if (!deserializedEntity.HasComponent<MaterialComponent>())
+        mc = &deserializedEntity.AddComponentI<MaterialComponent>();
+      else
+        mc = &deserializedEntity.GetComponent<MaterialComponent>();
+
+      const auto& node = entityNode["MaterialComponent"];
+
+      std::string assetPath;
+      if (node.has_child("Path"))
+        node["Path"] >> assetPath;
+
+      if (!assetPath.empty()) {
+        mc->Materials.clear();
+        mc->Materials.emplace_back(AssetManager::GetMaterialAsset(assetPath).Data);
+        mc->UsingMaterialAsset = true;
+      }
+    }
+
+    if (entityNode.has_child("LightComponent")) {
+      auto& light = deserializedEntity.AddComponentI<LightComponent>();
+      const auto& node = entityNode["LightComponent"];
+
+      SetEnum(node["Type"], light.Type);
+      node["UseColorTemperatureMode"] >> light.UseColorTemperatureMode;
+      node["Temperature"] >> light.Temperature;
+      node["Intensity"] >> light.Intensity;
+      glm::read(node["Color"], &light.Color);
+      node["Range"] >> light.Range;
+      node["CutOffAngle"] >> light.CutOffAngle;
+      node["OuterCutOffAngle"] >> light.OuterCutOffAngle;
+      SetEnum(node["ShadowQuality"], light.ShadowQuality);
+    }
+
+    if (entityNode.has_child("SkyLightComponent")) {
+      auto& light = deserializedEntity.AddComponentI<SkyLightComponent>();
+      const auto& node = entityNode["SkyLightComponent"];
+
+      VulkanImageDescription CubeMapDesc;
+      node["ImagePath"] >> CubeMapDesc.Path;
+      CubeMapDesc.Type = ImageType::TYPE_CUBE;
+      light.Cubemap = AssetManager::GetImageAsset(CubeMapDesc).Data;
+
+      node["CubemapLodBias"] >> light.CubemapLodBias;
+    }
+
+    if (entityNode.has_child("CameraComponent")) {
+      auto& camera = deserializedEntity.AddComponentI<CameraComponent>();
+      const auto& node = entityNode["CameraComponent"];
+
+      float fov = 0;
+      float nearclip = 0;
+      float farclip = 0;
+      node["FOV"] >> fov;
+      node["NearClip"] >> nearclip;
+      node["FarClip"] >> farclip;
+
+      camera.System->SetFov(fov);
+      camera.System->SetNear(nearclip);
+      camera.System->SetFar(farclip);
+    }
+
+    if (entityNode.has_child("NamedComponent")) {
+      auto& script = deserializedEntity.AddComponent<NamedComponent>();
+      const auto& node = entityNode["NamedComponent"];
+
+      node["ComponentName"] >> script.ComponentName;
+    }
+
+    return deserializedEntity.GetUUID();
+  }
+
+  void EntitySerializer::SerializeEntityAsPrefab(const char* filepath, Entity entity) {
+    if (entity.HasComponent<PrefabComponent>()) {
+      OX_CORE_ERROR("Entity already has a prefab component!");
+      return;
+    }
+
+    ryml::Tree tree;
+
+    ryml::NodeRef nodeRoot = tree.rootref();
+    nodeRoot |= ryml::MAP;
+
+    nodeRoot["Prefab"] << entity.AddComponentI<PrefabComponent>().ID;
+
+    ryml::NodeRef entitiesNode = nodeRoot["Entities"];
+    entitiesNode |= ryml::SEQ;
+
+    std::vector<Entity> entities;
+    entities.push_back(entity);
+    Entity::GetAllChildren(entity, entities);
+
+    for (const auto& child : entities) {
+      if (child)
+        SerializeEntity(entitiesNode, child);
+    }
+
+    std::stringstream ss;
+    ss << tree;
+    std::ofstream filestream(filepath);
+    filestream << ss.str();
+  }
+
+  Entity EntitySerializer::DeserializeEntityAsPrefab(const char* filepath, Scene& scene) {
+    const auto& content = FileUtils::ReadFile(filepath);
+
+    const ryml::Tree tree = ryml::parse_in_arena(ryml::to_csubstr(content));
+
+    if (tree.empty()) {
+      OX_CORE_BERROR("Couldn't parse the prefab file {0}", StringUtils::GetName(filepath))
+    }
+
+    const ryml::ConstNodeRef root = tree.rootref();
+
+    if (!root.has_child("Prefab")) {
+      OX_CORE_BERROR("Prefab file doesn't contain a prefab{0}", StringUtils::GetName(filepath)) return {};
+    }
+
+    const UUID prefabID = (uint64_t)root["Prefab"].val().data();
+
+    if (!prefabID) {
+      OX_CORE_ERROR("Invalid prefab ID {0}", StringUtils::GetName(filepath));
+      return {};
+    }
+
+    if (root.has_child("Entities")) {
+      const ryml::ConstNodeRef entitiesNode = root["Entities"];
+
+      Entity rootEntity = {};
+      std::unordered_map<UUID, UUID> oldNewIdMap;
+      for (const auto& entity : entitiesNode) {
+        uint64_t oldUUID;
+        entity["Entity"] >> oldUUID;
+        UUID newUUID = DeserializeEntity(entity, scene, false);
+        oldNewIdMap.emplace(oldUUID, newUUID);
+
+        if (!rootEntity)
+          rootEntity = scene.GetEntity(newUUID);
+      }
+
+      rootEntity.AddComponentI<PrefabComponent>().ID = prefabID;
+
+      // Fix parent/children UUIDs
+      for (const auto& newId : oldNewIdMap | std::views::values) {
+        auto& relationshipComponent = scene.GetEntity(newId).GetRelationship();
+        UUID parent = relationshipComponent.Parent;
+        if (parent)
+          relationshipComponent.Parent = oldNewIdMap.at(parent);
+
+        auto& children = relationshipComponent.Children;
+        for (auto& id : children)
+          id = oldNewIdMap.at(id);
+      }
+
+      return rootEntity;
+    }
+
+    OX_CORE_BERROR("There are not entities in the prefab to deserialize! {0}", StringUtils::GetName(filepath));
+    return {};
+  }
+}

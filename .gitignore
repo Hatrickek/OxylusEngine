@@ -1,0 +1,56 @@
+# Prerequisites
+*.d
+
+# Compiled Object files
+*.slo
+*.lo
+*.o
+
+# Precompiled Headers
+*.gch
+*.pch
+
+# Compiled Dynamic libraries
+*.so
+*.dylib
+
+# Fortran module files
+*.mod
+*.smod
+
+# Compiled Static libraries
+*.lai
+*.la
+*.a
+*.lib
+
+# Executables
+*.exe
+*.out
+*.app
+
+# zort
+/.vs
+/.vscode
+/cmake-build-debug
+/.idea
+/bin
+/bin-int
+/OxylusEditor/resources/shaders/compiled
+/OxylusEditor/bin
+/OxylusEditor/bin-int
+/OxylusEditor/resources/shaders/compiled
+.ccls
+.vcxproj
+.vcxproj.filters
+.vcxproj.user
+.DotSettings.user
+build
+OxylusEngine.sln
+OxylusEngine.sln.DotSettings.user
+OxylusEngine.vcxproj
+OxylusEngine.vcxproj.filters
+OxylusEngine.vcxproj.user
+.editorconfig
+CMakeSettings.json
+scripts/__pycache__

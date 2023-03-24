@@ -1,0 +1,229 @@
+Scene: Sponza.oxscene
+Entities:
+  - Entity: 929621726744524710
+    TagComponent:
+      Tag: Sun
+    RelationshipComponent:
+      Parent: 0
+      ChildCount: 0
+      Children: []
+    TransformComponent:
+      Translation: [0,21.63,-0.16874796]
+      Rotation: [1.4259338,0,0]
+      Scale: [1,0.99999994,0.99999994]
+    LightComponent:
+      Type: 0
+      UseColorTemperatureMode: 0
+      Temperature: 6570
+      Color: [1,1,1]
+      Intensity: 0
+      Range: 1
+      CutOffAngle: 0.21816616
+      OuterCutOffAngle: 0.30543262
+      ShadowQuality: 2
+  - Entity: 10943199591807759501
+    TagComponent:
+      Tag: Sponza
+    RelationshipComponent:
+      Parent: 0
+      ChildCount: 13
+      Children: [30630291566966455,4975767732756395324,6818692475221432715,13714546760674640533,13071951152713801967,16439451263681936300,12718086520964569343,2804331216526930272,8420916701172295382,10374966546562245969,8137398481895255434,15398296965543252175,14731673965884388404]
+    TransformComponent:
+      Translation: [0,0,0]
+      Rotation: [0,0,0]
+      Scale: [1,1,1]
+  - Entity: 30630291566966455
+    TagComponent:
+      Tag: Mesh_0
+    RelationshipComponent:
+      Parent: 10943199591807759501
+      ChildCount: 0
+      Children: []
+    TransformComponent:
+      Translation: [0,0,0]
+      Rotation: [0,0,0]
+      Scale: [1,1,1]
+    MeshRendererComponent:
+      Mesh: ../SandboxProject\Assets\models\sponza_gltf_khronos_fixed_and_split.gltf
+      SubmeshIndex: 12
+    MaterialComponent: {}
+  - Entity: 4975767732756395324
+    TagComponent:
+      Tag: Flowerpots
+    RelationshipComponent:
+      Parent: 10943199591807759501
+      ChildCount: 0
+      Children: []
+    TransformComponent:
+      Translation: [0,0,0]
+      Rotation: [0,0,0]
+      Scale: [1,1,1]
+    MeshRendererComponent:
+      Mesh: ../SandboxProject\Assets\models\sponza_gltf_khronos_fixed_and_split.gltf
+      SubmeshIndex: 11
+    MaterialComponent: {}
+  - Entity: 6818692475221432715
+    TagComponent:
+      Tag: Flowers
+    RelationshipComponent:
+      Parent: 10943199591807759501
+      ChildCount: 0
+      Children: []
+    TransformComponent:
+      Translation: [0,0,0]
+      Rotation: [0,0,0]
+      Scale: [1,1,1]
+    MeshRendererComponent:
+      Mesh: ../SandboxProject\Assets\models\sponza_gltf_khronos_fixed_and_split.gltf
+      SubmeshIndex: 10
+    MaterialComponent: {}
+  - Entity: 13714546760674640533
+    TagComponent:
+      Tag: Lions
+    RelationshipComponent:
+      Parent: 10943199591807759501
+      ChildCount: 0
+      Children: []
+    TransformComponent:
+      Translation: [0,0,0]
+      Rotation: [0,0,0]
+      Scale: [1,1,1]
+    MeshRendererComponent:
+      Mesh: ../SandboxProject\Assets\models\sponza_gltf_khronos_fixed_and_split.gltf
+      SubmeshIndex: 9
+    MaterialComponent: {}
+  - Entity: 13071951152713801967
+    TagComponent:
+      Tag: Shrub
+    RelationshipComponent:
+      Parent: 10943199591807759501
+      ChildCount: 0
+      Children: []
+    TransformComponent:
+      Translation: [0,0,0]
+      Rotation: [0,0,0]
+      Scale: [1,1,1]
+    MeshRendererComponent:
+      Mesh: ../SandboxProject\Assets\models\sponza_gltf_khronos_fixed_and_split.gltf
+      SubmeshIndex: 8
+    MaterialComponent: {}
+  - Entity: 16439451263681936300
+    TagComponent:
+      Tag: Curtains (green)
+    RelationshipComponent:
+      Parent: 10943199591807759501
+      ChildCount: 0
+      Children: []
+    TransformComponent:
+      Translation: [0,0,0]
+      Rotation: [0,0,0]
+      Scale: [1,1,1]
+    MeshRendererComponent:
+      Mesh: ../SandboxProject\Assets\models\sponza_gltf_khronos_fixed_and_split.gltf
+      SubmeshIndex: 7
+    MaterialComponent: {}
+  - Entity: 12718086520964569343
+    TagComponent:
+      Tag: Curtains (blue)
+    RelationshipComponent:
+      Parent: 10943199591807759501
+      ChildCount: 0
+      Children: []
+    TransformComponent:
+      Translation: [0,0,0]
+      Rotation: [0,0,0]
+      Scale: [1,1,1]
+    MeshRendererComponent:
+      Mesh: ../SandboxProject\Assets\models\sponza_gltf_khronos_fixed_and_split.gltf
+      SubmeshIndex: 6
+    MaterialComponent: {}
+  - Entity: 2804331216526930272
+    TagComponent:
+      Tag: Curtains (red)
+    RelationshipComponent:
+      Parent: 10943199591807759501
+      ChildCount: 0
+      Children: []
+    TransformComponent:
+      Translation: [0,0,0]
+      Rotation: [0,0,0]
+      Scale: [1,1,1]
+    MeshRendererComponent:
+      Mesh: ../SandboxProject\Assets\models\sponza_gltf_khronos_fixed_and_split.gltf
+      SubmeshIndex: 5
+    MaterialComponent: {}
+  - Entity: 8420916701172295382
+    TagComponent:
+      Tag: Braziers
+    RelationshipComponent:
+      Parent: 10943199591807759501
+      ChildCount: 0
+      Children: []
+    TransformComponent:
+      Translation: [0,0,0]
+      Rotation: [0,0,0]
+      Scale: [1,1,1]
+    MeshRendererComponent:
+      Mesh: ../SandboxProject\Assets\models\sponza_gltf_khronos_fixed_and_split.gltf
+      SubmeshIndex: 4
+    MaterialComponent: {}
+  - Entity: 10374966546562245969
+    TagComponent:
+      Tag: Brazier chains
+    RelationshipComponent:
+      Parent: 10943199591807759501
+      ChildCount: 0
+      Children: []
+    TransformComponent:
+      Translation: [0,0,0]
+      Rotation: [0,0,0]
+      Scale: [1,1,1]
+    MeshRendererComponent:
+      Mesh: ../SandboxProject\Assets\models\sponza_gltf_khronos_fixed_and_split.gltf
+      SubmeshIndex: 3
+    MaterialComponent: {}
+  - Entity: 8137398481895255434
+    TagComponent:
+      Tag: Fountains
+    RelationshipComponent:
+      Parent: 10943199591807759501
+      ChildCount: 0
+      Children: []
+    TransformComponent:
+      Translation: [0,0,0]
+      Rotation: [0,0,0]
+      Scale: [1,1,1]
+    MeshRendererComponent:
+      Mesh: ../SandboxProject\Assets\models\sponza_gltf_khronos_fixed_and_split.gltf
+      SubmeshIndex: 2
+    MaterialComponent: {}
+  - Entity: 15398296965543252175
+    TagComponent:
+      Tag: Rods
+    RelationshipComponent:
+      Parent: 10943199591807759501
+      ChildCount: 0
+      Children: []
+    TransformComponent:
+      Translation: [0,0,0]
+      Rotation: [0,0,0]
+      Scale: [1,1,1]
+    MeshRendererComponent:
+      Mesh: ../SandboxProject\Assets\models\sponza_gltf_khronos_fixed_and_split.gltf
+      SubmeshIndex: 1
+    MaterialComponent: {}
+  - Entity: 14731673965884388404
+    TagComponent:
+      Tag: Roof
+    RelationshipComponent:
+      Parent: 10943199591807759501
+      ChildCount: 0
+      Children: []
+    TransformComponent:
+      Translation: [0,0,0]
+      Rotation: [0,0,0]
+      Scale: [1,1,1]
+    MeshRendererComponent:
+      Mesh: ../SandboxProject\Assets\models\sponza_gltf_khronos_fixed_and_split.gltf
+      SubmeshIndex: 0
+    MaterialComponent: {}
