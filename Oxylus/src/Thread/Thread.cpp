@@ -26,9 +26,9 @@ namespace Oxylus {
   void Thread::Wait() {
     std::unique_lock<std::mutex> lock(m_QueueMutex);
     m_Condition.wait(lock,
-      [this]() {
-        return m_JobQueue.empty();
-      });
+                     [this]() {
+                       return m_JobQueue.empty();
+                     });
   }
 
   void Thread::QueueLoop() {
@@ -37,9 +37,9 @@ namespace Oxylus {
       {
         std::unique_lock<std::mutex> lock(m_QueueMutex);
         m_Condition.wait(lock,
-          [this] {
-            return !m_JobQueue.empty() || m_Destroying;
-          });
+                         [this] {
+                           return !m_JobQueue.empty() || m_Destroying;
+                         });
         if (m_Destroying) {
           break;
         }

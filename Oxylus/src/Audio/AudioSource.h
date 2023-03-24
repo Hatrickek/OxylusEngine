@@ -39,7 +39,6 @@ namespace Oxylus {
   public:
     explicit AudioSource(const char* filepath);
     ~AudioSource();
-
     AudioSource(const AudioSource& other) = delete;
     AudioSource(AudioSource&& other) = delete;
 
@@ -52,9 +51,7 @@ namespace Oxylus {
     void UnPause() const;
     void Stop() const;
     bool IsPlaying() const;
-
     void SetConfig(const AudioSourceConfig& config);
-
     void SetVolume(float volume) const;
     void SetPitch(float pitch) const;
     void SetLooping(bool state) const;
@@ -67,7 +64,6 @@ namespace Oxylus {
     void SetMaxDistance(float maxDistance) const;
     void SetCone(float innerAngle, float outerAngle, float outerGain) const;
     void SetDopplerFactor(float factor) const;
-
     void SetPosition(const glm::vec3& position) const;
     void SetDirection(const glm::vec3& forward) const;
     void SetVelocity(const glm::vec3& velocity) const;

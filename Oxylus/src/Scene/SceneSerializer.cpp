@@ -13,7 +13,7 @@
 #include "Utils/StringUtils.h"
 
 namespace Oxylus {
-  SceneSerializer::SceneSerializer(const Ref<Scene>& scene) : m_Scene(scene) { }
+  SceneSerializer::SceneSerializer(const Ref <Scene>& scene) : m_Scene(scene) { }
 
   void SceneSerializer::Serialize(const std::string& filePath) const {
     ryml::Tree tree;

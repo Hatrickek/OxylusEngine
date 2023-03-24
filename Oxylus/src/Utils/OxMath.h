@@ -8,12 +8,13 @@
 namespace Oxylus::Math {
   bool DecomposeTransform(const glm::mat4& transform, glm::vec3& translation, glm::vec3& rotation, glm::vec3& scale);
 
-  template <typename T> static T SmoothDamp(const T& current,
-                                            const T& target,
-                                            T& currentVelocity,
-                                            float smoothTime,
-                                            float maxSpeed,
-                                            float deltaTime) {
+  template<typename T>
+  static T SmoothDamp(const T& current,
+                      const T& target,
+                      T& currentVelocity,
+                      float smoothTime,
+                      float maxSpeed,
+                      float deltaTime) {
     ZoneScoped;
     // Based on Game Programming Gems 4 Chapter 1.10
     smoothTime = glm::max(0.0001F, smoothTime);

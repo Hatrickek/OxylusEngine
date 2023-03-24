@@ -20,9 +20,9 @@ namespace Oxylus {
   void OxUI::Property(const char* label, const char* fmt, ...) {
     IGUI::BeginPropertyGrid(label, nullptr);
     va_list args;
-    va_start(args, fmt);
+            va_start(args, fmt);
     ImGui::TextV(fmt, args);
-    va_end(args);
+            va_end(args);
     IGUI::EndPropertyGrid();
   }
 }

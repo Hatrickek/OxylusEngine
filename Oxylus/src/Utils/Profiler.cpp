@@ -14,11 +14,11 @@ namespace Oxylus {
                                          VkCommandBuffer cmdbuf) {
 #ifndef OX_DIST
     const auto timedomains = (PFN_vkGetPhysicalDeviceCalibrateableTimeDomainsEXT)vkGetDeviceProcAddr(
-      VulkanContext::Context.Device,
-      "vkGetPhysicalDeviceCalibrateableTimeDomainsEXT");
+            VulkanContext::Context.Device,
+            "vkGetPhysicalDeviceCalibrateableTimeDomainsEXT");
 
     const auto timesteps = (PFN_vkGetCalibratedTimestampsEXT)vkGetDeviceProcAddr(VulkanContext::Context.Device,
-      "vkGetCalibratedTimestampsEXT");
+                                                                                 "vkGetCalibratedTimestampsEXT");
 
     s_VulkanContext = TracyVkContextCalibrated(physdev, device, queue, cmdbuf, timedomains, timesteps);
 #endif
@@ -36,7 +36,7 @@ namespace Oxylus {
 #endif
   }
 
-  ProfilerTimer::ProfilerTimer(const char* name): m_Name(name), m_ElapsedTime(0), m_Stopped(false) {
+  ProfilerTimer::ProfilerTimer(const char* name) : m_Name(name), m_ElapsedTime(0), m_Stopped(false) {
     m_StartTimepoint = std::chrono::steady_clock::now();
   }
 

@@ -8,12 +8,15 @@ namespace Oxylus {
   class ImGuiLayer : public Layer {
   public:
     ImGuiLayer();
+
     ~ImGuiLayer() override = default;
 
     void OnAttach(EventDispatcher& dispatcher) override;
+
     void OnDetach() override;
 
     static void Begin();
+
     void RenderDrawData(const vk::CommandBuffer& commandBuffer, const vk::Pipeline& pipeline) const;
 
     ImGuiIO* GetImGuiIO() const {
@@ -32,8 +35,11 @@ namespace Oxylus {
     ImGuiIO* m_ImGuiIO = nullptr;
 
     void InitForVulkan();
+
     void ImGuiDarkTheme();
+
     void ImGuiDarkTheme2();
+
     void AddIconFont(float fontSize);
   };
 }

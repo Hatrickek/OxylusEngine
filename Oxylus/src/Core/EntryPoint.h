@@ -1,4 +1,5 @@
 #pragma once
+
 #include "Application.h"
 #include "Utils/Log.h"
 #include "Utils/Profiler.h"

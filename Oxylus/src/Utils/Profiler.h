@@ -11,6 +11,7 @@ namespace Oxylus {
   class TracyProfiler {
   public:
     static void InitTracyForVulkan(VkPhysicalDevice physdev, VkDevice device, VkQueue queue, VkCommandBuffer cmdbuf);
+
     static void DestroyContext();
 
     static void Collect(const vk::CommandBuffer& commandBuffer);

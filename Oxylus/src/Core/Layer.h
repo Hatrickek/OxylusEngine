@@ -1,4 +1,5 @@
 #pragma once
+
 #include <string>
 #include <Event/Event.h>
 
@@ -7,10 +8,9 @@ namespace Oxylus {
   public:
     Layer(const std::string& name = "Layer");
     virtual ~Layer() = default;
-
+    
     virtual void OnAttach(EventDispatcher& dispatcher) { }
     virtual void OnDetach() { }
-
     virtual void OnUpdate(float deltaTime) { }
     virtual void OnImGuiRender() { }
 

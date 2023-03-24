@@ -1,4 +1,5 @@
 #pragma once
+
 #include <cstdint>
 #include <filesystem>
 
@@ -12,8 +13,9 @@ namespace Oxylus {
   class IGUI {
   public:
     static void BeginProperties(
-      ImGuiTableFlags flags = ImGuiTableFlags_Resizable | ImGuiTableFlags_SizingStretchProp |
-                              ImGuiTableFlags_BordersInner | ImGuiTableFlags_BordersOuterH);
+            ImGuiTableFlags flags = ImGuiTableFlags_Resizable | ImGuiTableFlags_SizingStretchProp |
+                                    ImGuiTableFlags_BordersInner | ImGuiTableFlags_BordersOuterH);
+
     static void EndProperties();
 
     // Bool
@@ -26,11 +28,12 @@ namespace Oxylus {
                          int count,
                          const char* tooltip = nullptr);
 
-    template <std::integral T> static bool Property(const char* label,
-                                                    T& value,
-                                                    T min = 0,
-                                                    T max = 0,
-                                                    const char* tooltip = nullptr) {
+    template<std::integral T>
+    static bool Property(const char* label,
+                         T& value,
+                         T min = 0,
+                         T max = 0,
+                         const char* tooltip = nullptr) {
       BeginPropertyGrid(label, tooltip);
       bool modified;
 
@@ -65,13 +68,14 @@ namespace Oxylus {
       return modified;
     }
 
-    template <std::floating_point T> static bool Property(const char* label,
-                                                          T& value,
-                                                          T min = 0,
-                                                          T max = 0,
-                                                          const char* tooltip = nullptr,
-                                                          float delta = 0.1f,
-                                                          const char* fmt = "%.3f") {
+    template<std::floating_point T>
+    static bool Property(const char* label,
+                         T& value,
+                         T min = 0,
+                         T max = 0,
+                         const char* tooltip = nullptr,
+                         float delta = 0.1f,
+                         const char* fmt = "%.3f") {
       BeginPropertyGrid(label, tooltip);
       bool modified;
 
@@ -89,12 +93,13 @@ namespace Oxylus {
     }
 
     // Vec2/3/4
-    template <typename T> static bool PropertyVector(const char* label,
-                                                     T& value,
-                                                     bool color = false,
-                                                     bool showAlpha = true,
-                                                     const char* tooltip = nullptr,
-                                                     float delta = 0.1f) {
+    template<typename T>
+    static bool PropertyVector(const char* label,
+                               T& value,
+                               bool color = false,
+                               bool showAlpha = true,
+                               const char* tooltip = nullptr,
+                               float delta = 0.1f) {
       BeginPropertyGrid(label, tooltip);
       bool modified;
       int componentCount = value.length();
@@ -137,9 +142,11 @@ namespace Oxylus {
     static std::filesystem::path GetPathFromImGuiPayload(const ImGuiPayload* payload);
 
     static void BeginPropertyGrid(const char* label, const char* tooltip, bool rightAlignNextColumn = true);
+
     static void EndPropertyGrid();
 
     static void PushID();
+
     static void PopID();
 
     static char s_IDBuffer[16];

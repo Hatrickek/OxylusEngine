@@ -1,4 +1,5 @@
 #pragma once
+
 #include "Utils/Log.h"
 
 #include "Scene/Scene.h"
@@ -8,11 +9,14 @@ namespace Oxylus {
   class Entity {
   public:
     Entity() = default;
+
     Entity(entt::entity handle, Scene* scene);
+
     Entity(const Entity& other) = default;
 
     //Add component for Internal components which calls OnComponentAdded for them.
-    template <typename T, typename... Args> T& AddComponentI(Args&&... args) {
+    template<typename T, typename... Args>
+    T& AddComponentI(Args&& ... args) {
       if (HasComponent<T>()) {
         OX_CORE_ERROR("Entity already has {0}!", typeid(T).name());
       }
@@ -23,7 +27,8 @@ namespace Oxylus {
     }
 
     //Add component for exposing the raw ECS system for use.
-    template <typename T, typename... Args> T& AddComponent(Args&&... args) {
+    template<typename T, typename... Args>
+    T& AddComponent(Args&& ... args) {
       if (HasComponent<T>()) {
         OX_CORE_ERROR("Entity already has {0}!", typeid(T).name());
       }
@@ -32,31 +37,36 @@ namespace Oxylus {
       return component;
     }
 
-    template <typename T> T& GetComponent() const {
+    template<typename T>
+    T& GetComponent() const {
       if (!HasComponent<T>()) {
         OX_CORE_ERROR("Entity doesn't have {0}!", typeid(T).name());
       }
       return m_Scene->m_Registry.get<T>(m_EntityHandle);
     }
 
-    template <typename T> bool HasComponent() const {
+    template<typename T>
+    bool HasComponent() const {
       return m_Scene->m_Registry.all_of<T>(m_EntityHandle);
     }
 
-    template <typename T> void RemoveComponent() const {
+    template<typename T>
+    void RemoveComponent() const {
       if (!HasComponent<T>()) {
         OX_CORE_ERROR("Entity does not have {0} to remove!", typeid(T).name());
       }
       m_Scene->m_Registry.remove<T>(m_EntityHandle);
     }
 
-    template <typename T, typename... Args> T& AddOrReplaceComponent(Args&&... args) {
+    template<typename T, typename... Args>
+    T& AddOrReplaceComponent(Args&& ... args) {
       T& component = m_Scene->m_Registry.emplace_or_replace<T>(m_EntityHandle, std::forward<Args>(args)...);
       m_Scene->OnComponentAdded<T>(*this, component);
       return component;
     }
 
-    template <typename T, typename... Args> NativeScriptComponent& AddScript(Args&&... args) const {
+    template<typename T, typename... Args>
+    NativeScriptComponent& AddScript(Args&& ... args) const {
       NativeScriptComponent& component = m_Scene->m_Registry.emplace<NativeScriptComponent>(m_EntityHandle);
       component.Bind<T>(std::forward<Args>(args)...);
       m_Scene->OnComponentAdded<NativeScriptComponent>(*this, component);

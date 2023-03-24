@@ -4,10 +4,11 @@
 
 #include <filesystem>
 
-
 namespace Oxylus {
   class VulkanImage;
+
   class Material;
+
   class Mesh;
 
   class AssetManager {
@@ -18,7 +19,6 @@ namespace Oxylus {
     static const Asset<VulkanImage>& GetImageAsset(const VulkanImageDescription& description);
     static const Asset<Mesh>& GetMeshAsset(const std::string& path, int32_t loadingFlags = 0);
     static const Asset<Material>& GetMaterialAsset(const std::string& path);
-
     static void FreeUnusedAssets();
 
   private:

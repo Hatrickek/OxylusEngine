@@ -1,4 +1,5 @@
 #pragma once
+
 #include <thread>
 #include <queue>
 #include <mutex>
@@ -9,9 +10,11 @@ namespace Oxylus {
   class Thread {
   public:
     Thread();
+
     ~Thread();
 
     void QueueJob(std::function<void()> function);
+
     void Wait();
 
     uint32_t GetQueueSize() const {

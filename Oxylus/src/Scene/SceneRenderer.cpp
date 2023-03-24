@@ -19,7 +19,8 @@ namespace Oxylus {
       const auto view = scene.m_Registry.view<TransformComponent, MeshRendererComponent, MaterialComponent, TagComponent>();
       for (const auto&& [entity, transform, meshrenderer, material, tag] : view.each()) {
         if (tag.Enabled)
-          VulkanRenderer::SubmitMesh(*meshrenderer.MeshGeometry, Entity(entity, &scene).GetWorldTransform(), material.Materials,meshrenderer.SubmesIndex);
+          VulkanRenderer::SubmitMesh(*meshrenderer.MeshGeometry, Entity(entity, &scene).GetWorldTransform(),
+                                     material.Materials, meshrenderer.SubmesIndex);
       }
     }
 
@@ -41,7 +42,7 @@ namespace Oxylus {
         std::vector<Entity> lights;
         const auto view = scene.m_Registry.view<LightComponent>();
         lights.reserve(view.size());
-        for (auto&& [e , lc] : view.each()) {
+        for (auto&& [e, lc] : view.each()) {
           Entity entity = {e, &scene};
           if (!entity.GetComponent<TagComponent>().Enabled)
             continue;

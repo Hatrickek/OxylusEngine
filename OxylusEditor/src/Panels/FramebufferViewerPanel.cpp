@@ -30,13 +30,13 @@ namespace Oxylus {
           ImGui::TableNextRow();
           ImGui::TableNextColumn();
           ImGui::TreeNodeEx(framebuffer->GetDescription().DebugName.c_str(),
-            flags,
-            "%s  %s",
-            StringUtils::FromChar8T(ICON_MDI_IMAGE_FRAME),
-            framebuffer->GetDescription().DebugName.c_str());
+                            flags,
+                            "%s  %s",
+                            StringUtils::FromChar8T(ICON_MDI_IMAGE_FRAME),
+                            framebuffer->GetDescription().DebugName.c_str());
           if (!ImGui::IsItemToggledOpen() && (ImGui::IsItemClicked(ImGuiMouseButton_Left) ||
                                               ImGui::IsItemClicked(ImGuiMouseButton_Middle) || ImGui::IsItemClicked(
-                                                ImGuiMouseButton_Right))) {
+                  ImGuiMouseButton_Right))) {
             s_SelectedFramebuffer = framebuffer;
           }
         }

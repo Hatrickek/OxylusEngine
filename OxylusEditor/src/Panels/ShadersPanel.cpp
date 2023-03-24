@@ -37,15 +37,16 @@ namespace Oxylus {
           ImGui::TableNextColumn();
           ImGui::PushID(shader->GetName().c_str());
           ImGui::TreeNodeEx(shader->GetName().c_str(),
-            flags,
-            "%s  %s",
-            StringUtils::FromChar8T(ICON_MDI_FILE_CHART),
-            shader->GetName().c_str());
+                            flags,
+                            "%s  %s",
+                            StringUtils::FromChar8T(ICON_MDI_FILE_CHART),
+                            shader->GetName().c_str());
           ImGui::TableNextColumn();
           //Align it to far right
           ImGui::SetCursorPosX(
-            ImGui::GetCursorPosX() + ImGui::GetColumnWidth() - ImGui::CalcTextSize("Reload").x - ImGui::GetScrollX() - 2
-            * ImGui::GetStyle().ItemSpacing.x);
+                  ImGui::GetCursorPosX() + ImGui::GetColumnWidth() - ImGui::CalcTextSize("Reload").x -
+                  ImGui::GetScrollX() - 2
+                                        * ImGui::GetStyle().ItemSpacing.x);
           if (ImGui::Button("Reload")) {
             VulkanRenderer::WaitDeviceIdle();
             shader->Reload();

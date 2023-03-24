@@ -50,7 +50,7 @@ namespace Oxylus {
       case spdlog::level::warn: return ICON_MDI_ALERT;
       case spdlog::level::err: return ICON_MDI_CLOSE_OCTAGON;
       case spdlog::level::critical: return ICON_MDI_ALERT_OCTAGRAM;
-      default: ;
+      default:;
     }
 
     return u8"Unknown name";
@@ -205,14 +205,14 @@ namespace Oxylus {
                                                  ImGuiInputTextFlags_CallbackHistory |
                                                  ImGuiInputTextFlags_EscapeClearsAll;
       if (ImGui::InputText("##",
-        inputBuf,
-        OX_ARRAYSIZE(inputBuf),
-        inputFlags,
-        [](ImGuiInputTextCallbackData* data) {
-          const auto panel = (ConsolePanel*)data->UserData;
-          return panel->InputTextCallback(data);
-        },
-        this)) {
+                           inputBuf,
+                           OX_ARRAYSIZE(inputBuf),
+                           inputFlags,
+                           [](ImGuiInputTextCallbackData* data) {
+                             const auto panel = (ConsolePanel*)data->UserData;
+                             return panel->InputTextCallback(data);
+                           },
+                           this)) {
         ProcessInput(*this, inputBuf);
         m_InputLog.emplace_back(inputBuf);
         memset(inputBuf, 0, sizeof inputBuf);

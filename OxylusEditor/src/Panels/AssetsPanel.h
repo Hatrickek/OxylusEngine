@@ -25,7 +25,8 @@ namespace Oxylus {
 
   private:
     void RefreshAssetItems(const std::filesystem::path& currentDir, const std::filesystem::path& assetPath);
-    void DrawContextMenuItems(const std::filesystem::path& absolutePath, const std::filesystem::path& relativePath, bool isDir) const;
+    void DrawContextMenuItems(const std::filesystem::path& absolutePath, const std::filesystem::path& relativePath,
+                              bool isDir) const;
     bool DragDropTarget(const std::filesystem::path& dropPath);
 
     struct AssetItem {

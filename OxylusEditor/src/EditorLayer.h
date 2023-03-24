@@ -1,4 +1,5 @@
 #pragma once
+
 #include <Assets/Assets.h>
 
 #include "OxylusEngine.h"
@@ -31,8 +32,8 @@ namespace Oxylus {
     void SetRuntimeScene(const Ref<Scene>& scene);
 
     enum class SceneState {
-      Edit     = 0,
-      Play     = 1,
+      Edit = 0,
+      Play = 1,
       Simulate = 2
     };
 

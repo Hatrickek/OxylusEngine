@@ -28,7 +28,8 @@ namespace Oxylus {
     ImGui::CreateContext();
     ImGuiIO& io = ImGui::GetIO();
     io.ConfigFlags |= ImGuiConfigFlags_NavEnableKeyboard | ImGuiConfigFlags_ViewportsEnable |
-    ImGuiConfigFlags_DockingEnable | ImGuiConfigFlags_DpiEnableScaleFonts | ImGuiConfigFlags_DpiEnableScaleViewports;
+                      ImGuiConfigFlags_DockingEnable | ImGuiConfigFlags_DpiEnableScaleFonts |
+                      ImGuiConfigFlags_DpiEnableScaleViewports;
     io.BackendFlags |= ImGuiBackendFlags_RendererHasVtxOffset;
     io.BackendFlags |= ImGuiBackendFlags_RendererHasViewports;
 
@@ -75,10 +76,10 @@ namespace Oxylus {
     iconsConfig.SizePixels = 12.0f;
 
     io.Fonts->AddFontFromMemoryCompressedTTF(MaterialDesign_compressed_data,
-      MaterialDesign_compressed_size,
-      fontSize,
-      &iconsConfig,
-      icons_ranges);
+                                             MaterialDesign_compressed_size,
+                                             fontSize,
+                                             &iconsConfig,
+                                             icons_ranges);
   }
 
   void ImGuiLayer::InitForVulkan() {

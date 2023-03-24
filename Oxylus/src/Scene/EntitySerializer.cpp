@@ -14,7 +14,8 @@
 #include "Utils/StringUtils.h"
 
 namespace Oxylus {
-  template <typename T> void SetEnum(const ryml::ConstNodeRef& node, T& data) {
+  template<typename T>
+  void SetEnum(const ryml::ConstNodeRef& node, T& data) {
     int type = 0;
     node >> type;
     data = (T)type;
@@ -107,7 +108,7 @@ namespace Oxylus {
       node["FarClip"] << camera.System->FarClip;
     }
 
-    if (entity.HasComponent<NamedComponent>()){
+    if (entity.HasComponent<NamedComponent>()) {
       const auto& script = entity.GetComponent<NamedComponent>();
       auto node = entityNode["NamedComponent"];
       node |= ryml::MAP;
@@ -171,7 +172,7 @@ namespace Oxylus {
       node["SubmeshIndex"] >> submeshIndex;
 
       deserializedEntity.AddComponentI<MeshRendererComponent>(AssetManager::GetMeshAsset(meshPath).Data).SubmesIndex =
-        submeshIndex;
+              submeshIndex;
     }
 
     if (entityNode.has_child("MaterialComponent")) {
@@ -290,7 +291,8 @@ namespace Oxylus {
     const ryml::ConstNodeRef root = tree.rootref();
 
     if (!root.has_child("Prefab")) {
-      OX_CORE_BERROR("Prefab file doesn't contain a prefab{0}", StringUtils::GetName(filepath)) return {};
+      OX_CORE_BERROR("Prefab file doesn't contain a prefab{0}", StringUtils::GetName(filepath))
+      return {};
     }
 
     const UUID prefabID = (uint64_t)root["Prefab"].val().data();
