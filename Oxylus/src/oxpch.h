@@ -3,6 +3,7 @@
 #include "Core/PlatformDetection.h"
 
 #ifdef OX_PLATFORM_WINDOWS
+    #define WIN32_LEAN_AND_MEAN
 	#ifndef NOMINMAX
 		// See github.com/skypjack/entt/wiki/Frequently-Asked-Questions#warning-c4003-the-min-the-max-and-the-macro
 		#define NOMINMAX
@@ -29,5 +30,5 @@
 #include "Utils/Log.h"
 
 #ifdef OX_PLATFORM_WINDOWS
-	#include <Windows.h>
+    #include <windows.h>
 #endif

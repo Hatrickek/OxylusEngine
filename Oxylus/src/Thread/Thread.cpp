@@ -17,7 +17,7 @@ namespace Oxylus {
     }
   }
 
-  void Thread::AddJob(std::function<void()> function) {
+  void Thread::QueueJob(std::function<void()> function) {
     std::lock_guard<std::mutex> lock(m_QueueMutex);
     m_JobQueue.push(std::move(function));
     m_Condition.notify_one();

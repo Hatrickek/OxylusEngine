@@ -5,15 +5,13 @@
 #include <condition_variable>
 #include <functional>
 
-#undef AddJob
-
 namespace Oxylus {
   class Thread {
   public:
     Thread();
     ~Thread();
 
-    void AddJob(std::function<void()> function);
+    void QueueJob(std::function<void()> function);
     void Wait();
 
     uint32_t GetQueueSize() const {

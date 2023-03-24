@@ -326,7 +326,7 @@ namespace Oxylus {
 
   void EditorLayer::SaveScene() {
     if (!m_LastSaveScenePath.empty()) {
-      ThreadManager::Get()->AssetThread.AddJob([this] {
+      ThreadManager::Get()->AssetThread.QueueJob([this] {
         SceneSerializer(GetActiveScene()).Serialize(m_LastSaveScenePath);
       });
     }
@@ -338,7 +338,7 @@ namespace Oxylus {
   void EditorLayer::SaveSceneAs() {
     const std::string filepath = FileDialogs::SaveFile("Oxylus Scene (*.oxscene)\0*.oxscene\0");
     if (!filepath.empty()) {
-      ThreadManager::Get()->AssetThread.AddJob([this, filepath] {
+      ThreadManager::Get()->AssetThread.QueueJob([this, filepath] {
         SceneSerializer(GetActiveScene()).Serialize(filepath);
       });
       m_LastSaveScenePath = filepath;

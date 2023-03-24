@@ -1896,7 +1896,7 @@ namespace Oxylus {
     CommandBuffer.Begin(beginInfo);
     submitFunc();
     CommandBuffer.End();
-    GraphicsQueue.submit(endInfo);
+    VulkanUtils::CheckResult(GraphicsQueue.submit(endInfo));
     WaitDeviceIdle();
   }
 
@@ -2038,11 +2038,11 @@ namespace Oxylus {
 
   void VulkanRenderer::WaitDeviceIdle() {
     const auto& LogicalDevice = VulkanContext::Context.Device;
-    LogicalDevice.waitIdle();
+    VulkanUtils::CheckResult(LogicalDevice.waitIdle());
   }
 
   void VulkanRenderer::WaitGraphicsQueueIdle() {
-    VulkanContext::VulkanQueue.GraphicsQueue.waitIdle();
+    VulkanUtils::CheckResult(VulkanContext::VulkanQueue.GraphicsQueue.waitIdle());
   }
 
   void VulkanRenderer::AddShader(const Ref<VulkanShader>& shader) {

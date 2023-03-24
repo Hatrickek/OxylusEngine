@@ -35,7 +35,7 @@ namespace Oxylus {
         const Entity entity = *static_cast<Entity*>(payload->Data);
         const std::filesystem::path path =
           dropPath / std::string(entity.GetComponent<TagComponent>().Tag + ".oxprefab");
-        ThreadManager::Get()->AssetThread.AddJob([path, entity] {
+        ThreadManager::Get()->AssetThread.QueueJob([path, entity] {
           EntitySerializer::SerializeEntityAsPrefab(path.string().c_str(), entity);
         });
         return true;
