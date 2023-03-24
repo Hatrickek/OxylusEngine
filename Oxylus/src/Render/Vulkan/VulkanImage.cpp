@@ -1,4 +1,4 @@
-#include "oxpch.h"
+#include "src/oxpch.h"
 #include "VulkanImage.h"
 #include "VulkanContext.h"
 #include "VulkanRenderer.h"
@@ -304,7 +304,7 @@ namespace Oxylus {
     bufferCI.usage = vk::BufferUsageFlagBits::eTransferSrc;
     bufferCI.sharingMode = vk::SharingMode::eExclusive;
     bufferCI.size = imageSize;
-    stagingBuffer = LogicalDevice.createBuffer(bufferCI);
+    stagingBuffer = LogicalDevice.createBuffer(bufferCI).value;
     LogicalDevice.getBufferMemoryRequirements(stagingBuffer, &Memories[0].MemoryRequirements);
     Memories[0].memoryPropertyFlags = vk::MemoryPropertyFlagBits::eHostVisible |
                                       vk::MemoryPropertyFlagBits::eHostCoherent;

@@ -1,4 +1,4 @@
-﻿#include "oxpch.h"
+﻿#include "src/oxpch.h"
 #include "VulkanSwapchain.h"
 #include "VulkanContext.h"
 #include "VulkanRenderer.h"
@@ -102,7 +102,7 @@ namespace Oxylus {
     swapchainCI.clipped = VK_TRUE;
     swapchainCI.compositeAlpha = compositeAlpha;
 
-    m_SwapChain = LogicalDevice.createSwapchainKHR(swapchainCI);
+    m_SwapChain = LogicalDevice.createSwapchainKHR(swapchainCI).value;
 
     m_Extent = actualExtent;
     m_ImageFormat = m_SurfaceFormat.format;

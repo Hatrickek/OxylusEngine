@@ -11,9 +11,6 @@
 [submodule "Oxylus/vendor/miniaudio"]
 	path = Oxylus/vendor/miniaudio
 	url = https://github.com/mackron/miniaudio.git
-[submodule "Oxylus/vendor/PhysX"]
-	path = Oxylus/vendor/PhysX
-	url = https://github.com/Hatrickek/PhysX.git
 [submodule "Oxylus/vendor/glm"]
 	path = Oxylus/vendor/glm
 	url = https://github.com/g-truc/glm.git

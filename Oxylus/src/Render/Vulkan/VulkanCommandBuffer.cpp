@@ -1,7 +1,8 @@
-#include "oxpch.h"
+#include "src/oxpch.h"
 #include "VulkanCommandBuffer.h"
 #include "VulkanContext.h"
 #include "VulkanRenderer.h"
+#include "Utils/VulkanUtils.h"
 
 namespace Oxylus {
   void VulkanCommandBuffer::CreateBuffer(vk::CommandBufferLevel level) {
@@ -9,11 +10,11 @@ namespace Oxylus {
     cmdBufAllocateInfo.commandPool = VulkanRenderer::s_RendererContext.CommandPool;
     cmdBufAllocateInfo.level = level;
     cmdBufAllocateInfo.commandBufferCount = 1;
-    m_Buffer = VulkanContext::Context.Device.allocateCommandBuffers(cmdBufAllocateInfo)[0];
+    m_Buffer = VulkanContext::Context.Device.allocateCommandBuffers(cmdBufAllocateInfo).value[0];
   }
 
   const VulkanCommandBuffer& VulkanCommandBuffer::Begin(const vk::CommandBufferBeginInfo& beginInfo) const {
-    m_Buffer.begin(beginInfo);
+    VulkanUtils::CheckResult(m_Buffer.begin(beginInfo));
     return *this;
   }
 
@@ -33,7 +34,7 @@ namespace Oxylus {
   }
 
   const VulkanCommandBuffer& VulkanCommandBuffer::End() const {
-    m_Buffer.end();
+    VulkanUtils::CheckResult(m_Buffer.end());
     return *this;
   }
 
@@ -82,8 +83,8 @@ namespace Oxylus {
   }
 
   void VulkanCommandBuffer::FlushBuffer() const {
-    VulkanContext::VulkanQueue.GraphicsQueue.submit(vk::SubmitInfo{0, nullptr, nullptr, 1, &m_Buffer}, vk::Fence());
-    VulkanContext::VulkanQueue.GraphicsQueue.waitIdle();
+    VulkanUtils::CheckResult(VulkanContext::VulkanQueue.GraphicsQueue.submit(vk::SubmitInfo{0, nullptr, nullptr, 1, &m_Buffer}, vk::Fence()));
+    VulkanUtils::CheckResult(VulkanContext::VulkanQueue.GraphicsQueue.waitIdle());
   }
 
   void VulkanCommandBuffer::FreeBuffer() const {

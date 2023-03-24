@@ -1,4 +1,4 @@
-﻿#include "oxpch.h"
+﻿#include "src/oxpch.h"
 #include "VulkanBuffer.h"
 
 #include "VulkanContext.h"
@@ -22,7 +22,7 @@ namespace Oxylus {
     bufferCI.usage = usageFlags;
     bufferCI.size = allocatedSize;
     //bufferCI.size = size;
-    m_Buffer = LogicalDevice.createBuffer(bufferCI);
+    m_Buffer = LogicalDevice.createBuffer(bufferCI).value;
 
     LogicalDevice.getBufferMemoryRequirements(m_Buffer, &Memories[0].MemoryRequirements);
 

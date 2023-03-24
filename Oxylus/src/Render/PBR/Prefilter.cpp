@@ -1,4 +1,4 @@
-#include "oxpch.h"
+#include "src/oxpch.h"
 #include "Prefilter.h"
 
 #include "Render/Vulkan/VulkanContext.h"
@@ -77,20 +77,20 @@ namespace Oxylus {
       framebufferCI.width = dim;
       framebufferCI.height = dim;
       framebufferCI.layers = 1;
-      framebuffer = LogicalDevice.createFramebuffer(framebufferCI);
+      framebuffer = LogicalDevice.createFramebuffer(framebufferCI).value;
     }
 
     // Desriptors
-    vk::DescriptorSetLayout descriptorsetlayout = LogicalDevice.createDescriptorSetLayout({});
+    vk::DescriptorSetLayout descriptorsetlayout = LogicalDevice.createDescriptorSetLayout({}).value;
 
     // Descriptor Pool
     std::vector<vk::DescriptorPoolSize> poolSizes{{vk::DescriptorType::eCombinedImageSampler, 1}};
     vk::DescriptorPool descriptorpool = LogicalDevice.createDescriptorPool({
       {}, 2, static_cast<uint32_t>(poolSizes.size()), poolSizes.data()
-    });
+    }).value;
 
     // Pipeline layout
-    vk::PipelineLayout pipelinelayout = LogicalDevice.createPipelineLayout({{}, 1, &descriptorsetlayout});
+    vk::PipelineLayout pipelinelayout = LogicalDevice.createPipelineLayout({{}, 1, &descriptorsetlayout}).value;
 
     // Load shader
     VulkanShader shader = {
@@ -234,7 +234,7 @@ namespace Oxylus {
       fbufCreateInfo.width = dim;
       fbufCreateInfo.height = dim;
       fbufCreateInfo.layers = 1;
-      offscreen.framebuffer = LogicalDevice.createFramebuffer(fbufCreateInfo);
+      offscreen.framebuffer = LogicalDevice.createFramebuffer(fbufCreateInfo).value;
       vk::ImageSubresourceRange subresourceRange;
       subresourceRange.aspectMask = vk::ImageAspectFlagBits::eColor;
       subresourceRange.levelCount = 1;
@@ -249,13 +249,13 @@ namespace Oxylus {
     vk::DescriptorSetLayoutBinding setLayoutBinding{
       0, vk::DescriptorType::eCombinedImageSampler, 1, vk::ShaderStageFlagBits::eFragment
     };
-    descriptorsetlayout = LogicalDevice.createDescriptorSetLayout({{}, 1, &setLayoutBinding});
+    descriptorsetlayout = LogicalDevice.createDescriptorSetLayout({{}, 1, &setLayoutBinding}).value;
 
     // Descriptor Pool
     vk::DescriptorPoolSize poolSize{vk::DescriptorType::eCombinedImageSampler, 1};
-    vk::DescriptorPool descriptorpool = LogicalDevice.createDescriptorPool({{}, 2, 1, &poolSize});
+    vk::DescriptorPool descriptorpool = LogicalDevice.createDescriptorPool({{}, 2, 1, &poolSize}).value;
     // Descriptor sets
-    vk::DescriptorSet descriptorset = LogicalDevice.allocateDescriptorSets({descriptorpool, 1, &descriptorsetlayout})[
+    vk::DescriptorSet descriptorset = LogicalDevice.allocateDescriptorSets({descriptorpool, 1, &descriptorsetlayout}).value[
       0];
     vk::WriteDescriptorSet writeDescriptorSet{
       descriptorset, 0, 0, 1, vk::DescriptorType::eCombinedImageSampler, &skyboxDescriptor
@@ -275,7 +275,7 @@ namespace Oxylus {
 
     vk::PipelineLayout pipelinelayout = LogicalDevice.createPipelineLayout(vk::PipelineLayoutCreateInfo{
       {}, 1, &descriptorsetlayout, 1, &pushConstantRange
-    });
+    }).value;
 
     // Load shader
     VulkanShader shader = {
@@ -524,7 +524,7 @@ namespace Oxylus {
     fbufCreateInfo.width = dim;
     fbufCreateInfo.height = dim;
     fbufCreateInfo.layers = 1;
-    offscreen.framebuffer = LogicalDevice.createFramebuffer(fbufCreateInfo);
+    offscreen.framebuffer = LogicalDevice.createFramebuffer(fbufCreateInfo).value;
     vk::ImageSubresourceRange subresourceRange;
     subresourceRange.aspectMask = vk::ImageAspectFlagBits::eColor;
     subresourceRange.levelCount = 1;
@@ -537,12 +537,12 @@ namespace Oxylus {
     vk::DescriptorSetLayoutBinding setLayoutBinding{
       0, vk::DescriptorType::eCombinedImageSampler, 1, vk::ShaderStageFlagBits::eFragment
     };
-    vk::DescriptorSetLayout descriptorsetlayout = LogicalDevice.createDescriptorSetLayout({{}, 1, &setLayoutBinding});
+    vk::DescriptorSetLayout descriptorsetlayout = LogicalDevice.createDescriptorSetLayout({{}, 1, &setLayoutBinding}).value;
     // Descriptor Pool
     vk::DescriptorPoolSize poolSize{vk::DescriptorType::eCombinedImageSampler, 1};
-    vk::DescriptorPool descriptorpool = LogicalDevice.createDescriptorPool({{}, 2, 1, &poolSize});
+    vk::DescriptorPool descriptorpool = LogicalDevice.createDescriptorPool({{}, 2, 1, &poolSize}).value;
     // Descriptor sets
-    vk::DescriptorSet descriptorset = LogicalDevice.allocateDescriptorSets({descriptorpool, 1, &descriptorsetlayout})[
+    vk::DescriptorSet descriptorset = LogicalDevice.allocateDescriptorSets({descriptorpool, 1, &descriptorsetlayout}).value[
       0];
     vk::WriteDescriptorSet writeDescriptorSet{
       descriptorset, 0, 0, 1, vk::DescriptorType::eCombinedImageSampler, &skyboxDescriptor
@@ -561,7 +561,7 @@ namespace Oxylus {
     };
     vk::PipelineLayout pipelinelayout = LogicalDevice.createPipelineLayout({
       {}, 1, &descriptorsetlayout, 1, &pushConstantRange
-    });
+    }).value;
 
     // Pipeline
     VulkanShader shader{

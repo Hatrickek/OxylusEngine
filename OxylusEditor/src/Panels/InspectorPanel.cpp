@@ -514,33 +514,11 @@ namespace Oxylus {
     DrawComponent<RigidBodyComponent>(ICON_MDI_SOCCER " Rigidbody Component",
       entity,
       [](const RigidBodyComponent& component) {
-        using RB = PhysicsRigidbody;
-        const char* types[] = {"Static", "Dynamic"};
-        IGUI::BeginProperties();
-        static int selected_type = static_cast<int>(component.Rigidbody->GetType());
-        if (IGUI::Property("Type", selected_type, types, 2)) {
-          component.Rigidbody->ChangeType(static_cast<RB::RigidBodyType>(selected_type));
-        }
-        static float mass = 1;
-        if (IGUI::Property<float>("Mass", mass, 0, 10)) {
-          component.Rigidbody->SetMass(mass);
-        }
-        static bool isKinematic = component.Rigidbody->IsKinematic();
-        if (component.Rigidbody->GetType() == RB::RigidBodyType::Dynamic) {
-          if (IGUI::Property("Is Kinematic", isKinematic)) {
-            component.Rigidbody->SetKinematic(isKinematic);
-          }
-        }
-        IGUI::EndProperties();
       });
 
     DrawComponent<BoxColliderComponent>(ICON_MDI_CHECKBOX_BLANK_OUTLINE "Box Collider Component",
       entity,
       [](BoxColliderComponent& component) {
-        IGUI::BeginProperties();
-        IGUI::DrawVec3Control("Size", component.size, nullptr, 1.0f);
-        IGUI::EndProperties();
-        //TODO: Material slot.
       });
 
     DrawComponent<CameraComponent>(ICON_MDI_CAMERA "Camera Component",

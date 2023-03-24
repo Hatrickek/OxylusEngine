@@ -1,4 +1,4 @@
-﻿#include "oxpch.h"
+﻿#include "src/oxpch.h"
 #include "VulkanUtils.h"
 
 #include <GLFW/glfw3.h>
@@ -21,7 +21,7 @@ namespace Oxylus {
     }
 #if !(DISABLE_DEBUG_LAYERS)
     // Enable standard validation layer to find as much errors as possible!
-    if (std::find(layers, "VK_LAYER_KHRONOS_validation") == layers.end() && std::ranges::find_if(
+    if (std::ranges::find(layers, "VK_LAYER_KHRONOS_validation") == layers.end() && std::ranges::find_if(
           layerProperties,
           [](vk::LayerProperties const& lp) {
             return (strcmp("VK_LAYER_KHRONOS_validation", lp.layerName) == 0);
@@ -141,9 +141,9 @@ namespace Oxylus {
                                             std::vector<std::string> const& extensions,
                                             uint32_t apiVersion) {
     const vk::ApplicationInfo applicationInfo(appName.c_str(), 1, engineName.c_str(), 1, apiVersion);
-    const std::vector<char const*> enabledLayers = GatherLayers(layers, vk::enumerateInstanceLayerProperties());
+    const std::vector<char const*> enabledLayers = GatherLayers(layers, vk::enumerateInstanceLayerProperties().value);
     std::vector<char const*> enabledExtensions = GatherExtensions(extensions,
-      vk::enumerateInstanceExtensionProperties());
+      vk::enumerateInstanceExtensionProperties().value);
     uint32_t count = 0;
     const char** names = glfwGetRequiredInstanceExtensions(&count);
     if (count && names) {
@@ -152,7 +152,7 @@ namespace Oxylus {
       }
     }
     const vk::Instance instance = vk::createInstance(
-      MakeInstanceCreateInfoChain(applicationInfo, enabledLayers, enabledExtensions).get<vk::InstanceCreateInfo>());
+      MakeInstanceCreateInfoChain(applicationInfo, enabledLayers, enabledExtensions).get<vk::InstanceCreateInfo>()).value;
     vkCreateDebugUtilsMessengerEXT = reinterpret_cast<PFN_vkCreateDebugUtilsMessengerEXT>(vkGetInstanceProcAddr(
       instance,
       "vkCreateDebugUtilsMessengerEXT"));
@@ -233,7 +233,7 @@ namespace Oxylus {
       physicalDeviceFeatures,
       pNext);
 
-    const vk::Device device = physicalDevice.createDevice(deviceCreateInfo);
+    const vk::Device device = physicalDevice.createDevice(deviceCreateInfo).value;
 
     return device;
   }

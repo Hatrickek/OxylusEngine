@@ -10,7 +10,7 @@ project "Oxylus"
 	objdir ("%{wks.location}/bin-int/" .. outputdir .. "/%{prj.name}")
 
 	pchheader "src/oxpch.h"
-	pchsource "src/oxpch.cpp"
+	pchsource "src/Core/oxpch.cpp"
 
 	files
 	{
@@ -52,7 +52,6 @@ project "Oxylus"
 		"_CRT_SECURE_NO_WARNINGS",
 		"GLFW_INCLUDE_NONE",
 		"_SILENCE_ALL_CXX20_DEPRECATION_WARNINGS",
-		"PX_PHYSX_STATIC_LIB",
 		"SPDLOG_NO_EXCEPTIONS"
 	}
 
@@ -102,23 +101,11 @@ project "Oxylus"
 		runtime "Debug"
 		symbols "on"
 
-		local physxDebugDir =  "../Oxylus/vendor/PhysX/bin/debug/"
 
 		links
 		{
 			"%{Library.ShaderC_Debug}",
-
-			physxDebugDir .. "PhysX_static_64.lib",
-			physxDebugDir .. "PhysXFoundation_static_64.lib",
-			physxDebugDir .. "PhysXCommon_static_64.lib",
-			physxDebugDir .. "PhysXExtensions_static_64.lib",
-			physxDebugDir .. "PhysXPvdSDK_static_64.lib",
-			physxDebugDir .. "PhysXVehicle_static_64.lib",
-			physxDebugDir .. "PhysXVehicle2_static_64.lib",
-			physxDebugDir .. "PhysXCharacterKinematic_static_64.lib",
 		}
-
-	local physxReleaseDir =  "../Oxylus/vendor/PhysX/bin/release/"
 
 	filter "configurations:Release"
 		defines {"OX_RELEASE", "NDEBUG", "TRACY_ENABLE"}
@@ -129,15 +116,6 @@ project "Oxylus"
 		links
 		{
 			"%{Library.ShaderC_Release}",
-
-			physxReleaseDir .. "PhysX_static_64.lib",
-			physxReleaseDir .. "PhysXFoundation_static_64.lib",
-			physxReleaseDir .. "PhysXCommon_static_64.lib",
-			physxReleaseDir .. "PhysXExtensions_static_64.lib",
-			physxReleaseDir .. "PhysXPvdSDK_static_64.lib",
-			physxReleaseDir .. "PhysXVehicle_static_64.lib",
-			physxReleaseDir .. "PhysXVehicle2_static_64.lib",
-			physxReleaseDir .. "PhysXCharacterKinematic_static_64.lib",
 		}
 
 	filter "configurations:Dist"
@@ -148,13 +126,4 @@ project "Oxylus"
 		links
 		{
 			"%{Library.ShaderC_Release}",
-
-			physxReleaseDir .. "PhysX_static_64.lib",
-			physxReleaseDir .. "PhysXFoundation_static_64.lib",
-			physxReleaseDir .. "PhysXCommon_static_64.lib",
-			physxReleaseDir .. "PhysXExtensions_static_64.lib",
-			physxReleaseDir .. "PhysXPvdSDK_static_64.lib",
-			physxReleaseDir .. "PhysXVehicle_static_64.lib",
-			physxReleaseDir .. "PhysXVehicle2_static_64.lib",
-			physxReleaseDir .. "PhysXCharacterKinematic_static_64.lib",
 		}

@@ -1,4 +1,4 @@
-#include "oxpch.h"
+#include "src/oxpch.h"
 #include "VulkanRenderer.h"
 
 #include "VulkanCommandBuffer.h"
@@ -1613,7 +1613,7 @@ namespace Oxylus {
     vk::CommandPoolCreateInfo cmdPoolInfo;
     cmdPoolInfo.queueFamilyIndex = VulkanContext::VulkanQueue.graphicsQueueFamilyIndex;
     cmdPoolInfo.flags = vk::CommandPoolCreateFlagBits::eResetCommandBuffer;
-    s_RendererContext.CommandPool = VulkanContext::Context.Device.createCommandPool(cmdPoolInfo);
+    s_RendererContext.CommandPool = VulkanContext::Context.Device.createCommandPool(cmdPoolInfo).value;
 
     SwapChain.SetVsync(RendererConfig::Get()->DisplayConfig.VSync, false);
     SwapChain.CreateSwapChain();

@@ -1,5 +1,4 @@
-#include "oxpch.h"
-#define VK_USE_PLATFORM_WIN32_KHR
+#include "src/oxpch.h"
 #include "VulkanContext.h"
 
 #include "Utils/VulkanUtils.h"
@@ -19,10 +18,10 @@ namespace Oxylus {
       VK_API_VERSION_1_3);
 
     if (!Context.Instance)
-      OX_CORE_ERROR("Failed to create Vulkan Instance");
+      OX_CORE_FATAL("Failed to create Vulkan Instance");
 
     //Physical Device
-    Context.PhysicalDevices = Context.Instance.enumeratePhysicalDevices();
+    Context.PhysicalDevices = Context.Instance.enumeratePhysicalDevices().value;
     Context.PhysicalDevice = Context.PhysicalDevices[0];
     Context.DeviceProperties = Context.PhysicalDevice.getProperties();
 
@@ -40,7 +39,7 @@ namespace Oxylus {
       ContextUtils::FindGraphicsQueueFamilyIndex(VulkanQueue.queueFamilyProperties);
     VulkanQueue.presentQueueFamilyIndex = Context.PhysicalDevice.getSurfaceSupportKHR(
                                             VulkanQueue.graphicsQueueFamilyIndex,
-                                            Context.Surface)
+                                            Context.Surface).value
                                             ? VulkanQueue.graphicsQueueFamilyIndex
                                             : (uint32_t)VulkanQueue.queueFamilyProperties.size();
 
@@ -49,7 +48,7 @@ namespace Oxylus {
       // graphics and present
       for (uint32_t i = 0; i < VulkanQueue.queueFamilyProperties.size(); i++) {
         if ((VulkanQueue.queueFamilyProperties[i].queueFlags & vk::QueueFlagBits::eGraphics) && Context.PhysicalDevice.
-            getSurfaceSupportKHR(i, Context.Surface)) {
+            getSurfaceSupportKHR(i, Context.Surface).value) {
           VulkanQueue.graphicsQueueFamilyIndex = i;
           VulkanQueue.presentQueueFamilyIndex = i;
           break;
@@ -59,16 +58,16 @@ namespace Oxylus {
         // there's nothing like a single family index that supports both graphics and present -> look for an other
         // family index that supports present
         for (uint32_t i = 0; i < VulkanQueue.queueFamilyProperties.size(); i++) {
-          if (Context.PhysicalDevice.getSurfaceSupportKHR(i, Context.Surface)) {
+          if (Context.PhysicalDevice.getSurfaceSupportKHR(i, Context.Surface).value) {
             VulkanQueue.presentQueueFamilyIndex = i;
             break;
           }
         }
       }
     }
-    if ((VulkanQueue.graphicsQueueFamilyIndex == VulkanQueue.queueFamilyProperties.size()) || (
+    if (VulkanQueue.graphicsQueueFamilyIndex == VulkanQueue.queueFamilyProperties.size() || (
           VulkanQueue.presentQueueFamilyIndex == VulkanQueue.queueFamilyProperties.size())) {
-      throw std::runtime_error("Could not find a queue for graphics or present -> terminating");
+      OX_CORE_FATAL("Could not find a queue for graphics or present!");
     }
 
     Context.DeviceMemoryProperties = Context.PhysicalDevice.getMemoryProperties();

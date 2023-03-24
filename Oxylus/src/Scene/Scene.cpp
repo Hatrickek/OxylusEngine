@@ -1,4 +1,4 @@
-#include "oxpch.h"
+#include "src/oxpch.h"
 #include "Scene.h"
 
 #include "Core/Entity.h"
@@ -231,7 +231,7 @@ namespace Oxylus {
     {
       ZoneScopedN("Physics System");
       //Rigidbody
-      {
+      /*{
         const auto group = m_Registry.view<TransformComponent, RigidBodyComponent>();
         for (const auto entity : group) {
           auto [transform, rb] = group.get<TransformComponent, RigidBodyComponent>(entity);
@@ -247,7 +247,7 @@ namespace Oxylus {
           boxCollider.size = transform.Scale;
           rb.Rigidbody->SetGeometry(physx::PxBoxGeometry(boxCollider.size.x, boxCollider.size.y, boxCollider.size.z));
         }
-      }
+      }*/
     }
 
     //Audio
@@ -328,12 +328,7 @@ namespace Oxylus {
 
   template <> void Scene::OnComponentAdded<MeshColliderComponent>(Entity entity, MeshColliderComponent& component) { }
 
-  template <> void Scene::OnComponentAdded<RigidBodyComponent>(Entity entity, RigidBodyComponent& component) {
-    if (!entity.HasComponent<BoxColliderComponent>()) {
-      entity.AddComponentI<BoxColliderComponent>();
-    }
-    component.Rigidbody->Init(entity.GetComponent<BoxColliderComponent>().Shape);
-  }
+  template <> void Scene::OnComponentAdded<RigidBodyComponent>(Entity entity, RigidBodyComponent& component) { }
 
   template <> void Scene::OnComponentAdded<NativeScriptComponent>(Entity entity, NativeScriptComponent& component) { }
 

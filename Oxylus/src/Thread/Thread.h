@@ -5,6 +5,8 @@
 #include <condition_variable>
 #include <functional>
 
+#undef AddJob
+
 namespace Oxylus {
   class Thread {
   public:

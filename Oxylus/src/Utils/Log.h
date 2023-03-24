@@ -1,5 +1,4 @@
 #pragma once
-#define SPDLOG_NO_EXCEPTIONS
 
 #include <spdlog/sinks/basic_file_sink.h>
 

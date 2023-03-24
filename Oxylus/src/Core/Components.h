@@ -5,6 +5,7 @@
 #include <glm/gtx/quaternion.hpp>
 #include <glm/gtc/matrix_transform.hpp>
 
+#include "Types.h"
 #include "UUID.h"
 #include "Audio/AudioListener.h"
 #include "Audio/AudioSource.h"
@@ -119,27 +120,11 @@ namespace Oxylus {
 
   //Physics
   struct BoxColliderComponent {
-    glm::vec3 size = glm::vec3(1);
-    physx::PxShape* Shape = nullptr;
-    physx::PxMaterial* Material = Physics::s_Physics->createMaterial(0.5f, 0.5f, 0.1f);
-
-    BoxColliderComponent() {
-      Shape = Physics::s_Physics->createShape(physx::PxBoxGeometry(size.x, size.y, size.z), *Material, true);
-    }
-
-    ~BoxColliderComponent() { }
+    Vec3 Size = Vec3(1.0f);
   };
 
   struct MeshColliderComponent {
-    //TODO:
-    physx::PxShape* Shape;
-    physx::PxMaterial* Material = Physics::s_Physics->createMaterial(0.5f, 0.5f, 0.1f);
-
-    MeshColliderComponent() {
-      //Shape = Physics::m_Physics->createShape(physx::PxConvexMeshGeometry());
-    }
-
-    ~MeshColliderComponent() { }
+    Vec3 Size = Vec3(1.0f);
   };
 
   struct RigidBodyComponent {
@@ -147,9 +132,7 @@ namespace Oxylus {
 
     RigidBodyComponent() : Rigidbody(CreateRef<PhysicsRigidbody>()) { }
 
-    ~RigidBodyComponent() {
-      Rigidbody->Release();
-    }
+    ~RigidBodyComponent() { }
   };
 
   //Scripting

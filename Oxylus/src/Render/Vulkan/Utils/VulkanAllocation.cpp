@@ -1,4 +1,4 @@
-#include "oxpch.h"
+#include "src/oxpch.h"
 #include "VulkanAllocation.h"
 #include "VulkanUtils.h"
 #include "Utils/Log.h"
@@ -17,12 +17,12 @@ namespace Oxylus {
 
   void VulkanAllocation::BindBufferMemory(int memoryIndex, const vk::Buffer& buffer, int offset) const {
     const auto& LogicalDevice = VulkanContext::Context.Device;
-    LogicalDevice.bindBufferMemory(buffer, Memories[memoryIndex].DeviceMemory, offset);
+    VulkanUtils::CheckResult(LogicalDevice.bindBufferMemory(buffer, Memories[memoryIndex].DeviceMemory, offset));
   }
 
   void VulkanAllocation::BindImageMemory(int memoryIndex, const vk::Image& image, vk::DeviceSize offset) const {
     const auto& LogicalDevice = VulkanContext::Context.Device;
-    LogicalDevice.bindImageMemory(image, Memories[memoryIndex].DeviceMemory, offset);
+    VulkanUtils::CheckResult(LogicalDevice.bindImageMemory(image, Memories[memoryIndex].DeviceMemory, offset));
   }
 
   void VulkanAllocation::Unmap(int memoryIndex) {
@@ -55,21 +55,21 @@ namespace Oxylus {
                                       const void* data,
                                       vk::DeviceSize size,
                                       vk::DeviceSize offset) {
-    void* mapped = VulkanContext::Context.Device.mapMemory(memory, offset, size, vk::MemoryMapFlags());
+    void* mapped = VulkanContext::Context.Device.mapMemory(memory, offset, size, vk::MemoryMapFlags()).value;
     memcpy(mapped, data, size);
     VulkanContext::Context.Device.unmapMemory(memory);
   }
 
   void VulkanAllocation::Flush(int memoryIndex, vk::DeviceSize size, vk::DeviceSize offset) const {
-    return VulkanContext::Context.Device.flushMappedMemoryRanges(vk::MappedMemoryRange{
+    VulkanUtils::CheckResult(VulkanContext::Context.Device.flushMappedMemoryRanges(vk::MappedMemoryRange{
       Memories[memoryIndex].DeviceMemory, offset, size
-    });
+    }));
   }
 
   void VulkanAllocation::Invalidate(int memoryIndex, vk::DeviceSize size, vk::DeviceSize offset) const {
-    return VulkanContext::Context.Device.invalidateMappedMemoryRanges(vk::MappedMemoryRange{
+    VulkanUtils::CheckResult(VulkanContext::Context.Device.invalidateMappedMemoryRanges(vk::MappedMemoryRange{
       Memories[memoryIndex].DeviceMemory, offset, size
-    });
+    }));
   }
 
   void VulkanAllocation::FreeMemory(int memoryIndex) {

@@ -1,4 +1,4 @@
-﻿#include "oxpch.h"
+﻿#include "src/oxpch.h"
 #include "VulkanPipeline.h"
 
 #include "VulkanContext.h"
@@ -21,8 +21,8 @@ namespace Oxylus {
       descriptorSetLayoutCreateInfo.pBindings = bindings.data();
       descriptorSetLayoutCreateInfo.bindingCount = (uint32_t)bindings.size();
 
-      const auto& res = LogicalDevice.createDescriptorSetLayout(descriptorSetLayoutCreateInfo, nullptr);
-      descriptorSetLayouts.emplace_back(res);
+      descriptorSetLayouts.emplace_back(
+        LogicalDevice.createDescriptorSetLayout(descriptorSetLayoutCreateInfo, nullptr).value);
     }
 
     pipelineLayoutCI.pSetLayouts = descriptorSetLayouts.data();
@@ -32,8 +32,7 @@ namespace Oxylus {
       pipelineLayoutCI.pushConstantRangeCount = (uint32_t)pipDesc.PushConstantRanges.size();
       pipelineLayoutCI.pPushConstantRanges = pipDesc.PushConstantRanges.data();
     }
-
-    return {LogicalDevice.createPipelineLayout(pipelineLayoutCI, nullptr), descriptorSetLayouts};
+    return {LogicalDevice.createPipelineLayout(pipelineLayoutCI, nullptr).value, descriptorSetLayouts};
   }
 
   void VulkanPipeline::CreateGraphicsPipeline(PipelineDescription& pipelineSpecification) {

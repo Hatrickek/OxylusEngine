@@ -1,4 +1,4 @@
-#include "oxpch.h"
+#include "src/oxpch.h"
 #include "VulkanRenderPass.h"
 
 #include "VulkanContext.h"
@@ -10,7 +10,7 @@ namespace Oxylus {
     m_Description = renderPassCI;
     const auto& LogicalDevice = VulkanContext::Context.Device;
 
-    m_RenderPass = LogicalDevice.createRenderPass(renderPassCI);
+    m_RenderPass = LogicalDevice.createRenderPass(renderPassCI).value;
   }
 
   void VulkanRenderPass::Destroy() const {
