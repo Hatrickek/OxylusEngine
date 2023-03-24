@@ -1,4 +1,5 @@
 ﻿#pragma once
+
 #include "EditorPanel.h"
 
 namespace vk {

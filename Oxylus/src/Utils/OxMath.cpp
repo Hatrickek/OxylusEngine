@@ -1,6 +1,8 @@
 #include "src/oxpch.h"
 #include "OxMath.h"
+
 #define GLM_ENABLE_EXPERIMENTAL
+
 #include <glm/gtx/matrix_decompose.hpp>
 
 
@@ -18,8 +20,9 @@ namespace Oxylus::Math {
 
     // First, isolate perspective.  This is the messiest.
     if (epsilonNotEqual(LocalMatrix[0][3], static_cast<T>(0), epsilon<T>()) || epsilonNotEqual(LocalMatrix[1][3],
-          static_cast<T>(0),
-          epsilon<T>()) || epsilonNotEqual(LocalMatrix[2][3], static_cast<T>(0), epsilon<T>())) {
+                                                                                               static_cast<T>(0),
+                                                                                               epsilon<T>()) ||
+        epsilonNotEqual(LocalMatrix[2][3], static_cast<T>(0), epsilon<T>())) {
       // Clear the perspective partition
       LocalMatrix[0][3] = LocalMatrix[1][3] = LocalMatrix[2][3] = static_cast<T>(0);
       LocalMatrix[3][3] = static_cast<T>(1);

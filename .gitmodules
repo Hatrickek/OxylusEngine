@@ -20,3 +20,6 @@
 [submodule "Oxylus/vendor/tracy"]
 	path = Oxylus/vendor/tracy
 	url = https://github.com/wolfpld/tracy
+[submodule "Oxylus/vendor/nativefiledialog-extended"]
+	path = Oxylus/vendor/nativefiledialog-extended
+	url = https://github.com/btzy/nativefiledialog-extended.git

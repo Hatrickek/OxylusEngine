@@ -65,7 +65,7 @@ namespace Oxylus {
     return modified;
   }
 
-  bool IGUI::Property(const char* label, Ref<VulkanImage>& texture, uint64_t overrideTextureID, const char* tooltip) {
+  bool IGUI::Property(const char* label, Ref <VulkanImage>& texture, uint64_t overrideTextureID, const char* tooltip) {
     BeginPropertyGrid(label, tooltip);
 
     bool changed = false;
@@ -76,9 +76,9 @@ namespace Oxylus {
     const float tooltipSize = frameHeight * 11.0f;
 
     ImGui::SetCursorPos({
-      ImGui::GetContentRegionMax().x - buttonSize - xButtonSize.x,
-      ImGui::GetCursorPosY() + ImGui::GetStyle().FramePadding.y
-    });
+                                ImGui::GetContentRegionMax().x - buttonSize - xButtonSize.x,
+                                ImGui::GetCursorPosY() + ImGui::GetStyle().FramePadding.y
+                        });
     ImGui::PushStyleVar(ImGuiStyleVar_ItemSpacing, ImVec2{0, 0});
     ImGui::PushStyleColor(ImGuiCol_Button, ImVec4{0.25f, 0.25f, 0.25f, 1.0f});
     ImGui::PushStyleColor(ImGuiCol_ButtonHovered, ImVec4{0.35f, 0.35f, 0.35f, 1.0f});
@@ -88,7 +88,7 @@ namespace Oxylus {
     if (id == nullptr)
       id = texture == nullptr ? 0 : texture->GetDescriptorSet();
     if (ImGui::ImageButton(id, {buttonSize, buttonSize}, {1, 1}, {0, 0}, 0)) {
-      const auto& path = FileDialogs::OpenFile("Texture file (*.png, ktx)\0*.*\0");
+      const auto& path = FileDialogs::OpenFile({{"Texture file", "png,ktx"}});
       if (!path.empty()) {
         const auto& asset = AssetManager::GetImageAsset(path);
         texture = asset.Data;

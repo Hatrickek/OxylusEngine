@@ -1,4 +1,5 @@
 #pragma once
+
 #include <mutex>
 
 #include <functional>
@@ -27,11 +28,13 @@ namespace Oxylus {
     };
 
     explicit ExternalConsoleSink(bool forceFlush = false, uint8_t bufferCapacity = 10) :
-      m_MessageBufferCapacity(forceFlush ? 1 : bufferCapacity),
-      m_MessageBuffer(std::vector<Ref<Message>>(forceFlush ? 1 : bufferCapacity)) { }
+            m_MessageBufferCapacity(forceFlush ? 1 : bufferCapacity),
+            m_MessageBuffer(std::vector<Ref<Message>>(forceFlush ? 1 : bufferCapacity)) { }
 
     ExternalConsoleSink(const ExternalConsoleSink&) = delete;
+
     ExternalConsoleSink& operator=(const ExternalConsoleSink&) = delete;
+
     ~ExternalConsoleSink() override = default;
 
     static void SetConsoleSink_HandleFlush(const std::function<void(std::string_view,
@@ -52,11 +55,11 @@ namespace Oxylus {
       spdlog::memory_buf_t formatted;
       base_sink<std::mutex>::formatter_->format(msg, formatted);
       *(m_MessageBuffer.begin() + m_MessagesBuffered) = CreateRef<Message>(
-        std::string_view(formatted.data(), formatted.size()),
-        msg.source.filename,
-        msg.source.funcname,
-        msg.source.line,
-        msg.level);
+              std::string_view(formatted.data(), formatted.size()),
+              msg.source.filename,
+              msg.source.funcname,
+              msg.source.line,
+              msg.level);
 
       if (++m_MessagesBuffered == m_MessageBufferCapacity)
         flush_();

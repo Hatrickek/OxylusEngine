@@ -12,6 +12,7 @@ namespace Oxylus {
     Thread RenderThread;
 
     ThreadManager();
+
     ~ThreadManager() = default;
 
     void WaitAllThreads();

@@ -2,6 +2,7 @@
 #include "AudioEngine.h"
 
 #define MINIAUDIO_IMPLEMENTATION
+
 #include <miniaudio.h>
 
 #include "Utils/Log.h"

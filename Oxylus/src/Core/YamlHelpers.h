@@ -1,7 +1,9 @@
 #pragma once
 
 #pragma warning(disable:4996)
+
 #include <ryml/rapidyaml-0.5.0.hpp>
+
 #pragma warning(default:4996)
 
 #include <glm/glm.hpp>

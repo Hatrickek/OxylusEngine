@@ -9,12 +9,14 @@
 #include "Physics/Physics.h"
 #include "Render/Vulkan/VulkanContext.h"
 #include "Render/Vulkan/VulkanRenderer.h"
+#include "Utils/UIUtils.h"
 
 namespace Oxylus {
   Core::RenderBackend Core::s_Backend = RenderBackend::Vulkan;
 
   void Core::Init(const AppSpec& spec) {
     s_Backend = spec.Backend;
+    FileDialogs::InitNFD();
     Project::New();
     Window::InitWindow(spec);
     VulkanContext::CreateContext(spec);
@@ -25,6 +27,7 @@ namespace Oxylus {
   }
 
   void Core::Shutdown() {
+    FileDialogs::CloseNFD();
     VulkanRenderer::WaitDeviceIdle();
     VulkanRenderer::Shutdown();
 

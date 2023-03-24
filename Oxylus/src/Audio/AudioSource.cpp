@@ -11,11 +11,11 @@ namespace Oxylus {
     m_Sound = CreateScope<ma_sound>();
 
     const ma_result result = ma_sound_init_from_file(static_cast<ma_engine*>(AudioEngine::GetEngine()),
-      filepath,
-      MA_SOUND_FLAG_NO_SPATIALIZATION,
-      nullptr,
-      nullptr,
-      m_Sound.get());
+                                                     filepath,
+                                                     MA_SOUND_FLAG_NO_SPATIALIZATION,
+                                                     nullptr,
+                                                     nullptr,
+                                                     m_Sound.get());
     if (result != MA_SUCCESS)
       OX_CORE_ERROR("Failed to initialize sound: {}", filepath);
   }

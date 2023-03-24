@@ -6,10 +6,10 @@ This is my hobby project that I work on in my spare time to learn more about gra
 Currently only Windows is supported but Mac support is planned.
 
 ## Features:     
-- Editor with scene editing, saving/loading, asset browser.  
+- Full blown editor with asset browser, .  
 - Forward+ Rendering with PBR, Skybox, Bloom and SSAO.     
 - 3D Model and Texture workflow.   
-- Physics with Physx.   
+- Physics with Jolt.   
 - ECS with entt.
 - Native scripting.   
 
@@ -29,6 +29,7 @@ Currently only Windows is supported but Mac support is planned.
 2. Generate the project using cmake-gui or with `cmake -G "Visual Studio 17 2022` command. If visual studio is not preferred then it could be used with any other IDE.
 
 ## Special Mentions and Thanks To
-- Yan Chernikov aka [The Cherno](https://www.youtube.com/channel/UCQ-W1KE9EYfdxhL6S4twUNw) for his great video series, streams and being an inspiration to me. 
+- Yan Chernikov aka [The Cherno](https://www.youtube.com/channel/UCQ-W1KE9EYfdxhL6S4twUNw) for his great video series, streams.
+- [Cem Yuksel](https://www.youtube.com/@cem_yuksel/videos) for his great videos about graphics programming.
 - Jason Gregory for his [Game Engine Architecture](https://www.gameenginebook.com/) book.
 - [SaschaWillems](https://github.com/SaschaWillems/Vulkan) for his Vulkan examples and help. 

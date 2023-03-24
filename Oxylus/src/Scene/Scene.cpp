@@ -44,7 +44,7 @@ namespace Oxylus {
     return entity;
   }
 
-  void Scene::IterateOverMeshNode(const Ref<Mesh>& mesh, const std::vector<Mesh::Node*>& node, Entity parent) {
+  void Scene::IterateOverMeshNode(const Ref <Mesh>& mesh, const std::vector<Mesh::Node*>& node, Entity parent) {
     for (const auto child : node) {
       Entity entity = CreateEntity(child->Name).SetParent(parent);
       if (child->ContainsMesh) {
@@ -82,9 +82,10 @@ namespace Oxylus {
     m_Registry.destroy(entity);
   }
 
-  template <typename... Component> static void CopyComponent(entt::registry& dst,
-                                                             entt::registry& src,
-                                                             const std::unordered_map<UUID, entt::entity>& enttMap) {
+  template<typename... Component>
+  static void CopyComponent(entt::registry& dst,
+                            entt::registry& src,
+                            const std::unordered_map<UUID, entt::entity>& enttMap) {
     ([&] {
       auto view = src.view<Component>();
       for (auto srcEntity : view) {
@@ -96,23 +97,26 @@ namespace Oxylus {
     }(), ...);
   }
 
-  template <typename... Component> static void CopyComponent(ComponentGroup<Component...>,
-                                                             entt::registry& dst,
-                                                             entt::registry& src,
-                                                             const std::unordered_map<UUID, entt::entity>& enttMap) {
+  template<typename... Component>
+  static void CopyComponent(ComponentGroup<Component...>,
+                            entt::registry& dst,
+                            entt::registry& src,
+                            const std::unordered_map<UUID, entt::entity>& enttMap) {
     CopyComponent<Component...>(dst, src, enttMap);
   }
 
-  template <typename... Component> static void CopyComponentIfExists(Entity dst, Entity src) {
+  template<typename... Component>
+  static void CopyComponentIfExists(Entity dst, Entity src) {
     ([&] {
       if (src.HasComponent<Component>())
         dst.AddOrReplaceComponent<Component>(src.GetComponent<Component>());
     }(), ...);
   }
 
-  template <typename... Component> static void CopyComponentIfExists(ComponentGroup<Component...>,
-                                                                     Entity dst,
-                                                                     Entity src) {
+  template<typename... Component>
+  static void CopyComponentIfExists(ComponentGroup<Component...>,
+                                    Entity dst,
+                                    Entity src) {
     CopyComponentIfExists<Component...>(dst, src);
   }
 
@@ -155,9 +159,9 @@ namespace Oxylus {
     return {};
   }
 
-  Ref<Scene> Scene::Copy(const Ref<Scene>& other) {
+  Ref <Scene> Scene::Copy(const Ref <Scene>& other) {
     ZoneScoped;
-    Ref<Scene> newScene = CreateRef<Scene>();
+    Ref <Scene> newScene = CreateRef<Scene>();
 
     auto& srcSceneRegistry = other->m_Registry;
     auto& dstSceneRegistry = newScene->m_Registry;
@@ -286,51 +290,70 @@ namespace Oxylus {
     VulkanRenderer::SetCamera(camera);
   }
 
-  template <typename T> void Scene::OnComponentAdded(Entity entity, T& component) {
+  template<typename T>
+  void Scene::OnComponentAdded(Entity entity, T& component) {
     static_assert(sizeof(T) == 0);
   }
 
-  template <> void Scene::OnComponentAdded<TagComponent>(Entity entity, TagComponent& component) { }
+  template<>
+  void Scene::OnComponentAdded<TagComponent>(Entity entity, TagComponent& component) { }
 
-  template <> void Scene::OnComponentAdded<IDComponent>(Entity entity, IDComponent& component) { }
+  template<>
+  void Scene::OnComponentAdded<IDComponent>(Entity entity, IDComponent& component) { }
 
-  template <> void Scene::OnComponentAdded<RelationshipComponent>(Entity entity, RelationshipComponent& component) {}
+  template<>
+  void Scene::OnComponentAdded<RelationshipComponent>(Entity entity, RelationshipComponent& component) { }
 
-  template <> void Scene::OnComponentAdded<PrefabComponent>(Entity entity, PrefabComponent& component) {}
+  template<>
+  void Scene::OnComponentAdded<PrefabComponent>(Entity entity, PrefabComponent& component) { }
 
-  template <> void Scene::OnComponentAdded<TransformComponent>(Entity entity, TransformComponent& component) { }
+  template<>
+  void Scene::OnComponentAdded<TransformComponent>(Entity entity, TransformComponent& component) { }
 
-  template <> void Scene::OnComponentAdded<CameraComponent>(Entity entity, CameraComponent& component) { }
+  template<>
+  void Scene::OnComponentAdded<CameraComponent>(Entity entity, CameraComponent& component) { }
 
-  template <> void Scene::OnComponentAdded<AudioSourceComponent>(Entity entity, AudioSourceComponent& component) { }
+  template<>
+  void Scene::OnComponentAdded<AudioSourceComponent>(Entity entity, AudioSourceComponent& component) { }
 
-  template <> void Scene::OnComponentAdded<AudioListenerComponent>(Entity entity, AudioListenerComponent& component) { }
+  template<>
+  void Scene::OnComponentAdded<AudioListenerComponent>(Entity entity, AudioListenerComponent& component) { }
 
-  template <> void Scene::OnComponentAdded<MeshRendererComponent>(Entity entity, MeshRendererComponent& component) {
+  template<>
+  void Scene::OnComponentAdded<MeshRendererComponent>(Entity entity, MeshRendererComponent& component) {
     entity.AddComponentI<MaterialComponent>();
   }
 
-  template <> void Scene::OnComponentAdded<SkyLightComponent>(Entity entity, SkyLightComponent& component) { }
+  template<>
+  void Scene::OnComponentAdded<SkyLightComponent>(Entity entity, SkyLightComponent& component) { }
 
-  template <> void Scene::OnComponentAdded<MaterialComponent>(Entity entity, MaterialComponent& component) {
+  template<>
+  void Scene::OnComponentAdded<MaterialComponent>(Entity entity, MaterialComponent& component) {
     if (component.Materials.empty()) {
       if (entity.HasComponent<MeshRendererComponent>())
         component.Materials = entity.GetComponent<MeshRendererComponent>().MeshGeometry->GetMaterialsAsRef();
     }
   }
 
-  template <> void Scene::OnComponentAdded<LightComponent>(Entity entity, LightComponent& component) { }
+  template<>
+  void Scene::OnComponentAdded<LightComponent>(Entity entity, LightComponent& component) { }
 
-  template <> void Scene::OnComponentAdded<ParticleSystemComponent>(Entity entity,
-                                                                    ParticleSystemComponent& component) {}
+  template<>
+  void Scene::OnComponentAdded<ParticleSystemComponent>(Entity entity,
+                                                        ParticleSystemComponent& component) { }
 
-  template <> void Scene::OnComponentAdded<BoxColliderComponent>(Entity entity, BoxColliderComponent& component) { }
+  template<>
+  void Scene::OnComponentAdded<BoxColliderComponent>(Entity entity, BoxColliderComponent& component) { }
 
-  template <> void Scene::OnComponentAdded<MeshColliderComponent>(Entity entity, MeshColliderComponent& component) { }
+  template<>
+  void Scene::OnComponentAdded<MeshColliderComponent>(Entity entity, MeshColliderComponent& component) { }
 
-  template <> void Scene::OnComponentAdded<RigidBodyComponent>(Entity entity, RigidBodyComponent& component) { }
+  template<>
+  void Scene::OnComponentAdded<RigidBodyComponent>(Entity entity, RigidBodyComponent& component) { }
 
-  template <> void Scene::OnComponentAdded<NativeScriptComponent>(Entity entity, NativeScriptComponent& component) { }
+  template<>
+  void Scene::OnComponentAdded<NativeScriptComponent>(Entity entity, NativeScriptComponent& component) { }
 
-  template <> void Scene::OnComponentAdded<NamedComponent>(Entity entity, NamedComponent& component) { }
+  template<>
+  void Scene::OnComponentAdded<NamedComponent>(Entity entity, NamedComponent& component) { }
 }

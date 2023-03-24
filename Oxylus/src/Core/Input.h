@@ -1,4 +1,5 @@
 #pragma once
+
 #include <functional>
 #include "keycodes.h"
 #include <glfw/glfw3.h>
@@ -63,6 +64,7 @@ namespace Oxylus {
     } s_Events;
 
     static void MouseCallback(GLFWwindow* window, double xposIn, double yposIn);
+
     static void KeyCallback(GLFWwindow* window, int key, int scancode, int action, int mods);
   };
 }

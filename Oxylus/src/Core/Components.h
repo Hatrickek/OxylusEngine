@@ -1,5 +1,6 @@
 #pragma once
 #define GLM_ENABLE_EXPERIMENTAL
+
 #include <string>
 #include <glm/glm.hpp>
 #include <glm/gtx/quaternion.hpp>
@@ -21,6 +22,7 @@ namespace Oxylus {
     UUID ID;
 
     IDComponent() = default;
+
     IDComponent(const IDComponent&) = default;
 
     IDComponent(UUID id) : ID(id) { }
@@ -53,6 +55,7 @@ namespace Oxylus {
     glm::vec3 Scale = glm::vec3(1);
 
     TransformComponent() = default;
+
     TransformComponent(const TransformComponent&) = default;
 
     TransformComponent(const glm::vec3& translation) : Translation(translation) { }
@@ -72,12 +75,14 @@ namespace Oxylus {
 
   struct CameraComponent {
     Ref<Camera> System;
-    CameraComponent() : System(CreateRef<Camera>()) {};
+
+    CameraComponent() : System(CreateRef<Camera>()) { };
   };
 
   struct MeshRendererComponent {
     Ref<Mesh> MeshGeometry = nullptr;
     uint32_t SubmesIndex = 0;
+
     MeshRendererComponent() = default;
 
     MeshRendererComponent(const Ref<Mesh>& model) : MeshGeometry(model) { }
@@ -90,7 +95,7 @@ namespace Oxylus {
   struct ParticleSystemComponent {
     Ref<ParticleSystem> System = nullptr;
 
-    ParticleSystemComponent() : System(CreateRef<ParticleSystem>()) {}
+    ParticleSystemComponent() : System(CreateRef<ParticleSystem>()) { }
   };
 
   struct SkyLightComponent {
@@ -141,10 +146,12 @@ namespace Oxylus {
   struct NativeScriptComponent {
     ScriptableEntity* Instance = nullptr;
 
-    ScriptableEntity* (*InstantiateScript)();
-    void (*DestroyScript)(NativeScriptComponent*);
+    ScriptableEntity* (* InstantiateScript)();
 
-    template <typename T, typename... Args> void Bind(Args&&... args) {
+    void (* DestroyScript)(NativeScriptComponent*);
+
+    template<typename T, typename... Args>
+    void Bind(Args&& ... args) {
       InstantiateScript = [&args...] {
         return static_cast<ScriptableEntity*>(new T(std::forward<Args>(args)...));
       };
@@ -174,17 +181,17 @@ namespace Oxylus {
     Ref<AudioListener> Listener;
   };
 
-  template <typename... Component> struct ComponentGroup { };
+  template<typename... Component>
+  struct ComponentGroup { };
 
   using AllComponents = ComponentGroup<TransformComponent, RelationshipComponent, PrefabComponent, CameraComponent,
 
-                                       //Render
-                                       LightComponent, MeshRendererComponent, SkyLightComponent, ParticleSystemComponent
-                                       , MaterialComponent,
+          //Render
+          LightComponent, MeshRendererComponent, SkyLightComponent, ParticleSystemComponent, MaterialComponent,
 
-                                       //Physics
-                                       RigidBodyComponent, BoxColliderComponent, MeshColliderComponent,
+          //Physics
+          RigidBodyComponent, BoxColliderComponent, MeshColliderComponent,
 
-                                       //Audio
-                                       AudioSourceComponent, AudioListenerComponent, NativeScriptComponent>;
+          //Audio
+          AudioSourceComponent, AudioListenerComponent, NativeScriptComponent>;
 }

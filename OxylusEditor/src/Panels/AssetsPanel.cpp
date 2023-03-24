@@ -34,7 +34,7 @@ namespace Oxylus {
       if (const ImGuiPayload* payload = ImGui::AcceptDragDropPayload("Entity")) {
         const Entity entity = *static_cast<Entity*>(payload->Data);
         const std::filesystem::path path =
-          dropPath / std::string(entity.GetComponent<TagComponent>().Tag + ".oxprefab");
+                dropPath / std::string(entity.GetComponent<TagComponent>().Tag + ".oxprefab");
         ThreadManager::Get()->AssetThread.QueueJob([path, entity] {
           EntitySerializer::SerializeEntityAsPrefab(path.string().c_str(), entity);
         });
@@ -176,7 +176,7 @@ namespace Oxylus {
       }
 
       if (ImGui::BeginPopupContextWindow("AssetPanelHierarchyContextWindow",
-        ImGuiPopupFlags_MouseButtonRight | ImGuiPopupFlags_NoOpenOverItems)) {
+                                         ImGuiPopupFlags_MouseButtonRight | ImGuiPopupFlags_NoOpenOverItems)) {
         DrawContextMenuItems(absolute(m_CurrentDirectory), m_CurrentDirectory, true);
         ImGui::EndPopup();
       }
@@ -192,7 +192,7 @@ namespace Oxylus {
 
       if (ImGui::BeginPopupModal("Delete?", nullptr, ImGuiWindowFlags_AlwaysAutoResize)) {
         ImGui::Text("%s will be deleted. Are you sure? \nThis operation cannot be undone!\n\n",
-          s_DirectoryToDelete.string().c_str());
+                    s_DirectoryToDelete.string().c_str());
         ImGui::Separator();
         if (ImGui::Button("OK", ImVec2(120, 0))) {
           std::filesystem::remove_all(s_DirectoryToDelete);
@@ -227,7 +227,7 @@ namespace Oxylus {
       const std::string filenameString = relativePath.filename().string();
 
       m_PanelItems.emplace_back(AssetItem{
-        dirPath, relativePath, absolute(dirPath), filenameString, directoryEntry.is_directory()
+              dirPath, relativePath, absolute(dirPath), filenameString, directoryEntry.is_directory()
       });
     }
   }

@@ -10,7 +10,9 @@ namespace Oxylus {
     };
 
     static void Init(const AppSpec& spec);
+
     static void Shutdown();
+
     static RenderBackend s_Backend;
   };
 }

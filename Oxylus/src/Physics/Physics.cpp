@@ -7,11 +7,11 @@
 namespace Oxylus {
 
   void Physics::InitPhysics() {
-    
+
   }
 
   void Physics::Update(float deltaTime) {
-    
+
   }
 
   void Physics::CleanupPhysics() {

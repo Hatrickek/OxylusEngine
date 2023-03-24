@@ -1,4 +1,5 @@
 #pragma once
+
 #include "Material.h"
 #include "Core/YamlHelpers.h"
 
@@ -16,6 +17,7 @@ namespace Oxylus {
                           const char* nodeName,
                           Ref<VulkanImage>& texture,
                           VulkanImageDescription& desc) const;
+
     Material* m_Material;
   };
 }

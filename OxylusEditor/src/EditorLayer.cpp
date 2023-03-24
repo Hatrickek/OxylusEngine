@@ -172,11 +172,11 @@ namespace Oxylus {
             NewProject();
           }
           if (ImGui::MenuItem("Open Project")) {
-            const std::string filepath = FileDialogs::OpenFile("Oxylus Project (*.oxproj)\0*.oxproj\0");
+            const std::string filepath = FileDialogs::OpenFile({{"Oxylus Project", "oxproj"}});
             OpenProject(filepath);
           }
           if (ImGui::MenuItem("Save Project")) {
-            const std::string filepath = FileDialogs::SaveFile("Oxylus Project (*.oxproj)\0*.oxproj\0");
+            const std::string filepath = FileDialogs::SaveFile({{"Oxylus Project", "oxproj"}}, "New Project");
             SaveProject(filepath);
           }
 
@@ -195,7 +195,7 @@ namespace Oxylus {
         if (ImGui::BeginMenu("Window")) {
           if (ImGui::MenuItem("Add viewport", nullptr)) {
             m_ViewportPanels.emplace_back(CreateScope<ViewportPanel>())->SetContext(m_ActiveScene,
-              m_SceneHierarchyPanel);
+                                                                                    m_SceneHierarchyPanel);
           }
           if (ImGui::MenuItem("Shaders", nullptr)) {
             m_EditorPanels["Shaders"]->Visible = true;
@@ -218,8 +218,9 @@ namespace Oxylus {
         {
           //Project name text
           ImGui::SetCursorPos(ImVec2(
-            (float)Window::GetWidth() - 10 - ImGui::CalcTextSize(Project::GetActive()->GetConfig().Name.c_str()).x,
-            0));
+                  (float)Window::GetWidth() - 10 -
+                  ImGui::CalcTextSize(Project::GetActive()->GetConfig().Name.c_str()).x,
+                  0));
           ImGuiScoped::StyleColor bColor1(ImGuiCol_Button, ImVec4(0.2f, 0.2f, 0.2f, 0.7f));
           ImGuiScoped::StyleColor bColor2(ImGuiCol_ButtonHovered, ImVec4(0.2f, 0.2f, 0.2f, 0.7f));
           ImGui::Button(Project::GetActive()->GetConfig().Name.c_str());
@@ -285,7 +286,7 @@ namespace Oxylus {
   }
 
   void EditorLayer::OpenScene() {
-    const std::string filepath = FileDialogs::OpenFile("Oxylus Scene (*.oxscene)\0*.oxscene\0");
+    const std::string filepath = FileDialogs::OpenFile({{"Oxylus Scene", "oxscene"}});
     if (!filepath.empty())
       OpenScene(filepath);
   }
@@ -336,7 +337,7 @@ namespace Oxylus {
   }
 
   void EditorLayer::SaveSceneAs() {
-    const std::string filepath = FileDialogs::SaveFile("Oxylus Scene (*.oxscene)\0*.oxscene\0");
+    const std::string filepath = FileDialogs::SaveFile({{"Oxylus Scene", "oxscene"}}, "New Scene");
     if (!filepath.empty()) {
       ThreadManager::Get()->AssetThread.QueueJob([this, filepath] {
         SceneSerializer(GetActiveScene()).Serialize(filepath);

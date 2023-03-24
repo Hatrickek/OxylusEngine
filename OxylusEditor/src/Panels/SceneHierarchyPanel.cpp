@@ -80,10 +80,10 @@ namespace Oxylus {
       ImGui::PushStyleColor(ImGuiCol_Text, headerSelectedColor);
 
     const bool opened = ImGui::TreeNodeEx(reinterpret_cast<void*>(static_cast<uint64_t>(entity.GetUUID())),
-      flags,
-      "%s %s",
-      StringUtils::FromChar8T(ICON_MDI_CUBE_OUTLINE),
-      tag.c_str());
+                                          flags,
+                                          "%s %s",
+                                          StringUtils::FromChar8T(ICON_MDI_CUBE_OUTLINE),
+                                          tag.c_str());
 
     if (highlight)
       ImGui::PopStyleColor(2);
@@ -91,7 +91,7 @@ namespace Oxylus {
     // Select
     if (!ImGui::IsItemToggledOpen() && (ImGui::IsItemClicked(ImGuiMouseButton_Left) ||
                                         ImGui::IsItemClicked(ImGuiMouseButton_Middle) || ImGui::IsItemClicked(
-                                          ImGuiMouseButton_Right))) {
+            ImGuiMouseButton_Right))) {
       m_SelectedEntity = entity;
     }
 
@@ -183,7 +183,8 @@ namespace Oxylus {
     // Visibility Toggle
     {
       ImGui::Text("  %s",
-        reinterpret_cast<const char*>(tagComponent.Enabled ? ICON_MDI_EYE_OUTLINE : ICON_MDI_EYE_OFF_OUTLINE));
+                  reinterpret_cast<const char*>(tagComponent.Enabled ? ICON_MDI_EYE_OUTLINE
+                                                                     : ICON_MDI_EYE_OFF_OUTLINE));
 
       if (!ImGui::IsItemHovered())
         tagComponent.handled = false;
@@ -231,9 +232,9 @@ namespace Oxylus {
 
           const float midpoint = (childRect.Min.y + childRect.Max.y) / 2.0f;
           drawList->AddLine(ImVec2(verticalLineStart.x, midpoint),
-            ImVec2(verticalLineStart.x + HorizontalTreeLineSize, midpoint),
-            treeLineColor,
-            lineThickness);
+                            ImVec2(verticalLineStart.x + HorizontalTreeLineSize, midpoint),
+                            treeLineColor,
+                            lineThickness);
           verticalLineEnd.y = midpoint;
         }
 
@@ -296,12 +297,12 @@ namespace Oxylus {
         if (ImGui::MenuItem("Plane")) {
           toSelect = m_Context->CreateEntity("Plane");
           toSelect.AddComponentI<MeshRendererComponent>
-            (AssetManager::GetMeshAsset("resources/objects/plane.gltf").Data);
+                          (AssetManager::GetMeshAsset("resources/objects/plane.gltf").Data);
         }
         if (ImGui::MenuItem("Sphere")) {
           toSelect = m_Context->CreateEntity("Sphere");
           toSelect.AddComponentI<MeshRendererComponent>
-            (AssetManager::GetMeshAsset("resources/objects/sphere.gltf").Data);
+                          (AssetManager::GetMeshAsset("resources/objects/sphere.gltf").Data);
         }
         ImGui::EndMenu();
       }
@@ -381,7 +382,8 @@ namespace Oxylus {
 
       const float filterCursorPosX = ImGui::GetCursorPosX();
       m_Filter.Draw("###HierarchyFilter",
-        ImGui::GetContentRegionAvail().x - (IGUI::GetIconButtonSize(ICON_MDI_PLUS, "").x + 2.0f * padding.x));
+                    ImGui::GetContentRegionAvail().x -
+                    (IGUI::GetIconButtonSize(ICON_MDI_PLUS, "").x + 2.0f * padding.x));
       ImGui::SameLine();
 
       if (ImGui::Button(StringUtils::FromChar8T(ICON_MDI_PLUS)))
@@ -389,7 +391,7 @@ namespace Oxylus {
 
       ImGui::PushStyleVar(ImGuiStyleVar_ItemSpacing, ImVec2(6.0f, 8.0f));
       if (ImGui::BeginPopupContextWindow("SceneHierarchyContextWindow",
-        ImGuiPopupFlags_MouseButtonRight | ImGuiPopupFlags_NoOpenOverItems)) {
+                                         ImGuiPopupFlags_MouseButtonRight | ImGuiPopupFlags_NoOpenOverItems)) {
         DrawContextMenu();
         ImGui::EndPopup();
       }
@@ -411,8 +413,8 @@ namespace Oxylus {
         ImGui::TableSetupColumn("  Label", ImGuiTableColumnFlags_NoHide | ImGuiTableColumnFlags_NoClip);
         ImGui::TableSetupColumn("  Type", ImGuiTableColumnFlags_WidthFixed, lineHeight * 3.0f);
         ImGui::TableSetupColumn(StringUtils::FromChar8T("  " ICON_MDI_EYE_OUTLINE),
-          ImGuiTableColumnFlags_WidthFixed,
-          lineHeight * 2.0f);
+                                ImGuiTableColumnFlags_WidthFixed,
+                                lineHeight * 2.0f);
 
         ImGui::TableSetupScrollFreeze(0, 1);
 
@@ -439,7 +441,7 @@ namespace Oxylus {
         constexpr auto popItemSpacing = ImVec2(6.0f, 8.0f); //TODO: Get from theme
         ImGui::PushStyleVar(ImGuiStyleVar_ItemSpacing, popItemSpacing);
         if (ImGui::BeginPopupContextWindow("SceneHierarchyContextWindow",
-          ImGuiPopupFlags_MouseButtonRight | ImGuiPopupFlags_NoOpenOverItems)) {
+                                           ImGuiPopupFlags_MouseButtonRight | ImGuiPopupFlags_NoOpenOverItems)) {
           ClearSelectionContext();
           DrawContextMenu();
           ImGui::EndPopup();

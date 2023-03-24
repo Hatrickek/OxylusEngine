@@ -7,7 +7,8 @@ namespace Oxylus {
     virtual void Execute() const = 0;
   };
 
-  template <typename T> class UndoCommand : public Command {
+  template<typename T>
+  class UndoCommand : public Command {
   public:
     UndoCommand(T oldValue, T* pValue) : m_pValue(pValue), m_OldValue(oldValue) { }
 

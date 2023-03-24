@@ -205,16 +205,16 @@ namespace ImGuiScoped {
 
     TreeNode(const char* str_id, const char* fmt, ...) IM_FMTARGS(3) {
       va_list ap;
-      va_start(ap, fmt);
+              va_start(ap, fmt);
       IsOpen = ImGui::TreeNodeV(str_id, fmt, ap);
-      va_end(ap);
+              va_end(ap);
     }
 
     TreeNode(const void* ptr_id, const char* fmt, ...) IM_FMTARGS(3) {
       va_list ap;
-      va_start(ap, fmt);
+              va_start(ap, fmt);
       IsOpen = ImGui::TreeNodeV(ptr_id, fmt, ap);
-      va_end(ap);
+              va_end(ap);
     }
 
     ~TreeNode() {
@@ -262,18 +262,18 @@ namespace ImGuiScoped {
 
     TreeNodeEx(const char* str_id, ImGuiTreeNodeFlags flags, const char* fmt, ...) IM_FMTARGS(4) {
       va_list ap;
-      va_start(ap, fmt);
+              va_start(ap, fmt);
       IM_ASSERT(!(flags & ImGuiTreeNodeFlags_NoTreePushOnOpen));
       IsOpen = ImGui::TreeNodeExV(str_id, flags, fmt, ap);
-      va_end(ap);
+              va_end(ap);
     }
 
     TreeNodeEx(const void* ptr_id, ImGuiTreeNodeFlags flags, const char* fmt, ...) IM_FMTARGS(4) {
       va_list ap;
-      va_start(ap, fmt);
+              va_start(ap, fmt);
       IM_ASSERT(!(flags & ImGuiTreeNodeFlags_NoTreePushOnOpen));
       IsOpen = ImGui::TreeNodeExV(ptr_id, flags, fmt, ap);
-      va_end(ap);
+              va_end(ap);
     }
 
     ~TreeNodeEx() {

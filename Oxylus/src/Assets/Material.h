@@ -1,4 +1,5 @@
 #pragma once
+
 #include "glm/vec4.hpp"
 #include "Core/Base.h"
 #include "Render/Vulkan/VulkanDescriptorSet.h"
@@ -43,13 +44,11 @@ namespace Oxylus {
 
     Material() = default;
     ~Material() = default;
+
     //TODO: Use ShaderID
     void Create(const std::string& name = "Material", const UUID& shaderID = {});
-
     bool IsOpaque() const;
-
     const std::vector<MaterialProperty>& GetMaterialProperties() const { return Shader->GetMaterialProperties(); }
-
     void Update();
   };
 }

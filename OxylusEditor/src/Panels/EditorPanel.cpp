@@ -8,7 +8,7 @@ namespace Oxylus {
   uint32_t EditorPanel::s_Count = 0;
 
   EditorPanel::EditorPanel(const char* name, const char8_t* icon, bool defaultShow) : Visible(defaultShow),
-    m_Name(name), m_Icon(icon) {
+                                                                                      m_Name(name), m_Icon(icon) {
     m_ID = std::format(" {} {}\t\t###{}{}", StringUtils::FromChar8T(icon), name, s_Count, name);
     s_Count++;
   }

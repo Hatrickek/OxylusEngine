@@ -11,7 +11,7 @@
 #include "Utils/UIUtils.h"
 
 namespace Oxylus {
-  ProjectPanel::ProjectPanel() : EditorPanel("Projects", ICON_MDI_ACCOUNT_BADGE, true) {}
+  ProjectPanel::ProjectPanel() : EditorPanel("Projects", ICON_MDI_ACCOUNT_BADGE, true) { }
 
   void ProjectPanel::OnUpdate() { }
 
@@ -31,8 +31,8 @@ namespace Oxylus {
 
     ImGui::SetNextWindowSize(ImVec2(480, 640));
     if (ImGui::BeginPopupModal("ProjectSelector",
-      nullptr,
-      ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoSavedSettings)) {
+                               nullptr,
+                               ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoSavedSettings)) {
       ImGui::Text("Recent Projects");
       const float x = ImGui::GetContentRegionAvail().x;
       const float y = ImGui::GetFrameHeight();
@@ -49,7 +49,7 @@ namespace Oxylus {
       }
       ImGui::SetNextItemWidth(x);
       if (ImGui::Button(StringUtils::FromChar8T(ICON_MDI_UPLOAD " Load Project"), {x, y})) {
-        const std::string filepath = FileDialogs::OpenFile("Oxylus Project (*.oxproj)\0*.oxproj\0");
+        const std::string filepath = FileDialogs::OpenFile({{"Oxylus Project", "oxproj"}});
         if (!filepath.empty()) {
           LoadProjectForEditor(filepath);
         }

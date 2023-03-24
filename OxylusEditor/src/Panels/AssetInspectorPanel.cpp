@@ -11,7 +11,7 @@
 #include "EditorLayer.h"
 
 namespace Oxylus {
-  AssetInspectorPanel::AssetInspectorPanel() : EditorPanel("AssetInspector", ICON_MDI_INFORMATION) {}
+  AssetInspectorPanel::AssetInspectorPanel() : EditorPanel("AssetInspector", ICON_MDI_INFORMATION) { }
 
   void AssetInspectorPanel::OnUpdate() {
     if (!((m_SelectedAsset = EditorLayer::Get()->GetSelectedAsset()))) {

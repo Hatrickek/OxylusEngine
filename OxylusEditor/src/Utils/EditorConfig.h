@@ -1,4 +1,5 @@
 #pragma once
+
 #include <filesystem>
 #include <string>
 
@@ -14,6 +15,7 @@ namespace Oxylus {
     void SaveConfig() const;
 
     void AddRecentProject(const std::string& path);
+
     const std::vector<std::string>& GetRecentProjects() const { return m_RecentProjects; }
 
   private:

@@ -1,4 +1,5 @@
 #pragma once
+
 #include <oxpch.h>
 
 #include "Core/UUID.h"
@@ -27,7 +28,8 @@ namespace Oxylus {
     }
   };
 
-  template <typename T> struct Asset {
+  template<typename T>
+  struct Asset {
     Ref<T> Data = nullptr;
     AssetHandle Handle;
     std::string Path;

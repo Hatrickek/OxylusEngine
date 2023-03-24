@@ -1,4 +1,5 @@
 #pragma once
+
 #include "Layer.h"
 
 #include <vector>
@@ -7,6 +8,7 @@ namespace Oxylus {
   class LayerStack {
   public:
     LayerStack() = default;
+
     ~LayerStack();
 
     void PushLayer(Layer* layer);

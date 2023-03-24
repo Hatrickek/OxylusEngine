@@ -196,6 +196,9 @@ if (MSVC)
 endif ()
 
 # Dependencies
+add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}\\vendor\\nativefiledialog-extended)
+target_link_libraries(${PROJECT_NAME} PUBLIC nfd)
+
 set(ADDITIONAL_LIBRARY_DEPENDENCIES
   "$<$<CONFIG:Debug>:"
   "C:\\VulkanSDK\\1.3.236.0\\lib\\shaderc_sharedd.lib"

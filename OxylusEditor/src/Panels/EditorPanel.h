@@ -15,7 +15,8 @@ namespace Oxylus {
     EditorPanel& operator=(const EditorPanel& other) = delete;
     EditorPanel& operator=(EditorPanel&& other) = delete;
 
-    virtual void OnUpdate() {}
+    virtual void OnUpdate() { }
+
     virtual void OnImGuiRender() = 0;
 
     const char* GetName() const {
