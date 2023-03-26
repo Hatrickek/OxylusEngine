@@ -3,6 +3,7 @@
 #include "Utils/Log.h"
 
 #include <tracy/Tracy.hpp>
+#include <vulkan/vulkan.hpp>
 #include <tracy/TracyVulkan.hpp>
 
 #include <chrono>

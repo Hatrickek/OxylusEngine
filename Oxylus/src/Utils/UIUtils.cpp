@@ -21,7 +21,7 @@ namespace Oxylus {
 
   std::string FileDialogs::OpenFile(const std::vector<nfdfilteritem_t>& filter) {
     nfdchar_t* outPath;
-    nfdresult_t result = NFD_OpenDialog(&outPath, filter.data(), filter.size(), nullptr);
+    const nfdresult_t result = NFD_OpenDialog(&outPath, filter.data(), (uint32_t)filter.size(), nullptr);
     if (result == NFD_OKAY) {
       return outPath;
     }
@@ -30,7 +30,7 @@ namespace Oxylus {
 
   std::string FileDialogs::SaveFile(const std::vector<nfdfilteritem_t>& filter, const char* defaultName) {
     nfdchar_t* outPath;
-    nfdresult_t result = NFD_SaveDialog(&outPath, filter.data(), filter.size(), nullptr, defaultName);
+    const nfdresult_t result = NFD_SaveDialog(&outPath, filter.data(), (uint32_t)filter.size(), nullptr, defaultName);
     if (result == NFD_OKAY) {
       return outPath;
     }
@@ -40,7 +40,7 @@ namespace Oxylus {
   void FileDialogs::OpenFolderAndSelectItem(const char* path) {
 #ifdef OX_PLATFORM_WINDOWS
     const _bstr_t widePath(path);
-    if (const LPITEMIDLIST pidl = ILCreateFromPath(widePath)) {
+    if (const auto pidl = ILCreateFromPath(widePath)) {
       SHOpenFolderAndSelectItems(pidl, 0, nullptr, 0);
       ILFree(pidl);
     }

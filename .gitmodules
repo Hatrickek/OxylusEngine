@@ -23,3 +23,9 @@
 [submodule "Oxylus/vendor/nativefiledialog-extended"]
 	path = Oxylus/vendor/nativefiledialog-extended
 	url = https://github.com/btzy/nativefiledialog-extended.git
+[submodule "Oxylus/vendor/glfw"]
+	path = Oxylus/vendor/glfw
+	url = https://github.com/glfw/glfw
+[submodule "Oxylus/vendor/ryml"]
+	path = Oxylus/vendor/ryml
+	url = https://github.com/biojppm/rapidyaml

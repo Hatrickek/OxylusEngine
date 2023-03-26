@@ -24,11 +24,8 @@ namespace Oxylus {
     }
 
     static Ref<Project> GetActive() { return s_ActiveProject; }
-
     static Ref<Project> New();
-
     static Ref<Project> Load(const std::filesystem::path& path);
-
     static bool SaveActive(const std::filesystem::path& path);
 
   private:

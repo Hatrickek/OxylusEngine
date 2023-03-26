@@ -1,8 +1,9 @@
-cmake_minimum_required(VERSION 3.16.0 FATAL_ERROR)
+cmake_minimum_required(VERSION 3.24.0 FATAL_ERROR)
 
 set(CMAKE_SYSTEM_VERSION 10.0 CACHE STRING "" FORCE)
 
 project(Oxylus CXX)
+set(CMAKE_CXX_STANDARD 20)
 
 # Set target arch type if empty.
 if(NOT CMAKE_VS_PLATFORM_NAME)

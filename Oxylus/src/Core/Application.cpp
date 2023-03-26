@@ -100,6 +100,11 @@ namespace Oxylus {
         for (Layer* layer : m_LayerStack)
           layer->OnImGuiRender();
       }
+      {
+        ZoneScopedN("SystemImGuiRender");
+        for (auto& system : m_Systems)
+          system->OnImGuiRender();
+      }
       m_ImGuiLayer->End();
     }
   }

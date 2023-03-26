@@ -3,7 +3,6 @@
 
 #include <fstream>
 #include "Core/Entity.h"
-#include "Render/Mesh.h"
 #include "Core/Project.h"
 #include "Core/YamlHelpers.h"
 #include "Utils/Profiler.h"

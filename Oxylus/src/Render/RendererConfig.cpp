@@ -1,7 +1,6 @@
 #include "src/oxpch.h"
 #include "RendererConfig.h"
 
-#include "Utils/Log.h"
 #include "Core/YamlHelpers.h"
 #include "Utils/FileUtils.h"
 

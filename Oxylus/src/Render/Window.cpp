@@ -93,11 +93,4 @@ namespace Oxylus {
     glfwRestoreWindow(s_WindowHandle);
   }
 
-  void Window::RegisterOverTitlebar(const bool cond) {
-    s_WindowData.IsOverTitleBar = cond;
-  }
-
-  void Window::DragWindow() {
-    glfwDragWindow(s_WindowHandle);
-  }
 }

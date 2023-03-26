@@ -32,38 +32,37 @@ set_target_properties(${PROJECT_NAME} PROPERTIES
 )
 
 # MSVC runtime library
+
 get_property(MSVC_RUNTIME_LIBRARY_DEFAULT TARGET ${PROJECT_NAME} PROPERTY MSVC_RUNTIME_LIBRARY)
 string(CONCAT "MSVC_RUNTIME_LIBRARY_STR"
-    $<$<CONFIG:Debug>:
-        MultiThreadedDebug
-    >
-    $<$<CONFIG:Dist>:
-        MultiThreaded
-    >
-    $<$<CONFIG:Release>:
-        MultiThreaded
-    >
-    $<$<NOT:$<OR:$<CONFIG:Debug>,$<CONFIG:Dist>,$<CONFIG:Release>>>:${MSVC_RUNTIME_LIBRARY_DEFAULT}>
-)
+  $<$<CONFIG:Debug>:
+  MultiThreadedDebug
+  >
+  $<$<CONFIG:Dist>:
+  MultiThreaded
+  >
+  $<$<CONFIG:Release>:
+  MultiThreaded
+  >
+  $<$<NOT:$<OR:$<CONFIG:Debug>,$<CONFIG:Dist>,$<CONFIG:Release>>>:${MSVC_RUNTIME_LIBRARY_DEFAULT}>
+  )
 set_target_properties(${PROJECT_NAME} PROPERTIES MSVC_RUNTIME_LIBRARY ${MSVC_RUNTIME_LIBRARY_STR})
 
 # Include directories
 target_include_directories(${PROJECT_NAME} PUBLIC
-    "${CMAKE_CURRENT_SOURCE_DIR}/src;"
-    "${CMAKE_CURRENT_SOURCE_DIR}/../Oxylus/src;"
-    "${CMAKE_CURRENT_SOURCE_DIR}/../Oxylus/vendor;"
-    "${CMAKE_CURRENT_SOURCE_DIR}/../Oxylus/vendor/GLFW/include;"
-    "${CMAKE_CURRENT_SOURCE_DIR}/../Oxylus/vendor/ImGui;"
-    "${CMAKE_CURRENT_SOURCE_DIR}/../Oxylus/vendor/glm;"
-    "${CMAKE_CURRENT_SOURCE_DIR}/../Oxylus/vendor/entt;"
-    "${CMAKE_CURRENT_SOURCE_DIR}/../Oxylus/vendor/rapidyaml/include;"
-    "${CMAKE_CURRENT_SOURCE_DIR}/../Oxylus/vendor/ImGuizmo;"
-    "${CMAKE_CURRENT_SOURCE_DIR}/../../../../../VulkanSDK/1.3.236.0/Include;"
-    "${CMAKE_CURRENT_SOURCE_DIR}/../Oxylus/vendor/PhysX/PhysX/include;"
-    "${CMAKE_CURRENT_SOURCE_DIR}/../Oxylus/vendor/tinygltf;"
-    "${CMAKE_CURRENT_SOURCE_DIR}/../Oxylus/vendor/ktx/include;"
-    "${CMAKE_CURRENT_SOURCE_DIR}/../Oxylus/vendor/miniaudio;"
+    "${CMAKE_CURRENT_SOURCE_DIR}/src"
+    "${CMAKE_CURRENT_SOURCE_DIR}/../Oxylus/src"
+    "${CMAKE_CURRENT_SOURCE_DIR}/../Oxylus/vendor"
+    "${CMAKE_CURRENT_SOURCE_DIR}/../Oxylus/vendor/GLFW/include"
+    "${CMAKE_CURRENT_SOURCE_DIR}/../Oxylus/vendor/ImGui"
+    "${CMAKE_CURRENT_SOURCE_DIR}/../Oxylus/vendor/glm"
+    "${CMAKE_CURRENT_SOURCE_DIR}/../Oxylus/vendor/entt"
+    "${CMAKE_CURRENT_SOURCE_DIR}/../Oxylus/vendor/ImGuizmo"
+    "${CMAKE_CURRENT_SOURCE_DIR}/../Oxylus/vendor/tinygltf"
+    "${CMAKE_CURRENT_SOURCE_DIR}/../Oxylus/vendor/ktx/include"
+    "${CMAKE_CURRENT_SOURCE_DIR}/../Oxylus/vendor/miniaudio"
     "${CMAKE_CURRENT_SOURCE_DIR}/../Oxylus/vendor/tracy/public"
+    "$ENV{VULKAN_SDK}/include"
 )
 
 # Compile definitions
@@ -120,16 +119,12 @@ if(MSVC)
             /INCREMENTAL
         >
         $<$<CONFIG:Dist>:
-            /DEBUG:FULL;
             /OPT:REF;
             /OPT:ICF;
-            /INCREMENTAL:NO
         >
         $<$<CONFIG:Release>:
-            /DEBUG:FULL;
             /OPT:REF;
             /OPT:ICF;
-            /INCREMENTAL:NO
         >
         /SUBSYSTEM:CONSOLE
     )
@@ -139,4 +134,3 @@ endif()
 target_link_libraries(${PROJECT_NAME} PRIVATE
     Oxylus
 )
-

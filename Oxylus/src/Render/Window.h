@@ -29,8 +29,6 @@ namespace Oxylus {
     static void Maximize();
     static bool IsMaximized();
     static void Restore();
-    static void RegisterOverTitlebar(bool cond);
-    static void DragWindow();
 
   private:
     static struct WindowData {

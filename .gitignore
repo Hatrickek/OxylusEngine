@@ -33,9 +33,9 @@
 /.vs
 /.vscode
 /.idea
-/cmake-build-debug-visual-studio
-/cmake-build-dist-visual-studio
-/cmake-build-release-visual-studio
+/cmake-build-debug
+/cmake-build-dist
+/cmake-build-release
 /bin
 /bin-int
 /OxylusEditor/resources/shaders/compiled

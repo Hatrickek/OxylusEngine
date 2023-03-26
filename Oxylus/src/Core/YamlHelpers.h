@@ -1,13 +1,10 @@
 #pragma once
 
-#pragma warning(disable:4996)
-
-#include <ryml/rapidyaml-0.5.0.hpp>
-
-#pragma warning(default:4996)
-
 #include <glm/glm.hpp>
 #include <glm/ext/quaternion_float.hpp>
+#include <ryml.hpp>
+#include <c4/yml/std/string.hpp>
+
 
 namespace glm {
   inline void write(ryml::NodeRef* n, glm::vec2 const& val) {

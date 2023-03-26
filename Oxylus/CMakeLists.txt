@@ -3,8 +3,6 @@ set(PROJECT_NAME Oxylus)
 file(GLOB_RECURSE src "src/*.h" "src/*.cpp")
 source_group("src" FILES ${src})
 
-set(BUILD_SHARED_LIBS false)
-
 set(vendor__ImGui
   "vendor/ImGui/imconfig.h"
   "vendor/ImGui/imgui.cpp"
@@ -48,11 +46,6 @@ set(vendor__miniaudio
   )
 source_group("vendor\\miniaudio" FILES ${vendor__miniaudio})
 
-set(vendor__rapidyaml__src
-  "vendor/rapidyaml/src/ryml.cpp"
-  )
-source_group("vendor\\rapidyaml\\src" FILES ${vendor__rapidyaml__src})
-
 set(vendor__tracy__public
   "vendor/tracy/public/TracyClient.cpp"
   )
@@ -66,7 +59,6 @@ set(ALL_FILES
   ${vendor__ImGuizmo}
   ${vendor__glm}
   ${vendor__miniaudio}
-  ${vendor__rapidyaml__src}
   ${vendor__tracy__public}
   )
 
@@ -94,21 +86,6 @@ set_target_properties(${PROJECT_NAME} PROPERTIES
   OUTPUT_DIRECTORY_DIST "${CMAKE_CURRENT_SOURCE_DIR}/../../bin/Dist-windows-x86_64/Oxylus/"
   OUTPUT_DIRECTORY_RELEASE "${CMAKE_CURRENT_SOURCE_DIR}/../../bin/Release-windows-x86_64/Oxylus/"
   )
-# MSVC runtime library
-get_property(MSVC_RUNTIME_LIBRARY_DEFAULT TARGET ${PROJECT_NAME} PROPERTY MSVC_RUNTIME_LIBRARY)
-string(CONCAT "MSVC_RUNTIME_LIBRARY_STR"
-  $<$<CONFIG:Debug>:
-  MultiThreadedDebug
-  >
-  $<$<CONFIG:Dist>:
-  MultiThreaded
-  >
-  $<$<CONFIG:Release>:
-  MultiThreaded
-  >
-  $<$<NOT:$<OR:$<CONFIG:Debug>,$<CONFIG:Dist>,$<CONFIG:Release>>>:${MSVC_RUNTIME_LIBRARY_DEFAULT}>
-  )
-set_target_properties(${PROJECT_NAME} PROPERTIES MSVC_RUNTIME_LIBRARY ${MSVC_RUNTIME_LIBRARY_STR})
 
 # Include directories
 target_include_directories(${PROJECT_NAME} PUBLIC
@@ -118,14 +95,12 @@ target_include_directories(${PROJECT_NAME} PUBLIC
   "${CMAKE_CURRENT_SOURCE_DIR}/vendor/ImGui;"
   "${CMAKE_CURRENT_SOURCE_DIR}/vendor/glm;"
   "${CMAKE_CURRENT_SOURCE_DIR}/vendor/entt;"
-  "${CMAKE_CURRENT_SOURCE_DIR}/vendor/rapidyaml/include;"
   "${CMAKE_CURRENT_SOURCE_DIR}/vendor/ImGuizmo;"
   "${CMAKE_CURRENT_SOURCE_DIR}/.;"
   "${CMAKE_CURRENT_SOURCE_DIR}/vendor/tinygltf;"
   "${CMAKE_CURRENT_SOURCE_DIR}/vendor/ktx/include;"
   "${CMAKE_CURRENT_SOURCE_DIR}/vendor/miniaudio;"
   "${CMAKE_CURRENT_SOURCE_DIR}/vendor/tracy/public"
-  "C://VulkanSDK//1.3.236.0//Include;"
   )
 
 # Compile definitions
@@ -155,6 +130,10 @@ target_compile_definitions(${PROJECT_NAME} PRIVATE
   "UNICODE"
   "_UNICODE"
   )
+
+#-------------
+# MSVC Specific
+#-------------
 
 # Compile and link options
 if (MSVC)
@@ -195,23 +174,79 @@ if (MSVC)
     )
 endif ()
 
+# MSVC runtime library
+
+get_property(MSVC_RUNTIME_LIBRARY_DEFAULT TARGET ${PROJECT_NAME} PROPERTY MSVC_RUNTIME_LIBRARY)
+string(CONCAT "MSVC_RUNTIME_LIBRARY_STR"
+  $<$<CONFIG:Debug>:
+  MultiThreadedDebug
+  >
+  $<$<CONFIG:Dist>:
+  MultiThreaded
+  >
+  $<$<CONFIG:Release>:
+  MultiThreaded
+  >
+  $<$<NOT:$<OR:$<CONFIG:Debug>,$<CONFIG:Dist>,$<CONFIG:Release>>>:${MSVC_RUNTIME_LIBRARY_DEFAULT}>
+  )
+set_target_properties(${PROJECT_NAME} PROPERTIES MSVC_RUNTIME_LIBRARY ${MSVC_RUNTIME_LIBRARY_STR})
+
+#-------------
 # Dependencies
+#-------------
+
+#build libraries as static
+set(BUILD_SHARED_LIBS OFF)
+
+# Vulkan
+find_package(Vulkan)
+
+if (Vulkan_FOUND)
+  message("Found Vulkan SDK at: ${Vulkan_LIBRARY}")
+else ()
+  message("Vulkan SDK not found!")
+endif ()
+
+# Extract the Vulkan SDK path
+if (NOT ${Vulkan_INCLUDE_DIRS} STREQUAL "")
+  set(VULKAN_PATH ${Vulkan_INCLUDE_DIRS})
+  STRING(REGEX REPLACE "/Include" "" VULKAN_PATH ${VULKAN_PATH})
+endif()
+
+# Include Vulkan header files 
+include_directories(${Vulkan_INCLUDE_DIRS})
+
+if (WIN32)
+  set(Vulkan_shaderc_combined_LIBRARY "${VULKAN_PATH}\\lib\\shaderc_shared.lib")
+elseif (APPLE)
+  set(Vulkan_shaderc_combined_LIBRARY "${VULKAN_PATH}\\lib\\shaderc_shared.d")
+endif()
+
+set(VULKAN_LIB_LIST "${Vulkan_LIBRARIES}" "${Vulkan_shaderc_combined_LIBRARY}")
+target_link_libraries(${PROJECT_NAME} PUBLIC ${VULKAN_LIB_LIST} )
+
+# NFD
 add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}\\vendor\\nativefiledialog-extended)
 target_link_libraries(${PROJECT_NAME} PUBLIC nfd)
+set_target_properties(nfd PROPERTIES MSVC_RUNTIME_LIBRARY ${MSVC_RUNTIME_LIBRARY_STR})
 
+# GLFW
+set(GLFW_BUILD_DOCS OFF CACHE BOOL "" FORCE)
+set(GLFW_BUILD_TESTS OFF CACHE BOOL "" FORCE)
+set(GLFW_BUILD_EXAMPLES OFF CACHE BOOL "" FORCE)
+add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}\\vendor\\glfw)
+target_link_libraries(${PROJECT_NAME} PUBLIC glfw)
+set_target_properties(glfw PROPERTIES MSVC_RUNTIME_LIBRARY ${MSVC_RUNTIME_LIBRARY_STR})
+
+# RYML
+add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}\\vendor\\ryml)
+target_link_libraries(${PROJECT_NAME} PUBLIC ryml::ryml)
+set_target_properties(ryml PROPERTIES MSVC_RUNTIME_LIBRARY ${MSVC_RUNTIME_LIBRARY_STR})
+target_link_libraries(${PROJECT_NAME} PUBLIC c4core)
+set_target_properties(c4core PROPERTIES MSVC_RUNTIME_LIBRARY ${MSVC_RUNTIME_LIBRARY_STR})
+
+# Set dependencies
 set(ADDITIONAL_LIBRARY_DEPENDENCIES
-  "$<$<CONFIG:Debug>:"
-  "C:\\VulkanSDK\\1.3.236.0\\lib\\shaderc_sharedd.lib"
-  ">"
-  "$<$<CONFIG:Dist>:"
-  "C:\\VulkanSDK\\1.3.236.0\\lib\\shaderc_shared.lib"
-  ">"
-  "$<$<CONFIG:Release>:"
-  "C:\\VulkanSDK\\1.3.236.0\\lib\\shaderc_shared.lib"
-  ">"
-  "${CMAKE_CURRENT_SOURCE_DIR}\\vendor\\lib\\glfw3.lib"
-  "${CMAKE_CURRENT_SOURCE_DIR}\\vendor\\lib\\ktx.lib"
-  "C:\\VulkanSDK\\1.3.236.0\\lib\\vulkan-1.lib"
+  "C:\\Program Files\\KTX-SOFTWARE\\lib\\ktx.lib"
   )
 target_link_libraries(${PROJECT_NAME} PUBLIC "${ADDITIONAL_LIBRARY_DEPENDENCIES}")
-
