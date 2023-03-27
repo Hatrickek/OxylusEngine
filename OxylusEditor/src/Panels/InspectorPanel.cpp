@@ -6,6 +6,7 @@
 #include <imgui.h>
 #include <imgui_internal.h>
 #include <misc/cpp/imgui_stdlib.h>
+#include <fmt/format.h>
 
 #include <Assets/AssetManager.h>
 
@@ -27,7 +28,7 @@ namespace Oxylus {
   void InspectorPanel::OnImGuiRender() {
     m_SelectedEntity = EditorLayer::Get()->GetSelectedEntity();
 
-    ImGui::Begin(std::format("{} {}", StringUtils::FromChar8T(ICON_MDI_INFORMATION), "Inspector").c_str());
+    ImGui::Begin(fmt::format("{} {}", StringUtils::FromChar8T(ICON_MDI_INFORMATION), "Inspector").c_str());
     if (m_SelectedEntity) {
       DrawComponents(m_SelectedEntity);
     }

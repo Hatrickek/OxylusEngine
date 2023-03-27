@@ -1,6 +1,7 @@
 #pragma once
 
 #include <cstdint>
+#include <unordered_set>
 
 namespace Oxylus {
   class UUID {
@@ -20,14 +21,9 @@ namespace Oxylus {
   };
 }
 
-namespace std {
-  template<typename T>
-  struct hash;
-
-  template<>
-  struct hash<Oxylus::UUID> {
-    size_t operator()(const Oxylus::UUID& uuid) const noexcept {
-      return uuid;
-    }
-  };
-}
+template<>
+struct std::hash<Oxylus::UUID> {
+  size_t operator()(const Oxylus::UUID& uuid) const noexcept {
+    return uuid;
+  }
+};

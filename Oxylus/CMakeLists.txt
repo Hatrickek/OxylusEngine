@@ -252,19 +252,14 @@ set(KTX_FEATURE_TESTS OFF)
 set(KTX_FEATURE_GL_UPLOAD OFF)
 set(KTX_FEATURE_STATIC_LIBRARY ON)
 add_subdirectory(${KTX_DIR})
-message(${KTX_DIR})
 target_link_libraries(${PROJECT_NAME} PUBLIC ktx)
 target_include_directories(${PROJECT_NAME} PUBLIC ${KTX_DIR}/include)
 set_target_properties(ktx PROPERTIES MSVC_RUNTIME_LIBRARY ${MSVC_RUNTIME_LIBRARY_STR})
-#target_link_libraries(${PROJECT_NAME} PUBLIC basisu)
-#set_target_properties(basisu PROPERTIES MSVC_RUNTIME_LIBRARY ${MSVC_RUNTIME_LIBRARY_STR})
 
-#FETCHCONTENT_DECLARE(
-#  ktx
-#  URL https://github.com/foonathan/lexy/archive/refs/heads/main.zip
-#)
-#set(KTX_FEATURE_TESTS OFF)
-#set(KTX_FEATURE_GL_UPLOAD OFF)
-#set(KTX_FEATURE_STATIC_LIBRARY ON)
-#FETCHCONTENT_MAKEAVAILABLE(ktx)
-#target_link_libraries(${PROJECT_NAME} PUBLIC ktx)
+# FMT
+FetchContent_Declare(fmt
+  GIT_REPOSITORY https://github.com/fmtlib/fmt.git
+  GIT_TAG master)
+FetchContent_MakeAvailable(fmt)
+target_link_libraries(${PROJECT_NAME} PUBLIC fmt)
+

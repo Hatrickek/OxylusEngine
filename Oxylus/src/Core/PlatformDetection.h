@@ -25,7 +25,6 @@
 	#elif TARGET_OS_MAC == 1
 		#define OX_PLATFORM_MACOS
 		#define VK_USE_PLATFORM_MACOS_MVK
-		#error "MacOS is not supported!"
 	#else
 		#error "Unknown Apple platform!"
 	#endif

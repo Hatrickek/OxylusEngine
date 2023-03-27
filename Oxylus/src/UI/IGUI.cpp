@@ -1,7 +1,6 @@
 #include "src/oxpch.h"
 #include "IGUI.h"
 
-#include <format>
 #include <imgui_internal.h>
 
 #include "Assets/AssetManager.h"
@@ -19,7 +18,7 @@ namespace Oxylus {
     s_IDBuffer[1] = '#';
     memset(s_IDBuffer + 2, 0, 14);
     ++s_Counter;
-    const std::string buffer = std::format("##{}", s_Counter);
+    const std::string buffer = fmt::format("##{}", s_Counter);
     std::memcpy(&s_IDBuffer, buffer.data(), 16);
 
     constexpr ImGuiTableFlags tableFlags = ImGuiTableFlags_PadOuterX;
@@ -315,7 +314,7 @@ namespace Oxylus {
     s_IDBuffer[1] = '#';
     memset(s_IDBuffer + 2, 0, 14);
     ++s_Counter;
-    const std::string buffer = std::format("##{}", s_Counter);
+    const std::string buffer = fmt::format("##{}", s_Counter);
     std::memcpy(&s_IDBuffer, buffer.data(), 16);
   }
 

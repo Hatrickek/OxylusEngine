@@ -4,10 +4,9 @@
 
 #include <filesystem>
 #include <fstream>
-#include <ranges>
+#include <fmt/format.h>
 
 #include "VulkanRenderer.h"
-#include "utils/Log.h"
 #include "Utils/Profiler.h"
 #include "Utils/FileUtils.h"
 
@@ -18,7 +17,7 @@ namespace Oxylus {
                                        const char* requesting_source,
                                        size_t include_depth) override {
       const std::string name = std::string(requested_source);
-      const std::string filepath = std::string(std::format("Resources/Shaders/{0}", name));
+      const std::string filepath = std::string(fmt::format("Resources/Shaders/{0}", name));
       const std::string content = FileUtils::ReadFile(filepath);
 
       const auto container = new std::array<std::string, 2>;
@@ -122,7 +121,7 @@ namespace Oxylus {
     if (m_ShaderDesc.Name.empty())
       m_ShaderDesc.Name = std::filesystem::path(m_ShaderDesc.VertexPath).filename().string();
 
-    timer.Print(std::format("Shader {0} loaded", m_ShaderDesc.Name));
+    timer.Print(fmt::format("Shader {0} loaded", m_ShaderDesc.Name));
 
     m_Loaded = true;
   }
@@ -197,7 +196,7 @@ namespace Oxylus {
   void VulkanShader::Unload() {
     if (!m_Loaded)
       return;
-    for (const auto& stage : m_VulkanSPIRV | std::views::keys) {
+    for (const auto& [stage, _]: m_VulkanSPIRV) {
       VulkanContext::Context.Device.destroyShaderModule(m_ShaderModule[stage], nullptr);
     }
     m_ShaderStages.clear();
