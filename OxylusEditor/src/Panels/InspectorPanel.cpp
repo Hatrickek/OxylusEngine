@@ -138,6 +138,7 @@ namespace Oxylus {
     if (IGUI::Property("Metallic", material->MetallicTexture)) {
       material->Update();
     }
+    IGUI::Property("Metallic", material->Parameters.Metallic);
 
     IGUI::Property("Use AO", (bool&)material->Parameters.UseAO);
     if (IGUI::Property("AO", material->AOTexture)) {

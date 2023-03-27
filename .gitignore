@@ -29,7 +29,8 @@
 *.out
 *.app
 
-# zort
+# Additional Files/Folders
+/Oxylus/vendor
 /.vs
 /.vscode
 /.idea

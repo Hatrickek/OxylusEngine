@@ -16,7 +16,7 @@ set(vendor__ImGui
   "vendor/ImGui/imstb_textedit.h"
   "vendor/ImGui/imstb_truetype.h"
   )
-source_group("vendor\\ImGui" FILES ${vendor__ImGui})
+source_group("vendor/ImGui" FILES ${vendor__ImGui})
 
 set(vendor__ImGui__backends
   "vendor/ImGui/backends/imgui_impl_glfw.cpp"
@@ -24,32 +24,32 @@ set(vendor__ImGui__backends
   "vendor/ImGui/backends/imgui_impl_vulkan.cpp"
   "vendor/ImGui/backends/imgui_impl_vulkan.h"
   )
-source_group("vendor\\ImGui\\backends" FILES ${vendor__ImGui__backends})
+source_group("vendor/ImGui/backends" FILES ${vendor__ImGui__backends})
 
 set(vendor__ImGui__misc__cpp
   "vendor/ImGui/misc/cpp/imgui_stdlib.cpp"
   "vendor/ImGui/misc/cpp/imgui_stdlib.h"
   )
-source_group("vendor\\ImGui\\misc\\cpp" FILES ${vendor__ImGui__misc__cpp})
+source_group("vendor/ImGui/misc/cpp" FILES ${vendor__ImGui__misc__cpp})
 
 set(vendor__ImGuizmo
   "vendor/ImGuizmo/ImGuizmo.cpp"
   "vendor/ImGuizmo/ImGuizmo.h"
   )
-source_group("vendor\\ImGuizmo" FILES ${vendor__ImGuizmo})
+source_group("vendor/ImGuizmo" FILES ${vendor__ImGuizmo})
 
 file(GLOB vendor__glm "vendor/glm/*.hpp")
-source_group("vendor\\glm" FILES ${vendor__glm})
+source_group("vendor/glm" FILES ${vendor__glm})
 
 set(vendor__miniaudio
   "vendor/miniaudio/miniaudio.h"
   )
-source_group("vendor\\miniaudio" FILES ${vendor__miniaudio})
+source_group("vendor/miniaudio" FILES ${vendor__miniaudio})
 
 set(vendor__tracy__public
   "vendor/tracy/public/TracyClient.cpp"
   )
-source_group("vendor\\tracy\\public" FILES ${vendor__tracy__public})
+source_group("vendor/tracy/public" FILES ${vendor__tracy__public})
 
 set(ALL_FILES
   ${src}
@@ -195,17 +195,13 @@ set_target_properties(${PROJECT_NAME} PROPERTIES MSVC_RUNTIME_LIBRARY ${MSVC_RUN
 # Dependencies
 #-------------
 
+include(FetchContent)
+
 #build libraries as static
 set(BUILD_SHARED_LIBS OFF)
 
 # Vulkan
 find_package(Vulkan)
-
-if (Vulkan_FOUND)
-  message("Found Vulkan SDK at: ${Vulkan_LIBRARY}")
-else ()
-  message("Vulkan SDK not found!")
-endif ()
 
 # Extract the Vulkan SDK path
 if (NOT ${Vulkan_INCLUDE_DIRS} STREQUAL "")
@@ -217,16 +213,16 @@ endif()
 include_directories(${Vulkan_INCLUDE_DIRS})
 
 if (WIN32)
-  set(Vulkan_shaderc_combined_LIBRARY "${VULKAN_PATH}\\lib\\shaderc_shared.lib")
+  set(Vulkan_shaderc_combined_LIBRARY "${VULKAN_PATH}/lib/shaderc_shared.lib")
 elseif (APPLE)
-  set(Vulkan_shaderc_combined_LIBRARY "${VULKAN_PATH}\\lib\\shaderc_shared.d")
+  set(Vulkan_shaderc_combined_LIBRARY "${VULKAN_PATH}/lib/shaderc_shared.d")
 endif()
 
 set(VULKAN_LIB_LIST "${Vulkan_LIBRARIES}" "${Vulkan_shaderc_combined_LIBRARY}")
 target_link_libraries(${PROJECT_NAME} PUBLIC ${VULKAN_LIB_LIST} )
 
 # NFD
-add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}\\vendor\\nativefiledialog-extended)
+add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/vendor/nativefiledialog-extended)
 target_link_libraries(${PROJECT_NAME} PUBLIC nfd)
 set_target_properties(nfd PROPERTIES MSVC_RUNTIME_LIBRARY ${MSVC_RUNTIME_LIBRARY_STR})
 
@@ -234,19 +230,41 @@ set_target_properties(nfd PROPERTIES MSVC_RUNTIME_LIBRARY ${MSVC_RUNTIME_LIBRARY
 set(GLFW_BUILD_DOCS OFF CACHE BOOL "" FORCE)
 set(GLFW_BUILD_TESTS OFF CACHE BOOL "" FORCE)
 set(GLFW_BUILD_EXAMPLES OFF CACHE BOOL "" FORCE)
-add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}\\vendor\\glfw)
+add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/vendor/glfw)
 target_link_libraries(${PROJECT_NAME} PUBLIC glfw)
 set_target_properties(glfw PROPERTIES MSVC_RUNTIME_LIBRARY ${MSVC_RUNTIME_LIBRARY_STR})
 
 # RYML
-add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}\\vendor\\ryml)
+add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/vendor/ryml)
 target_link_libraries(${PROJECT_NAME} PUBLIC ryml::ryml)
 set_target_properties(ryml PROPERTIES MSVC_RUNTIME_LIBRARY ${MSVC_RUNTIME_LIBRARY_STR})
 target_link_libraries(${PROJECT_NAME} PUBLIC c4core)
 set_target_properties(c4core PROPERTIES MSVC_RUNTIME_LIBRARY ${MSVC_RUNTIME_LIBRARY_STR})
 
-# Set dependencies
-set(ADDITIONAL_LIBRARY_DEPENDENCIES
-  "C:\\Program Files\\KTX-SOFTWARE\\lib\\ktx.lib"
-  )
-target_link_libraries(${PROJECT_NAME} PUBLIC "${ADDITIONAL_LIBRARY_DEPENDENCIES}")
+# KTX
+set(KTX_DIR "${CMAKE_CURRENT_SOURCE_DIR}/vendor/KTX-Software-4.1.0-rc3")
+if (NOT EXISTS ${KTX_DIR})
+  file(DOWNLOAD https://github.com/KhronosGroup/KTX-Software/archive/refs/tags/v4.1.0-rc3.zip ktx.zip SHOW_PROGRESS)
+  file(ARCHIVE_EXTRACT INPUT ktx.zip DESTINATION "${CMAKE_CURRENT_SOURCE_DIR}/vendor")
+endif()
+
+set(KTX_FEATURE_TESTS OFF)
+set(KTX_FEATURE_GL_UPLOAD OFF)
+set(KTX_FEATURE_STATIC_LIBRARY ON)
+add_subdirectory(${KTX_DIR})
+message(${KTX_DIR})
+target_link_libraries(${PROJECT_NAME} PUBLIC ktx)
+target_include_directories(${PROJECT_NAME} PUBLIC ${KTX_DIR}/include)
+set_target_properties(ktx PROPERTIES MSVC_RUNTIME_LIBRARY ${MSVC_RUNTIME_LIBRARY_STR})
+#target_link_libraries(${PROJECT_NAME} PUBLIC basisu)
+#set_target_properties(basisu PROPERTIES MSVC_RUNTIME_LIBRARY ${MSVC_RUNTIME_LIBRARY_STR})
+
+#FETCHCONTENT_DECLARE(
+#  ktx
+#  URL https://github.com/foonathan/lexy/archive/refs/heads/main.zip
+#)
+#set(KTX_FEATURE_TESTS OFF)
+#set(KTX_FEATURE_GL_UPLOAD OFF)
+#set(KTX_FEATURE_STATIC_LIBRARY ON)
+#FETCHCONTENT_MAKEAVAILABLE(ktx)
+#target_link_libraries(${PROJECT_NAME} PUBLIC ktx)

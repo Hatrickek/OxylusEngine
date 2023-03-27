@@ -4,7 +4,7 @@
 #include "VulkanRenderer.h"
 #include "Utils/VulkanUtils.h"
 #include <fstream>
-#include <ktx/include/ktx.h>
+#include <ktx.h>
 #include <ktxvulkan.h>
 
 #include "Core/Resources.h"

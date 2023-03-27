@@ -1328,7 +1328,7 @@ namespace Oxylus {
         commandBuffer.Get().pushConstants(s_Pipelines.SSAOHBlurPassPipeline.GetPipelineLayout(),
           vk::ShaderStageFlagBits::eFragment,
           0,
-          sizeof glm::vec4,
+          sizeof( glm::vec4),
           &s_RendererData.SSAOBlurParams.texelOffset);
         DrawFullscreenQuad(commandBuffer.Get(), true);
       }
@@ -1349,7 +1349,7 @@ namespace Oxylus {
         commandBuffer.Get().pushConstants(s_Pipelines.SSAOVBlurPassPipeline.GetPipelineLayout(),
           vk::ShaderStageFlagBits::eFragment,
           0,
-          sizeof glm::vec4,
+          sizeof( glm::vec4),
           &s_RendererData.SSAOBlurParams.texelOffset);
         DrawFullscreenQuad(commandBuffer.Get(), true);
       },
@@ -1370,7 +1370,7 @@ namespace Oxylus {
         commandBuffer.PushConstants(s_Pipelines.SkyboxPipeline.GetPipelineLayout(),
           vk::ShaderStageFlagBits::eVertex,
           0,
-          sizeof glm::mat4,
+          sizeof( glm::mat4),
           &s_RendererContext.CurrentCamera->SkyboxView);
         s_SkyboxCube.Draw(commandBuffer.Get());
 
@@ -1409,7 +1409,7 @@ namespace Oxylus {
           commandBuffer.Get().pushConstants(s_Pipelines.UnlitPipeline.GetPipelineLayout(),
             vk::ShaderStageFlagBits::eVertex,
             0,
-            sizeof glm::mat4 * 2,
+            sizeof(glm::mat4) * 2,
             &s_RendererData.UboVS);
           //TODO: Add texturing with batching combined.
           //pipeline.BindDescriptorSets(commandBuffer, drawcmd.DescriptorSet.Get());
@@ -1677,7 +1677,7 @@ namespace Oxylus {
     s_RendererData.LightsBuffer.CreateBuffer(
       vk::BufferUsageFlagBits::eStorageBuffer | vk::BufferUsageFlagBits::eTransferDst,
       vk::MemoryPropertyFlagBits::eHostVisible | vk::MemoryPropertyFlagBits::eHostCoherent,
-      sizeof LightingData).Map();
+      sizeof( LightingData)).Map();
 
     s_RendererData.FrustumBuffer.CreateBuffer(
       vk::BufferUsageFlagBits::eStorageBuffer | vk::BufferUsageFlagBits::eTransferDst,
@@ -1695,7 +1695,7 @@ namespace Oxylus {
 
     s_RendererData.BloomBuffer.CreateBuffer(vk::BufferUsageFlagBits::eUniformBuffer,
       vk::MemoryPropertyFlagBits::eHostVisible | vk::MemoryPropertyFlagBits::eHostCoherent,
-      sizeof RendererData::BloomUB).Map();
+      sizeof( RendererData::BloomUB)).Map();
 
     //SSAO
     {
@@ -1800,7 +1800,7 @@ namespace Oxylus {
     s_SkyboxCube.LoadFromFile("resources/objects/cube.gltf", Mesh::FlipY | Mesh::DontCreateMaterials);
 
     VulkanImageDescription CubeMapDesc;
-    CubeMapDesc.Path = "resources/hdrs/belfast_sunset.ktx2";
+    CubeMapDesc.Path = ("resources\\hdrs\\belfast_sunset.ktx2");
     CubeMapDesc.Type = ImageType::TYPE_CUBE;
     s_Resources.CubeMap.Create(CubeMapDesc);
 
@@ -1836,9 +1836,9 @@ namespace Oxylus {
       vk::VertexInputBindingDescription{0, sizeof(ImDrawVert), vk::VertexInputRate::eVertex},
     };
     const std::vector vertexInputAttributes = {
-      vk::VertexInputAttributeDescription{0, 0, vk::Format::eR32G32Sfloat, offsetof(ImDrawVert, pos)},
-      vk::VertexInputAttributeDescription{1, 0, vk::Format::eR32G32Sfloat, offsetof(ImDrawVert, uv)},
-      vk::VertexInputAttributeDescription{2, 0, vk::Format::eR8G8B8A8Unorm, offsetof(ImDrawVert, col)},
+      vk::VertexInputAttributeDescription{0, 0, vk::Format::eR32G32Sfloat, (uint32_t)offsetof(ImDrawVert, pos)},
+      vk::VertexInputAttributeDescription{1, 0, vk::Format::eR32G32Sfloat, (uint32_t)offsetof(ImDrawVert, uv)},
+      vk::VertexInputAttributeDescription{2, 0, vk::Format::eR8G8B8A8Unorm, (uint32_t)offsetof(ImDrawVert, col)},
     };
     PipelineDescription uiPipelineDecs;
     uiPipelineDecs.Shader = CreateRef<VulkanShader>(ShaderCI{
