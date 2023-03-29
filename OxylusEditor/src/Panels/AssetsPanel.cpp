@@ -116,8 +116,8 @@ namespace Oxylus {
         ImGui::PushStyleColor(ImGuiCol_Button, ImVec4(0, 0, 0, 0));
         ImGui::ImageButton(icon, {(float)thumbnailSize, (float)thumbnailSize});
         if (ImGui::BeginDragDropSource()) {
-          const wchar_t* itemPath = relativePath.c_str();
-          ImGui::SetDragDropPayload("CONTENT_BROWSER_ITEM", itemPath, (wcslen(itemPath) + 1) * sizeof(wchar_t));
+          const std::string itemPath = relativePath.string();
+          ImGui::SetDragDropPayload("CONTENT_BROWSER_ITEM", itemPath.c_str(), itemPath.size());
           ImGui::EndDragDropSource();
         }
         ImGui::PopStyleColor();

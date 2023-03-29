@@ -27,7 +27,7 @@ namespace Oxylus {
     } VignetteConfig;
 
     struct SSAO {
-      bool Enabled = true;
+      bool Enabled = false;
       float Radius = 0.2f;
     } SSAOConfig;
 

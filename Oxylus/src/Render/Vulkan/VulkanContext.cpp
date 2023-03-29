@@ -74,12 +74,6 @@ namespace Oxylus {
 
     //Logical Device
     vk::PhysicalDeviceVulkan12Features features{};
-    features.bufferDeviceAddress = VK_TRUE;
-    features.bufferDeviceAddressCaptureReplay = VK_TRUE;
-
-    vk::PhysicalDeviceVulkan13Features features13;
-    features13.maintenance4 = VK_TRUE;
-    features.pNext = &features13;
     Context.DeviceFeatures = Context.PhysicalDevice.getFeatures();
     Context.DeviceFeatures.depthClamp = VK_TRUE;
     Context.Device = ContextUtils::CreateDevice(Context.PhysicalDevice,

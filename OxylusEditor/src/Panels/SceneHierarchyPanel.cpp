@@ -133,7 +133,7 @@ namespace Oxylus {
           m_DraggedEntityTarget = entity;
         }
         else if (const ImGuiPayload* payload = ImGui::AcceptDragDropPayload("CONTENT_BROWSER_ITEM")) {
-          std::filesystem::path path = static_cast<const wchar_t*>(payload->Data);
+          std::filesystem::path path = std::filesystem::path((const char*)payload->Data);
           path = AssetManager::GetAssetFileSystemPath(path);
           if (path.extension() == ".oxprefab") {
             m_DraggedEntity = EntitySerializer::DeserializeEntityAsPrefab(path.string().c_str(), *m_Context);
@@ -255,7 +255,7 @@ namespace Oxylus {
   void SceneHierarchyPanel::DragDropTarget() const {
     if (ImGui::BeginDragDropTarget()) {
       if (const ImGuiPayload* payload = ImGui::AcceptDragDropPayload("CONTENT_BROWSER_ITEM")) {
-        std::filesystem::path path = static_cast<const wchar_t*>(payload->Data);
+        std::filesystem::path path = IGUI::GetPathFromImGuiPayload(payload);
         path = AssetManager::GetAssetFileSystemPath(path);
         if (path.extension() == ".oxscene") {
           EditorLayer::Get()->OpenScene(path);
@@ -431,11 +431,11 @@ namespace Oxylus {
 
         ImGui::PushStyleVar(ImGuiStyleVar_FrameBorderSize, 0.0f);
         const auto view = m_Context->m_Registry.view<IDComponent>();
-        for (const auto e : std::ranges::reverse_view(view)) {
-          const Entity entity = {e, m_Context.get()};
+        for (auto i = view.size() - 1; i == 0; i--) {
+          const Entity entity = {view[i], m_Context.get()};
           if (entity && !entity.GetParent())
             DrawEntityNode(entity);
-        }
+        } 
         ImGui::PopStyleVar();
 
         constexpr auto popItemSpacing = ImVec2(6.0f, 8.0f); //TODO: Get from theme

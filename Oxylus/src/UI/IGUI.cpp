@@ -84,8 +84,7 @@ namespace Oxylus {
     ImGui::PushStyleColor(ImGuiCol_ButtonActive, ImVec4{0.25f, 0.25f, 0.25f, 1.0f});
 
     ImTextureID id = {};
-    if (id == nullptr)
-      id = texture == nullptr ? 0 : texture->GetDescriptorSet();
+    id = texture == nullptr ? 0 : (VkDescriptorSet)texture->GetDescriptorSet();
     if (ImGui::ImageButton(id, {buttonSize, buttonSize}, {1, 1}, {0, 0}, 0)) {
       const auto& path = FileDialogs::OpenFile({{"Texture file", "png,ktx"}});
       if (!path.empty()) {
@@ -276,7 +275,7 @@ namespace Oxylus {
   }
 
   std::filesystem::path IGUI::GetPathFromImGuiPayload(const ImGuiPayload* payload) {
-    return static_cast<const wchar_t*>(payload->Data);
+    return std::filesystem::path(static_cast<const char*>(payload->Data));
   }
 
   void IGUI::PushID() {

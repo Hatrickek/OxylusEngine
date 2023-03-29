@@ -21,7 +21,15 @@ namespace Oxylus {
     }
 #if !(DISABLE_DEBUG_LAYERS)
     // Enable standard validation layer to find as much errors as possible!
-    enabledLayers.push_back("VK_LAYER_KHRONOS_validation");
+    for (auto& layer : layers) {
+      if (layer == "VK_LAYER_KHRONOS_validation") {
+        for (auto& lp : layerProperties) {
+          if (strcmp("VK_LAYER_KHRONOS_validation", lp.layerName) == 0) {
+            enabledLayers.push_back("VK_LAYER_KHRONOS_validation");
+          }
+        }
+      }
+    }
 #endif
     return enabledLayers;
   }
@@ -101,7 +109,8 @@ namespace Oxylus {
                               std::vector<char const*> const& extensions) {
 #if ( DISABLE_DEBUG_LAYERS )
 		// in non-debug mode just use the InstanceCreateInfo for Instance creation
-		vk::StructureChain<vk::InstanceCreateInfo> instanceCreateInfo({ {}, &applicationInfo, layers, extensions });
+		vk::StructureChain<vk::InstanceCreateInfo> instanceCreateInfo(
+            { vk::InstanceCreateFlagBits::eEnumeratePortabilityKHR, &applicationInfo, layers, extensions });
 #else
     // in debug mode, addionally use the debugUtilsMessengerCallback in Instance creation!
     vk::DebugUtilsMessageSeverityFlagsEXT severityFlags(
@@ -110,7 +119,7 @@ namespace Oxylus {
       vk::DebugUtilsMessageTypeFlagBitsEXT::eGeneral | vk::DebugUtilsMessageTypeFlagBitsEXT::ePerformance |
       vk::DebugUtilsMessageTypeFlagBitsEXT::eValidation);
     vk::StructureChain<vk::InstanceCreateInfo, vk::DebugUtilsMessengerCreateInfoEXT> instanceCreateInfo(
-      {{}, &applicationInfo, layers, extensions},
+      {vk::InstanceCreateFlagBits::eEnumeratePortabilityKHR, &applicationInfo, layers, extensions},
       {{}, severityFlags, messageTypeFlags, &debugUtilsMessengerCallback});
 #endif
     return instanceCreateInfo;
@@ -145,6 +154,7 @@ namespace Oxylus {
         enabledExtensions.emplace_back(names[i]);
       }
     }
+    enabledExtensions.emplace_back(VK_KHR_PORTABILITY_ENUMERATION_EXTENSION_NAME);
     const vk::Instance instance = vk::createInstance(
       MakeInstanceCreateInfoChain(applicationInfo, enabledLayers, enabledExtensions).get<vk::InstanceCreateInfo>()).value;
     vkCreateDebugUtilsMessengerEXT = reinterpret_cast<PFN_vkCreateDebugUtilsMessengerEXT>(vkGetInstanceProcAddr(
@@ -216,7 +226,7 @@ namespace Oxylus {
       enabledExtensions.push_back(ext.data());
     }
 
-    enabledExtensions.emplace_back("VK_EXT_calibrated_timestamps");
+//    enabledExtensions.emplace_back("VK_EXT_calibrated_timestamps");
 
     constexpr float queuePriority = 0.0f;
     vk::DeviceQueueCreateInfo deviceQueueCreateInfo({}, queueFamilyIndex, 1, &queuePriority);

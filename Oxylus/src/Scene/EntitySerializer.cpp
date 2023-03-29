@@ -320,7 +320,7 @@ namespace Oxylus {
       rootEntity.AddComponentI<PrefabComponent>().ID = prefabID;
 
       // Fix parent/children UUIDs
-      for (const auto& newId : oldNewIdMap | std::views::values) {
+      for (const auto& [_, newId] : oldNewIdMap) {
         auto& relationshipComponent = scene.GetEntity(newId).GetRelationship();
         UUID parent = relationshipComponent.Parent;
         if (parent)

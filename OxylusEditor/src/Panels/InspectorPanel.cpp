@@ -259,7 +259,7 @@ namespace Oxylus {
     if (entity.HasComponent<TagComponent>()) {
       auto& tag = entity.GetComponent<TagComponent>().Tag;
       char buffer[256] = {};
-      strncpy_s(buffer, tag.c_str(), sizeof buffer);
+      strncpy(buffer, tag.c_str(), sizeof buffer);
       if (s_RenameEntity)
         ImGui::SetKeyboardFocusHere();
       if (ImGui::InputText("##Tag", buffer, sizeof(buffer), ImGuiInputTextFlags_EnterReturnsTrue)) {

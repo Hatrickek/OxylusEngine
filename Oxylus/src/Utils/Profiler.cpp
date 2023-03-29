@@ -31,8 +31,8 @@ namespace Oxylus {
   }
 
   void TracyProfiler::Collect(const vk::CommandBuffer& commandBuffer) {
-#ifndef OX_DIST
-    GetContext()->Collect(commandBuffer);
+#if !defined(OX_DIST) 
+//    s_VulkanContext->Collect(commandBuffer);
 #endif
   }
 
