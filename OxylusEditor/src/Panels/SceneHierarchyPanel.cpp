@@ -284,11 +284,6 @@ namespace Oxylus {
         toSelect = m_Context->CreateEntity("New Entity");
       }
 
-      if (ImGui::MenuItem("Empty Mesh")) {
-        toSelect = m_Context->CreateEntity("New Mesh");
-        toSelect.AddComponentI<MeshRendererComponent>();
-      }
-
       if (ImGui::BeginMenu("Primitives")) {
         if (ImGui::MenuItem("Cube")) {
           toSelect = m_Context->CreateEntity("Cube");
@@ -431,11 +426,11 @@ namespace Oxylus {
 
         ImGui::PushStyleVar(ImGuiStyleVar_FrameBorderSize, 0.0f);
         const auto view = m_Context->m_Registry.view<IDComponent>();
-        for (auto i = view.size() - 1; i == 0; i--) {
-          const Entity entity = {view[i], m_Context.get()};
+        for (const auto e : view) {
+          const Entity entity = {e, m_Context.get()};
           if (entity && !entity.GetParent())
             DrawEntityNode(entity);
-        } 
+        }
         ImGui::PopStyleVar();
 
         constexpr auto popItemSpacing = ImVec2(6.0f, 8.0f); //TODO: Get from theme

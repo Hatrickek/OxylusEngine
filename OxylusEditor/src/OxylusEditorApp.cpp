@@ -2,7 +2,6 @@
 #include <core/EntryPoint.h>
 #include "EditorLayer.h"
 #include "Core/Project.h"
-#include "Core/Systems/HotReloadableScenes.h"
 
 namespace Oxylus {
   class MavreasEditor : public Application {
@@ -24,7 +23,7 @@ namespace Oxylus {
     spec.Backend = Core::RenderBackend::Vulkan;
     spec.WorkingDirectory = std::filesystem::current_path().string();
     spec.CommandLineArgs = args;
-    spec.CustomWindowTitle = true;
+    spec.CustomWindowTitle = false;
     spec.UseImGui = true;
 
     const auto app = new MavreasEditor(spec);

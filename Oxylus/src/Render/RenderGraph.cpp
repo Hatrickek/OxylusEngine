@@ -115,7 +115,6 @@ namespace Oxylus {
 
     for (auto& [name, renderPass] : m_RenderGraphPasses) {
       ZoneScoped;
-      OX_CORE_INFO("Executing Pass : {}", name);
       //Render pass
       if (!isFirstPass) {
         VulkanUtils::CheckResult(LogicalDevice.waitForFences(1, &renderPass.m_Fence, true, UINT64_MAX));
@@ -184,7 +183,6 @@ namespace Oxylus {
       }
 
       VulkanUtils::CheckResult(renderPass.SubmitQueue->submit(1, &submitInfo, renderPass.m_Fence));
-      OX_CORE_INFO("Submitted {}", name);
     }
 
     isFirstPass = false;

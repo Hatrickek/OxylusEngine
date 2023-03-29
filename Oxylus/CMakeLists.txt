@@ -215,7 +215,7 @@ include_directories(${Vulkan_INCLUDE_DIRS})
 if (WIN32)
   set(Vulkan_shaderc_combined_LIBRARY "${VULKAN_PATH}/lib/shaderc_shared.lib")
 elseif (APPLE)
-  set(Vulkan_shaderc_combined_LIBRARY "${VULKAN_PATH}/../lib/shaderc_shared.dylib")
+  set(Vulkan_shaderc_combined_LIBRARY "${VULKAN_PATH}/../lib/libshaderc_shared.dylib")
 endif()
 
 set(VULKAN_LIB_LIST "${Vulkan_LIBRARIES}" "${Vulkan_shaderc_combined_LIBRARY}")

@@ -120,7 +120,7 @@ namespace Oxylus {
                                               ImGuiWindowFlags_NoBackground | ImGuiWindowFlags_NoNavFocus |
                                               ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_NoTitleBar |
                                               ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoResize |
-                                              ImGuiWindowFlags_NoBringToFrontOnFocus;
+                                              ImGuiWindowFlags_NoBringToFrontOnFocus | ImGuiWindowFlags_NoSavedSettings;
 
     ImGuiViewport* viewport = ImGui::GetMainViewport();
     ImGui::SetNextWindowPos(viewport->WorkPos);
@@ -130,10 +130,7 @@ namespace Oxylus {
     ImGui::PushStyleVar(ImGuiStyleVar_WindowBorderSize, 0.0f);
     ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2(0.0f, 0.0f));
     ImGui::Begin("DockSpace Demo", nullptr, window_flags);
-
-    ImGui::PopStyleVar();
-
-    ImGui::PopStyleVar(2);
+    ImGui::PopStyleVar(3);
 
     // Submit the DockSpace
     const ImGuiIO& io = ImGui::GetIO();

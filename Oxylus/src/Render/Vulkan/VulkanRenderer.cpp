@@ -1353,7 +1353,7 @@ namespace Oxylus {
           &s_RendererData.SSAOBlurParams.texelOffset);
         DrawFullscreenQuad(commandBuffer.Get(), true);
       },
-    }).AddToGraph(renderGraph).RunWithCondition(RendererConfig::Get()->SSAOConfig.Enabled);
+    });//.AddToGraph(renderGraph).RunWithCondition(RendererConfig::Get()->SSAOConfig.Enabled);
 
     RenderGraphPass pbrPass("PBR Pass",
       {&s_RendererContext.PBRPassCommandBuffer},
@@ -1461,7 +1461,7 @@ namespace Oxylus {
       },
       clearValues, &VulkanContext::VulkanQueue.GraphicsQueue
     });
-    compositePass.AddReadDependency(renderGraph, "SSAO Pass").AddToGraph(renderGraph);
+    compositePass.AddToGraph(renderGraph);
 
     RenderGraphPass frustumPass("Frustum Pass",
       {&s_RendererContext.FrustumCommandBuffer},
