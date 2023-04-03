@@ -2,6 +2,7 @@
 #include <icons/IconsMaterialDesignIcons.h>
 
 #include "imgui.h"
+#include "Render/ShaderLibrary.h"
 #include "Render/Vulkan/VulkanRenderer.h"
 #include "UI/IGUI.h"
 
@@ -20,7 +21,7 @@ namespace Oxylus {
       flags |= ImGuiTreeNodeFlags_Leaf | ImGuiTreeNodeFlags_NoTreePushOnOpen;
 
       if (ImGui::Button("Reload all")) {
-        const auto& shaders = VulkanRenderer::GetShaders();
+        const auto& shaders = ShaderLibrary::GetShaders();
         for (const auto& [name, shader] : shaders) {
           VulkanRenderer::WaitDeviceIdle();
           shader->Reload();
@@ -31,7 +32,7 @@ namespace Oxylus {
       if (ImGui::BeginTable("ScrollRegionTable", 2, tableFlags)) {
         ImGui::TableSetupColumn(" Name", ImGuiTableColumnFlags_NoHide | ImGuiTableColumnFlags_WidthStretch);
         ImGui::TableSetupColumn(" Reload", ImGuiTableColumnFlags_WidthStretch);
-        const auto& shaders = VulkanRenderer::GetShaders();
+        const auto& shaders = ShaderLibrary::GetShaders();
         for (const auto& [name, shader] : shaders) {
           ImGui::TableNextRow();
           ImGui::TableNextColumn();

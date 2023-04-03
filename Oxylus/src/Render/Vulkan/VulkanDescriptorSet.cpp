@@ -6,7 +6,7 @@
 #include "Utils/VulkanUtils.h"
 
 namespace Oxylus {
-  void VulkanDescriptorSet::Allocate(const std::vector<vk::DescriptorSetLayout>& layouts, uint32_t layoutIndex) {
+  VulkanDescriptorSet& VulkanDescriptorSet::Allocate(const std::vector<vk::DescriptorSetLayout>& layouts, uint32_t layoutIndex) {
     const auto& LogicalDevice = VulkanContext::Context.Device;
 
     vk::DescriptorSetAllocateInfo allocateInfo;
@@ -14,6 +14,8 @@ namespace Oxylus {
     allocateInfo.descriptorSetCount = 1;
     allocateInfo.pSetLayouts = &layouts[layoutIndex];
     VulkanUtils::CheckResult(LogicalDevice.allocateDescriptorSets(&allocateInfo, &m_DescriptorSet));
+    
+    return *this;
   }
 
   void VulkanDescriptorSet::Update(bool waitForQueueIdle) const {

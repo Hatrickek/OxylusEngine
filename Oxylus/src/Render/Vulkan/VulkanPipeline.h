@@ -35,7 +35,17 @@ namespace Oxylus {
     vk::StencilOp StencilPassOp = vk::StencilOp::eKeep;
     vk::StencilOp StencilDepthFailOp = vk::StencilOp::eKeep;
   };
-
+  
+  struct SubpassDescription {
+    uint32_t SrcSubpass = VK_SUBPASS_EXTERNAL;
+    uint32_t DstSubpass = 0;
+    vk::PipelineStageFlags SrcStageMask = vk::PipelineStageFlagBits::eColorAttachmentOutput;
+    vk::PipelineStageFlags DstStageMask = vk::PipelineStageFlagBits::eColorAttachmentOutput;
+    vk::AccessFlags SrcAccessMask = vk::AccessFlagBits::eMemoryRead;
+    vk::AccessFlags DstAccessMask = vk::AccessFlagBits::eColorAttachmentRead |
+                                    vk::AccessFlagBits::eColorAttachmentWrite;
+  };
+  
   struct DepthStencilDescription {
     bool DepthEnable = true;
     bool DepthWriteEnable = true;
@@ -49,6 +59,7 @@ namespace Oxylus {
     float MinDepthBound = 0;
     float MaxDepthBound = 1;
     vk::Format DepthStenctilFormat;
+    uint32_t DepthReferenceAttachment = 0;
   };
 
   struct RasterizerDescription {
@@ -97,7 +108,12 @@ namespace Oxylus {
 
   struct PipelineDescription {
     RenderTargetDescription RenderTargets[MAX_RENDER_TARGETS];
+    bool DepthAttachmentFirst = false;
+    uint32_t ColorAttachment = 0;
     vk::ImageLayout ColorAttachmentLayout = vk::ImageLayout::eColorAttachmentOptimal;
+    vk::ImageLayout DepthAttachmentLayout = vk::ImageLayout::eDepthStencilAttachmentOptimal;
+    SubpassDescription SubpassDescription[4];
+    uint32_t SubpassDependencyCount = 1;
     Ref<VulkanShader> Shader;
     DepthStencilDescription DepthSpec;
     uint8_t ColorAttachmentCount = 1;
@@ -166,5 +182,9 @@ namespace Oxylus {
     VulkanRenderPass m_RenderPass;
     PipelineDescription m_PipelineDescription;
     bool m_IsCompute = false;
+    void CreateColorAttachments(const PipelineDescription& pipelineSpecification,
+                                std::vector<vk::AttachmentDescription>& AttachmentDescriptions) const;
+    void CreateDepthAttachments(const PipelineDescription& pipelineSpecification,
+                                std::vector<vk::AttachmentDescription>& attachmentDescriptions) const;
   };
 }

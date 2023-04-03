@@ -9,7 +9,7 @@ namespace Oxylus {
 
     VulkanDescriptorSet() = default;
 
-    void Allocate(const std::vector<vk::DescriptorSetLayout>& layouts, uint32_t layoutIndex = 0);
+    VulkanDescriptorSet& Allocate(const std::vector<vk::DescriptorSetLayout>& layouts, uint32_t layoutIndex = 0);
 
     void Update(bool waitForQueueIdle = false) const;
 

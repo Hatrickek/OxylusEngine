@@ -1,8 +1,7 @@
 ﻿#include "src/oxpch.h"
 #include "VulkanPipeline.h"
-
+#include "Render/ShaderLibrary.h"
 #include "VulkanContext.h"
-#include "VulkanRenderer.h"
 #include "Utils/VulkanUtils.h"
 
 namespace Oxylus {
@@ -40,36 +39,25 @@ namespace Oxylus {
 
     m_PipelineDescription = pipelineSpecification;
 
-    std::vector<vk::AttachmentDescription> AttachmentDescriptions;
+    std::vector<vk::AttachmentDescription> attachmentDescriptions;
 
-    for (int i = 0; i < pipelineSpecification.ColorAttachmentCount; i++) {
-      vk::AttachmentDescription ColorAttachment = {
-        vk::AttachmentDescriptionFlags(), pipelineSpecification.RenderTargets[i].Format, pipelineSpecification.Samples,
-        pipelineSpecification.RenderTargets[i].LoadOp, pipelineSpecification.RenderTargets[i].StoreOp,
-        vk::AttachmentLoadOp::eDontCare, vk::AttachmentStoreOp::eDontCare,
-        pipelineSpecification.RenderTargets[i].InitialLayout, pipelineSpecification.RenderTargets[i].FinalLayout
-      };
-      AttachmentDescriptions.emplace_back(ColorAttachment);
-    }
-
-    if (pipelineSpecification.DepthSpec.DepthEnable) {
-      vk::AttachmentDescription DepthAttachment = {
-        vk::AttachmentDescriptionFlags(), pipelineSpecification.DepthSpec.DepthStenctilFormat,
-        pipelineSpecification.Samples, vk::AttachmentLoadOp::eClear, vk::AttachmentStoreOp::eDontCare,
-        vk::AttachmentLoadOp::eDontCare, vk::AttachmentStoreOp::eDontCare, vk::ImageLayout::eUndefined,
-        vk::ImageLayout::eDepthStencilAttachmentOptimal
-      };
-      AttachmentDescriptions.emplace_back(DepthAttachment);
-    }
+    if (m_PipelineDescription.DepthAttachmentFirst)
+      CreateDepthAttachments(pipelineSpecification, attachmentDescriptions);
+          
+    CreateColorAttachments(pipelineSpecification, attachmentDescriptions);
+  
+    if (!m_PipelineDescription.DepthAttachmentFirst)
+      CreateDepthAttachments(pipelineSpecification, attachmentDescriptions);
+      
 
     std::vector<vk::SubpassDescription> subpasses;
 
     vk::AttachmentReference ColorAttachmentReference;
-    ColorAttachmentReference.attachment = 0;
+    ColorAttachmentReference.attachment = m_PipelineDescription.ColorAttachment;
     ColorAttachmentReference.layout = m_PipelineDescription.ColorAttachmentLayout;
 
     vk::AttachmentReference DepthAttachmentReference;
-    DepthAttachmentReference.attachment = 1;
+    DepthAttachmentReference.attachment = m_PipelineDescription.DepthSpec.DepthReferenceAttachment;
     DepthAttachmentReference.layout = vk::ImageLayout::eDepthStencilAttachmentOptimal;
 
     vk::SubpassDescription subpassDescription;
@@ -93,20 +81,21 @@ namespace Oxylus {
 
     std::vector<vk::SubpassDependency> dependencies;
 
-    vk::SubpassDependency subpassDependency;
-    subpassDependency.srcSubpass = VK_SUBPASS_EXTERNAL;
-    subpassDependency.srcStageMask = vk::PipelineStageFlagBits::eColorAttachmentOutput;
-    subpassDependency.srcAccessMask = vk::AccessFlagBits::eMemoryRead;
-    subpassDependency.dstStageMask = vk::PipelineStageFlagBits::eColorAttachmentOutput;
-    subpassDependency.dstAccessMask = vk::AccessFlagBits::eColorAttachmentRead |
-                                      vk::AccessFlagBits::eColorAttachmentWrite;
-
-    dependencies.emplace_back(subpassDependency);
+    for (auto i = 0; i < m_PipelineDescription.SubpassDependencyCount; ++i) {
+      vk::SubpassDependency subpassDependency;
+      subpassDependency.srcSubpass = m_PipelineDescription.SubpassDescription[i].SrcSubpass;
+      subpassDependency.dstSubpass = m_PipelineDescription.SubpassDescription[i].DstSubpass;
+      subpassDependency.srcStageMask = m_PipelineDescription.SubpassDescription[i].SrcStageMask;
+      subpassDependency.dstStageMask = m_PipelineDescription.SubpassDescription[i].DstStageMask;
+      subpassDependency.srcAccessMask = m_PipelineDescription.SubpassDescription[i].SrcAccessMask;
+      subpassDependency.dstAccessMask = m_PipelineDescription.SubpassDescription[i].DstAccessMask;
+      dependencies.emplace_back(subpassDependency);
+    }
 
     if (!GetDesc().RenderPass.Get()) {
       vk::RenderPassCreateInfo renderPassCI;
-      renderPassCI.pAttachments = AttachmentDescriptions.data();
-      renderPassCI.attachmentCount = static_cast<uint32_t>(AttachmentDescriptions.size());
+      renderPassCI.pAttachments = attachmentDescriptions.data();
+      renderPassCI.attachmentCount = static_cast<uint32_t>(attachmentDescriptions.size());
       renderPassCI.pSubpasses = subpasses.data();
       renderPassCI.subpassCount = static_cast<uint32_t>(subpasses.size());
       renderPassCI.pDependencies = dependencies.data();
@@ -284,7 +273,33 @@ namespace Oxylus {
       CreateGraphicsPipeline(m_PipelineDescription);
     });
 
-    VulkanRenderer::AddShader(pipelineSpecification.Shader);
+    ShaderLibrary::AddShader(pipelineSpecification.Shader);
+  }
+
+  void VulkanPipeline::CreateDepthAttachments(const PipelineDescription& pipelineSpecification,
+                                              std::vector<vk::AttachmentDescription>& attachmentDescriptions) const {
+    if (pipelineSpecification.DepthSpec.DepthEnable) {
+      vk::AttachmentDescription DepthAttachment = {
+        vk::AttachmentDescriptionFlags(), pipelineSpecification.DepthSpec.DepthStenctilFormat,
+        pipelineSpecification.Samples, vk::AttachmentLoadOp::eClear, vk::AttachmentStoreOp::eStore,
+        vk::AttachmentLoadOp::eDontCare, vk::AttachmentStoreOp::eDontCare, vk::ImageLayout::eUndefined,
+        pipelineSpecification.DepthAttachmentLayout
+      };
+      attachmentDescriptions.emplace_back(DepthAttachment);
+    }
+  }
+
+  void VulkanPipeline::CreateColorAttachments(const PipelineDescription& pipelineSpecification,
+                                              std::vector<vk::AttachmentDescription>& AttachmentDescriptions) const {
+    for (int i = 0; i < pipelineSpecification.ColorAttachmentCount; i++) {
+      vk::AttachmentDescription ColorAttachment = {
+        vk::AttachmentDescriptionFlags(), pipelineSpecification.RenderTargets[i].Format, pipelineSpecification.Samples,
+        pipelineSpecification.RenderTargets[i].LoadOp, pipelineSpecification.RenderTargets[i].StoreOp,
+        vk::AttachmentLoadOp::eDontCare, vk::AttachmentStoreOp::eDontCare,
+        pipelineSpecification.RenderTargets[i].InitialLayout, pipelineSpecification.RenderTargets[i].FinalLayout
+      };
+      AttachmentDescriptions.emplace_back(ColorAttachment);
+    }
   }
 
   void VulkanPipeline::CreateComputePipeline(const PipelineDescription& pipelineSpecification) {
@@ -312,7 +327,7 @@ namespace Oxylus {
       CreateComputePipeline(m_PipelineDescription);
     });
 
-    VulkanRenderer::AddShader(pipelineSpecification.Shader);
+    ShaderLibrary::AddShader(pipelineSpecification.Shader);
   }
 
   void VulkanPipeline::BindDescriptorSets(const vk::CommandBuffer& commandBuffer,
@@ -321,20 +336,19 @@ namespace Oxylus {
                                           uint32_t setCount,
                                           uint32_t dynamicOffsetCount,
                                           const uint32_t* pDynamicOffsets) const {
-    commandBuffer.bindDescriptorSets(vk::PipelineBindPoint::eGraphics,
-      m_Layout,
-      firstSet,
-      setCount,
-      descriptorSets.data(),
-      dynamicOffsetCount,
-      pDynamicOffsets);
+    const auto bindPoint = m_IsCompute ? vk::PipelineBindPoint::eCompute : vk::PipelineBindPoint::eGraphics;
+    commandBuffer.bindDescriptorSets(bindPoint,
+                                     m_Layout,
+                                     firstSet,
+                                     setCount,
+                                     descriptorSets.data(),
+                                     dynamicOffsetCount,
+                                     pDynamicOffsets);
   }
 
   void VulkanPipeline::BindPipeline(const vk::CommandBuffer& cmdBuffer) const {
-    if (m_IsCompute)
-      cmdBuffer.bindPipeline(vk::PipelineBindPoint::eCompute, m_Pipeline);
-    else
-      cmdBuffer.bindPipeline(vk::PipelineBindPoint::eGraphics, m_Pipeline);
+    const auto bindPoint = m_IsCompute ? vk::PipelineBindPoint::eCompute : vk::PipelineBindPoint::eGraphics;
+    cmdBuffer.bindPipeline(bindPoint, m_Pipeline);
   }
 
   void VulkanPipeline::Destroy() const {

@@ -21,15 +21,7 @@ namespace Oxylus {
     }
 #if !(DISABLE_DEBUG_LAYERS)
     // Enable standard validation layer to find as much errors as possible!
-    for (auto& layer : layers) {
-      if (layer == "VK_LAYER_KHRONOS_validation") {
-        for (auto& lp : layerProperties) {
-          if (strcmp("VK_LAYER_KHRONOS_validation", lp.layerName) == 0) {
-            enabledLayers.push_back("VK_LAYER_KHRONOS_validation");
-          }
-        }
-      }
-    }
+    enabledLayers.push_back("VK_LAYER_KHRONOS_validation");
 #endif
     return enabledLayers;
   }

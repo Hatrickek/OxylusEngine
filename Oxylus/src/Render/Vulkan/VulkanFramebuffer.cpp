@@ -1,5 +1,6 @@
 #include "src/oxpch.h"
 #include "VulkanFramebuffer.h"
+#include "Render/ResourcePool.h"
 
 #include "VulkanContext.h"
 #include "VulkanRenderer.h"
@@ -108,31 +109,5 @@ namespace Oxylus {
     LogicalDevice.destroyFramebuffer(m_Framebuffer);
     FrameBufferPool::RemoveFromPool(GetDescription().DebugName);
     LogicalDevice.destroyImageView(m_VkImageView);
-  }
-
-  std::vector<VulkanFramebuffer*> FrameBufferPool::m_Pool;
-
-  void FrameBufferPool::ResizeBuffers() {
-    for (const auto& framebuffer : m_Pool) {
-      framebuffer->Resize();
-    }
-  }
-
-  void FrameBufferPool::AddToPool(VulkanFramebuffer* framebuffer) {
-    m_Pool.emplace_back(framebuffer);
-  }
-
-  void FrameBufferPool::RemoveFromPool(const std::string_view name) {
-    const auto index = FindFramebuffer(name);
-    m_Pool.erase(m_Pool.begin() + index);
-  }
-
-  uint32_t FrameBufferPool::FindFramebuffer(const std::string_view name) {
-    for (size_t i = 0; i < m_Pool.size(); i++) {
-      if (m_Pool[i]->GetDescription().DebugName == name) {
-        return (uint32_t)i;
-      }
-    }
-    return {};
   }
 }

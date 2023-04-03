@@ -7,6 +7,7 @@
 #include <fmt/format.h>
 
 #include "VulkanRenderer.h"
+#include "Render/ShaderLibrary.h"
 #include "Utils/Profiler.h"
 #include "Utils/FileUtils.h"
 
@@ -205,7 +206,7 @@ namespace Oxylus {
 
   void VulkanShader::Destroy() {
     Unload();
-    VulkanRenderer::RemoveShader(GetName());
+    ShaderLibrary::RemoveShader(GetName());
   }
 
   void VulkanShader::Reload() {

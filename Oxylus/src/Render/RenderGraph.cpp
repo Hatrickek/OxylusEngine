@@ -114,6 +114,8 @@ namespace Oxylus {
     }
 
     for (auto& [name, renderPass] : m_RenderGraphPasses) {
+      if (renderPass.m_RunCondition != nullptr && !renderPass.m_RunCondition)
+        continue;
       ZoneScoped;
       //Render pass
       if (!isFirstPass) {

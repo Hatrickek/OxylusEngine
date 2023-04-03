@@ -158,21 +158,11 @@ namespace Oxylus {
       VulkanPipeline BloomPipeline;
     } s_Pipelines;
 
-    static struct RenderPasses {
-      VulkanRenderPass PBRRenderPass;
-      VulkanRenderPass CompositeRP;
-      VulkanRenderPass DepthNormalRP;
-      VulkanRenderPass SSAORenderPass;
-      VulkanRenderPass SSAOHBlurRP;
-      VulkanRenderPass SSAOVBlurRP;
-      VulkanRenderPass DirectShadowDepthRP;
-    } s_RenderPasses;
-
     static struct FrameBuffers {
       VulkanFramebuffer PBRPassFB;
       VulkanFramebuffer CompositePassFB;
       VulkanFramebuffer DepthNormalPassFB;
-      VulkanFramebuffer SSAOPassFB;
+      VulkanImage SSAOPassImage;
       VulkanFramebuffer SSAOHBlurPassFB;
       VulkanFramebuffer SSAOVBlurPassFB;
       VulkanFramebuffer BloomPrefilteredFB;
@@ -191,7 +181,6 @@ namespace Oxylus {
 
     static void UpdateUniformBuffers();
     static void CreateGraphicsPipelines();
-    static void CreateRenderPasses();
     static void CreateFramebuffers();
     static void ResizeBuffers();
     static void UpdateSkyboxDescriptorSets();
@@ -221,15 +210,6 @@ namespace Oxylus {
     static void WaitDeviceIdle();
     static void GeneratePrefilter();
     static void WaitGraphicsQueueIdle();
-
-    //Shaders
-    static void AddShader(const Ref<VulkanShader>& shader);
-    static void RemoveShader(const std::string& name);
-
-    static const std::unordered_map<std::string, Ref<VulkanShader>>& GetShaders() { return s_Shaders; }
-
-    static Ref<VulkanShader> GetShaderByID(const UUID& id);
-    static void UnloadShaders();
 
   private:
     //Mesh
@@ -289,9 +269,6 @@ namespace Oxylus {
     static void DrawQuad(const vk::CommandBuffer& commandBuffer);
     static void InitQuadVertexBuffer();
     static void FlushQuadVertexBuffer();
-
-    //Shaders
-    static std::unordered_map<std::string, Ref<VulkanShader>> s_Shaders;
 
     //Config
     static RendererConfig s_RendererConfig;

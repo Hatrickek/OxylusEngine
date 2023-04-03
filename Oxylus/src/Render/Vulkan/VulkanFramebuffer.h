@@ -49,17 +49,4 @@ namespace Oxylus {
     vk::ImageView m_VkImageView;
     bool m_Resizing = false;
   };
-
-  class FrameBufferPool {
-  public:
-    static void ResizeBuffers();
-    static void AddToPool(VulkanFramebuffer* framebuffer);
-    static void RemoveFromPool(std::string_view name);
-
-    static std::vector<VulkanFramebuffer*>& GetPool() { return m_Pool; }
-
-  private:
-    static std::vector<VulkanFramebuffer*> m_Pool;
-    static uint32_t FindFramebuffer(std::string_view name);
-  };
 }

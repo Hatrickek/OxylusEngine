@@ -28,8 +28,10 @@ namespace Oxylus {
   void ProjectPanel::OnImGuiRender() {
     if (Visible)
       ImGui::OpenPopup("ProjectSelector");
-
-    ImGui::SetNextWindowSize(ImVec2(480, 640));
+    ImGuiIO& io = ImGui::GetIO();
+    ImGui::SetNextWindowSize(ImVec2(480, 640), ImGuiCond_FirstUseEver);
+    ImGui::SetNextWindowPos(ImVec2(io.DisplaySize.x * 0.5f, io.DisplaySize.y * 0.5f), ImGuiCond_Always,
+                            ImVec2(0.5f, 0.5f));
     if (ImGui::BeginPopupModal("ProjectSelector",
                                nullptr,
                                ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoSavedSettings)) {

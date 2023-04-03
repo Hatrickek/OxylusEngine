@@ -4,6 +4,7 @@
 #include <imgui.h>
 #include <icons/IconsMaterialDesignIcons.h>
 #include <Render/Vulkan/VulkanFramebuffer.h>
+#include <Render/ResourcePool.h>
 
 namespace Oxylus {
   FramebufferViewerPanel::FramebufferViewerPanel() : EditorPanel("Framebuffer Viewer", ICON_MDI_IMAGE_FRAME) { }
