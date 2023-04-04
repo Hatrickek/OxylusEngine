@@ -28,6 +28,7 @@
 
 #include "Core/Base.h"
 #include "Utils/Log.h"
+#include "Core/Types.h"
 
 #ifdef OX_PLATFORM_WINDOWS
 

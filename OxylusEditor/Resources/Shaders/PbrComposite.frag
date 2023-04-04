@@ -7,8 +7,9 @@ layout(location = 1) in vec2 in_TexCoords;
 
 layout(binding = 0) uniform sampler2D in_Color;
 layout(binding = 1) uniform sampler2D in_SSAO;
+layout(binding = 2) uniform sampler2D in_Bloom;
 
-layout(binding = 2) uniform UBOParams {
+layout(binding = 3) uniform UBOParams {
   int tonemapper; // 0- Aces 1- Uncharted 2-Filmic 3- Reinhard
   float exposure;
   float gamma;

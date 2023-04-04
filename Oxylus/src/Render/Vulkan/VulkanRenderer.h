@@ -106,8 +106,8 @@ namespace Oxylus {
       } SSAOBlurParams;
 
       struct BloomUB {
-        glm::vec4 Threshold;
-        glm::vec4 Params;
+        glm::vec4 Params; // x: threshold, y: clamp, z: radius, w: unused
+        glm::vec2 Stage;  // x: stage, y: lod
       } BloomUBO;
 
       struct DirectShadowUB {
@@ -163,11 +163,9 @@ namespace Oxylus {
       VulkanFramebuffer CompositePassFB;
       VulkanFramebuffer DepthNormalPassFB;
       VulkanImage SSAOPassImage;
-      VulkanFramebuffer SSAOHBlurPassFB;
-      VulkanFramebuffer SSAOVBlurPassFB;
-      VulkanFramebuffer BloomPrefilteredFB;
-      VulkanFramebuffer BloomDownsampledFB;
-      VulkanFramebuffer BloomUpsampledFB;
+      VulkanImage BloomPassImage;
+      VulkanImage BloomUpsampleImage;
+      VulkanImage BloomDownsampleImage;
       std::vector<VulkanFramebuffer> DirectionalCascadesFB;
     } s_FrameBuffers;
 
@@ -175,7 +173,6 @@ namespace Oxylus {
 
     static void Init();
     static void InitRenderGraph();
-    static void InitUIPipeline();
 
     static void Shutdown();
 

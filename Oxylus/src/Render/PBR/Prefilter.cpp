@@ -288,8 +288,10 @@ namespace Oxylus {
     // Pipeline
     VulkanPipeline pipeline;
     PipelineDescription pipelineDescription;
-    pipelineDescription.DescriptorSetLayoutBindings = {
-      {{0, vk::DescriptorType::eCombinedImageSampler, 1, vk::ShaderStageFlagBits::eFragment}}
+    pipelineDescription.SetDescriptions = {
+      {
+        SetDescription{0, 0, 1, vk::DescriptorType::eCombinedImageSampler, vk::ShaderStageFlagBits::eFragment}
+      }
     };
     pipelineDescription.PushConstantRanges = {
       vk::PushConstantRange{vk::ShaderStageFlagBits::eVertex | vk::ShaderStageFlagBits::eFragment, 0, sizeof(PushBlock)}
@@ -574,8 +576,10 @@ namespace Oxylus {
     pipelineDescription.PushConstantRanges = {
       vk::PushConstantRange{vk::ShaderStageFlagBits::eVertex | vk::ShaderStageFlagBits::eFragment, 0, sizeof(PushBlock)}
     };
-    pipelineDescription.DescriptorSetLayoutBindings = {
-      {{0, vk::DescriptorType::eCombinedImageSampler, 1, vk::ShaderStageFlagBits::eFragment}}
+    pipelineDescription.SetDescriptions = {
+      {
+        SetDescription{0, 0, 1, vk::DescriptorType::eCombinedImageSampler, vk::ShaderStageFlagBits::eFragment}
+      }
     };
     pipelineDescription.Shader = CreateRef<VulkanShader>(shader);
     pipelineDescription.RenderPass = renderpass;

@@ -15,10 +15,14 @@ namespace Oxylus {
 
     std::vector<vk::DescriptorSetLayout> descriptorSetLayouts;
 
-    for (auto& bindings : pipDesc.DescriptorSetLayoutBindings) {
+    for (auto& bindings : pipDesc.SetDescriptions) {
       vk::DescriptorSetLayoutCreateInfo descriptorSetLayoutCreateInfo;
-      descriptorSetLayoutCreateInfo.pBindings = bindings.data();
-      descriptorSetLayoutCreateInfo.bindingCount = (uint32_t)bindings.size();
+      std::vector<vk::DescriptorSetLayoutBinding> binds;
+      for (auto& bind : bindings) {
+        binds.emplace_back(bind.Binding, bind.DescriptorType, bind.DescriptorCount, bind.ShaderStage);
+      }
+      descriptorSetLayoutCreateInfo.pBindings = binds.data();
+      descriptorSetLayoutCreateInfo.bindingCount = (uint32_t)binds.size();
 
       descriptorSetLayouts.emplace_back(
         LogicalDevice.createDescriptorSetLayout(descriptorSetLayoutCreateInfo, nullptr).value);

@@ -4,6 +4,7 @@
 #include "Utils/VulkanAllocation.h"
 #include "VulkanCommandBuffer.h"
 #include "Core/Base.h"
+#include "Core/Types.h"
 
 namespace Oxylus {
   enum class ImageType {
@@ -64,25 +65,20 @@ namespace Oxylus {
                         vk::ImageSubresourceRange subresourceRange,
                         const VulkanCommandBuffer* cmdBuffer = nullptr);
 
-
+    uint32_t GetWidth() const { return m_ImageDescription.Width; }
+    uint32_t GetHeight() const { return m_ImageDescription.Height; }
     const vk::Image& GetImage() const { return m_Image; }
-
     const vk::ImageView& GetImageView() const { return m_View; }
-
     const vk::Sampler& GetImageSampler() const { return m_Sampler; }
-
     const VulkanImageDescription& GetDesc() const { return m_ImageDescription; }
-
     const vk::DescriptorSet& GetDescriptorSet() const { return m_DescSet; }
-
     const vk::DescriptorImageInfo& GetDescImageInfo() const { return DescriptorImageInfo; }
-
     const vk::ImageLayout& GetImageLayout() const { return m_ImageLayout; }
-
     static VulkanImageDescription GetColorAttachmentImageDescription(vk::Format format,
                                                                      uint32_t width,
                                                                      uint32_t height);
     static Ref<VulkanImage> GetBlankImage();
+    static IVec3 GetMipMapLevelSize(uint32_t width, uint32_t height, uint32_t depth, uint32_t level);
 
     void Destroy();
 

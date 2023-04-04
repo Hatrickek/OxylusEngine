@@ -26,7 +26,6 @@ namespace Oxylus {
         avg += frameTime;
       }
       avg /= (float)size;
-      ImGui::PlotLines("##FPS", m_FpsValues, static_cast<int>(size));
       ImGui::Text("FPS: %lf", static_cast<double>(avg));
       const double fps = (1.0 / static_cast<double>(avg)) * 1000.0;
       ImGui::Text("Frame time (ms): %lf", fps);
@@ -49,6 +48,12 @@ namespace Oxylus {
       IGUI::BeginProperties();
       IGUI::Property("Enabled", RendererConfig::Get()->SSAOConfig.Enabled);
       IGUI::Property<float>("Radius", RendererConfig::Get()->SSAOConfig.Radius, 0, 1);
+      IGUI::EndProperties();
+
+      ImGui::Text("Bloom");
+      IGUI::BeginProperties();
+      IGUI::Property("Enabled", RendererConfig::Get()->BloomConfig.Enabled);
+      IGUI::Property<float>("Radius", RendererConfig::Get()->BloomConfig.Threshold, 0, 5);
       IGUI::EndProperties();
 
       OnEnd();

@@ -34,8 +34,7 @@ namespace Oxylus {
     struct Bloom {
       bool Enabled = true;
       float Threshold = 1.0f;
-      float Knee = 0.1f;
-      float Clamp = 100.0f;
+      float Clamp = 3.0f;
     } BloomConfig;
 
     struct SSR {

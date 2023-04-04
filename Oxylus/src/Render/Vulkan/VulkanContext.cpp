@@ -76,6 +76,10 @@ namespace Oxylus {
     vk::PhysicalDeviceVulkan13Features features{};
     features.maintenance4 = VK_TRUE;
     Context.DeviceFeatures = Context.PhysicalDevice.getFeatures();
+    //TODO: Check if device supports these
+    Context.DeviceFeatures.shaderUniformBufferArrayDynamicIndexing = true;
+    Context.DeviceFeatures.shaderSampledImageArrayDynamicIndexing = true;
+    Context.DeviceFeatures.shaderStorageImageArrayDynamicIndexing = true;
     Context.DeviceFeatures.depthClamp = VK_TRUE;
     Context.Device = ContextUtils::CreateDevice(Context.PhysicalDevice,
       VulkanQueue.graphicsQueueFamilyIndex,

@@ -129,6 +129,7 @@ namespace Oxylus {
     BlendStateDescription BlendStateDesc;
     std::vector<vk::DynamicState> DynamicStates = {vk::DynamicState::eViewport, vk::DynamicState::eScissor};
     std::vector<std::vector<vk::DescriptorSetLayoutBinding>> DescriptorSetLayoutBindings;
+    std::vector<std::vector<SetDescription>> SetDescriptions;
     std::vector<vk::PushConstantRange> PushConstantRanges;
     VulkanRenderPass RenderPass;
   };
