@@ -59,6 +59,8 @@ namespace Oxylus {
       ImGui::Text("SSR");
       IGUI::BeginProperties();
       IGUI::Property("Enabled", RendererConfig::Get()->SSRConfig.Enabled);
+      IGUI::Property<>("Samples", RendererConfig::Get()->SSRConfig.Samples, 30, 1024);
+      IGUI::Property<>("Max Distance", RendererConfig::Get()->SSRConfig.MaxDist, 50.0f, 500.0f);
       IGUI::EndProperties();
 
       OnEnd();

@@ -149,6 +149,7 @@ namespace Oxylus {
     enabledExtensions.emplace_back(VK_KHR_PORTABILITY_ENUMERATION_EXTENSION_NAME);
     const vk::Instance instance = vk::createInstance(
       MakeInstanceCreateInfoChain(applicationInfo, enabledLayers, enabledExtensions).get<vk::InstanceCreateInfo>()).value;
+#if (!DISABLE_DEBUG_LAYERS)
     vkCreateDebugUtilsMessengerEXT = reinterpret_cast<PFN_vkCreateDebugUtilsMessengerEXT>(vkGetInstanceProcAddr(
       instance,
       "vkCreateDebugUtilsMessengerEXT"));
@@ -165,6 +166,7 @@ namespace Oxylus {
     debugUtilsMessengerCI.pfnUserCallback = debugUtilsMessengerCallback;
     VkResult result = vkCreateDebugUtilsMessengerEXT(instance, &debugUtilsMessengerCI, nullptr, &debugUtilsMessenger);
     assert(result == VK_SUCCESS);
+#endif
     return instance;
   }
 
@@ -219,7 +221,9 @@ namespace Oxylus {
     }
 
 //    enabledExtensions.emplace_back("VK_EXT_calibrated_timestamps");
+#if 0
     enabledExtensions.emplace_back("VK_KHR_portability_subset");
+#endif
 
     constexpr float queuePriority = 0.0f;
     vk::DeviceQueueCreateInfo deviceQueueCreateInfo({}, queueFamilyIndex, 1, &queuePriority);

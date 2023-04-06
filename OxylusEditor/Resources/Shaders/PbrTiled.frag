@@ -32,8 +32,6 @@ layout(binding = 0) uniform UBO {
 u_Ubo;
 
 layout(binding = 1) uniform UBOParams {
-  float exposure;
-  float gamma;
   int numLights;
   int debugMode;
   float lodBias;

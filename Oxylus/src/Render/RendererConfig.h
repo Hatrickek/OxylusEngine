@@ -39,6 +39,8 @@ namespace Oxylus {
 
     struct SSR {
       bool Enabled = true;
+      int Samples = 30;
+      float MaxDist = 50.0f;
     } SSRConfig;
 
     struct DirectShadows {

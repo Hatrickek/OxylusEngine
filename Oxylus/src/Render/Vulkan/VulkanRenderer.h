@@ -74,16 +74,16 @@ namespace Oxylus {
         glm::mat4 projection;
         glm::mat4 view;
         glm::vec3 camPos;
-      } UboVS;
+      } UBO_VS;
 
-      struct UBOParams {
-        int numLights;
-        int debugMode;
+      struct PBRPassParams {
+        int numLights = 0;
+        int debugMode = 0;
         float lodBias = 1.0f;
         glm::ivec2 numThreads;
         glm::ivec2 screenDimensions;
         glm::ivec2 numThreadGroups;
-      } UboParams;
+      } UBO_PbrPassParams;
 
       struct UBOComposite {
         int Tonemapper = RendererConfig::TONEMAP_ACES;                  // 0- Aces 1- Uncharted 2-Filmic 3- Reinhard
@@ -95,27 +95,33 @@ namespace Oxylus {
         glm::vec2 _pad{};
         glm::vec4 VignetteColor = glm::vec4(0.0f, 0.0f, 0.0f, 0.25f);    // rgb: color, a: intensity
         glm::vec4 VignetteOffset = glm::vec4(0.0f, 0.0f, 0.0f, 1.0f);    // xy: offset, z: useMask, w: enable effect
-      } UBOCompositeParameters;
+      } UBO_CompositeParams;
 
       struct SSAOParamsUB {
         glm::vec4 ssaoSamples[64] = {};
         float radius = 0.2f;
-      } SSAOParams;
+      } UBO_SSAOParams;
 
       struct SSAOBlurParamsUB {
         glm::vec4 texelOffset = {};
         int texelRadius = 2;
-      } SSAOBlurParams;
+      } UBO_SSAOBlur;
 
       struct BloomUB {
         glm::vec4 Params; // x: threshold, y: clamp, z: radius, w: unused
         glm::ivec2 Stage;  // x: stage, y: lod
-      } BloomUBO;
+      } UBO_Bloom;
+
+      struct SSR_UBO {
+        int Samples = 30;             
+        int BinarySearchSamples = 8; 
+        float MaxDist = 50.0f;           
+      } UBO_SSR;
 
       struct DirectShadowUB {
         glm::mat4 cascadeViewProjMat[SHADOW_MAP_CASCADE_COUNT]{};
         float cascadeSplits[4]{};
-      } DirectShadowUBO;
+      } UBO_DirectShadow;
 
       VulkanBuffer SkyboxBuffer;
       VulkanBuffer ParametersBuffer;
@@ -128,6 +134,7 @@ namespace Oxylus {
       VulkanBuffer CompositeParametersBuffer;
       VulkanBuffer DirectShadowBuffer;
       VulkanBuffer BloomBuffer;
+      VulkanBuffer SSRBuffer;
 
       vk::DescriptorSetLayout ImageDescriptorSetLayout;
 

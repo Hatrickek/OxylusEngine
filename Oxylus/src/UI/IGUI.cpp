@@ -275,7 +275,7 @@ namespace Oxylus {
   }
 
   std::filesystem::path IGUI::GetPathFromImGuiPayload(const ImGuiPayload* payload) {
-    return std::filesystem::path(static_cast<const char*>(payload->Data));
+    return std::string(static_cast<const char*>(payload->Data));
   }
 
   void IGUI::PushID() {

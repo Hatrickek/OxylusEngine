@@ -33,7 +33,7 @@ void main() {
 
   float depth = texture(in_Depth, uv).r;
   if (depth == 1.0) {
-    imageStore(ImgResult, imgCoord, vec4(1.0));
+    imageStore(ImgResult, imgCoord, vec4(0.0));
     return;
   }
   rngSeed = imgCoord.x * 1973 + imgCoord.y * 9277;

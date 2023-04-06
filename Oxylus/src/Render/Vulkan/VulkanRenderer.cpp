@@ -183,40 +183,43 @@ namespace Oxylus {
 
   void VulkanRenderer::UpdateUniformBuffers() {
     ZoneScoped;
-    s_RendererData.UboVS.projection = s_RendererContext.CurrentCamera->GetProjectionMatrixFlipped();
-    s_RendererData.SkyboxBuffer.Copy(&s_RendererData.UboVS, sizeof s_RendererData.UboVS);
+    s_RendererData.UBO_VS.projection = s_RendererContext.CurrentCamera->GetProjectionMatrixFlipped();
+    s_RendererData.SkyboxBuffer.Copy(&s_RendererData.UBO_VS, sizeof s_RendererData.UBO_VS);
 
-    s_RendererData.UboVS.projection = s_RendererContext.CurrentCamera->GetProjectionMatrixFlipped();
-    s_RendererData.UboVS.view = s_RendererContext.CurrentCamera->GetViewMatrix();
-    s_RendererData.UboVS.camPos = s_RendererContext.CurrentCamera->GetPosition();
-    s_RendererData.VSBuffer.Copy(&s_RendererData.UboVS, sizeof s_RendererData.UboVS);
+    s_RendererData.UBO_VS.projection = s_RendererContext.CurrentCamera->GetProjectionMatrixFlipped();
+    s_RendererData.UBO_VS.view = s_RendererContext.CurrentCamera->GetViewMatrix();
+    s_RendererData.UBO_VS.camPos = s_RendererContext.CurrentCamera->GetPosition();
+    s_RendererData.VSBuffer.Copy(&s_RendererData.UBO_VS, sizeof s_RendererData.UBO_VS);
 
-    s_RendererData.UboParams.numLights = 1;
-    s_RendererData.UboParams.numThreads = (glm::ivec2(Window::GetWidth(), Window::GetHeight()) + PIXELS_PER_TILE - 1) /
+    s_RendererData.UBO_PbrPassParams.numLights = 1;
+    s_RendererData.UBO_PbrPassParams.numThreads = (glm::ivec2(Window::GetWidth(), Window::GetHeight()) + PIXELS_PER_TILE - 1) /
                                           PIXELS_PER_TILE;
-    s_RendererData.UboParams.numThreadGroups = (s_RendererData.UboParams.numThreads + TILES_PER_THREADGROUP - 1) /
+    s_RendererData.UBO_PbrPassParams.numThreadGroups = (s_RendererData.UBO_PbrPassParams.numThreads + TILES_PER_THREADGROUP - 1) /
                                                TILES_PER_THREADGROUP;
-    s_RendererData.UboParams.screenDimensions = glm::ivec2(Window::GetWidth(), Window::GetHeight());
+    s_RendererData.UBO_PbrPassParams.screenDimensions = glm::ivec2(Window::GetWidth(), Window::GetHeight());
 
-    s_RendererData.ParametersBuffer.Copy(&s_RendererData.UboParams, sizeof s_RendererData.UboParams);
+    s_RendererData.ParametersBuffer.Copy(&s_RendererData.UBO_PbrPassParams, sizeof s_RendererData.UBO_PbrPassParams);
 
     UpdateLightingData();
 
     //TODO: Both not needed to be copied every frame.
-    //Currently only radius is copied.
-    s_RendererData.SSAOParams.radius = RendererConfig::Get()->SSAOConfig.Radius;
-    s_RendererData.SSAOBuffer.Copy(&s_RendererData.SSAOParams, sizeof s_RendererData.SSAOParams);
+    s_RendererData.UBO_SSAOParams.radius = RendererConfig::Get()->SSAOConfig.Radius;
+    s_RendererData.SSAOBuffer.Copy(&s_RendererData.UBO_SSAOParams, sizeof s_RendererData.UBO_SSAOParams);
+
+    s_RendererData.UBO_SSR.Samples = RendererConfig::Get()->SSRConfig.Samples;
+    s_RendererData.UBO_SSR.MaxDist = RendererConfig::Get()->SSRConfig.MaxDist;
+    s_RendererData.SSRBuffer.Copy(&s_RendererData.UBO_SSR, sizeof s_RendererData.UBO_SSR);
 
     //Composite buffer
-    s_RendererData.UBOCompositeParameters.Tonemapper = RendererConfig::Get()->ColorConfig.Tonemapper;
-    s_RendererData.UBOCompositeParameters.Exposure = RendererConfig::Get()->ColorConfig.Exposure;
-    s_RendererData.UBOCompositeParameters.Gamma = RendererConfig::Get()->ColorConfig.Gamma;
-    s_RendererData.UBOCompositeParameters.EnableSSAO = RendererConfig::Get()->SSAOConfig.Enabled;
-    s_RendererData.UBOCompositeParameters.EnableBloom = RendererConfig::Get()->BloomConfig.Enabled;
-    s_RendererData.UBOCompositeParameters.EnableSSR = RendererConfig::Get()->SSRConfig.Enabled;
-    s_RendererData.UBOCompositeParameters.VignetteColor.a = RendererConfig::Get()->VignetteConfig.Intensity;
-    s_RendererData.UBOCompositeParameters.VignetteOffset.w = RendererConfig::Get()->VignetteConfig.Enabled;
-    s_RendererData.CompositeParametersBuffer.Copy(&s_RendererData.UBOCompositeParameters, sizeof s_RendererData.UBOCompositeParameters);
+    s_RendererData.UBO_CompositeParams.Tonemapper = RendererConfig::Get()->ColorConfig.Tonemapper;
+    s_RendererData.UBO_CompositeParams.Exposure = RendererConfig::Get()->ColorConfig.Exposure;
+    s_RendererData.UBO_CompositeParams.Gamma = RendererConfig::Get()->ColorConfig.Gamma;
+    s_RendererData.UBO_CompositeParams.EnableSSAO = RendererConfig::Get()->SSAOConfig.Enabled;
+    s_RendererData.UBO_CompositeParams.EnableBloom = RendererConfig::Get()->BloomConfig.Enabled;
+    s_RendererData.UBO_CompositeParams.EnableSSR = RendererConfig::Get()->SSRConfig.Enabled;
+    s_RendererData.UBO_CompositeParams.VignetteColor.a = RendererConfig::Get()->VignetteConfig.Intensity;
+    s_RendererData.UBO_CompositeParams.VignetteOffset.w = RendererConfig::Get()->VignetteConfig.Enabled;
+    s_RendererData.CompositeParametersBuffer.Copy(&s_RendererData.UBO_CompositeParams, sizeof s_RendererData.UBO_CompositeParams);
   }
 
   void VulkanRenderer::GeneratePrefilter() {
@@ -479,6 +482,7 @@ namespace Oxylus {
           SetDescription{3, 0, 1, vDT::eCombinedImageSampler, vSS::eCompute},
           SetDescription{4, 0, 1, vDT::eCombinedImageSampler, vSS::eCompute},
           SetDescription{5, 0, 1, vDT::eUniformBuffer, vSS::eCompute, nullptr, &s_RendererData.VSBuffer.GetDescriptor()},
+          SetDescription{6, 0, 1, vDT::eUniformBuffer, vSS::eCompute, nullptr, &s_RendererData.SSRBuffer.GetDescriptor()},
         }
       };
       ssrDesc.Shader = CreateRef<VulkanShader>(ShaderCI{
@@ -965,9 +969,9 @@ namespace Oxylus {
             continue;
 
           glm::mat4 transform = e.GetWorldTransform();
-          UpdateCascades(transform, s_RendererContext.CurrentCamera, s_RendererData.DirectShadowUBO);
-          s_RendererData.DirectShadowBuffer.Copy(&s_RendererData.DirectShadowUBO,
-            sizeof s_RendererData.DirectShadowUBO);
+          UpdateCascades(transform, s_RendererContext.CurrentCamera, s_RendererData.UBO_DirectShadow);
+          s_RendererData.DirectShadowBuffer.Copy(&s_RendererData.UBO_DirectShadow,
+            sizeof s_RendererData.UBO_DirectShadow);
 
           for (const auto& mesh : s_MeshDrawList) {
             if (mesh.MeshGeometry.Nodes.empty())
@@ -1094,7 +1098,7 @@ namespace Oxylus {
             vk::ShaderStageFlagBits::eVertex,
             0,
             sizeof(glm::mat4) * 2,
-            &s_RendererData.UboVS);
+            &s_RendererData.UBO_VS);
           //TODO: Add texturing with batching combined.
           //pipeline.BindDescriptorSets(commandBuffer, drawcmd.DescriptorSet.Get());
           s_QuadVertexBuffer.Copy(s_QuadVertexDataBuffer.data(), s_QuadVertexDataBuffer.size());
@@ -1258,7 +1262,7 @@ namespace Oxylus {
         //TracyVkZone(TracyProfiler::GetContext(), commandBuffer.Get(), "Frustum Pass")
         s_Pipelines.FrustumGridPipeline.BindPipeline(commandBuffer.Get());
         s_Pipelines.FrustumGridPipeline.BindDescriptorSets(s_RendererContext.FrustumCommandBuffer.Get(), {s_ComputeDescriptorSet.Get()});
-        commandBuffer.Dispatch(s_RendererData.UboParams.numThreadGroups.x, s_RendererData.UboParams.numThreadGroups.y, 1);
+        commandBuffer.Dispatch(s_RendererData.UBO_PbrPassParams.numThreadGroups.x, s_RendererData.UBO_PbrPassParams.numThreadGroups.y, 1);
       },
       {},
       &VulkanContext::VulkanQueue.GraphicsQueue);
@@ -1307,8 +1311,8 @@ namespace Oxylus {
           nullptr);
         s_Pipelines.LightListPipeline.BindPipeline(commandBuffer.Get());
         s_Pipelines.LightListPipeline.BindDescriptorSets(commandBuffer.Get(), {s_ComputeDescriptorSet.Get()});
-        commandBuffer.Dispatch(s_RendererData.UboParams.numThreadGroups.x,
-          s_RendererData.UboParams.numThreadGroups.y,
+        commandBuffer.Dispatch(s_RendererData.UBO_PbrPassParams.numThreadGroups.x,
+          s_RendererData.UBO_PbrPassParams.numThreadGroups.y,
           1);
         commandBuffer.Get().pipelineBarrier(vk::PipelineStageFlagBits::eFragmentShader,
           vk::PipelineStageFlagBits::eComputeShader,
@@ -1419,20 +1423,20 @@ namespace Oxylus {
     s_RendererData.SkyboxBuffer.CreateBuffer(vk::BufferUsageFlagBits::eUniformBuffer,
                                              vk::MemoryPropertyFlagBits::eHostVisible |
                                              vk::MemoryPropertyFlagBits::eHostCoherent,
-                                             sizeof RendererData::UboVS,
-                                             &s_RendererData.UboVS).Map();
+                                             sizeof RendererData::UBO_VS,
+                                             &s_RendererData.UBO_VS).Map();
 
     s_RendererData.ParametersBuffer.CreateBuffer(vk::BufferUsageFlagBits::eUniformBuffer,
                                                  vk::MemoryPropertyFlagBits::eHostVisible |
                                                  vk::MemoryPropertyFlagBits::eHostCoherent,
-                                                 sizeof RendererData::UboParams,
-                                                 &s_RendererData.UboParams).Map();
+                                                 sizeof RendererData::UBO_PbrPassParams,
+                                                 &s_RendererData.UBO_PbrPassParams).Map();
 
     s_RendererData.VSBuffer.CreateBuffer(vk::BufferUsageFlagBits::eUniformBuffer,
                                               vk::MemoryPropertyFlagBits::eHostVisible |
                                               vk::MemoryPropertyFlagBits::eHostCoherent,
-                                              sizeof RendererData::UboVS,
-                                              &s_RendererData.UboVS).Map();
+                                              sizeof RendererData::UBO_VS,
+                                              &s_RendererData.UBO_VS).Map();
 
     s_RendererData.LightsBuffer.CreateBuffer(
       vk::BufferUsageFlagBits::eStorageBuffer | vk::BufferUsageFlagBits::eTransferDst,
@@ -1459,27 +1463,32 @@ namespace Oxylus {
                                             vk::MemoryPropertyFlagBits::eHostVisible |
                                             vk::MemoryPropertyFlagBits::eHostCoherent,
                                             sizeof(RendererData::BloomUB)).Map();
+
+    s_RendererData.SSRBuffer.CreateBuffer(vk::BufferUsageFlagBits::eUniformBuffer,
+                                            vk::MemoryPropertyFlagBits::eHostVisible |
+                                            vk::MemoryPropertyFlagBits::eHostCoherent,
+                                            sizeof(RendererData::SSRBuffer)).Map();
     
     s_RendererData.SSAOBuffer.CreateBuffer(vk::BufferUsageFlagBits::eUniformBuffer,
                                            vk::MemoryPropertyFlagBits::eHostVisible |
                                            vk::MemoryPropertyFlagBits::eHostCoherent,
-                                           sizeof RendererData::SSAOParams,
-                                           &s_RendererData.SSAOParams).Map();
+                                           sizeof RendererData::UBO_SSAOParams,
+                                           &s_RendererData.UBO_SSAOParams).Map();
 
     //PBR Composite buffer
     {
       s_RendererData.CompositeParametersBuffer.CreateBuffer(vk::BufferUsageFlagBits::eUniformBuffer,
         vk::MemoryPropertyFlagBits::eHostVisible,
-        sizeof RendererData::UBOCompositeParameters,
-        &s_RendererData.UBOCompositeParameters).Map();
+        sizeof RendererData::UBO_CompositeParams,
+        &s_RendererData.UBO_CompositeParams).Map();
     }
 
     //Direct shadow buffer
     {
       s_RendererData.DirectShadowBuffer.CreateBuffer(vk::BufferUsageFlagBits::eUniformBuffer,
         vk::MemoryPropertyFlagBits::eHostVisible,
-        sizeof RendererData::DirectShadowUBO,
-        &s_RendererData.DirectShadowUBO).Map();
+        sizeof RendererData::UBO_DirectShadow,
+        &s_RendererData.UBO_DirectShadow).Map();
     }
 
     //Create Triangle Buffers for rendering a single triangle.
@@ -1527,6 +1536,7 @@ namespace Oxylus {
     s_SkyboxCube.LoadFromFile("resources/objects/cube.gltf", Mesh::FlipY | Mesh::DontCreateMaterials);
 
     VulkanImageDescription CubeMapDesc;
+    //temp fail-safe until we have an actual atmosphere
     if (std::filesystem::exists("resources/hdrs/industrial_sky.ktx2"))
       CubeMapDesc.Path = ("resources/hdrs/industrial_sky.ktx2");
     else
