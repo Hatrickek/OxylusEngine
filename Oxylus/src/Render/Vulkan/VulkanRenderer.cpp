@@ -1527,7 +1527,10 @@ namespace Oxylus {
     s_SkyboxCube.LoadFromFile("resources/objects/cube.gltf", Mesh::FlipY | Mesh::DontCreateMaterials);
 
     VulkanImageDescription CubeMapDesc;
-    CubeMapDesc.Path = ("resources/hdrs/industrial_sky.ktx2");
+    if (std::filesystem::exists("resources/hdrs/industrial_sky.ktx2"))
+      CubeMapDesc.Path = ("resources/hdrs/industrial_sky.ktx2");
+    else
+      CubeMapDesc.Path = "resources/hdrs/belfast_sunset.ktx2";
     CubeMapDesc.Type = ImageType::TYPE_CUBE;
     s_Resources.CubeMap.Create(CubeMapDesc);
 

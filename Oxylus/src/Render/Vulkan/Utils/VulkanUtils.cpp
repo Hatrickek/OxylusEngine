@@ -219,6 +219,7 @@ namespace Oxylus {
     }
 
 //    enabledExtensions.emplace_back("VK_EXT_calibrated_timestamps");
+    enabledExtensions.emplace_back("VK_KHR_portability_subset");
 
     constexpr float queuePriority = 0.0f;
     vk::DeviceQueueCreateInfo deviceQueueCreateInfo({}, queueFamilyIndex, 1, &queuePriority);
