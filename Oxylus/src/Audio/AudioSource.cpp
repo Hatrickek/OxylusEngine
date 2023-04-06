@@ -17,7 +17,7 @@ namespace Oxylus {
                                                      nullptr,
                                                      m_Sound.get());
     if (result != MA_SUCCESS)
-      OX_CORE_ERROR("Failed to initialize sound: {}", filepath);
+      OX_CORE_ERROR("Failed to load sound: {}", filepath);
   }
 
   AudioSource::~AudioSource() {

@@ -42,9 +42,7 @@ namespace Oxylus {
     AudioSource(const AudioSource& other) = delete;
     AudioSource(AudioSource&& other) = delete;
 
-    const char* GetPath() const {
-      return m_Path.c_str();
-    }
+    const char* GetPath() const { return m_Path.c_str(); }
 
     void Play() const;
     void Pause() const;

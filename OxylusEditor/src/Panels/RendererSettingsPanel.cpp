@@ -56,6 +56,11 @@ namespace Oxylus {
       IGUI::Property<float>("Radius", RendererConfig::Get()->BloomConfig.Threshold, 0, 5);
       IGUI::EndProperties();
 
+      ImGui::Text("SSR");
+      IGUI::BeginProperties();
+      IGUI::Property("Enabled", RendererConfig::Get()->SSRConfig.Enabled);
+      IGUI::EndProperties();
+
       OnEnd();
     }
   }

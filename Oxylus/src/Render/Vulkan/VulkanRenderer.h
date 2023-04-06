@@ -38,11 +38,13 @@ namespace Oxylus {
       VulkanCommandBuffer TimelineCommandBuffer;
       VulkanCommandBuffer DirectShadowCommandBuffer;
       VulkanCommandBuffer PBRPassCommandBuffer;
-      VulkanCommandBuffer CompositeCommandBuffer;
+      VulkanCommandBuffer PostProcessCommandBuffer;
       VulkanCommandBuffer BloomPassCommandBuffer;
       VulkanCommandBuffer FrustumCommandBuffer;
       VulkanCommandBuffer DepthPassCommandBuffer;
       VulkanCommandBuffer SSAOCommandBuffer;
+      VulkanCommandBuffer SSRCommandBuffer;
+      VulkanCommandBuffer CompositeCommandBuffer;
 
       vk::CommandPool CommandPool;
 
@@ -90,7 +92,7 @@ namespace Oxylus {
         int EnableSSAO = 1;
         int EnableBloom = 1;
         int EnableSSR = 1;
-        glm::vec2 _pad;
+        glm::vec2 _pad{};
         glm::vec4 VignetteColor = glm::vec4(0.0f, 0.0f, 0.0f, 0.25f);    // rgb: color, a: intensity
         glm::vec4 VignetteOffset = glm::vec4(0.0f, 0.0f, 0.0f, 1.0f);    // xy: offset, z: useMask, w: enable effect
       } UBOCompositeParameters;
@@ -107,7 +109,7 @@ namespace Oxylus {
 
       struct BloomUB {
         glm::vec4 Params; // x: threshold, y: clamp, z: radius, w: unused
-        glm::vec2 Stage;  // x: stage, y: lod
+        glm::ivec2 Stage;  // x: stage, y: lod
       } BloomUBO;
 
       struct DirectShadowUB {
@@ -117,7 +119,7 @@ namespace Oxylus {
 
       VulkanBuffer SkyboxBuffer;
       VulkanBuffer ParametersBuffer;
-      VulkanBuffer ObjectsBuffer;
+      VulkanBuffer VSBuffer;
       VulkanBuffer LightsBuffer;
       VulkanBuffer FrustumBuffer;
       VulkanBuffer LighIndexBuffer;
@@ -143,7 +145,7 @@ namespace Oxylus {
     static struct Pipelines {
       VulkanPipeline SkyboxPipeline;
       VulkanPipeline PBRPipeline;
-      VulkanPipeline CompositePipeline;
+      VulkanPipeline PostProcessPipeline;
       VulkanPipeline DepthPrePassPipeline;
       VulkanPipeline SSAOPassPipeline;
       VulkanPipeline SSAOHBlurPassPipeline;
@@ -156,13 +158,17 @@ namespace Oxylus {
       VulkanPipeline GaussianBlurPipeline;
       VulkanPipeline UnlitPipeline;
       VulkanPipeline BloomPipeline;
+      VulkanPipeline SSRPipeline;
+      VulkanPipeline CompositePipeline;
     } s_Pipelines;
 
     static struct FrameBuffers {
       VulkanFramebuffer PBRPassFB;
-      VulkanFramebuffer CompositePassFB;
+      VulkanFramebuffer PostProcessPassFB;
       VulkanFramebuffer DepthNormalPassFB;
       VulkanImage SSAOPassImage;
+      VulkanImage SSRPassImage;
+      VulkanImage CompositePassImage;
       VulkanImage BloomPassImage;
       VulkanImage BloomUpsampleImage;
       VulkanImage BloomDownsampleImage;

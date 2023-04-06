@@ -11,15 +11,13 @@ layout(set = 0, binding = 0) restrict writeonly uniform image2D ImgResult[]; //0
 layout(set = 1, binding = 0) uniform sampler2D Samplers[]; //0: PBR Image, 1: Downscaled, 2: Upsampled 
 
 layout(push_constant) uniform uPC {
-  int UnitIndex;
-  int DownsamplerIndex;
-  int UpsamplerIndex;
+  int UnitIndex, DownsamplerIndex, UpsamplerIndex;
 }
 u_PC;
 
 layout(set = 2, binding = 0) uniform UBO {
   vec4 Params; // x: threshold, y: clamp, z: radius, w: unused
-  vec2 Stage; //x: Stage, y: Lod
+  ivec2 Stage; //x: Stage, y: Lod
 }
 u_Ubo;
 
