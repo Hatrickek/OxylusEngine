@@ -55,7 +55,7 @@ namespace Oxylus {
 
     bool HasEntity(UUID uuid) const;
 
-    Entity GetEntity(UUID uuid);
+    Entity GetEntityByUUID(UUID uuid);
 
     static Ref<Scene> Copy(const Ref<Scene>& other);
 

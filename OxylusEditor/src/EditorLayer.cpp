@@ -17,6 +17,7 @@
 #include "Panels/SceneHierarchyPanel.h"
 #include "Panels/ProjectPanel.h"
 #include "Panels/ShadersPanel.h"
+#include "Panels/StatisticsPanel.h"
 #include "Render/Window.h"
 #include "Render/Vulkan/VulkanRenderer.h"
 #include "Utils/EditorConfig.h"
@@ -45,7 +46,8 @@ namespace Oxylus {
     m_EditorPanels.emplace("RenderSettings", CreateScope<RendererSettingsPanel>());
     m_EditorPanels.emplace("Shaders", CreateScope<ShadersPanel>());
     m_EditorPanels.emplace("FramebufferViewer", CreateScope<FramebufferViewerPanel>());
-    m_EditorPanels.emplace("Project Panel", CreateScope<ProjectPanel>());
+    m_EditorPanels.emplace("ProjectPanel", CreateScope<ProjectPanel>());
+    m_EditorPanels.emplace("StatisticsPanel", CreateScope<StatisticsPanel>());
     m_ViewportPanels.emplace_back(CreateScope<ViewportPanel>())->Camera.SetPosition({-2, 2, 0});
 
     //Register panel events
@@ -204,6 +206,7 @@ namespace Oxylus {
           ImGui::MenuItem("Scene hierarchy", nullptr, &m_SceneHierarchyPanel.Visible);
           ImGui::MenuItem("Console window", nullptr, &m_ConsolePanel.Visible);
           ImGui::MenuItem("Performance Overlay", nullptr, &m_ViewportPanels[0]->PerformanceOverlayVisible);
+          ImGui::MenuItem("Statistics", nullptr, &m_EditorPanels["StatisticsPanel"]->Visible);
           ImGui::EndMenu();
         }
         if (ImGui::BeginMenu("Help")) {

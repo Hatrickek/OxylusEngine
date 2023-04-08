@@ -8,6 +8,18 @@
 
 #include <chrono>
 
+#define GPU_PROFILER_ENABLED 1
+#ifdef OX_DIST
+#undef GPU_PROFILER_ENABLED
+#define GPU_PROFILER_ENABLED 0
+#endif
+
+#if GPU_PROFILER_ENABLED
+#define OX_TRACE_GPU(cmdbuf, name) TracyVkZone(Oxylus::TracyProfiler::GetContext(), cmdbuf, name)
+#else
+#define OX_TRACE_GPU(cmdbuf, name)
+#endif
+
 namespace Oxylus {
   class TracyProfiler {
   public:

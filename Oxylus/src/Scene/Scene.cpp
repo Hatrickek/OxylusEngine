@@ -71,10 +71,10 @@ namespace Oxylus {
 
   void Scene::DestroyEntity(const Entity entity) {
     entity.Deparent();
-    const auto& children = entity.GetComponent<RelationshipComponent>().Children;
+    const auto children = entity.GetComponent<RelationshipComponent>().Children;
 
-    for (const auto& child : children) {
-      if (const Entity childEntity = GetEntity(child))
+    for (size_t i = 0; i < children.size(); i++) {
+      if (const Entity childEntity = GetEntityByUUID(children[i]))
         DestroyEntity(childEntity);
     }
 
@@ -150,7 +150,7 @@ namespace Oxylus {
     return m_EntityMap.contains(uuid);
   }
 
-  Entity Scene::GetEntity(UUID uuid) {
+  Entity Scene::GetEntityByUUID(UUID uuid) {
     ZoneScoped;
     const auto& it = m_EntityMap.find(uuid);
     if (it != m_EntityMap.end())
@@ -177,9 +177,9 @@ namespace Oxylus {
 
     for (const auto e : view) {
       Entity src = {e, other.get()};
-      Entity dst = newScene->GetEntity(view.get<IDComponent>(e).ID);
+      Entity dst = newScene->GetEntityByUUID(view.get<IDComponent>(e).ID);
       if (Entity srcParent = src.GetParent())
-        dst.SetParent(newScene->GetEntity(srcParent.GetUUID()));
+        dst.SetParent(newScene->GetEntityByUUID(srcParent.GetUUID()));
     }
 
     // Copy components (except IDComponent and TagComponent)

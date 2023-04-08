@@ -152,14 +152,14 @@ namespace Oxylus {
           }
         }
 
-        //TracyProfiler::Collect(commandBuffer->Get());
+        TracyProfiler::Collect(commandBuffer->Get());
 
         commandBuffer->End();
       }
       else {
         renderPass.Execute(*commandBuffer, 0);
 
-        //TracyProfiler::Collect(commandBuffer->Get());
+        TracyProfiler::Collect(commandBuffer->Get());
 
         commandBuffer->End();
       }

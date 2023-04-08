@@ -255,6 +255,9 @@ add_subdirectory(${KTX_DIR})
 target_link_libraries(${PROJECT_NAME} PUBLIC ktx)
 target_include_directories(${PROJECT_NAME} PUBLIC ${KTX_DIR}/include)
 set_target_properties(ktx PROPERTIES MSVC_RUNTIME_LIBRARY ${MSVC_RUNTIME_LIBRARY_STR})
+set_target_properties(toktx PROPERTIES MSVC_RUNTIME_LIBRARY ${MSVC_RUNTIME_LIBRARY_STR})
+set_target_properties(ktxsc PROPERTIES MSVC_RUNTIME_LIBRARY ${MSVC_RUNTIME_LIBRARY_STR})
+set_target_properties(ktx2check PROPERTIES MSVC_RUNTIME_LIBRARY ${MSVC_RUNTIME_LIBRARY_STR})
 
 # FMT
 FetchContent_Declare(fmt

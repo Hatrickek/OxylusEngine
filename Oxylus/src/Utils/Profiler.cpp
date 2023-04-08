@@ -4,15 +4,13 @@
 #include "Render/Vulkan/VulkanContext.h"
 
 namespace Oxylus {
-#ifndef OX_DIST
   TracyVkCtx TracyProfiler::s_VulkanContext;
-#endif
 
   void TracyProfiler::InitTracyForVulkan(VkPhysicalDevice physdev,
                                          VkDevice device,
                                          VkQueue queue,
                                          VkCommandBuffer cmdbuf) {
-#ifndef OX_DIST
+#if GPU_PROFILER_ENABLED
     const auto timedomains = (PFN_vkGetPhysicalDeviceCalibrateableTimeDomainsEXT)vkGetDeviceProcAddr(
             VulkanContext::Context.Device,
             "vkGetPhysicalDeviceCalibrateableTimeDomainsEXT");
@@ -25,14 +23,14 @@ namespace Oxylus {
   }
 
   void TracyProfiler::DestroyContext() {
-#ifndef OX_DIST
+#if GPU_PROFILER_ENABLED
     TracyVkDestroy(s_VulkanContext);
 #endif
   }
 
   void TracyProfiler::Collect(const vk::CommandBuffer& commandBuffer) {
-#if !defined(OX_DIST) 
-//    s_VulkanContext->Collect(commandBuffer);
+#if GPU_PROFILER_ENABLED
+    s_VulkanContext->Collect(commandBuffer);
 #endif
   }
 

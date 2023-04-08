@@ -83,12 +83,12 @@ namespace Oxylus {
         return {};
 
       const auto& rc = GetComponent<RelationshipComponent>();
-      return rc.Parent != 0 ? m_Scene->GetEntity(rc.Parent) : Entity{};
+      return rc.Parent != 0 ? m_Scene->GetEntityByUUID(rc.Parent) : Entity{};
     }
 
     Entity GetChild(uint32_t index = 0) const {
       const auto& rc = GetComponent<RelationshipComponent>();
-      return GetScene()->GetEntity(rc.Children[index]);
+      return GetScene()->GetEntityByUUID(rc.Children[index]);
     }
 
     std::vector<Entity> GetAllChildren() const {
@@ -96,7 +96,7 @@ namespace Oxylus {
 
       const std::vector<UUID> children = GetComponent<RelationshipComponent>().Children;
       for (const auto& child : children) {
-        Entity entity = GetScene()->GetEntity(child);
+        Entity entity = GetScene()->GetEntityByUUID(child);
         entities.push_back(entity);
         GetAllChildren();
       }
@@ -107,7 +107,7 @@ namespace Oxylus {
     static void GetAllChildren(Entity parent, std::vector<Entity>& outEntities) {
       const std::vector<UUID> children = parent.GetComponent<RelationshipComponent>().Children;
       for (const auto& child : children) {
-        Entity entity = parent.GetScene()->GetEntity(child);
+        Entity entity = parent.GetScene()->GetEntityByUUID(child);
         outEntities.push_back(entity);
         GetAllChildren(entity, outEntities);
       }
@@ -146,7 +146,7 @@ namespace Oxylus {
     glm::mat4 GetWorldTransform() const {
       const auto& transform = GetTransform();
       const auto& rc = GetRelationship();
-      const Entity parent = m_Scene->GetEntity(rc.Parent);
+      const Entity parent = m_Scene->GetEntityByUUID(rc.Parent);
       const glm::mat4 parentTransform = parent ? parent.GetWorldTransform() : glm::mat4(1.0f);
       return parentTransform * glm::translate(glm::mat4(1.0f), transform.Translation) *
              glm::toMat4(glm::quat(transform.Rotation)) * glm::scale(glm::mat4(1.0f), transform.Scale);

@@ -908,7 +908,7 @@ namespace Oxylus {
       {&s_FrameBuffers.DepthNormalPassFB},
       [](VulkanCommandBuffer& commandBuffer, int32_t) {
         ZoneScopedN("DepthPrePass");
-        //TracyVkZone(TracyProfiler::GetContext(), commandBuffer.Get(), "Depth Pre Pass")
+        OX_TRACE_GPU(commandBuffer.Get(), "Depth Pre Pass")
         commandBuffer.SetViwportWindow().SetScissorWindow();
         for (const auto& mesh : s_MeshDrawList) {
           if (mesh.MeshGeometry.Nodes.empty())
@@ -956,7 +956,7 @@ namespace Oxylus {
       },
       [](VulkanCommandBuffer& commandBuffer, int32_t framebufferIndex) {
         ZoneScopedN("DirectShadowDepthPass");
-        //TracyVkZone(TracyProfiler::GetContext(), commandBuffer.Get(), "Direct Shadow Depth Pass")
+        OX_TRACE_GPU(commandBuffer.Get(), "Direct Shadow Depth Pass")
         commandBuffer.SetViewport(vk::Viewport{
           0, 0, (float)RendererConfig::Get()->DirectShadowsConfig.Size,
           (float)RendererConfig::Get()->DirectShadowsConfig.Size, 0, 1
@@ -1010,7 +1010,7 @@ namespace Oxylus {
       {},
       [](VulkanCommandBuffer& commandBuffer, int32_t) {
         ZoneScopedN("SSAOPass");
-        //TracyVkZone(TracyProfiler::GetContext(), commandBuffer.Get(), "SSAO Pass")
+        OX_TRACE_GPU(commandBuffer.Get(), "SSAO Pass")
         vk::ImageSubresourceRange subresourceRange;
         subresourceRange.aspectMask = s_FrameBuffers.DepthNormalPassFB.GetImage()[0].GetDesc().AspectFlag;
         subresourceRange.levelCount = 1;
@@ -1051,7 +1051,7 @@ namespace Oxylus {
       {&s_FrameBuffers.PBRPassFB},
       [](VulkanCommandBuffer& commandBuffer, int32_t) {
         ZoneScopedN("PBRPass");
-        //TracyVkZone(TracyProfiler::GetContext(), commandBuffer.Get(), "PBR Pass")
+        OX_TRACE_GPU(commandBuffer.Get(), "PBR Pass")
         commandBuffer.SetViwportWindow().SetScissorWindow();
 
         //Skybox pass
@@ -1117,7 +1117,7 @@ namespace Oxylus {
       {},
       [](VulkanCommandBuffer& commandBuffer, int32_t) {
         ZoneScopedN("BloomPass");
-        //TracyVkZone(TracyProfiler::GetContext(), commandBuffer.Get(), "Bloom Pass")
+        OX_TRACE_GPU(commandBuffer.Get(), "Bloom Pass")
         //const Vec4 Params = {
         //  RendererConfig::Get()->BloomConfig.Threshold, RendererConfig::Get()->BloomConfig.Clamp,
         //  {}, {}
@@ -1211,6 +1211,8 @@ namespace Oxylus {
       &s_Pipelines.SSRPipeline,
       {},
       [](VulkanCommandBuffer& commandBuffer, int32_t) {
+        ZoneScopedN("SSR Pass");
+        OX_TRACE_GPU(commandBuffer.Get(), "SSR Pass")
         s_Pipelines.SSRPipeline.BindPipeline(commandBuffer.Get());
         s_Pipelines.SSRPipeline.BindDescriptorSets(commandBuffer.Get(), {s_SSRDescriptorSet.Get()});
         commandBuffer.Dispatch((Window::GetWidth() + 8 - 1) / 8, (Window::GetHeight() + 8 - 1) / 8, 1);
@@ -1227,6 +1229,7 @@ namespace Oxylus {
       {},
       [](VulkanCommandBuffer& commandBuffer, int32_t) {
         ZoneScopedN("Composite Pass");
+        OX_TRACE_GPU(commandBuffer.Get(), "Composite Pass")
         s_Pipelines.CompositePipeline.BindPipeline(commandBuffer.Get());
         s_Pipelines.CompositePipeline.BindDescriptorSets(commandBuffer.Get(), {s_CompositeDescriptorSet.Get()});
         commandBuffer.Dispatch((Window::GetWidth() + 8 - 1) / 8, (Window::GetHeight() + 8 - 1) / 8, 1);
@@ -1242,7 +1245,7 @@ namespace Oxylus {
       {&s_FrameBuffers.PostProcessPassFB},
       [](VulkanCommandBuffer& commandBuffer, int32_t) {
         ZoneScopedN("PP Pass");
-        //TracyVkZone(TracyProfiler::GetContext(), commandBuffer.Get(), "Composite Pass")
+        OX_TRACE_GPU(commandBuffer.Get(), "PP Pass")
         commandBuffer.SetFlippedViwportWindow().SetScissorWindow();
         s_Pipelines.PostProcessPipeline.BindPipeline(commandBuffer.Get());
         s_Pipelines.PostProcessPipeline.BindDescriptorSets(commandBuffer.Get(), {s_PostProcessDescriptorSet.Get()});
@@ -1259,7 +1262,7 @@ namespace Oxylus {
       {},
       [](const VulkanCommandBuffer& commandBuffer, int32_t) {
         ZoneScopedN("FrustumPass");
-        //TracyVkZone(TracyProfiler::GetContext(), commandBuffer.Get(), "Frustum Pass")
+        OX_TRACE_GPU(commandBuffer.Get(), "Frustum Pass")
         s_Pipelines.FrustumGridPipeline.BindPipeline(commandBuffer.Get());
         s_Pipelines.FrustumGridPipeline.BindDescriptorSets(s_RendererContext.FrustumCommandBuffer.Get(), {s_ComputeDescriptorSet.Get()});
         commandBuffer.Dispatch(s_RendererData.UBO_PbrPassParams.numThreadGroups.x, s_RendererData.UBO_PbrPassParams.numThreadGroups.y, 1);
@@ -1275,7 +1278,7 @@ namespace Oxylus {
       {},
       [](const VulkanCommandBuffer& commandBuffer, int32_t) {
         ZoneScopedN("Light List Pass");
-        //TracyVkZone(TracyProfiler::GetContext(), commandBuffer.Get(), "Light List Pass")
+        OX_TRACE_GPU(commandBuffer.Get(), "Light List Pass")
         std::vector<vk::BufferMemoryBarrier> barriers1;
         std::vector<vk::BufferMemoryBarrier> barriers2;
         static bool initalizedBarries = false;
@@ -1577,11 +1580,13 @@ namespace Oxylus {
     InitRenderGraph();
 
     //Initalize tracy profiling
-    //VkPhysicalDevice physicalDevice = VulkanContext::Context.PhysicalDevice;
-    //TracyProfiler::InitTracyForVulkan(physicalDevice,
-    //  LogicalDevice,
-    //  VulkanContext::VulkanQueue.GraphicsQueue,
-    //  s_RendererContext.TimelineCommandBuffer.Get());
+#if GPU_PROFILER_ENABLED 
+    const VkPhysicalDevice physicalDevice = VulkanContext::Context.PhysicalDevice;
+    TracyProfiler::InitTracyForVulkan(physicalDevice,
+      LogicalDevice,
+      VulkanContext::VulkanQueue.GraphicsQueue,
+      s_RendererContext.TimelineCommandBuffer.Get());
+#endif
   }
 
   void VulkanRenderer::Shutdown() {

@@ -314,14 +314,14 @@ namespace Oxylus {
         oldNewIdMap.emplace(oldUUID, newUUID);
 
         if (!rootEntity)
-          rootEntity = scene.GetEntity(newUUID);
+          rootEntity = scene.GetEntityByUUID(newUUID);
       }
 
       rootEntity.AddComponentI<PrefabComponent>().ID = prefabID;
 
       // Fix parent/children UUIDs
       for (const auto& [_, newId] : oldNewIdMap) {
-        auto& relationshipComponent = scene.GetEntity(newId).GetRelationship();
+        auto& relationshipComponent = scene.GetEntityByUUID(newId).GetRelationship();
         UUID parent = relationshipComponent.Parent;
         if (parent)
           relationshipComponent.Parent = oldNewIdMap.at(parent);

@@ -47,7 +47,7 @@ namespace Oxylus {
     if (m_Filter.IsActive() && !m_Filter.PassFilter(tag.c_str())) {
       for (const auto& child : rc.Children) {
         const UUID childId = entity.GetRelationship().Children[child];
-        DrawEntityNode(m_Context->GetEntity(childId));
+        DrawEntityNode(m_Context->GetEntityByUUID(childId));
       }
       return {0, 0, 0, 0};
     }
@@ -225,7 +225,7 @@ namespace Oxylus {
         constexpr float lineThickness = 1.5f;
 
         for (const auto& childId : rc.Children) {
-          Entity child = m_Context->GetEntity(childId);
+          Entity child = m_Context->GetEntityByUUID(childId);
           const float HorizontalTreeLineSize = child.GetRelationship().Children.empty() ? 18.0f : 9.0f;
           //chosen arbitrarily
           const ImRect childRect = DrawEntityNode(child, depth + 1, forceExpandTree, isPartOfPrefab);

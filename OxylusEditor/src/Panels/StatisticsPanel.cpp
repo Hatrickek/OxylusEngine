@@ -1,0 +1,61 @@
+﻿#include "StatisticsPanel.h"
+
+#include <icons/IconsMaterialDesignIcons.h>
+#include <imgui.h>
+#include <fmt/format.h>
+
+#include "Core/Memory.h"
+
+namespace Oxylus {
+  StatisticsPanel::StatisticsPanel() : EditorPanel("Statistics", ICON_MDI_CLIPBOARD_TEXT, false) {}
+
+  void StatisticsPanel::OnImGuiRender() {
+    if (OnBegin()) {
+      if (ImGui::BeginTabBar("TabBar")) {
+        if (ImGui::BeginTabItem("Memory")) {
+          MemoryTab();
+          ImGui::EndTabItem();
+        }
+        if (ImGui::BeginTabItem("Renderer")) {
+          RendererTab();
+          ImGui::EndTabItem();
+        }
+
+        ImGui::EndTabBar();
+      }
+      OnEnd();
+    }
+  }
+
+  void StatisticsPanel::MemoryTab() const {
+    static bool showInMegabytes;
+    ImGui::Checkbox("Show in megabytes", &showInMegabytes);
+    ImGui::Separator();
+    const auto sizetype = showInMegabytes ? "mb" : "kb";
+    auto totalAllocated = showInMegabytes ? (float)Memory::TotalAllocated / 1024.0f / 1024.0f : (float)Memory::TotalAllocated / 1024.0f;
+    auto totalFreed = showInMegabytes ? (float)Memory::TotalFreed / 1024.0f / 1024.0f : (float)Memory::TotalFreed / 1024.0f;
+    auto currentUsage = showInMegabytes ? (float)Memory::CurrentUsage() / 1024.0f / 1024.0f : (float)Memory::CurrentUsage() / 1024.0f;
+    ImGui::Text(fmt::format("Total Allocated: {0} {1}", totalAllocated, sizetype).c_str());
+    ImGui::Text(fmt::format("Total Freed: {0} {1}", totalFreed, sizetype).c_str());
+    ImGui::Text(fmt::format("Current Usage: {0} {1}", currentUsage, sizetype).c_str());
+  }
+
+  void StatisticsPanel::RendererTab() {
+    float avg = 0.0;
+
+    const size_t size = m_FrameTimes.size();
+    if (size >= 50)
+      m_FrameTimes.erase(m_FrameTimes.begin());
+
+    m_FrameTimes.emplace_back(ImGui::GetIO().Framerate);
+    for (uint32_t i = 0; i < size; i++) {
+      const float frameTime = m_FrameTimes[i];
+      m_FpsValues[i] = frameTime;
+      avg += frameTime;
+    }
+    avg /= (float)size;
+    ImGui::Text("FPS: %lf", static_cast<double>(avg));
+    const double fps = (1.0 / static_cast<double>(avg)) * 1000.0;
+    ImGui::Text("Frame time (ms): %lf", fps);
+  }
+}

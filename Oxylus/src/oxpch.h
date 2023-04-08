@@ -26,6 +26,7 @@
 #include <vulkan/vulkan.hpp>
 #include <glm/glm.hpp>
 
+#include "Core/Memory.h"
 #include "Core/Base.h"
 #include "Utils/Log.h"
 #include "Core/Types.h"
