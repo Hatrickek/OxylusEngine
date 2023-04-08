@@ -48,35 +48,30 @@ namespace Oxylus {
   }
 
   void VulkanImage::CreateImage(const vk::Device& LogicalDevice, const bool hasPath) {
-    vk::ImageCreateInfo ImageCI;
-    ImageCI.imageType = vk::ImageType::e2D;
-    ImageCI.extent = vk::Extent3D{m_ImageDescription.Width, m_ImageDescription.Height, m_ImageDescription.Depth};
-    ImageCI.mipLevels = m_ImageDescription.MipLevels;
-    ImageCI.format = m_ImageDescription.Format;
-    ImageCI.arrayLayers = m_ImageDescription.Type == ImageType::TYPE_CUBE ? 6 : m_ImageDescription.ImageArrayLayerCount;
-    ImageCI.tiling = m_ImageDescription.ImageTiling;
-    ImageCI.initialLayout = vk::ImageLayout::eUndefined;
-    ImageCI.usage = m_ImageDescription.UsageFlags;
-    ImageCI.samples = m_ImageDescription.SampleCount;
-    ImageCI.sharingMode = m_ImageDescription.SharingMode;
-    ImageCI.flags = m_ImageDescription.Type == ImageType::TYPE_CUBE
-                      ? vk::ImageCreateFlagBits::eCubeCompatible
-                      : vk::ImageCreateFlags{};
+    vk::ImageCreateInfo imageCreateInfo;
+    imageCreateInfo.imageType = vk::ImageType::e2D;
+    imageCreateInfo.extent = vk::Extent3D{m_ImageDescription.Width, m_ImageDescription.Height, m_ImageDescription.Depth};
+    imageCreateInfo.mipLevels = m_ImageDescription.MipLevels;
+    imageCreateInfo.format = m_ImageDescription.Format;
+    imageCreateInfo.arrayLayers = m_ImageDescription.Type == ImageType::TYPE_CUBE ? 6 : m_ImageDescription.ImageArrayLayerCount;
+    imageCreateInfo.tiling = m_ImageDescription.ImageTiling;
+    imageCreateInfo.initialLayout = vk::ImageLayout::eUndefined;
+    imageCreateInfo.usage = m_ImageDescription.UsageFlags;
+    imageCreateInfo.samples = m_ImageDescription.SampleCount;
+    imageCreateInfo.sharingMode = m_ImageDescription.SharingMode;
+    imageCreateInfo.flags = m_ImageDescription.Type == ImageType::TYPE_CUBE
+                              ? vk::ImageCreateFlagBits::eCubeCompatible
+                              : vk::ImageCreateFlags{};
 
     if (m_ImageDescription.FlipOnLoad)
       stbi_set_flip_vertically_on_load(true);
 
     if (!hasPath && !m_ImageDescription.EmbeddedStbData && !m_ImageDescription.EmbeddedKtxData) {
-      VulkanUtils::CheckResult(LogicalDevice.createImage(&ImageCI, nullptr, &m_Image));
-      Memories.emplace_back(Memory{});
-      // Query memory requirements.
-      LogicalDevice.getImageMemoryRequirements(m_Image, &Memories[0].MemoryRequirements);
-      if (!FindMemoryTypeIndex(0)) {
-        OX_CORE_ERROR("Required memory type not found. Image not valid.");
-      }
-      // Allocate memory
-      Allocate(0);
-      BindImageMemory(0, GetImage());
+      const VkImageCreateInfo _imageci = (VkImageCreateInfo)imageCreateInfo;
+      VmaAllocationCreateInfo allocationCreateInfo{};
+      allocationCreateInfo.usage = VMA_MEMORY_USAGE_AUTO_PREFER_DEVICE;
+      VmaAllocationInfo allocInfo{};
+      vmaCreateImage(VulkanContext::GetAllocator(), &_imageci, &allocationCreateInfo, &m_Image, &m_Allocation, &allocInfo);
       if (m_ImageDescription.TransitionLayoutAtCreate) {
         vk::ImageSubresourceRange subresourceRange;
         subresourceRange.aspectMask = m_ImageDescription.AspectFlag;
@@ -84,6 +79,8 @@ namespace Oxylus {
         subresourceRange.layerCount = 1;
         SetImageLayout(m_ImageDescription.InitalImageLayout, m_ImageDescription.FinalImageLayout, subresourceRange);
       }
+      GPUMemory::TotalAllocated += allocInfo.size;
+      ImageSize = allocInfo.size;
     }
   }
 
@@ -249,22 +246,20 @@ namespace Oxylus {
     ProfilerTimer timer;
 
     const auto& path = m_ImageDescription.Path;
-    const auto& LogicalDevice = VulkanContext::Context.Device;
     int texWidth = 0, texHeight = 0, texChannels = 4;
-    vk::ImageCreateInfo ImageCI;
-    ImageCI.imageType = vk::ImageType::e2D;
-    ImageCI.extent = vk::Extent3D{m_ImageDescription.Width, m_ImageDescription.Height, m_ImageDescription.Depth};
-    ImageCI.mipLevels = m_ImageDescription.MipLevels;
-    ImageCI.format = m_ImageDescription.Format;
-    ImageCI.arrayLayers = m_ImageDescription.Type == ImageType::TYPE_CUBE ? 6 : 1;
-    ImageCI.tiling = m_ImageDescription.ImageTiling;
-    ImageCI.initialLayout = vk::ImageLayout::eUndefined;
-    ImageCI.usage = m_ImageDescription.UsageFlags;
-    ImageCI.samples = m_ImageDescription.SampleCount;
-    ImageCI.sharingMode = m_ImageDescription.SharingMode;
+    vk::ImageCreateInfo imageCreateInfo;
+    imageCreateInfo.imageType = vk::ImageType::e2D;
+    imageCreateInfo.extent = vk::Extent3D{m_ImageDescription.Width, m_ImageDescription.Height, m_ImageDescription.Depth};
+    imageCreateInfo.arrayLayers = m_ImageDescription.Type == ImageType::TYPE_CUBE ? 6 : 1;
+    imageCreateInfo.tiling = m_ImageDescription.ImageTiling;
+    imageCreateInfo.initialLayout = vk::ImageLayout::eUndefined;
+    imageCreateInfo.usage = m_ImageDescription.UsageFlags;
+    imageCreateInfo.samples = m_ImageDescription.SampleCount;
+    imageCreateInfo.sharingMode = m_ImageDescription.SharingMode;
 
-    if (m_ImageDescription.EmbeddedStbData)
+    if (m_ImageDescription.EmbeddedStbData) {
       m_ImageData = m_ImageDescription.EmbeddedStbData;
+    }
 
     else {
       if (m_ImageDescription.EmbeddedData) {
@@ -278,8 +273,7 @@ namespace Oxylus {
       else
         m_ImageData = stbi_load(path.c_str(), &texWidth, &texHeight, &texChannels, STBI_rgb_alpha);
       if (!m_ImageData) {
-        OX_CORE_ERROR("Failed to load texture file {}", path);
-        OX_DEBUGBREAK();
+        OX_CORE_BERROR("Failed to load texture file {}", path);
       }
     }
     if (m_ImageDescription.Width == 0)
@@ -287,56 +281,49 @@ namespace Oxylus {
     if (m_ImageDescription.Height == 0)
       m_ImageDescription.Height = texHeight;
 
-    ImageCI.mipLevels = 1;
-    ImageCI.extent.width = m_ImageDescription.Width;
-    ImageCI.extent.height = m_ImageDescription.Height;
-    ImageCI.format = m_ImageDescription.Format;
+    imageCreateInfo.mipLevels = 1;
+    imageCreateInfo.extent.width = m_ImageDescription.Width;
+    imageCreateInfo.extent.height = m_ImageDescription.Height;
+    imageCreateInfo.format = m_ImageDescription.Format;
     size_t imageSize = static_cast<size_t>(m_ImageDescription.Width) * m_ImageDescription.Height * 4;
 
     if (m_ImageDescription.Format == vk::Format::eR32G32B32A32Sfloat) //TODO: Hardcoded
       imageSize = m_ImageDescription.EmbeddedDataLength;
 
     const int sizeMultiplier = GetDesc().Type == ImageType::TYPE_CUBE ? 6 : 1;
-    vk::Buffer stagingBuffer;
-    Memories.clear();
-    Memories.emplace_back(Memory{}); //Staging memory
-    vk::BufferCreateInfo bufferCI;
-    bufferCI.usage = vk::BufferUsageFlagBits::eTransferSrc;
-    bufferCI.sharingMode = vk::SharingMode::eExclusive;
-    bufferCI.size = imageSize;
-    stagingBuffer = LogicalDevice.createBuffer(bufferCI).value;
-    LogicalDevice.getBufferMemoryRequirements(stagingBuffer, &Memories[0].MemoryRequirements);
-    Memories[0].memoryPropertyFlags = vk::MemoryPropertyFlagBits::eHostVisible |
-                                      vk::MemoryPropertyFlagBits::eHostCoherent;
-    FindMemoryTypeIndex(0);
-    Allocate(0);
-    BindBufferMemory(0, stagingBuffer, 0);
 
-    Map(0, 0, imageSize * sizeMultiplier);
+    VulkanBuffer stagingBuffer;
+    stagingBuffer.CreateBuffer(vk::BufferUsageFlagBits::eTransferSrc,
+      vk::MemoryPropertyFlagBits::eHostVisible |
+      vk::MemoryPropertyFlagBits::eHostCoherent,
+      imageSize,
+      m_ImageData, VMA_MEMORY_USAGE_AUTO_PREFER_HOST).Map();
+
     if (m_ImageData)
-      Copy(0, imageSize, m_ImageData);
-    Flush(0);
-    Unmap(0);
+      stagingBuffer.Copy(m_ImageData, imageSize);
+    stagingBuffer.Flush();
+    stagingBuffer.Unmap();
 
-    //if (imageData && !m_ImageDescription.EmbeddedData)
-    //	stbi_image_free(imageData);
+    if (!m_ImageDescription.Path.empty())
+      delete m_ImageData;
 
-    VulkanUtils::CheckResult(LogicalDevice.createImage(&ImageCI, nullptr, &m_Image));
-
-    Memories.emplace_back(Memory{});
-    LogicalDevice.getImageMemoryRequirements(m_Image, &Memories[1].MemoryRequirements);
-    FindMemoryTypeIndex(1);
-    Allocate(1);
-    BindImageMemory(1, m_Image, 0);
-
-    VulkanCommandBuffer copyCmd;
-    copyCmd.CreateBuffer();
+    const VkImageCreateInfo _imagecreateinfo = imageCreateInfo;
+    VmaAllocationCreateInfo allocationInfo{};
+    allocationInfo.usage = VMA_MEMORY_USAGE_AUTO_PREFER_DEVICE;
+    VmaAllocationInfo allocInfo{};
+    VulkanUtils::CheckResult(
+      vmaCreateImage(VulkanContext::GetAllocator(), &_imagecreateinfo, &allocationInfo, &m_Image, &m_Allocation, &allocInfo));
+    GPUMemory::TotalAllocated += allocInfo.size;
+    ImageSize = allocInfo.size;
 
     vk::ImageSubresourceRange subresourceRange = {};
     subresourceRange.aspectMask = vk::ImageAspectFlagBits::eColor;
     subresourceRange.baseMipLevel = 0;
     subresourceRange.levelCount = 1;
     subresourceRange.layerCount = sizeMultiplier;
+
+    VulkanCommandBuffer copyCmd;
+    copyCmd.CreateBuffer();
 
     vk::ImageMemoryBarrier imageMemoryBarrier{};
     imageMemoryBarrier.image = m_Image;
@@ -363,7 +350,7 @@ namespace Oxylus {
       nullptr,
       nullptr,
       imageMemoryBarrier);
-    copyCmd.Get().copyBufferToImage(stagingBuffer,
+    copyCmd.Get().copyBufferToImage(stagingBuffer.Get(),
       m_Image,
       vk::ImageLayout::eTransferDstOptimal,
       static_cast<uint32_t>(bufferCopyRegions.size()),
@@ -386,8 +373,7 @@ namespace Oxylus {
 
     m_ImageLayout = vk::ImageLayout::eShaderReadOnlyOptimal;
 
-    LogicalDevice.destroyBuffer(stagingBuffer);
-    FreeMemory(0);
+    stagingBuffer.Destroy();
 
     CreateSampler();
     CreateImageView();
@@ -503,9 +489,8 @@ namespace Oxylus {
       viewCreateInfo.viewType = vk::ImageViewType::eCube;
     else if (GetDesc().Type == ImageType::TYPE_2D)
       viewCreateInfo.viewType = vk::ImageViewType::e2D;
-    else
-      if (GetDesc().Type == ImageType::TYPE_2DARRAY)
-        viewCreateInfo.viewType = vk::ImageViewType::e2DArray;
+    else if (GetDesc().Type == ImageType::TYPE_2DARRAY)
+      viewCreateInfo.viewType = vk::ImageViewType::e2DArray;
 
     viewCreateInfo.format = GetDesc().Format;
     viewCreateInfo.components = {
@@ -652,12 +637,8 @@ namespace Oxylus {
     if (m_View) {
       LogicalDevice.destroyImageView(m_View, nullptr);
     }
-    if (m_Image) {
-      LogicalDevice.destroyImage(m_Image, nullptr);
-    }
-    for (int i = 0; i < static_cast<int>(Memories.size()); i++) {
-      FreeMemory(i);
-    }
+    vmaDestroyImage(VulkanContext::GetAllocator(), m_Image, m_Allocation);
+    GPUMemory::TotalFreed += ImageSize;
     if (m_Sampler) {
       LogicalDevice.destroySampler(m_Sampler);
     }

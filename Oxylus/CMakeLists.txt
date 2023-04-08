@@ -258,6 +258,9 @@ set_target_properties(ktx PROPERTIES MSVC_RUNTIME_LIBRARY ${MSVC_RUNTIME_LIBRARY
 set_target_properties(toktx PROPERTIES MSVC_RUNTIME_LIBRARY ${MSVC_RUNTIME_LIBRARY_STR})
 set_target_properties(ktxsc PROPERTIES MSVC_RUNTIME_LIBRARY ${MSVC_RUNTIME_LIBRARY_STR})
 set_target_properties(ktx2check PROPERTIES MSVC_RUNTIME_LIBRARY ${MSVC_RUNTIME_LIBRARY_STR})
+set_target_properties(ktxinfo PROPERTIES MSVC_RUNTIME_LIBRARY ${MSVC_RUNTIME_LIBRARY_STR})
+set_target_properties(ktx2ktx2 PROPERTIES MSVC_RUNTIME_LIBRARY ${MSVC_RUNTIME_LIBRARY_STR})
+set_target_properties(ktx_read PROPERTIES MSVC_RUNTIME_LIBRARY ${MSVC_RUNTIME_LIBRARY_STR})
 
 # FMT
 FetchContent_Declare(fmt
@@ -266,3 +269,7 @@ FetchContent_Declare(fmt
 FetchContent_MakeAvailable(fmt)
 target_link_libraries(${PROJECT_NAME} PUBLIC fmt)
 
+# VMA
+add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/vendor/VulkanMemoryAllocator)
+target_link_libraries(${PROJECT_NAME} PUBLIC VulkanMemoryAllocator)
+set_target_properties(VulkanMemoryAllocator PROPERTIES MSVC_RUNTIME_LIBRARY ${MSVC_RUNTIME_LIBRARY_STR})

@@ -193,9 +193,9 @@ namespace Oxylus {
 
     s_RendererData.UBO_PbrPassParams.numLights = 1;
     s_RendererData.UBO_PbrPassParams.numThreads = (glm::ivec2(Window::GetWidth(), Window::GetHeight()) + PIXELS_PER_TILE - 1) /
-                                          PIXELS_PER_TILE;
+                                                  PIXELS_PER_TILE;
     s_RendererData.UBO_PbrPassParams.numThreadGroups = (s_RendererData.UBO_PbrPassParams.numThreads + TILES_PER_THREADGROUP - 1) /
-                                               TILES_PER_THREADGROUP;
+                                                       TILES_PER_THREADGROUP;
     s_RendererData.UBO_PbrPassParams.screenDimensions = glm::ivec2(Window::GetWidth(), Window::GetHeight());
 
     s_RendererData.ParametersBuffer.Copy(&s_RendererData.UBO_PbrPassParams, sizeof s_RendererData.UBO_PbrPassParams);
@@ -258,7 +258,7 @@ namespace Oxylus {
     pipelineDescription.DepthSpec.BackFace.StencilFunc = vk::CompareOp::eNever;
     pipelineDescription.DepthSpec.MinDepthBound = 0;
     pipelineDescription.DepthSpec.MaxDepthBound = 0;
-    pipelineDescription.DepthSpec.DepthStenctilFormat = vk::Format::eD32Sfloat; 
+    pipelineDescription.DepthSpec.DepthStenctilFormat = vk::Format::eD32Sfloat;
     pipelineDescription.DynamicStates = {vk::DynamicState::eViewport, vk::DynamicState::eScissor};
     pipelineDescription.VertexInputState = VertexInputDescription(VertexLayout({
       VertexComponent::POSITION, VertexComponent::NORMAL, VertexComponent::UV
@@ -301,8 +301,8 @@ namespace Oxylus {
 
     pipelineDescription.SetDescriptions = pbrDescriptorSet;
     pipelineDescription.PushConstantRanges.emplace_back(vk::ShaderStageFlagBits::eFragment,
-                                                        sizeof(glm::mat4),
-                                                        sizeof Material::Parameters);
+      sizeof(glm::mat4),
+      sizeof Material::Parameters);
     pipelineDescription.Shader = CreateRef<VulkanShader>(ShaderCI{
       .VertexPath = "resources/shaders/PBRTiled.vert", .FragmentPath = "resources/shaders/PBRTiled.frag",
       .EntryPoint = "main", .Name = "PBR",
@@ -344,7 +344,7 @@ namespace Oxylus {
 
       s_Pipelines.UnlitPipeline.CreateGraphicsPipeline(unlitPipelineDesc);
     }
-    
+
     PipelineDescription depthpassdescription;
     depthpassdescription.DepthSpec.CompareOp = vk::CompareOp::eLess;
     depthpassdescription.Shader = CreateRef<VulkanShader>(ShaderCI{
@@ -816,7 +816,7 @@ namespace Oxylus {
       s_FrameBuffers.BloomPassImage.Create(bloompassimage);
       s_FrameBuffers.BloomDownsampleImage.Create(bloompassimage);
       s_FrameBuffers.BloomUpsampleImage.Create(bloompassimage);
-      auto updateBloomSet = []{
+      auto updateBloomSet = [] {
         /*s_BloomDescriptorSet.WriteDescriptorSets[0].pImageInfo = &s_FrameBuffers.BloomDownsampleImage.GetDescImageInfo();
         s_BloomDescriptorSet.WriteDescriptorSets[1].pImageInfo = &s_FrameBuffers.BloomUpsampleImage.GetDescImageInfo();
         s_BloomDescriptorSet.WriteDescriptorSets[2].pImageInfo = &s_FrameBuffers.PBRPassFB.GetImage()[0].GetDescImageInfo();
@@ -970,8 +970,7 @@ namespace Oxylus {
 
           glm::mat4 transform = e.GetWorldTransform();
           UpdateCascades(transform, s_RendererContext.CurrentCamera, s_RendererData.UBO_DirectShadow);
-          s_RendererData.DirectShadowBuffer.Copy(&s_RendererData.UBO_DirectShadow,
-            sizeof s_RendererData.UBO_DirectShadow);
+          s_RendererData.DirectShadowBuffer.Copy(&s_RendererData.UBO_DirectShadow, sizeof s_RendererData.UBO_DirectShadow);
 
           for (const auto& mesh : s_MeshDrawList) {
             if (mesh.MeshGeometry.Nodes.empty())
@@ -1060,7 +1059,7 @@ namespace Oxylus {
         commandBuffer.PushConstants(s_Pipelines.SkyboxPipeline.GetPipelineLayout(),
           vk::ShaderStageFlagBits::eVertex,
           0,
-          sizeof( glm::mat4),
+          sizeof(glm::mat4),
           &s_RendererContext.CurrentCamera->SkyboxView);
         s_SkyboxCube.Draw(commandBuffer.Get());
 
@@ -1424,22 +1423,22 @@ namespace Oxylus {
       LogicalDevice.createDescriptorSetLayout(&info, nullptr, &s_RendererData.ImageDescriptorSetLayout));
 
     s_RendererData.SkyboxBuffer.CreateBuffer(vk::BufferUsageFlagBits::eUniformBuffer,
-                                             vk::MemoryPropertyFlagBits::eHostVisible |
-                                             vk::MemoryPropertyFlagBits::eHostCoherent,
-                                             sizeof RendererData::UBO_VS,
-                                             &s_RendererData.UBO_VS).Map();
+      vk::MemoryPropertyFlagBits::eHostVisible |
+      vk::MemoryPropertyFlagBits::eHostCoherent,
+      sizeof RendererData::UBO_VS,
+      &s_RendererData.UBO_VS).Map();
 
     s_RendererData.ParametersBuffer.CreateBuffer(vk::BufferUsageFlagBits::eUniformBuffer,
-                                                 vk::MemoryPropertyFlagBits::eHostVisible |
-                                                 vk::MemoryPropertyFlagBits::eHostCoherent,
-                                                 sizeof RendererData::UBO_PbrPassParams,
-                                                 &s_RendererData.UBO_PbrPassParams).Map();
+      vk::MemoryPropertyFlagBits::eHostVisible |
+      vk::MemoryPropertyFlagBits::eHostCoherent,
+      sizeof RendererData::UBO_PbrPassParams,
+      &s_RendererData.UBO_PbrPassParams).Map();
 
     s_RendererData.VSBuffer.CreateBuffer(vk::BufferUsageFlagBits::eUniformBuffer,
-                                              vk::MemoryPropertyFlagBits::eHostVisible |
-                                              vk::MemoryPropertyFlagBits::eHostCoherent,
-                                              sizeof RendererData::UBO_VS,
-                                              &s_RendererData.UBO_VS).Map();
+      vk::MemoryPropertyFlagBits::eHostVisible |
+      vk::MemoryPropertyFlagBits::eHostCoherent,
+      sizeof RendererData::UBO_VS,
+      &s_RendererData.UBO_VS).Map();
 
     s_RendererData.LightsBuffer.CreateBuffer(
       vk::BufferUsageFlagBits::eStorageBuffer | vk::BufferUsageFlagBits::eTransferDst,
@@ -1453,30 +1452,30 @@ namespace Oxylus {
       &s_RendererData.Frustums).Map();
 
     s_RendererData.LighGridBuffer.CreateBuffer(vk::BufferUsageFlagBits::eStorageBuffer,
-                                               vk::MemoryPropertyFlagBits::eHostVisible |
-                                               vk::MemoryPropertyFlagBits::eHostCoherent,
-                                               sizeof(uint32_t) * MAX_NUM_FRUSTUMS * MAX_NUM_LIGHTS_PER_TILE).Map();
+      vk::MemoryPropertyFlagBits::eHostVisible |
+      vk::MemoryPropertyFlagBits::eHostCoherent,
+      sizeof(uint32_t) * MAX_NUM_FRUSTUMS * MAX_NUM_LIGHTS_PER_TILE).Map();
 
     s_RendererData.LighIndexBuffer.CreateBuffer(vk::BufferUsageFlagBits::eStorageBuffer,
-                                                vk::MemoryPropertyFlagBits::eHostVisible |
-                                                vk::MemoryPropertyFlagBits::eHostCoherent,
-                                                sizeof(uint32_t) * MAX_NUM_FRUSTUMS).Map();
+      vk::MemoryPropertyFlagBits::eHostVisible |
+      vk::MemoryPropertyFlagBits::eHostCoherent,
+      sizeof(uint32_t) * MAX_NUM_FRUSTUMS).Map();
 
     s_RendererData.BloomBuffer.CreateBuffer(vk::BufferUsageFlagBits::eUniformBuffer,
-                                            vk::MemoryPropertyFlagBits::eHostVisible |
-                                            vk::MemoryPropertyFlagBits::eHostCoherent,
-                                            sizeof(RendererData::BloomUB)).Map();
+      vk::MemoryPropertyFlagBits::eHostVisible |
+      vk::MemoryPropertyFlagBits::eHostCoherent,
+      sizeof(RendererData::BloomUB)).Map();
 
     s_RendererData.SSRBuffer.CreateBuffer(vk::BufferUsageFlagBits::eUniformBuffer,
-                                            vk::MemoryPropertyFlagBits::eHostVisible |
-                                            vk::MemoryPropertyFlagBits::eHostCoherent,
-                                            sizeof(RendererData::SSRBuffer)).Map();
-    
+      vk::MemoryPropertyFlagBits::eHostVisible |
+      vk::MemoryPropertyFlagBits::eHostCoherent,
+      sizeof(RendererData::SSRBuffer)).Map();
+
     s_RendererData.SSAOBuffer.CreateBuffer(vk::BufferUsageFlagBits::eUniformBuffer,
-                                           vk::MemoryPropertyFlagBits::eHostVisible |
-                                           vk::MemoryPropertyFlagBits::eHostCoherent,
-                                           sizeof RendererData::UBO_SSAOParams,
-                                           &s_RendererData.UBO_SSAOParams).Map();
+      vk::MemoryPropertyFlagBits::eHostVisible |
+      vk::MemoryPropertyFlagBits::eHostCoherent,
+      sizeof RendererData::UBO_SSAOParams,
+      &s_RendererData.UBO_SSAOParams).Map();
 
     //PBR Composite buffer
     {
@@ -1523,7 +1522,6 @@ namespace Oxylus {
       });
 
       vertexStaging.Destroy();
-      vertexStaging.FreeMemory(0);
     }
 
     InitQuadVertexBuffer();
@@ -1580,7 +1578,7 @@ namespace Oxylus {
     InitRenderGraph();
 
     //Initalize tracy profiling
-#if GPU_PROFILER_ENABLED 
+#if GPU_PROFILER_ENABLED
     const VkPhysicalDevice physicalDevice = VulkanContext::Context.PhysicalDevice;
     TracyProfiler::InitTracyForVulkan(physicalDevice,
       LogicalDevice,
@@ -1648,7 +1646,7 @@ namespace Oxylus {
   }
 
   void VulkanRenderer::SubmitMesh(Mesh& mesh, const glm::mat4& transform, std::vector<Ref<Material>>& materials, uint32_t submeshIndex) {
-    s_MeshDrawList.emplace_back(mesh, transform, materials,submeshIndex);
+    s_MeshDrawList.emplace_back(mesh, transform, materials, submeshIndex);
   }
 
   void VulkanRenderer::SubmitQuad(const glm::mat4& transform, const Ref<VulkanImage>& image, const glm::vec4& color) {
@@ -1737,7 +1735,7 @@ namespace Oxylus {
       commandBuffer.draw(3, 1, 0, 0);
     }
   }
-    
+
   void VulkanRenderer::DrawQuad(const vk::CommandBuffer& commandBuffer) {
     constexpr vk::DeviceSize offsets[1] = {0};
     commandBuffer.bindVertexBuffers(0, s_QuadVertexBuffer.Get(), offsets);

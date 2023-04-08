@@ -2,6 +2,7 @@
 #include <vulkan/vulkan.hpp>
 
 #include "Core/Application.h"
+#include <vk_mem_alloc.h>
 
 namespace Oxylus {
   class VulkanContext {
@@ -15,6 +16,7 @@ namespace Oxylus {
       vk::PhysicalDeviceProperties DeviceProperties;
       vk::PhysicalDeviceMemoryProperties DeviceMemoryProperties;
       vk::Device Device;
+      VmaAllocator Allocator;
     };
 
     struct VkQueue {
@@ -28,6 +30,11 @@ namespace Oxylus {
     };
 
     static void CreateContext(const AppSpec& spec);
+
+    static vk::Instance& GetInstance() { return Context.Instance; }
+    static VmaAllocator& GetAllocator() { return Context.Allocator; }
+    static vk::Device& GetDevice() { return Context.Device; }
+    static vk::PhysicalDevice& GetPhysicalDevice() { return Context.PhysicalDevice; }
 
     static VkContext Context;
     static VkQueue VulkanQueue;

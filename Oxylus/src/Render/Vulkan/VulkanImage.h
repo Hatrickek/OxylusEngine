@@ -1,7 +1,7 @@
 #pragma once
 #include <vulkan/vulkan.hpp>
 
-#include "Utils/VulkanAllocation.h"
+#include "vk_mem_alloc.h"
 #include "VulkanCommandBuffer.h"
 #include "Core/Base.h"
 #include "Core/Types.h"
@@ -47,11 +47,12 @@ namespace Oxylus {
     int32_t BaseArrayLayerIndex = 0;
   };
 
-  class VulkanImage : VulkanAllocation {
+  class VulkanImage {
   public:
     vk::DescriptorImageInfo DescriptorImageInfo;
     std::string Name = "Image";
     bool LoadCallback = false; //True when an image is loaded.
+    size_t ImageSize = 0; //Total loaded image size
 
     VulkanImage() = default;
 
@@ -67,7 +68,7 @@ namespace Oxylus {
 
     uint32_t GetWidth() const { return m_ImageDescription.Width; }
     uint32_t GetHeight() const { return m_ImageDescription.Height; }
-    const vk::Image& GetImage() const { return m_Image; }
+    vk::Image GetImage() const { return m_Image; }
     const vk::ImageView& GetImageView() const { return m_View; }
     const vk::Sampler& GetImageSampler() const { return m_Sampler; }
     const VulkanImageDescription& GetDesc() const { return m_ImageDescription; }
@@ -94,11 +95,12 @@ namespace Oxylus {
     vk::DescriptorSet CreateDescriptorSet() const;
 
     vk::ImageLayout m_ImageLayout = vk::ImageLayout::eUndefined;
-    vk::Image m_Image;
-    vk::ImageView m_View;
-    vk::Sampler m_Sampler;
-    vk::DescriptorSet m_DescSet;
-    VulkanImageDescription m_ImageDescription;
-    const uint8_t* m_ImageData;
+    VkImage m_Image{};
+    vk::ImageView m_View{};
+    vk::Sampler m_Sampler{};
+    vk::DescriptorSet m_DescSet{};
+    VulkanImageDescription m_ImageDescription{};
+    const uint8_t* m_ImageData = nullptr;
+    VmaAllocation m_Allocation{};
   };
 }

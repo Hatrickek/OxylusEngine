@@ -110,20 +110,20 @@ namespace Oxylus {
     vertexStaging.CreateBuffer(vk::BufferUsageFlagBits::eTransferSrc,
       vk::MemoryPropertyFlagBits::eHostVisible | vk::MemoryPropertyFlagBits::eHostCoherent,
       vBufferSize,
-      m_VertexBuffer.data());
+      m_VertexBuffer.data(), VMA_MEMORY_USAGE_AUTO_PREFER_HOST);
 
     VerticiesBuffer.CreateBuffer(vk::BufferUsageFlagBits::eVertexBuffer | vk::BufferUsageFlagBits::eTransferDst,
       vk::MemoryPropertyFlagBits::eDeviceLocal,
-      vBufferSize);
+      vBufferSize, nullptr, VMA_MEMORY_USAGE_AUTO_PREFER_DEVICE);
 
     indexStaging.CreateBuffer(vk::BufferUsageFlagBits::eTransferSrc,
       vk::MemoryPropertyFlagBits::eHostVisible | vk::MemoryPropertyFlagBits::eHostCoherent,
       iBufferSize,
-      m_IndexBuffer.data());
+      m_IndexBuffer.data(), VMA_MEMORY_USAGE_AUTO_PREFER_HOST);
 
     IndiciesBuffer.CreateBuffer(vk::BufferUsageFlagBits::eIndexBuffer | vk::BufferUsageFlagBits::eTransferDst,
       vk::MemoryPropertyFlagBits::eDeviceLocal,
-      iBufferSize);
+      iBufferSize, nullptr, VMA_MEMORY_USAGE_AUTO_PREFER_DEVICE);
 
     VulkanRenderer::SubmitOnce([&](const VulkanCommandBuffer copyCmd) {
       vk::BufferCopy copyRegion{};
@@ -137,10 +137,7 @@ namespace Oxylus {
 
     // Destroy staging resources
     vertexStaging.Destroy();
-    vertexStaging.FreeMemory(0);
-
     indexStaging.Destroy();
-    indexStaging.FreeMemory(0);
 
     m_Textures.clear();
 

@@ -85,7 +85,7 @@ namespace Oxylus {
 
     std::vector<vk::SubpassDependency> dependencies;
 
-    for (auto i = 0; i < m_PipelineDescription.SubpassDependencyCount; ++i) {
+    for (uint32_t i = 0; i < m_PipelineDescription.SubpassDependencyCount; ++i) {
       vk::SubpassDependency subpassDependency;
       subpassDependency.srcSubpass = m_PipelineDescription.SubpassDescription[i].SrcSubpass;
       subpassDependency.dstSubpass = m_PipelineDescription.SubpassDescription[i].DstSubpass;

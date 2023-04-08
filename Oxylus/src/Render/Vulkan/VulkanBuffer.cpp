@@ -1,50 +1,41 @@
 ﻿#include "src/oxpch.h"
+
+#define VMA_IMPLEMENTATION
+#include "vk_mem_alloc.h"
 #include "VulkanBuffer.h"
 
 #include "VulkanContext.h"
 
 namespace Oxylus {
+  VulkanBuffer::~VulkanBuffer() { }
+
   VulkanBuffer& VulkanBuffer::CreateBuffer(const vk::BufferUsageFlags usageFlags,
                                            const vk::MemoryPropertyFlags memoryPropertyFlags,
                                            const vk::DeviceSize size,
-                                           const void* data) {
-    const auto& LogicalDevice = VulkanContext::Context.Device;
-
-    const auto alignment = VulkanContext::Context.DeviceProperties.limits.minUniformBufferOffsetAlignment;
-    const auto extra = size % alignment;
-    constexpr auto count = 1;
-    const auto alignedSize = size + (alignment - extra);
-    const auto allocatedSize = count * alignedSize;
-
-    Memories.emplace_back(Memory{});
+                                           const void* data,
+                                           VmaMemoryUsage memoryUsageFlag) {
+    Size = size;
+    UsageFlags = usageFlags;
 
     vk::BufferCreateInfo bufferCI;
     bufferCI.usage = usageFlags;
-    bufferCI.size = allocatedSize;
-    //bufferCI.size = size;
-    m_Buffer = LogicalDevice.createBuffer(bufferCI).value;
+    bufferCI.size = size;
 
-    LogicalDevice.getBufferMemoryRequirements(m_Buffer, &Memories[0].MemoryRequirements);
-
-    Memories[0].memoryPropertyFlags = memoryPropertyFlags;
-    FindMemoryTypeIndex(0);
-    vk::MemoryAllocateFlagsInfoKHR allocFlagsInfo{};
-    if (usageFlags & vk::BufferUsageFlagBits::eShaderDeviceAddress) {
-      allocFlagsInfo.flags = vk::MemoryAllocateFlagBits::eDeviceAddress;
-    }
-    Allocate(0, &allocFlagsInfo);
-
-    Alignment = alignedSize;
-    Size = allocatedSize;
-    //Size = size;
-    UsageFlags = usageFlags;
+    VmaAllocationCreateInfo allocInfo = {};
+    allocInfo.usage = memoryUsageFlag;
+    allocInfo.preferredFlags = (VkMemoryPropertyFlags)memoryPropertyFlags;
+    allocInfo.flags = VMA_ALLOCATION_CREATE_DONT_BIND_BIT | VMA_ALLOCATION_CREATE_HOST_ACCESS_SEQUENTIAL_WRITE_BIT;
+    const VkBufferCreateInfo createinfo = bufferCI;
+    VmaAllocationInfo allocationInfo{};
+    vmaCreateBuffer(VulkanContext::GetAllocator(), &createinfo, &allocInfo, &m_Buffer, &m_Allocation, &allocationInfo);
+    GPUMemory::TotalAllocated += allocationInfo.size;
 
     if (data) {
-      Map(0, 0, Size);
-      Copy(0, Size, data);
+      Map();
+      Copy(data, size);
       if (!(memoryPropertyFlags & vk::MemoryPropertyFlagBits::eHostCoherent))
-        Flush(0);
-      Unmap(0);
+        Flush();
+      Unmap();
     }
 
     m_Descriptor.buffer = m_Buffer;
@@ -52,6 +43,8 @@ namespace Oxylus {
     m_Descriptor.range = VK_WHOLE_SIZE;
 
     Bind();
+
+    m_Freed = false;
 
     return *this;
   }
@@ -68,7 +61,7 @@ namespace Oxylus {
   }
 
   const VulkanBuffer& VulkanBuffer::Bind() const {
-    BindBufferMemory(0, m_Buffer);
+    vmaBindBufferMemory(VulkanContext::GetAllocator(), m_Allocation, m_Buffer);
     return *this;
   }
 
@@ -79,12 +72,26 @@ namespace Oxylus {
     return *this;
   }
 
-  void VulkanBuffer::Destroy() {
-    const auto& LogicalDevice = VulkanContext::Context.Device;
-    LogicalDevice.destroyBuffer(m_Buffer);
-    FreeMemory(0);
-    Memories.clear();
+  void VulkanBuffer::Map() {
+    vmaMapMemory(VulkanContext::GetAllocator(), m_Allocation, &m_Mapped);
   }
 
-  bool VulkanBuffer::operator==(std::nullptr_t null) const { return m_Buffer.operator==(null); }
+  void VulkanBuffer::Unmap() {
+    vmaUnmapMemory(VulkanContext::GetAllocator(), m_Allocation);
+    m_Mapped = nullptr;
+  }
+
+  void VulkanBuffer::Flush() const {
+    vmaFlushAllocation(VulkanContext::GetAllocator(), m_Allocation, 0, VK_WHOLE_SIZE);
+  }
+
+  void VulkanBuffer::Destroy() {
+    if (m_Freed)
+      return;
+    if (m_Mapped)
+      Unmap();
+    vmaDestroyBuffer(VulkanContext::GetAllocator(), m_Buffer, m_Allocation);
+    GPUMemory::TotalFreed += Size;
+    m_Freed = true;
+  }
 }

@@ -4,6 +4,9 @@
 namespace Oxylus {
   uint64_t Memory::TotalAllocated = 0;
   uint64_t Memory::TotalFreed = 0;
+
+  uint64_t GPUMemory::TotalAllocated = 0;
+  uint64_t GPUMemory::TotalFreed = 0;
 }
 
 void* operator new(const size_t _Size) {

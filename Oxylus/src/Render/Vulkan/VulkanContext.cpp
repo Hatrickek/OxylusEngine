@@ -48,7 +48,7 @@ namespace Oxylus {
       // graphics and present
       for (uint32_t i = 0; i < VulkanQueue.queueFamilyProperties.size(); i++) {
         if ((VulkanQueue.queueFamilyProperties[i].queueFlags & vk::QueueFlagBits::eGraphics) && Context.PhysicalDevice.
-            getSurfaceSupportKHR(i, Context.Surface).value) {
+                                                                                                        getSurfaceSupportKHR(i, Context.Surface).value) {
           VulkanQueue.graphicsQueueFamilyIndex = i;
           VulkanQueue.presentQueueFamilyIndex = i;
           break;
@@ -91,5 +91,13 @@ namespace Oxylus {
     VulkanQueue.GraphicsQueue = Context.Device.getQueue(VulkanQueue.graphicsQueueFamilyIndex, 0);
     //VulkanQueue.ComputeQueue = Context.Device.getQueue(VulkanQueue.graphicsQueueFamilyIndex, 1);
     VulkanQueue.PresentQueue = Context.Device.getQueue(VulkanQueue.presentQueueFamilyIndex, 0);
+
+    // VMA
+    VmaAllocatorCreateInfo allocatorInfo{};
+    allocatorInfo.device = GetDevice();
+    allocatorInfo.instance = GetInstance();
+    allocatorInfo.physicalDevice = GetPhysicalDevice();
+    allocatorInfo.vulkanApiVersion = VK_API_VERSION_1_3;
+    vmaCreateAllocator(&allocatorInfo, &Context.Allocator);
   }
 }

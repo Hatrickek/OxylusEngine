@@ -17,15 +17,7 @@ namespace Oxylus {
   }
 
   void Resources::InitEngineResources() {
-    VulkanImageDescription imageDescription;
-    imageDescription.Format = vk::Format::eR8G8B8A8Unorm;
-    imageDescription.Path = "resources/icons/CheckboardTexture.png";
-    imageDescription.Width = 128;
-    imageDescription.Height = 128;
-    imageDescription.CreateDescriptorSet = true;
-    s_EngineResources.CheckboardTexture.Create(imageDescription);
-
-    VulkanImageDescription emptyDescription;
+    VulkanImageDescription emptyDescription{};
     emptyDescription.Width = 1;
     emptyDescription.Height = 1;
     emptyDescription.CreateDescriptorSet = true;
