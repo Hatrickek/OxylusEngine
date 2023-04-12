@@ -7,7 +7,6 @@
 #include <glm/gtc/type_ptr.hpp>
 
 #include "Assets/AssetManager.h"
-#include "Core/resources.h"
 #include "Utils/Profiler.h"
 #include "Vulkan/VulkanContext.h"
 #include "Vulkan/VulkanRenderer.h"
@@ -23,8 +22,8 @@ namespace Oxylus {
   }
 
   bool IsImageKtx(const tinygltf::Image& image) {
-    if (image.uri.find_last_of(".") != std::string::npos) {
-      if (image.uri.substr(image.uri.find_last_of(".") + 1) == "ktx") { return true; }
+    if (image.uri.find_last_of('.') != std::string::npos) {
+      if (image.uri.substr(image.uri.find_last_of('.') + 1) == "ktx") { return true; }
     }
     return false;
   }
@@ -77,14 +76,14 @@ namespace Oxylus {
 
     const bool preMultiplyColor = fileLoadingFlags & FileLoadingFlags::PreMultiplyVertexColors;
     const bool flipY = fileLoadingFlags & FileLoadingFlags::FlipY;
-    for (Node* node : LinearNodes) {
+    for (auto& node : LinearNodes) {
       if (!node)
         continue;
-      const glm::mat4 localMatrix = node->GetMatrix();
+      const Mat4 localMatrix = node->GetMatrix();
       for (const Primitive* primitive : node->Primitives) {
         for (uint32_t i = 0; i < primitive->vertexCount; i++) {
           Vertex& vertex = m_VertexBuffer[primitive->firstVertex + i];
-          vertex.pos = glm::vec3(localMatrix * glm::vec4(vertex.pos, 1.0f));
+          vertex.pos = Vec3(localMatrix * glm::vec4(vertex.pos, 1.0f));
           vertex.normal = glm::normalize(glm::mat3(localMatrix) * vertex.normal);
           if (flipY) {
             vertex.pos.y *= -1.0f;
@@ -110,20 +109,26 @@ namespace Oxylus {
     vertexStaging.CreateBuffer(vk::BufferUsageFlagBits::eTransferSrc,
       vk::MemoryPropertyFlagBits::eHostVisible | vk::MemoryPropertyFlagBits::eHostCoherent,
       vBufferSize,
-      m_VertexBuffer.data(), VMA_MEMORY_USAGE_AUTO_PREFER_HOST);
+      m_VertexBuffer.data(),
+      VMA_MEMORY_USAGE_AUTO_PREFER_HOST);
 
     VerticiesBuffer.CreateBuffer(vk::BufferUsageFlagBits::eVertexBuffer | vk::BufferUsageFlagBits::eTransferDst,
       vk::MemoryPropertyFlagBits::eDeviceLocal,
-      vBufferSize, nullptr, VMA_MEMORY_USAGE_AUTO_PREFER_DEVICE);
+      vBufferSize,
+      nullptr,
+      VMA_MEMORY_USAGE_AUTO_PREFER_DEVICE);
 
     indexStaging.CreateBuffer(vk::BufferUsageFlagBits::eTransferSrc,
       vk::MemoryPropertyFlagBits::eHostVisible | vk::MemoryPropertyFlagBits::eHostCoherent,
       iBufferSize,
-      m_IndexBuffer.data(), VMA_MEMORY_USAGE_AUTO_PREFER_HOST);
+      m_IndexBuffer.data(),
+      VMA_MEMORY_USAGE_AUTO_PREFER_HOST);
 
     IndiciesBuffer.CreateBuffer(vk::BufferUsageFlagBits::eIndexBuffer | vk::BufferUsageFlagBits::eTransferDst,
       vk::MemoryPropertyFlagBits::eDeviceLocal,
-      iBufferSize, nullptr, VMA_MEMORY_USAGE_AUTO_PREFER_DEVICE);
+      iBufferSize,
+      nullptr,
+      VMA_MEMORY_USAGE_AUTO_PREFER_DEVICE);
 
     VulkanRenderer::SubmitOnce([&](const VulkanCommandBuffer copyCmd) {
       vk::BufferCopy copyRegion{};
@@ -139,6 +144,9 @@ namespace Oxylus {
     vertexStaging.Destroy();
     indexStaging.Destroy();
 
+    m_VertexBuffer.clear();
+    m_IndexBuffer.clear();
+
     m_Textures.clear();
 
     timer.Stop();
@@ -149,7 +157,7 @@ namespace Oxylus {
       timer.ElapsedMilliSeconds());
   }
 
-  void Mesh::SetScale(const glm::vec3& scale) {
+  void Mesh::SetScale(const Vec3& scale) {
     m_Scale = scale;
 
     //TODO:
@@ -166,8 +174,8 @@ namespace Oxylus {
     }
   }
 
-  void Mesh::UpdateMaterials() {
-    for (auto& material : m_Materials) {
+  void Mesh::UpdateMaterials() const {
+    for (const auto& material : m_Materials) {
       material->Update();
     }
   }
@@ -178,7 +186,6 @@ namespace Oxylus {
       auto& img = model.images[i];
       VulkanImageDescription desc;
       desc.CreateDescriptorSet = true;
-      //desc.FlipOnLoad = true;
       desc.Width = img.width;
       desc.Height = img.height;
       if (IsImageKtx(img) || !img.uri.empty()) {
@@ -208,6 +215,7 @@ namespace Oxylus {
       material.Create();
       if (!mat.name.empty())
         material.Name = mat.name;
+      material.Parameters.DoubleSided = mat.doubleSided;
       if (mat.values.contains("baseColorTexture")) {
         material.AlbedoTexture = m_Textures.at(model.textures[mat.values["baseColorTexture"].TextureIndex()].source);
         material.Parameters.UseAlbedo = true;
@@ -229,24 +237,18 @@ namespace Oxylus {
         material.Parameters.Specular = static_cast<float>(mat.values["specularFactor"].Factor());
       }
       if (mat.values.contains("baseColorFactor")) {
-        material.Parameters.Color.r = static_cast<float>(mat.values["baseColorFactor"].ColorFactor()[0]);
-        material.Parameters.Color.g = static_cast<float>(mat.values["baseColorFactor"].ColorFactor()[1]);
-        material.Parameters.Color.b = static_cast<float>(mat.values["baseColorFactor"].ColorFactor()[2]);
-        material.Parameters.Color.a = static_cast<float>(mat.values["baseColorFactor"].ColorFactor()[3]);
+        material.Parameters.Color = glm::make_vec4(mat.values["baseColorFactor"].ColorFactor().data());
       }
       if (mat.additionalValues.contains("normalTexture")) {
-        material.NormalTexture = m_Textures.at(
-          model.textures[mat.additionalValues["normalTexture"].TextureIndex()].source);
+        material.NormalTexture = m_Textures.at(model.textures[mat.additionalValues["normalTexture"].TextureIndex()].source);
         material.Parameters.UseNormal = true;
       }
-
-      //TODO: Emmisive Textures
       if (mat.additionalValues.contains("emissiveTexture")) {
-        //material.emissiveTexture = CreateRef<VulkanImage>(Textures.at(model.textures[mat.additionalValues["emissiveTexture"].TextureIndex()].source));
+        material.EmissiveTexture = m_Textures.at(model.textures[mat.additionalValues["emissiveTexture"].TextureIndex()].source);
+        material.Parameters.UseEmissive = true;
       }
       if (mat.additionalValues.contains("occlusionTexture")) {
-        material.AOTexture = m_Textures.at(
-          model.textures[mat.additionalValues["occlusionTexture"].TextureIndex()].source);
+        material.AOTexture = m_Textures.at(model.textures[mat.additionalValues["occlusionTexture"].TextureIndex()].source);
       }
       if (mat.additionalValues.contains("alphaMode")) {
         tinygltf::Parameter param = mat.additionalValues["alphaMode"];
@@ -254,12 +256,42 @@ namespace Oxylus {
           material.AlphaMode = Material::AlphaMode::Blend;
         }
         if (param.string_value == "MASK") {
+          material.Parameters.AlphaCutoff = 0.5f;
           material.AlphaMode = Material::AlphaMode::Mask;
         }
       }
       if (mat.additionalValues.contains("alphaCutoff")) {
         material.Parameters.AlphaCutoff = static_cast<float>(mat.additionalValues["alphaCutoff"].Factor());
       }
+      if (mat.extensions.contains("KHR_materials_pbrSpecularGlossiness")) {
+        auto ext = mat.extensions.find("KHR_materials_pbrSpecularGlossiness");
+        if (ext->second.Has("specularGlossinessTexture")) {
+          auto index = ext->second.Get("specularGlossinessTexture").Get("index");
+          material.SpecularTexture = m_Textures.at(model.textures[mat.additionalValues["specularGlossinessTexture"].TextureIndex()].source);
+          material.Parameters.UseSpecular = true;
+        }
+        if (ext->second.Has("specularFactor")) {
+          auto factor = ext->second.Get("specularFactor");
+          for (uint32_t i = 0; i < factor.ArrayLen(); i++) {
+            auto& val = factor.Get(i);
+            material.Parameters.Specular = val.IsNumber() ? (float)val.Get<double>() : (float)val.Get<int>();
+          }
+        }
+#if 0 //NOTE: Currently Not used.
+        if (ext->second.Has("diffuseTexture")) {
+          material.DiffuseTexture = m_Textures.at(model.textures[mat.additionalValues["diffuseTexture"].TextureIndex()].source);
+          material.Parameters.UseDiffuse = true; 
+        }
+        if (ext->second.Has("diffuseFactor")) {
+          auto factor = ext->second.Get("diffuseFactor");
+          for (uint32_t i = 0; i < factor.ArrayLen(); i++) {
+            auto val = factor.Get(i);
+            material.Parameters.DiffuseFactor[i] = val.IsNumber() ? (float)val.Get<double>() : (float)val.Get<int>();
+          }
+        }
+#endif
+      }
+
       m_Materials.push_back(CreateRef<Material>(material));
     }
   }
@@ -274,17 +306,20 @@ namespace Oxylus {
   }
 
   void Mesh::Destroy() {
-    for (const auto node : LinearNodes) {
+    for (const auto& node : LinearNodes) {
       for (const auto primitive : node->Primitives) {
         delete primitive;
       }
       delete node;
     }
+    LinearNodes.clear();
+    Nodes.clear();
     VerticiesBuffer.Destroy();
     IndiciesBuffer.Destroy();
+    m_Materials.clear();
   }
 
-  void Mesh::Primitive::SetDimensions(glm::vec3 min, glm::vec3 max) {
+  void Mesh::Primitive::SetDimensions(Vec3 min, Vec3 max) {
     dimensions.min = min;
     dimensions.max = max;
     dimensions.size = max - min;
@@ -292,13 +327,13 @@ namespace Oxylus {
     dimensions.radius = glm::distance(min, max) / 2.0f;
   }
 
-  glm::mat4 Mesh::Node::LocalMatrix() const {
-    return glm::translate(glm::mat4(1.0f), Translation) * glm::mat4(Rotation) * glm::scale(glm::mat4(1.0f), Scale) *
+  Mat4 Mesh::Node::LocalMatrix() const {
+    return glm::translate(Mat4(1.0f), Translation) * Mat4(Rotation) * glm::scale(Mat4(1.0f), Scale) *
            Matrix;
   }
 
-  glm::mat4 Mesh::Node::GetMatrix() const {
-    glm::mat4 m = LocalMatrix();
+  Mat4 Mesh::Node::GetMatrix() const {
+    Mat4 m = LocalMatrix();
     const Node* p = Parent;
     while (p) {
       m = p->LocalMatrix() * m;
@@ -319,27 +354,27 @@ namespace Oxylus {
     newNode->Parent = parent;
     newNode->Name = node.name;
     newNode->SkinIndex = node.skin;
-    newNode->Matrix = glm::mat4(1.0f);
-    newNode->Scale = glm::vec3(globalscale);
+    newNode->Matrix = Mat4(1.0f);
+    newNode->Scale = Vec3(globalscale);
 
     // Generate local node matrix
-    glm::vec3 translation = glm::vec3(0.0f);
+    Vec3 translation = Vec3(0.0f);
     if (node.translation.size() == 3) {
       translation = glm::make_vec3(node.translation.data());
       newNode->Translation = translation;
     }
     if (node.rotation.size() == 4) {
       glm::quat q = glm::make_quat(node.rotation.data());
-      newNode->Rotation = glm::mat4(q);
+      newNode->Rotation = Mat4(q);
     }
-    glm::vec3 scale = glm::vec3(globalscale);
+    Vec3 scale = Vec3(globalscale);
     if (node.scale.size() == 3) {
       scale = glm::make_vec3(node.scale.data());
       newNode->Scale = scale;
     }
     if (node.matrix.size() == 16) {
       newNode->Matrix = glm::make_mat4x4(node.matrix.data());
-      if (globalscale != 1.0f) { newNode->Matrix = glm::scale(newNode->Matrix, glm::vec3(globalscale)); }
+      if (globalscale != 1.0f) { newNode->Matrix = glm::scale(newNode->Matrix, Vec3(globalscale)); }
     }
 
     // Node with children
@@ -359,8 +394,8 @@ namespace Oxylus {
         uint32_t vertexStart = static_cast<uint32_t>(vertexBuffer.size());
         uint32_t indexCount = 0;
         uint32_t vertexCount = 0;
-        glm::vec3 posMin{};
-        glm::vec3 posMax{};
+        Vec3 posMin{};
+        Vec3 posMax{};
         bool hasSkin = false;
         // Vertices
         {
@@ -378,23 +413,20 @@ namespace Oxylus {
 
           const tinygltf::Accessor& posAccessor = model.accessors[primitive.attributes.find("POSITION")->second];
           const tinygltf::BufferView& posView = model.bufferViews[posAccessor.bufferView];
-          bufferPos = reinterpret_cast<const float*>(&model.buffers[posView.buffer].data[posAccessor.
-            byteOffset + posView.byteOffset]);
-          posMin = glm::vec3(posAccessor.minValues[0], posAccessor.minValues[1], posAccessor.minValues[2]);
-          posMax = glm::vec3(posAccessor.maxValues[0], posAccessor.maxValues[1], posAccessor.maxValues[2]);
+          bufferPos = reinterpret_cast<const float*>(&model.buffers[posView.buffer].data[posAccessor.byteOffset + posView.byteOffset]);
+          posMin = Vec3(posAccessor.minValues[0], posAccessor.minValues[1], posAccessor.minValues[2]);
+          posMax = Vec3(posAccessor.maxValues[0], posAccessor.maxValues[1], posAccessor.maxValues[2]);
 
           if (primitive.attributes.contains("NORMAL")) {
             const tinygltf::Accessor& normAccessor = model.accessors[primitive.attributes.find("NORMAL")->second];
             const tinygltf::BufferView& normView = model.bufferViews[normAccessor.bufferView];
-            bufferNormals = reinterpret_cast<const float*>(&model.buffers[normView.buffer].data[
-              normAccessor.byteOffset + normView.byteOffset]);
+            bufferNormals = reinterpret_cast<const float*>(&model.buffers[normView.buffer].data[normAccessor.byteOffset + normView.byteOffset]);
           }
 
           if (primitive.attributes.contains("TEXCOORD_0")) {
             const tinygltf::Accessor& uvAccessor = model.accessors[primitive.attributes.find("TEXCOORD_0")->second];
             const tinygltf::BufferView& uvView = model.bufferViews[uvAccessor.bufferView];
-            bufferTexCoords = reinterpret_cast<const float*>(&model.buffers[uvView.buffer].data[
-              uvAccessor.byteOffset + uvView.byteOffset]);
+            bufferTexCoords = reinterpret_cast<const float*>(&model.buffers[uvView.buffer].data[uvAccessor.byteOffset + uvView.byteOffset]);
           }
 
           if (primitive.attributes.contains("COLOR_0")) {
@@ -402,15 +434,13 @@ namespace Oxylus {
             const tinygltf::BufferView& colorView = model.bufferViews[colorAccessor.bufferView];
             // Color buffer are either of type vec3 or vec4
             numColorComponents = colorAccessor.type == TINYGLTF_PARAMETER_TYPE_FLOAT_VEC3 ? 3 : 4;
-            bufferColors = reinterpret_cast<const float*>(&model.buffers[colorView.buffer].data[
-              colorAccessor.byteOffset + colorView.byteOffset]);
+            bufferColors = reinterpret_cast<const float*>(&model.buffers[colorView.buffer].data[colorAccessor.byteOffset + colorView.byteOffset]);
           }
 
           if (primitive.attributes.contains("TANGENT")) {
             const tinygltf::Accessor& tangentAccessor = model.accessors[primitive.attributes.find("TANGENT")->second];
             const tinygltf::BufferView& tangentView = model.bufferViews[tangentAccessor.bufferView];
-            bufferTangents = reinterpret_cast<const float*>(&model.buffers[tangentView.buffer].data[
-              tangentAccessor.byteOffset + tangentView.byteOffset]);
+            bufferTangents = reinterpret_cast<const float*>(&model.buffers[tangentView.buffer].data[tangentAccessor.byteOffset + tangentView.byteOffset]);
           }
 
           // Skinning
@@ -418,15 +448,13 @@ namespace Oxylus {
           if (primitive.attributes.contains("JOINTS_0")) {
             const tinygltf::Accessor& jointAccessor = model.accessors[primitive.attributes.find("JOINTS_0")->second];
             const tinygltf::BufferView& jointView = model.bufferViews[jointAccessor.bufferView];
-            bufferJoints = reinterpret_cast<const uint16_t*>(&model.buffers[jointView.buffer].data[
-              jointAccessor.byteOffset + jointView.byteOffset]);
+            bufferJoints = reinterpret_cast<const uint16_t*>(&model.buffers[jointView.buffer].data[jointAccessor.byteOffset + jointView.byteOffset]);
           }
 
           if (primitive.attributes.contains("WEIGHTS_0")) {
             const tinygltf::Accessor& uvAccessor = model.accessors[primitive.attributes.find("WEIGHTS_0")->second];
             const tinygltf::BufferView& uvView = model.bufferViews[uvAccessor.bufferView];
-            bufferWeights = reinterpret_cast<const float*>(&model.buffers[uvView.buffer].data[
-              uvAccessor.byteOffset + uvView.byteOffset]);
+            bufferWeights = reinterpret_cast<const float*>(&model.buffers[uvView.buffer].data[uvAccessor.byteOffset + uvView.byteOffset]);
           }
 
           hasSkin = bufferJoints && bufferWeights;
@@ -437,8 +465,8 @@ namespace Oxylus {
             Vertex vert{};
             vert.pos = glm::vec4(glm::make_vec3(&bufferPos[v * 3]), 1.0f);
             vert.normal = glm::normalize(
-              glm::vec3(bufferNormals ? glm::make_vec3(&bufferNormals[v * 3]) : glm::vec3(0.0f)));
-            vert.uv = bufferTexCoords ? glm::make_vec2(&bufferTexCoords[v * 2]) : glm::vec3(0.0f);
+              Vec3(bufferNormals ? glm::make_vec3(&bufferNormals[v * 3]) : Vec3(0.0f)));
+            vert.uv = bufferTexCoords ? glm::make_vec2(&bufferTexCoords[v * 2]) : Vec3(0.0f);
             if (bufferColors) {
               switch (numColorComponents) {
                 case 3: vert.color = glm::vec4(glm::make_vec3(&bufferColors[v * 3]), 1.0f);

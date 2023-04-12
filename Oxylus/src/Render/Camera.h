@@ -1,5 +1,7 @@
 #pragma once
 
+#include "Core/Types.h"
+
 #include <glm/glm.hpp>
 #include <glm/gtc/matrix_transform.hpp>
 #include <vulkan/vulkan.hpp>
@@ -21,7 +23,7 @@ namespace Oxylus {
    */
   class Camera {
   public:
-    glm::mat4 SkyboxView;
+    Mat4 SkyboxView;
 
     bool ShouldMove = true;
 
@@ -31,11 +33,11 @@ namespace Oxylus {
     float NearClip = NEARCLIP;
     bool ConstrainPitch = true;
 
-    Camera(glm::vec3 position = glm::vec3(0.0f, 0.0f, 0.0f));
+    Camera(Vec3 position = Vec3(0.0f, 0.0f, 0.0f));
 
-    glm::mat4 GetProjectionMatrixFlipped() const;
-    glm::mat4 GetProjectionMatrix() const;
-    glm::mat4 GetViewMatrix() const;
+    Mat4 GetProjectionMatrixFlipped() const;
+    Mat4 GetProjectionMatrix() const;
+    Mat4 GetViewMatrix() const;
     void SetYaw(float value);
     float GetYaw() const;
     void SetPitch(float value);
@@ -43,26 +45,27 @@ namespace Oxylus {
     void SetNear(float newNear);
     void SetFar(float newFar);
     void Dolly(float z);
-    void SetPosition(glm::vec3 pos);
+    void SetPosition(Vec3 pos);
     void SetPerspective(float fov, float aspect, float znear, float zfar);
     void SetFov(float fov);
-    void Translate(const glm::vec3& delta);
+    void Translate(const Vec3& delta);
     void UpdateAspectRatio(float aspect);
     void UpdateAspectRatio(const vk::Extent2D& size);
-    glm::vec3 GetFront() const;
-    glm::vec3 GetRight() const;
-    const glm::vec3& GetPosition() const;
+    Vec3 GetFront() const;
+    Vec3 GetRight() const;
+    const Vec3& GetPosition() const;
     void Update();
-    void Update(const glm::vec3& pos, const glm::vec3& rotation);
+    void Update(const Vec3& pos, const Vec3& rotation);
     void UpdateViewMatrix();
+    static Mat4 GenerateViewMatrix(const Vec3& position, const Vec3& viewDir, const Vec3& up);
 
   private:
-    glm::mat4 m_Perspective;
-    glm::vec3 m_Position;
-    glm::vec3 m_Forward;
-    glm::vec3 m_Right;
-    glm::vec3 m_Up;
-    glm::mat4 m_ViewMatrix;
+    Mat4 m_Perspective;
+    Vec3 m_Position;
+    Vec3 m_Forward;
+    Vec3 m_Right;
+    Vec3 m_Up;
+    Mat4 m_ViewMatrix;
     float m_Yaw = 0;
     float m_Pitch = 0;
   };

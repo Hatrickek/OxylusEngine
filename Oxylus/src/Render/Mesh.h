@@ -103,7 +103,7 @@ namespace Oxylus {
     void LoadFromFile(const std::string& path, uint32_t fileLoadingFlags = None, float scale = 1);
     void SetScale(const glm::vec3& scale);
     void Draw(const vk::CommandBuffer& cmdBuffer) const;
-    void UpdateMaterials();
+    void UpdateMaterials() const;
     size_t GetNodeCount() const { return Nodes.size(); }
     const Ref<Material>& GetMaterial(uint32_t index) const;
     std::vector<Ref<Material>> GetMaterialsAsRef() const;
@@ -118,7 +118,6 @@ namespace Oxylus {
     std::vector<uint32_t> m_IndexBuffer;
     std::vector<Vertex> m_VertexBuffer;
     uint32_t VertexCount = 0;
-    std::vector<glm::vec4> m_DiffuseColors;
     glm::vec3 m_Scale{1.0f};
     glm::vec3 center{0.0f};
     glm::vec2 uvscale{1.0f};

@@ -34,8 +34,10 @@ namespace Oxylus {
     for (const auto& [image, extent, onresize] : m_Pool) {
       image->Destroy();
       VulkanImageDescription desc = image->GetDesc();
-      desc.Width = extent->width;
-      desc.Height = extent->height;
+      if (extent) {
+        desc.Width = extent->width;
+        desc.Height = extent->height;
+      }
       image->Create(desc);
       if (onresize)
         onresize();

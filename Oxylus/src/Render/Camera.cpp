@@ -137,4 +137,8 @@ namespace Oxylus {
 
     Aspect = (float)Window::GetWidth() / (float)Window::GetHeight();
   }
+
+  Mat4 Camera::GenerateViewMatrix(const Vec3& position, const Vec3& viewDir, const Vec3& up) {
+    return glm::lookAt(position, position + viewDir, up);
+  }
 }

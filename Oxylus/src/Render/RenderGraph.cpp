@@ -97,18 +97,14 @@ namespace Oxylus {
   }
 
   bool RenderGraph::Update(VulkanSwapchain& swapchain, const uint32_t* currentFrame) {
-    const auto& LogicalDevice = VulkanContext::Context.Device;
-    auto& SwapChain = swapchain;
+    const auto& LogicalDevice = VulkanContext::GetDevice();
 
     static bool isFirstPass = true;
 
-    VulkanUtils::CheckResult(LogicalDevice.waitForFences(1,
-      &SwapChain.InFlightFences[*currentFrame],
-      true,
-      UINT64_MAX));
-    VulkanUtils::CheckResult(LogicalDevice.resetFences(1, &SwapChain.InFlightFences[*currentFrame]));
+    VulkanUtils::CheckResult(LogicalDevice.waitForFences(1, &swapchain.InFlightFences[*currentFrame], true,UINT64_MAX));
+    VulkanUtils::CheckResult(LogicalDevice.resetFences(1, &swapchain.InFlightFences[*currentFrame]));
 
-    if (SwapChain.Resizing || !SwapChain.AcquireNextImage() && !isFirstPass) {
+    if (swapchain.Resizing || !swapchain.AcquireNextImage() && !isFirstPass) {
       VulkanRenderer::ResizeBuffers();
       return false;
     }
@@ -167,11 +163,7 @@ namespace Oxylus {
       //Submit
       vk::SubmitInfo submitInfo = {};
       submitInfo.commandBufferCount = 1;
-      std::vector<const vk::CommandBuffer*> commandbuffers;
-      commandbuffers.reserve(renderPass.CommandBuffers.size());
-      for (const auto& buffer : renderPass.CommandBuffers)
-        commandbuffers.emplace_back(&buffer->Get());
-      submitInfo.pCommandBuffers = *commandbuffers.data();
+      submitInfo.pCommandBuffers = &commandBuffer->Get();
       if (renderPass.m_HasDependency) {
         submitInfo.signalSemaphoreCount = 1;
         submitInfo.pSignalSemaphores = &renderPass.m_SignalSemaphore;

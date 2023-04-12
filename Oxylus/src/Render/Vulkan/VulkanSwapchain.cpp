@@ -357,9 +357,7 @@ namespace Oxylus {
   bool VulkanSwapchain::AcquireNextImage() {
     const auto& LogicalDevice = VulkanContext::Context.Device;
 
-    const auto result = LogicalDevice.acquireNextImageKHR(m_SwapChain,
-      UINT64_MAX,
-      ImageAcquiredSemaphores[CurrentFrame]);
+    const auto result = LogicalDevice.acquireNextImageKHR(m_SwapChain,UINT64_MAX, ImageAcquiredSemaphores[CurrentFrame]);
 
     if (VulkanUtils::IsOutOfDate(result.result) || VulkanUtils::IsSubOptimal(result.result)) {
       return false;

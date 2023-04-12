@@ -7,6 +7,8 @@
 #include "Render/Vulkan/VulkanShader.h"
 
 namespace Oxylus {
+#define BOOL int32_t //GLSL doesn't have one byte bools
+
   class Material {
   public:
     enum class AlphaMode {
@@ -16,18 +18,21 @@ namespace Oxylus {
     } AlphaMode = AlphaMode::Opaque;
 
     struct Parameters {
-      glm::vec4 Color = glm::vec4(1.0f);
+      Vec4 Color = Vec4(1.0f);
       float Roughness = 1.0f;
       float Metallic = 0.0f;
       float Specular = 0.1f;
       float Normal = 1.0f;
       float AO = 1.0f;
-      int UseAlbedo = 0;
-      int UseRoughness = 0;
-      int UseMetallic = 0;
-      int UseNormal = 0;
-      int UseAO = 0;
+      BOOL UseAlbedo = false;
+      BOOL UseRoughness = false;
+      BOOL UseMetallic = false;
+      BOOL UseNormal = false;
+      BOOL UseAO = false;
+      BOOL UseEmissive = false;
+      BOOL UseSpecular = false;
       float AlphaCutoff = 1;
+      BOOL DoubleSided = false;
     } Parameters;
 
     std::string Name = "Material";
@@ -35,12 +40,15 @@ namespace Oxylus {
 
     static VulkanDescriptorSet s_DescriptorSet;
     VulkanDescriptorSet MaterialDescriptorSet;
-    Ref<VulkanShader> Shader;
-    Ref<VulkanImage> AlbedoTexture;
-    Ref<VulkanImage> NormalTexture;
-    Ref<VulkanImage> RoughnessTexture;
-    Ref<VulkanImage> MetallicTexture;
-    Ref<VulkanImage> AOTexture;
+    Ref<VulkanShader> Shader = nullptr;
+    Ref<VulkanImage> AlbedoTexture = nullptr;
+    Ref<VulkanImage> NormalTexture = nullptr;
+    Ref<VulkanImage> RoughnessTexture = nullptr;
+    Ref<VulkanImage> MetallicTexture = nullptr;
+    Ref<VulkanImage> AOTexture = nullptr;
+    Ref<VulkanImage> EmissiveTexture = nullptr;
+    Ref<VulkanImage> SpecularTexture = nullptr;
+    Ref<VulkanImage> DiffuseTexture = nullptr;
 
     Material() = default;
     ~Material() = default;

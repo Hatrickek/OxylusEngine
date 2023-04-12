@@ -45,6 +45,7 @@ namespace Oxylus {
       VulkanCommandBuffer SSAOCommandBuffer;
       VulkanCommandBuffer SSRCommandBuffer;
       VulkanCommandBuffer CompositeCommandBuffer;
+      VulkanCommandBuffer AtmosphereCommandBuffer;
 
       vk::CommandPool CommandPool;
 
@@ -57,32 +58,32 @@ namespace Oxylus {
 
     static struct RendererData {
       struct Vertex {
-        glm::vec3 Position{};
-        glm::vec3 Normal{};
-        glm::vec2 UV{};
-        glm::vec4 Color{};
-        glm::vec4 Joint0{};
-        glm::vec4 Weight0{};
-        glm::vec4 Tangent{};
+        Vec3 Position{};
+        Vec3 Normal{};
+        Vec2 UV{};
+        Vec4 Color{};
+        Vec4 Joint0{};
+        Vec4 Weight0{};
+        Vec4 Tangent{};
       };
 
       struct Frustum {
-        glm::vec4 planes[4] = {glm::vec4(0)};
+        Vec4 planes[4] = {Vec4(0)};
       } Frustums[MAX_NUM_FRUSTUMS];
 
       struct UBOVS {
-        glm::mat4 projection;
-        glm::mat4 view;
-        glm::vec3 camPos;
+        Mat4 projection;
+        Mat4 view;
+        Vec3 camPos;
       } UBO_VS;
 
       struct PBRPassParams {
         int numLights = 0;
         int debugMode = 0;
         float lodBias = 1.0f;
-        glm::ivec2 numThreads;
-        glm::ivec2 screenDimensions;
-        glm::ivec2 numThreadGroups;
+        IVec2 numThreads;
+        IVec2 screenDimensions;
+        IVec2 numThreadGroups;
       } UBO_PbrPassParams;
 
       struct UBOComposite {
@@ -92,36 +93,45 @@ namespace Oxylus {
         int EnableSSAO = 1;
         int EnableBloom = 1;
         int EnableSSR = 1;
-        glm::vec2 _pad{};
-        glm::vec4 VignetteColor = glm::vec4(0.0f, 0.0f, 0.0f, 0.25f);    // rgb: color, a: intensity
-        glm::vec4 VignetteOffset = glm::vec4(0.0f, 0.0f, 0.0f, 1.0f);    // xy: offset, z: useMask, w: enable effect
+        Vec2 _pad{};
+        Vec4 VignetteColor = Vec4(0.0f, 0.0f, 0.0f, 0.25f);    // rgb: color, a: intensity
+        Vec4 VignetteOffset = Vec4(0.0f, 0.0f, 0.0f, 1.0f);    // xy: offset, z: useMask, w: enable effect
       } UBO_CompositeParams;
 
       struct SSAOParamsUB {
-        glm::vec4 ssaoSamples[64] = {};
+        Vec4 ssaoSamples[64] = {};
         float radius = 0.2f;
       } UBO_SSAOParams;
 
       struct SSAOBlurParamsUB {
-        glm::vec4 texelOffset = {};
+        Vec4 texelOffset = {};
         int texelRadius = 2;
       } UBO_SSAOBlur;
 
       struct BloomUB {
-        glm::vec4 Params; // x: threshold, y: clamp, z: radius, w: unused
-        glm::ivec2 Stage;  // x: stage, y: lod
+        Vec4 Params; // x: threshold, y: clamp, z: radius, w: unused
+        IVec2 Stage;  // x: stage, y: lod
       } UBO_Bloom;
 
       struct SSR_UBO {
-        int Samples = 30;             
-        int BinarySearchSamples = 8; 
-        float MaxDist = 50.0f;           
+        int Samples = 30;
+        int BinarySearchSamples = 8;
+        float MaxDist = 50.0f;
       } UBO_SSR;
 
       struct DirectShadowUB {
-        glm::mat4 cascadeViewProjMat[SHADOW_MAP_CASCADE_COUNT]{};
+        Mat4 cascadeViewProjMat[SHADOW_MAP_CASCADE_COUNT]{};
         float cascadeSplits[4]{};
       } UBO_DirectShadow;
+
+      struct AtmosphereUB {
+        Mat4 InvViews[6] = {};
+        Mat4 InvProjection{};
+        Vec4 LightPos{}; // w: Intensity
+        int ISteps = 40;
+        int JSteps = 8;
+        float Time = 0.15f; // Not used by shader.
+      } UBO_Atmosphere;
 
       VulkanBuffer SkyboxBuffer;
       VulkanBuffer ParametersBuffer;
@@ -135,10 +145,9 @@ namespace Oxylus {
       VulkanBuffer DirectShadowBuffer;
       VulkanBuffer BloomBuffer;
       VulkanBuffer SSRBuffer;
+      VulkanBuffer AtmosphereBuffer;
 
       vk::DescriptorSetLayout ImageDescriptorSetLayout;
-
-      VulkanImage SSAONoise;
     } s_RendererData;
 
     static struct RendererResources {
@@ -155,8 +164,6 @@ namespace Oxylus {
       VulkanPipeline PostProcessPipeline;
       VulkanPipeline DepthPrePassPipeline;
       VulkanPipeline SSAOPassPipeline;
-      VulkanPipeline SSAOHBlurPassPipeline;
-      VulkanPipeline SSAOVBlurPassPipeline;
       VulkanPipeline QuadPipeline;
       VulkanPipeline FrustumGridPipeline;
       VulkanPipeline LightListPipeline;
@@ -167,6 +174,7 @@ namespace Oxylus {
       VulkanPipeline BloomPipeline;
       VulkanPipeline SSRPipeline;
       VulkanPipeline CompositePipeline;
+      VulkanPipeline AtmospherePipeline;
     } s_Pipelines;
 
     static struct FrameBuffers {
@@ -179,6 +187,7 @@ namespace Oxylus {
       VulkanImage BloomPassImage;
       VulkanImage BloomUpsampleImage;
       VulkanImage BloomDownsampleImage;
+      VulkanImage AtmosphereImage;
       std::vector<VulkanFramebuffer> DirectionalCascadesFB;
     } s_FrameBuffers;
 
@@ -209,8 +218,8 @@ namespace Oxylus {
     //Drawing
     static void Draw();
     static void DrawFullscreenQuad(const vk::CommandBuffer& commandBuffer, bool bindVertex = false);
-    static void SubmitMesh(Mesh& mesh, const glm::mat4& transform, std::vector<Ref<Material>>& materials, uint32_t submeshIndex);
-    static void SubmitQuad(const glm::mat4& transform, const Ref<VulkanImage>& image, const glm::vec4& color);
+    static void SubmitMesh(Mesh& mesh, const Mat4& transform, std::vector<Ref<Material>>& materials, uint32_t submeshIndex);
+    static void SubmitQuad(const Mat4& transform, const Ref<VulkanImage>& image, const Vec4& color);
 
     static const VulkanImage& GetFinalImage();
 
@@ -226,11 +235,11 @@ namespace Oxylus {
     struct MeshData {
       Mesh& MeshGeometry;
       std::vector<Ref<Material>>& Materials;
-      glm::mat4 Transform;
+      Mat4 Transform;
       uint32_t SubmeshIndex = 0;
 
       MeshData(Mesh& mesh,
-               const glm::mat4& transform,
+               const Mat4& transform,
                std::vector<Ref<Material>>& materials,
                const uint32_t submeshIndex) : MeshGeometry(mesh), Materials(materials), Transform(transform),
                                               SubmeshIndex(submeshIndex) {}
@@ -249,36 +258,34 @@ namespace Oxylus {
 
     //Lighting
     struct LightingData {
-      glm::vec4 PositionAndIntensity;
-      glm::vec4 ColorAndRadius;
-      glm::vec4 Rotation;
+      Vec4 PositionAndIntensity;
+      Vec4 ColorAndRadius;
+      Vec4 Rotation;
     };
 
     static Entity s_Skylight;
     static std::vector<Entity> s_SceneLights;
     static std::vector<LightingData> s_PointLightsData;
 
-    static void UpdateCascades(const glm::mat4& Transform, Camera* camera, RendererData::DirectShadowUB& cascadesUbo);
+    static void UpdateCascades(const Mat4& Transform, Camera* camera, RendererData::DirectShadowUB& cascadesUbo);
     static void UpdateLightingData();
 
     //Particle
     static constexpr uint32_t MAX_PARTICLE_COUNT = 800;
 
     struct QuadData {
-      glm::mat4 Transform;
+      Mat4 Transform;
       const Ref<VulkanImage>& Image;
-      const glm::vec4 Color;
+      const Vec4 Color;
 
-      QuadData(const glm::mat4& transform, const Ref<VulkanImage>& image, const glm::vec4 color) : Transform(transform),
-        Image(image), Color(color) { }
+      QuadData(const Mat4& transform, const Ref<VulkanImage>& image, const Vec4 color) : Transform(transform),
+                                                                                                   Image(image), Color(color) { }
     };
 
     static std::vector<RendererData::Vertex> s_QuadVertexDataBuffer;
     static std::vector<QuadData> s_QuadDrawList;
 
     static void DrawQuad(const vk::CommandBuffer& commandBuffer);
-    static void InitQuadVertexBuffer();
-    static void FlushQuadVertexBuffer();
 
     //Config
     static RendererConfig s_RendererConfig;

@@ -25,6 +25,7 @@
 #include "Utils/ImGuiScoped.h"
 #include "Utils/Profiler.h"
 #include "Utils/UIUtils.h"
+#include <Panels/EditorDebugPanel.h>
 
 namespace Oxylus {
   EditorLayer* EditorLayer::s_Instance = nullptr;
@@ -48,6 +49,7 @@ namespace Oxylus {
     m_EditorPanels.emplace("FramebufferViewer", CreateScope<FramebufferViewerPanel>());
     m_EditorPanels.emplace("ProjectPanel", CreateScope<ProjectPanel>());
     m_EditorPanels.emplace("StatisticsPanel", CreateScope<StatisticsPanel>());
+    m_EditorPanels.emplace("EditorDebugPanel", CreateScope<EditorDebugPanel>());
     m_ViewportPanels.emplace_back(CreateScope<ViewportPanel>())->Camera.SetPosition({-2, 2, 0});
 
     //Register panel events
@@ -207,6 +209,7 @@ namespace Oxylus {
           ImGui::MenuItem("Console window", nullptr, &m_ConsolePanel.Visible);
           ImGui::MenuItem("Performance Overlay", nullptr, &m_ViewportPanels[0]->PerformanceOverlayVisible);
           ImGui::MenuItem("Statistics", nullptr, &m_EditorPanels["StatisticsPanel"]->Visible);
+          ImGui::MenuItem("Editor Debug", nullptr, &m_EditorPanels["EditorDebugPanel"]->Visible);
           ImGui::EndMenu();
         }
         if (ImGui::BeginMenu("Help")) {

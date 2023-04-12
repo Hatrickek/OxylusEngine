@@ -94,8 +94,9 @@ namespace Oxylus {
     ImGui::SameLine();
     if (ImGui::Button("Load")) {
       const auto& path = FileDialogs::OpenFile({{"Material file", "oxmat"}});
-      if (!path.empty())
+      if (!path.empty()) {
         MaterialSerializer(*material).Deserialize(path);
+      }
     }
     ImGui::SameLine();
     const float x = ImGui::GetContentRegionAvail().x;
@@ -281,7 +282,6 @@ namespace Oxylus {
       DrawAddComponent<LightComponent>(m_SelectedEntity, "Light");
       DrawAddComponent<ParticleSystemComponent>(m_SelectedEntity, "Particle System");
       DrawAddComponent<CameraComponent>(m_SelectedEntity, "Camera");
-      DrawAddComponent<NamedComponent>(m_SelectedEntity, "Named Component");
 
       ImGui::EndPopup();
     }
@@ -567,12 +567,6 @@ namespace Oxylus {
           component.System->SetFar(farClip);
         }
         IGUI::EndProperties();
-      });
-
-    DrawComponent<NamedComponent>(ICON_MDI_FILE "Named Component",
-      entity,
-      [](NamedComponent& component) {
-        ImGui::InputText("Component Name", &component.ComponentName);
       });
 
     DrawComponent<ParticleSystemComponent>(ICON_MDI_LAMP "Particle System Component",

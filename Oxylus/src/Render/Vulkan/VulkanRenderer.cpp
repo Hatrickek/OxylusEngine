@@ -39,6 +39,7 @@ namespace Oxylus {
   static VulkanDescriptorSet s_ShadowDepthDescriptorSet;
   static VulkanDescriptorSet s_BloomDescriptorSet;
   static VulkanDescriptorSet s_CompositeDescriptorSet;
+  static VulkanDescriptorSet s_AtmosphereDescriptorSet;
   static Mesh s_SkyboxCube;
   static VulkanBuffer s_TriangleVertexBuffer;
   static VulkanBuffer s_QuadVertexBuffer;
@@ -89,27 +90,27 @@ namespace Oxylus {
     for (uint32_t i = 0; i < SHADOW_MAP_CASCADE_COUNT; i++) {
       float splitDist = cascadeSplits[i];
 
-      glm::vec3 frustumCorners[8] = {
-        glm::vec3(-1.0f, 1.0f, 0.0f), glm::vec3(1.0f, 1.0f, 0.0f), glm::vec3(1.0f, -1.0f, 0.0f),
-        glm::vec3(-1.0f, -1.0f, 0.0f), glm::vec3(-1.0f, 1.0f, 1.0f), glm::vec3(1.0f, 1.0f, 1.0f),
-        glm::vec3(1.0f, -1.0f, 1.0f), glm::vec3(-1.0f, -1.0f, 1.0f),
+      Vec3 frustumCorners[8] = {
+        Vec3(-1.0f, 1.0f, 0.0f), Vec3(1.0f, 1.0f, 0.0f), Vec3(1.0f, -1.0f, 0.0f),
+        Vec3(-1.0f, -1.0f, 0.0f), Vec3(-1.0f, 1.0f, 1.0f), Vec3(1.0f, 1.0f, 1.0f),
+        Vec3(1.0f, -1.0f, 1.0f), Vec3(-1.0f, -1.0f, 1.0f),
       };
 
       // Project frustum corners into world space
-      glm::mat4 invCam = inverse(camera->GetProjectionMatrix() * camera->GetViewMatrix());
+      Mat4 invCam = inverse(camera->GetProjectionMatrix() * camera->GetViewMatrix());
       for (auto& frustumCorner : frustumCorners) {
-        glm::vec4 invCorner = invCam * glm::vec4(frustumCorner, 1.0f);
+        Vec4 invCorner = invCam * Vec4(frustumCorner, 1.0f);
         frustumCorner = invCorner / invCorner.w;
       }
 
       for (uint32_t j = 0; j < 4; j++) {
-        glm::vec3 dist = frustumCorners[j + 4] - frustumCorners[j];
-        frustumCorners[j + 4] = frustumCorners[j] + (dist * splitDist);
-        frustumCorners[j] = frustumCorners[j] + (dist * lastSplitDist);
+        Vec3 dist = frustumCorners[j + 4] - frustumCorners[j];
+        frustumCorners[j + 4] = frustumCorners[j] + dist * splitDist;
+        frustumCorners[j] = frustumCorners[j] + dist * lastSplitDist;
       }
 
       // Get frustum center
-      auto frustumCenter = glm::vec3(0.0f);
+      auto frustumCenter = Vec3(0.0f);
       for (auto& frustumCorner : frustumCorners) {
         frustumCenter += frustumCorner;
       }
@@ -122,17 +123,17 @@ namespace Oxylus {
       }
       radius = std::ceil(radius * 16.0f) / 16.0f;
 
-      auto maxExtents = glm::vec3(radius);
-      glm::vec3 minExtents = -maxExtents;
+      auto maxExtents = Vec3(radius);
+      Vec3 minExtents = -maxExtents;
 
-      glm::vec4 zDir = Transform * glm::vec4(0, 0, 1, 0);
+      Vec4 zDir = Transform * Vec4(0, 0, 1, 0);
       //glm::vec3 pos = Transform[3];
-      glm::vec3 dir = glm::normalize(glm::vec3(zDir));
+      Vec3 dir = glm::normalize(Vec3(zDir));
       //glm::vec3 lookAt = pos + dir;
-      glm::mat4 lightViewMatrix = glm::lookAt(frustumCenter - dir * -minExtents.z,
+      Mat4 lightViewMatrix = glm::lookAt(frustumCenter - dir * -minExtents.z,
         frustumCenter,
-        glm::vec3(0.0f, 1.0f, 0.0f));
-      glm::mat4 lightOrthoMatrix = glm::ortho(minExtents.x,
+        Vec3(0.0f, 1.0f, 0.0f));
+      Mat4 lightOrthoMatrix = glm::ortho(minExtents.x,
         maxExtents.x,
         minExtents.y,
         maxExtents.y,
@@ -166,8 +167,8 @@ namespace Oxylus {
         case LightComponent::LightType::Directional: break;
         case LightComponent::LightType::Point: {
           s_PointLightsData.emplace_back(LightingData{
-            glm::vec4{transformComponent.Translation, lightComponent.Intensity},
-            glm::vec4{lightComponent.Color, lightComponent.Range}, glm::vec4{transformComponent.Rotation, 1.0f}
+            Vec4{transformComponent.Translation, lightComponent.Intensity},
+            Vec4{lightComponent.Color, lightComponent.Range}, Vec4{transformComponent.Rotation, 1.0f}
           });
         }
         break;
@@ -210,6 +211,13 @@ namespace Oxylus {
     s_RendererData.UBO_SSR.MaxDist = RendererConfig::Get()->SSRConfig.MaxDist;
     s_RendererData.SSRBuffer.Copy(&s_RendererData.UBO_SSR, sizeof s_RendererData.UBO_SSR);
 
+    s_RendererData.UBO_Atmosphere.LightPos = Vec4{
+      Vec3(0.0f, glm::sin(glm::radians(s_RendererData.UBO_Atmosphere.Time * 360.0f)), glm::cos(glm::radians(s_RendererData.UBO_Atmosphere.Time * 360.0f))) * 149600000e3f,
+      s_RendererData.UBO_Atmosphere.LightPos.w
+    };
+    s_RendererData.UBO_Atmosphere.InvProjection = glm::inverse(s_RendererContext.CurrentCamera->GetProjectionMatrixFlipped());
+    s_RendererData.AtmosphereBuffer.Copy(&s_RendererData.UBO_Atmosphere, sizeof s_RendererData.UBO_Atmosphere);
+
     //Composite buffer
     s_RendererData.UBO_CompositeParams.Tonemapper = RendererConfig::Get()->ColorConfig.Tonemapper;
     s_RendererData.UBO_CompositeParams.Exposure = RendererConfig::Get()->ColorConfig.Exposure;
@@ -223,8 +231,7 @@ namespace Oxylus {
   }
 
   void VulkanRenderer::GeneratePrefilter() {
-    ProfilerTimer timer("Generated Prefilters");
-
+    ZoneScoped;
     Prefilter::GenerateBRDFLUT(s_Resources.LutBRDF);
     Prefilter::GenerateIrradianceCube(s_Resources.IrradianceCube,
       s_SkyboxCube,
@@ -234,14 +241,14 @@ namespace Oxylus {
       s_SkyboxCube,
       VertexLayout({VertexComponent::POSITION, VertexComponent::NORMAL, VertexComponent::UV}),
       s_Resources.CubeMap.GetDescImageInfo());
-
-    timer.Print();
   }
 
   void VulkanRenderer::CreateGraphicsPipelines() {
+    ZoneScoped;
     PipelineDescription pipelineDescription{};
     pipelineDescription.Shader = CreateRef<VulkanShader>(ShaderCI{
-      .VertexPath = "resources/shaders/Skybox.vert", .FragmentPath = "resources/shaders/Skybox.frag",
+      .VertexPath = Resources::GetResourcesPath("Shaders/Skybox.vert").string(),
+      .FragmentPath = Resources::GetResourcesPath("Shaders/Skybox.frag").string(),
       .EntryPoint = "main", .Name = "Skybox"
     });
     pipelineDescription.ColorAttachmentCount = 1;
@@ -304,7 +311,8 @@ namespace Oxylus {
       sizeof(glm::mat4),
       sizeof Material::Parameters);
     pipelineDescription.Shader = CreateRef<VulkanShader>(ShaderCI{
-      .VertexPath = "resources/shaders/PBRTiled.vert", .FragmentPath = "resources/shaders/PBRTiled.frag",
+      .VertexPath = Resources::GetResourcesPath("Shaders/PBRTiled.vert").string(),
+      .FragmentPath = Resources::GetResourcesPath("Shaders/PBRTiled.frag").string(),
       .EntryPoint = "main", .Name = "PBR",
       .MaterialProperties = {
         MaterialProperty{.Type = MaterialPropertyType::Float, .DisplayName = "Rougnhess",},
@@ -328,7 +336,8 @@ namespace Oxylus {
     {
       PipelineDescription unlitPipelineDesc;
       unlitPipelineDesc.Shader = CreateRef<VulkanShader>(ShaderCI{
-        .VertexPath = "resources/shaders/Unlit.vert", .FragmentPath = "resources/shaders/Unlit.frag",
+        .VertexPath = Resources::GetResourcesPath("Shaders/Unlit.vert").string(),
+        .FragmentPath = Resources::GetResourcesPath("Shaders/Unlit.frag").string(),
         .EntryPoint = "main", .Name = "Unlit",
       });
       unlitPipelineDesc.ColorAttachmentCount = 1;
@@ -348,7 +357,8 @@ namespace Oxylus {
     PipelineDescription depthpassdescription;
     depthpassdescription.DepthSpec.CompareOp = vk::CompareOp::eLess;
     depthpassdescription.Shader = CreateRef<VulkanShader>(ShaderCI{
-      .VertexPath = "resources/shaders/DepthNormalPass.vert", .FragmentPath = "resources/shaders/DepthNormalPass.frag",
+      .VertexPath = Resources::GetResourcesPath("Shaders/DepthNormalPass.vert").string(),
+      .FragmentPath = Resources::GetResourcesPath("Shaders/DepthNormalPass.frag").string(),
       .EntryPoint = "main", .Name = "DepthPass"
     });
     depthpassdescription.SetDescriptions = pbrDescriptorSet;
@@ -390,8 +400,9 @@ namespace Oxylus {
     s_Pipelines.DepthPrePassPipeline.CreateGraphicsPipeline(depthpassdescription);
 
     pipelineDescription.Shader = CreateRef<VulkanShader>(ShaderCI{
-      .VertexPath = "resources/shaders/DirectShadowDepthPass.vert",
-      .FragmentPath = "resources/shaders/DirectShadowDepthPass.frag", .EntryPoint = "main", .Name = "DirectShadowDepth"
+      .VertexPath = Resources::GetResourcesPath("Shaders/DirectShadowDepthPass.vert").string(),
+      .FragmentPath = Resources::GetResourcesPath("Shaders/DirectShadowDepthPass.frag").string(), 
+      .EntryPoint = "main", .Name = "DirectShadowDepth"
     });
     pipelineDescription.PushConstantRanges = {vk::PushConstantRange{vk::ShaderStageFlagBits::eVertex, 0, 68}};
     pipelineDescription.ColorAttachmentCount = 0;
@@ -428,7 +439,7 @@ namespace Oxylus {
     ssaoDescription.Shader = CreateRef<VulkanShader>(ShaderCI{
       .EntryPoint = "main",
       .Name = "SSAO",
-      .ComputePath = "resources/Shaders/SSAO.comp",
+      .ComputePath = Resources::GetResourcesPath("Shaders/SSAO.comp").string(),
     });
     s_Pipelines.SSAOPassPipeline.CreateComputePipeline(ssaoDescription);
 
@@ -441,7 +452,7 @@ namespace Oxylus {
       //  vk::PushConstantRange{vk::ShaderStageFlagBits::eFragment, 0, sizeof(int32_t)}
       //};
       //gaussianBlurDesc.Shader = CreateRef<VulkanShader>(ShaderCI{
-      //  .VertexPath = "resources/Shaders/FlatColor.vert", .FragmentPath = "resources/Shaders/GaussianBlur.frag",
+      //  .VertexPath = "Resources/Shaders/FlatColor.vert", .FragmentPath = "Resources/Shaders/GaussianBlur.frag",
       //  .EntryPoint = "main", .Name = "GaussianBlur"
       //});
       //gaussianBlurDesc.RasterizerDesc.CullMode = vk::CullModeFlagBits::eNone;
@@ -467,13 +478,12 @@ namespace Oxylus {
       bloomDesc.Shader = CreateRef<VulkanShader>(ShaderCI{
         .EntryPoint = "main",
         .Name = "Bloom",
-        .ComputePath = "resources/shaders/Bloom.comp",
+        .ComputePath = Resources::GetResourcesPath("Shaders/Bloom.comp").string(),
       });
       //s_Pipelines.BloomPipeline.CreateComputePipeline(bloomDesc);
     }
     {
       PipelineDescription ssrDesc;
-      ssrDesc.DepthSpec.DepthEnable = false;
       ssrDesc.SetDescriptions = {
         {
           SetDescription{0, 0, 1, vDT::eStorageImage, vSS::eCompute},
@@ -488,9 +498,24 @@ namespace Oxylus {
       ssrDesc.Shader = CreateRef<VulkanShader>(ShaderCI{
         .EntryPoint = "main",
         .Name = "SSR",
-        .ComputePath = "resources/shaders/SSR.comp",
+        .ComputePath = Resources::GetResourcesPath("Shaders/SSR.comp").string(),
       });
       s_Pipelines.SSRPipeline.CreateComputePipeline(ssrDesc);
+    }
+    {
+      PipelineDescription atmDesc;
+      atmDesc.SetDescriptions = {
+        {
+          SetDescription{0, 0, 1, vDT::eStorageImage, vSS::eCompute},
+          SetDescription{1, 0, 1, vDT::eUniformBuffer, vSS::eCompute, nullptr, &s_RendererData.AtmosphereBuffer.GetDescriptor()},
+        }
+      };
+      atmDesc.Shader = CreateRef<VulkanShader>(ShaderCI{
+        .EntryPoint = "main",
+        .Name = "AtmosphereScattering",
+        .ComputePath = Resources::GetResourcesPath("Shaders/AtmosphricScattering.comp").string(),
+      });
+      s_Pipelines.AtmospherePipeline.CreateComputePipeline(atmDesc);
     }
     {
       PipelineDescription composite;
@@ -508,7 +533,7 @@ namespace Oxylus {
       composite.Shader = CreateRef<VulkanShader>(ShaderCI{
         .EntryPoint = "main",
         .Name = "Composite",
-        .ComputePath = "resources/shaders/Composite.comp",
+        .ComputePath = Resources::GetResourcesPath("Shaders/Composite.comp").string(),
       });
       s_Pipelines.CompositePipeline.CreateComputePipeline(composite);
     }
@@ -521,7 +546,8 @@ namespace Oxylus {
         }
       };
       ppPass.Shader = CreateRef<VulkanShader>(ShaderCI{
-        .VertexPath = "resources/shaders/PostProcess.vert", .FragmentPath = "resources/shaders/PostProcess.frag",
+        .VertexPath = Resources::GetResourcesPath("Shaders/PostProcess.vert").string(),
+        .FragmentPath = Resources::GetResourcesPath("Shaders/PostProcess.frag").string(),
         .EntryPoint = "main", .Name = "PostProcess"
       });
       ppPass.RasterizerDesc.CullMode = vk::CullModeFlagBits::eNone;
@@ -542,7 +568,9 @@ namespace Oxylus {
       quadDescription.VertexInputState.attributeDescriptions.clear();
       quadDescription.VertexInputState.bindingDescriptions.clear();
       quadDescription.Shader = CreateRef<VulkanShader>(ShaderCI{
-        .VertexPath = "resources/shaders/quad.vert", .FragmentPath = "resources/shaders/quad.frag", .EntryPoint = "main",
+        .VertexPath = Resources::GetResourcesPath("Shaders/quad.vert").string(),
+        .FragmentPath = Resources::GetResourcesPath("Shaders/quad.frag").string(),
+        .EntryPoint = "main",
         .Name = "Quad",
       });
       quadDescription.RasterizerDesc.CullMode = vk::CullModeFlagBits::eNone;
@@ -562,12 +590,13 @@ namespace Oxylus {
       }
     };
     computePipelineDesc.Shader = CreateRef<VulkanShader>(ShaderCI{
-      .EntryPoint = "main", .Name = "FrustumGrid", .ComputePath = "resources/shaders/ComputeFrustumGrid.comp",
+      .EntryPoint = "main", .Name = "FrustumGrid",
+      .ComputePath = Resources::GetResourcesPath("Shaders/ComputeFrustumGrid.comp").string(),
     });
     s_Pipelines.FrustumGridPipeline.CreateComputePipeline(computePipelineDesc);
 
     computePipelineDesc.Shader = CreateRef<VulkanShader>(ShaderCI{
-      .EntryPoint = "main", .Name = "LightList", .ComputePath = "resources/shaders/ComputeLightList.comp",
+      .EntryPoint = "main", .Name = "LightList", .ComputePath = Resources::GetResourcesPath("Shaders/ComputeLightList.comp").string(),
     });
     s_Pipelines.LightListPipeline.CreateComputePipeline(computePipelineDesc);
 
@@ -581,7 +610,9 @@ namespace Oxylus {
     };
     PipelineDescription uiPipelineDecs;
     uiPipelineDecs.Shader = CreateRef<VulkanShader>(ShaderCI{
-      .VertexPath = "resources/Shaders/ui.vert", .FragmentPath = "resources/Shaders/ui.frag", .EntryPoint = "main",
+      .VertexPath = Resources::GetResourcesPath("Shaders/ui.vert").string(),
+      .FragmentPath = Resources::GetResourcesPath("Shaders/ui.frag").string(),
+      .EntryPoint = "main",
       .Name = "UI",
     });
     uiPipelineDecs.SetDescriptions = {
@@ -618,6 +649,7 @@ namespace Oxylus {
   }
 
   void VulkanRenderer::CreateFramebuffers() {
+    ZoneScoped;
     VulkanImageDescription colorImageDesc{};
     colorImageDesc.Format = SwapChain.m_ImageFormat;
     colorImageDesc.UsageFlags = vk::ImageUsageFlagBits::eColorAttachment | vk::ImageUsageFlagBits::eSampled;
@@ -772,6 +804,27 @@ namespace Oxylus {
           s_SSRDescriptorSet.WriteDescriptorSets[3].pImageInfo = &s_Resources.CubeMap.GetDescImageInfo();
           s_SSRDescriptorSet.WriteDescriptorSets[4].pImageInfo = &s_FrameBuffers.DepthNormalPassFB.GetImage()[1].GetDescImageInfo();
           s_SSRDescriptorSet.Update();
+          s_FrameBuffers.PostProcessPassFB.GetDescription().OnResize();
+        });
+    }
+    {
+      VulkanImageDescription atmImage;
+      atmImage.Height = 128;
+      atmImage.Width = 128;
+      atmImage.CreateDescriptorSet = true;
+      atmImage.Type = ImageType::TYPE_CUBE;
+      atmImage.UsageFlags = vk::ImageUsageFlagBits::eStorage | vk::ImageUsageFlagBits::eSampled;
+      atmImage.Format = SwapChain.m_ImageFormat;
+      atmImage.FinalImageLayout = vk::ImageLayout::eGeneral;
+      atmImage.TransitionLayoutAtCreate = true;
+      s_FrameBuffers.AtmosphereImage.Create(atmImage);
+
+      ImagePool::AddToPool(
+        &s_FrameBuffers.AtmosphereImage,
+        nullptr,
+        [] {
+          s_AtmosphereDescriptorSet.WriteDescriptorSets[0].pImageInfo = &s_FrameBuffers.AtmosphereImage.GetDescImageInfo();
+          s_AtmosphereDescriptorSet.Update();
           s_FrameBuffers.PostProcessPassFB.GetDescription().OnResize();
         });
     }
@@ -1090,20 +1143,6 @@ namespace Oxylus {
         }
         s_ForceUpdateMaterials = false;
         s_MeshDrawList.clear();
-
-        if (!s_QuadDrawList.empty()) {
-          s_Pipelines.UnlitPipeline.BindPipeline(commandBuffer.Get());
-          commandBuffer.Get().pushConstants(s_Pipelines.UnlitPipeline.GetPipelineLayout(),
-            vk::ShaderStageFlagBits::eVertex,
-            0,
-            sizeof(glm::mat4) * 2,
-            &s_RendererData.UBO_VS);
-          //TODO: Add texturing with batching combined.
-          //pipeline.BindDescriptorSets(commandBuffer, drawcmd.DescriptorSet.Get());
-          s_QuadVertexBuffer.Copy(s_QuadVertexDataBuffer.data(), s_QuadVertexDataBuffer.size());
-          DrawQuad(commandBuffer.Get());
-        }
-        s_QuadDrawList.clear();
       },
       {clearValues},
       &VulkanContext::VulkanQueue.GraphicsQueue);
@@ -1221,6 +1260,47 @@ namespace Oxylus {
     ssrPass.RunWithCondition(s_RendererConfig.SSRConfig.Enabled)
            .AddToGraphCompute(renderGraph);
 
+    RenderGraphPass atmospherePass(
+      "Atmosphere Pass",
+      {&s_RendererContext.AtmosphereCommandBuffer},
+      &s_Pipelines.AtmospherePipeline,
+      {},
+      [](VulkanCommandBuffer& commandBuffer, int32_t) {
+        ZoneScopedN("Atmosphere Pass");
+        OX_TRACE_GPU(commandBuffer.Get(), "Atmosphere Pass")
+        vk::ImageSubresourceRange subresourceRange;
+        subresourceRange.aspectMask = s_FrameBuffers.AtmosphereImage.GetDesc().AspectFlag;
+        subresourceRange.levelCount = 1;
+        subresourceRange.layerCount = 6;
+        const vk::ImageMemoryBarrier imageMemoryBarrier = {
+          {},
+          {},
+          vk::ImageLayout::eUndefined,
+          vk::ImageLayout::eGeneral,
+          0,
+          0,
+          s_FrameBuffers.AtmosphereImage.GetImage(),
+          subresourceRange
+        };
+        commandBuffer.Get().pipelineBarrier(
+          vk::PipelineStageFlagBits::eFragmentShader,
+          vk::PipelineStageFlagBits::eComputeShader,
+          {},
+          0,
+          nullptr,
+          0,
+          nullptr,
+          1,
+          &imageMemoryBarrier
+        );
+        s_Pipelines.AtmospherePipeline.BindPipeline(commandBuffer.Get());
+        s_Pipelines.AtmospherePipeline.BindDescriptorSets(commandBuffer.Get(), {s_AtmosphereDescriptorSet.Get()});
+        commandBuffer.Dispatch((Window::GetWidth() + 8 - 1) / 8, (Window::GetHeight() + 8 - 1) / 8, 6);
+      },
+      clearValues,
+      &VulkanContext::VulkanQueue.GraphicsQueue);
+    //atmospherePass.AddToGraphCompute(renderGraph);
+
     RenderGraphPass compositePass(
       "Composite Pass",
       {&s_RendererContext.CompositeCommandBuffer},
@@ -1332,39 +1412,6 @@ namespace Oxylus {
     //renderGraph.AddComputePass(lightListPass);
   }
 
-  void VulkanRenderer::InitQuadVertexBuffer() {
-    static constexpr size_t quadVertexCount = 4;
-    static constexpr glm::vec4 QuadVertexPositions[4] = {
-      {-0.5f, -0.5f, 0.0f, 1.0f}, {0.5f, -0.5f, 0.0f, 1.0f}, {0.5f, 0.5f, 0.0f, 1.0f}, {-0.5f, 0.5f, 0.0f, 1.0f}
-    };
-
-    constexpr glm::vec2 textureCoords[] = {{0.0f, 0.0f}, {1.0f, 0.0f}, {1.0f, 1.0f}, {0.0f, 1.0f}};
-
-    for (auto& drawcmd : s_QuadDrawList) {
-      for (size_t i = 0; i < quadVertexCount; i++) {
-        s_QuadVertexDataBuffer[i].Position = drawcmd.Transform * QuadVertexPositions[i];
-        s_QuadVertexDataBuffer[i].Color = drawcmd.Color;
-        s_QuadVertexDataBuffer[i].UV = textureCoords[i];
-        //s_QuadVertexDataBuffer[i].TexIndex = textureIndex;
-        //s_QuadVertexDataBuffer[i].TilingFactor = tilingFactor;
-      }
-    }
-
-    s_QuadVertexDataBuffer.resize(MAX_PARTICLE_COUNT);
-    const uint64_t vBufferSize = (uint32_t)s_QuadVertexDataBuffer.size() * sizeof(RendererData::Vertex);
-
-    s_QuadVertexBuffer.CreateBuffer(vk::BufferUsageFlagBits::eVertexBuffer,
-      vk::MemoryPropertyFlagBits::eHostVisible | vk::MemoryPropertyFlagBits::eHostCoherent,
-      vBufferSize,
-      s_QuadVertexDataBuffer.data()).Map();
-  }
-
-  void VulkanRenderer::FlushQuadVertexBuffer() {
-    s_QuadVertexBuffer.Destroy();
-    s_QuadVertexDataBuffer.clear();
-    s_QuadVertexDataBuffer.resize(MAX_PARTICLE_COUNT);
-  }
-
   void VulkanRenderer::Init() {
     //Save/Load renderer config
     if (!RendererConfig::Get()->LoadConfig("renderer.oxconfig")) {
@@ -1410,6 +1457,7 @@ namespace Oxylus {
     s_RendererContext.SSAOCommandBuffer.CreateBuffer();
     s_RendererContext.DirectShadowCommandBuffer.CreateBuffer();
     s_RendererContext.CompositeCommandBuffer.CreateBuffer();
+    s_RendererContext.AtmosphereCommandBuffer.CreateBuffer();
 
     vk::DescriptorSetLayoutBinding binding[1];
     binding[0].descriptorType = vk::DescriptorType::eCombinedImageSampler;
@@ -1469,7 +1517,22 @@ namespace Oxylus {
     s_RendererData.SSRBuffer.CreateBuffer(vk::BufferUsageFlagBits::eUniformBuffer,
       vk::MemoryPropertyFlagBits::eHostVisible |
       vk::MemoryPropertyFlagBits::eHostCoherent,
-      sizeof(RendererData::SSRBuffer)).Map();
+      sizeof RendererData::UBO_SSR).Map();
+
+    {
+      s_RendererData.UBO_Atmosphere.InvViews[0] = glm::inverse(Camera::GenerateViewMatrix({}, Vec3(1.0f, 0.0f, 0.0f), Vec3(0.0f, -1.0f, 0.0f))); // PositiveX
+      s_RendererData.UBO_Atmosphere.InvViews[1] = glm::inverse(Camera::GenerateViewMatrix({}, Vec3(-1.0f, 0.0f, 0.0f), Vec3(0.0f, -1.0f, 0.0f))); // NegativeX
+
+      s_RendererData.UBO_Atmosphere.InvViews[2] = glm::inverse(Camera::GenerateViewMatrix({}, Vec3(0.0f, 1.0f, 0.0f), Vec3(0.0f, 0.0f, 1.0f))); // PositiveY
+      s_RendererData.UBO_Atmosphere.InvViews[3] = glm::inverse(Camera::GenerateViewMatrix({}, Vec3(0.0f, -1.0f, 0.0f), Vec3(0.0f, 0.0f, -1.0f))); // NegativeY
+
+      s_RendererData.UBO_Atmosphere.InvViews[4] = glm::inverse(Camera::GenerateViewMatrix({}, Vec3(0.0f, 0.0f, 1.0f), Vec3(0.0f, -1.0f, 0.0f))); // PositiveZ
+      s_RendererData.UBO_Atmosphere.InvViews[5] = glm::inverse(Camera::GenerateViewMatrix({}, Vec3(0.0f, 0.0f, -1.0f), Vec3(0.0f, -1.0f, 0.0f))); // NegativeZ
+      s_RendererData.AtmosphereBuffer.CreateBuffer(vk::BufferUsageFlagBits::eUniformBuffer,
+        vk::MemoryPropertyFlagBits::eHostVisible |
+        vk::MemoryPropertyFlagBits::eHostCoherent,
+        sizeof RendererData::UBO_Atmosphere).Map();
+    }
 
     s_RendererData.SSAOBuffer.CreateBuffer(vk::BufferUsageFlagBits::eUniformBuffer,
       vk::MemoryPropertyFlagBits::eHostVisible |
@@ -1524,8 +1587,6 @@ namespace Oxylus {
       vertexStaging.Destroy();
     }
 
-    InitQuadVertexBuffer();
-
     //Lights data
     s_PointLightsData.reserve(MAX_NUM_LIGHTS);
 
@@ -1534,14 +1595,14 @@ namespace Oxylus {
 
     Resources::InitEngineResources();
 
-    s_SkyboxCube.LoadFromFile("resources/objects/cube.gltf", Mesh::FlipY | Mesh::DontCreateMaterials);
+    s_SkyboxCube.LoadFromFile(Resources::GetResourcesPath("Objects/cube.gltf").string(), Mesh::FlipY | Mesh::DontCreateMaterials);
 
     VulkanImageDescription CubeMapDesc;
     //temp fail-safe until we have an actual atmosphere
-    if (std::filesystem::exists("resources/hdrs/industrial_sky.ktx2"))
-      CubeMapDesc.Path = ("resources/hdrs/industrial_sky.ktx2");
+    if (std::filesystem::exists(Resources::GetResourcesPath("HDRs/industrial_sky.ktx2").string()))
+      CubeMapDesc.Path = Resources::GetResourcesPath("HDRs/industrial_sky.ktx2").string();
     else
-      CubeMapDesc.Path = "resources/hdrs/belfast_sunset.ktx2";
+      CubeMapDesc.Path = Resources::GetResourcesPath("HDRs/HDRs/belfast_sunset.ktx2").string();
     CubeMapDesc.Type = ImageType::TYPE_CUBE;
     s_Resources.CubeMap.Create(CubeMapDesc);
 
@@ -1559,6 +1620,7 @@ namespace Oxylus {
     s_ShadowDepthDescriptorSet.CreateFromPipeline(s_Pipelines.DirectShadowDepthPipeline);
     s_SSRDescriptorSet.CreateFromPipeline(s_Pipelines.SSRPipeline);
     s_CompositeDescriptorSet.CreateFromPipeline(s_Pipelines.CompositePipeline);
+    s_AtmosphereDescriptorSet.CreateFromPipeline(s_Pipelines.AtmospherePipeline);
 
     GeneratePrefilter();
 
@@ -1577,8 +1639,8 @@ namespace Oxylus {
     //Render graph
     InitRenderGraph();
 
-    //Initalize tracy profiling
 #if GPU_PROFILER_ENABLED
+    //Initalize tracy profiling
     const VkPhysicalDevice physicalDevice = VulkanContext::Context.PhysicalDevice;
     TracyProfiler::InitTracyForVulkan(physicalDevice,
       LogicalDevice,
@@ -1645,11 +1707,11 @@ namespace Oxylus {
     }
   }
 
-  void VulkanRenderer::SubmitMesh(Mesh& mesh, const glm::mat4& transform, std::vector<Ref<Material>>& materials, uint32_t submeshIndex) {
+  void VulkanRenderer::SubmitMesh(Mesh& mesh, const Mat4& transform, std::vector<Ref<Material>>& materials, uint32_t submeshIndex) {
     s_MeshDrawList.emplace_back(mesh, transform, materials, submeshIndex);
   }
 
-  void VulkanRenderer::SubmitQuad(const glm::mat4& transform, const Ref<VulkanImage>& image, const glm::vec4& color) {
+  void VulkanRenderer::SubmitQuad(const Mat4& transform, const Ref<VulkanImage>& image, const Vec4& color) {
     s_QuadDrawList.emplace_back(transform, image, color);
   }
 
@@ -1712,6 +1774,7 @@ namespace Oxylus {
 
     SwapChain.SubmitPass([](const VulkanCommandBuffer& commandBuffer) {
       ZoneScopedN("Swapchain pass");
+      OX_TRACE_GPU(commandBuffer.Get(), "Swapchain Pass")
       s_Pipelines.QuadPipeline.BindPipeline(commandBuffer.Get());
       s_Pipelines.QuadPipeline.BindDescriptorSets(commandBuffer.Get(), {s_QuadDescriptorSet.Get()});
       DrawFullscreenQuad(commandBuffer.Get());

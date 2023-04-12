@@ -6,9 +6,7 @@
 
 namespace Oxylus {
   class VulkanImage;
-
   class Material;
-
   class Mesh;
 
   class AssetManager {

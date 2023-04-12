@@ -162,11 +162,6 @@ namespace Oxylus {
     }
   };
 
-  //Component for serializing custom components
-  struct NamedComponent {
-    std::string ComponentName = "EmptyComponent";
-  };
-
   //Audio
   struct AudioSourceComponent {
     AudioSourceConfig Config;

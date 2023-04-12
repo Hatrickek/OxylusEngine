@@ -1,5 +1,6 @@
 #include <oxpch.h>
 #include "Memory.h"
+#include "Utils/Profiler.h"
 
 namespace Oxylus {
   uint64_t Memory::TotalAllocated = 0;
@@ -11,10 +12,13 @@ namespace Oxylus {
 
 void* operator new(const size_t _Size) {
   Oxylus::Memory::TotalAllocated += _Size;
-  return malloc(_Size);
+  const auto ptr = malloc(_Size);
+  TracyAlloc(ptr, _Size);
+  return ptr;
 }
 
-void operator delete(void* _Block, const size_t _Size) noexcept {
+void operator delete(void* _Block, const size_t _Size) {
   Oxylus::Memory::TotalFreed += _Size;
+  TracyFree(_Block);
   free(_Block);
 }

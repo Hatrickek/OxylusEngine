@@ -58,7 +58,7 @@ namespace Oxylus {
   void Scene::CreateEntityWithMesh(const Asset<Mesh>& meshAsset) {
     const auto& mesh = meshAsset.Data;
     uint32_t nodeIndex = 0;
-    for (const auto node : mesh->Nodes) {
+    for (const auto& node : mesh->Nodes) {
       Entity entity = CreateEntity(node->Name);
       if (node->ContainsMesh) {
         entity.AddComponentI<MeshRendererComponent>(mesh).SubmesIndex = nodeIndex;
@@ -353,7 +353,4 @@ namespace Oxylus {
 
   template<>
   void Scene::OnComponentAdded<NativeScriptComponent>(Entity entity, NativeScriptComponent& component) { }
-
-  template<>
-  void Scene::OnComponentAdded<NamedComponent>(Entity entity, NamedComponent& component) { }
 }

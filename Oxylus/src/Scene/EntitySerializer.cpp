@@ -14,7 +14,7 @@
 #include "Utils/StringUtils.h"
 
 namespace Oxylus {
-  template<typename T>
+  template <typename T>
   void SetEnum(const ryml::ConstNodeRef& node, T& data) {
     int type = 0;
     node >> type;
@@ -107,13 +107,6 @@ namespace Oxylus {
       node["NearClip"] << camera.System->NearClip;
       node["FarClip"] << camera.System->FarClip;
     }
-
-    if (entity.HasComponent<NamedComponent>()) {
-      const auto& script = entity.GetComponent<NamedComponent>();
-      auto node = entityNode["NamedComponent"];
-      node |= ryml::MAP;
-      node["ComponentName"] << script.ComponentName;
-    }
   }
 
   UUID EntitySerializer::DeserializeEntity(ryml::ConstNodeRef entityNode, Scene& scene, bool preserveUUID) {
@@ -171,16 +164,11 @@ namespace Oxylus {
       node["Mesh"] >> meshPath;
       node["SubmeshIndex"] >> submeshIndex;
 
-      deserializedEntity.AddComponentI<MeshRendererComponent>(AssetManager::GetMeshAsset(meshPath).Data).SubmesIndex =
-              submeshIndex;
+      deserializedEntity.AddComponent<MeshRendererComponent>(AssetManager::GetMeshAsset(meshPath).Data).SubmesIndex = submeshIndex;
     }
 
     if (entityNode.has_child("MaterialComponent")) {
-      MaterialComponent* mc{};
-      if (!deserializedEntity.HasComponent<MaterialComponent>())
-        mc = &deserializedEntity.AddComponentI<MaterialComponent>();
-      else
-        mc = &deserializedEntity.GetComponent<MaterialComponent>();
+      auto& mc = deserializedEntity.AddComponentI<MaterialComponent>();
 
       const auto& node = entityNode["MaterialComponent"];
 
@@ -189,9 +177,9 @@ namespace Oxylus {
         node["Path"] >> assetPath;
 
       if (!assetPath.empty()) {
-        mc->Materials.clear();
-        mc->Materials.emplace_back(AssetManager::GetMaterialAsset(assetPath).Data);
-        mc->UsingMaterialAsset = true;
+        mc.Materials.clear();
+        mc.Materials.emplace_back(AssetManager::GetMaterialAsset(assetPath).Data);
+        mc.UsingMaterialAsset = true;
       }
     }
 
@@ -236,13 +224,6 @@ namespace Oxylus {
       camera.System->SetFov(fov);
       camera.System->SetNear(nearclip);
       camera.System->SetFar(farclip);
-    }
-
-    if (entityNode.has_child("NamedComponent")) {
-      auto& script = deserializedEntity.AddComponent<NamedComponent>();
-      const auto& node = entityNode["NamedComponent"];
-
-      node["ComponentName"] >> script.ComponentName;
     }
 
     return deserializedEntity.GetUUID();

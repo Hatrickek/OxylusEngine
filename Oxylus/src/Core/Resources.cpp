@@ -1,6 +1,9 @@
 #include "src/oxpch.h"
 #include "Resources.h"
 
+#include "Application.h"
+#include "EmbeddedResources.h"
+
 namespace Oxylus {
   Resources::EditorRes Resources::s_EditorResources;
   Resources::EngineRes Resources::s_EngineResources;
@@ -14,6 +17,10 @@ namespace Oxylus {
     imageDescription.EmbeddedData = EngineLogo;
     imageDescription.EmbeddedDataLength = EngineLogoLen;
     s_EditorResources.EngineIcon.Create(imageDescription);
+  }
+
+  std::filesystem::path Resources::GetResourcesPath(const std::filesystem::path& path) {
+    return Application::Get().Spec.WorkingDirectory / "Resources" / path;
   }
 
   void Resources::InitEngineResources() {

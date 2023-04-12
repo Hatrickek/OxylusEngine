@@ -102,7 +102,7 @@ namespace Oxylus {
       }
       {
         ZoneScopedN("SystemImGuiRender");
-        for (auto& system : m_Systems)
+        for (const auto& system : m_Systems)
           system->OnImGuiRender();
       }
       m_ImGuiLayer->End();

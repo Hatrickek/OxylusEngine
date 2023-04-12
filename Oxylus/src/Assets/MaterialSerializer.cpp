@@ -80,7 +80,6 @@ namespace Oxylus {
     parNode["UseNormal"] >> Parameters.UseNormal;
     parNode["UseAO"] >> Parameters.UseAO;
 
-    const auto textureNode = nodeRoot["Textures"];
     VulkanImageDescription desc;
     desc.FlipOnLoad = true;
     desc.CreateDescriptorSet = true;

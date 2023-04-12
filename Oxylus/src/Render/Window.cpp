@@ -1,5 +1,7 @@
 #include "src/oxpch.h"
 #include "Window.h"
+
+#include "Core/EmbeddedResources.h"
 #include "Utils/Log.h"
 
 #include "tinygltf/stb_image.h"
