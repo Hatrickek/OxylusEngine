@@ -79,22 +79,22 @@ namespace Oxylus {
     nodeRoot["Material"] >> m_Material->Name;
 
     const auto parNode = nodeRoot["Parameters"];
-    parNode["Roughness"] >> Parameters.Roughness;
-    parNode["Metallic"] >> Parameters.Metallic;
-    parNode["Specular"] >> Parameters.Specular;
-    parNode["Normal"] >> Parameters.Normal;
-    parNode["AO"] >> Parameters.AO;
+    TryLoad(parNode, "Roughness", Parameters.Roughness);
+    TryLoad(parNode, "Metallic", Parameters.Metallic);
+    TryLoad(parNode, "Specular", Parameters.Specular);
+    TryLoad(parNode, "Normal", Parameters.Normal);
+    TryLoad(parNode, "AO", Parameters.AO);
     glm::read(parNode["Color"], &Parameters.Color);
-    parNode["UseAlbedo"] >> Parameters.UseAlbedo;
-    parNode["UseRoughness"] >> Parameters.UseRoughness;
-    parNode["UseMetallic"] >> Parameters.UseMetallic;
-    parNode["UseNormal"] >> Parameters.UseNormal;
-    parNode["UseAO"] >> Parameters.UseAO;
-    parNode["UseEmissive"] >> Parameters.UseAO;
-    parNode["UseSpecular"] >> Parameters.UseSpecular;
-    parNode["FlipImage"] >> Parameters.FlipImage;
-    parNode["DoubleSided"] >> Parameters.DoubleSided;
-    parNode["UVScale"] >> Parameters.UVScale;
+    TryLoad(parNode, "UseAlbedo", Parameters.UseAlbedo);
+    TryLoad(parNode, "UseRoughness", Parameters.UseRoughness);
+    TryLoad(parNode, "UseMetallic", Parameters.UseMetallic);
+    TryLoad(parNode, "UseNormal", Parameters.UseNormal);
+    TryLoad(parNode, "UseAO", Parameters.UseAO);
+    TryLoad(parNode, "UseEmissive", Parameters.UseAO);
+    TryLoad(parNode, "UseSpecular", Parameters.UseSpecular);
+    TryLoad(parNode, "FlipImage", Parameters.FlipImage);
+    TryLoad(parNode, "DoubleSided", Parameters.DoubleSided);
+    TryLoad(parNode, "UVScale", Parameters.UVScale);
 
     VulkanImageDescription desc;
     desc.FlipOnLoad = true;

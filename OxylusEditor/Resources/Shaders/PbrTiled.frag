@@ -175,7 +175,6 @@ void main() {
     albedo = vec3(u_Material.Color.r, u_Material.Color.g, u_Material.Color.b);
     alpha = u_Material.Color.a;
   }
-  albedo += u_Material.Emmisive.rgb;
 
   if (alpha < 0.1) {
     discard;
@@ -256,13 +255,16 @@ void main() {
   // Cascade debug
   // color *= ColorCascades(in_DirectShadows, inUV, cascadeIndex);
 
+  color += u_Material.Emmisive.rgb;
+
+
   // TODO: Make configurable via buffers
-  //  float far = 800.0;
-  //  float fogCord = (gl_FragCoord.z / gl_FragCoord.w) / far;
-  //  float fogDensity = 2.0;
-  //  float fog = fogCord * fogDensity;
-  //  vec4 fogColor = vec4(vec3(1), 0);
-  //  vec4 outFog = mix(fogColor, vec4(color, 1.0), clamp(1.0 - fog, 0.0, 1.0));
+  float far = 50.0;
+  float fogCord = (gl_FragCoord.z / gl_FragCoord.w) / far;
+  float fogDensity = 2.0;
+  float fog = fogCord * fogDensity;
+  vec4 fogColor = vec4(vec3(1), 0);
+  vec4 outFog = mix(fogColor, vec4(color, 1.0), clamp(1.0 - fog, 0.0, 1.0));
 
   outColor = vec4(color, 1.0);
 }

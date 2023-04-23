@@ -113,3 +113,12 @@ namespace glm {
     return true;
   }
 }
+
+namespace Oxylus {
+  template <typename T>
+  static void TryLoad(ryml::ConstNodeRef node, const char* name, T& value) {
+    const auto n = c4::to_csubstr(name);
+    if (node.has_child(n))
+      node[n] >> value;
+  }
+}
