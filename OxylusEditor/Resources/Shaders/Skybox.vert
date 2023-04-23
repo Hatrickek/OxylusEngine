@@ -10,7 +10,7 @@ layout(location = 2) in vec2 inUV;
 layout(binding = 0) uniform UBO { mat4 projection; }
 u_Ubo;
 
-layout(push_constant) uniform ModelConst { mat4 model; }
+layout(push_constant) uniform ViewConst { mat4 model; }
 u_ModelUbo;
 
 layout(location = 0) out vec3 outUVW;

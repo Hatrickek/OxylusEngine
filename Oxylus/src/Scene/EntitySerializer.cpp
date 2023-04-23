@@ -95,8 +95,26 @@ namespace Oxylus {
       const auto& light = entity.GetComponent<SkyLightComponent>();
       auto node = entityNode["SkyLightComponent"];
       node |= ryml::MAP;
-      node["ImagePath"] << light.Cubemap->GetDesc().Path;
+      std::string path = light.Cubemap ? light.Cubemap->GetDesc().Path : "";
+      node["ImagePath"] << path;
       node["CubemapLodBias"] << light.CubemapLodBias;
+    }
+
+    if (entity.HasComponent<PostProcessProbe>()) {
+      const auto& probe = entity.GetComponent<PostProcessProbe>();
+      auto node = entityNode["PostProcessProbe"];
+      node |= ryml::MAP;
+      node["VignetteEnabled"] << probe.VignetteEnabled;
+      node["VignetteIntensity"] << probe.VignetteIntensity;
+
+      node["FilmGrainEnabled"] << probe.FilmGrainEnabled;
+      node["FilmGrainIntensity"] << probe.FilmGrainIntensity;
+
+      node["ChromaticAberrationEnabled"] << probe.ChromaticAberrationEnabled;
+      node["ChromaticAberrationIntensity"] << probe.ChromaticAberrationIntensity;
+
+      node["SharpenEnabled"] << probe.SharpenEnabled;
+      node["SharpenIntensity"] << probe.SharpenIntensity;
     }
 
     if (entity.HasComponent<CameraComponent>()) {
@@ -202,12 +220,34 @@ namespace Oxylus {
       auto& light = deserializedEntity.AddComponentI<SkyLightComponent>();
       const auto& node = entityNode["SkyLightComponent"];
 
-      VulkanImageDescription CubeMapDesc;
-      node["ImagePath"] >> CubeMapDesc.Path;
-      CubeMapDesc.Type = ImageType::TYPE_CUBE;
-      light.Cubemap = AssetManager::GetImageAsset(CubeMapDesc).Data;
+      std::string path{};
+      node["ImagePath"] >> path;
+
+      if (!path.empty()) {
+        VulkanImageDescription CubeMapDesc;
+        CubeMapDesc.Path = path;
+        CubeMapDesc.Type = ImageType::TYPE_CUBE;
+        light.Cubemap = AssetManager::GetImageAsset(CubeMapDesc).Data;
+      }
 
       node["CubemapLodBias"] >> light.CubemapLodBias;
+    }
+
+    if (entityNode.has_child("PostProcessProbe")) {
+      auto& probe = deserializedEntity.AddComponentI<PostProcessProbe>();
+      const auto& node = entityNode["PostProcessProbe"];
+
+      node["VignetteEnabled"] >> probe.VignetteEnabled;
+      node["VignetteIntensity"] >> probe.VignetteIntensity;
+
+      node["FilmGrainEnabled"] >> probe.FilmGrainEnabled;
+      node["FilmGrainIntensity"] >> probe.FilmGrainIntensity;
+
+      node["ChromaticAberrationEnabled"] >> probe.ChromaticAberrationEnabled;
+      node["ChromaticAberrationIntensity"] >> probe.ChromaticAberrationIntensity;
+
+      node["SharpenEnabled"] >> probe.SharpenEnabled;
+      node["SharpenIntensity"] >> probe.SharpenIntensity;
     }
 
     if (entityNode.has_child("CameraComponent")) {

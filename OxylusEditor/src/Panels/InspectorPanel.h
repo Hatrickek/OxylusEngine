@@ -16,6 +16,8 @@ namespace Oxylus {
     template<typename Component>
     void DrawAddComponent(Entity entity, const char* name) const;
 
+   void PP_ProbeProperty(bool value) const;
+
     Entity m_SelectedEntity;
   };
 }

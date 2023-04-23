@@ -5,9 +5,11 @@
 
 #include "AssetManager.h"
 #include "Utils/FileUtils.h"
+#include "Utils/Profiler.h"
 
 namespace Oxylus {
   void MaterialSerializer::Serialize(const std::string& path) const {
+    ZoneScoped;
     m_Material->Path = path;
 
     ryml::Tree tree;
@@ -33,6 +35,11 @@ namespace Oxylus {
     parNode["UseMetallic"] << Parameters.UseMetallic;
     parNode["UseNormal"] << Parameters.UseNormal;
     parNode["UseAO"] << Parameters.UseAO;
+    parNode["UseEmissive"] << Parameters.UseAO;
+    parNode["UseSpecular"] << Parameters.UseSpecular;
+    parNode["FlipImage"] << Parameters.FlipImage;
+    parNode["DoubleSided"] << Parameters.DoubleSided;
+    parNode["DoubleSided"] << Parameters.UVScale;
 
     auto textureNode = nodeRoot["Textures"];
     textureNode |= ryml::MAP;
@@ -42,6 +49,7 @@ namespace Oxylus {
     SaveIfPathExists(textureNode["Roughness"], m_Material->RoughnessTexture);
     SaveIfPathExists(textureNode["Metallic"], m_Material->MetallicTexture);
     SaveIfPathExists(textureNode["AO"], m_Material->AOTexture);
+    SaveIfPathExists(textureNode["Emissive"], m_Material->EmissiveTexture);
 
     std::stringstream ss;
     ss << tree;
@@ -52,6 +60,9 @@ namespace Oxylus {
   void MaterialSerializer::Deserialize(const std::string& path) const {
     if (path.empty())
       return;
+    ZoneScoped;
+
+    m_Material->Destroy();
 
     m_Material->Path = path;
 
@@ -79,6 +90,11 @@ namespace Oxylus {
     parNode["UseMetallic"] >> Parameters.UseMetallic;
     parNode["UseNormal"] >> Parameters.UseNormal;
     parNode["UseAO"] >> Parameters.UseAO;
+    parNode["UseEmissive"] >> Parameters.UseAO;
+    parNode["UseSpecular"] >> Parameters.UseSpecular;
+    parNode["FlipImage"] >> Parameters.FlipImage;
+    parNode["DoubleSided"] >> Parameters.DoubleSided;
+    parNode["UVScale"] >> Parameters.UVScale;
 
     VulkanImageDescription desc;
     desc.FlipOnLoad = true;
@@ -89,13 +105,15 @@ namespace Oxylus {
     LoadIfPathExists(nodeRoot["Textures"], "Roughness", m_Material->RoughnessTexture, desc);
     LoadIfPathExists(nodeRoot["Textures"], "Metallic", m_Material->MetallicTexture, desc);
     LoadIfPathExists(nodeRoot["Textures"], "AO", m_Material->AOTexture, desc);
+    LoadIfPathExists(nodeRoot["Textures"], "AO", m_Material->AOTexture, desc);
+    LoadIfPathExists(nodeRoot["Textures"], "Emmisive", m_Material->EmissiveTexture, desc);
 
     m_Material->Update();
   }
 
   void MaterialSerializer::SaveIfPathExists(ryml::NodeRef node, const Ref<VulkanImage>& texture) const {
     if (!texture->GetDesc().Path.empty())
-      node << AssetManager::GetAssetFileSystemPath(texture->GetDesc().Path).string();
+      node << texture->GetDesc().Path;
   }
 
   void MaterialSerializer::LoadIfPathExists(ryml::ConstNodeRef parentNode,

@@ -1,21 +1,31 @@
 set(PROJECT_NAME Oxylus)
 
-file(GLOB_RECURSE src "src/*.h" "src/*.cpp")
+file(GLOB src "src/*.h" "src/*.cpp")
 source_group("src" FILES ${src})
+file(GLOB_RECURSE Assets "src/Assets/*.h" "src/Assets/*.cpp" )
+source_group("src/Assets" FILES ${Assets})
+file(GLOB_RECURSE Audio "src/Audio/*.h" "src/Audio/*.cpp" )
+source_group("src/Audio" FILES ${Audio})
+file(GLOB_RECURSE Core "src/Core/*.h" "src/Core/*.cpp" )
+source_group("src/Core" FILES ${Core})
+file(GLOB_RECURSE Event "src/Event/*.h" "src/Event/*.cpp" )
+source_group("src/Event" FILES ${Event})
+file(GLOB_RECURSE Physics "src/Physics/*.h" "src/Physics/*.cpp" )
+source_group("src/Physics" FILES ${Physics})
+file(GLOB_RECURSE Render "src/Render/*.h" "src/Render/*.cpp" )
+source_group("src/Render" FILES ${Render})
+file(GLOB_RECURSE Scene "src/Scene/*.h" "src/Scene/*.cpp" )
+source_group("src/Scene" FILES ${Scene})
+file(GLOB_RECURSE Thread "src/Thread/*.h" "src/Thread/*.cpp" )
+source_group("src/Thread" FILES ${Thread})
+file(GLOB_RECURSE UI "src/UI/*.h" "src/UI/*.cpp" )
+source_group("src/UI" FILES ${UI})
+file(GLOB_RECURSE Utils "src/Utils/*.h" "src/Utils/*.cpp" )
+source_group("src/Utils" FILES ${Utils})
 
-set(vendor__ImGui
-  "vendor/ImGui/imconfig.h"
-  "vendor/ImGui/imgui.cpp"
-  "vendor/ImGui/imgui.h"
-  "vendor/ImGui/imgui_demo.cpp"
-  "vendor/ImGui/imgui_draw.cpp"
-  "vendor/ImGui/imgui_internal.h"
-  "vendor/ImGui/imgui_tables.cpp"
-  "vendor/ImGui/imgui_widgets.cpp"
-  "vendor/ImGui/imstb_rectpack.h"
-  "vendor/ImGui/imstb_textedit.h"
-  "vendor/ImGui/imstb_truetype.h"
-  )
+set(SOURCE_FILES ${src} ${Core} ${Assets} ${Audio} ${Event} ${Physics} ${Render} ${Scene} ${Thread} ${UI} ${Utils})
+
+file(GLOB vendor__ImGui "vendor/ImGui/*.h" "vendor/ImGui/*.cpp")
 source_group("vendor/ImGui" FILES ${vendor__ImGui})
 
 set(vendor__ImGui__backends
@@ -26,33 +36,23 @@ set(vendor__ImGui__backends
   )
 source_group("vendor/ImGui/backends" FILES ${vendor__ImGui__backends})
 
-set(vendor__ImGui__misc__cpp
-  "vendor/ImGui/misc/cpp/imgui_stdlib.cpp"
-  "vendor/ImGui/misc/cpp/imgui_stdlib.h"
-  )
+set(vendor__ImGui__misc__cpp "vendor/ImGui/misc/cpp/imgui_stdlib.cpp" "vendor/ImGui/misc/cpp/imgui_stdlib.h")
 source_group("vendor/ImGui/misc/cpp" FILES ${vendor__ImGui__misc__cpp})
 
-set(vendor__ImGuizmo
-  "vendor/ImGuizmo/ImGuizmo.cpp"
-  "vendor/ImGuizmo/ImGuizmo.h"
-  )
+set(vendor__ImGuizmo "vendor/ImGuizmo/ImGuizmo.cpp" "vendor/ImGuizmo/ImGuizmo.h")
 source_group("vendor/ImGuizmo" FILES ${vendor__ImGuizmo})
 
 file(GLOB vendor__glm "vendor/glm/*.hpp")
 source_group("vendor/glm" FILES ${vendor__glm})
 
-set(vendor__miniaudio
-  "vendor/miniaudio/miniaudio.h"
-  )
+set(vendor__miniaudio "vendor/miniaudio/miniaudio.h")
 source_group("vendor/miniaudio" FILES ${vendor__miniaudio})
 
-set(vendor__tracy__public
-  "vendor/tracy/public/TracyClient.cpp"
-  )
+set(vendor__tracy__public "vendor/tracy/public/TracyClient.cpp")
 source_group("vendor/tracy/public" FILES ${vendor__tracy__public})
 
 set(ALL_FILES
-  ${src}
+  ${SOURCE_FILES}
   ${vendor__ImGui}
   ${vendor__ImGui__backends}
   ${vendor__ImGui__misc__cpp}
@@ -221,12 +221,12 @@ elseif (APPLE)
 endif()
 
 set(VULKAN_LIB_LIST "${Vulkan_LIBRARIES}" "${Vulkan_shaderc_combined_LIBRARY}")
-target_link_libraries(${PROJECT_NAME} PUBLIC ${VULKAN_LIB_LIST} )
+target_link_libraries(${PROJECT_NAME} PUBLIC ${VULKAN_LIB_LIST})
 
 # NFD
 add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/vendor/nativefiledialog-extended)
 target_link_libraries(${PROJECT_NAME} PUBLIC nfd)
-set_target_properties(nfd PROPERTIES MSVC_RUNTIME_LIBRARY ${MSVC_RUNTIME_LIBRARY_STR})
+set_target_properties(nfd PROPERTIES MSVC_RUNTIME_LIBRARY ${MSVC_RUNTIME_LIBRARY_STR} FOLDER "Vendor")
 
 # GLFW
 set(GLFW_BUILD_DOCS OFF CACHE BOOL "" FORCE)
@@ -234,14 +234,18 @@ set(GLFW_BUILD_TESTS OFF CACHE BOOL "" FORCE)
 set(GLFW_BUILD_EXAMPLES OFF CACHE BOOL "" FORCE)
 add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/vendor/glfw)
 target_link_libraries(${PROJECT_NAME} PUBLIC glfw)
-set_target_properties(glfw PROPERTIES MSVC_RUNTIME_LIBRARY ${MSVC_RUNTIME_LIBRARY_STR})
+set_target_properties(glfw PROPERTIES MSVC_RUNTIME_LIBRARY ${MSVC_RUNTIME_LIBRARY_STR} FOLDER "Vendor")
+set_target_properties(uninstall PROPERTIES MSVC_RUNTIME_LIBRARY ${MSVC_RUNTIME_LIBRARY_STR} FOLDER "Vendor")
+set_target_properties(update_mappings PROPERTIES MSVC_RUNTIME_LIBRARY ${MSVC_RUNTIME_LIBRARY_STR} FOLDER "Vendor")
 
 # RYML
 add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/vendor/ryml)
 target_link_libraries(${PROJECT_NAME} PUBLIC ryml::ryml)
-set_target_properties(ryml PROPERTIES MSVC_RUNTIME_LIBRARY ${MSVC_RUNTIME_LIBRARY_STR})
+set_target_properties(ryml PROPERTIES MSVC_RUNTIME_LIBRARY ${MSVC_RUNTIME_LIBRARY_STR} FOLDER "Vendor")
 target_link_libraries(${PROJECT_NAME} PUBLIC c4core)
-set_target_properties(c4core PROPERTIES MSVC_RUNTIME_LIBRARY ${MSVC_RUNTIME_LIBRARY_STR})
+set_target_properties(c4core PROPERTIES MSVC_RUNTIME_LIBRARY ${MSVC_RUNTIME_LIBRARY_STR} FOLDER "Vendor")
+set_target_properties(c4core-amalgamate PROPERTIES MSVC_RUNTIME_LIBRARY ${MSVC_RUNTIME_LIBRARY_STR} FOLDER "Vendor")
+set_target_properties(ryml-uninstall PROPERTIES MSVC_RUNTIME_LIBRARY ${MSVC_RUNTIME_LIBRARY_STR} FOLDER "Vendor")
 
 # KTX
 set(KTX_DIR "${CMAKE_CURRENT_SOURCE_DIR}/vendor/KTX-Software-4.1.0-rc3")
@@ -253,16 +257,35 @@ endif()
 set(KTX_FEATURE_TESTS OFF)
 set(KTX_FEATURE_GL_UPLOAD OFF)
 set(KTX_FEATURE_STATIC_LIBRARY ON)
+set(BASISU_SUPPORT_OPENCL OFF)
+set(BASISU_SUPPORT_SSE OFF)
 add_subdirectory(${KTX_DIR})
 target_link_libraries(${PROJECT_NAME} PUBLIC ktx)
 target_include_directories(${PROJECT_NAME} PUBLIC ${KTX_DIR}/include)
-set_target_properties(ktx PROPERTIES MSVC_RUNTIME_LIBRARY ${MSVC_RUNTIME_LIBRARY_STR})
-set_target_properties(toktx PROPERTIES MSVC_RUNTIME_LIBRARY ${MSVC_RUNTIME_LIBRARY_STR})
-set_target_properties(ktxsc PROPERTIES MSVC_RUNTIME_LIBRARY ${MSVC_RUNTIME_LIBRARY_STR})
-set_target_properties(ktx2check PROPERTIES MSVC_RUNTIME_LIBRARY ${MSVC_RUNTIME_LIBRARY_STR})
-set_target_properties(ktxinfo PROPERTIES MSVC_RUNTIME_LIBRARY ${MSVC_RUNTIME_LIBRARY_STR})
-set_target_properties(ktx2ktx2 PROPERTIES MSVC_RUNTIME_LIBRARY ${MSVC_RUNTIME_LIBRARY_STR})
-set_target_properties(ktx_read PROPERTIES MSVC_RUNTIME_LIBRARY ${MSVC_RUNTIME_LIBRARY_STR})
+set_target_properties(ktx PROPERTIES MSVC_RUNTIME_LIBRARY ${MSVC_RUNTIME_LIBRARY_STR} FOLDER "Vendor")
+set_target_properties(Continuous PROPERTIES MSVC_RUNTIME_LIBRARY ${MSVC_RUNTIME_LIBRARY_STR} FOLDER "Vendor")
+set_target_properties(Experimental PROPERTIES MSVC_RUNTIME_LIBRARY ${MSVC_RUNTIME_LIBRARY_STR} FOLDER "Vendor")
+set_target_properties(Nightly PROPERTIES MSVC_RUNTIME_LIBRARY ${MSVC_RUNTIME_LIBRARY_STR} FOLDER "Vendor")
+set_target_properties(NightlyMemoryCheck PROPERTIES MSVC_RUNTIME_LIBRARY ${MSVC_RUNTIME_LIBRARY_STR} FOLDER "Vendor")
+set_target_properties(toktx PROPERTIES MSVC_RUNTIME_LIBRARY ${MSVC_RUNTIME_LIBRARY_STR} FOLDER "Vendor")
+set_target_properties(ktxsc PROPERTIES MSVC_RUNTIME_LIBRARY ${MSVC_RUNTIME_LIBRARY_STR} FOLDER "Vendor")
+set_target_properties(ktxsc_version PROPERTIES MSVC_RUNTIME_LIBRARY ${MSVC_RUNTIME_LIBRARY_STR} FOLDER "Vendor")
+set_target_properties(ktx2check PROPERTIES MSVC_RUNTIME_LIBRARY ${MSVC_RUNTIME_LIBRARY_STR} FOLDER "Vendor")
+set_target_properties(ktx2check_version PROPERTIES MSVC_RUNTIME_LIBRARY ${MSVC_RUNTIME_LIBRARY_STR} FOLDER "Vendor")
+set_target_properties(ktxinfo PROPERTIES MSVC_RUNTIME_LIBRARY ${MSVC_RUNTIME_LIBRARY_STR} FOLDER "Vendor")
+set_target_properties(ktxinfo_version PROPERTIES MSVC_RUNTIME_LIBRARY ${MSVC_RUNTIME_LIBRARY_STR} FOLDER "Vendor")
+set_target_properties(ktx2ktx2 PROPERTIES MSVC_RUNTIME_LIBRARY ${MSVC_RUNTIME_LIBRARY_STR} FOLDER "Vendor")
+set_target_properties(ktx2ktx2_version PROPERTIES MSVC_RUNTIME_LIBRARY ${MSVC_RUNTIME_LIBRARY_STR} FOLDER "Vendor")
+set_target_properties(ktx_read PROPERTIES MSVC_RUNTIME_LIBRARY ${MSVC_RUNTIME_LIBRARY_STR} FOLDER "Vendor")
+set_target_properties(astcenc-avx2-static PROPERTIES MSVC_RUNTIME_LIBRARY ${MSVC_RUNTIME_LIBRARY_STR} FOLDER "Vendor")
+set_target_properties(toktx_version PROPERTIES MSVC_RUNTIME_LIBRARY ${MSVC_RUNTIME_LIBRARY_STR} FOLDER "Vendor")
+set_target_properties(ktx_version PROPERTIES MSVC_RUNTIME_LIBRARY ${MSVC_RUNTIME_LIBRARY_STR} FOLDER "Vendor")
+set_target_properties(mkvk PROPERTIES MSVC_RUNTIME_LIBRARY ${MSVC_RUNTIME_LIBRARY_STR} FOLDER "Vendor")
+set_target_properties(mkvkformatfiles PROPERTIES MSVC_RUNTIME_LIBRARY ${MSVC_RUNTIME_LIBRARY_STR} FOLDER "Vendor")
+set_target_properties(obj_basisu_cbind PROPERTIES MSVC_RUNTIME_LIBRARY ${MSVC_RUNTIME_LIBRARY_STR} FOLDER "Vendor")
+set_target_properties(objUtil PROPERTIES MSVC_RUNTIME_LIBRARY ${MSVC_RUNTIME_LIBRARY_STR} FOLDER "Vendor")
+set_target_properties(makedfd2vk PROPERTIES MSVC_RUNTIME_LIBRARY ${MSVC_RUNTIME_LIBRARY_STR} FOLDER "Vendor")
+set_target_properties(makevk2dfd PROPERTIES MSVC_RUNTIME_LIBRARY ${MSVC_RUNTIME_LIBRARY_STR} FOLDER "Vendor")
 
 # FMT
 FetchContent_Declare(fmt
@@ -270,8 +293,9 @@ FetchContent_Declare(fmt
   GIT_TAG master)
 FetchContent_MakeAvailable(fmt)
 target_link_libraries(${PROJECT_NAME} PUBLIC fmt)
+set_target_properties(fmt PROPERTIES FOLDER "Vendor")
 
 # VMA
 add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/vendor/VulkanMemoryAllocator)
 target_link_libraries(${PROJECT_NAME} PUBLIC VulkanMemoryAllocator)
-set_target_properties(VulkanMemoryAllocator PROPERTIES MSVC_RUNTIME_LIBRARY ${MSVC_RUNTIME_LIBRARY_STR})
+set_target_properties(VulkanMemoryAllocator PROPERTIES MSVC_RUNTIME_LIBRARY ${MSVC_RUNTIME_LIBRARY_STR} FOLDER "Vendor")

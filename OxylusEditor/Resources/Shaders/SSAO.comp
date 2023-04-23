@@ -21,7 +21,7 @@ vec3 CosineSampleHemisphere(float u, float v, vec3 normal);
 float GetRandomFloat01();
 uint GetPCGHash(inout uint seed);
 
-const float Samples = 10;
+const float Samples = 32;
 const float Radius = 0.2;
 const float Strength = 2.0;
 

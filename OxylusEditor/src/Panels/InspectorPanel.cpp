@@ -95,7 +95,7 @@ namespace Oxylus {
     if (ImGui::Button("Load")) {
       const auto& path = FileDialogs::OpenFile({{"Material file", "oxmat"}});
       if (!path.empty()) {
-        MaterialSerializer(*material).Deserialize(path);
+        MaterialSerializer(material).Deserialize(path);
       }
     }
     ImGui::SameLine();
@@ -108,7 +108,7 @@ namespace Oxylus {
         const std::string ext = path.extension().string();
         path = AssetManager::GetAssetFileSystemPath(path);
         if (ext == ".oxmat") {
-          MaterialSerializer(*material).Deserialize(path.string());
+          MaterialSerializer(material).Deserialize(path.string());
           loadAsset = true;
         }
       }
@@ -116,7 +116,7 @@ namespace Oxylus {
     }
 
     IGUI::BeginProperties();
-
+    IGUI::Property("UV Scale", material->Parameters.UVScale);
     IGUI::Property("Use Albedo", (bool&)material->Parameters.UseAlbedo);
     if (IGUI::Property("Albedo", material->AlbedoTexture)) {
       material->Update();
@@ -282,6 +282,7 @@ namespace Oxylus {
       DrawAddComponent<LightComponent>(m_SelectedEntity, "Light");
       DrawAddComponent<ParticleSystemComponent>(m_SelectedEntity, "Particle System");
       DrawAddComponent<CameraComponent>(m_SelectedEntity, "Camera");
+      DrawAddComponent<PostProcessProbe>(m_SelectedEntity, "PostProcess Probe");
 
       ImGui::EndPopup();
     }
@@ -371,7 +372,40 @@ namespace Oxylus {
         ImGui::Spacing();
         IGUI::BeginProperties();
         IGUI::Property("Cubemap Lod Bias", component.CubemapLodBias);
+        IGUI::Property("Flip Image", component.FlipImage);
         IGUI::EndProperties();
+      });
+
+    DrawComponent<PostProcessProbe>(ICON_MDI_SPRAY " PostProcess Probe Component",
+      entity,
+      [this](PostProcessProbe& component) {
+        ImGui::Text("Vignette");
+        IGUI::BeginProperties();
+        PP_ProbeProperty(IGUI::Property("Enable", component.VignetteEnabled));
+        PP_ProbeProperty(IGUI::Property("Intensity", component.VignetteIntensity));
+        IGUI::EndProperties();
+        ImGui::Separator();
+
+        ImGui::Text("FilmGrain");
+        IGUI::BeginProperties();
+        PP_ProbeProperty(IGUI::Property("Enable", component.FilmGrainEnabled));
+        PP_ProbeProperty(IGUI::Property("Intensity", component.FilmGrainIntensity));
+        IGUI::EndProperties();
+        ImGui::Separator();
+
+        ImGui::Text("ChromaticAberration");
+        IGUI::BeginProperties();
+        PP_ProbeProperty(IGUI::Property("Enable", component.ChromaticAberrationEnabled));
+        PP_ProbeProperty(IGUI::Property("Intensity", component.ChromaticAberrationIntensity));
+        IGUI::EndProperties();
+        ImGui::Separator();
+
+        ImGui::Text("Sharpen");
+        IGUI::BeginProperties();
+        PP_ProbeProperty(IGUI::Property("Enable", component.SharpenEnabled));
+        PP_ProbeProperty(IGUI::Property("Intensity", component.SharpenIntensity));
+        IGUI::EndProperties();
+        ImGui::Separator();
       });
 
     DrawComponent<AudioSourceComponent>(ICON_MDI_VOLUME_MEDIUM " Audio Source Component",
@@ -625,5 +659,11 @@ namespace Oxylus {
         DrawParticleOverLifetimeModule("Rotation Over Lifetime", props.RotationOverLifetime, false, true);
         DrawParticleBySpeedModule("Rotation By Speed", props.RotationBySpeed, false, true);
       });
+  }
+
+  void InspectorPanel::PP_ProbeProperty(const bool value) const {
+    if (value) {
+      m_SelectedEntity.GetScene()->GetRenderer().Dispatcher.trigger(SceneRenderer::ProbeChangeEvent{});
+    }
   }
 }

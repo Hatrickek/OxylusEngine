@@ -1,7 +1,6 @@
 ﻿#include "ResourcePool.h"
 
 namespace Oxylus {
-
   std::vector<VulkanFramebuffer*> FrameBufferPool::m_Pool;
 
   void FrameBufferPool::ResizeBuffers() {
@@ -31,12 +30,12 @@ namespace Oxylus {
   std::vector<ImagePool::ImageResource> ImagePool::m_Pool;
 
   void ImagePool::ResizeImages() {
-    for (const auto& [image, extent, onresize] : m_Pool) {
+    for (const auto& [image, extent, onresize, extMult] : m_Pool) {
       image->Destroy();
       VulkanImageDescription desc = image->GetDesc();
       if (extent) {
-        desc.Width = extent->width;
-        desc.Height = extent->height;
+        desc.Width = extent->width / extMult;
+        desc.Height = extent->height / extMult;
       }
       image->Create(desc);
       if (onresize)
@@ -44,8 +43,8 @@ namespace Oxylus {
     }
   }
 
-  void ImagePool::AddToPool(VulkanImage* image, vk::Extent2D* extent, const std::function<void()>& onresize) {
-    m_Pool.emplace_back(ImageResource{image, extent, onresize});
+  void ImagePool::AddToPool(VulkanImage* image, vk::Extent2D* extent, const std::function<void()>& onresize, uint32_t extentMultiplier) {
+    m_Pool.emplace_back(ImageResource{image, extent, onresize, extentMultiplier});
   }
 
   void ImagePool::RemoveFromPool(const std::string_view name) {
@@ -56,4 +55,4 @@ namespace Oxylus {
     OX_CORE_ERROR("Not implemented");
     return {};
   }
-} 
+}

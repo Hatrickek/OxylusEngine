@@ -1,5 +1,4 @@
 #pragma once
-#include <iostream>
 #include "Core/Input.h"
 #include "Core/Application.h"
 

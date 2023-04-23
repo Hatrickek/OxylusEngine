@@ -110,7 +110,7 @@ namespace Oxylus {
       for (const auto& [directoryPath, relativePath, absolutePath, name, isDirectory] : m_PanelItems) {
         ImGui::PushID(name.c_str());
         auto icon = isDirectory ? m_FolderImage.GetDescriptorSet() : m_FileImage.GetDescriptorSet();
-        if (!isDirectory && relativePath.extension().string() == ".gltf") {
+        if (!isDirectory && relativePath.extension().string() == ".gltf" || relativePath.extension().string() == ".glb") {
           icon = m_MeshFileImage.GetDescriptorSet();
         }
         ImGui::PushStyleColor(ImGuiCol_Button, ImVec4(0, 0, 0, 0));

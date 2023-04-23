@@ -9,29 +9,26 @@ layout(binding = 3) uniform sampler2D in_Bloom;
 layout(binding = 4) uniform sampler2D in_SSR;
 
 layout(binding = 5) uniform UBOParams {
-  int tonemapper; // 0- Aces 1- Uncharted 2-Filmic 3- Reinhard
+  int tonemapper;  // 0- Aces 1- Uncharted 2-Filmic 3- Reinhard
   float exposure;
   float gamma;
   bool enableSSAO;
   bool enableBloom;
   bool enableSSR;
   vec2 _pad;
-  vec4 vignetteColor;  // rgb: color, a: intensity
-  vec4 vignetteOffset; // xy: offset, z: useMask, w: enable/disable effect
+  vec4 vignetteColor;   // rgb: color, a: intensity
+  vec4 vignetteOffset;  // xy: offset, z: useMask, w: enable/disable effect
 }
 u_UBOParams;
-
-#include "PostProcessing.glsl"
-#include "Tonemaps.glsl"
 
 void main() {
   ivec2 imgCoord = ivec2(gl_GlobalInvocationID.xy);
   vec2 uv = (imgCoord + 0.5) / imageSize(ImgResult);
 
-  vec3 albedo = texture(in_Color, uv).rgb;
+  vec4 albedo = texture(in_Color, uv).rgba;
   float ssao = 1.0 - texture(in_SSAO, uv).r;
-  vec3 ssr = texture(in_SSR, uv).rgb;
-
+  vec4 ssr = texture(in_SSR, uv).rgba;
+  vec4 bloom = texture(in_Bloom, uv);
 
   if (u_UBOParams.enableSSAO) {
     albedo *= ssao;
@@ -39,7 +36,9 @@ void main() {
   if (u_UBOParams.enableSSR) {
     albedo += ssr;
   }
+  if (u_UBOParams.enableBloom) {
+    albedo += bloom;
+  }
 
-  
-  imageStore(ImgResult, imgCoord, vec4(albedo, 1.0));
+  imageStore(ImgResult, imgCoord, albedo);
 }

@@ -37,6 +37,7 @@ namespace Oxylus {
     int m_GizmoType = -1;
 
     //Camera
+    bool m_LockAspectRatio = true;
     float m_TranslationDampening = 0.6f;
     float m_RotationDampening = 0.3f;
     bool m_SmoothCamera = true;

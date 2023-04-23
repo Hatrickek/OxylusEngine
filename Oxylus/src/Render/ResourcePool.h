@@ -20,7 +20,7 @@ namespace Oxylus {
   class ImagePool {
   public:
     static void ResizeImages();
-    static void AddToPool(VulkanImage* image, vk::Extent2D* extent, const std::function<void()>& onresize);
+    static void AddToPool(VulkanImage* image, vk::Extent2D* extent, const std::function<void()>& onresize, uint32_t extentMultiplier = 1);
     static void RemoveFromPool(std::string_view name);
 
   private:
@@ -28,6 +28,7 @@ namespace Oxylus {
       VulkanImage* Image;
       vk::Extent2D* Extent;
       const std::function<void()> OnResize;
+      uint32_t ExtentMultiplier = 1;
     };
     static std::vector<ImageResource> m_Pool;
     static uint32_t FindImage(std::string_view name);

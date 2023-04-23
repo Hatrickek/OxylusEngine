@@ -109,6 +109,7 @@ namespace Oxylus {
   }
 
   void Camera::Update(const glm::vec3& pos, const glm::vec3& rotation) {
+    ZoneScoped;
     SetPosition(pos);
     SetPitch(rotation.x);
     SetYaw(rotation.y);

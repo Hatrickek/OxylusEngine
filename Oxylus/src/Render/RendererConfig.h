@@ -1,9 +1,15 @@
 #pragma once
 #include <cstdint>
 
+#include "Event/Event.h"
+
 namespace Oxylus {
   class RendererConfig {
   public:
+    struct ConfigChangeEvent { };
+
+    EventDispatcher ConfigChangeDispatcher;
+
     struct Display {
       bool VSync = true;
     } DisplayConfig;
@@ -20,11 +26,6 @@ namespace Oxylus {
       float Exposure = 1.0f;
       float Gamma = 2.5f;
     } ColorConfig;
-
-    struct Vignette {
-      bool Enabled = true;
-      float Intensity = 0.25f;
-    } VignetteConfig;
 
     struct SSAO {
       bool Enabled = false;

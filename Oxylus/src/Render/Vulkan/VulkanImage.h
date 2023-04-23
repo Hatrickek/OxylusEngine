@@ -39,7 +39,8 @@ namespace Oxylus {
     bool FlipOnLoad = false;
     bool TransitionLayoutAtCreate = true;
     vk::DescriptorSetLayout DescriptorSetLayout; //Optional
-    vk::Filter SamplerFiltering = vk::Filter::eLinear;
+    vk::Filter MinFiltering = vk::Filter::eLinear;
+    vk::Filter MagFiltering = vk::Filter::eLinear;
     vk::BorderColor SamplerBorderColor = vk::BorderColor::eFloatOpaqueWhite;
     vk::SamplerAddressMode SamplerAddressMode = vk::SamplerAddressMode::eRepeat;
     int32_t ImageArrayLayerCount = 1;
@@ -75,11 +76,13 @@ namespace Oxylus {
     const vk::DescriptorSet& GetDescriptorSet() const { return m_DescSet; }
     const vk::DescriptorImageInfo& GetDescImageInfo() const { return DescriptorImageInfo; }
     const vk::ImageLayout& GetImageLayout() const { return m_ImageLayout; }
+    std::vector<vk::DescriptorImageInfo> GetMipDescriptors() const;
     static VulkanImageDescription GetColorAttachmentImageDescription(vk::Format format,
                                                                      uint32_t width,
                                                                      uint32_t height);
     static Ref<VulkanImage> GetBlankImage();
     static IVec3 GetMipMapLevelSize(uint32_t width, uint32_t height, uint32_t depth, uint32_t level);
+    static uint32_t GetMaxMipmapLevel(uint32_t width, uint32_t height, uint32_t depth);
 
     void Destroy();
 
@@ -88,10 +91,11 @@ namespace Oxylus {
     void LoadCubeMapFromFile(int version);
     void LoadKtxFile(int version = 1);
     void LoadStbFile();
-    void CreateImage(const vk::Device& LogicalDevice, bool hasPath);
+    void CreateImage(bool hasPath);
     void LoadAndCreateResources(bool hasPath);
-    void CreateImageView();
+    vk::ImageView CreateImageView(uint32_t mipmapIndex = 0) const;
     void CreateSampler();
+    void GenerateMips();
     vk::DescriptorSet CreateDescriptorSet() const;
 
     vk::ImageLayout m_ImageLayout = vk::ImageLayout::eUndefined;

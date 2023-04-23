@@ -39,15 +39,6 @@ namespace Oxylus {
       node["Gamma"] << ColorConfig.Gamma;
     }
 
-    //Vignette
-    {
-      auto node = nodeRoot["Vignette"];
-      node |= ryml::MAP;
-
-      node["Enabled"] << VignetteConfig.Enabled;
-      node["Intensity"] << VignetteConfig.Intensity;
-    }
-
     //SSAO
     {
       auto node = nodeRoot["SSAO"];
@@ -91,7 +82,7 @@ namespace Oxylus {
   }
 
   bool RendererConfig::LoadConfig(const char* path) {
-    const auto& content = FileUtils::ReadFile(path);
+    const auto& content = FileUtils::ReadFile(path, false);
     if (content.empty())
       return false;
 
@@ -113,14 +104,6 @@ namespace Oxylus {
       node["Tonemapper"] >> ColorConfig.Tonemapper;
       node["Exposure"] >> ColorConfig.Exposure;
       node["Gamma"] >> ColorConfig.Gamma;
-    }
-
-    //Vignette
-    {
-      const ryml::ConstNodeRef node = nodeRoot["Vignette"];
-
-      node["Enabled"] >> VignetteConfig.Enabled;
-      node["Intensity"] >> VignetteConfig.Intensity;
     }
 
     //SSAO

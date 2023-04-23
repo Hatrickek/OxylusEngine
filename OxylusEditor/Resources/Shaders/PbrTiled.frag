@@ -15,8 +15,8 @@ struct Frustum {
 };
 
 struct Light {
-  vec4 position; // w: intensity
-  vec4 color;    // w: radius
+  vec4 position;  // w: intensity
+  vec4 color;     // w: radius
 };
 
 layout(location = 0) in vec3 inWorldPos;
@@ -74,20 +74,7 @@ layout(set = 1, binding = 4) uniform sampler2D roughnessMap;
 
 layout(location = 0) out vec4 outColor;
 
-layout(push_constant, std140) uniform Material {
-  layout(offset = 64) vec4 color;
-  layout(offset = 80) float roughness;
-  layout(offset = 84) float metallic;
-  layout(offset = 88) float specular;
-  layout(offset = 92) float normal;
-  layout(offset = 96) float ao;
-  layout(offset = 100) bool useAlbedo;
-  layout(offset = 104) bool useRoughness;
-  layout(offset = 108) bool useMetallic;
-  layout(offset = 112) bool useNormal;
-  layout(offset = 116) bool useAO;
-}
-u_Material;
+#include "Material.glsl"
 
 // Normal Distribution function
 float D_GGX(float dotNH, float roughness) {
@@ -115,7 +102,7 @@ vec3 F_SchlickR(float cosTheta, vec3 F0, float roughness) {
 }
 
 vec3 prefilteredReflection(vec3 R, float roughness) {
-  const float MAX_REFLECTION_LOD = 9.0; // todo: param/const
+  const float MAX_REFLECTION_LOD = 9.0;  // todo: param/const
   float lod = roughness * MAX_REFLECTION_LOD;
   float lodf = floor(lod);
   float lodc = ceil(lod);
@@ -151,14 +138,14 @@ vec3 specularContribution(vec3 L, vec3 V, vec3 N, vec3 F0, float metallic,
 }
 
 // See http://www.thetenthplanet.de/archives/1180
-vec3 perturbNormal() {
-  vec3 tangentNormal = inNormal;
-  if (u_Material.useNormal) {
-    tangentNormal = texture(normalMap, inUV).xyz * 2.0 - 1.0;
+vec3 perturbNormal(vec2 uv) {
+  vec3 tangentNormal = normalize(inNormal);
+  if (u_Material.UseNormal) {
+    tangentNormal = texture(normalMap, uv).xyz * 2.0 - 1.0;
     vec3 q1 = dFdx(inWorldPos);
     vec3 q2 = dFdy(inWorldPos);
-    vec2 st1 = dFdx(inUV);
-    vec2 st2 = dFdy(inUV);
+    vec2 st1 = dFdx(uv);
+    vec2 st2 = dFdy(uv);
 
     vec3 N = normalize(inNormal);
     vec3 T = normalize(q1 * st2.t - q2 * st1.t);
@@ -171,38 +158,43 @@ vec3 perturbNormal() {
 }
 
 void main() {
-  ivec2 tileID =
-      ivec2(gl_FragCoord.x, u_UboParams.screenDimensions.y - gl_FragCoord.y) /
-      PIXELS_PER_TILE;
+  ivec2 tileID = ivec2(gl_FragCoord.x, u_UboParams.screenDimensions.y - gl_FragCoord.y) / PIXELS_PER_TILE;
   int tileIndex = tileID.y * u_UboParams.numThreads.x + tileID.x;
+
+  vec2 scaledUV = inUV;
+  scaledUV *= u_Material.UVScale;
 
   float alpha = 1;
   vec3 albedo;
-  if (u_Material.useAlbedo) {
-    vec4 tex4 = texture(albedoMap, vec2(inUV.x, inUV.y));
-    alpha = tex4.w;
+  if (u_Material.UseAlbedo) {
+    vec4 tex4 = texture(albedoMap, scaledUV);
+    alpha = tex4.a;
     albedo = pow(tex4.rgb, vec3(2.2));
-    albedo *= vec3(u_Material.color.r, u_Material.color.g, u_Material.color.b);
-  } else
-    albedo = vec3(u_Material.color.r, u_Material.color.g, u_Material.color.b);
+    albedo *= vec3(u_Material.Color.r, u_Material.Color.g, u_Material.Color.b);
+  } else {
+    albedo = vec3(u_Material.Color.r, u_Material.Color.g, u_Material.Color.b);
+    alpha = u_Material.Color.a;
+  }
+  albedo += u_Material.Emmisive.rgb;
 
   if (alpha < 0.1) {
     discard;
   }
 
-  vec3 normal = perturbNormal();
+  vec3 normal = perturbNormal(scaledUV);
   vec3 V = normalize(u_Ubo.camPos - inWorldPos);
   vec3 R = reflect(-V, normal);
 
-  float metallic = u_Material.metallic;
-  if (u_Material.useMetallic) {
-    metallic = texture(metallicMap, inUV).r;
+  float metallic = u_Material.Metallic;
+  if (u_Material.UseMetallic) {
+    metallic = texture(metallicMap, scaledUV).r;
+    metallic *= u_Material.Metallic;
   }
 
-  float roughness = u_Material.roughness;
-  if (u_Material.useRoughness) {
-    roughness = texture(roughnessMap, inUV).r;
-    roughness *= u_Material.roughness;
+  float roughness = u_Material.Roughness;
+  if (u_Material.UseRoughness) {
+    roughness = texture(roughnessMap, scaledUV).r;
+    roughness *= u_Material.Roughness;
   }
 
   vec3 F0 = vec3(0.04);
@@ -210,8 +202,7 @@ void main() {
 
   vec3 Lo = vec3(0.0);
 
-  vec2 brdf =
-      texture(samplerBRDFLUT, vec2(max(dot(normal, V), 0.0), roughness)).rg;
+  vec2 brdf = texture(samplerBRDFLUT, vec2(max(dot(normal, V), 0.0), roughness)).rg;
   vec3 reflection = prefilteredReflection(R, roughness).rgb;
   vec3 irradiance = texture(samplerIrradiance, normal).rgb;
 
@@ -221,16 +212,16 @@ void main() {
   vec3 F = F_SchlickR(max(dot(normal, V), 0.0), F0, roughness);
 
   // Specular reflectance
-  vec3 specular = reflection * (F * brdf.x + brdf.y) * u_Material.specular;
+  vec3 specular = reflection * (F * brdf.x + brdf.y) * u_Material.Specular;
 
   // Ambient part
   vec3 kD = 1.0 - F;
   kD *= 1.0 - metallic;
-  // vec3 ambient = (kD * diffuse + specular) * texture(aoMap, inUV).rrr *
+  // vec3 ambient = (kD * diffuse + specular) * texture(aoMap, scaledUV).rrr *
   // u_Material.ao;
   vec3 ambient = (kD * diffuse + specular);
-  if (u_Material.useAO)
-    ambient = (kD * diffuse + specular) * texture(aoMap, inUV).rrr;
+  if (u_Material.UseAO)
+    ambient = (kD * diffuse + specular) * texture(aoMap, scaledUV).rrr;
 
   vec3 color;
 
@@ -246,7 +237,7 @@ void main() {
     vec3 L = normalize(currentLight.position.xyz - inWorldPos);
     Lo += specularContribution(L, V, normal, F0, metallic, roughness, albedo,
                                currentLight.color.xyz);
-    Lo *= currentLight.position.w; // intensity
+    Lo *= currentLight.position.w;  // intensity
   }
 
   // Directional light
@@ -258,36 +249,20 @@ void main() {
   color = ambient + Lo;
 
   // Directional shadows
-  uint cascadeIndex = GetCascadeIndex(u_ShadowUbo.cascadeSplits, in_ViewPos,
-                                      SHADOW_MAP_CASCADE_COUNT);
-  vec4 shadowCoord =
-      GetShadowCoord(u_ShadowUbo.cascadeViewProjMat, inWorldPos, cascadeIndex);
-  float shadow = FilterPCF(in_DirectShadows, shadowCoord / shadowCoord.w,
-                           cascadeIndex, ambient.r); // PCF filtered shadow
+  uint cascadeIndex = GetCascadeIndex(u_ShadowUbo.cascadeSplits, in_ViewPos, SHADOW_MAP_CASCADE_COUNT);
+  vec4 shadowCoord = GetShadowCoord(u_ShadowUbo.cascadeViewProjMat, inWorldPos, cascadeIndex);
+  float shadow = FilterPCF(in_DirectShadows, shadowCoord / shadowCoord.w, cascadeIndex, ambient.r);  // PCF filtered shadow
   color.rgb *= shadow;
   // Cascade debug
   // color *= ColorCascades(in_DirectShadows, inUV, cascadeIndex);
 
-  //TODO: Make configurable via buffers
-  // float far = 800.0;
-  // float fogCord = (gl_FragCoord.z / gl_FragCoord.w) / far; 
-  // float fogDensity = 2.0;
-  // float fog = fogCord * fogDensity;
-  // vec4 fogColor = vec4(vec3(1), 0);
-  // vec4 outFog = mix(fogColor, vec4(color, 1.0), clamp(1.0 - fog, 0.0, 1.0)); 
+  // TODO: Make configurable via buffers
+  //  float far = 800.0;
+  //  float fogCord = (gl_FragCoord.z / gl_FragCoord.w) / far;
+  //  float fogDensity = 2.0;
+  //  float fog = fogCord * fogDensity;
+  //  vec4 fogColor = vec4(vec3(1), 0);
+  //  vec4 outFog = mix(fogColor, vec4(color, 1.0), clamp(1.0 - fog, 0.0, 1.0));
 
   outColor = vec4(color, 1.0);
-
-  // Light heatmap
-  // float tmp = lightGrid[tileIndex];
-  // if(tmp <= 20.f)
-  //{
-  //    outColor = vec4( 0.f, 0.f, tmp / 20.f, 1.f );
-  //}
-  // else if(tmp <= 40.f) {
-  //    outColor = vec4( 0.f, (tmp - 20.f) / 20.0f, 1.f, 1.f );
-  //}
-  // else {
-  //    outColor = vec4( (tmp - 40.f) / 20.f, 1.f, 1.f, 1.f );
-  //}
 }

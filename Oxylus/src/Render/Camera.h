@@ -29,6 +29,8 @@ namespace Oxylus {
 
     float Fov = FOV;
     float Aspect;
+    uint32_t AspectRatioW = 1;
+    uint32_t AspectRatioH = 1;
     float FarClip = FARCLIP;
     float NearClip = NEARCLIP;
     bool ConstrainPitch = true;

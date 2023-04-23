@@ -47,26 +47,26 @@ namespace Oxylus {
     Create(imageDescription);
   }
 
-  void VulkanImage::CreateImage(const vk::Device& LogicalDevice, const bool hasPath) {
-    vk::ImageCreateInfo imageCreateInfo;
-    imageCreateInfo.imageType = vk::ImageType::e2D;
-    imageCreateInfo.extent = vk::Extent3D{m_ImageDescription.Width, m_ImageDescription.Height, m_ImageDescription.Depth};
-    imageCreateInfo.mipLevels = m_ImageDescription.MipLevels;
-    imageCreateInfo.format = m_ImageDescription.Format;
-    imageCreateInfo.arrayLayers = m_ImageDescription.Type == ImageType::TYPE_CUBE ? 6 : m_ImageDescription.ImageArrayLayerCount;
-    imageCreateInfo.tiling = m_ImageDescription.ImageTiling;
-    imageCreateInfo.initialLayout = vk::ImageLayout::eUndefined;
-    imageCreateInfo.usage = m_ImageDescription.UsageFlags;
-    imageCreateInfo.samples = m_ImageDescription.SampleCount;
-    imageCreateInfo.sharingMode = m_ImageDescription.SharingMode;
-    imageCreateInfo.flags = m_ImageDescription.Type == ImageType::TYPE_CUBE
-                              ? vk::ImageCreateFlagBits::eCubeCompatible
-                              : vk::ImageCreateFlags{};
-
+  void VulkanImage::CreateImage(const bool hasPath) {
     if (m_ImageDescription.FlipOnLoad)
       stbi_set_flip_vertically_on_load(true);
 
     if (!hasPath && !m_ImageDescription.EmbeddedStbData && !m_ImageDescription.EmbeddedKtxData) {
+      vk::ImageCreateInfo imageCreateInfo;
+      imageCreateInfo.imageType = vk::ImageType::e2D;
+      imageCreateInfo.extent = vk::Extent3D{m_ImageDescription.Width, m_ImageDescription.Height, m_ImageDescription.Depth};
+      imageCreateInfo.mipLevels = m_ImageDescription.MipLevels;
+      imageCreateInfo.format = m_ImageDescription.Format;
+      imageCreateInfo.arrayLayers = m_ImageDescription.Type == ImageType::TYPE_CUBE ? 6 : m_ImageDescription.ImageArrayLayerCount;
+      imageCreateInfo.tiling = m_ImageDescription.ImageTiling;
+      imageCreateInfo.initialLayout = vk::ImageLayout::eUndefined;
+      imageCreateInfo.usage = m_ImageDescription.UsageFlags;
+      imageCreateInfo.samples = m_ImageDescription.SampleCount;
+      imageCreateInfo.sharingMode = m_ImageDescription.SharingMode;
+      imageCreateInfo.flags = m_ImageDescription.Type == ImageType::TYPE_CUBE
+                                ? vk::ImageCreateFlagBits::eCubeCompatible
+                                : vk::ImageCreateFlags{};
+
       const VkImageCreateInfo _imageci = (VkImageCreateInfo)imageCreateInfo;
       VmaAllocationCreateInfo allocationCreateInfo{};
       allocationCreateInfo.usage = VMA_MEMORY_USAGE_AUTO_PREFER_DEVICE;
@@ -75,9 +75,12 @@ namespace Oxylus {
       if (m_ImageDescription.TransitionLayoutAtCreate) {
         vk::ImageSubresourceRange subresourceRange;
         subresourceRange.aspectMask = m_ImageDescription.AspectFlag;
-        subresourceRange.levelCount = 1;
+        subresourceRange.levelCount = m_ImageDescription.MipLevels;
         subresourceRange.layerCount = 1;
-        SetImageLayout(m_ImageDescription.InitalImageLayout, m_ImageDescription.FinalImageLayout, subresourceRange);
+        if (m_ImageDescription.MipLevels > 1 && m_ImageDescription.Type != ImageType::TYPE_CUBE)
+          SetImageLayout(m_ImageDescription.InitalImageLayout, (vk::ImageLayout)VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, subresourceRange);
+        else
+          SetImageLayout(m_ImageDescription.InitalImageLayout, m_ImageDescription.FinalImageLayout, subresourceRange);
       }
       GPUMemory::TotalAllocated += allocInfo.size;
       ImageSize = allocInfo.size;
@@ -85,14 +88,16 @@ namespace Oxylus {
   }
 
   void VulkanImage::LoadAndCreateResources(const bool hasPath) {
-    if (hasPath || m_ImageDescription.EmbeddedData || m_ImageDescription.EmbeddedStbData || m_ImageDescription.
-        EmbeddedKtxData) {
+    if (hasPath || m_ImageDescription.EmbeddedData || m_ImageDescription.EmbeddedStbData || m_ImageDescription.EmbeddedKtxData) {
       LoadTextureFromFile();
     }
 
+    if (m_ImageDescription.MipLevels > 1 && m_ImageDescription.Type != ImageType::TYPE_CUBE)
+      GenerateMips();
+
     // Create view
     if (m_ImageDescription.CreateView)
-      CreateImageView();
+      m_View = CreateImageView();
 
     // Create sampler
     if (m_ImageDescription.CreateSampler)
@@ -110,13 +115,11 @@ namespace Oxylus {
   }
 
   void VulkanImage::Create(const VulkanImageDescription& imageDescription) {
-    const auto& LogicalDevice = VulkanContext::Context.Device;
-
     m_ImageDescription = imageDescription;
 
     const bool hasPath = !m_ImageDescription.Path.empty();
 
-    CreateImage(LogicalDevice, hasPath);
+    CreateImage(hasPath);
 
     LoadAndCreateResources(hasPath);
 
@@ -158,14 +161,14 @@ namespace Oxylus {
 
   void VulkanImage::LoadCubeMapFromFile(const int version) {
     ProfilerTimer timer;
-    const auto& LogicalDevice = VulkanContext::Context.Device;
-    const auto& PhysicalDevice = VulkanContext::Context.PhysicalDevice;
+    const auto& LogicalDevice = VulkanContext::GetDevice();
+    const auto& PhysicalDevice = VulkanContext::GetPhysicalDevice();
 
     const auto& path = m_ImageDescription.Path;
 
     ktxTexture1* kTexture1 = nullptr;
     ktxTexture2* kTexture2 = nullptr;
-    ktxVulkanTexture texture;
+    ktxVulkanTexture texture{};
     ktxVulkanDeviceInfo kvdi;
 
     ktxVulkanDeviceInfo_Construct(&kvdi,
@@ -203,7 +206,6 @@ namespace Oxylus {
 
       if (result != KTX_SUCCESS)
         OX_CORE_ERROR("Couldn't load the KTX texture file. {}", ktxErrorString(result));
-
       result = ktxTexture2_VkUploadEx(kTexture2,
         &kvdi,
         &texture,
@@ -227,14 +229,6 @@ namespace Oxylus {
     m_ImageDescription.Format = static_cast<vk::Format>(texture.imageFormat);
 
     ktxVulkanDeviceInfo_Destruct(&kvdi);
-
-    CreateSampler();
-
-    CreateImageView();
-
-    DescriptorImageInfo.imageLayout = GetImageLayout();
-    DescriptorImageInfo.imageView = GetImageView();
-    DescriptorImageInfo.sampler = m_Sampler;
 
     timer.Stop();
     OX_CORE_TRACE("Texture cube map loaded: {}, {} ms",
@@ -297,7 +291,8 @@ namespace Oxylus {
       vk::MemoryPropertyFlagBits::eHostVisible |
       vk::MemoryPropertyFlagBits::eHostCoherent,
       imageSize,
-      m_ImageData, VMA_MEMORY_USAGE_AUTO_PREFER_HOST).Map();
+      m_ImageData,
+      VMA_MEMORY_USAGE_AUTO_PREFER_HOST).Map();
 
     if (m_ImageData)
       stagingBuffer.Copy(m_ImageData, imageSize);
@@ -374,13 +369,6 @@ namespace Oxylus {
     m_ImageLayout = vk::ImageLayout::eShaderReadOnlyOptimal;
 
     stagingBuffer.Destroy();
-
-    CreateSampler();
-    CreateImageView();
-
-    DescriptorImageInfo.imageLayout = GetImageLayout();
-    DescriptorImageInfo.imageView = GetImageView();
-    DescriptorImageInfo.sampler = m_Sampler;
 
     timer.Stop();
     if (!m_ImageDescription.Path.empty())
@@ -467,21 +455,14 @@ namespace Oxylus {
 
     ktxVulkanDeviceInfo_Destruct(&kvdi);
 
-    CreateSampler();
-    CreateImageView();
-
-    DescriptorImageInfo.imageLayout = GetImageLayout();
-    DescriptorImageInfo.imageView = GetImageView();
-    DescriptorImageInfo.sampler = m_Sampler;
-
     timer.Stop();
     OX_CORE_TRACE("Image loaded: {}, {} ms",
       std::filesystem::path(m_ImageDescription.Path).filename().string().c_str(),
       timer.ElapsedMilliSeconds());
   }
 
-  void VulkanImage::CreateImageView() {
-    const auto& LogicalDevice = VulkanContext::Context.Device;
+  vk::ImageView VulkanImage::CreateImageView(const uint32_t mipmapIndex) const {
+    const auto& LogicalDevice = VulkanContext::GetDevice();
 
     vk::ImageViewCreateInfo viewCreateInfo;
     viewCreateInfo.image = m_Image;
@@ -497,22 +478,24 @@ namespace Oxylus {
       vk::ComponentSwizzle::eR, vk::ComponentSwizzle::eG, vk::ComponentSwizzle::eB, vk::ComponentSwizzle::eA
     };
     viewCreateInfo.subresourceRange.aspectMask = m_ImageDescription.AspectFlag;
-    viewCreateInfo.subresourceRange.baseMipLevel = 0;
-    viewCreateInfo.subresourceRange.levelCount = m_ImageDescription.MipLevels;
+    viewCreateInfo.subresourceRange.baseMipLevel = mipmapIndex;
+    viewCreateInfo.subresourceRange.levelCount = VK_REMAINING_MIP_LEVELS;
     viewCreateInfo.subresourceRange.baseArrayLayer = m_ImageDescription.BaseArrayLayerIndex;
     viewCreateInfo.subresourceRange.layerCount = GetDesc().Type == ImageType::TYPE_CUBE
                                                    ? 6
                                                    : m_ImageDescription.ViewArrayLayerCount;
 
-    VulkanUtils::CheckResult(LogicalDevice.createImageView(&viewCreateInfo, nullptr, &m_View));
+    const auto res = LogicalDevice.createImageView(viewCreateInfo, nullptr);
+    VulkanUtils::CheckResult(res.result);
+    return res.value;
   }
 
   void VulkanImage::CreateSampler() {
     const auto& LogicalDevice = VulkanContext::Context.Device;
 
     vk::SamplerCreateInfo sampler;
-    sampler.magFilter = m_ImageDescription.SamplerFiltering;
-    sampler.minFilter = m_ImageDescription.SamplerFiltering;
+    sampler.minFilter = m_ImageDescription.MinFiltering;
+    sampler.magFilter = m_ImageDescription.MagFiltering;
     sampler.mipmapMode = vk::SamplerMipmapMode::eLinear;
     sampler.addressModeU = m_ImageDescription.SamplerAddressMode;
     sampler.addressModeV = m_ImageDescription.SamplerAddressMode;
@@ -531,6 +514,78 @@ namespace Oxylus {
     }
     sampler.borderColor = m_ImageDescription.SamplerBorderColor;
     VulkanUtils::CheckResult(LogicalDevice.createSampler(&sampler, nullptr, &m_Sampler));
+  }
+
+  void VulkanImage::GenerateMips() {
+    vk::FormatProperties formatProperties;
+    VulkanContext::GetPhysicalDevice().getFormatProperties(m_ImageDescription.Format, &formatProperties);
+
+    if (!(formatProperties.optimalTilingFeatures & vk::FormatFeatureFlagBits::eSampledImageFilterLinear)) {
+      OX_CORE_WARN("Image format doesn't support linear blitting!");
+      return;
+    }
+    VulkanRenderer::SubmitOnce([this](const VulkanCommandBuffer& cmdBuffer) {
+      VkImageMemoryBarrier barrier{};
+      barrier.sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER;
+      barrier.image = GetImage();
+      barrier.srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
+      barrier.dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
+      barrier.subresourceRange.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
+      barrier.subresourceRange.baseArrayLayer = 0;
+      barrier.subresourceRange.layerCount = 1;
+      barrier.subresourceRange.levelCount = 1;
+
+      int32_t mipWidth = (int32_t)GetWidth();
+      int32_t mipHeight = (int32_t)GetHeight();
+
+      for (uint32_t i = 1; i < m_ImageDescription.MipLevels; i++) {
+        barrier.subresourceRange.baseMipLevel = i - 1;
+        barrier.oldLayout = VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL;
+        barrier.newLayout = VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL;
+        barrier.srcAccessMask = VK_ACCESS_TRANSFER_WRITE_BIT;
+        barrier.dstAccessMask = VK_ACCESS_TRANSFER_READ_BIT;
+        vk::ImageMemoryBarrier bar = barrier;
+        cmdBuffer.Get().pipelineBarrier(vk::PipelineStageFlagBits::eTransfer, vk::PipelineStageFlagBits::eTransfer, {}, 0, nullptr, 0, nullptr, 1, &bar);
+
+        VkImageBlit blit{};
+        blit.srcOffsets[0] = {0, 0, 0};
+        blit.srcOffsets[1] = {mipWidth, mipHeight, 1};
+        blit.srcSubresource.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
+        blit.srcSubresource.mipLevel = i - 1;
+        blit.srcSubresource.baseArrayLayer = 0;
+        blit.srcSubresource.layerCount = 1;
+        blit.dstOffsets[0] = {0, 0, 0};
+        blit.dstOffsets[1] = {mipWidth > 1 ? mipWidth / 2 : 1, mipHeight > 1 ? mipHeight / 2 : 1, 1};
+        blit.dstSubresource.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
+        blit.dstSubresource.mipLevel = i;
+        blit.dstSubresource.baseArrayLayer = 0;
+        blit.dstSubresource.layerCount = 1;
+        vk::ImageBlit bli = blit;
+        cmdBuffer.Get().blitImage(GetImage(), vk::ImageLayout::eTransferSrcOptimal, GetImage(), vk::ImageLayout::eTransferDstOptimal, 1, &bli, vk::Filter::eLinear);
+
+        barrier.oldLayout = VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL;
+        barrier.newLayout = (VkImageLayout)m_ImageDescription.FinalImageLayout;
+        barrier.srcAccessMask = VK_ACCESS_TRANSFER_READ_BIT;
+        barrier.dstAccessMask = VK_ACCESS_SHADER_READ_BIT;
+
+        vkCmdPipelineBarrier(cmdBuffer.Get(), VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT, 0, 0, nullptr, 0, nullptr, 1, &barrier);
+
+        if (mipWidth > 1)
+          mipWidth /= 2;
+        if (mipHeight > 1)
+          mipHeight /= 2;
+      }
+
+      barrier.subresourceRange.baseMipLevel = m_ImageDescription.MipLevels - 1;
+      barrier.oldLayout = VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL;
+      barrier.newLayout = (VkImageLayout)m_ImageDescription.FinalImageLayout;
+      barrier.srcAccessMask = VK_ACCESS_TRANSFER_WRITE_BIT;
+      barrier.dstAccessMask = VK_ACCESS_SHADER_READ_BIT;
+
+      vkCmdPipelineBarrier(cmdBuffer.Get(), VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT, 0, 0, nullptr, 0, nullptr, 1, &barrier);
+
+      m_ImageLayout = (vk::ImageLayout)barrier.newLayout;
+    });
   }
 
   vk::DescriptorSet VulkanImage::CreateDescriptorSet() const {
@@ -607,6 +662,20 @@ namespace Oxylus {
     m_ImageLayout = newImageLayout;
   }
 
+  std::vector<vk::DescriptorImageInfo> VulkanImage::GetMipDescriptors() const {
+    std::vector<vk::DescriptorImageInfo> result;
+
+    for (uint32_t i = 0; i < m_ImageDescription.MipLevels; i++) {
+      vk::DescriptorImageInfo desc;
+      desc.imageLayout = m_ImageLayout;
+      desc.imageView = CreateImageView(i);
+      desc.sampler = m_Sampler;
+      result.emplace_back(desc);
+    }
+
+    return result;
+  }
+
   VulkanImageDescription VulkanImage::GetColorAttachmentImageDescription(vk::Format format,
                                                                          uint32_t width,
                                                                          uint32_t height) {
@@ -630,6 +699,10 @@ namespace Oxylus {
 
   IVec3 VulkanImage::GetMipMapLevelSize(uint32_t width, uint32_t height, uint32_t depth, uint32_t level) {
     return {width / (1 << level), height / (1 << level), depth / (1 << level)};
+  }
+
+  uint32_t VulkanImage::GetMaxMipmapLevel(uint32_t width, uint32_t height, uint32_t depth) {
+    return std::ilogb(std::max(width, std::max(height, depth)));
   }
 
   void VulkanImage::Destroy() {

@@ -15,6 +15,7 @@
 
 namespace Oxylus {
   Scene::Scene() {
+    m_SceneRenderer.Init(*this);
     for (const auto& system : m_Systems) {
       system->OnInit();
     }
@@ -44,7 +45,7 @@ namespace Oxylus {
     return entity;
   }
 
-  void Scene::IterateOverMeshNode(const Ref <Mesh>& mesh, const std::vector<Mesh::Node*>& node, Entity parent) {
+  void Scene::IterateOverMeshNode(const Ref<Mesh>& mesh, const std::vector<Mesh::Node*>& node, Entity parent) {
     for (const auto child : node) {
       Entity entity = CreateEntity(child->Name).SetParent(parent);
       if (child->ContainsMesh) {
@@ -82,7 +83,7 @@ namespace Oxylus {
     m_Registry.destroy(entity);
   }
 
-  template<typename... Component>
+  template <typename... Component>
   static void CopyComponent(entt::registry& dst,
                             entt::registry& src,
                             const std::unordered_map<UUID, entt::entity>& enttMap) {
@@ -97,7 +98,7 @@ namespace Oxylus {
     }(), ...);
   }
 
-  template<typename... Component>
+  template <typename... Component>
   static void CopyComponent(ComponentGroup<Component...>,
                             entt::registry& dst,
                             entt::registry& src,
@@ -105,7 +106,7 @@ namespace Oxylus {
     CopyComponent<Component...>(dst, src, enttMap);
   }
 
-  template<typename... Component>
+  template <typename... Component>
   static void CopyComponentIfExists(Entity dst, Entity src) {
     ([&] {
       if (src.HasComponent<Component>())
@@ -113,7 +114,7 @@ namespace Oxylus {
     }(), ...);
   }
 
-  template<typename... Component>
+  template <typename... Component>
   static void CopyComponentIfExists(ComponentGroup<Component...>,
                                     Entity dst,
                                     Entity src) {
@@ -159,9 +160,9 @@ namespace Oxylus {
     return {};
   }
 
-  Ref <Scene> Scene::Copy(const Ref <Scene>& other) {
+  Ref<Scene> Scene::Copy(const Ref<Scene>& other) {
     ZoneScoped;
-    Ref <Scene> newScene = CreateRef<Scene>();
+    Ref<Scene> newScene = CreateRef<Scene>();
 
     auto& srcSceneRegistry = other->m_Registry;
     auto& dstSceneRegistry = newScene->m_Registry;
@@ -189,7 +190,7 @@ namespace Oxylus {
   }
 
   void Scene::RenderScene() {
-    m_SceneRenderer.Render(*this);
+    m_SceneRenderer.Render();
   }
 
   void Scene::UpdateSystems() {
@@ -290,44 +291,44 @@ namespace Oxylus {
     VulkanRenderer::SetCamera(camera);
   }
 
-  template<typename T>
+  template <typename T>
   void Scene::OnComponentAdded(Entity entity, T& component) {
     static_assert(sizeof(T) == 0);
   }
 
-  template<>
+  template <>
   void Scene::OnComponentAdded<TagComponent>(Entity entity, TagComponent& component) { }
 
-  template<>
+  template <>
   void Scene::OnComponentAdded<IDComponent>(Entity entity, IDComponent& component) { }
 
-  template<>
+  template <>
   void Scene::OnComponentAdded<RelationshipComponent>(Entity entity, RelationshipComponent& component) { }
 
-  template<>
+  template <>
   void Scene::OnComponentAdded<PrefabComponent>(Entity entity, PrefabComponent& component) { }
 
-  template<>
+  template <>
   void Scene::OnComponentAdded<TransformComponent>(Entity entity, TransformComponent& component) { }
 
-  template<>
+  template <>
   void Scene::OnComponentAdded<CameraComponent>(Entity entity, CameraComponent& component) { }
 
-  template<>
+  template <>
   void Scene::OnComponentAdded<AudioSourceComponent>(Entity entity, AudioSourceComponent& component) { }
 
-  template<>
+  template <>
   void Scene::OnComponentAdded<AudioListenerComponent>(Entity entity, AudioListenerComponent& component) { }
 
-  template<>
+  template <>
   void Scene::OnComponentAdded<MeshRendererComponent>(Entity entity, MeshRendererComponent& component) {
     entity.AddComponentI<MaterialComponent>();
   }
 
-  template<>
+  template <>
   void Scene::OnComponentAdded<SkyLightComponent>(Entity entity, SkyLightComponent& component) { }
 
-  template<>
+  template <>
   void Scene::OnComponentAdded<MaterialComponent>(Entity entity, MaterialComponent& component) {
     if (component.Materials.empty()) {
       if (entity.HasComponent<MeshRendererComponent>())
@@ -335,22 +336,25 @@ namespace Oxylus {
     }
   }
 
-  template<>
+  template <>
   void Scene::OnComponentAdded<LightComponent>(Entity entity, LightComponent& component) { }
 
-  template<>
+  template <>
+  void Scene::OnComponentAdded<PostProcessProbe>(Entity entity, PostProcessProbe& component) { }
+
+  template <>
   void Scene::OnComponentAdded<ParticleSystemComponent>(Entity entity,
                                                         ParticleSystemComponent& component) { }
 
-  template<>
+  template <>
   void Scene::OnComponentAdded<BoxColliderComponent>(Entity entity, BoxColliderComponent& component) { }
 
-  template<>
+  template <>
   void Scene::OnComponentAdded<MeshColliderComponent>(Entity entity, MeshColliderComponent& component) { }
 
-  template<>
+  template <>
   void Scene::OnComponentAdded<RigidBodyComponent>(Entity entity, RigidBodyComponent& component) { }
 
-  template<>
+  template <>
   void Scene::OnComponentAdded<NativeScriptComponent>(Entity entity, NativeScriptComponent& component) { }
 }

@@ -72,26 +72,40 @@ namespace Oxylus {
     return *this;
   }
 
-  void VulkanBuffer::Map() {
+  VulkanBuffer& VulkanBuffer::Map() {
     vmaMapMemory(VulkanContext::GetAllocator(), m_Allocation, &m_Mapped);
+    return *this;
   }
 
-  void VulkanBuffer::Unmap() {
+  VulkanBuffer& VulkanBuffer::Unmap() {
     vmaUnmapMemory(VulkanContext::GetAllocator(), m_Allocation);
     m_Mapped = nullptr;
+    return *this;
   }
 
-  void VulkanBuffer::Flush() const {
+  VulkanBuffer& VulkanBuffer::Flush() {
     vmaFlushAllocation(VulkanContext::GetAllocator(), m_Allocation, 0, VK_WHOLE_SIZE);
+    return *this;
   }
 
-  void VulkanBuffer::Destroy() {
+  VulkanBuffer& VulkanBuffer::Destroy() {
     if (m_Freed)
-      return;
+      return *this;
     if (m_Mapped)
       Unmap();
     vmaDestroyBuffer(VulkanContext::GetAllocator(), m_Buffer, m_Allocation);
     GPUMemory::TotalFreed += Size;
     m_Freed = true;
+    return *this;
+  }
+
+  VulkanBuffer& VulkanBuffer::Update() {
+    m_OnUpdate();
+    return *this;
+  }
+
+  VulkanBuffer& VulkanBuffer::SetOnUpdate(std::function<void()> func) {
+    m_OnUpdate = std::move(func);
+    return *this;
   }
 }

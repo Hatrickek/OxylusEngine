@@ -13,12 +13,11 @@ layout(binding = 1) uniform UBOParams {
 }
 u_UBOParams;
 
-#include "Tonemaps.glsl"
-
 void main() {
   vec3 uv = inUVW;
-  const float lodBias = 1.0f;
-  vec3 finalColor = textureLod(samplerEnv, uv, lodBias).rgb;
+  const float lodBias = 1.2f;
 
-  outColor = vec4(finalColor, 1.0);
+  vec4 finalColor = textureLod(samplerEnv, uv, lodBias);
+
+  outColor = finalColor;
 }

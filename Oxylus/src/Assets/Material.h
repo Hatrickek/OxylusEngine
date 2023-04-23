@@ -19,6 +19,7 @@ namespace Oxylus {
 
     struct Parameters {
       Vec4 Color = Vec4(1.0f);
+      Vec4 Emmisive = Vec4(0);
       float Roughness = 1.0f;
       float Metallic = 0.0f;
       float Specular = 0.1f;
@@ -31,8 +32,10 @@ namespace Oxylus {
       BOOL UseAO = false;
       BOOL UseEmissive = false;
       BOOL UseSpecular = false;
+      BOOL FlipImage = false;
       float AlphaCutoff = 1;
       BOOL DoubleSided = false;
+      uint32_t UVScale = 1;
     } Parameters;
 
     std::string Name = "Material";
@@ -51,12 +54,15 @@ namespace Oxylus {
     Ref<VulkanImage> DiffuseTexture = nullptr;
 
     Material() = default;
-    ~Material() = default;
+    ~Material();
 
     //TODO: Use ShaderID
     void Create(const std::string& name = "Material", const UUID& shaderID = {});
     bool IsOpaque() const;
     const std::vector<MaterialProperty>& GetMaterialProperties() const { return Shader->GetMaterialProperties(); }
     void Update();
+    void Destroy();
+  private:
+    void ClearTextures();
   };
 }

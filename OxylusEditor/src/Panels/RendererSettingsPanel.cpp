@@ -33,37 +33,37 @@ namespace Oxylus {
       ImGui::Text("Environment");
       IGUI::BeginProperties();
       const char* tonemaps[4] = {"ACES", "Uncharted2", "Filmic", "Reinhard"};
-      IGUI::Property("Tonemapper", RendererConfig::Get()->ColorConfig.Tonemapper, tonemaps, 4);
-      IGUI::Property<float>("Exposure", RendererConfig::Get()->ColorConfig.Exposure, 0, 5, "%.2f");
-      IGUI::Property<float>("Gamma", RendererConfig::Get()->ColorConfig.Gamma, 0, 5, "%.2f");
-      IGUI::EndProperties();
-
-      ImGui::Text("Vignette");
-      IGUI::BeginProperties();
-      IGUI::Property("Enable", RendererConfig::Get()->VignetteConfig.Enabled);
-      IGUI::Property<float>("Intensity", RendererConfig::Get()->VignetteConfig.Intensity, 0, 1, "%.2f");
+      ConfigProperty(IGUI::Property("Tonemapper", RendererConfig::Get()->ColorConfig.Tonemapper, tonemaps, 4));
+      ConfigProperty(IGUI::Property<float>("Exposure", RendererConfig::Get()->ColorConfig.Exposure, 0, 5, "%.2f"));
+      ConfigProperty(IGUI::Property<float>("Gamma", RendererConfig::Get()->ColorConfig.Gamma, 0, 5, "%.2f"));
       IGUI::EndProperties();
 
       ImGui::Text("SSAO");
       IGUI::BeginProperties();
-      IGUI::Property("Enabled", RendererConfig::Get()->SSAOConfig.Enabled);
-      IGUI::Property<float>("Radius", RendererConfig::Get()->SSAOConfig.Radius, 0, 1);
+      ConfigProperty(IGUI::Property("Enabled", RendererConfig::Get()->SSAOConfig.Enabled));
+      ConfigProperty(IGUI::Property<float>("Radius", RendererConfig::Get()->SSAOConfig.Radius, 0, 1));
       IGUI::EndProperties();
 
       ImGui::Text("Bloom");
       IGUI::BeginProperties();
-      IGUI::Property("Enabled", RendererConfig::Get()->BloomConfig.Enabled);
-      IGUI::Property<float>("Radius", RendererConfig::Get()->BloomConfig.Threshold, 0, 5);
+      ConfigProperty(IGUI::Property("Enabled", RendererConfig::Get()->BloomConfig.Enabled));
+      ConfigProperty(IGUI::Property<float>("Threshold", RendererConfig::Get()->BloomConfig.Threshold, 0, 5));
+      ConfigProperty(IGUI::Property<float>("Clamp", RendererConfig::Get()->BloomConfig.Clamp, 0, 5));
       IGUI::EndProperties();
 
       ImGui::Text("SSR");
       IGUI::BeginProperties();
-      IGUI::Property("Enabled", RendererConfig::Get()->SSRConfig.Enabled);
-      IGUI::Property<>("Samples", RendererConfig::Get()->SSRConfig.Samples, 30, 1024);
-      IGUI::Property<>("Max Distance", RendererConfig::Get()->SSRConfig.MaxDist, 50.0f, 500.0f);
+      ConfigProperty(IGUI::Property("Enabled", RendererConfig::Get()->SSRConfig.Enabled));
+      ConfigProperty(IGUI::Property<>("Samples", RendererConfig::Get()->SSRConfig.Samples, 30, 1024));
+      ConfigProperty(IGUI::Property<>("Max Distance", RendererConfig::Get()->SSRConfig.MaxDist, 50.0f, 500.0f));
       IGUI::EndProperties();
 
       OnEnd();
     }
+  }
+
+  void RendererSettingsPanel::ConfigProperty(bool value) {
+    if (value)
+      RendererConfig::Get()->ConfigChangeDispatcher.trigger(RendererConfig::ConfigChangeEvent{});
   }
 }

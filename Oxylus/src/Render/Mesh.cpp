@@ -1,7 +1,6 @@
 #include "src/oxpch.h"
 #define TINYGLTF_IMPLEMENTATION
 #define STB_IMAGE_IMPLEMENTATION
-#define TINYGLTF_NO_STB_IMAGE_WRITE
 #include "Mesh.h"
 
 #include <glm/gtc/type_ptr.hpp>
@@ -44,6 +43,7 @@ namespace Oxylus {
   }
 
   void Mesh::LoadFromFile(const std::string& path, uint32_t fileLoadingFlags, const float scale) {
+    ZoneScoped;
     ProfilerTimer timer;
 
     Path = path;
@@ -55,7 +55,11 @@ namespace Oxylus {
     gltfContext.SetImageLoader(LoadImageDataCallback, nullptr);
 
     std::string error, warning;
-    const bool fileLoaded = gltfContext.LoadASCIIFromFile(&gltfModel, &error, &warning, path);
+    bool fileLoaded = false;
+    if (std::filesystem::path(path).extension() == ".gltf")
+      fileLoaded = gltfContext.LoadASCIIFromFile(&gltfModel, &error, &warning, path);
+    else
+      fileLoaded = gltfContext.LoadBinaryFromFile(&gltfModel, &error, &warning, path);
     if (!fileLoaded) {
       OX_CORE_ERROR("Couldnt load gltf file: {}", error);
       LoadFailFallback();
@@ -188,6 +192,7 @@ namespace Oxylus {
       desc.CreateDescriptorSet = true;
       desc.Width = img.width;
       desc.Height = img.height;
+      //desc.MipLevels = VulkanImage::GetMaxMipmapLevel(img.width, img.height, 1) - 1;
       if (IsImageKtx(img) || !img.uri.empty()) {
         desc.Path = (std::filesystem::path(Path).remove_filename() / img.uri).string();
         m_Textures[i] = AssetManager::GetImageAsset(desc).Data;
@@ -201,6 +206,7 @@ namespace Oxylus {
   }
 
   void Mesh::LoadMaterials(tinygltf::Model& model) {
+    ZoneScoped;
     //Create a empty material if the mesh file doesn't have any.
     if (model.materials.empty()) {
       m_Materials.emplace_back(CreateRef<Material>());
@@ -221,23 +227,23 @@ namespace Oxylus {
         material.Parameters.UseAlbedo = true;
       }
       if (mat.values.contains("metallicRoughnessTexture")) {
-        material.MetallicTexture = m_Textures.at(
-          model.textures[mat.values["metallicRoughnessTexture"].TextureIndex()].source);
+        material.MetallicTexture = m_Textures.at(model.textures[mat.values["metallicRoughnessTexture"].TextureIndex()].source);
         material.Parameters.UseMetallic = true;
       }
       if (mat.values.contains("roughnessFactor")) {
         material.Parameters.Roughness = static_cast<float>(mat.values["roughnessFactor"].Factor());
-        material.Parameters.UseRoughness = true;
       }
       if (mat.values.contains("metallicFactor")) {
         material.Parameters.Metallic = static_cast<float>(mat.values["metallicFactor"].Factor());
-        material.Parameters.UseMetallic = true;
       }
       if (mat.values.contains("specularFactor")) {
         material.Parameters.Specular = static_cast<float>(mat.values["specularFactor"].Factor());
       }
       if (mat.values.contains("baseColorFactor")) {
         material.Parameters.Color = glm::make_vec4(mat.values["baseColorFactor"].ColorFactor().data());
+      }
+      if (mat.additionalValues.contains("emissiveFactor")) {
+        material.Parameters.Emmisive = glm::vec4(glm::make_vec3(mat.additionalValues["emissiveFactor"].ColorFactor().data()), 1.0);
       }
       if (mat.additionalValues.contains("normalTexture")) {
         material.NormalTexture = m_Textures.at(model.textures[mat.additionalValues["normalTexture"].TextureIndex()].source);
@@ -291,6 +297,14 @@ namespace Oxylus {
         }
 #endif
       }
+      if (mat.extensions.contains("KHR_materials_ior")) {
+        auto ext = mat.extensions.find("KHR_materials_ior");
+        if (ext->second.Has("ior")) {
+          auto factor = ext->second.Get("ior");
+          const auto value = (float)factor.Get<double>();
+          material.Parameters.Specular = (float)std::pow((value - 1) / (value + 1), 2);
+        }
+      }
 
       m_Materials.push_back(CreateRef<Material>(material));
     }
@@ -302,10 +316,12 @@ namespace Oxylus {
   }
 
   std::vector<Ref<Material>> Mesh::GetMaterialsAsRef() const {
+    ZoneScoped;
     return m_Materials;
   }
 
   void Mesh::Destroy() {
+    ZoneScoped;
     for (const auto& node : LinearNodes) {
       for (const auto primitive : node->Primitives) {
         delete primitive;
@@ -320,6 +336,7 @@ namespace Oxylus {
   }
 
   void Mesh::Primitive::SetDimensions(Vec3 min, Vec3 max) {
+    ZoneScoped;
     dimensions.min = min;
     dimensions.max = max;
     dimensions.size = max - min;
@@ -328,11 +345,13 @@ namespace Oxylus {
   }
 
   Mat4 Mesh::Node::LocalMatrix() const {
+    ZoneScoped;
     return glm::translate(Mat4(1.0f), Translation) * Mat4(Rotation) * glm::scale(Mat4(1.0f), Scale) *
            Matrix;
   }
 
   Mat4 Mesh::Node::GetMatrix() const {
+    ZoneScoped;
     Mat4 m = LocalMatrix();
     const Node* p = Parent;
     while (p) {
@@ -349,6 +368,7 @@ namespace Oxylus {
                       std::vector<uint32_t>& indexBuffer,
                       std::vector<Vertex>& vertexBuffer,
                       float globalscale) {
+    ZoneScoped;
     Node* newNode = new Node{};
     newNode->Index = nodeIndex;
     newNode->Parent = parent;
@@ -541,6 +561,7 @@ namespace Oxylus {
   }
 
   void Mesh::LoadFailFallback() {
+    ZoneScoped;
     LoadFromFile("resources/objects/cube.gltf");
     m_Materials[0]->Parameters.Color.r = 1.0f;
     m_Materials[0]->Parameters.Specular = 0.0f;

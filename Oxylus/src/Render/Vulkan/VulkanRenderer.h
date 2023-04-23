@@ -34,7 +34,7 @@ namespace Oxylus {
       bool Initialized = false;
 
       vk::DescriptorPool DescriptorPool;
-      std::vector<VulkanCommandBuffer> ComputeCommandBuffers;
+      VulkanCommandBuffer LightListCommandBuffer;
       VulkanCommandBuffer TimelineCommandBuffer;
       VulkanCommandBuffer DirectShadowCommandBuffer;
       VulkanCommandBuffer PBRPassCommandBuffer;
@@ -86,17 +86,20 @@ namespace Oxylus {
         IVec2 numThreadGroups;
       } UBO_PbrPassParams;
 
-      struct UBOComposite {
-        int Tonemapper = RendererConfig::TONEMAP_ACES;                  // 0- Aces 1- Uncharted 2-Filmic 3- Reinhard
+      struct UBOPostProcess {
+        int Tonemapper = RendererConfig::TONEMAP_ACES;          // 0- Aces 1- Uncharted 2-Filmic 3- Reinhard
         float Exposure = 1.0f;
         float Gamma = 2.5f;
         int EnableSSAO = 1;
         int EnableBloom = 1;
         int EnableSSR = 1;
         Vec2 _pad{};
-        Vec4 VignetteColor = Vec4(0.0f, 0.0f, 0.0f, 0.25f);    // rgb: color, a: intensity
-        Vec4 VignetteOffset = Vec4(0.0f, 0.0f, 0.0f, 1.0f);    // xy: offset, z: useMask, w: enable effect
-      } UBO_CompositeParams;
+        Vec4 VignetteColor = Vec4(0.0f, 0.0f, 0.0f, 0.25f);     // rgb: color, a: intensity
+        Vec4 VignetteOffset = Vec4(0.0f, 0.0f, 0.0f, 1.0f);     // xy: offset, z: useMask, w: enable effect
+        Vec2 FilmGrain = {};                                    //x: enable, y: amount
+        Vec2 ChromaticAberration = {};                          //x: enable, y: amount
+        Vec2 Sharpen = {};                                      // x: enable, y: amount
+      } UBO_PostProcessParams;
 
       struct SSAOParamsUB {
         Vec4 ssaoSamples[64] = {};
@@ -107,11 +110,6 @@ namespace Oxylus {
         Vec4 texelOffset = {};
         int texelRadius = 2;
       } UBO_SSAOBlur;
-
-      struct BloomUB {
-        Vec4 Params; // x: threshold, y: clamp, z: radius, w: unused
-        IVec2 Stage;  // x: stage, y: lod
-      } UBO_Bloom;
 
       struct SSR_UBO {
         int Samples = 30;
@@ -141,9 +139,8 @@ namespace Oxylus {
       VulkanBuffer LighIndexBuffer;
       VulkanBuffer LighGridBuffer;
       VulkanBuffer SSAOBuffer;
-      VulkanBuffer CompositeParametersBuffer;
+      VulkanBuffer PostProcessBuffer;
       VulkanBuffer DirectShadowBuffer;
-      VulkanBuffer BloomBuffer;
       VulkanBuffer SSRBuffer;
       VulkanBuffer AtmosphereBuffer;
 
@@ -184,7 +181,6 @@ namespace Oxylus {
       VulkanImage SSAOPassImage;
       VulkanImage SSRPassImage;
       VulkanImage CompositePassImage;
-      VulkanImage BloomPassImage;
       VulkanImage BloomUpsampleImage;
       VulkanImage BloomDownsampleImage;
       VulkanImage AtmosphereImage;
@@ -279,7 +275,7 @@ namespace Oxylus {
       const Vec4 Color;
 
       QuadData(const Mat4& transform, const Ref<VulkanImage>& image, const Vec4 color) : Transform(transform),
-                                                                                                   Image(image), Color(color) { }
+                                                                                         Image(image), Color(color) { }
     };
 
     static std::vector<RendererData::Vertex> s_QuadVertexDataBuffer;

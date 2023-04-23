@@ -103,6 +103,7 @@ namespace Oxylus {
     float CubemapLodBias;
     float Intensity = 0.7f;
     float Rotation = 0.0f;
+    bool FlipImage = false;
   };
 
   struct LightComponent {
@@ -121,6 +122,20 @@ namespace Oxylus {
     float OuterCutOffAngle = glm::radians(17.5f);
 
     ShadowQualityType ShadowQuality = ShadowQualityType::UltraSoft;
+  };
+
+  struct PostProcessProbe {
+    bool VignetteEnabled = false;
+    float VignetteIntensity = 0.25f;
+
+    bool FilmGrainEnabled = false;
+    float FilmGrainIntensity = 0.2f;
+
+    bool ChromaticAberrationEnabled = false;
+    float ChromaticAberrationIntensity = 0.5f;
+
+    bool SharpenEnabled = false;
+    float SharpenIntensity = 0.5f;
   };
 
   //Physics

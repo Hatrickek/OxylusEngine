@@ -3,6 +3,7 @@
 #include <vulkan/vulkan.hpp>
 
 #include "vk_mem_alloc.h"
+#include "Event/Event.h"
 
 namespace Oxylus {
   class VulkanBuffer {
@@ -23,10 +24,11 @@ namespace Oxylus {
     const VulkanBuffer& CopyTo(const vk::Buffer& dstBuffer,
                                const vk::CommandBuffer& copyCmd,
                                const vk::BufferCopy& bufferCopy) const;
-    void Map();
-    void Unmap();
-    void Flush() const;
-    void Destroy();
+    VulkanBuffer& Map();
+    VulkanBuffer& Unmap();
+    VulkanBuffer& Flush();
+    VulkanBuffer& Destroy();
+    VulkanBuffer& Update();
 
     template <typename T = uint8_t> void Copy(const void* data, size_t size, VkDeviceSize offset = 0) const {
       memcpy((T*)m_Mapped + offset, data, size);
@@ -34,6 +36,14 @@ namespace Oxylus {
 
     template <typename T> void Copy(const std::vector<T>& data, VkDeviceSize offset = 0) {
       Copy(data.data(), sizeof(T) * data.size(), offset);
+    }
+
+    VulkanBuffer& SetOnUpdate(std::function<void()> func);
+
+    template <typename Type>
+    VulkanBuffer& Sink(EventDispatcher& dispatcher) {
+      dispatcher.sink<Type>().connect < &VulkanBuffer::Update > (*this);
+      return *this;
     }
 
     vk::Buffer Get() const { return m_Buffer; }
@@ -46,5 +56,6 @@ namespace Oxylus {
     vk::DescriptorBufferInfo m_Descriptor;
     void* m_Mapped = nullptr;
     bool m_Freed = false;
+    std::function<void()> m_OnUpdate = nullptr;
   };
 }

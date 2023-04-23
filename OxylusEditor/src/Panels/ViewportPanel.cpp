@@ -93,6 +93,8 @@ namespace Oxylus {
 
   void ViewportPanel::OnUpdate() {
     if (m_ViewportFocused && !m_SimulationRunning && m_UseEditorCamera) {
+      if (m_LockAspectRatio)
+        Camera;
       const glm::vec3& position = Camera.GetPosition();
       const glm::vec2 yawPitch = glm::vec2(Camera.GetYaw(), Camera.GetPitch());
       glm::vec3 finalPosition = position;
@@ -137,17 +139,17 @@ namespace Oxylus {
       }
 
       const glm::vec3 dampedPosition = Math::SmoothDamp(position,
-                                                        finalPosition,
-                                                        m_TranslationVelocity,
-                                                        m_TranslationDampening,
-                                                        10000.0f,
-                                                        Timestep::GetDeltaTime());
+        finalPosition,
+        m_TranslationVelocity,
+        m_TranslationDampening,
+        10000.0f,
+        Timestep::GetDeltaTime());
       const glm::vec2 dampedYawPitch = Math::SmoothDamp(yawPitch,
-                                                        finalYawPitch,
-                                                        m_RotationVelocity,
-                                                        m_RotationDampening,
-                                                        1000.0f,
-                                                        Timestep::GetDeltaTime());
+        finalYawPitch,
+        m_RotationVelocity,
+        m_RotationDampening,
+        1000.0f,
+        Timestep::GetDeltaTime());
 
       Camera.SetPosition(m_SmoothCamera ? dampedPosition : finalPosition);
       Camera.SetYaw(m_SmoothCamera ? dampedYawPitch.x : finalYawPitch.x);
@@ -207,9 +209,9 @@ namespace Oxylus {
       ImGuizmo::SetOrthographic(false);
       ImGuizmo::SetDrawlist();
       ImGuizmo::SetRect(m_ViewportBounds[0].x,
-                        m_ViewportBounds[0].y,
-                        m_ViewportBounds[1].x - m_ViewportBounds[0].x,
-                        m_ViewportBounds[1].y - m_ViewportBounds[0].y);
+        m_ViewportBounds[0].y,
+        m_ViewportBounds[1].x - m_ViewportBounds[0].x,
+        m_ViewportBounds[1].y - m_ViewportBounds[0].y);
 
       const glm::mat4& cameraProjection = Camera.GetProjectionMatrix();
       const glm::mat4& cameraView = Camera.GetViewMatrix();
@@ -227,12 +229,12 @@ namespace Oxylus {
       const float snapValues[3] = {snapValue, snapValue, snapValue};
 
       ImGuizmo::Manipulate(glm::value_ptr(cameraView),
-                           glm::value_ptr(cameraProjection),
-                           static_cast<ImGuizmo::OPERATION>(m_GizmoType),
-                           ImGuizmo::WORLD,
-                           glm::value_ptr(transform),
-                           nullptr,
-                           snap ? snapValues : nullptr);
+        glm::value_ptr(cameraProjection),
+        static_cast<ImGuizmo::OPERATION>(m_GizmoType),
+        ImGuizmo::WORLD,
+        glm::value_ptr(transform),
+        nullptr,
+        snap ? snapValues : nullptr);
 
       if (ImGuizmo::IsUsing()) {
         const Entity parent = selectedEntity.GetParent();

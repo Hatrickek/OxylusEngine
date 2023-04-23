@@ -330,7 +330,6 @@ namespace Oxylus {
     pipelineSpecification.Shader->OnReloadEnd([this] {
       CreateComputePipeline(m_PipelineDescription);
     });
-
     ShaderLibrary::AddShader(pipelineSpecification.Shader);
   }
 

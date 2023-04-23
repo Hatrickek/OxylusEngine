@@ -29,42 +29,32 @@ namespace Oxylus {
 
     void CreateEntityWithMesh(const Asset<Mesh>& meshAsset);
 
-    template<typename T, typename... Args>
-    Scene* AddSystem(Args&& ... args) {
+    template <typename T, typename... Args>
+    Scene* AddSystem(Args&&... args) {
       m_Systems.emplace_back(CreateScope<T>(std::forward<Args>(args)...));
       return this;
     }
 
     void DestroyEntity(Entity entity);
-
     void DuplicateEntity(Entity entity);
-
     void OnPlay();
-
     void OnStop();
-
     void OnUpdate(float deltaTime);
-
     void OnEditorUpdate(float deltaTime, Camera& camera);
-
     void RenderScene();
-
     void UpdateSystems();
-
     Entity FindEntity(const std::string_view& name);
-
     bool HasEntity(UUID uuid) const;
-
     Entity GetEntityByUUID(UUID uuid);
-
     static Ref<Scene> Copy(const Ref<Scene>& other);
+    SceneRenderer& GetRenderer() { return m_SceneRenderer; }
 
     std::string SceneName = "Untitled";
     entt::registry m_Registry;
     std::unordered_map<UUID, entt::entity> m_EntityMap;
 
   private:
-    template<typename T>
+    template <typename T>
     void OnComponentAdded(Entity entity, T& component);
 
     void IterateOverMeshNode(const Ref<Mesh>& mesh, const std::vector<Mesh::Node*>& node, Entity parent);
