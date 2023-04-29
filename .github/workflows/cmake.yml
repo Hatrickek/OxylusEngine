@@ -22,8 +22,15 @@ jobs:
             build_type: [Dist]
 
     steps:
+    - name: Install Vulkan SDK
+      uses: humbletim/install-vulkan-sdk@v1.1.1
+      with:
+         version: latest
+         cache: true
     - name: Checkout Code
       uses: actions/checkout@v3
+      with:
+        submodules: recursive
     - name: Configure CMake
       run: cmake -B ${{github.workspace}}/Build -DCMAKE_BUILD_TYPE=${{matrix.build_type}} -DCMAKE_CXX_COMPILER=clang++ Build
     - name: Build
@@ -41,8 +48,15 @@ jobs:
             build_type: [Dist]
 
     steps:
+    - name: Install Vulkan SDK
+      uses: humbletim/install-vulkan-sdk@v1.1.1
+      with:
+         version: latest
+         cache: true
     - name: Checkout Code
       uses: actions/checkout@v3
+      with:
+        submodules: recursive
     - name: Add msbuild to PATH
       uses: microsoft/setup-msbuild@v1.3
     - name: Configure CMake
