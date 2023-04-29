@@ -45,8 +45,8 @@ namespace Oxylus {
 
     void CreateSwapChain();
     void RecreateSwapChain();
-    void Submit();
-    void SubmitPass(const std::function<void(VulkanCommandBuffer& commandBuffer)>& func);
+    VulkanSwapchain* Submit();
+    VulkanSwapchain* SubmitPass(const std::function<void(VulkanCommandBuffer& commandBuffer)>& func);
     void Present();
     void ClearSwapChain();
     bool AcquireNextImage();

@@ -2,8 +2,6 @@
 
 #include "imgui.h"
 #include "Core/Application.h"
-#include "Utils/EditorConfig.h"
-#include "Utils/ImGuiScoped.h"
 #include "icons/IconsMaterialDesignIcons.h"
 
 namespace Oxylus {
@@ -11,17 +9,14 @@ namespace Oxylus {
 
   void EditorSettingsPanel::OnImGuiRender() {
     constexpr ImGuiWindowFlags window_flags = ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_NoDocking;
-    OnBegin(window_flags);
-    {
+    if (OnBegin(window_flags)) {
       //Theme
       const auto& ImGuiLayer = Application::Get().GetImGuiLayer();
-      const char* themes[] = {"Dark", "Dark 2", "White"};
+      const char* themes[] = {"Dark", "White"};
       if (ImGui::Combo("Theme", &ImGuiLayer->SelectedTheme, themes, OX_ARRAYSIZE(themes))) {
         ImGuiLayer->SetTheme(ImGuiLayer->SelectedTheme);
       }
+      OnEnd();
     }
-    static bool windowDecors; //TODO:
-    ImGui::Checkbox("Custom window titlebar", &windowDecors);
-    OnEnd();
   }
 }

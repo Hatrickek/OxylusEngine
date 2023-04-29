@@ -274,7 +274,7 @@ namespace Oxylus {
     Resizing = false;
   }
 
-  void VulkanSwapchain::Submit() {
+  VulkanSwapchain* VulkanSwapchain::Submit() {
     ZoneScoped;
     //Swapchain pass submit
     vk::SubmitInfo submitInfo;
@@ -289,9 +289,11 @@ namespace Oxylus {
 
     VulkanUtils::CheckResult(
       VulkanContext::VulkanQueue.GraphicsQueue.submit(1, &submitInfo, InFlightFences[CurrentFrame]));
+
+    return this;
   }
 
-  void VulkanSwapchain::SubmitPass(const std::function<void(VulkanCommandBuffer& commandBuffer)>& func) {
+  VulkanSwapchain* VulkanSwapchain::SubmitPass(const std::function<void(VulkanCommandBuffer& commandBuffer)>& func) {
     const auto& LogicalDevice = VulkanContext::Context.Device;
     vk::ClearValue clearValues[1];
     clearValues[0].color = vk::ClearColorValue(std::array{0.0f, 0.0f, 0.0f, 1.0f});
@@ -316,6 +318,8 @@ namespace Oxylus {
     func(commandBuffer);
     commandBuffer.EndRenderPass();
     commandBuffer.End();
+
+    return this;
   }
 
   void VulkanSwapchain::Present() {

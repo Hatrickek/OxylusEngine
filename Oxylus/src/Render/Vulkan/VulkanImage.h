@@ -19,7 +19,8 @@ namespace Oxylus {
     uint32_t Width = 0;
     uint32_t Height = 0;
     uint32_t Depth = 1;
-    uint32_t MipLevels = 1;
+    uint32_t MipLevels = 1;     // If it is above 1 even when `GenerateMips` is false, it will still generate mips.
+    bool GenerateMips = false;  // Will override the `MipLevels` value and get the max mip level.
     vk::Format Format = vk::Format::eR8G8B8A8Unorm;
     vk::ImageTiling ImageTiling = vk::ImageTiling::eOptimal;
     vk::ImageUsageFlags UsageFlags = vk::ImageUsageFlagBits::eTransferSrc | vk::ImageUsageFlagBits::eTransferDst |

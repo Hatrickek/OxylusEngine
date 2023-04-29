@@ -1,6 +1,8 @@
 #include "src/oxpch.h"
 #include "VulkanRenderer.h"
 
+#include <future>
+
 #include "VulkanCommandBuffer.h"
 #include "VulkanContext.h"
 #include "VulkanPipeline.h"
@@ -16,7 +18,6 @@
 #include "Utils/Profiler.h"
 #include "Core/Entity.h"
 
-#include <random>
 #include <backends/imgui_impl_vulkan.h>
 
 namespace Oxylus {
@@ -39,6 +40,7 @@ namespace Oxylus {
   static VulkanDescriptorSet s_BloomDescriptorSet;
   static VulkanDescriptorSet s_CompositeDescriptorSet;
   static VulkanDescriptorSet s_AtmosphereDescriptorSet;
+  static VulkanDescriptorSet s_DepthOfFieldDescriptorSet;
   static Mesh s_SkyboxCube;
   static VulkanBuffer s_TriangleVertexBuffer;
   static VulkanBuffer s_QuadVertexBuffer;
@@ -227,12 +229,89 @@ namespace Oxylus {
 
   void VulkanRenderer::CreateGraphicsPipelines() {
     ZoneScoped;
-    PipelineDescription pipelineDescription{};
-    pipelineDescription.Shader = CreateRef<VulkanShader>(ShaderCI{
+    // Create shaders
+    auto skyboxShader = ShaderLibrary::CreateShaderAsync(ShaderCI{
       .VertexPath = Resources::GetResourcesPath("Shaders/Skybox.vert").string(),
       .FragmentPath = Resources::GetResourcesPath("Shaders/Skybox.frag").string(),
       .EntryPoint = "main", .Name = "Skybox"
     });
+    auto pbrShader = ShaderLibrary::CreateShaderAsync(ShaderCI{
+      .VertexPath = Resources::GetResourcesPath("Shaders/PBRTiled.vert").string(),
+      .FragmentPath = Resources::GetResourcesPath("Shaders/PBRTiled.frag").string(),
+      .EntryPoint = "main", .Name = "PBRTiled",
+    });
+    auto unlitShader = ShaderLibrary::CreateShaderAsync(ShaderCI{
+      .VertexPath = Resources::GetResourcesPath("Shaders/Unlit.vert").string(),
+      .FragmentPath = Resources::GetResourcesPath("Shaders/Unlit.frag").string(),
+      .EntryPoint = "main", .Name = "Unlit",
+    });
+    auto directShadowShader = ShaderLibrary::CreateShaderAsync(ShaderCI{
+      .VertexPath = Resources::GetResourcesPath("Shaders/DirectShadowDepthPass.vert").string(),
+      .FragmentPath = Resources::GetResourcesPath("Shaders/DirectShadowDepthPass.frag").string(),
+      .EntryPoint = "main", .Name = "DirectShadowDepth"
+    });
+    auto depthPassShader = ShaderLibrary::CreateShaderAsync(ShaderCI{
+      .VertexPath = Resources::GetResourcesPath("Shaders/DepthNormalPass.vert").string(),
+      .FragmentPath = Resources::GetResourcesPath("Shaders/DepthNormalPass.frag").string(),
+      .EntryPoint = "main", .Name = "DepthPass"
+    });
+    auto ssaoShader = ShaderLibrary::CreateShaderAsync(ShaderCI{
+      .EntryPoint = "main",
+      .Name = "SSAO",
+      .ComputePath = Resources::GetResourcesPath("Shaders/SSAO.comp").string(),
+    });
+    auto bloomShader = ShaderLibrary::CreateShaderAsync(ShaderCI{
+      .EntryPoint = "main",
+      .Name = "Bloom",
+      .ComputePath = Resources::GetResourcesPath("Shaders/Bloom.comp").string(),
+    });
+    auto ssrShader = ShaderLibrary::CreateShaderAsync(ShaderCI{
+      .EntryPoint = "main",
+      .Name = "SSR",
+      .ComputePath = Resources::GetResourcesPath("Shaders/SSR.comp").string(),
+    });
+    auto atmosphereShader = ShaderLibrary::CreateShaderAsync(ShaderCI{
+      .EntryPoint = "main",
+      .Name = "AtmosphereScattering",
+      .ComputePath = Resources::GetResourcesPath("Shaders/AtmosphricScattering.comp").string(),
+    });
+    auto compositeShader = ShaderLibrary::CreateShaderAsync(ShaderCI{
+      .EntryPoint = "main",
+      .Name = "Composite",
+      .ComputePath = Resources::GetResourcesPath("Shaders/Composite.comp").string(),
+    });
+    auto postProcessShader = ShaderLibrary::CreateShaderAsync(ShaderCI{
+      .VertexPath = Resources::GetResourcesPath("Shaders/PostProcess.vert").string(),
+      .FragmentPath = Resources::GetResourcesPath("Shaders/PostProcess.frag").string(),
+      .EntryPoint = "main", .Name = "PostProcess"
+    });
+    auto quadShader = ShaderLibrary::CreateShaderAsync(ShaderCI{
+      .VertexPath = Resources::GetResourcesPath("Shaders/quad.vert").string(),
+      .FragmentPath = Resources::GetResourcesPath("Shaders/quad.frag").string(),
+      .EntryPoint = "main",
+      .Name = "Quad",
+    });
+    auto frustumGridShader = ShaderLibrary::CreateShaderAsync(ShaderCI{
+      .EntryPoint = "main", .Name = "FrustumGrid",
+      .ComputePath = Resources::GetResourcesPath("Shaders/ComputeFrustumGrid.comp").string(),
+    });
+    auto lightListShader = ShaderLibrary::CreateShaderAsync(ShaderCI{
+      .EntryPoint = "main", .Name = "LightList",
+      .ComputePath = Resources::GetResourcesPath("Shaders/ComputeLightList.comp").string(),
+    });
+    auto uiShader = ShaderLibrary::CreateShaderAsync(ShaderCI{
+      .VertexPath = Resources::GetResourcesPath("Shaders/ui.vert").string(),
+      .FragmentPath = Resources::GetResourcesPath("Shaders/ui.frag").string(),
+      .EntryPoint = "main",
+      .Name = "UI",
+    });
+    auto depthOfFieldShader = ShaderLibrary::CreateShaderAsync(ShaderCI{
+      .EntryPoint = "main",
+      .Name = "DepthOfField",
+      .ComputePath = Resources::GetResourcesPath("Shaders/DepthOfField.comp").string(),
+    });
+    PipelineDescription pipelineDescription{};
+    pipelineDescription.Shader = skyboxShader.get();
     pipelineDescription.ColorAttachmentCount = 1;
     pipelineDescription.RenderTargets[0].Format = SwapChain.m_ImageFormat;
     pipelineDescription.RasterizerDesc.CullMode = vk::CullModeFlagBits::eNone;
@@ -262,7 +341,7 @@ namespace Oxylus {
         SetDescription{6, 0, 1, vDT::eCombinedImageSampler, vSS::eFragment, &s_Resources.CubeMap.GetDescImageInfo()},
       }
     };
-    s_Pipelines.SkyboxPipeline.CreateGraphicsPipeline(pipelineDescription);
+    s_Pipelines.SkyboxPipeline.CreateGraphicsPipelineAsync(pipelineDescription).wait();
 
     std::vector<std::vector<SetDescription>> pbrDescriptorSet = {
       {
@@ -292,68 +371,32 @@ namespace Oxylus {
     pipelineDescription.PushConstantRanges.emplace_back(vk::ShaderStageFlagBits::eFragment,
       sizeof(glm::mat4),
       sizeof Material::Parameters);
-    pipelineDescription.Shader = CreateRef<VulkanShader>(ShaderCI{
-      .VertexPath = Resources::GetResourcesPath("Shaders/PBRTiled.vert").string(),
-      .FragmentPath = Resources::GetResourcesPath("Shaders/PBRTiled.frag").string(),
-      .EntryPoint = "main", .Name = "PBR",
-      .MaterialProperties = {
-        MaterialProperty{.Type = MaterialPropertyType::Float, .DisplayName = "Rougnhess",},
-        MaterialProperty{.Type = MaterialPropertyType::Float, .DisplayName = "Metallic",},
-        MaterialProperty{.Type = MaterialPropertyType::Float, .DisplayName = "Specular",},
-        MaterialProperty{.Type = MaterialPropertyType::Float, .DisplayName = "Normal",},
-        MaterialProperty{.Type = MaterialPropertyType::Float, .DisplayName = "AO",},
-        MaterialProperty{.Type = MaterialPropertyType::Float3, .DisplayName = "Color", .IsColor = true},
-        MaterialProperty{.Type = MaterialPropertyType::Int, .DisplayName = "UseAlbedo",},
-        MaterialProperty{.Type = MaterialPropertyType::Int, .DisplayName = "UseRoughness",},
-        MaterialProperty{.Type = MaterialPropertyType::Int, .DisplayName = "UseMetallic",},
-        MaterialProperty{.Type = MaterialPropertyType::Int, .DisplayName = "UseNormal",},
-        MaterialProperty{.Type = MaterialPropertyType::Int, .DisplayName = "UseAO",}
-      }
-    });
+    pipelineDescription.Shader = pbrShader.get();
     pipelineDescription.DepthSpec.DepthWriteEnable = true;
     pipelineDescription.DepthSpec.DepthEnable = true;
     pipelineDescription.RasterizerDesc.CullMode = vk::CullModeFlagBits::eBack;
-    s_Pipelines.PBRPipeline.CreateGraphicsPipeline(pipelineDescription);
+    s_Pipelines.PBRPipeline.CreateGraphicsPipelineAsync(pipelineDescription).wait();
 
-    {
-      PipelineDescription unlitPipelineDesc;
-      unlitPipelineDesc.Shader = CreateRef<VulkanShader>(ShaderCI{
-        .VertexPath = Resources::GetResourcesPath("Shaders/Unlit.vert").string(),
-        .FragmentPath = Resources::GetResourcesPath("Shaders/Unlit.frag").string(),
-        .EntryPoint = "main", .Name = "Unlit",
-      });
-      unlitPipelineDesc.ColorAttachmentCount = 1;
-      unlitPipelineDesc.PushConstantRanges = {vk::PushConstantRange{vSS::eVertex, 0, sizeof glm::mat4() * 2}};
-      unlitPipelineDesc.DepthSpec.DepthWriteEnable = false;
-      unlitPipelineDesc.DepthSpec.DepthEnable = false;
-      unlitPipelineDesc.RasterizerDesc.CullMode = vk::CullModeFlagBits::eBack;
-      unlitPipelineDesc.VertexInputState = VertexInputDescription(VertexLayout({
-        VertexComponent::POSITION, VertexComponent::NORMAL, VertexComponent::UV, VertexComponent::COLOR
-      }));
-      unlitPipelineDesc.BlendStateDesc.RenderTargets[0].BlendEnable = true;
-      unlitPipelineDesc.BlendStateDesc.RenderTargets[0].DestBlend = vk::BlendFactor::eOneMinusSrcAlpha;
+    PipelineDescription unlitPipelineDesc;
+    unlitPipelineDesc.Shader = unlitShader.get();
+    unlitPipelineDesc.ColorAttachmentCount = 1;
+    unlitPipelineDesc.PushConstantRanges = {vk::PushConstantRange{vSS::eVertex, 0, sizeof glm::mat4() * 2}};
+    unlitPipelineDesc.DepthSpec.DepthWriteEnable = false;
+    unlitPipelineDesc.DepthSpec.DepthEnable = false;
+    unlitPipelineDesc.RasterizerDesc.CullMode = vk::CullModeFlagBits::eBack;
+    unlitPipelineDesc.VertexInputState = VertexInputDescription(VertexLayout({
+      VertexComponent::POSITION, VertexComponent::NORMAL, VertexComponent::UV, VertexComponent::COLOR
+    }));
+    unlitPipelineDesc.BlendStateDesc.RenderTargets[0].BlendEnable = true;
+    unlitPipelineDesc.BlendStateDesc.RenderTargets[0].DestBlend = vk::BlendFactor::eOneMinusSrcAlpha;
 
-      s_Pipelines.UnlitPipeline.CreateGraphicsPipeline(unlitPipelineDesc);
-    }
+    s_Pipelines.UnlitPipeline.CreateGraphicsPipelineAsync(unlitPipelineDesc).wait();
 
     PipelineDescription depthpassdescription;
-    depthpassdescription.DepthSpec.CompareOp = vk::CompareOp::eLess;
-    depthpassdescription.Shader = CreateRef<VulkanShader>(ShaderCI{
-      .VertexPath = Resources::GetResourcesPath("Shaders/DepthNormalPass.vert").string(),
-      .FragmentPath = Resources::GetResourcesPath("Shaders/DepthNormalPass.frag").string(),
-      .EntryPoint = "main", .Name = "DepthPass"
-    });
+    depthpassdescription.Shader = depthPassShader.get();
     depthpassdescription.SetDescriptions = pbrDescriptorSet;
     depthpassdescription.DepthAttachmentFirst = true;
-    depthpassdescription.DepthSpec.DepthReferenceAttachment = 0;
-    depthpassdescription.DepthSpec.DepthWriteEnable = true;
-    depthpassdescription.DepthSpec.DepthEnable = true;
-    depthpassdescription.DepthSpec.DepthStenctilFormat = vk::Format::eD32Sfloat;
     depthpassdescription.DepthSpec.BoundTest = true;
-    depthpassdescription.DepthSpec.MinDepthBound = 0;
-    depthpassdescription.DepthSpec.MaxDepthBound = 1;
-    depthpassdescription.RasterizerDesc.CullMode = vk::CullModeFlagBits::eBack;
-    depthpassdescription.ColorAttachmentCount = 1;
     depthpassdescription.ColorAttachment = 1;
     depthpassdescription.SubpassDependencyCount = 2;
     depthpassdescription.SubpassDescription[0].SrcStageMask = vk::PipelineStageFlagBits::eBottomOfPipe;
@@ -367,6 +410,7 @@ namespace Oxylus {
     depthpassdescription.SubpassDescription[1].DstStageMask = vk::PipelineStageFlagBits::eFragmentShader;
     depthpassdescription.SubpassDescription[1].SrcAccessMask = vk::AccessFlagBits::eColorAttachmentWrite;
     depthpassdescription.SubpassDescription[1].DstAccessMask = vk::AccessFlagBits::eShaderRead;
+    depthpassdescription.DepthAttachmentLayout = vk::ImageLayout::eDepthStencilReadOnlyOptimal;
     depthpassdescription.VertexInputState = VertexInputDescription(VertexLayout({
       VertexComponent::POSITION,
       VertexComponent::NORMAL,
@@ -379,13 +423,9 @@ namespace Oxylus {
     depthpassdescription.PushConstantRanges.emplace_back(vk::ShaderStageFlagBits::eFragment,
       sizeof(glm::mat4),
       sizeof Material::Parameters);
-    s_Pipelines.DepthPrePassPipeline.CreateGraphicsPipeline(depthpassdescription);
+    s_Pipelines.DepthPrePassPipeline.CreateGraphicsPipelineAsync(depthpassdescription).wait();
 
-    pipelineDescription.Shader = CreateRef<VulkanShader>(ShaderCI{
-      .VertexPath = Resources::GetResourcesPath("Shaders/DirectShadowDepthPass.vert").string(),
-      .FragmentPath = Resources::GetResourcesPath("Shaders/DirectShadowDepthPass.frag").string(),
-      .EntryPoint = "main", .Name = "DirectShadowDepth"
-    });
+    pipelineDescription.Shader = directShadowShader.get();
     pipelineDescription.PushConstantRanges = {vk::PushConstantRange{vk::ShaderStageFlagBits::eVertex, 0, 68}};
     pipelineDescription.ColorAttachmentCount = 0;
     pipelineDescription.RasterizerDesc.CullMode = vk::CullModeFlagBits::eNone;
@@ -403,7 +443,7 @@ namespace Oxylus {
         SetDescription{0, 0, 1, vDT::eUniformBuffer, vSS::eVertex, nullptr, &s_RendererData.DirectShadowBuffer.GetDescriptor()}
       }
     };
-    s_Pipelines.DirectShadowDepthPipeline.CreateGraphicsPipeline(pipelineDescription);
+    s_Pipelines.DirectShadowDepthPipeline.CreateGraphicsPipelineAsync(pipelineDescription).wait();
 
     PipelineDescription ssaoDescription;
     ssaoDescription.RenderTargets[0].Format = vk::Format::eR8Unorm;
@@ -418,15 +458,12 @@ namespace Oxylus {
         SetDescription{3, 0, 1, vDT::eCombinedImageSampler, vSS::eCompute},
       }
     };
-    ssaoDescription.Shader = CreateRef<VulkanShader>(ShaderCI{
-      .EntryPoint = "main",
-      .Name = "SSAO",
-      .ComputePath = Resources::GetResourcesPath("Shaders/SSAO.comp").string(),
-    });
-    s_Pipelines.SSAOPassPipeline.CreateComputePipeline(ssaoDescription);
+    ssaoDescription.Shader = ssaoShader.get();
+    s_Pipelines.SSAOPassPipeline.CreateComputePipelineAsync(ssaoDescription).wait();
 
     {
       PipelineDescription bloomDesc;
+      bloomDesc.Name = "Bloom Pipeline";
       bloomDesc.ColorAttachmentCount = 1;
       bloomDesc.DepthSpec.DepthEnable = false;
       bloomDesc.PushConstantRanges.emplace_back(vk::ShaderStageFlagBits::eCompute, 0, 40);
@@ -437,15 +474,12 @@ namespace Oxylus {
           SetDescription{2, 0, 8, vDT::eStorageImage, vSS::eCompute},
         }
       };
-      bloomDesc.Shader = CreateRef<VulkanShader>(ShaderCI{
-        .EntryPoint = "main",
-        .Name = "Bloom",
-        .ComputePath = Resources::GetResourcesPath("Shaders/Bloom.comp").string(),
-      });
-      s_Pipelines.BloomPipeline.CreateComputePipeline(bloomDesc);
+      bloomDesc.Shader = bloomShader.get();
+      s_Pipelines.BloomPipeline.CreateComputePipelineAsync(bloomDesc).wait();
     }
     {
       PipelineDescription ssrDesc;
+      ssrDesc.Name = "SSR Pipeline";
       ssrDesc.SetDescriptions = {
         {
           SetDescription{0, 0, 1, vDT::eStorageImage, vSS::eCompute},
@@ -457,27 +491,33 @@ namespace Oxylus {
           SetDescription{6, 0, 1, vDT::eUniformBuffer, vSS::eCompute, nullptr, &s_RendererData.SSRBuffer.GetDescriptor()},
         }
       };
-      ssrDesc.Shader = CreateRef<VulkanShader>(ShaderCI{
-        .EntryPoint = "main",
-        .Name = "SSR",
-        .ComputePath = Resources::GetResourcesPath("Shaders/SSR.comp").string(),
-      });
-      s_Pipelines.SSRPipeline.CreateComputePipeline(ssrDesc);
+      ssrDesc.Shader = ssrShader.get();
+      s_Pipelines.SSRPipeline.CreateComputePipelineAsync(ssrDesc).wait();
     }
     {
       PipelineDescription atmDesc;
+      atmDesc.Name = "Atmosphere Pipeline";
       atmDesc.SetDescriptions = {
         {
           SetDescription{0, 0, 1, vDT::eStorageImage, vSS::eCompute},
           SetDescription{1, 0, 1, vDT::eUniformBuffer, vSS::eCompute, nullptr, &s_RendererData.AtmosphereBuffer.GetDescriptor()},
         }
       };
-      atmDesc.Shader = CreateRef<VulkanShader>(ShaderCI{
-        .EntryPoint = "main",
-        .Name = "AtmosphereScattering",
-        .ComputePath = Resources::GetResourcesPath("Shaders/AtmosphricScattering.comp").string(),
-      });
-      s_Pipelines.AtmospherePipeline.CreateComputePipeline(atmDesc);
+      atmDesc.Shader = atmosphereShader.get();
+      s_Pipelines.AtmospherePipeline.CreateComputePipelineAsync(atmDesc).wait();
+    }
+    {
+      PipelineDescription depthOfField;
+      depthOfField.Name = "DOF Pipeline";
+      depthOfField.SetDescriptions = {
+        {
+          SetDescription{0, 0, 1, vDT::eStorageImage, vSS::eCompute},
+          SetDescription{1, 0, 1, vDT::eCombinedImageSampler, vSS::eCompute},
+          SetDescription{2, 0, 1, vDT::eCombinedImageSampler, vSS::eCompute},
+        }
+      };
+      depthOfField.Shader = depthOfFieldShader.get();
+      s_Pipelines.DepthOfFieldPipeline.CreateComputePipelineAsync(depthOfField).wait();
     }
     {
       PipelineDescription composite;
@@ -492,12 +532,8 @@ namespace Oxylus {
           SetDescription{5, 0, 1, vDT::eUniformBuffer, vSS::eCompute, nullptr, &s_RendererData.PostProcessBuffer.GetDescriptor()},
         }
       };
-      composite.Shader = CreateRef<VulkanShader>(ShaderCI{
-        .EntryPoint = "main",
-        .Name = "Composite",
-        .ComputePath = Resources::GetResourcesPath("Shaders/Composite.comp").string(),
-      });
-      s_Pipelines.CompositePipeline.CreateComputePipeline(composite);
+      composite.Shader = compositeShader.get();
+      s_Pipelines.CompositePipeline.CreateComputePipelineAsync(composite).wait();
     }
     {
       PipelineDescription ppPass;
@@ -507,17 +543,13 @@ namespace Oxylus {
           SetDescription{1, 0, 1, vDT::eUniformBuffer, vSS::eFragment, nullptr, &s_RendererData.PostProcessBuffer.GetDescriptor()},
         }
       };
-      ppPass.Shader = CreateRef<VulkanShader>(ShaderCI{
-        .VertexPath = Resources::GetResourcesPath("Shaders/PostProcess.vert").string(),
-        .FragmentPath = Resources::GetResourcesPath("Shaders/PostProcess.frag").string(),
-        .EntryPoint = "main", .Name = "PostProcess"
-      });
+      ppPass.Shader = postProcessShader.get();
       ppPass.RasterizerDesc.CullMode = vk::CullModeFlagBits::eNone;
       ppPass.VertexInputState = VertexInputDescription(VertexLayout({
         VertexComponent::POSITION, VertexComponent::NORMAL, VertexComponent::UV
       }));
       ppPass.DepthSpec.DepthEnable = false;
-      s_Pipelines.PostProcessPipeline.CreateGraphicsPipeline(ppPass);
+      s_Pipelines.PostProcessPipeline.CreateGraphicsPipelineAsync(ppPass).wait();
     }
     {
       PipelineDescription quadDescription;
@@ -529,14 +561,9 @@ namespace Oxylus {
       quadDescription.RenderPass = SwapChain.m_RenderPass;
       quadDescription.VertexInputState.attributeDescriptions.clear();
       quadDescription.VertexInputState.bindingDescriptions.clear();
-      quadDescription.Shader = CreateRef<VulkanShader>(ShaderCI{
-        .VertexPath = Resources::GetResourcesPath("Shaders/quad.vert").string(),
-        .FragmentPath = Resources::GetResourcesPath("Shaders/quad.frag").string(),
-        .EntryPoint = "main",
-        .Name = "Quad",
-      });
+      quadDescription.Shader = quadShader.get();
       quadDescription.RasterizerDesc.CullMode = vk::CullModeFlagBits::eNone;
-      s_Pipelines.QuadPipeline.CreateGraphicsPipeline(quadDescription);
+      s_Pipelines.QuadPipeline.CreateGraphicsPipelineAsync(quadDescription).wait();
     }
 
     PipelineDescription computePipelineDesc;
@@ -551,16 +578,11 @@ namespace Oxylus {
         SetDescription{6, 0, 1, vDT::eCombinedImageSampler, vSS::eCompute},
       }
     };
-    computePipelineDesc.Shader = CreateRef<VulkanShader>(ShaderCI{
-      .EntryPoint = "main", .Name = "FrustumGrid",
-      .ComputePath = Resources::GetResourcesPath("Shaders/ComputeFrustumGrid.comp").string(),
-    });
-    s_Pipelines.FrustumGridPipeline.CreateComputePipeline(computePipelineDesc);
+    computePipelineDesc.Shader = frustumGridShader.get();
+    s_Pipelines.FrustumGridPipeline.CreateComputePipelineAsync(computePipelineDesc).wait();
 
-    computePipelineDesc.Shader = CreateRef<VulkanShader>(ShaderCI{
-      .EntryPoint = "main", .Name = "LightList", .ComputePath = Resources::GetResourcesPath("Shaders/ComputeLightList.comp").string(),
-    });
-    s_Pipelines.LightListPipeline.CreateComputePipeline(computePipelineDesc);
+    computePipelineDesc.Shader = lightListShader.get();
+    s_Pipelines.LightListPipeline.CreateComputePipelineAsync(computePipelineDesc).wait();
 
     const std::vector vertexInputBindings = {
       vk::VertexInputBindingDescription{0, sizeof(ImDrawVert), vk::VertexInputRate::eVertex},
@@ -571,12 +593,8 @@ namespace Oxylus {
       vk::VertexInputAttributeDescription{2, 0, vk::Format::eR8G8B8A8Unorm, (uint32_t)offsetof(ImDrawVert, col)},
     };
     PipelineDescription uiPipelineDecs;
-    uiPipelineDecs.Shader = CreateRef<VulkanShader>(ShaderCI{
-      .VertexPath = Resources::GetResourcesPath("Shaders/ui.vert").string(),
-      .FragmentPath = Resources::GetResourcesPath("Shaders/ui.frag").string(),
-      .EntryPoint = "main",
-      .Name = "UI",
-    });
+    uiPipelineDecs.Name = "UI Pipeline";
+    uiPipelineDecs.Shader = uiShader.get();
     uiPipelineDecs.SetDescriptions = {
       {
         SetDescription{0, 0, 1, vDT::eCombinedImageSampler, vSS::eFragment},
@@ -607,7 +625,7 @@ namespace Oxylus {
     uiPipelineDecs.DepthSpec.MinDepthBound = 0;
     uiPipelineDecs.DepthSpec.MaxDepthBound = 0;
 
-    s_Pipelines.UIPipeline.CreateGraphicsPipeline(uiPipelineDecs);
+    s_Pipelines.UIPipeline.CreateGraphicsPipelineAsync(uiPipelineDecs).wait();
   }
 
   void VulkanRenderer::CreateFramebuffers() {
@@ -791,6 +809,30 @@ namespace Oxylus {
         });
     }
     {
+      VulkanImageDescription dofImage;
+      dofImage.Height = Window::GetHeight();
+      dofImage.Width = Window::GetWidth();
+      dofImage.CreateDescriptorSet = true;
+      dofImage.UsageFlags = vk::ImageUsageFlagBits::eStorage | vk::ImageUsageFlagBits::eSampled;
+      dofImage.Format = SwapChain.m_ImageFormat;
+      dofImage.FinalImageLayout = vk::ImageLayout::eGeneral;
+      dofImage.TransitionLayoutAtCreate = true;
+      dofImage.SamplerAddressMode = vk::SamplerAddressMode::eClampToBorder;
+      dofImage.SamplerBorderColor = vk::BorderColor::eFloatTransparentBlack;
+      s_FrameBuffers.DepthOfFieldImage.Create(dofImage);
+
+      ImagePool::AddToPool(
+        &s_FrameBuffers.DepthOfFieldImage,
+        &Window::GetWindowExtent(),
+        [] {
+          s_DepthOfFieldDescriptorSet.WriteDescriptorSets[0].pImageInfo = &s_FrameBuffers.DepthOfFieldImage.GetDescImageInfo();
+          s_DepthOfFieldDescriptorSet.WriteDescriptorSets[1].pImageInfo = &s_FrameBuffers.PBRPassFB.GetImage()[0].GetDescImageInfo();
+          s_DepthOfFieldDescriptorSet.WriteDescriptorSets[2].pImageInfo = &s_FrameBuffers.DepthNormalPassFB.GetImage()[0].GetDescImageInfo();
+          s_DepthOfFieldDescriptorSet.Update();
+          s_FrameBuffers.PostProcessPassFB.GetDescription().OnResize();
+        });
+    }
+    {
       const auto lodCount = std::max((int32_t)VulkanImage::GetMaxMipmapLevel(Window::GetWidth() / 2, Window::GetHeight() / 2, 1), 2);
       VulkanImageDescription bloompassimage;
       bloompassimage.Width = Window::GetWidth() / 2;
@@ -856,7 +898,7 @@ namespace Oxylus {
         &Window::GetWindowExtent(),
         [] {
           s_CompositeDescriptorSet.WriteDescriptorSets[0].pImageInfo = &s_FrameBuffers.CompositePassImage.GetDescImageInfo();
-          s_CompositeDescriptorSet.WriteDescriptorSets[1].pImageInfo = &s_FrameBuffers.PBRPassFB.GetImage()[0].GetDescImageInfo();
+          s_CompositeDescriptorSet.WriteDescriptorSets[1].pImageInfo = &s_FrameBuffers.DepthOfFieldImage.GetDescImageInfo();
           s_CompositeDescriptorSet.WriteDescriptorSets[2].pImageInfo = &s_FrameBuffers.SSAOPassImage.GetDescImageInfo();
           s_CompositeDescriptorSet.WriteDescriptorSets[3].pImageInfo = &s_FrameBuffers.BloomUpsampleImage.GetDescImageInfo();
           s_CompositeDescriptorSet.WriteDescriptorSets[4].pImageInfo = &s_FrameBuffers.SSRPassImage.GetDescImageInfo();
@@ -1019,7 +1061,7 @@ namespace Oxylus {
       [](const VulkanCommandBuffer& commandBuffer, int32_t) {
         ZoneScopedN("SSAOPass");
         OX_TRACE_GPU(commandBuffer.Get(), "SSAO Pass")
-        vk::ImageSubresourceRange subresourceRange;
+        /*vk::ImageSubresourceRange subresourceRange;
         subresourceRange.aspectMask = s_FrameBuffers.DepthNormalPassFB.GetImage()[0].GetDesc().AspectFlag;
         subresourceRange.levelCount = 1;
         subresourceRange.layerCount = 1;
@@ -1036,14 +1078,14 @@ namespace Oxylus {
         commandBuffer.Get().pipelineBarrier(
           vk::PipelineStageFlagBits::eFragmentShader,
           vk::PipelineStageFlagBits::eComputeShader,
-          {},
+          vk::DependencyFlagBits::eByRegion,
           0,
           nullptr,
           0,
           nullptr,
           1,
           &imageMemoryBarrier
-        );
+        );*/
         s_Pipelines.SSAOPassPipeline.BindPipeline(commandBuffer.Get());
         s_Pipelines.SSAOPassPipeline.BindDescriptorSets(commandBuffer.Get(), {s_SSAODescriptorSet.Get()});
         commandBuffer.Dispatch((Window::GetWidth() + 8 - 1) / 8, (Window::GetHeight() + 8 - 1) / 8, 1);
@@ -1094,6 +1136,23 @@ namespace Oxylus {
       &VulkanContext::VulkanQueue.GraphicsQueue);
     pbrPass.AddToGraph(renderGraph);
 
+    RenderGraphPass ssrPass(
+      "SSR Pass",
+      {&s_RendererContext.SSRCommandBuffer},
+      &s_Pipelines.SSRPipeline,
+      {},
+      [](const VulkanCommandBuffer& commandBuffer, int32_t) {
+        ZoneScopedN("SSR Pass");
+        OX_TRACE_GPU(commandBuffer.Get(), "SSR Pass")
+        s_Pipelines.SSRPipeline.BindPipeline(commandBuffer.Get());
+        s_Pipelines.SSRPipeline.BindDescriptorSets(commandBuffer.Get(), {s_SSRDescriptorSet.Get()});
+        commandBuffer.Dispatch((Window::GetWidth() + 8 - 1) / 8, (Window::GetHeight() + 8 - 1) / 8, 1);
+      },
+      clearValues,
+      &VulkanContext::VulkanQueue.GraphicsQueue);
+    ssrPass.RunWithCondition(s_RendererConfig.SSRConfig.Enabled)
+           .AddToGraphCompute(renderGraph);
+
     RenderGraphPass bloomPass(
       "Bloom Pass",
       {&s_RendererContext.BloomPassCommandBuffer},
@@ -1115,7 +1174,7 @@ namespace Oxylus {
           DOWNSAMPLE_STAGE = 1,
           UPSAMPLE_STAGE   = 2,
         };
-        const int32_t lodCount = s_FrameBuffers.BloomDownsampleImage.GetDesc().MipLevels - 3;
+        const int32_t lodCount = (int32_t)s_FrameBuffers.BloomDownsampleImage.GetDesc().MipLevels - 3;
 
         const auto& layout = s_Pipelines.BloomPipeline.GetPipelineLayout();
 
@@ -1123,7 +1182,7 @@ namespace Oxylus {
         imageMemoryBarrier.image = s_FrameBuffers.BloomDownsampleImage.GetImage();
         imageMemoryBarrier.oldLayout = vk::ImageLayout::eGeneral;
         imageMemoryBarrier.newLayout = vk::ImageLayout::eGeneral;
-        imageMemoryBarrier.dstAccessMask = vk::AccessFlagBits::eNone;
+        imageMemoryBarrier.dstAccessMask = vk::AccessFlagBits::eShaderRead;
         imageMemoryBarrier.srcAccessMask = vk::AccessFlagBits::eShaderWrite;
         imageMemoryBarrier.subresourceRange.aspectMask = vk::ImageAspectFlagBits::eColor;
         imageMemoryBarrier.subresourceRange.levelCount = lodCount;
@@ -1136,19 +1195,36 @@ namespace Oxylus {
         s_Pipelines.BloomPipeline.BindDescriptorSets(commandBuffer.Get(), {s_BloomDescriptorSet.Get()});
         IVec3 size = VulkanImage::GetMipMapLevelSize(s_FrameBuffers.BloomDownsampleImage.GetWidth(), s_FrameBuffers.BloomDownsampleImage.GetHeight(), 1, 0);
         commandBuffer.Dispatch((size.x + 8 - 1) / 8, (size.y + 8 - 1) / 8, 1);
+        commandBuffer.Get().pipelineBarrier(vk::PipelineStageFlagBits::eComputeShader,
+          vk::PipelineStageFlagBits::eComputeShader,
+          vk::DependencyFlagBits::eByRegion,
+          0,
+          nullptr,
+          0,
+          nullptr,
+          1,
+          &imageMemoryBarrier);
 
         //Downsample
         pushConst.Stage.x = DOWNSAMPLE_STAGE;
-        commandBuffer.PushConstants(layout, vk::ShaderStageFlagBits::eCompute, 0, sizeof pushConst, &pushConst);
         for (int32_t i = 1; i < lodCount; i++) {
           size = VulkanImage::GetMipMapLevelSize(s_FrameBuffers.BloomDownsampleImage.GetWidth(), s_FrameBuffers.BloomDownsampleImage.GetHeight(), 1, i);
 
           //Set lod in shader
           pushConst.Stage.y = i - 1;
 
-          commandBuffer.Get().pipelineBarrier(vk::PipelineStageFlagBits::eComputeShader, vk::PipelineStageFlagBits::eComputeShader, vk::DependencyFlagBits::eByRegion, 0, nullptr, 0, nullptr, 1, &imageMemoryBarrier);
+          s_Pipelines.BloomPipeline.BindDescriptorSets(commandBuffer.Get(), {s_BloomDescriptorSet.Get()});
           commandBuffer.PushConstants(layout, vk::ShaderStageFlagBits::eCompute, 0, sizeof pushConst, &pushConst);
           commandBuffer.Dispatch((size.x + 8 - 1) / 8, (size.y + 8 - 1) / 8, 1);
+          commandBuffer.Get().pipelineBarrier(vk::PipelineStageFlagBits::eComputeShader,
+            vk::PipelineStageFlagBits::eComputeShader,
+            vk::DependencyFlagBits::eByRegion,
+            0,
+            nullptr,
+            0,
+            nullptr,
+            1,
+            &imageMemoryBarrier);
         }
 
         //Upsample
@@ -1161,8 +1237,8 @@ namespace Oxylus {
 
         imageMemoryBarrier.subresourceRange.levelCount = s_FrameBuffers.BloomUpsampleImage.GetDesc().MipLevels;
         imageMemoryBarrier.image = s_FrameBuffers.BloomUpsampleImage.GetImage();
-        //commandBuffer.Get().pipelineBarrier(vk::PipelineStageFlagBits::eComputeShader, vk::PipelineStageFlagBits::eComputeShader, {}, 0, nullptr, 0, nullptr, 1, &imageMemoryBarrier);
-        //commandBuffer.Dispatch((size.x + 8 - 1) / 8, (size.y + 8 - 1) / 8, 1);
+        commandBuffer.Dispatch((size.x + 8 - 1) / 8, (size.y + 8 - 1) / 8, 1);
+        commandBuffer.Get().pipelineBarrier(vk::PipelineStageFlagBits::eComputeShader, vk::PipelineStageFlagBits::eComputeShader, {}, 0, nullptr, 0, nullptr, 1, &imageMemoryBarrier);
 
         for (int32_t i = lodCount - 1; i >= 0; i--) {
           size = VulkanImage::GetMipMapLevelSize(s_FrameBuffers.BloomUpsampleImage.GetWidth(), s_FrameBuffers.BloomUpsampleImage.GetHeight(), 1, i);
@@ -1180,29 +1256,55 @@ namespace Oxylus {
     bloomPass.RunWithCondition(RendererConfig::Get()->BloomConfig.Enabled)
              .AddToGraphCompute(renderGraph);
 
-    RenderGraphPass ssrPass(
-      "SSR Pass",
-      {&s_RendererContext.SSRCommandBuffer},
-      &s_Pipelines.SSRPipeline,
+    RenderGraphPass dofPass(
+      "DepthOfField Pass",
+      {&s_RendererContext.DepthOfFieldCommandBuffer},
+      &s_Pipelines.DepthOfFieldPipeline,
       {},
       [](const VulkanCommandBuffer& commandBuffer, int32_t) {
-        ZoneScopedN("SSR Pass");
-        OX_TRACE_GPU(commandBuffer.Get(), "SSR Pass")
-        s_Pipelines.SSRPipeline.BindPipeline(commandBuffer.Get());
-        s_Pipelines.SSRPipeline.BindDescriptorSets(commandBuffer.Get(), {s_SSRDescriptorSet.Get()});
-        commandBuffer.Dispatch((Window::GetWidth() + 8 - 1) / 8, (Window::GetHeight() + 8 - 1) / 8, 1);
+        ZoneScopedN("DepthOfField Pass");
+        OX_TRACE_GPU(commandBuffer.Get(), "DepthOfField Pass")
+        
+        /*vk::ImageSubresourceRange subresourceRange;
+        subresourceRange.aspectMask = s_FrameBuffers.DepthNormalPassFB.GetImage()[0].GetDesc().AspectFlag;
+        subresourceRange.levelCount = 1;
+        subresourceRange.layerCount = 1;
+        const vk::ImageMemoryBarrier imageMemoryBarrier = {
+          {},
+          {},
+          vk::ImageLayout::eDepthStencilAttachmentOptimal,
+          vk::ImageLayout::eDepthStencilReadOnlyOptimal,
+          0,
+          0,
+          s_FrameBuffers.DepthNormalPassFB.GetImage()[0].GetImage(),
+          subresourceRange
+        };
+        commandBuffer.Get().pipelineBarrier(
+          vk::PipelineStageFlagBits::eFragmentShader,
+          vk::PipelineStageFlagBits::eComputeShader,
+          vk::DependencyFlagBits::eByRegion,
+          0,
+          nullptr,
+          0,
+          nullptr,
+          1,
+          &imageMemoryBarrier
+        );*/
+        s_Pipelines.DepthOfFieldPipeline.BindPipeline(commandBuffer.Get());
+        s_Pipelines.DepthOfFieldPipeline.BindDescriptorSets(commandBuffer.Get(), {s_DepthOfFieldDescriptorSet.Get()});
+        commandBuffer.Dispatch((Window::GetWidth() + 8 - 1) / 8, (Window::GetHeight() + 8 - 1) / 8, 6);
       },
       clearValues,
-      &VulkanContext::VulkanQueue.GraphicsQueue);
-    ssrPass.RunWithCondition(s_RendererConfig.SSRConfig.Enabled)
-           .AddToGraphCompute(renderGraph);
+      &VulkanContext::VulkanQueue.GraphicsQueue
+    );
+    dofPass.AddToGraphCompute(renderGraph);
 
     RenderGraphPass atmospherePass(
       "Atmosphere Pass",
       {&s_RendererContext.AtmosphereCommandBuffer},
       &s_Pipelines.AtmospherePipeline,
       {},
-      [](VulkanCommandBuffer& commandBuffer, int32_t) {
+      [](const VulkanCommandBuffer& commandBuffer, int32_t) {
         ZoneScopedN("Atmosphere Pass");
         OX_TRACE_GPU(commandBuffer.Get(), "Atmosphere Pass")
         vk::ImageSubresourceRange subresourceRange;
@@ -1395,6 +1497,7 @@ namespace Oxylus {
     s_RendererContext.DirectShadowCommandBuffer.CreateBuffer();
     s_RendererContext.CompositeCommandBuffer.CreateBuffer();
     s_RendererContext.AtmosphereCommandBuffer.CreateBuffer();
+    s_RendererContext.DepthOfFieldCommandBuffer.CreateBuffer();
 
     vk::DescriptorSetLayoutBinding binding[1];
     binding[0].descriptorType = vk::DescriptorType::eCombinedImageSampler;
@@ -1569,6 +1672,7 @@ namespace Oxylus {
     s_SSRDescriptorSet.CreateFromPipeline(s_Pipelines.SSRPipeline);
     s_CompositeDescriptorSet.CreateFromPipeline(s_Pipelines.CompositePipeline);
     s_AtmosphereDescriptorSet.CreateFromPipeline(s_Pipelines.AtmospherePipeline);
+    s_DepthOfFieldDescriptorSet.CreateFromPipeline(s_Pipelines.DepthOfFieldPipeline);
 
     GeneratePrefilter();
 
@@ -1712,9 +1816,6 @@ namespace Oxylus {
 
   void VulkanRenderer::Draw() {
     ZoneScoped;
-    if (Window::IsMinimized())
-      return;
-
     if (!s_RendererContext.CurrentCamera) {
       OX_CORE_ERROR("Renderer couldn't find a camera!");
       return;
@@ -1734,11 +1835,7 @@ namespace Oxylus {
       DrawFullscreenQuad(commandBuffer.Get());
       //UI pass
       Application::Get().GetImGuiLayer()->RenderDrawData(commandBuffer.Get(), s_Pipelines.UIPipeline.Get());
-    });
-
-    SwapChain.Submit();
-
-    SwapChain.Present();
+    })->Submit()->Present();
   }
 
   void VulkanRenderer::DrawFullscreenQuad(const vk::CommandBuffer& commandBuffer, const bool bindVertex) {

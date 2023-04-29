@@ -23,6 +23,7 @@ void main()
     if (u_Material.UseRoughness)
     {
         roughness = 1.0 - texture(in_RoughnessSampler, in_UV * u_Material.UVScale).r;
+        roughness *= u_Material.Roughness;
     }
     else
     {

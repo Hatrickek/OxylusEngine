@@ -62,8 +62,8 @@ namespace Oxylus {
     }
 
     const bool highlight = m_SelectedEntity == entity;
-    constexpr auto headerSelectedColor = ImVec4(0.26f, 0.59f, 0.98f, 0.65f); //TODO: Get this from theme
-    constexpr auto popupItemSpacing = ImVec2(6.0f, 8.0f);                    //TODO: Get this from theme
+    const auto headerSelectedColor = ImGuiLayer::HeaderSelectedColor; 
+    const auto popupItemSpacing = ImGuiLayer::PopupItemSpacing;
     if (highlight) {
       ImGui::TableSetBgColor(ImGuiTableBgTarget_RowBg0, ImGui::GetColorU32(headerSelectedColor));
       ImGui::PushStyleColor(ImGuiCol_Header, headerSelectedColor);
@@ -439,7 +439,7 @@ namespace Oxylus {
         }
         ImGui::PopStyleVar();
 
-        constexpr auto popItemSpacing = ImVec2(6.0f, 8.0f); //TODO: Get from theme
+        const auto popItemSpacing = ImGuiLayer::PopupItemSpacing;
         ImGui::PushStyleVar(ImGuiStyleVar_ItemSpacing, popItemSpacing);
         if (ImGui::BeginPopupContextWindow("SceneHierarchyContextWindow",
           ImGuiPopupFlags_MouseButtonRight | ImGuiPopupFlags_NoOpenOverItems)) {

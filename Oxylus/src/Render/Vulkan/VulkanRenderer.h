@@ -46,6 +46,7 @@ namespace Oxylus {
       VulkanCommandBuffer SSRCommandBuffer;
       VulkanCommandBuffer CompositeCommandBuffer;
       VulkanCommandBuffer AtmosphereCommandBuffer;
+      VulkanCommandBuffer DepthOfFieldCommandBuffer;
 
       vk::CommandPool CommandPool;
 
@@ -172,6 +173,7 @@ namespace Oxylus {
       VulkanPipeline SSRPipeline;
       VulkanPipeline CompositePipeline;
       VulkanPipeline AtmospherePipeline;
+      VulkanPipeline DepthOfFieldPipeline;
     } s_Pipelines;
 
     static struct FrameBuffers {
@@ -184,6 +186,7 @@ namespace Oxylus {
       VulkanImage BloomUpsampleImage;
       VulkanImage BloomDownsampleImage;
       VulkanImage AtmosphereImage;
+      VulkanImage DepthOfFieldImage;
       std::vector<VulkanFramebuffer> DirectionalCascadesFB;
     } s_FrameBuffers;
 

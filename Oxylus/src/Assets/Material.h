@@ -22,7 +22,7 @@ namespace Oxylus {
       Vec4 Emmisive = Vec4(0);
       float Roughness = 1.0f;
       float Metallic = 0.0f;
-      float Specular = 0.1f;
+      float Specular = 0.0f;
       float Normal = 1.0f;
       float AO = 1.0f;
       BOOL UseAlbedo = false;
@@ -59,7 +59,6 @@ namespace Oxylus {
     //TODO: Use ShaderID
     void Create(const std::string& name = "Material", const UUID& shaderID = {});
     bool IsOpaque() const;
-    const std::vector<MaterialProperty>& GetMaterialProperties() const { return Shader->GetMaterialProperties(); }
     void Update();
     void Destroy();
   private:

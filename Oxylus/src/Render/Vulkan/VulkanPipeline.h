@@ -1,9 +1,11 @@
 ﻿#pragma once
+#include <future>
 #include <vulkan/vulkan.hpp>
 
 #include "VulkanRenderPass.h"
 #include "VulkanShader.h"
 #include "Render/Mesh.h"
+#include "Thread/Thread.h"
 
 namespace Oxylus {
 #define MAX_RENDER_TARGETS 8
@@ -35,7 +37,7 @@ namespace Oxylus {
     vk::StencilOp StencilPassOp = vk::StencilOp::eKeep;
     vk::StencilOp StencilDepthFailOp = vk::StencilOp::eKeep;
   };
-  
+
   struct SubpassDescription {
     uint32_t SrcSubpass = VK_SUBPASS_EXTERNAL;
     uint32_t DstSubpass = 0;
@@ -45,7 +47,7 @@ namespace Oxylus {
     vk::AccessFlags DstAccessMask = vk::AccessFlagBits::eColorAttachmentRead |
                                     vk::AccessFlagBits::eColorAttachmentWrite;
   };
-  
+
   struct DepthStencilDescription {
     bool DepthEnable = true;
     bool DepthWriteEnable = true;
@@ -58,7 +60,7 @@ namespace Oxylus {
     StencilDescription BackFace;
     float MinDepthBound = 0;
     float MaxDepthBound = 1;
-    vk::Format DepthStenctilFormat;
+    vk::Format DepthStenctilFormat = vk::Format::eD32Sfloat;
     uint32_t DepthReferenceAttachment = 0;
   };
 
@@ -107,6 +109,7 @@ namespace Oxylus {
   };
 
   struct PipelineDescription {
+    std::string Name = {};
     RenderTargetDescription RenderTargets[MAX_RENDER_TARGETS];
     bool DepthAttachmentFirst = false;
     uint32_t ColorAttachment = 0;
@@ -141,8 +144,10 @@ namespace Oxylus {
     ~VulkanPipeline() = default;
 
     void CreateGraphicsPipeline(PipelineDescription& pipelineSpecification);
+    [[nodiscard]] std::future<void> CreateGraphicsPipelineAsync(PipelineDescription& pipelineSpecification);
 
     void CreateComputePipeline(const PipelineDescription& pipelineSpecification);
+    [[nodiscard]] std::future<void> CreateComputePipelineAsync(const PipelineDescription& pipelineSpecification);
 
     void BindDescriptorSets(const vk::CommandBuffer& commandBuffer,
                             const std::vector<vk::DescriptorSet>& descriptorSets,

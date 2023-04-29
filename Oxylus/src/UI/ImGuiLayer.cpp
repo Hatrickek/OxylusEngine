@@ -14,11 +14,12 @@
 #include "Utils/Profiler.h"
 
 namespace Oxylus {
-  struct PushConstBlock {
-    glm::vec2 scale;
-    glm::vec2 translate;
-  };
+  static ImVec4 Darken(ImVec4 c, float p) { return {glm::max(0.f, c.x - 1.0f * p), glm::max(0.f, c.y - 1.0f * p), glm::max(0.f, c.z - 1.0f * p), c.w}; }
+  static ImVec4 Lighten(ImVec4 c, float p) { return {glm::max(0.f, c.x + 1.0f * p), glm::max(0.f, c.y + 1.0f * p), glm::max(0.f, c.z + 1.0f * p), c.w}; }
 
+  ImFont* ImGuiLayer::RegularFont = nullptr;
+  ImFont* ImGuiLayer::SmallFont = nullptr;
+  ImFont* ImGuiLayer::BoldFont = nullptr;
   static vk::DescriptorSet s_FontDescriptorSet;
 
   ImGuiLayer::ImGuiLayer() : Layer("ImGuiLayer") { }
@@ -28,12 +29,12 @@ namespace Oxylus {
     ImGui::CreateContext();
     ImGuiIO& io = ImGui::GetIO();
     io.ConfigFlags |= ImGuiConfigFlags_NavEnableKeyboard | ImGuiConfigFlags_ViewportsEnable |
-                      ImGuiConfigFlags_DockingEnable | ImGuiConfigFlags_DpiEnableScaleFonts |
-                      ImGuiConfigFlags_DpiEnableScaleViewports;
+      ImGuiConfigFlags_DockingEnable | ImGuiConfigFlags_DpiEnableScaleFonts |
+      ImGuiConfigFlags_DpiEnableScaleViewports;
     io.BackendFlags |= ImGuiBackendFlags_RendererHasVtxOffset;
     io.BackendFlags |= ImGuiBackendFlags_RendererHasViewports;
 
-    ImGuiDarkTheme2();
+    ImGuiDarkTheme();
 
     //ImGuizmo style
     {
@@ -76,10 +77,10 @@ namespace Oxylus {
     iconsConfig.SizePixels = 12.0f;
 
     io.Fonts->AddFontFromMemoryCompressedTTF(MaterialDesign_compressed_data,
-                                             MaterialDesign_compressed_size,
-                                             fontSize,
-                                             &iconsConfig,
-                                             icons_ranges);
+      MaterialDesign_compressed_size,
+      fontSize,
+      &iconsConfig,
+      icons_ranges);
   }
 
   void ImGuiLayer::InitForVulkan() {
@@ -102,6 +103,7 @@ namespace Oxylus {
 
     const ImGuiIO& io = ImGui::GetIO();
     constexpr float fontSize = 16.0f;
+    constexpr float fontSizeSmall = 12.0f;
 
     ImFontConfig iconsConfig;
     iconsConfig.MergeMode = false;
@@ -110,9 +112,11 @@ namespace Oxylus {
     iconsConfig.GlyphMinAdvanceX = 4.0f;
     iconsConfig.SizePixels = 12.0f;
 
-    io.Fonts->AddFontFromFileTTF(regularFontPath, fontSize, &iconsConfig);
+    RegularFont = io.Fonts->AddFontFromFileTTF(regularFontPath, fontSize, &iconsConfig);
     AddIconFont(fontSize);
-    io.Fonts->AddFontFromFileTTF(boldFontPath, fontSize, &iconsConfig);
+    SmallFont = io.Fonts->AddFontFromFileTTF(regularFontPath, fontSizeSmall, &iconsConfig);
+    AddIconFont(fontSizeSmall);
+    BoldFont = io.Fonts->AddFontFromFileTTF(boldFontPath, fontSize, &iconsConfig);
     AddIconFont(fontSize);
 
     io.Fonts->TexGlyphPadding = 1;
@@ -208,9 +212,7 @@ namespace Oxylus {
     switch (index) {
       case 0: ImGuiDarkTheme();
         break;
-      case 1: ImGuiDarkTheme2();
-        break;
-      case 2: ImGui::StyleColorsLight();
+      case 1: ImGui::StyleColorsLight();
         break;
       default: ImGuiDarkTheme();
         break;
@@ -221,63 +223,10 @@ namespace Oxylus {
     ImGuiStyle* style = &ImGui::GetStyle();
     ImVec4* colors = style->Colors;
     style->WindowBorderSize = 0;
-    style->WindowRounding = 1.0f;
-    style->FrameRounding = 0.0f;
-    style->TabRounding = 1.0f;
-    style->FramePadding = {8, 4};
-#pragma region DARK_THEME
-    colors[ImGuiCol_Text] = ImVec4(1.00f, 1.00f, 1.00f, 1.00f);
-    colors[ImGuiCol_Tab] = ImVec4(0.8f, 0.180f, 0.000f, 1.000f);
-    colors[ImGuiCol_TabActive] = ImVec4(0.8f, 0.180f, 0.000f, 1.000f);
-    colors[ImGuiCol_TabUnfocused] = ImVec4(0.7f, 0.180f, 0.000f, 1.000f);
-    colors[ImGuiCol_TabUnfocusedActive] = ImVec4(0.7f, 0.180f, 0.000f, 1.000f);
-    colors[ImGuiCol_TabHovered] = ImVec4(0.5f, 0.180f, 0.000f, 1.000f);
-    colors[ImGuiCol_Header] = ImVec4(0.8f, 0.180f, 0.000f, 1.000f);
-    colors[ImGuiCol_WindowBg] = ImVec4(0.06f, 0.05f, 0.07f, 1.00f);
-    colors[ImGuiCol_PopupBg] = ImVec4(0.07f, 0.07f, 0.09f, 1.00f);
-    colors[ImGuiCol_Border] = ImVec4(0.80f, 0.80f, 0.83f, 0.88f);
-    colors[ImGuiCol_BorderShadow] = ImVec4(0.92f, 0.91f, 0.88f, 0.00f);
-    colors[ImGuiCol_FrameBg] = ImVec4(0.10f, 0.09f, 0.12f, 1.00f);
-    colors[ImGuiCol_FrameBgHovered] = ImVec4(0.24f, 0.23f, 0.29f, 1.00f);
-    colors[ImGuiCol_FrameBgActive] = ImVec4(0.56f, 0.56f, 0.58f, 1.00f);
-    colors[ImGuiCol_TitleBg] = ImVec4(0.10f, 0.09f, 0.12f, 1.00f);
-    colors[ImGuiCol_TitleBgCollapsed] = ImVec4(1.00f, 0.98f, 0.95f, 0.75f);
-    colors[ImGuiCol_TitleBgActive] = ImVec4(0.07f, 0.07f, 0.09f, 1.00f);
-    colors[ImGuiCol_MenuBarBg] = ImVec4(0.10f, 0.09f, 0.12f, 1.00f);
-    colors[ImGuiCol_ScrollbarBg] = ImVec4(0.10f, 0.09f, 0.12f, 1.00f);
-    colors[ImGuiCol_ScrollbarGrab] = ImVec4(0.80f, 0.80f, 0.83f, 0.31f);
-    colors[ImGuiCol_ScrollbarGrabHovered] = ImVec4(0.56f, 0.56f, 0.58f, 1.00f);
-    colors[ImGuiCol_ScrollbarGrabActive] = ImVec4(0.06f, 0.05f, 0.07f, 1.00f);
-    colors[ImGuiCol_CheckMark] = ImVec4(0.80f, 0.80f, 0.83f, 0.31f);
-    colors[ImGuiCol_SliderGrab] = ImVec4(0.8f, 0.180f, 0.000f, 1.000f);
-    colors[ImGuiCol_SliderGrabActive] = ImVec4(0.06f, 0.05f, 0.07f, 1.00f);
-    colors[ImGuiCol_Button] = ImVec4(0.824f, 0.180f, 0.000f, 1.000f);
-    colors[ImGuiCol_ButtonHovered] = ImVec4(1.000f, 0.114f, 0.114f, 1.000f);
-    colors[ImGuiCol_ButtonActive] = ImVec4(0.431f, 0.000f, 0.000f, 1.000f);
-    colors[ImGuiCol_Header] = ImVec4(0.10f, 0.09f, 0.12f, 1.00f);
-    colors[ImGuiCol_HeaderHovered] = ImVec4(0.56f, 0.56f, 0.58f, 1.00f);
-    colors[ImGuiCol_HeaderActive] = ImVec4(0.06f, 0.05f, 0.07f, 1.00f);
-    colors[ImGuiCol_ResizeGrip] = ImVec4(0.00f, 0.00f, 0.00f, 0.00f);
-    colors[ImGuiCol_ResizeGripHovered] = ImVec4(0.56f, 0.56f, 0.58f, 1.00f);
-    colors[ImGuiCol_ResizeGripActive] = ImVec4(0.06f, 0.05f, 0.07f, 1.00f);
-    colors[ImGuiCol_PlotLines] = ImVec4(0.40f, 0.39f, 0.38f, 0.63f);
-    colors[ImGuiCol_PlotLinesHovered] = ImVec4(0.25f, 1.00f, 0.00f, 1.00f);
-    colors[ImGuiCol_PlotHistogram] = ImVec4(1.000f, 0.271f, 0.000f, 0.631f);
-    colors[ImGuiCol_PlotHistogramHovered] = ImVec4(0.25f, 1.00f, 0.00f, 1.00f);
-    colors[ImGuiCol_TextSelectedBg] = ImVec4(0.25f, 1.00f, 0.00f, 0.43f);
-    colors[ImGuiCol_ModalWindowDimBg] = ImVec4(0, 0, 0, 0.73f);
-    colors[ImGuiCol_NavWindowingDimBg] = ImVec4(0, 0, 0, 0.73f);
-#pragma endregion
-    SelectedTheme = 0;
-  }
-
-  void ImGuiLayer::ImGuiDarkTheme2() {
-    ImGuiStyle* style = &ImGui::GetStyle();
-    ImVec4* colors = style->Colors;
-    style->WindowBorderSize = 0;
-    style->WindowRounding = 1.0f;
-    style->FrameRounding = 0.0f;
-    style->TabRounding = 1.0f;
+    style->WindowRounding = 3.0f;
+    style->FrameRounding = 2.0f;
+    style->TabRounding = 3.0f;
+    style->GrabRounding = 1.0f;
     style->FramePadding = {8, 4};
 #pragma region DARK_THEME
     colors[ImGuiCol_Text] = ImVec4(1.00f, 1.00f, 1.00f, 1.00f);
@@ -304,7 +253,7 @@ namespace Oxylus {
     colors[ImGuiCol_CheckMark] = ImVec4(0.80f, 0.80f, 0.83f, 0.31f);
     colors[ImGuiCol_SliderGrab] = ImVec4(0.8f, 0.180f, 0.000f, 1.000f);
     colors[ImGuiCol_SliderGrabActive] = ImVec4(0.06f, 0.05f, 0.07f, 1.00f);
-    colors[ImGuiCol_Button] = ImVec4(0.745f, 0.344f, 0.000f, 1.000f);
+    colors[ImGuiCol_Button] = ImVec4(0.87f, 0.40f, 0.00f, 1.00f);
     colors[ImGuiCol_ButtonHovered] = ImVec4(0.970f, 0.448f, 0.000f, 1.000f);
     colors[ImGuiCol_ButtonActive] = ImVec4(1.000f, 0.234f, 0.000f, 1.000f);
     colors[ImGuiCol_Header] = ImVec4(0.10f, 0.09f, 0.12f, 1.00f);
@@ -322,7 +271,14 @@ namespace Oxylus {
     colors[ImGuiCol_NavWindowingDimBg] = ImVec4(0, 0, 0, 0.73f);
     colors[ImGuiCol_Border] = ImVec4(0.118f, 0.118f, 0.118f, 0.878f);
     colors[ImGuiCol_Separator] = ImVec4(0.118f, 0.118f, 0.118f, 0.878f);
+    HeaderSelectedColor = ImVec4(0.19f, 0.53f, 0.78f, 1.00f);
+    HeaderHoveredColor = Lighten(colors[ImGuiCol_HeaderActive], 0.1f);
+    WindowBgColor = colors[ImGuiCol_WindowBg];
+    WindowBgAlternativeColor = Lighten(WindowBgColor, 0.04f);
+    AssetIconColor = Lighten(HeaderSelectedColor, 0.9f);
+    TextColor = colors[ImGuiCol_Text];
+    TextDisabledColor = colors[ImGuiCol_TextDisabled];
 #pragma endregion
-    SelectedTheme = 1;
+    SelectedTheme = 0;
   }
 }

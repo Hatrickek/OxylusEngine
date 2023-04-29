@@ -43,11 +43,9 @@ namespace Oxylus {
     glfwSetWindowCloseCallback(s_WindowHandle, CloseWindow);
     glfwSetFramebufferSizeCallback(s_WindowHandle,
       [](GLFWwindow*, int width, int height) {
-        if (!IsMinimized()) {
-          s_WindowData.ScreenExtent.width = width;
-          s_WindowData.ScreenExtent.height = height;
-          OnResize();
-        }
+        s_WindowData.ScreenExtent.width = width;
+        s_WindowData.ScreenExtent.height = height;
+        OnResize();
       });
     Maximize();
     //if (spec.CustomWindowTitle)
@@ -95,4 +93,7 @@ namespace Oxylus {
     glfwRestoreWindow(s_WindowHandle);
   }
 
+  void Window::WaitForEvents() {
+    glfwWaitEvents();
+  }
 }

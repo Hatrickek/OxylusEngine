@@ -105,6 +105,9 @@ namespace Oxylus {
     VulkanUtils::CheckResult(LogicalDevice.resetFences(1, &swapchain.InFlightFences[*currentFrame]));
 
     if (swapchain.Resizing || !swapchain.AcquireNextImage() && !isFirstPass) {
+      while (Window::IsMinimized()) {
+        Window::WaitForEvents();
+      }
       VulkanRenderer::ResizeBuffers();
       return false;
     }
@@ -119,6 +122,7 @@ namespace Oxylus {
         VulkanUtils::CheckResult(LogicalDevice.resetFences(1, &renderPass.m_Fence));
       }
       const auto& commandBuffer = renderPass.CommandBuffers[0];
+      OX_CORE_ASSERT(commandBuffer)
       commandBuffer->Begin({vk::CommandBufferUsageFlagBits::eSimultaneousUse});
       if (!renderPass.m_IsComputePass) {
         vk::RenderPassBeginInfo beginInfo;

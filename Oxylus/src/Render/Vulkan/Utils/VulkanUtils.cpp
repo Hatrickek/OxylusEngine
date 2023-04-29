@@ -8,6 +8,7 @@
 namespace Oxylus {
   PFN_vkCreateDebugUtilsMessengerEXT vkCreateDebugUtilsMessengerEXT;
   PFN_vkDestroyDebugUtilsMessengerEXT vkDestroyDebugUtilsMessengerEXT;
+  PFN_vkSetDebugUtilsObjectNameEXT vkSetDebugUtilsObjectNameExt;
   VkDebugUtilsMessengerEXT debugUtilsMessenger;
 
   static std::vector<char const*> GatherLayers(std::vector<std::string> const& layers,
@@ -130,6 +131,17 @@ namespace Oxylus {
     return VK_FALSE;
   }
 
+  void VulkanUtils::SetObjectName(const uint64_t objectHandle, const vk::ObjectType objectType, const char* objectName) {
+#ifndef OX_DIST
+    vk::DebugUtilsObjectNameInfoEXT objectNameInfo = {};
+    objectNameInfo.objectHandle = objectHandle;
+    objectNameInfo.objectType = objectType;
+    objectNameInfo.pObjectName = objectName;
+    const VkDebugUtilsObjectNameInfoEXT casted = objectNameInfo;
+    CheckResult(vkSetDebugUtilsObjectNameExt(VulkanContext::GetDevice(), &casted));
+#endif
+  }
+
   vk::Instance ContextUtils::CreateInstance(std::string const& appName,
                                             std::string const& engineName,
                                             std::vector<std::string> const& layers,
@@ -156,6 +168,7 @@ namespace Oxylus {
     vkDestroyDebugUtilsMessengerEXT = reinterpret_cast<PFN_vkDestroyDebugUtilsMessengerEXT>(vkGetInstanceProcAddr(
       instance,
       "vkDestroyDebugUtilsMessengerEXT"));
+    vkSetDebugUtilsObjectNameExt = reinterpret_cast<PFN_vkSetDebugUtilsObjectNameEXT>(vkGetInstanceProcAddr(instance, "vkSetDebugUtilsObjectNameEXT"));
 
     VkDebugUtilsMessengerCreateInfoEXT debugUtilsMessengerCI{};
     debugUtilsMessengerCI.sType = VK_STRUCTURE_TYPE_DEBUG_UTILS_MESSENGER_CREATE_INFO_EXT;
@@ -220,7 +233,7 @@ namespace Oxylus {
       enabledExtensions.push_back(ext.data());
     }
 
-//    enabledExtensions.emplace_back("VK_EXT_calibrated_timestamps");
+    //    enabledExtensions.emplace_back("VK_EXT_calibrated_timestamps");
 #if 0
     enabledExtensions.emplace_back("VK_KHR_portability_subset");
 #endif

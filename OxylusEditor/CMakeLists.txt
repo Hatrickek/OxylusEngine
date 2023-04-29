@@ -1,12 +1,14 @@
 set(PROJECT_NAME OxylusEditor)
 
 # Source groups
-file(GLOB_RECURSE src "src/*.h" "src/*.cpp")
+file(GLOB src "src/*.h" "src/*.cpp")
 source_group("src" FILES ${src})
+file(GLOB_RECURSE Panels "src/Panels/*.h" "src/Panels/*.cpp" )
+source_group("src/Panels" FILES ${Panels})
+file(GLOB_RECURSE Utils "src/Utils/*.h" "src/Utils/*.cpp" )
+source_group("src/Utils" FILES ${Utils})
 
-set(ALL_FILES
-    ${src}
-)
+set(ALL_FILES ${src} ${Panels} ${Utils})
 
 # Target
 add_executable(${PROJECT_NAME} ${ALL_FILES})

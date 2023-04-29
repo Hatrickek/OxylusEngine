@@ -41,7 +41,7 @@ namespace Oxylus {
     void OnStop();
     void OnUpdate(float deltaTime);
     void OnEditorUpdate(float deltaTime, Camera& camera);
-    void RenderScene();
+    void RenderScene() const;
     void UpdateSystems();
     Entity FindEntity(const std::string_view& name);
     bool HasEntity(UUID uuid) const;

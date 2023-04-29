@@ -16,5 +16,6 @@ namespace Oxylus {
     static std::string SaveFile(const std::vector<nfdfilteritem_t>& filter, const char* defaultName);
 
     static void OpenFolderAndSelectItem(const char* path);
+    static void OpenFileWithProgram(const char* filepath);
   };
 }

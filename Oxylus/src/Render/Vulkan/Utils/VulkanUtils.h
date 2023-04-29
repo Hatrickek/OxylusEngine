@@ -57,6 +57,8 @@ namespace Oxylus {
       }
       return result;
     }
+
+    static void SetObjectName(uint64_t objectHandle, vk::ObjectType objectType, const char* objectName);
   };
 
   class ContextUtils {

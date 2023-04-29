@@ -7,10 +7,8 @@ namespace Oxylus {
   public:
     Thread AssetThread;
     Thread AudioThread;
-
-    Thread RenderCommandsThread;
     Thread RenderThread;
-
+    
     ThreadManager();
 
     ~ThreadManager() = default;

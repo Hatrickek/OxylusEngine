@@ -189,7 +189,7 @@ namespace Oxylus {
     return newScene;
   }
 
-  void Scene::RenderScene() {
+  void Scene::RenderScene() const {
     m_SceneRenderer.Render();
   }
 
@@ -206,6 +206,8 @@ namespace Oxylus {
     UpdateSystems();
 
     RenderScene();
+
+    Physics::Update(deltaTime);
 
     //Camera
     {

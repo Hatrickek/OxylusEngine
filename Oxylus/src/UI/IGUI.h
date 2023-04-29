@@ -3,6 +3,7 @@
 #include <cstdint>
 #include <filesystem>
 
+#include "imgui_internal.h"
 #include "glm/vec3.hpp"
 #include "glm/gtc/type_ptr.hpp"
 #include "imgui/imgui.h"
@@ -13,8 +14,8 @@ namespace Oxylus {
   class IGUI {
   public:
     static void BeginProperties(
-            ImGuiTableFlags flags = ImGuiTableFlags_Resizable | ImGuiTableFlags_SizingStretchProp |
-                                    ImGuiTableFlags_BordersInner | ImGuiTableFlags_BordersOuterH);
+      ImGuiTableFlags flags = ImGuiTableFlags_Resizable | ImGuiTableFlags_SizingStretchProp |
+                              ImGuiTableFlags_BordersInner | ImGuiTableFlags_BordersOuterH);
 
     static void EndProperties();
 
@@ -28,7 +29,7 @@ namespace Oxylus {
                          int count,
                          const char* tooltip = nullptr);
 
-    template<std::integral T>
+    template <std::integral T>
     static bool Property(const char* label,
                          T& value,
                          T min = 0,
@@ -68,7 +69,7 @@ namespace Oxylus {
       return modified;
     }
 
-    template<std::floating_point T>
+    template <std::floating_point T>
     static bool Property(const char* label,
                          T& value,
                          T min = 0,
@@ -93,7 +94,7 @@ namespace Oxylus {
     }
 
     // Vec2/3/4
-    template<typename T>
+    template <typename T>
     static bool PropertyVector(const char* label,
                                T& value,
                                bool color = false,
@@ -135,10 +136,29 @@ namespace Oxylus {
                              float pressedAlpha = 1.0f,
                              ImGuiButtonFlags buttonFlags = ImGuiButtonFlags_None);
 
+    static bool ToggleButton(const char* label, bool state, ImVec2 size = { 0, 0 }, float alpha = 1.0f, float pressedAlpha = 1.0f, ImGuiButtonFlags buttonFlags = ImGuiButtonFlags_None);
+
     static ImVec2 GetIconButtonSize(const char8_t* icon, const char* label);
 
     static bool IconButton(const char8_t* icon, const char* label, ImVec4 iconColor = {0.537f, 0.753f, 0.286f, 1.0f});
+    static void ClippedText(const ImVec2& pos_min,
+                            const ImVec2& pos_max,
+                            const char* text,
+                            const char* text_end,
+                            const ImVec2* text_size_if_known,
+                            const ImVec2& align,
+                            const ImRect* clip_rect,
+                            float wrap_width);
 
+    static void ClippedText(ImDrawList* draw_list,
+                            const ImVec2& pos_min,
+                            const ImVec2& pos_max,
+                            const char* text,
+                            const char* text_display_end,
+                            const ImVec2* text_size_if_known,
+                            const ImVec2& align,
+                            const ImRect* clip_rect,
+                            float wrap_width);
     static std::filesystem::path GetPathFromImGuiPayload(const ImGuiPayload* payload);
 
     static void BeginPropertyGrid(const char* label, const char* tooltip, bool rightAlignNextColumn = true);

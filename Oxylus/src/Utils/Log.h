@@ -4,6 +4,7 @@
 
 #include "spdlog/spdlog.h"
 #include "spdlog/sinks/stdout_color_sinks.h"
+#include <filesystem>
 
 namespace Oxylus {
   class Log {

@@ -11,7 +11,6 @@ namespace Oxylus {
   void ThreadManager::WaitAllThreads() {
     AssetThread.Wait();
     AudioThread.Wait();
-    RenderCommandsThread.Wait();
     RenderThread.Wait();
   }
 }

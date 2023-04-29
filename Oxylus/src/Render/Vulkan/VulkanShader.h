@@ -51,7 +51,6 @@ namespace Oxylus {
     std::string EntryPoint = "main";
     std::string Name;
     std::string ComputePath;
-    std::vector<MaterialProperty> MaterialProperties = {};
     std::vector<DesciptorProperty> DesciptorProperties = {};
   };
 
@@ -102,17 +101,12 @@ namespace Oxylus {
     const UUID& GetID() const {
       return m_ID;
     }
-
-    const std::vector<MaterialProperty>& GetMaterialProperties() const {
-      return m_ShaderDesc.MaterialProperties;
-    }
-
+    
   private:
     void CreateShader();
     std::filesystem::path GetCachedDirectory(vk::ShaderStageFlagBits stage, std::filesystem::path cacheDirectory);
     void ReadOrCompile(vk::ShaderStageFlagBits stage, const std::string& source, shaderc::CompileOptions options);
     void CreateShaderModule(vk::ShaderStageFlagBits stage, const std::vector<unsigned>& source);
-    void CreateDescriptorSet();
     std::unordered_map<vk::ShaderStageFlagBits, std::vector<uint32_t>> m_VulkanSPIRV;
     std::unordered_map<vk::ShaderStageFlagBits, std::string> m_VulkanSourceCode;
     std::unordered_map<vk::ShaderStageFlagBits, std::filesystem::path> m_VulkanFilePath;

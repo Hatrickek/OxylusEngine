@@ -8,6 +8,7 @@
 
 namespace Oxylus {
   AssetManager::AssetsLibrary AssetManager::s_AssetsLibrary;
+  std::mutex AssetManager::s_AssetMutex;
 
   std::filesystem::path AssetManager::GetAssetFileSystemPath(const std::filesystem::path& path) {
     return Project::GetAssetDirectory() / path;
@@ -82,6 +83,7 @@ namespace Oxylus {
   const Asset<VulkanImage>& AssetManager::LoadImageAsset(const VulkanImageDescription& description) {
     ZoneScoped;
     Asset<VulkanImage> asset;
+    std::lock_guard lock(s_AssetMutex);
     asset.Data = CreateRef<VulkanImage>(description);
     asset.Path = description.Path;
     asset.Type = AssetType::Image;

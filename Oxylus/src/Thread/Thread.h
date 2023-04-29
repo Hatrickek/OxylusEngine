@@ -10,16 +10,11 @@ namespace Oxylus {
   class Thread {
   public:
     Thread();
-
     ~Thread();
 
     void QueueJob(std::function<void()> function);
-
     void Wait();
-
-    uint32_t GetQueueSize() const {
-      return (uint32_t)m_JobQueue.size();
-    }
+    uint32_t GetQueueSize() const { return (uint32_t)m_JobQueue.size(); }
 
   private:
     void QueueLoop();

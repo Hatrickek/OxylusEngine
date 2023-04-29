@@ -6,7 +6,6 @@
 #include "Core/Application.h"
 #include "Render/Vulkan/VulkanRenderer.h"
 #include "UI/IGUI.h"
-#include "Utils/UIUtils.h"
 
 namespace Oxylus {
   RendererSettingsPanel::RendererSettingsPanel() : EditorPanel("Renderer Settings", ICON_MDI_GPU, true) { }

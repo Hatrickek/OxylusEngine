@@ -14,12 +14,14 @@ namespace Oxylus {
   }
 
   const VulkanCommandBuffer& VulkanCommandBuffer::Begin(const vk::CommandBufferBeginInfo& beginInfo) const {
+    OX_CORE_ASSERT(m_Buffer);
     VulkanUtils::CheckResult(m_Buffer.begin(beginInfo));
     return *this;
   }
 
   const VulkanCommandBuffer& VulkanCommandBuffer::BeginRenderPass(const vk::RenderPassBeginInfo& beginInfo,
                                                                   vk::SubpassContents subpassContents) const {
+    OX_CORE_ASSERT(m_Buffer);
     m_Buffer.beginRenderPass(beginInfo, subpassContents);
     return *this;
   }

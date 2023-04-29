@@ -10,6 +10,8 @@ namespace Oxylus {
 
     void OnImGuiRender() override;
 
+    static bool DrawMaterialProperties(const Ref<Material>& material, bool saveToCurrentPath = false);
+
   private:
     void DrawComponents(Entity entity);
 

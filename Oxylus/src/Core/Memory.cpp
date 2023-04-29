@@ -10,15 +10,23 @@ namespace Oxylus {
   uint64_t GPUMemory::TotalFreed = 0;
 }
 
-void* operator new(const size_t _Size) {
+void Delete(void* _Block, size_t _Size) {
+  Oxylus::Memory::TotalFreed += _Size;
+  TracyFree(_Block);
+  free(_Block);
+}
+
+void* New(size_t _Size) {
   Oxylus::Memory::TotalAllocated += _Size;
   const auto ptr = malloc(_Size);
   TracyAlloc(ptr, _Size);
   return ptr;
 }
 
+void* operator new(const size_t _Size) {
+  return New(_Size);
+}
+
 void operator delete(void* _Block, const size_t _Size) {
-  Oxylus::Memory::TotalFreed += _Size;
-  TracyFree(_Block);
-  free(_Block);
+  Delete(_Block, _Size);
 }

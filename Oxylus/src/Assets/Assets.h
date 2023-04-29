@@ -39,8 +39,4 @@ namespace Oxylus {
       return !Path.empty();
     }
   };
-
-  class VulkanImage;
-
-  struct EditorAsset : Asset<VulkanImage> { };
 }

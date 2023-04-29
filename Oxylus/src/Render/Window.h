@@ -28,6 +28,7 @@ namespace Oxylus {
     static void Maximize();
     static bool IsMaximized();
     static void Restore();
+    static void WaitForEvents();
 
   private:
     static struct WindowData {

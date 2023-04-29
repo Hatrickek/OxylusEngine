@@ -8,8 +8,7 @@ namespace Oxylus {
 
   void VulkanRenderPass::CreateRenderPass(const vk::RenderPassCreateInfo& renderPassCI) {
     m_Description = renderPassCI;
-    const auto& LogicalDevice = VulkanContext::Context.Device;
-
+    const auto& LogicalDevice = VulkanContext::GetDevice();
     m_RenderPass = LogicalDevice.createRenderPass(renderPassCI).value;
   }
 

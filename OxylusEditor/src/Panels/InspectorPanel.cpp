@@ -84,11 +84,15 @@ namespace Oxylus {
     }
   }
 
-  static bool DrawMaterialProperties(const Ref<Material>& material) {
+  bool InspectorPanel::DrawMaterialProperties(const Ref<Material>& material, bool saveToCurrentPath) {
     bool loadAsset = false;
 
     if (ImGui::Button("Save")) {
-      const auto& path = FileDialogs::SaveFile({{"Material file", "oxmat"}}, "NewMaterial");
+      std::string path = {};
+      if (saveToCurrentPath)
+        path = FileDialogs::SaveFile({{"Material file", "oxmat"}}, "NewMaterial");
+      else
+        path = material->Path;
       MaterialSerializer(*material).Serialize(path);
     }
     ImGui::SameLine();

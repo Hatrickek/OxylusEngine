@@ -259,12 +259,12 @@ void main() {
 
 
   // TODO: Make configurable via buffers
-  float far = 50.0;
-  float fogCord = (gl_FragCoord.z / gl_FragCoord.w) / far;
-  float fogDensity = 2.0;
-  float fog = fogCord * fogDensity;
-  vec4 fogColor = vec4(vec3(1), 0);
-  vec4 outFog = mix(fogColor, vec4(color, 1.0), clamp(1.0 - fog, 0.0, 1.0));
+  //float far = 50.0;
+  //float fogCord = (gl_FragCoord.z / gl_FragCoord.w) / far;
+  //float fogDensity = 2.0;
+  //float fog = fogCord * fogDensity;
+  //vec4 fogColor = vec4(vec3(1), 0);
+  //vec4 outFog = mix(fogColor, vec4(color, 1.0), clamp(1.0 - fog, 0.0, 1.0));
 
   outColor = vec4(color, 1.0);
 }

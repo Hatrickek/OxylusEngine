@@ -9,7 +9,7 @@
 #include "Core/Project.h"
 #include "Core/Resources.h"
 #include "Scene/SceneManager.h"
-#include "Panels/AssetsPanel.h"
+#include "Panels/ContentPanel.h"
 #include "Panels/ConsolePanel.h"
 #include "Panels/EditorSettingsPanel.h"
 #include "Panels/FramebufferViewerPanel.h"
@@ -59,10 +59,6 @@ namespace Oxylus {
     m_ConsolePanel.Events.DemoWindowEvent.emplace_back([this] {
       m_ShowDemoWindow = !m_ShowDemoWindow;
     });
-    m_AssetsPanel.Events.OnAssetSelectEvent.emplace_back([this] {
-      m_AssetInspectorPanel.Visible = true;
-    });
-
     SetEditorScene(m_EditorScene);
   }
 
@@ -99,12 +95,10 @@ namespace Oxylus {
       }
       case SceneState::Play: {
         m_ActiveScene->OnUpdate(deltaTime);
-        Physics::Update(deltaTime);
         break;
       }
       case SceneState::Simulate: {
         m_ActiveScene->OnEditorUpdate(deltaTime, m_ViewportPanels[0]->Camera);
-        Physics::Update(deltaTime);
         break;
       }
     }
@@ -196,7 +190,7 @@ namespace Oxylus {
         if (ImGui::BeginMenu("Window")) {
           if (ImGui::MenuItem("Add viewport", nullptr)) {
             m_ViewportPanels.emplace_back(CreateScope<ViewportPanel>())->SetContext(m_ActiveScene,
-                                                                                    m_SceneHierarchyPanel);
+              m_SceneHierarchyPanel);
           }
           if (ImGui::MenuItem("Shaders", nullptr)) {
             m_EditorPanels["Shaders"]->Visible = true;
@@ -221,9 +215,9 @@ namespace Oxylus {
         {
           //Project name text
           ImGui::SetCursorPos(ImVec2(
-                  (float)Window::GetWidth() - 10 -
-                  ImGui::CalcTextSize(Project::GetActive()->GetConfig().Name.c_str()).x,
-                  0));
+            (float)Window::GetWidth() - 10 -
+            ImGui::CalcTextSize(Project::GetActive()->GetConfig().Name.c_str()).x,
+            0));
           ImGuiScoped::StyleColor bColor1(ImGuiCol_Button, ImVec4(0.2f, 0.2f, 0.2f, 0.7f));
           ImGuiScoped::StyleColor bColor2(ImGuiCol_ButtonHovered, ImVec4(0.2f, 0.2f, 0.2f, 0.7f));
           ImGui::Button(Project::GetActive()->GetConfig().Name.c_str());
@@ -322,10 +316,6 @@ namespace Oxylus {
 
   void EditorLayer::ClearSelectedEntity() {
     m_SceneHierarchyPanel.ClearSelectionContext();
-  }
-
-  EditorAsset EditorLayer::GetSelectedAsset() const {
-    return m_AssetsPanel.GetSelectedAsset();
   }
 
   void EditorLayer::SaveScene() {

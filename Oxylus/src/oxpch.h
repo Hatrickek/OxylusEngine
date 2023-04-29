@@ -10,29 +10,28 @@
 #endif
 #endif
 
+#include <algorithm>
+#include <functional>
 #include <iostream>
 #include <memory>
 #include <utility>
-#include <algorithm>
-#include <functional>
 
-#include <string>
-#include <sstream>
 #include <array>
-#include <vector>
+#include <sstream>
+#include <string>
 #include <unordered_map>
 #include <unordered_set>
+#include <vector>
 
-#include <vulkan/vulkan.hpp>
-#include <glm/glm.hpp>
-
-#include "Core/Memory.h"
 #include "Core/Base.h"
-#include "Utils/Log.h"
+#include "Core/Memory.h"
 #include "Core/Types.h"
+#include "Utils/Log.h"
+
+#include <glm/glm.hpp>
+#include <vulkan/vulkan.hpp>
+#include <Jolt/Jolt.h>
 
 #ifdef OX_PLATFORM_WINDOWS
-
 #include <windows.h>
-
 #endif

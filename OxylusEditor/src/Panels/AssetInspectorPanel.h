@@ -14,13 +14,8 @@ namespace Oxylus {
     void OnImGuiRender() override;
 
   private:
-    void DrawAssets(const EditorAsset& asset);
-    bool DrawMaterialProperties(const Ref<Material>& material) const;
-    void HandleMaterialAsset(const EditorAsset& asset);
-    void InvalidateSerializedAssets();
+    void DrawMaterialAsset(const std::string* path);
 
-    EditorAsset m_SelectedAsset{};
-
-    Ref<Material> m_DeserializedMaterial;
+    Ref<Material> m_SelectedMaterial;
   };
 }

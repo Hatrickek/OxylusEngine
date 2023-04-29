@@ -92,7 +92,7 @@ namespace Oxylus {
       LoadTextureFromFile();
     }
 
-    if (m_ImageDescription.MipLevels > 1 && m_ImageDescription.Type != ImageType::TYPE_CUBE)
+    if (m_ImageDescription.MipLevels > 1 && m_ImageDescription.Type != ImageType::TYPE_CUBE || m_ImageDescription.GenerateMips)
       GenerateMips();
 
     // Create view
@@ -535,8 +535,11 @@ namespace Oxylus {
       barrier.subresourceRange.layerCount = 1;
       barrier.subresourceRange.levelCount = 1;
 
-      int32_t mipWidth = (int32_t)GetWidth();
-      int32_t mipHeight = (int32_t)GetHeight();
+      auto mipWidth = (int32_t)GetWidth();
+      auto mipHeight = (int32_t)GetHeight();
+
+      if (m_ImageDescription.GenerateMips)
+        m_ImageDescription.MipLevels = GetMaxMipmapLevel(GetWidth(), GetHeight(), 1);
 
       for (uint32_t i = 1; i < m_ImageDescription.MipLevels; i++) {
         barrier.subresourceRange.baseMipLevel = i - 1;

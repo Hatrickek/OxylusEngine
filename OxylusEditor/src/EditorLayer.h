@@ -2,11 +2,12 @@
 
 #include <Assets/Assets.h>
 
+#include "EditorContext.h"
 #include "OxylusEngine.h"
 #include "imgui.h"
 
 #include "Panels/AssetInspectorPanel.h"
-#include "Panels/AssetsPanel.h"
+#include "Panels/ContentPanel.h"
 #include "Panels/ConsolePanel.h"
 #include "Panels/InspectorPanel.h"
 #include "Panels/SceneHierarchyPanel.h"
@@ -26,14 +27,21 @@ namespace Oxylus {
 
     static EditorLayer* Get() { return s_Instance; }
 
+    void SetContext(EditorContextType type, const char* data, size_t size) { m_SelectedContext.Set(type, data, size); }
+    void SetContextAsAssetWithPath(const std::string& path) { m_SelectedContext.Set(EditorContextType::Asset, path.c_str(), sizeof(char) * (path.length() + 1)); }
+    void SetContextAsFileWithPath(const std::string& path) { m_SelectedContext.Set(EditorContextType::File, path.c_str(), sizeof(char) * (path.length() + 1)); }
+
+    void ResetContext() { m_SelectedContext.Reset(); }
+    const EditorContext& GetContext() const { return m_SelectedContext; }
+
     void EditorShortcuts();
     Ref<Scene> GetActiveScene();
     void SetEditorScene(const Ref<Scene>& scene);
     void SetRuntimeScene(const Ref<Scene>& scene);
 
     enum class SceneState {
-      Edit = 0,
-      Play = 1,
+      Edit     = 0,
+      Play     = 1,
       Simulate = 2
     };
 
@@ -46,14 +54,13 @@ namespace Oxylus {
     Entity GetSelectedEntity() const;
     void ClearSelectedEntity();
 
-    EditorAsset GetSelectedAsset() const;
   private:
-    //Project
+    // Project
     void NewProject();
     void OpenProject(const std::filesystem::path& path);
     void SaveProject(const std::string& path);
 
-    //Scene
+    // Scene
     void NewScene();
     void OpenScene();
     void SaveScene();
@@ -63,7 +70,7 @@ namespace Oxylus {
     void OnSceneSimulate();
     std::string m_LastSaveScenePath{};
 
-    //Panels
+    // Panels
     static void DrawWindowTitle();
     void DrawPanels();
 
@@ -75,11 +82,14 @@ namespace Oxylus {
     bool m_ShowDemoWindow = false;
     SceneHierarchyPanel m_SceneHierarchyPanel;
     InspectorPanel m_InspectorPanel;
-    AssetsPanel m_AssetsPanel;
+    ContentPanel m_AssetsPanel;
     AssetInspectorPanel m_AssetInspectorPanel;
 
-    //Config
+    // Config
     EditorConfig m_EditorConfig;
+
+    // Context
+    EditorContext m_SelectedContext = {};
 
     Ref<Scene> m_EditorScene;
     Ref<Scene> m_ActiveScene;

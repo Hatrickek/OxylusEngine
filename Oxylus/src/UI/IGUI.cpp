@@ -64,7 +64,7 @@ namespace Oxylus {
     return modified;
   }
 
-  bool IGUI::Property(const char* label, Ref <VulkanImage>& texture, uint64_t overrideTextureID, const char* tooltip) {
+  bool IGUI::Property(const char* label, Ref<VulkanImage>& texture, uint64_t overrideTextureID, const char* tooltip) {
     BeginPropertyGrid(label, tooltip);
 
     bool changed = false;
@@ -75,16 +75,15 @@ namespace Oxylus {
     const float tooltipSize = frameHeight * 11.0f;
 
     ImGui::SetCursorPos({
-                                ImGui::GetContentRegionMax().x - buttonSize - xButtonSize.x,
-                                ImGui::GetCursorPosY() + ImGui::GetStyle().FramePadding.y
-                        });
+      ImGui::GetContentRegionMax().x - buttonSize - xButtonSize.x,
+      ImGui::GetCursorPosY() + ImGui::GetStyle().FramePadding.y
+    });
     ImGui::PushStyleVar(ImGuiStyleVar_ItemSpacing, ImVec2{0, 0});
     ImGui::PushStyleColor(ImGuiCol_Button, ImVec4{0.25f, 0.25f, 0.25f, 1.0f});
     ImGui::PushStyleColor(ImGuiCol_ButtonHovered, ImVec4{0.35f, 0.35f, 0.35f, 1.0f});
     ImGui::PushStyleColor(ImGuiCol_ButtonActive, ImVec4{0.25f, 0.25f, 0.25f, 1.0f});
 
-    ImTextureID id = {};
-    id = texture == nullptr ? 0 : (VkDescriptorSet)texture->GetDescriptorSet();
+    const ImTextureID id = texture == nullptr ? 0 : (VkDescriptorSet)texture->GetDescriptorSet();
     if (ImGui::ImageButton(id, {buttonSize, buttonSize}, {1, 1}, {0, 0}, 0)) {
       const auto& path = FileDialogs::OpenFile({{"Texture file", "png,ktx"}});
       if (!path.empty()) {
@@ -238,6 +237,33 @@ namespace Oxylus {
     return clicked;
   }
 
+  bool IGUI::ToggleButton(const char* label, bool state, ImVec2 size, float alpha, float pressedAlpha, ImGuiButtonFlags buttonFlags) {
+    if (state) {
+      ImVec4 color = ImGui::GetStyle().Colors[ImGuiCol_ButtonActive];
+
+      color.w = pressedAlpha;
+      ImGui::PushStyleColor(ImGuiCol_Button, color);
+      ImGui::PushStyleColor(ImGuiCol_ButtonHovered, color);
+      ImGui::PushStyleColor(ImGuiCol_ButtonActive, color);
+    }
+    else {
+      ImVec4 color = ImGui::GetStyle().Colors[ImGuiCol_Button];
+      ImVec4 hoveredColor = ImGui::GetStyle().Colors[ImGuiCol_ButtonHovered];
+      color.w = alpha;
+      hoveredColor.w = pressedAlpha;
+      ImGui::PushStyleColor(ImGuiCol_Button, color);
+      ImGui::PushStyleColor(ImGuiCol_ButtonHovered, hoveredColor);
+      color.w = pressedAlpha;
+      ImGui::PushStyleColor(ImGuiCol_ButtonActive, color);
+    }
+
+    bool clicked = ImGui::ButtonEx(label, size, buttonFlags);
+
+    ImGui::PopStyleColor(3);
+
+    return clicked;
+  }
+
   ImVec2 IGUI::GetIconButtonSize(const char8_t* icon, const char* label) {
     const float lineHeight = ImGui::GetTextLineHeight();
     const ImVec2 padding = ImGui::GetStyle().FramePadding;
@@ -272,6 +298,40 @@ namespace Oxylus {
     ImGui::PopID();
 
     return clicked;
+  }
+
+  void IGUI::ClippedText(const ImVec2& pos_min, const ImVec2& pos_max, const char* text, const char* text_end, const ImVec2* text_size_if_known, const ImVec2& align, const ImRect* clip_rect, float wrap_width) {
+    // Hide anything after a '##' string
+    const char* text_display_end = ImGui::FindRenderedTextEnd(text, text_end);
+    const int text_len = static_cast<int>(text_display_end - text);
+    if (text_len == 0)
+      return;
+
+    ImGuiContext& g = *GImGui;
+    ImGuiWindow* window = g.CurrentWindow;
+    IGUI::ClippedText(window->DrawList, pos_min, pos_max, text, text_display_end, text_size_if_known, align, clip_rect, wrap_width);
+    if (g.LogEnabled)
+      ImGui::LogRenderedText(&pos_min, text, text_display_end);
+  }
+
+  void IGUI::ClippedText(ImDrawList* draw_list, const ImVec2& pos_min, const ImVec2& pos_max, const char* text, const char* text_display_end, const ImVec2* text_size_if_known, const ImVec2& align, const ImRect* clip_rect, float wrap_width) {
+    // Perform CPU side clipping for single clipped element to avoid using scissor state
+    ImVec2 pos = pos_min;
+    const ImVec2 text_size = text_size_if_known ? *text_size_if_known : ImGui::CalcTextSize(text, text_display_end, false, wrap_width);
+
+    const ImVec2* clip_min = clip_rect ? &clip_rect->Min : &pos_min;
+    const ImVec2* clip_max = clip_rect ? &clip_rect->Max : &pos_max;
+
+    // Align whole block. We should defer that to the better rendering function when we'll have support for individual line alignment.
+    if (align.x > 0.0f)
+      pos.x = ImMax(pos.x, pos.x + (pos_max.x - pos.x - text_size.x) * align.x);
+
+    if (align.y > 0.0f)
+      pos.y = ImMax(pos.y, pos.y + (pos_max.y - pos.y - text_size.y) * align.y);
+
+    // Render
+    ImVec4 fine_clip_rect(clip_min->x, clip_min->y, clip_max->x, clip_max->y);
+    draw_list->AddText(nullptr, 0.0f, pos, ImGui::GetColorU32(ImGuiCol_Text), text, text_display_end, wrap_width, &fine_clip_rect);
   }
 
   std::filesystem::path IGUI::GetPathFromImGuiPayload(const ImGuiPayload* payload) {

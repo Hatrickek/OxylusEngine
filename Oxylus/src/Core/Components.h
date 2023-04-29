@@ -11,7 +11,6 @@
 #include "Audio/AudioListener.h"
 #include "Audio/AudioSource.h"
 #include "Physics/Physics.h"
-#include "Physics/PhysicsRigidbody.h"
 #include "Render/Camera.h"
 #include "Render/Mesh.h"
 #include "Render/ParticleSystem.h"
@@ -148,9 +147,9 @@ namespace Oxylus {
   };
 
   struct RigidBodyComponent {
-    Ref<PhysicsRigidbody> Rigidbody = nullptr;
+    JPH::BodyID BodyID;
 
-    RigidBodyComponent() : Rigidbody(CreateRef<PhysicsRigidbody>()) { }
+    RigidBodyComponent() { }
 
     ~RigidBodyComponent() { }
   };

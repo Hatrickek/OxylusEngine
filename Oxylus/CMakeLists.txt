@@ -286,6 +286,12 @@ set_target_properties(obj_basisu_cbind PROPERTIES MSVC_RUNTIME_LIBRARY ${MSVC_RU
 set_target_properties(objUtil PROPERTIES MSVC_RUNTIME_LIBRARY ${MSVC_RUNTIME_LIBRARY_STR} FOLDER "Vendor")
 set_target_properties(makedfd2vk PROPERTIES MSVC_RUNTIME_LIBRARY ${MSVC_RUNTIME_LIBRARY_STR} FOLDER "Vendor")
 set_target_properties(makevk2dfd PROPERTIES MSVC_RUNTIME_LIBRARY ${MSVC_RUNTIME_LIBRARY_STR} FOLDER "Vendor")
+# Disable warnings for ktx
+if(MSVC)
+target_compile_options(ktx PUBLIC /W0)
+else()
+target_compile_options(ktx PUBLIC -w)
+endif()
 
 # FMT
 FetchContent_Declare(fmt
@@ -299,3 +305,16 @@ set_target_properties(fmt PROPERTIES FOLDER "Vendor")
 add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/vendor/VulkanMemoryAllocator)
 target_link_libraries(${PROJECT_NAME} PUBLIC VulkanMemoryAllocator)
 set_target_properties(VulkanMemoryAllocator PROPERTIES MSVC_RUNTIME_LIBRARY ${MSVC_RUNTIME_LIBRARY_STR} FOLDER "Vendor")
+
+# Jolt
+
+FetchContent_Declare(
+        JoltPhysics
+        GIT_REPOSITORY "https://github.com/jrouwe/JoltPhysics"
+        GIT_TAG "v3.0.0"
+		SOURCE_SUBDIR "Build"
+)
+FetchContent_MakeAvailable(JoltPhysics)
+target_link_libraries(${PROJECT_NAME} PUBLIC Jolt)
+target_include_directories(${PROJECT_NAME} PUBLIC ${JoltPhysics_SOURCE_DIR}/..)
+set_target_properties(Jolt PROPERTIES FOLDER "Vendor")

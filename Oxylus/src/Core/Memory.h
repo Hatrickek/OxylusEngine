@@ -16,6 +16,9 @@ namespace Oxylus {
   };
 }
 
+extern void Delete(void* _Block, size_t _Size);
+extern void* New(size_t _Size);
+
 void* operator new(size_t _Size);
 
 void operator delete(void* _Block, size_t _Size);

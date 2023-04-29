@@ -1,5 +1,12 @@
 ﻿#include "src/oxpch.h"
 #include "VulkanPipeline.h"
+
+#include <future>
+#include <type_traits>
+#include <type_traits>
+#include <type_traits>
+#include <type_traits>
+
 #include "Render/ShaderLibrary.h"
 #include "VulkanContext.h"
 #include "Utils/VulkanUtils.h"
@@ -47,12 +54,12 @@ namespace Oxylus {
 
     if (m_PipelineDescription.DepthAttachmentFirst)
       CreateDepthAttachments(pipelineSpecification, attachmentDescriptions);
-          
+
     CreateColorAttachments(pipelineSpecification, attachmentDescriptions);
-  
+
     if (!m_PipelineDescription.DepthAttachmentFirst)
       CreateDepthAttachments(pipelineSpecification, attachmentDescriptions);
-      
+
 
     std::vector<vk::SubpassDescription> subpasses;
 
@@ -128,13 +135,10 @@ namespace Oxylus {
     PipelineCI.layout = m_Layout;
 
     vk::PipelineVertexInputStateCreateInfo vertexInputStateCI;
-    vertexInputStateCI.pVertexAttributeDescriptions = m_PipelineDescription.VertexInputState.attributeDescriptions.
-                                                                            data();
+    vertexInputStateCI.pVertexAttributeDescriptions = m_PipelineDescription.VertexInputState.attributeDescriptions.data();
     vertexInputStateCI.pVertexBindingDescriptions = m_PipelineDescription.VertexInputState.bindingDescriptions.data();
-    vertexInputStateCI.vertexAttributeDescriptionCount = static_cast<uint32_t>(m_PipelineDescription.VertexInputState.
-      attributeDescriptions.size());
-    vertexInputStateCI.vertexBindingDescriptionCount = static_cast<uint32_t>(m_PipelineDescription.VertexInputState.
-      bindingDescriptions.size());
+    vertexInputStateCI.vertexAttributeDescriptionCount = static_cast<uint32_t>(m_PipelineDescription.VertexInputState.attributeDescriptions.size());
+    vertexInputStateCI.vertexBindingDescriptionCount = static_cast<uint32_t>(m_PipelineDescription.VertexInputState.bindingDescriptions.size());
     PipelineCI.pVertexInputState = &vertexInputStateCI;
 
     vk::PipelineInputAssemblyStateCreateInfo InputAssemblyCI;
@@ -178,7 +182,7 @@ namespace Oxylus {
                                     ? vk::FrontFace::eCounterClockwise
                                     : vk::FrontFace::eClockwise;
     RasterizerStateCI.depthBiasEnable = (pipelineSpecification.RasterizerDesc.DepthBias != 0 || pipelineSpecification.
-                                         RasterizerDesc.SlopeScaledDepthBias != 0.f)
+                                                                                                RasterizerDesc.SlopeScaledDepthBias != 0.f)
                                           ? VK_TRUE
                                           : VK_FALSE;
     RasterizerStateCI.depthBiasConstantFactor = static_cast<float>(pipelineSpecification.RasterizerDesc.DepthBias);
@@ -269,6 +273,9 @@ namespace Oxylus {
     VulkanUtils::CheckResult(res.result);
     m_Pipeline = res.value;
 
+    if (!pipelineSpecification.Name.empty())
+      VulkanUtils::SetObjectName((uint64_t)(VkPipeline)m_Pipeline, vk::ObjectType::ePipeline, pipelineSpecification.Name.c_str());
+
     //Connect pipeline with shader
     pipelineSpecification.Shader->OnReloadBegin([this] {
       Destroy();
@@ -276,8 +283,12 @@ namespace Oxylus {
     pipelineSpecification.Shader->OnReloadEnd([this] {
       CreateGraphicsPipeline(m_PipelineDescription);
     });
+  }
 
-    ShaderLibrary::AddShader(pipelineSpecification.Shader);
+  std::future<void> VulkanPipeline::CreateGraphicsPipelineAsync(PipelineDescription& pipelineSpecification) {
+    return std::async([this, &pipelineSpecification] {
+      CreateGraphicsPipeline(pipelineSpecification);
+    });
   }
 
   void VulkanPipeline::CreateDepthAttachments(const PipelineDescription& pipelineSpecification,
@@ -330,7 +341,12 @@ namespace Oxylus {
     pipelineSpecification.Shader->OnReloadEnd([this] {
       CreateComputePipeline(m_PipelineDescription);
     });
-    ShaderLibrary::AddShader(pipelineSpecification.Shader);
+  }
+
+  std::future<void> VulkanPipeline::CreateComputePipelineAsync(const PipelineDescription& pipelineSpecification) {
+    return std::async([this, &pipelineSpecification] {
+      CreateComputePipeline(pipelineSpecification);
+    });
   }
 
   void VulkanPipeline::BindDescriptorSets(const vk::CommandBuffer& commandBuffer,
@@ -341,15 +357,16 @@ namespace Oxylus {
                                           const uint32_t* pDynamicOffsets) const {
     const auto bindPoint = m_IsCompute ? vk::PipelineBindPoint::eCompute : vk::PipelineBindPoint::eGraphics;
     commandBuffer.bindDescriptorSets(bindPoint,
-                                     m_Layout,
-                                     firstSet,
-                                     setCount,
-                                     descriptorSets.data(),
-                                     dynamicOffsetCount,
-                                     pDynamicOffsets);
+      m_Layout,
+      firstSet,
+      setCount,
+      descriptorSets.data(),
+      dynamicOffsetCount,
+      pDynamicOffsets);
   }
 
   void VulkanPipeline::BindPipeline(const vk::CommandBuffer& cmdBuffer) const {
+    OX_CORE_ASSERT(m_Pipeline);
     const auto bindPoint = m_IsCompute ? vk::PipelineBindPoint::eCompute : vk::PipelineBindPoint::eGraphics;
     cmdBuffer.bindPipeline(bindPoint, m_Pipeline);
   }

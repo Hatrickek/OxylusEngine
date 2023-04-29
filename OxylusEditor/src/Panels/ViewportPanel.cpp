@@ -24,7 +24,7 @@ namespace Oxylus {
     ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2{0, 0});
 
     if (OnBegin(flags)) {
-      constexpr auto popupItemSpacing = ImVec2(6.0f, 8.0f); //TODO: Get this from theme
+      const auto popupItemSpacing = ImGuiLayer::PopupItemSpacing;
       ImGui::PushStyleVar(ImGuiStyleVar_ItemSpacing, popupItemSpacing);
       if (ImGui::BeginPopupContextItem("RightClick")) {
         if (ImGui::MenuItem("Fullscreen"))

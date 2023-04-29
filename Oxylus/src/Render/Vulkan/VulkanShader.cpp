@@ -188,12 +188,6 @@ namespace Oxylus {
     m_ShaderStage[stage].pName = m_ShaderDesc.EntryPoint.c_str();
   }
 
-  void VulkanShader::CreateDescriptorSet() {
-    for (auto& prop : GetMaterialProperties()) {
-      DescriptorSets.emplace_back(vk::WriteDescriptorSet{});
-    }
-  }
-
   void VulkanShader::Unload() {
     if (!m_Loaded)
       return;

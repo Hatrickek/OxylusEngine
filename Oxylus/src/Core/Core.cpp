@@ -30,7 +30,7 @@ namespace Oxylus {
     FileDialogs::CloseNFD();
     VulkanRenderer::WaitDeviceIdle();
     VulkanRenderer::Shutdown();
-
+    Physics::Shutdown();
     AudioEngine::Shutdown();
 
     ThreadManager::Get()->WaitAllThreads();
