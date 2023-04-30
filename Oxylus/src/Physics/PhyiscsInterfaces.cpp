@@ -29,6 +29,7 @@ JPH::BroadPhaseLayer BPLayerInterfaceImpl::GetBroadPhaseLayer(JPH::ObjectLayer i
   return mObjectToBroadPhase[inLayer];
 }
 
+#if defined(JPH_EXTERNAL_PROFILE) || defined(JPH_PROFILE_ENABLED)
 const char* BPLayerInterfaceImpl::GetBroadPhaseLayerName(JPH::BroadPhaseLayer inLayer) const {
   using namespace JPH;
   switch ((JPH::BroadPhaseLayer::Type)inLayer) {
@@ -38,6 +39,7 @@ const char* BPLayerInterfaceImpl::GetBroadPhaseLayerName(JPH::BroadPhaseLayer in
       return "INVALID";
   }
 }
+#endif
 
 bool ObjectVsBroadPhaseLayerFilterImpl::ShouldCollide(JPH::ObjectLayer inLayer1, JPH::BroadPhaseLayer inLayer2) const {
   using namespace JPH;

@@ -84,7 +84,7 @@ namespace Oxylus {
     }
   }
 
-  bool InspectorPanel::DrawMaterialProperties(const Ref<Material>& material, bool saveToCurrentPath) {
+  bool InspectorPanel::DrawMaterialProperties(Ref<Material>& material, bool saveToCurrentPath) {
     bool loadAsset = false;
 
     if (ImGui::Button("Save")) {
@@ -101,6 +101,11 @@ namespace Oxylus {
       if (!path.empty()) {
         MaterialSerializer(material).Deserialize(path);
       }
+    }
+    ImGui::SameLine();
+    if (ImGui::Button("Reset")) {
+      material = CreateRef<Material>();
+      material->Create();
     }
     ImGui::SameLine();
     const float x = ImGui::GetContentRegionAvail().x;
@@ -128,6 +133,7 @@ namespace Oxylus {
     IGUI::PropertyVector("Color", material->Parameters.Color, true, true);
 
     IGUI::Property("Specular", material->Parameters.Specular);
+    IGUI::PropertyVector("Emmisive", material->Parameters.Emmisive, true, false);
 
     IGUI::Property("Use Normal", (bool&)material->Parameters.UseNormal);
     if (IGUI::Property("Normal", material->NormalTexture)) {
@@ -151,29 +157,6 @@ namespace Oxylus {
       material->Update();
     }
 
-    //TODO:
-    //const auto& materialProperties = material.GetMaterialProperties();
-    //for(auto& prop : materialProperties) {
-    //    switch (prop.Type) {
-    //        case MaterialPropertyType::None: 
-    //            break;
-    //        case MaterialPropertyType::Sampler2D:
-    //            if (Ref<VulkanImage>& tex = material.AlbedoTexture) {
-    //                IGUI::Property(prop.DisplayName.c_str(), tex);
-    //            }
-    //            break;
-    //        case MaterialPropertyType::Bool: 
-    //            if (IGUI::Property(prop.DisplayName, v))
-    //                material->SetData(name, v ? 1 : 0);
-    //            break;
-    //        case MaterialPropertyType::Int: break;
-    //        case MaterialPropertyType::Float: break;
-    //        case MaterialPropertyType::Float2: break;
-    //        case MaterialPropertyType::Float3: break;
-    //        case MaterialPropertyType::Float4: break;
-    //        default: ;
-    //    }
-    //}
     IGUI::EndProperties();
 
     return loadAsset;

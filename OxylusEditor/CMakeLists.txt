@@ -22,14 +22,14 @@ set_target_properties(${PROJECT_NAME} PROPERTIES
 # Target name
 set_target_properties(${PROJECT_NAME} PROPERTIES
     TARGET_NAME_DEBUG   "OxylusEditor"
-    TARGET_NAME_DIST    "OxylusEditor"
+    TARGET_NAME_DISTRIBUTION    "OxylusEditor"
     TARGET_NAME_RELEASE "OxylusEditor"
 )
 
 # Output directory
 set_target_properties(${PROJECT_NAME} PROPERTIES
     OUTPUT_DIRECTORY_DEBUG   "${CMAKE_CURRENT_SOURCE_DIR}/../bin/Debug-windows-x86_64/OxylusEditor/"
-    OUTPUT_DIRECTORY_DIST    "${CMAKE_CURRENT_SOURCE_DIR}/../bin/Dist-windows-x86_64/OxylusEditor/"
+    OUTPUT_DIRECTORY_DISTRIBUTION    "${CMAKE_CURRENT_SOURCE_DIR}/../bin/Distribution-windows-x86_64/OxylusEditor/"
     OUTPUT_DIRECTORY_RELEASE "${CMAKE_CURRENT_SOURCE_DIR}/../bin/Release-windows-x86_64/OxylusEditor/"
 )
 
@@ -40,13 +40,13 @@ string(CONCAT "MSVC_RUNTIME_LIBRARY_STR"
   $<$<CONFIG:Debug>:
   MultiThreadedDebug
   >
-  $<$<CONFIG:Dist>:
+  $<$<CONFIG:Distribution>:
   MultiThreaded
   >
   $<$<CONFIG:Release>:
   MultiThreaded
   >
-  $<$<NOT:$<OR:$<CONFIG:Debug>,$<CONFIG:Dist>,$<CONFIG:Release>>>:${MSVC_RUNTIME_LIBRARY_DEFAULT}>
+  $<$<NOT:$<OR:$<CONFIG:Debug>,$<CONFIG:Distribution>,$<CONFIG:Release>>>:${MSVC_RUNTIME_LIBRARY_DEFAULT}>
   )
 set_target_properties(${PROJECT_NAME} PROPERTIES MSVC_RUNTIME_LIBRARY ${MSVC_RUNTIME_LIBRARY_STR})
 
@@ -64,7 +64,6 @@ target_include_directories(${PROJECT_NAME} PUBLIC
     "${CMAKE_CURRENT_SOURCE_DIR}/../Oxylus/vendor/ktx/include"
     "${CMAKE_CURRENT_SOURCE_DIR}/../Oxylus/vendor/miniaudio"
     "${CMAKE_CURRENT_SOURCE_DIR}/../Oxylus/vendor/tracy/public"
-    "$ENV{VULKAN_SDK}/include"
 )
 
 # Compile definitions
@@ -74,7 +73,7 @@ target_compile_definitions(${PROJECT_NAME} PRIVATE
         "_DEBUG;"
         "TRACY_ENABLE"
     ">"
-    "$<$<CONFIG:Dist>:"
+    "$<$<CONFIG:Distribution>:"
         "OX_DIST;"
         "NDEBUG"
     ">"
@@ -95,7 +94,7 @@ if(MSVC)
             /Od;
             /Zi
         >
-        $<$<CONFIG:Dist>:
+        $<$<CONFIG:Distribution>:
             /Ox;
             /Oi;
             /GF;
@@ -120,7 +119,7 @@ if(MSVC)
             /DEBUG;
             /INCREMENTAL
         >
-        $<$<CONFIG:Dist>:
+        $<$<CONFIG:Distribution>:
             /OPT:REF;
             /OPT:ICF;
         >

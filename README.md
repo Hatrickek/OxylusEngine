@@ -1,21 +1,30 @@
 # Oxylus Engine
 ![](/resources/branding/OXLogoBanner.png)     
 ## About   
-Render and Game engine using Vulkan. It is focused on realistic and stylistic 3D rendering.    
+Render and Game engine built with Vulkan and C++. It is focused on  stylistic and realistic 3D rendering.        
 This is my hobby project that I work on in my spare time to learn more about graphics programming and engine architectures. Also to produce some games including my dream game in the future.
 
 Currently Windows and Mac (with MoltenVK) is supported.
 
 ## Features:     
-- Full blown editor with asset browser.  
-- Clustered Forward Rendering with IBL PBR, Skybox, Bloom, SSR, SSAO, Shadows etc. Using own Vulkan API created from scratch.
-- 3D Model and Material workflow. (Prefabs etc.)
-- Physics with Jolt.   
-- Most of the engine including renderer is built with ECS using entt.
-- Game API with events and ecs systems. Read more: [(Creating a Game With Oxylus)](https://hatrickek.github.io/blog/oxylus-first-game)
+- Editor with features like Projects, Scenes and Saving/Loading Scenes, Content
+Browser, Prefabs, Shader Hot Reloading, Entity Parenting, and other entity
+manipulations, Inspector Panel which draws any component with its properties,
+Asset Manager, Material System&Editor, In-Editor Console, and a lot more QOL
+features...
+- Abstracted Vulkan renderer with Scene Graph built from scratch with ECS
+- Modern rendering features; Clustered Forward IBL PBR, SSAO, SSR, PCF Shadows,
+Bloom, Depth Of Field also various Post Processing techniques like HDR
+Tonemapping, Chromatic Aberration, Film Grain, Vignette, Sharpen
+- Multithreaded physics with Jolt.   
+- Game scripting API with ECS events and ECS systems. Which has been used to
+build multiple games to test the API and engine in general.
+ Read more: [(Creating a Game With Oxylus)](https://hatrickek.github.io/blog/oxylus-first-game)
 - 3D Audio with miniaudio
 
 ## Showcase
+![PostProcessing](https://cdn.discordapp.com/attachments/882355531463938078/1101916100414931066/image.png)
+PBR Testing scene with Depth Of Field, SSR, SSAO, Bloom, Vignette, Film Grain, Chromatic Aberration, Sharpen
 ![SSR](https://cdn.discordapp.com/attachments/1012357737256058924/1093471555679432815/image.png)
 [![SSR](https://cdn.discordapp.com/attachments/1012357737256058924/1095085960858976387/image.png)](https://youtu.be/nu4_uiTNB5Q)    
 Sponza scene with IBL PBR, SSAO, SSR and Directional Shadows

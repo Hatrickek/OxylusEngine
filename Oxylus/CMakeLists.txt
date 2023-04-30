@@ -25,19 +25,19 @@ source_group("src/Utils" FILES ${Utils})
 
 set(SOURCE_FILES ${src} ${Core} ${Assets} ${Audio} ${Event} ${Physics} ${Render} ${Scene} ${Thread} ${UI} ${Utils})
 
-file(GLOB vendor__ImGui "vendor/ImGui/*.h" "vendor/ImGui/*.cpp")
-source_group("vendor/ImGui" FILES ${vendor__ImGui})
+file(GLOB vendor__ImGui "vendor/imgui/*.h" "vendor/imgui/*.cpp")
+source_group("vendor/imgui" FILES ${vendor__ImGui})
 
 set(vendor__ImGui__backends
-  "vendor/ImGui/backends/imgui_impl_glfw.cpp"
-  "vendor/ImGui/backends/imgui_impl_glfw.h"
-  "vendor/ImGui/backends/imgui_impl_vulkan.cpp"
-  "vendor/ImGui/backends/imgui_impl_vulkan.h"
+  "vendor/imgui/backends/imgui_impl_glfw.cpp"
+  "vendor/imgui/backends/imgui_impl_glfw.h"
+  "vendor/imgui/backends/imgui_impl_vulkan.cpp"
+  "vendor/imgui/backends/imgui_impl_vulkan.h"
   )
-source_group("vendor/ImGui/backends" FILES ${vendor__ImGui__backends})
+source_group("vendor/imgui/backends" FILES ${vendor__ImGui__backends})
 
-set(vendor__ImGui__misc__cpp "vendor/ImGui/misc/cpp/imgui_stdlib.cpp" "vendor/ImGui/misc/cpp/imgui_stdlib.h")
-source_group("vendor/ImGui/misc/cpp" FILES ${vendor__ImGui__misc__cpp})
+set(vendor__ImGui__misc__cpp "vendor/imgui/misc/cpp/imgui_stdlib.cpp" "vendor/imgui/misc/cpp/imgui_stdlib.h")
+source_group("vendor/imgui/misc/cpp" FILES ${vendor__ImGui__misc__cpp})
 
 set(vendor__ImGuizmo "vendor/ImGuizmo/ImGuizmo.cpp" "vendor/ImGuizmo/ImGuizmo.h")
 source_group("vendor/ImGuizmo" FILES ${vendor__ImGuizmo})
@@ -77,13 +77,13 @@ set_target_properties(${PROJECT_NAME} PROPERTIES
 # Target name
 set_target_properties(${PROJECT_NAME} PROPERTIES
   TARGET_NAME_DEBUG "Oxylus"
-  TARGET_NAME_DIST "Oxylus"
+  TARGET_NAME_DISTRIBUTION "Oxylus"
   TARGET_NAME_RELEASE "Oxylus"
   )
 # Output directory
 set_target_properties(${PROJECT_NAME} PROPERTIES
   OUTPUT_DIRECTORY_DEBUG "${CMAKE_CURRENT_SOURCE_DIR}/../../bin/Debug-windows-x86_64/Oxylus/"
-  OUTPUT_DIRECTORY_DIST "${CMAKE_CURRENT_SOURCE_DIR}/../../bin/Dist-windows-x86_64/Oxylus/"
+  OUTPUT_DIRECTORY_DISTRIBUTION "${CMAKE_CURRENT_SOURCE_DIR}/../../bin/Distribution-windows-x86_64/Oxylus/"
   OUTPUT_DIRECTORY_RELEASE "${CMAKE_CURRENT_SOURCE_DIR}/../../bin/Release-windows-x86_64/Oxylus/"
   )
 
@@ -111,7 +111,7 @@ target_compile_definitions(${PROJECT_NAME} PRIVATE
   "TRACY_ON_DEMAND"
   "TRACY_ENABLE"
   ">"
-  "$<$<CONFIG:Dist>:"
+  "$<$<CONFIG:Distribution>:"
   "OX_DIST;"
   "NDEBUG"
   ">"
@@ -144,7 +144,7 @@ if (MSVC)
     /Od;
     /Zi
     >
-    $<$<CONFIG:Dist>:
+    $<$<CONFIG:Distribution>:
     /Ox;
     /Oi;
     /GF;
@@ -164,7 +164,7 @@ if (MSVC)
     /W3
     )
   target_link_options(${PROJECT_NAME} PRIVATE
-    $<$<CONFIG:Dist>:
+    $<$<CONFIG:Distribution>:
     /OPT:REF;
     /OPT:ICF
     >
@@ -183,13 +183,13 @@ string(CONCAT "MSVC_RUNTIME_LIBRARY_STR"
   $<$<CONFIG:Debug>:
   MultiThreadedDebug
   >
-  $<$<CONFIG:Dist>:
+  $<$<CONFIG:Distribution>:
   MultiThreaded
   >
   $<$<CONFIG:Release>:
   MultiThreaded
   >
-  $<$<NOT:$<OR:$<CONFIG:Debug>,$<CONFIG:Dist>,$<CONFIG:Release>>>:${MSVC_RUNTIME_LIBRARY_DEFAULT}>
+  $<$<NOT:$<OR:$<CONFIG:Debug>,$<CONFIG:Distribution>,$<CONFIG:Release>>>:${MSVC_RUNTIME_LIBRARY_DEFAULT}>
   )
 set_target_properties(${PROJECT_NAME} PROPERTIES MSVC_RUNTIME_LIBRARY ${MSVC_RUNTIME_LIBRARY_STR})
 
@@ -205,23 +205,27 @@ set(BUILD_SHARED_LIBS OFF)
 # Vulkan
 find_package(Vulkan)
 
-# Extract the Vulkan SDK path
-if (NOT ${Vulkan_INCLUDE_DIRS} STREQUAL "")
-  set(VULKAN_PATH ${Vulkan_INCLUDE_DIRS})
-  STRING(REGEX REPLACE "/Include" "" VULKAN_PATH ${VULKAN_PATH})
-endif()
-
-# Include Vulkan header files 
-include_directories(${Vulkan_INCLUDE_DIRS})
-
 if (WIN32)
-  set(Vulkan_shaderc_combined_LIBRARY "${VULKAN_PATH}/lib/shaderc_shared.lib")
+  set(Vulkan_INCLUDE_DIR "$ENV{VULKAN_SDK}/Include")
+  set(Vulkan_LIBRARY "$ENV{VULKAN_SDK}/lib/vulkan-1.lib")
+  set(shaderc_shared "$ENV{VULKAN_SDK}/lib/shaderc_shared.lib")
+  set(Vulkan_FOUND ON)
 elseif (APPLE)
-  set(Vulkan_shaderc_combined_LIBRARY "${VULKAN_PATH}/../lib/libshaderc_shared.dylib")
+  set(Vulkan_INCLUDE_DIR "$ENV{VULKAN_SDK}/include")
+  set(Vulkan_LIBRARY "$ENV{VULKAN_SDK}/lib/vulkan-1.dylib")
+  set(shaderc_shared "$ENV{VULKAN_SDK}/lib/libshaderc_shared.dylib")
+  set(Vulkan_FOUND ON)
+elseif (UNIX)
+  set(Vulkan_INCLUDE_DIR "$ENV{VULKAN_SDK}/include")
+  set(Vulkan_LIBRARY "$ENV{VULKAN_SDK}/lib/vulkan-1.a")
+  set(shaderc_shared "$ENV{VULKAN_SDK}/lib/libshaderc_shared.a")
+  set(Vulkan_FOUND ON)
 endif()
 
-set(VULKAN_LIB_LIST "${Vulkan_LIBRARIES}" "${Vulkan_shaderc_combined_LIBRARY}")
-target_link_libraries(${PROJECT_NAME} PUBLIC ${VULKAN_LIB_LIST})
+#target_include_directories(${PROJECT_NAME} PUBLIC ${Vulkan_INCLUDE_DIR})
+
+target_link_libraries(${PROJECT_NAME} PUBLIC ${shaderc_shared})
+target_link_libraries(${PROJECT_NAME} PUBLIC ${Vulkan_LIBRARY})
 
 # NFD
 add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/vendor/nativefiledialog-extended)
@@ -248,20 +252,18 @@ set_target_properties(c4core-amalgamate PROPERTIES MSVC_RUNTIME_LIBRARY ${MSVC_R
 set_target_properties(ryml-uninstall PROPERTIES MSVC_RUNTIME_LIBRARY ${MSVC_RUNTIME_LIBRARY_STR} FOLDER "Vendor")
 
 # KTX
-set(KTX_DIR "${CMAKE_CURRENT_SOURCE_DIR}/vendor/KTX-Software-4.1.0-rc3")
-if (NOT EXISTS ${KTX_DIR})
-  file(DOWNLOAD https://github.com/KhronosGroup/KTX-Software/archive/refs/tags/v4.1.0-rc3.zip ktx.zip SHOW_PROGRESS)
-  file(ARCHIVE_EXTRACT INPUT ktx.zip DESTINATION "${CMAKE_CURRENT_SOURCE_DIR}/vendor")
-endif()
-
 set(KTX_FEATURE_TESTS OFF)
 set(KTX_FEATURE_GL_UPLOAD OFF)
 set(KTX_FEATURE_STATIC_LIBRARY ON)
 set(BASISU_SUPPORT_OPENCL OFF)
 set(BASISU_SUPPORT_SSE OFF)
-add_subdirectory(${KTX_DIR})
+FetchContent_Declare(
+        ktx
+        GIT_REPOSITORY "https://github.com/KhronosGroup/KTX-Software"
+        GIT_TAG "v4.1.0"
+)
+FetchContent_MakeAvailable(ktx)
 target_link_libraries(${PROJECT_NAME} PUBLIC ktx)
-target_include_directories(${PROJECT_NAME} PUBLIC ${KTX_DIR}/include)
 set_target_properties(ktx PROPERTIES MSVC_RUNTIME_LIBRARY ${MSVC_RUNTIME_LIBRARY_STR} FOLDER "Vendor")
 set_target_properties(Continuous PROPERTIES MSVC_RUNTIME_LIBRARY ${MSVC_RUNTIME_LIBRARY_STR} FOLDER "Vendor")
 set_target_properties(Experimental PROPERTIES MSVC_RUNTIME_LIBRARY ${MSVC_RUNTIME_LIBRARY_STR} FOLDER "Vendor")
@@ -288,9 +290,9 @@ set_target_properties(makedfd2vk PROPERTIES MSVC_RUNTIME_LIBRARY ${MSVC_RUNTIME_
 set_target_properties(makevk2dfd PROPERTIES MSVC_RUNTIME_LIBRARY ${MSVC_RUNTIME_LIBRARY_STR} FOLDER "Vendor")
 # Disable warnings for ktx
 if(MSVC)
-target_compile_options(ktx PUBLIC /W0)
+target_compile_options(ktx PRIVATE /W0)
 else()
-target_compile_options(ktx PUBLIC -w)
+target_compile_options(ktx PRIVATE -w)
 endif()
 
 # FMT
@@ -302,16 +304,16 @@ target_link_libraries(${PROJECT_NAME} PUBLIC fmt)
 set_target_properties(fmt PROPERTIES FOLDER "Vendor")
 
 # VMA
+set(VMA_STATIC_VULKAN_FUNCTIONS ON)
 add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/vendor/VulkanMemoryAllocator)
 target_link_libraries(${PROJECT_NAME} PUBLIC VulkanMemoryAllocator)
 set_target_properties(VulkanMemoryAllocator PROPERTIES MSVC_RUNTIME_LIBRARY ${MSVC_RUNTIME_LIBRARY_STR} FOLDER "Vendor")
 
 # Jolt
-
 FetchContent_Declare(
         JoltPhysics
         GIT_REPOSITORY "https://github.com/jrouwe/JoltPhysics"
-        GIT_TAG "v3.0.0"
+        GIT_TAG "v3.0.1"
 		SOURCE_SUBDIR "Build"
 )
 FetchContent_MakeAvailable(JoltPhysics)

@@ -74,6 +74,9 @@ namespace Oxylus {
         //VulkanRenderer::OnResize(); TODO: Currently causes lags while resizing viewport.
         m_ViewportSize = {m_ViewportPanelSize.x, m_ViewportPanelSize.y};
       }
+      constexpr auto sixteenNineAR = 1.7777777f;
+      m_ViewportSize.x = m_ViewportSize.y * sixteenNineAR;
+      ImGui::SetCursorPosX((m_ViewportPanelSize.x - m_ViewportSize.x) * 0.5f);
       ImGui::Image(VulkanRenderer::GetFinalImage().GetDescriptorSet(), ImVec2{m_ViewportSize.x, m_ViewportSize.y});
 
       if (m_SceneHierarchyPanel)
