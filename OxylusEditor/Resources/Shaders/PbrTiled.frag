@@ -8,7 +8,6 @@
 #define PI 3.1415926535897932384626433832795
 #define MAX_NUM_LIGHTS_PER_TILE 128
 #define PIXELS_PER_TILE 16
-#define PBR 1
 
 struct Frustum {
   vec4 planes[4];

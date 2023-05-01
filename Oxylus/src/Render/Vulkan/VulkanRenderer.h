@@ -181,6 +181,7 @@ namespace Oxylus {
       VulkanFramebuffer PostProcessPassFB;
       VulkanFramebuffer DepthNormalPassFB;
       VulkanImage SSAOPassImage;
+      VulkanImage SSAOBlurPassImage;
       VulkanImage SSRPassImage;
       VulkanImage CompositePassImage;
       VulkanImage BloomUpsampleImage;

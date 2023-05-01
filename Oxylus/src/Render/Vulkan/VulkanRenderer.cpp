@@ -33,6 +33,7 @@ namespace Oxylus {
   static VulkanDescriptorSet s_SkyboxDescriptorSet;
   static VulkanDescriptorSet s_ComputeDescriptorSet;
   static VulkanDescriptorSet s_SSAODescriptorSet;
+  static VulkanDescriptorSet s_SSAOBlurDescriptorSet;
   static VulkanDescriptorSet s_SSRDescriptorSet;
   static VulkanDescriptorSet s_QuadDescriptorSet;
   static VulkanDescriptorSet s_DepthDescriptorSet;
@@ -310,6 +311,11 @@ namespace Oxylus {
       .Name = "DepthOfField",
       .ComputePath = Resources::GetResourcesPath("Shaders/DepthOfField.comp").string(),
     });
+    auto gaussianBlurShader = ShaderLibrary::CreateShaderAsync(ShaderCI{
+      .EntryPoint = "main",
+      .Name = "GaussianBlur",
+      .ComputePath = Resources::GetResourcesPath("Shaders/GaussianBlur.comp").string(),
+    });
     PipelineDescription pipelineDescription{};
     pipelineDescription.Shader = skyboxShader.get();
     pipelineDescription.ColorAttachmentCount = 1;
@@ -461,6 +467,20 @@ namespace Oxylus {
     ssaoDescription.Shader = ssaoShader.get();
     s_Pipelines.SSAOPassPipeline.CreateComputePipelineAsync(ssaoDescription).wait();
 
+    {
+      PipelineDescription gaussianBlur;
+      gaussianBlur.Name = "GaussianBlur Pipeline";
+      gaussianBlur.DepthSpec.DepthEnable = false;
+      gaussianBlur.SetDescriptions = {
+        {
+          SetDescription{0, 0, 1, vDT::eStorageImage, vSS::eCompute},
+          SetDescription{1, 0, 1, vDT::eCombinedImageSampler, vSS::eCompute},
+        }
+      };
+      gaussianBlur.Shader = gaussianBlurShader.get();
+      gaussianBlur.PushConstantRanges.emplace_back(vk::ShaderStageFlagBits::eCompute, 0, 4);
+      s_Pipelines.GaussianBlurPipeline.CreateComputePipelineAsync(gaussianBlur).wait();
+    }
     {
       PipelineDescription bloomDesc;
       bloomDesc.Name = "Bloom Pipeline";
@@ -749,12 +769,22 @@ namespace Oxylus {
       ssaopassimage.Format = vk::Format::eR8Unorm;
       ssaopassimage.FinalImageLayout = vk::ImageLayout::eGeneral;
       ssaopassimage.TransitionLayoutAtCreate = true;
-      ssaopassimage.SamplerAddressMode = vk::SamplerAddressMode::eClampToBorder;
+      ssaopassimage.SamplerAddressMode = vk::SamplerAddressMode::eClampToEdge;
       ssaopassimage.SamplerBorderColor = vk::BorderColor::eFloatTransparentBlack;
       s_FrameBuffers.SSAOPassImage.Create(ssaopassimage);
 
       ImagePool::AddToPool(
         &s_FrameBuffers.SSAOPassImage,
+        &Window::GetWindowExtent(),
+        [] {
+          UpdateSSAODescriptorSets();
+          s_FrameBuffers.PostProcessPassFB.GetDescription().OnResize();
+        });
+
+      s_FrameBuffers.SSAOBlurPassImage.Create(ssaopassimage);
+
+      ImagePool::AddToPool(
+        &s_FrameBuffers.SSAOBlurPassImage,
         &Window::GetWindowExtent(),
         [] {
           UpdateSSAODescriptorSets();
@@ -899,7 +929,7 @@ namespace Oxylus {
         [] {
           s_CompositeDescriptorSet.WriteDescriptorSets[0].pImageInfo = &s_FrameBuffers.CompositePassImage.GetDescImageInfo();
           s_CompositeDescriptorSet.WriteDescriptorSets[1].pImageInfo = &s_FrameBuffers.DepthOfFieldImage.GetDescImageInfo();
-          s_CompositeDescriptorSet.WriteDescriptorSets[2].pImageInfo = &s_FrameBuffers.SSAOPassImage.GetDescImageInfo();
+          s_CompositeDescriptorSet.WriteDescriptorSets[2].pImageInfo = &s_FrameBuffers.SSAOBlurPassImage.GetDescImageInfo();
           s_CompositeDescriptorSet.WriteDescriptorSets[3].pImageInfo = &s_FrameBuffers.BloomUpsampleImage.GetDescImageInfo();
           s_CompositeDescriptorSet.WriteDescriptorSets[4].pImageInfo = &s_FrameBuffers.SSRPassImage.GetDescImageInfo();
           s_CompositeDescriptorSet.WriteDescriptorSets[5].pImageInfo = &s_FrameBuffers.PostProcessPassFB.GetImage()[0].GetDescImageInfo();
@@ -954,6 +984,10 @@ namespace Oxylus {
     s_SSAODescriptorSet.WriteDescriptorSets[2].pImageInfo = &s_FrameBuffers.SSAOPassImage.GetDescImageInfo();
     s_SSAODescriptorSet.WriteDescriptorSets[3].pImageInfo = &s_FrameBuffers.DepthNormalPassFB.GetImage()[1].GetDescImageInfo();
     s_SSAODescriptorSet.Update();
+
+    s_SSAOBlurDescriptorSet.WriteDescriptorSets[0].pImageInfo = &s_FrameBuffers.SSAOBlurPassImage.GetDescImageInfo();
+    s_SSAOBlurDescriptorSet.WriteDescriptorSets[1].pImageInfo = &s_FrameBuffers.SSAOPassImage.GetDescImageInfo();
+    s_SSAOBlurDescriptorSet.Update();
   }
 
   void VulkanRenderer::InitRenderGraph() {
@@ -1061,38 +1095,55 @@ namespace Oxylus {
       [](const VulkanCommandBuffer& commandBuffer, int32_t) {
         ZoneScopedN("SSAOPass");
         OX_TRACE_GPU(commandBuffer.Get(), "SSAO Pass")
-        /*vk::ImageSubresourceRange subresourceRange;
-        subresourceRange.aspectMask = s_FrameBuffers.DepthNormalPassFB.GetImage()[0].GetDesc().AspectFlag;
-        subresourceRange.levelCount = 1;
-        subresourceRange.layerCount = 1;
-        const vk::ImageMemoryBarrier imageMemoryBarrier = {
-          {},
-          {},
-          vk::ImageLayout::eDepthStencilAttachmentOptimal,
-          vk::ImageLayout::eDepthStencilReadOnlyOptimal,
-          0,
-          0,
-          s_FrameBuffers.DepthNormalPassFB.GetImage()[0].GetImage(),
-          subresourceRange
-        };
-        commandBuffer.Get().pipelineBarrier(
-          vk::PipelineStageFlagBits::eFragmentShader,
-          vk::PipelineStageFlagBits::eComputeShader,
-          vk::DependencyFlagBits::eByRegion,
-          0,
-          nullptr,
-          0,
-          nullptr,
-          1,
-          &imageMemoryBarrier
-        );*/
         s_Pipelines.SSAOPassPipeline.BindPipeline(commandBuffer.Get());
         s_Pipelines.SSAOPassPipeline.BindDescriptorSets(commandBuffer.Get(), {s_SSAODescriptorSet.Get()});
         commandBuffer.Dispatch((Window::GetWidth() + 8 - 1) / 8, (Window::GetHeight() + 8 - 1) / 8, 1);
       },
       {clearValues},
       &VulkanContext::VulkanQueue.GraphicsQueue);
-    ssaoPass.RunWithCondition(RendererConfig::Get()->SSAOConfig.Enabled).AddToGraphCompute(renderGraph);
+    ssaoPass
+     .RunWithCondition(RendererConfig::Get()->SSAOConfig.Enabled)
+     .AddInnerPass(RenderGraphPass(
+        "SSAO Blur Pass",
+        {},
+        &s_Pipelines.GaussianBlurPipeline,
+        {},
+        [](VulkanCommandBuffer& commandBuffer, int32_t) {
+          ZoneScopedN("SSAO Blur Pass");
+          OX_TRACE_GPU(commandBuffer.Get(), "SSAO Blur Pass")
+          vk::ImageMemoryBarrier imageMemoryBarrier{};
+          imageMemoryBarrier.image = s_FrameBuffers.SSAOPassImage.GetImage();
+          imageMemoryBarrier.oldLayout = vk::ImageLayout::eGeneral;
+          imageMemoryBarrier.newLayout = vk::ImageLayout::eGeneral;
+          imageMemoryBarrier.dstAccessMask = vk::AccessFlagBits::eShaderRead;
+          imageMemoryBarrier.srcAccessMask = vk::AccessFlagBits::eShaderWrite;
+          imageMemoryBarrier.subresourceRange.aspectMask = vk::ImageAspectFlagBits::eColor;
+          imageMemoryBarrier.subresourceRange.levelCount = 1;
+          imageMemoryBarrier.subresourceRange.layerCount = 1;
+          commandBuffer.Get().pipelineBarrier(
+            vk::PipelineStageFlagBits::eComputeShader,
+            vk::PipelineStageFlagBits::eComputeShader,
+            vk::DependencyFlagBits::eByRegion,
+            0,
+            nullptr,
+            0,
+            nullptr,
+            1,
+            &imageMemoryBarrier);
+          const auto& layout = s_Pipelines.GaussianBlurPipeline.GetPipelineLayout();
+          s_Pipelines.GaussianBlurPipeline.BindPipeline(commandBuffer.Get());
+          struct PushConst {
+            BOOL Horizontal = false;
+          } pushConst;
+          s_Pipelines.GaussianBlurPipeline.BindDescriptorSets(commandBuffer.Get(), {s_SSAOBlurDescriptorSet.Get()});
+          commandBuffer.Dispatch((Window::GetWidth() + 8 - 1) / 8, (Window::GetHeight() + 8 - 1) / 8, 1);
+
+          pushConst.Horizontal = true;
+          commandBuffer.PushConstants(layout, vk::ShaderStageFlagBits::eCompute, 0, 4, &pushConst);
+          s_Pipelines.GaussianBlurPipeline.BindDescriptorSets(commandBuffer.Get(), {s_SSAOBlurDescriptorSet.Get()});
+          commandBuffer.Dispatch((Window::GetWidth() + 8 - 1) / 8, (Window::GetHeight() + 8 - 1) / 8, 1);
+        }
+      )).AddToGraphCompute(renderGraph);
 
     RenderGraphPass pbrPass(
       "PBR Pass",
@@ -1263,33 +1314,7 @@ namespace Oxylus {
       {},
       [](const VulkanCommandBuffer& commandBuffer, int32_t) {
         ZoneScopedN("DepthOfField Pass");
-        OX_TRACE_GPU(commandBuffer.Get(), "DepthOfField Pass")
-        
-        /*vk::ImageSubresourceRange subresourceRange;
-        subresourceRange.aspectMask = s_FrameBuffers.DepthNormalPassFB.GetImage()[0].GetDesc().AspectFlag;
-        subresourceRange.levelCount = 1;
-        subresourceRange.layerCount = 1;
-        const vk::ImageMemoryBarrier imageMemoryBarrier = {
-          {},
-          {},
-          vk::ImageLayout::eDepthStencilAttachmentOptimal,
-          vk::ImageLayout::eDepthStencilReadOnlyOptimal,
-          0,
-          0,
-          s_FrameBuffers.DepthNormalPassFB.GetImage()[0].GetImage(),
-          subresourceRange
-        };
-        commandBuffer.Get().pipelineBarrier(
-          vk::PipelineStageFlagBits::eFragmentShader,
-          vk::PipelineStageFlagBits::eComputeShader,
-          vk::DependencyFlagBits::eByRegion,
-          0,
-          nullptr,
-          0,
-          nullptr,
-          1,
-          &imageMemoryBarrier
-        );*/
+        OX_TRACE_GPU(commandBuffer.Get(), "DepthOfField Pass");
         s_Pipelines.DepthOfFieldPipeline.BindPipeline(commandBuffer.Get());
         s_Pipelines.DepthOfFieldPipeline.BindDescriptorSets(commandBuffer.Get(), {s_DepthOfFieldDescriptorSet.Get()});
         commandBuffer.Dispatch((Window::GetWidth() + 8 - 1) / 8, (Window::GetHeight() + 8 - 1) / 8, 6);
@@ -1665,6 +1690,7 @@ namespace Oxylus {
     s_SkyboxDescriptorSet.CreateFromPipeline(s_Pipelines.SkyboxPipeline);
     s_ComputeDescriptorSet.CreateFromPipeline(s_Pipelines.LightListPipeline);
     s_SSAODescriptorSet.CreateFromPipeline(s_Pipelines.SSAOPassPipeline);
+    s_SSAOBlurDescriptorSet.CreateFromPipeline(s_Pipelines.GaussianBlurPipeline);
     s_PostProcessDescriptorSet.CreateFromPipeline(s_Pipelines.PostProcessPipeline);
     s_BloomDescriptorSet.CreateFromPipeline(s_Pipelines.BloomPipeline);
     s_DepthDescriptorSet.CreateFromPipeline(s_Pipelines.DepthPrePassPipeline);

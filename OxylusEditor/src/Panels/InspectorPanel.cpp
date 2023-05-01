@@ -242,8 +242,7 @@ namespace Oxylus {
     }
   }
 
-
-  void InspectorPanel::DrawComponents(Entity entity) {
+  void InspectorPanel::DrawComponents(Entity entity) const {
     if (entity.HasComponent<TagComponent>()) {
       auto& tag = entity.GetComponent<TagComponent>().Tag;
       char buffer[256] = {};

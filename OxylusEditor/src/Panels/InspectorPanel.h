@@ -13,7 +13,7 @@ namespace Oxylus {
     static bool DrawMaterialProperties(Ref<Material>& material, bool saveToCurrentPath = false);
 
   private:
-    void DrawComponents(Entity entity);
+    void DrawComponents(Entity entity) const;
 
     template<typename Component>
     void DrawAddComponent(Entity entity, const char* name) const;

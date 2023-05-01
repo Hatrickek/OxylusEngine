@@ -7,8 +7,6 @@
 #include "Render/Vulkan/VulkanShader.h"
 
 namespace Oxylus {
-#define BOOL int32_t //GLSL doesn't have one byte bools
-
   class Material {
   public:
     enum class AlphaMode {

@@ -159,6 +159,10 @@ namespace Oxylus {
       else {
         renderPass.Execute(*commandBuffer, 0);
 
+        for (const auto& innerPass : renderPass.m_InnerPasses) {
+          innerPass.Execute(*commandBuffer, 0);
+        }
+
         TracyProfiler::Collect(commandBuffer->Get());
 
         commandBuffer->End();

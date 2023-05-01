@@ -112,7 +112,10 @@ namespace Oxylus {
       renderPassCI.pDependencies = dependencies.data();
       renderPassCI.dependencyCount = static_cast<uint32_t>(dependencies.size());
 
-      m_RenderPass.CreateRenderPass(renderPassCI);
+      RenderPassDescription description = {};
+      description.Name = m_PipelineDescription.Name;
+      description.CreateInfo = renderPassCI;
+      m_RenderPass.CreateRenderPass(description);
     }
     else {
       m_RenderPass = GetDesc().RenderPass;
