@@ -569,7 +569,7 @@ namespace Oxylus {
           }
           else if (file.Type == FileType::Model) {
             if (file.Thumbnail) {
-              textureId = file.Thumbnail->GetDescriptorSet();
+              textureId = m_MeshIcon->GetDescriptorSet();
             }
           }
           else {

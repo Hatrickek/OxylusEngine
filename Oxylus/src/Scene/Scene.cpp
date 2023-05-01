@@ -58,15 +58,13 @@ namespace Oxylus {
 
   void Scene::CreateEntityWithMesh(const Asset<Mesh>& meshAsset) {
     const auto& mesh = meshAsset.Data;
-    uint32_t nodeIndex = 0;
     for (const auto& node : mesh->Nodes) {
       Entity entity = CreateEntity(node->Name);
       if (node->ContainsMesh) {
-        entity.AddComponentI<MeshRendererComponent>(mesh).SubmesIndex = nodeIndex;
+        entity.AddComponentI<MeshRendererComponent>(mesh).SubmesIndex = node->MeshIndex;
         entity.GetComponent<MaterialComponent>().Materials = mesh->GetMaterialsAsRef();
       }
       IterateOverMeshNode(mesh, node->Children, entity);
-      ++nodeIndex;
     }
   }
 
