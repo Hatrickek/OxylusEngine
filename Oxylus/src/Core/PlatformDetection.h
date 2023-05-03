@@ -37,8 +37,7 @@
 	#error "Android is not supported!"
 #elif defined(__linux__)
 	#define OX_PLATFORM_LINUX
-	#define VK_USE_PLATFORM_ANDROID_KHR
-	#error "Linux is not supported!"
+	#define VK_USE_PLATFORM_XCB_KHR
 #else
 	/* Unknown compiler/platform */
 	#error "Unknown platform!"

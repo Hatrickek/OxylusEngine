@@ -3,12 +3,10 @@
 #include <cstdint>
 #include <filesystem>
 
-#include "imgui_internal.h"
-#include "glm/vec3.hpp"
-#include "glm/gtc/type_ptr.hpp"
-#include "imgui/imgui.h"
+#include <imgui.h>
+#include <imgui_internal.h>
+#include <glm/gtc/type_ptr.hpp>
 #include "Render/Vulkan/VulkanImage.h"
-#include "Utils/StringUtils.h"
 
 namespace Oxylus {
   class IGUI {

@@ -40,9 +40,9 @@ namespace Oxylus {
 
     VulkanBuffer& SetOnUpdate(std::function<void()> func);
 
-    template <typename Type>
+    template <typename T>
     VulkanBuffer& Sink(EventDispatcher& dispatcher) {
-      dispatcher.sink<Type>().connect < &VulkanBuffer::Update > (*this);
+      dispatcher.sink<T>().template connect<&VulkanBuffer::Update>(*this);
       return *this;
     }
 

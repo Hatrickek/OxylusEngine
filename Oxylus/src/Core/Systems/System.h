@@ -3,7 +3,6 @@
 #include <Event/Event.h>
 
 #include <string>
-#include <functional>
 
 namespace Oxylus {
   class Scene;

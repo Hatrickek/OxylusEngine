@@ -9,6 +9,7 @@
 #include "Scene/EntitySerializer.h"
 #include "UI/IGUI.h"
 #include "Utils/OxMath.h"
+#include "Utils/StringUtils.h"
 #include "utils/timestep.h"
 
 namespace Oxylus {

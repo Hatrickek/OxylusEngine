@@ -19,8 +19,8 @@ endif()
 # Global configuration types
 set(CMAKE_CONFIGURATION_TYPES
     "Debug"
-    "Distribution"
     "Release"
+    "Distribution"
     CACHE STRING "" FORCE
 )
 

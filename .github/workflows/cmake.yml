@@ -19,13 +19,14 @@ jobs:
     strategy:
         fail-fast: false
         matrix:
-            build_type: [Distribution]
-
+            build_type: [Release]
+  
     steps:
-    - name: Setup CMake
-      uses: jwlawson/actions-setup-cmake@v1.13
+    - name: Set up GCC
+      uses: egor-tensin/setup-gcc@v1
       with:
-        cmake-version: '3.24.x'
+        version: latest
+        platform: x64
     - name: Install GTK
       run: sudo apt install build-essential libgtk-3-dev
     - name: Checkout Code
@@ -35,28 +36,79 @@ jobs:
     - name: Configure CMake
       run: cmake -B ${{github.workspace}}/Build -DCMAKE_BUILD_TYPE=${{matrix.build_type}} -DCMAKE_CXX_COMPILER=clang++ -DIS_CONTAINER=True
     - name: Build
-      run: cmake --build ${{github.workspace}}/Build/ -j 2
-      
+      run: cmake --build ${{github.workspace}}/Build -j 2
+    - name: "Release"
+      uses: "marvinpinto/action-automatic-releases@latest"
+      with:
+        repo_token: "${{ secrets.GITHUB_TOKEN }}"
+        automatic_release_tag: "latest"
+        prerelease: true
+        title: "Development Build"
+        files: |
+          build/Oxylus/Release/Oxylus.a
+          build/OxylusEditor/Release/OxylusEditor
+
   msvc_cl:
     runs-on: windows-latest
     name: Visual Studio CL
     strategy:
         fail-fast: false
         matrix:
-            build_type: [Distribution]
+            build_type: [Release]
 
     steps:
-    - name: Setup CMake
-      uses: jwlawson/actions-setup-cmake@v1.13
-      with:
-        cmake-version: '3.24.x'
     - name: Checkout Code
       uses: actions/checkout@v3
       with:
         submodules: recursive
+    - name: Setup CMake
+      uses: lukka/get-cmake@latest
+    - name: Setup MSVC
+      uses: ilammy/msvc-dev-cmd@v1.12.1
+      with:
+        arch: ${{ matrix.arch }}
+        vsversion: 2022
     - name: Add msbuild to PATH
       uses: microsoft/setup-msbuild@v1.3
     - name: Configure CMake
-      run: cmake -B ${{github.workspace}}/Build/ -G "Visual Studio 17 2022" -A x64 -DIS_CONTAINER=True
+      run: cmake -S . -B ${{github.workspace}}/Build -G "Visual Studio 17 2022" -A x64 -DIS_CONTAINER=True
     - name: Build
       run: msbuild Build\Oxylus.sln /property:Configuration=${{matrix.build_type}}
+    - name: "Release"
+      uses: "marvinpinto/action-automatic-releases@latest"
+      with:
+        repo_token: "${{ secrets.GITHUB_TOKEN }}"
+        automatic_release_tag: "latest"
+        prerelease: true
+        title: "Development Build"
+        files: |
+          build/Oxylus/Release/Oxylus.lib
+          build/OxylusEditor/Release/OxylusEditor.exe
+
+  mac_clang:
+    runs-on: macos-latest
+    name: Mac Clang
+    strategy:
+        fail-fast: false
+        matrix:
+            build_type: [Release]
+  
+    steps:
+    - name: Checkout Code
+      uses: actions/checkout@v3
+      with:
+        submodules: recursive
+    - name: Configure CMake
+      run: cmake -B ${{github.workspace}}/Build -DCMAKE_BUILD_TYPE=${{matrix.build_type}} -DIS_CONTAINER=True
+    - name: Build
+      run: cmake --build ${{github.workspace}}/Build -j 2
+    - name: "Release"
+      uses: "marvinpinto/action-automatic-releases@latest"
+      with:
+        repo_token: "${{ secrets.GITHUB_TOKEN }}"
+        automatic_release_tag: "latest"
+        prerelease: true
+        title: "Development Build"
+        files: |
+          build/Oxylus/Release/Oxylus
+          build/OxylusEditor/Release/OxylusEditor

@@ -8,7 +8,7 @@
 #include "VulkanPipeline.h"
 #include "VulkanSwapchain.h"
 #include "Utils/VulkanUtils.h"
-#include "Core/resources.h"
+#include "Core/Resources.h"
 #include "Render/Mesh.h"
 #include "Render/Window.h"
 #include "Render/PBR/Prefilter.h"
@@ -1133,7 +1133,7 @@ namespace Oxylus {
           const auto& layout = s_Pipelines.GaussianBlurPipeline.GetPipelineLayout();
           s_Pipelines.GaussianBlurPipeline.BindPipeline(commandBuffer.Get());
           struct PushConst {
-            BOOL Horizontal = false;
+            GLSL_BOOL Horizontal = false;
           } pushConst;
           s_Pipelines.GaussianBlurPipeline.BindDescriptorSets(commandBuffer.Get(), {s_SSAOBlurDescriptorSet.Get()});
           commandBuffer.Dispatch((Window::GetWidth() + 8 - 1) / 8, (Window::GetHeight() + 8 - 1) / 8, 1);

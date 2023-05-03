@@ -154,28 +154,6 @@ namespace Oxylus {
     ~RigidBodyComponent() { }
   };
 
-  //Scripting
-  class ScriptableEntity;
-
-  struct NativeScriptComponent {
-    ScriptableEntity* Instance = nullptr;
-
-    ScriptableEntity* (* InstantiateScript)();
-
-    void (* DestroyScript)(NativeScriptComponent*);
-
-    template<typename T, typename... Args>
-    void Bind(Args&& ... args) {
-      InstantiateScript = [&args...] {
-        return static_cast<ScriptableEntity*>(new T(std::forward<Args>(args)...));
-      };
-      DestroyScript = [](NativeScriptComponent* nsc) {
-        delete nsc->Instance;
-        nsc->Instance = nullptr;
-      };
-    }
-  };
-
   //Audio
   struct AudioSourceComponent {
     AudioSourceConfig Config;
@@ -202,5 +180,5 @@ namespace Oxylus {
           RigidBodyComponent, BoxColliderComponent, MeshColliderComponent,
 
           //Audio
-          AudioSourceComponent, AudioListenerComponent, NativeScriptComponent>;
+          AudioSourceComponent, AudioListenerComponent>;
 }

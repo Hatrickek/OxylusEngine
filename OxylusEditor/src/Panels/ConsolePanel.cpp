@@ -9,6 +9,7 @@
 #include "Core/Input.h"
 #include "UI/ExternalConsoleSink.h"
 #include "UI/IGUI.h"
+#include "Utils/StringUtils.h"
 
 namespace Oxylus {
   enum ConsoleCommands {

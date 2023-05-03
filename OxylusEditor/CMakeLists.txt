@@ -22,15 +22,15 @@ set_target_properties(${PROJECT_NAME} PROPERTIES
 # Target name
 set_target_properties(${PROJECT_NAME} PROPERTIES
     TARGET_NAME_DEBUG   "OxylusEditor"
-    TARGET_NAME_DISTRIBUTION    "OxylusEditor"
     TARGET_NAME_RELEASE "OxylusEditor"
+    TARGET_NAME_Distribution    "OxylusEditor"
 )
 
 # Output directory
 set_target_properties(${PROJECT_NAME} PROPERTIES
     OUTPUT_DIRECTORY_DEBUG   "${CMAKE_CURRENT_SOURCE_DIR}/../bin/Debug-windows-x86_64/OxylusEditor/"
-    OUTPUT_DIRECTORY_DISTRIBUTION    "${CMAKE_CURRENT_SOURCE_DIR}/../bin/Distribution-windows-x86_64/OxylusEditor/"
     OUTPUT_DIRECTORY_RELEASE "${CMAKE_CURRENT_SOURCE_DIR}/../bin/Release-windows-x86_64/OxylusEditor/"
+    OUTPUT_DIRECTORY_Distribution    "${CMAKE_CURRENT_SOURCE_DIR}/../bin/Distribution-windows-x86_64/OxylusEditor/"
 )
 
 # MSVC runtime library
@@ -40,13 +40,16 @@ string(CONCAT "MSVC_RUNTIME_LIBRARY_STR"
   $<$<CONFIG:Debug>:
   MultiThreadedDebug
   >
-  $<$<CONFIG:Distribution>:
-  MultiThreaded
-  >
   $<$<CONFIG:Release>:
   MultiThreaded
   >
-  $<$<NOT:$<OR:$<CONFIG:Debug>,$<CONFIG:Distribution>,$<CONFIG:Release>>>:${MSVC_RUNTIME_LIBRARY_DEFAULT}>
+  $<$<CONFIG:Distribution>:
+  MultiThreaded
+  >
+  $<$<NOT:$<OR:$<CONFIG:Debug>,
+  $<CONFIG:Release>,
+  $<CONFIG:Distribution>
+  >>:${MSVC_RUNTIME_LIBRARY_DEFAULT}>
   )
 set_target_properties(${PROJECT_NAME} PROPERTIES MSVC_RUNTIME_LIBRARY ${MSVC_RUNTIME_LIBRARY_STR})
 
@@ -73,14 +76,14 @@ target_compile_definitions(${PROJECT_NAME} PRIVATE
         "_DEBUG;"
         "TRACY_ENABLE"
     ">"
-    "$<$<CONFIG:Distribution>:"
-        "OX_DIST;"
-        "NDEBUG"
-    ">"
     "$<$<CONFIG:Release>:"
         "OX_RELEASE;"
         "NDEBUG;"
         "TRACY_ENABLE"
+    ">"
+    "$<$<CONFIG:Distribution>:"
+        "OX_Distribution;"
+        "NDEBUG"
     ">"
     "_HAS_EXCEPTIONS=0;"
     "UNICODE;"
@@ -94,14 +97,14 @@ if(MSVC)
             /Od;
             /Zi
         >
-        $<$<CONFIG:Distribution>:
+        $<$<CONFIG:Release>:
             /Ox;
             /Oi;
             /GF;
             /Gy;
             ${DEFAULT_CXX_DEBUG_INFORMATION_FORMAT}
         >
-        $<$<CONFIG:Release>:
+        $<$<CONFIG:Distribution>:
             /Ox;
             /Oi;
             /GF;
@@ -119,16 +122,18 @@ if(MSVC)
             /DEBUG;
             /INCREMENTAL
         >
-        $<$<CONFIG:Distribution>:
+        $<$<CONFIG:Release>:
             /OPT:REF;
             /OPT:ICF;
         >
-        $<$<CONFIG:Release>:
+        $<$<CONFIG:Distribution>:
             /OPT:REF;
             /OPT:ICF;
         >
         /SUBSYSTEM:CONSOLE
     )
+    set(CMAKE_SHARED_LINKER_FLAGS_DISTRIBUTION ${CMAKE_SHARED_LINKER_FLAGS})
+    set(CMAKE_EXE_LINKER_FLAGS_DISTRIBUTION ${CMAKE_EXE_LINKER_FLAGS})
 endif()
 
 # Link with oxylus.

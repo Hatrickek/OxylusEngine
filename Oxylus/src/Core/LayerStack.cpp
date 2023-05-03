@@ -1,5 +1,5 @@
 #include "src/oxpch.h"
-#include "layerstack.h"
+#include "LayerStack.h"
 
 namespace Oxylus {
   LayerStack::~LayerStack() {

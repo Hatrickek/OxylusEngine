@@ -30,7 +30,6 @@
 *.app
 
 # Additional Files/Folders
-/Oxylus/vendor
 /.vs
 /.vscode
 /.idea

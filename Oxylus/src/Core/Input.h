@@ -1,8 +1,8 @@
 #pragma once
 
 #include <functional>
-#include "keycodes.h"
-#include <glfw/glfw3.h>
+#include "Keycodes.h"
+#include <GLFW/glfw3.h>
 #include "glm/vec2.hpp"
 
 namespace Oxylus {

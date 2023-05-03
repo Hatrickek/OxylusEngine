@@ -2,12 +2,10 @@
 #include "Scene.h"
 
 #include "Core/Entity.h"
-#include "Core/ScriptableEntity.h"
 #include "Render/Camera.h"
 #include "Render/Vulkan/VulkanRenderer.h"
-#include "Utils/Log.h"
 #include "Utils/Profiler.h"
-#include "Utils/Timestep.h"
+#include "Utils/TimeStep.h"
 
 #include <glm/glm.hpp>
 
@@ -218,20 +216,6 @@ namespace Oxylus {
       }
     }
 
-    //Scripts
-    {
-      ZoneScopedN("Scripts System");
-      m_Registry.view<NativeScriptComponent>().each([this, deltaTime](auto entity, auto& nsc) {
-        if (!nsc.Instance) {
-          nsc.Instance = nsc.InstantiateScript();
-          nsc.Instance->m_Entity = Entity{entity, this};
-          nsc.Instance->OnCreate();
-        }
-
-        nsc.Instance->OnUpdate(deltaTime);
-      });
-    }
-
     //Physics
     {
       ZoneScopedN("Physics System");
@@ -285,7 +269,7 @@ namespace Oxylus {
     }
   }
 
-  void Scene::OnEditorUpdate(float deltaTime, Camera& camera) {
+  void Scene::OnEditorUpdate([[maybe_unused]] float deltaTime, Camera& camera) {
     RenderScene();
 
     VulkanRenderer::SetCamera(camera);
@@ -354,7 +338,4 @@ namespace Oxylus {
 
   template <>
   void Scene::OnComponentAdded<RigidBodyComponent>(Entity entity, RigidBodyComponent& component) { }
-
-  template <>
-  void Scene::OnComponentAdded<NativeScriptComponent>(Entity entity, NativeScriptComponent& component) { }
 }

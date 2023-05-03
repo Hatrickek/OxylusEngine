@@ -8,6 +8,7 @@
 #include "Core/Project.h"
 #include "UI/IGUI.h"
 #include "Utils/EditorConfig.h"
+#include "Utils/StringUtils.h"
 #include "Utils/UIUtils.h"
 
 namespace Oxylus {

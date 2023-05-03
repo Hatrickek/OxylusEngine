@@ -1,7 +1,7 @@
 #include "src/oxpch.h"
 #include "Input.h"
 #include "Render/Window.h"
-#include "Utils/Timestep.h"
+#include "Utils/TimeStep.h"
 
 namespace Oxylus {
   void ScrollCallback(GLFWwindow* window, double xoffset, double yoffset);
@@ -106,7 +106,7 @@ namespace Oxylus {
     }
   }
 
-  void Input::MouseCallback(GLFWwindow* window, const double xposIn, const double yposIn) {
+  void Input::MouseCallback([[maybe_unused]] GLFWwindow* window, const double xposIn, const double yposIn) {
     s_MouseOffsetX = s_MousePos.x - static_cast<float>(xposIn);
     s_MouseOffsetY = s_MousePos.y - static_cast<float>(yposIn);
     s_MousePos = glm::vec2{static_cast<float>(xposIn), static_cast<float>(yposIn)};
@@ -119,11 +119,11 @@ namespace Oxylus {
     s_Events.RegisteredMouseEventsOnce.clear();
   }
 
-  void ScrollCallback(GLFWwindow* window, double xoffset, double yoffset) {
+  void ScrollCallback([[maybe_unused]] GLFWwindow* window, [[maybe_unused]] double xoffset, double yoffset) {
     s_MouseScrollOffsetY = (float)yoffset;
   }
 
-  void Input::KeyCallback(GLFWwindow* window, int key, int scancode, int action, int mods) {
+  void Input::KeyCallback([[maybe_unused]] GLFWwindow* window, [[maybe_unused]] int key, [[maybe_unused]] int scancode, [[maybe_unused]] int action, [[maybe_unused]] int mods) {
     for (auto& event : s_Events.RegisteredKeyboardEvents) {
       event();
     }

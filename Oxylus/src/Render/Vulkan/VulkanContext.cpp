@@ -16,12 +16,15 @@ namespace Oxylus {
     const auto vkGetInstanceProcAddr = GetDynamicLoader().getProcAddress<PFN_vkGetInstanceProcAddr>("vkGetInstanceProcAddr");
     VULKAN_HPP_DEFAULT_DISPATCHER.init(vkGetInstanceProcAddr);
 
-    // TODO: Add this extensions only if it's supported
-    //const auto extension = {VK_KHR_PORTABILITY_ENUMERATION_EXTENSION_NAME};
-
+    std::vector<std::string> enabledInstanceExtensions = {};
+#if (defined(VK_USE_PLATFORM_IOS_MVK) || defined(VK_USE_PLATFORM_MACOS_MVK))
+	// SRS - When running on iOS/macOS with MoltenVK, enable VK_KHR_get_physical_device_properties2 if not already enabled by the example (required by VK_KHR_portability_subset)
+    enabledInstanceExtensions.emplace_back(VK_KHR_GET_PHYSICAL_DEVICE_PROPERTIES_2_EXTENSION_NAME);
+    enabledInstanceExtensions.emplace_back(VK_KHR_PORTABILITY_ENUMERATION_EXTENSION_NAME);
+#endif
     Context.Instance = ContextUtils::CreateInstance(spec.Name,
       "Oxylus Engine",
-      {},
+      enabledInstanceExtensions,
       ContextUtils::GetInstanceExtensions(),
       VK_API_VERSION_1_3);
 

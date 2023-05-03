@@ -6,6 +6,7 @@
 #include "Assets/AssetManager.h"
 
 #include "Utils/ImGuiScoped.h"
+#include "Utils/StringUtils.h"
 #include "Utils/UIUtils.h"
 
 namespace Oxylus {

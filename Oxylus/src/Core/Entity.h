@@ -65,14 +65,6 @@ namespace Oxylus {
       return component;
     }
 
-    template<typename T, typename... Args>
-    NativeScriptComponent& AddScript(Args&& ... args) const {
-      NativeScriptComponent& component = m_Scene->m_Registry.emplace<NativeScriptComponent>(m_EntityHandle);
-      component.Bind<T>(std::forward<Args>(args)...);
-      m_Scene->OnComponentAdded<NativeScriptComponent>(*this, component);
-      return component;
-    }
-
     RelationshipComponent& GetRelationship() const { return GetComponent<RelationshipComponent>(); }
     UUID GetUUID() const { return GetComponent<IDComponent>().ID; }
     const std::string& GetName() const { return GetComponent<TagComponent>().Tag; }

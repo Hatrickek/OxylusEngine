@@ -23,16 +23,16 @@ namespace Oxylus {
       float Specular = 0.0f;
       float Normal = 1.0f;
       float AO = 1.0f;
-      BOOL UseAlbedo = false;
-      BOOL UseRoughness = false;
-      BOOL UseMetallic = false;
-      BOOL UseNormal = false;
-      BOOL UseAO = false;
-      BOOL UseEmissive = false;
-      BOOL UseSpecular = false;
-      BOOL FlipImage = false;
+      GLSL_BOOL UseAlbedo = false;
+      GLSL_BOOL UseRoughness = false;
+      GLSL_BOOL UseMetallic = false;
+      GLSL_BOOL UseNormal = false;
+      GLSL_BOOL UseAO = false;
+      GLSL_BOOL UseEmissive = false;
+      GLSL_BOOL UseSpecular = false;
+      GLSL_BOOL FlipImage = false;
       float AlphaCutoff = 1;
-      BOOL DoubleSided = false;
+      GLSL_BOOL DoubleSided = false;
       uint32_t UVScale = 1;
     } Parameters;
 

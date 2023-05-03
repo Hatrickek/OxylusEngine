@@ -48,7 +48,7 @@ namespace Oxylus {
       bool Enabled = true;
       uint32_t Quality = 3;
       bool UsePCF = true;
-      uint32_t Size = 4096;
+      uint32_t Size = 2048;
     } DirectShadowsConfig;
 
     RendererConfig();
@@ -57,9 +57,7 @@ namespace Oxylus {
     void SaveConfig(const char* path) const;
     bool LoadConfig(const char* path);
 
-    static RendererConfig* Get() {
-      return s_Instance;
-    }
+    static RendererConfig* Get() { return s_Instance; }
 
   private:
     static RendererConfig* s_Instance;

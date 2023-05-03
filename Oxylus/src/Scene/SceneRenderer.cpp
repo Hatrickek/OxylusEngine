@@ -7,7 +7,7 @@
 #include "Render/Vulkan/VulkanRenderer.h"
 
 #include "Utils/Profiler.h"
-#include "Utils/Timestep.h"
+#include "Utils/TimeStep.h"
 
 namespace Oxylus {
   void SceneRenderer::Init(Scene& scene) {

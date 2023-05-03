@@ -25,19 +25,19 @@ source_group("src/Utils" FILES ${Utils})
 
 set(SOURCE_FILES ${src} ${Core} ${Assets} ${Audio} ${Event} ${Physics} ${Render} ${Scene} ${Thread} ${UI} ${Utils})
 
-file(GLOB vendor__ImGui "vendor/imgui/*.h" "vendor/imgui/*.cpp")
-source_group("vendor/imgui" FILES ${vendor__ImGui})
+file(GLOB vendor__ImGui "vendor/ImGui/*.h" "vendor/ImGui/*.cpp")
+source_group("vendor/ImGui" FILES ${vendor__ImGui})
 
 set(vendor__ImGui__backends
-  "vendor/imgui/backends/imgui_impl_glfw.cpp"
-  "vendor/imgui/backends/imgui_impl_glfw.h"
-  "vendor/imgui/backends/imgui_impl_vulkan.cpp"
-  "vendor/imgui/backends/imgui_impl_vulkan.h"
+  "vendor/ImGui/backends/imgui_impl_glfw.cpp"
+  "vendor/ImGui/backends/imgui_impl_glfw.h"
+  "vendor/ImGui/backends/imgui_impl_vulkan.cpp"
+  "vendor/ImGui/backends/imgui_impl_vulkan.h"
   )
-source_group("vendor/imgui/backends" FILES ${vendor__ImGui__backends})
+source_group("vendor/ImGui/backends" FILES ${vendor__ImGui__backends})
 
-set(vendor__ImGui__misc__cpp "vendor/imgui/misc/cpp/imgui_stdlib.cpp" "vendor/imgui/misc/cpp/imgui_stdlib.h")
-source_group("vendor/imgui/misc/cpp" FILES ${vendor__ImGui__misc__cpp})
+set(vendor__ImGui__misc__cpp "vendor/ImGui/misc/cpp/imgui_stdlib.cpp" "vendor/ImGui/misc/cpp/imgui_stdlib.h")
+source_group("vendor/ImGui/misc/cpp" FILES ${vendor__ImGui__misc__cpp})
 
 set(vendor__ImGuizmo "vendor/ImGuizmo/ImGuizmo.cpp" "vendor/ImGuizmo/ImGuizmo.h")
 source_group("vendor/ImGuizmo" FILES ${vendor__ImGuizmo})
@@ -74,17 +74,18 @@ set(ROOT_NAMESPACE Oxylus)
 set_target_properties(${PROJECT_NAME} PROPERTIES
   VS_GLOBAL_KEYWORD "Win32Proj"
   )
+
 # Target name
 set_target_properties(${PROJECT_NAME} PROPERTIES
   TARGET_NAME_DEBUG "Oxylus"
-  TARGET_NAME_DISTRIBUTION "Oxylus"
   TARGET_NAME_RELEASE "Oxylus"
+  TARGET_NAME_Distribution "Oxylus"
   )
 # Output directory
 set_target_properties(${PROJECT_NAME} PROPERTIES
   OUTPUT_DIRECTORY_DEBUG "${CMAKE_CURRENT_SOURCE_DIR}/../../bin/Debug-windows-x86_64/Oxylus/"
-  OUTPUT_DIRECTORY_DISTRIBUTION "${CMAKE_CURRENT_SOURCE_DIR}/../../bin/Distribution-windows-x86_64/Oxylus/"
   OUTPUT_DIRECTORY_RELEASE "${CMAKE_CURRENT_SOURCE_DIR}/../../bin/Release-windows-x86_64/Oxylus/"
+  OUTPUT_DIRECTORY_Distribution "${CMAKE_CURRENT_SOURCE_DIR}/../../bin/Distribution-windows-x86_64/Oxylus/"
   )
 
 # Include directories
@@ -111,15 +112,15 @@ target_compile_definitions(${PROJECT_NAME} PRIVATE
   "TRACY_ON_DEMAND"
   "TRACY_ENABLE"
   ">"
-  "$<$<CONFIG:Distribution>:"
-  "OX_DIST;"
-  "NDEBUG"
-  ">"
   "$<$<CONFIG:Release>:"
   "OX_RELEASE;"
   "TRACY_ON_DEMAND"
   "NDEBUG;"
   "TRACY_ENABLE"
+  ">"
+  "$<$<CONFIG:Distribution>:"
+  "OX_Distribution;"
+  "NDEBUG"
   ">"
   "VULKAN_HPP_NO_EXCEPTIONS"
   "VULKAN_HPP_NO_SPACESHIP_OPERATOR"
@@ -144,36 +145,44 @@ if (MSVC)
     /Od;
     /Zi
     >
-    $<$<CONFIG:Distribution>:
-    /Ox;
-    /Oi;
-    /GF;
-    /Gy;
-    ${DEFAULT_CXX_DEBUG_INFORMATION_FORMAT}
-    >
     $<$<CONFIG:Release>:
     /Ox;
     /Oi;
     /GF;
     /Gy;
+    /O2;
+    ${DEFAULT_CXX_DEBUG_INFORMATION_FORMAT}
+    >
+    $<$<CONFIG:Distribution>:
+    /Oi;
+    /GF;
+    /Gy;
+    /O2;
     ${DEFAULT_CXX_DEBUG_INFORMATION_FORMAT}
     >
     /MP;
     /std:c++latest;
     /Gm-;
     /W3
+    /external:anglebrackets
     )
-  target_link_options(${PROJECT_NAME} PRIVATE
-    $<$<CONFIG:Distribution>:
-    /OPT:REF;
-    /OPT:ICF
+    target_link_options(${PROJECT_NAME} PRIVATE
+    $<$<CONFIG:Debug>:
+        /DEBUG;
+        /INCREMENTAL
     >
     $<$<CONFIG:Release>:
-    /OPT:REF;
-    /OPT:ICF
+        /OPT:REF;
+        /OPT:ICF;
     >
-    /SUBSYSTEM:WINDOWS
+    $<$<CONFIG:Distribution>:
+        /OPT:REF;
+        /OPT:ICF;
+    >
+    /SUBSYSTEM:CONSOLE
     )
+    set(CMAKE_SHARED_LINKER_FLAGS_DISTRIBUTION ${CMAKE_SHARED_LINKER_FLAGS})
+    set(CMAKE_EXE_LINKER_FLAGS_DISTRIBUTION ${CMAKE_EXE_LINKER_FLAGS})
 endif ()
 
 # MSVC runtime library
@@ -183,13 +192,16 @@ string(CONCAT "MSVC_RUNTIME_LIBRARY_STR"
   $<$<CONFIG:Debug>:
   MultiThreadedDebug
   >
-  $<$<CONFIG:Distribution>:
-  MultiThreaded
-  >
   $<$<CONFIG:Release>:
   MultiThreaded
   >
-  $<$<NOT:$<OR:$<CONFIG:Debug>,$<CONFIG:Distribution>,$<CONFIG:Release>>>:${MSVC_RUNTIME_LIBRARY_DEFAULT}>
+  $<$<CONFIG:Distribution>:
+  MultiThreaded
+  >
+  $<$<NOT:$<OR:$<CONFIG:Debug>,
+  $<CONFIG:Distribution>,
+  $<CONFIG:Release>
+  >>:${MSVC_RUNTIME_LIBRARY_DEFAULT}>
   )
 set_target_properties(${PROJECT_NAME} PROPERTIES MSVC_RUNTIME_LIBRARY ${MSVC_RUNTIME_LIBRARY_STR})
 
@@ -252,14 +264,14 @@ FetchContent_MakeAvailable(Vulkan-Headers)
 target_link_libraries(${PROJECT_NAME} PUBLIC Vulkan-Headers)
 get_target_property(Vulkan_HEADERS_SOURCEDIR Vulkan-Headers SOURCE_DIR)
 
-# Vulkan dll
+# Vulkan
 if (NOT IS_CONTAINER)
     find_package(Vulkan)
     target_link_libraries(${PROJECT_NAME} PUBLIC Vulkan::Vulkan)
 endif()
 
 # VMA
-target_include_directories(${PROJECT_NAME} PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/vendor/VulkanMemoryAllocator/include)
+target_include_directories(${PROJECT_NAME} PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}/vendor/VulkanMemoryAllocator/include")
 
 # spirv-headers
 set(PROJECT_IS_TOP_LEVEL OFF)
@@ -285,6 +297,8 @@ FetchContent_Declare(
 FetchContent_MakeAvailable(SPIRV-Tools)
 get_target_property(SPIRV_TOOLS_DIR SPIRV-Tools SOURCE_DIR)
 set_targets_static_and_folder(SPIRV-Tools)
+FOLDER_DIR_TARGETS(spirv-tools-pkg-config)
+FOLDER_DIR_TARGETS(spirv-tools-shared-pkg-config)
 
 # glslang
 set(ENABLE_CTEST OFF)
@@ -320,6 +334,13 @@ target_link_libraries(${PROJECT_NAME} PUBLIC shaderc)
 get_target_property(SHADERC_SOURCE_DIR shaderc SOURCE_DIR)
 set_targets_static_and_folder(shaderc)
 set_targets_static_and_folder(shaderc_util)
+FOLDER_DIR_TARGETS(add-copyright)
+FOLDER_DIR_TARGETS(build-version)
+FOLDER_DIR_TARGETS(glslc)
+set_targets_static_and_folder(glslc_exe)
+FOLDER_DIR_TARGETS(shaderc_static-pkg-config)
+FOLDER_DIR_TARGETS(shaderc-pkg-config)
+FOLDER_DIR_TARGETS(shaderc_combined-pkg-config)
 
 # NFD
 add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/vendor/nativefiledialog-extended)
@@ -366,6 +387,8 @@ target_link_libraries(${PROJECT_NAME} PUBLIC fmt)
 set_targets_static_and_folder(fmt)
 
 # Jolt
+set(COMPILE_AS_SHARED_LIBRARY OFF)
+set(ENABLE_ALL_WARNINGS OFF)
 FetchContent_Declare(
         JoltPhysics
         GIT_REPOSITORY "https://github.com/jrouwe/JoltPhysics"
@@ -375,4 +398,4 @@ FetchContent_Declare(
 FetchContent_MakeAvailable(JoltPhysics)
 target_link_libraries(${PROJECT_NAME} PUBLIC Jolt)
 target_include_directories(${PROJECT_NAME} PUBLIC ${JoltPhysics_SOURCE_DIR}/..)
-set_targets_static_and_folder(Jolt)
+FOLDER_DIR_TARGETS(Jolt)

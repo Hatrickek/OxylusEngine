@@ -5,6 +5,7 @@
 #include "Render/ShaderLibrary.h"
 #include "Render/Vulkan/VulkanRenderer.h"
 #include "UI/IGUI.h"
+#include "Utils/StringUtils.h"
 
 namespace Oxylus {
   ShadersPanel::ShadersPanel() : EditorPanel("Shaders", ICON_MDI_FILE_CHART, false) { }

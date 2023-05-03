@@ -3,13 +3,13 @@
 #include "VulkanContext.h"
 #include "VulkanRenderer.h"
 #include "Utils/VulkanUtils.h"
+#include "Core/Resources.h"
+#include "Utils/Profiler.h"
+
 #include <fstream>
 #include <ktx.h>
 #include <ktxvulkan.h>
-
-#include "Core/Resources.h"
-#include "tinygltf/stb_image.h"
-#include "Utils/Profiler.h"
+#include <stb_image.h>
 
 namespace Oxylus {
   vk::AccessFlags AccessFlagsForLayout(const vk::ImageLayout layout) {

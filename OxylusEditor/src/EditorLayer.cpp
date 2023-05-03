@@ -23,9 +23,10 @@
 #include "Utils/EditorConfig.h"
 #include "UI/IGUI.h"
 #include "Utils/ImGuiScoped.h"
-#include "Utils/Profiler.h"
 #include "Utils/UIUtils.h"
 #include <Panels/EditorDebugPanel.h>
+
+#include "Utils/StringUtils.h"
 
 namespace Oxylus {
   EditorLayer* EditorLayer::s_Instance = nullptr;

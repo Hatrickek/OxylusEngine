@@ -1,14 +1,12 @@
 #pragma once
 
-#include "Utils/Log.h"
-
 #include <tracy/Tracy.hpp>
 #include <vulkan/vulkan.hpp>
 #include <tracy/TracyVulkan.hpp>
 
 #include <chrono>
 
-#define GPU_PROFILER_ENABLED 1
+#define GPU_PROFILER_ENABLED 0
 #ifdef OX_DIST
 #undef GPU_PROFILER_ENABLED
 #define GPU_PROFILER_ENABLED 0

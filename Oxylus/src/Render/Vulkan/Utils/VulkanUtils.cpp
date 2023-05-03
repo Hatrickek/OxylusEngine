@@ -116,9 +116,15 @@ namespace Oxylus {
     vk::DebugUtilsMessageTypeFlagsEXT messageTypeFlags(
       vk::DebugUtilsMessageTypeFlagBitsEXT::eGeneral | vk::DebugUtilsMessageTypeFlagBitsEXT::ePerformance |
       vk::DebugUtilsMessageTypeFlagBitsEXT::eValidation);
+#if (defined(VK_USE_PLATFORM_IOS_MVK) || defined(VK_USE_PLATFORM_MACOS_MVK))
     vk::StructureChain<vk::InstanceCreateInfo, vk::DebugUtilsMessengerCreateInfoEXT> instanceCreateInfo(
       {vk::InstanceCreateFlagBits::eEnumeratePortabilityKHR, &applicationInfo, layers, extensions},
       {{}, severityFlags, messageTypeFlags, &debugUtilsMessengerCallback});
+#else
+    vk::StructureChain<vk::InstanceCreateInfo, vk::DebugUtilsMessengerCreateInfoEXT> instanceCreateInfo(
+      {{}, &applicationInfo, layers, extensions},
+      {{}, severityFlags, messageTypeFlags, &debugUtilsMessengerCallback});
+#endif
 #endif
     return instanceCreateInfo;
   }
@@ -154,8 +160,7 @@ namespace Oxylus {
                                             uint32_t apiVersion) {
     const vk::ApplicationInfo applicationInfo(appName.c_str(), 1, engineName.c_str(), 1, apiVersion);
     const std::vector<char const*> enabledLayers = GatherLayers(layers, vk::enumerateInstanceLayerProperties().value);
-    std::vector<char const*> enabledExtensions = GatherExtensions(extensions,
-      vk::enumerateInstanceExtensionProperties().value);
+    std::vector<char const*> enabledExtensions = GatherExtensions(extensions, vk::enumerateInstanceExtensionProperties().value);
     uint32_t count = 0;
     const char** names = glfwGetRequiredInstanceExtensions(&count);
     if (count && names) {
