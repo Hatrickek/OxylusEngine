@@ -29,7 +29,7 @@
 #include "Utils/Log.h"
 
 #include <glm/glm.hpp>
-#include <vulkan/vulkan.hpp>
+#define VULKAN_HPP_DISPATCH_LOADER_DYNAMIC 1
 #include <Jolt/Jolt.h>
 
 #ifdef OX_PLATFORM_WINDOWS

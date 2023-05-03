@@ -66,11 +66,19 @@ namespace Oxylus {
 
     m_Material->Path = path;
 
-    const auto& content = FileUtils::ReadFile(path);
-    if (content.empty())
-      return;
+    auto content = FileUtils::ReadFile(path);
+    if (!content) {
+      OX_CORE_ASSERT(content, fmt::format("Couldn't read material file: {0}", path).c_str());
 
-    ryml::Tree tree = ryml::parse_in_arena(c4::to_csubstr(content));
+      // Try to read it again from assets path
+      content = FileUtils::ReadFile(AssetManager::GetAssetFileSystemPath(path).string());
+      if (content)
+        OX_CORE_INFO("Could load the material file from assets path: {0}", path);
+      else
+        return;
+    }
+
+    ryml::Tree tree = ryml::parse_in_arena(c4::to_csubstr(content.value()));
 
     const ryml::ConstNodeRef nodeRoot = tree.rootref();
 

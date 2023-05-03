@@ -8,7 +8,7 @@
 #include <Utils/FileUtils.h>
 
 namespace Oxylus {
-  ProjectSerializer::ProjectSerializer(Ref <Project> project) : m_Project(std::move(project)) { }
+  ProjectSerializer::ProjectSerializer(Ref<Project> project) : m_Project(std::move(project)) { }
 
   bool ProjectSerializer::Serialize(const std::filesystem::path& filePath) const {
     const auto& config = m_Project->GetConfig();
@@ -35,8 +35,12 @@ namespace Oxylus {
     auto& [Name, StartScene, AssetDirectory] = m_Project->GetConfig();
 
     const auto& content = FileUtils::ReadFile(filePath.string());
+    if (!content) {
+      OX_CORE_ASSERT(content, fmt::format("Couldn't load project file: {0}", filePath.string()).c_str());
+      return false;
+    }
 
-    ryml::Tree tree = ryml::parse_in_arena(c4::to_csubstr(content));
+    ryml::Tree tree = ryml::parse_in_arena(c4::to_csubstr(content.value()));
 
     const ryml::ConstNodeRef root = tree.rootref();
 

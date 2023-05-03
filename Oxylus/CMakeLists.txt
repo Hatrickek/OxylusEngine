@@ -196,41 +196,141 @@ set_target_properties(${PROJECT_NAME} PROPERTIES MSVC_RUNTIME_LIBRARY ${MSVC_RUN
 #-------------
 # Dependencies
 #-------------
+function(get_all_targets var dir)
+    set(targets)
+    get_all_targets_recursive(targets ${dir})
+    set(${var} ${targets} PARENT_SCOPE)
+endfunction()
+
+macro(get_all_targets_recursive targets dir)
+    get_property(subdirectories DIRECTORY ${dir} PROPERTY SUBDIRECTORIES)
+    foreach(subdir ${subdirectories})
+        get_all_targets_recursive(${targets} ${subdir})
+    endforeach()
+
+    get_property(current_targets DIRECTORY ${dir} PROPERTY BUILDSYSTEM_TARGETS)
+    list(APPEND ${targets} ${current_targets})
+endmacro()
+
+function(folder_dir_targets _target)
+    get_target_property(TARGET_SOURCE_DIR ${_target} SOURCE_DIR)
+    get_all_targets(targets ${TARGET_SOURCE_DIR})
+    set_target_properties(${targets} PROPERTIES FOLDER "Vendor/${_target}")
+endfunction()
+
+function(set_targets_static _target)
+    get_target_property(TARGET_SOURCE_DIR ${_target} SOURCE_DIR)
+    get_all_targets(targets ${TARGET_SOURCE_DIR})
+    set_target_properties(${targets} PROPERTIES MSVC_RUNTIME_LIBRARY ${MSVC_RUNTIME_LIBRARY_STR})
+endfunction()
+
+function(set_targets_static_and_folder _target)
+    get_target_property(TARGET_SOURCE_DIR ${_target} SOURCE_DIR)
+    get_all_targets(targets ${TARGET_SOURCE_DIR})
+    set_target_properties(${targets} PROPERTIES MSVC_RUNTIME_LIBRARY ${MSVC_RUNTIME_LIBRARY_STR} FOLDER "Vendor/${_target}")
+endfunction()
+
+# Suppress all warnings from dependencies.
+if(MSVC)
+set_property(DIRECTORY APPEND PROPERTY COMPILE_OPTIONS /W0)
+else()
+set_property(DIRECTORY APPEND PROPERTY COMPILE_OPTIONS -w)
+endif()
 
 include(FetchContent)
 
-#build libraries as static
-set(BUILD_SHARED_LIBS OFF)
+# Set build type (This is actually not required)
+set(CMAKE_BUILD_TYPE Release)
 
-# Vulkan
+# Vulkan Headers
+FetchContent_Declare(
+        Vulkan-Headers
+        GIT_REPOSITORY "https://github.com/KhronosGroup/Vulkan-Headers.git"
+        GIT_TAG "v1.3.239"
+)
+FetchContent_MakeAvailable(Vulkan-Headers)
+target_link_libraries(${PROJECT_NAME} PUBLIC Vulkan-Headers)
+get_target_property(Vulkan_HEADERS_SOURCEDIR Vulkan-Headers SOURCE_DIR)
+
+# Vulkan dll
 find_package(Vulkan)
+target_link_libraries(${PROJECT_NAME} PUBLIC Vulkan::Vulkan)
 
-if (WIN32)
-  set(Vulkan_INCLUDE_DIR "$ENV{VULKAN_SDK}/Include")
-  set(Vulkan_LIBRARY "$ENV{VULKAN_SDK}/lib/vulkan-1.lib")
-  set(shaderc_shared "$ENV{VULKAN_SDK}/lib/shaderc_shared.lib")
-  set(Vulkan_FOUND ON)
-elseif (APPLE)
-  set(Vulkan_INCLUDE_DIR "$ENV{VULKAN_SDK}/include")
-  set(Vulkan_LIBRARY "$ENV{VULKAN_SDK}/lib/vulkan-1.dylib")
-  set(shaderc_shared "$ENV{VULKAN_SDK}/lib/libshaderc_shared.dylib")
-  set(Vulkan_FOUND ON)
-elseif (UNIX)
-  set(Vulkan_INCLUDE_DIR "$ENV{VULKAN_SDK}/include")
-  set(Vulkan_LIBRARY "$ENV{VULKAN_SDK}/lib/vulkan-1.a")
-  set(shaderc_shared "$ENV{VULKAN_SDK}/lib/libshaderc_shared.a")
-  set(Vulkan_FOUND ON)
-endif()
+# VMA
+set(VMA_STATIC_VULKAN_FUNCTIONS OFF)
+set(VMA_DYNAMIC_VULKAN_FUNCTIONS ON)
+FetchContent_Declare(
+        vma
+        GIT_REPOSITORY "https://github.com/GPUOpen-LibrariesAndSDKs/VulkanMemoryAllocator.git"
+        GIT_TAG "v3.0.1"
+)
+FetchContent_MakeAvailable(vma)
+target_include_directories(${PROJECT_NAME} PUBLIC ${vma_SOURCE_DIR}/include)
 
-#target_include_directories(${PROJECT_NAME} PUBLIC ${Vulkan_INCLUDE_DIR})
+# spirv-headers
+set(PROJECT_IS_TOP_LEVEL OFF)
+set(BUILD_TESTS OFF)
+FetchContent_Declare(
+        SPIRV-Headers
+        GIT_REPOSITORY "https://github.com/KhronosGroup/SPIRV-Headers.git"
+        GIT_TAG "sdk-1.3.243.0"
+)
+FetchContent_MakeAvailable(SPIRV-Headers)
+get_target_property(SPIRV_HEADER_DIR SPIRV-Headers SOURCE_DIR)
+set(SPIRV_HEADERS_DIR ${SPIRV-Headers_SOURCE_DIR})
+set_targets_static_and_folder(SPIRV-Headers)
 
-target_link_libraries(${PROJECT_NAME} PUBLIC ${shaderc_shared})
-target_link_libraries(${PROJECT_NAME} PUBLIC ${Vulkan_LIBRARY})
+# spirv-tools
+set(SPIRV_SKIP_TESTS ON)
+set(SPIRV_SKIP_EXECUTABLES ON)
+FetchContent_Declare(
+        SPIRV-Tools
+        GIT_REPOSITORY "https://github.com/KhronosGroup/SPIRV-Tools.git"
+        GIT_TAG "v2023.2"
+)
+FetchContent_MakeAvailable(SPIRV-Tools)
+get_target_property(SPIRV_TOOLS_DIR SPIRV-Tools SOURCE_DIR)
+set_targets_static_and_folder(SPIRV-Tools)
+
+# glslang
+set(ENABLE_CTEST OFF)
+set(ENABLE_GLSLANG_BINARIES OFF)
+set(SKIP_GLSLANG_INSTALL ON)
+set(BUILD_EXTERNAL OFF)
+FetchContent_Declare(
+        glslang
+        GIT_REPOSITORY "https://github.com/KhronosGroup/glslang.git"
+        GIT_TAG "12.1.0"
+)
+FetchContent_MakeAvailable(glslang)
+get_target_property(GLSL_SOURCE_DIR glslang SOURCE_DIR)
+set_targets_static_and_folder(glslang)
+set_targets_static_and_folder(SPIRV)
+set_targets_static_and_folder(OGLCompiler)
+set_targets_static_and_folder(SPVRemapper)
+set_targets_static_and_folder(HLSL)
+
+# shaderc
+set(SHADERC_ENABLE_SHARED_CRT OFF)
+set(SHADERC_SKIP_TESTS ON)
+set(SHADERC_SKIP_EXAMPLES ON)
+set(SHADERC_SKIP_COPYRIGHT_CHECK ON)    
+set(SHADERC_GLSLANG_DIR ${GLSL_SOURCE_DIR})
+FetchContent_Declare(
+        shaderc
+        GIT_REPOSITORY "https://github.com/google/shaderc.git"
+        GIT_TAG "v2023.3"
+)
+FetchContent_MakeAvailable(shaderc)
+target_link_libraries(${PROJECT_NAME} PUBLIC shaderc)
+get_target_property(SHADERC_SOURCE_DIR shaderc SOURCE_DIR)
+set_targets_static_and_folder(shaderc)
+set_targets_static_and_folder(shaderc_util)
 
 # NFD
 add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/vendor/nativefiledialog-extended)
 target_link_libraries(${PROJECT_NAME} PUBLIC nfd)
-set_target_properties(nfd PROPERTIES MSVC_RUNTIME_LIBRARY ${MSVC_RUNTIME_LIBRARY_STR} FOLDER "Vendor")
+set_targets_static_and_folder(nfd)
 
 # GLFW
 set(GLFW_BUILD_DOCS OFF CACHE BOOL "" FORCE)
@@ -238,18 +338,15 @@ set(GLFW_BUILD_TESTS OFF CACHE BOOL "" FORCE)
 set(GLFW_BUILD_EXAMPLES OFF CACHE BOOL "" FORCE)
 add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/vendor/glfw)
 target_link_libraries(${PROJECT_NAME} PUBLIC glfw)
-set_target_properties(glfw PROPERTIES MSVC_RUNTIME_LIBRARY ${MSVC_RUNTIME_LIBRARY_STR} FOLDER "Vendor")
-set_target_properties(uninstall PROPERTIES MSVC_RUNTIME_LIBRARY ${MSVC_RUNTIME_LIBRARY_STR} FOLDER "Vendor")
-set_target_properties(update_mappings PROPERTIES MSVC_RUNTIME_LIBRARY ${MSVC_RUNTIME_LIBRARY_STR} FOLDER "Vendor")
+set_targets_static_and_folder(glfw)
+FOLDER_DIR_TARGETS(uninstall)
 
 # RYML
 add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/vendor/ryml)
 target_link_libraries(${PROJECT_NAME} PUBLIC ryml::ryml)
-set_target_properties(ryml PROPERTIES MSVC_RUNTIME_LIBRARY ${MSVC_RUNTIME_LIBRARY_STR} FOLDER "Vendor")
+set_target_properties(ryml PROPERTIES  FOLDER "Vendor")
 target_link_libraries(${PROJECT_NAME} PUBLIC c4core)
-set_target_properties(c4core PROPERTIES MSVC_RUNTIME_LIBRARY ${MSVC_RUNTIME_LIBRARY_STR} FOLDER "Vendor")
-set_target_properties(c4core-amalgamate PROPERTIES MSVC_RUNTIME_LIBRARY ${MSVC_RUNTIME_LIBRARY_STR} FOLDER "Vendor")
-set_target_properties(ryml-uninstall PROPERTIES MSVC_RUNTIME_LIBRARY ${MSVC_RUNTIME_LIBRARY_STR} FOLDER "Vendor")
+set_targets_static_and_folder(ryml)
 
 # KTX
 set(KTX_FEATURE_TESTS OFF)
@@ -264,36 +361,7 @@ FetchContent_Declare(
 )
 FetchContent_MakeAvailable(ktx)
 target_link_libraries(${PROJECT_NAME} PUBLIC ktx)
-set_target_properties(ktx PROPERTIES MSVC_RUNTIME_LIBRARY ${MSVC_RUNTIME_LIBRARY_STR} FOLDER "Vendor")
-set_target_properties(Continuous PROPERTIES MSVC_RUNTIME_LIBRARY ${MSVC_RUNTIME_LIBRARY_STR} FOLDER "Vendor")
-set_target_properties(Experimental PROPERTIES MSVC_RUNTIME_LIBRARY ${MSVC_RUNTIME_LIBRARY_STR} FOLDER "Vendor")
-set_target_properties(Nightly PROPERTIES MSVC_RUNTIME_LIBRARY ${MSVC_RUNTIME_LIBRARY_STR} FOLDER "Vendor")
-set_target_properties(NightlyMemoryCheck PROPERTIES MSVC_RUNTIME_LIBRARY ${MSVC_RUNTIME_LIBRARY_STR} FOLDER "Vendor")
-set_target_properties(toktx PROPERTIES MSVC_RUNTIME_LIBRARY ${MSVC_RUNTIME_LIBRARY_STR} FOLDER "Vendor")
-set_target_properties(ktxsc PROPERTIES MSVC_RUNTIME_LIBRARY ${MSVC_RUNTIME_LIBRARY_STR} FOLDER "Vendor")
-set_target_properties(ktxsc_version PROPERTIES MSVC_RUNTIME_LIBRARY ${MSVC_RUNTIME_LIBRARY_STR} FOLDER "Vendor")
-set_target_properties(ktx2check PROPERTIES MSVC_RUNTIME_LIBRARY ${MSVC_RUNTIME_LIBRARY_STR} FOLDER "Vendor")
-set_target_properties(ktx2check_version PROPERTIES MSVC_RUNTIME_LIBRARY ${MSVC_RUNTIME_LIBRARY_STR} FOLDER "Vendor")
-set_target_properties(ktxinfo PROPERTIES MSVC_RUNTIME_LIBRARY ${MSVC_RUNTIME_LIBRARY_STR} FOLDER "Vendor")
-set_target_properties(ktxinfo_version PROPERTIES MSVC_RUNTIME_LIBRARY ${MSVC_RUNTIME_LIBRARY_STR} FOLDER "Vendor")
-set_target_properties(ktx2ktx2 PROPERTIES MSVC_RUNTIME_LIBRARY ${MSVC_RUNTIME_LIBRARY_STR} FOLDER "Vendor")
-set_target_properties(ktx2ktx2_version PROPERTIES MSVC_RUNTIME_LIBRARY ${MSVC_RUNTIME_LIBRARY_STR} FOLDER "Vendor")
-set_target_properties(ktx_read PROPERTIES MSVC_RUNTIME_LIBRARY ${MSVC_RUNTIME_LIBRARY_STR} FOLDER "Vendor")
-set_target_properties(astcenc-avx2-static PROPERTIES MSVC_RUNTIME_LIBRARY ${MSVC_RUNTIME_LIBRARY_STR} FOLDER "Vendor")
-set_target_properties(toktx_version PROPERTIES MSVC_RUNTIME_LIBRARY ${MSVC_RUNTIME_LIBRARY_STR} FOLDER "Vendor")
-set_target_properties(ktx_version PROPERTIES MSVC_RUNTIME_LIBRARY ${MSVC_RUNTIME_LIBRARY_STR} FOLDER "Vendor")
-set_target_properties(mkvk PROPERTIES MSVC_RUNTIME_LIBRARY ${MSVC_RUNTIME_LIBRARY_STR} FOLDER "Vendor")
-set_target_properties(mkvkformatfiles PROPERTIES MSVC_RUNTIME_LIBRARY ${MSVC_RUNTIME_LIBRARY_STR} FOLDER "Vendor")
-set_target_properties(obj_basisu_cbind PROPERTIES MSVC_RUNTIME_LIBRARY ${MSVC_RUNTIME_LIBRARY_STR} FOLDER "Vendor")
-set_target_properties(objUtil PROPERTIES MSVC_RUNTIME_LIBRARY ${MSVC_RUNTIME_LIBRARY_STR} FOLDER "Vendor")
-set_target_properties(makedfd2vk PROPERTIES MSVC_RUNTIME_LIBRARY ${MSVC_RUNTIME_LIBRARY_STR} FOLDER "Vendor")
-set_target_properties(makevk2dfd PROPERTIES MSVC_RUNTIME_LIBRARY ${MSVC_RUNTIME_LIBRARY_STR} FOLDER "Vendor")
-# Disable warnings for ktx
-if(MSVC)
-target_compile_options(ktx PRIVATE /W0)
-else()
-target_compile_options(ktx PRIVATE -w)
-endif()
+set_targets_static_and_folder(ktx)
 
 # FMT
 FetchContent_Declare(fmt
@@ -301,13 +369,7 @@ FetchContent_Declare(fmt
   GIT_TAG master)
 FetchContent_MakeAvailable(fmt)
 target_link_libraries(${PROJECT_NAME} PUBLIC fmt)
-set_target_properties(fmt PROPERTIES FOLDER "Vendor")
-
-# VMA
-set(VMA_STATIC_VULKAN_FUNCTIONS ON)
-add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/vendor/VulkanMemoryAllocator)
-target_link_libraries(${PROJECT_NAME} PUBLIC VulkanMemoryAllocator)
-set_target_properties(VulkanMemoryAllocator PROPERTIES MSVC_RUNTIME_LIBRARY ${MSVC_RUNTIME_LIBRARY_STR} FOLDER "Vendor")
+set_targets_static_and_folder(fmt)
 
 # Jolt
 FetchContent_Declare(
@@ -319,4 +381,4 @@ FetchContent_Declare(
 FetchContent_MakeAvailable(JoltPhysics)
 target_link_libraries(${PROJECT_NAME} PUBLIC Jolt)
 target_include_directories(${PROJECT_NAME} PUBLIC ${JoltPhysics_SOURCE_DIR}/..)
-set_target_properties(Jolt PROPERTIES FOLDER "Vendor")
+set_targets_static_and_folder(Jolt)

@@ -5,6 +5,6 @@
 namespace Oxylus {
   class FileUtils {
   public:
-    static std::string ReadFile(const std::string& filePath, bool logError = true);
+    static std::optional<std::string> ReadFile(const std::string& filePath);
   };
 }

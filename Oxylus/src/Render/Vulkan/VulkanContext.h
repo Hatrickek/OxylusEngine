@@ -17,6 +17,7 @@ namespace Oxylus {
       vk::PhysicalDeviceMemoryProperties DeviceMemoryProperties;
       vk::Device Device;
       VmaAllocator Allocator;
+      vk::DynamicLoader DynamicLoader;
     };
 
     struct VkQueue {
@@ -35,6 +36,7 @@ namespace Oxylus {
     static VmaAllocator& GetAllocator() { return Context.Allocator; }
     static vk::Device& GetDevice() { return Context.Device; }
     static vk::PhysicalDevice& GetPhysicalDevice() { return Context.PhysicalDevice; }
+    static vk::DynamicLoader& GetDynamicLoader() { return Context.DynamicLoader; }
 
     static VkContext Context;
     static VkQueue VulkanQueue;

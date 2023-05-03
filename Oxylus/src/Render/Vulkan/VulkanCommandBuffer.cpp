@@ -10,7 +10,7 @@ namespace Oxylus {
     cmdBufAllocateInfo.commandPool = VulkanRenderer::s_RendererContext.CommandPool;
     cmdBufAllocateInfo.level = level;
     cmdBufAllocateInfo.commandBufferCount = 1;
-    m_Buffer = VulkanContext::Context.Device.allocateCommandBuffers(cmdBufAllocateInfo).value[0];
+    m_Buffer = VulkanContext::GetDevice().allocateCommandBuffers(cmdBufAllocateInfo).value[0];
   }
 
   const VulkanCommandBuffer& VulkanCommandBuffer::Begin(const vk::CommandBufferBeginInfo& beginInfo) const {

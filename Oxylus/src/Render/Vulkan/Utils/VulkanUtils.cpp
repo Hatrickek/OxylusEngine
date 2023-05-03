@@ -5,6 +5,11 @@
 
 #define DISABLE_DEBUG_LAYERS 0
 
+#ifdef OX_DIST
+#undef DISABLE_DEBUG_LAYERS 
+#define DISABLE_DEBUG_LAYERS 1
+#endif
+
 namespace Oxylus {
   PFN_vkCreateDebugUtilsMessengerEXT vkCreateDebugUtilsMessengerEXT;
   PFN_vkDestroyDebugUtilsMessengerEXT vkDestroyDebugUtilsMessengerEXT;
@@ -158,7 +163,6 @@ namespace Oxylus {
         enabledExtensions.emplace_back(names[i]);
       }
     }
-    enabledExtensions.emplace_back(VK_KHR_PORTABILITY_ENUMERATION_EXTENSION_NAME);
     const vk::Instance instance = vk::createInstance(
       MakeInstanceCreateInfoChain(applicationInfo, enabledLayers, enabledExtensions).get<vk::InstanceCreateInfo>()).value;
 #if (!DISABLE_DEBUG_LAYERS)
@@ -233,7 +237,7 @@ namespace Oxylus {
       enabledExtensions.push_back(ext.data());
     }
 
-    //    enabledExtensions.emplace_back("VK_EXT_calibrated_timestamps");
+    //enabledExtensions.emplace_back("VK_EXT_calibrated_timestamps");
 #if 0
     enabledExtensions.emplace_back("VK_KHR_portability_subset");
 #endif

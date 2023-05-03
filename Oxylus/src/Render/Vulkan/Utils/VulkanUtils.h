@@ -77,9 +77,7 @@ namespace Oxylus {
                                    vk::PhysicalDeviceFeatures const* physicalDeviceFeatures,
                                    void const* pNext = nullptr);
 
-    static std::vector<std::string> GetDeviceExtensions() {
-      return {VK_KHR_SWAPCHAIN_EXTENSION_NAME};
-    }
+    static std::vector<std::string> GetDeviceExtensions() { return {VK_KHR_SWAPCHAIN_EXTENSION_NAME}; }
 
     static uint32_t FindGraphicsQueueFamilyIndex(std::vector<vk::QueueFamilyProperties> const& queueFamilyProperties);
   };

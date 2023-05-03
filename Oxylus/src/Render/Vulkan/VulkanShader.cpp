@@ -19,11 +19,13 @@ namespace Oxylus {
                                        size_t include_depth) override {
       const std::string name = std::string(requested_source);
       const std::string filepath = std::string(fmt::format("Resources/Shaders/{0}", name));
-      const std::string content = FileUtils::ReadFile(filepath);
+      const auto content = FileUtils::ReadFile(filepath);
+      OX_CORE_ASSERT(content,
+        fmt::format("Couldn't load the include file: {0} for shader: {1}", requested_source, requesting_source).c_str());
 
       const auto container = new std::array<std::string, 2>;
       (*container)[0] = name;
-      (*container)[1] = content;
+      (*container)[1] = content.value();
 
       const auto result = new shaderc_include_result;
       result->content = (*container)[1].data();
@@ -84,26 +86,26 @@ namespace Oxylus {
     if (!m_ShaderDesc.ComputePath.empty()) {
       m_VulkanFilePath[vk::ShaderStageFlagBits::eCompute] = m_ShaderDesc.ComputePath;
       const auto& content = FileUtils::ReadFile(m_ShaderDesc.ComputePath);
-      OX_CORE_ASSERT(!content.empty())
-      m_VulkanSourceCode[vk::ShaderStageFlagBits::eCompute] = content;
+      OX_CORE_ASSERT(content, fmt::format("Couldn't load the shader file: {0}", m_ShaderDesc.ComputePath).c_str());
+      m_VulkanSourceCode[vk::ShaderStageFlagBits::eCompute] = content.value();
     }
     if (!m_ShaderDesc.VertexPath.empty()) {
       m_VulkanFilePath[vk::ShaderStageFlagBits::eVertex] = m_ShaderDesc.VertexPath;
       const auto& content = FileUtils::ReadFile(m_ShaderDesc.VertexPath);
-      OX_CORE_ASSERT(!content.empty())
-      m_VulkanSourceCode[vk::ShaderStageFlagBits::eVertex] = content;
+      OX_CORE_ASSERT(content, fmt::format("Couldn't load the shader file: {0}", m_ShaderDesc.ComputePath).c_str());
+      m_VulkanSourceCode[vk::ShaderStageFlagBits::eVertex] = content.value();
     }
     if (!m_ShaderDesc.FragmentPath.empty()) {
       m_VulkanFilePath[vk::ShaderStageFlagBits::eFragment] = m_ShaderDesc.FragmentPath;
       const auto& content = FileUtils::ReadFile(m_ShaderDesc.FragmentPath);
-      OX_CORE_ASSERT(!content.empty())
-      m_VulkanSourceCode[vk::ShaderStageFlagBits::eFragment] = content;
+      OX_CORE_ASSERT(content, fmt::format("Couldn't load the shader file: {0}", m_ShaderDesc.ComputePath).c_str());
+      m_VulkanSourceCode[vk::ShaderStageFlagBits::eFragment] = content.value();
     }
 
     shaderc::CompileOptions options;
     options.SetTargetEnvironment(shaderc_target_env_vulkan, shaderc_env_version_vulkan_1_3);
     options.SetTargetSpirv(shaderc_spirv_version_1_6);
-#ifdef OX_RELEASE
+#if defined (OX_RELEASE) || defined (OX_DIST)
     options.SetOptimizationLevel(shaderc_optimization_level_performance);
 #else
     options.SetOptimizationLevel(shaderc_optimization_level_zero);
@@ -191,7 +193,7 @@ namespace Oxylus {
   void VulkanShader::Unload() {
     if (!m_Loaded)
       return;
-    for (const auto& [stage, _]: m_VulkanSPIRV) {
+    for (const auto& [stage, _] : m_VulkanSPIRV) {
       VulkanContext::Context.Device.destroyShaderModule(m_ShaderModule[stage], nullptr);
     }
     m_ShaderStages.clear();

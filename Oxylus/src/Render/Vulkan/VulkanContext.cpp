@@ -6,11 +6,19 @@
 
 #include "Utils/Log.h"
 
+VULKAN_HPP_DEFAULT_DISPATCH_LOADER_DYNAMIC_STORAGE;
+
 namespace Oxylus {
   VulkanContext::VkContext VulkanContext::Context;
   VulkanContext::VkQueue VulkanContext::VulkanQueue;
 
   void VulkanContext::CreateContext(const AppSpec& spec) {
+    const auto vkGetInstanceProcAddr = GetDynamicLoader().getProcAddress<PFN_vkGetInstanceProcAddr>("vkGetInstanceProcAddr");
+    VULKAN_HPP_DEFAULT_DISPATCHER.init(vkGetInstanceProcAddr);
+
+    // TODO: Add this extensions only if it's supported
+    //const auto extension = {VK_KHR_PORTABILITY_ENUMERATION_EXTENSION_NAME};
+
     Context.Instance = ContextUtils::CreateInstance(spec.Name,
       "Oxylus Engine",
       {},
@@ -20,6 +28,9 @@ namespace Oxylus {
     if (!Context.Instance)
       OX_CORE_FATAL("Failed to create Vulkan Instance");
 
+    // initialize function pointers for instance
+    VULKAN_HPP_DEFAULT_DISPATCHER.init(Context.Instance);
+
     //Physical Device
     Context.PhysicalDevices = Context.Instance.enumeratePhysicalDevices().value;
     Context.PhysicalDevice = Context.PhysicalDevices[0];
@@ -27,13 +38,13 @@ namespace Oxylus {
 
     OX_CORE_TRACE("Vulkan renderer initialized using device: {}", Context.DeviceProperties.deviceName.data());
 
-    //Surface
+    // Surface
     {
       VkSurfaceKHR _surface;
       glfwCreateWindowSurface(Context.Instance, Window::GetGLFWWindow(), nullptr, &_surface);
       Context.Surface = vk::SurfaceKHR(_surface);
     }
-    //Queue
+    // Queue
     VulkanQueue.queueFamilyProperties = Context.PhysicalDevice.getQueueFamilyProperties();
     VulkanQueue.graphicsQueueFamilyIndex =
       ContextUtils::FindGraphicsQueueFamilyIndex(VulkanQueue.queueFamilyProperties);
@@ -72,7 +83,7 @@ namespace Oxylus {
 
     Context.DeviceMemoryProperties = Context.PhysicalDevice.getMemoryProperties();
 
-    //Logical Device
+    // Logical Device
     vk::PhysicalDeviceVulkan13Features features{};
     features.maintenance4 = VK_TRUE;
     Context.DeviceFeatures = Context.PhysicalDevice.getFeatures();
@@ -87,7 +98,10 @@ namespace Oxylus {
       &Context.DeviceFeatures,
       &features);
 
-    //Get queues.
+    // function pointer specialization for device
+    VULKAN_HPP_DEFAULT_DISPATCHER.init(Context.Device);
+
+    // Get queues.
     VulkanQueue.GraphicsQueue = Context.Device.getQueue(VulkanQueue.graphicsQueueFamilyIndex, 0);
     //VulkanQueue.ComputeQueue = Context.Device.getQueue(VulkanQueue.graphicsQueueFamilyIndex, 1);
     VulkanQueue.PresentQueue = Context.Device.getQueue(VulkanQueue.presentQueueFamilyIndex, 0);

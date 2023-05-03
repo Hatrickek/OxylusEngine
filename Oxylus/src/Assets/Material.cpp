@@ -68,5 +68,8 @@ namespace Oxylus {
     RoughnessTexture = EmptyTexture;
     MetallicTexture = EmptyTexture;
     AOTexture = EmptyTexture;
+    EmissiveTexture = EmptyTexture;
+    SpecularTexture = EmptyTexture;
+    DiffuseTexture = EmptyTexture;
   }
 }

@@ -20,10 +20,10 @@ namespace Oxylus {
 
   void EditorConfig::LoadConfig() {
     const auto& content = FileUtils::ReadFile(EditorConfigFileName);
-    if (content.empty())
+    if (!content)
       return;
 
-    ryml::Tree tree = ryml::parse_in_arena(c4::to_csubstr(content));
+    ryml::Tree tree = ryml::parse_in_arena(c4::to_csubstr(*content));
 
     const ryml::ConstNodeRef root = tree.rootref();
 

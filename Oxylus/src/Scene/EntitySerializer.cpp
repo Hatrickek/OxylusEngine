@@ -301,9 +301,21 @@ namespace Oxylus {
   }
 
   Entity EntitySerializer::DeserializeEntityAsPrefab(const char* filepath, Scene& scene) {
-    const auto& content = FileUtils::ReadFile(filepath);
+    auto content = FileUtils::ReadFile(filepath);
+    if (!content) {
+      OX_CORE_ASSERT(content, fmt::format("Couldn't read prefab file: {0}", filepath).c_str());
 
-    const ryml::Tree tree = ryml::parse_in_arena(ryml::to_csubstr(content));
+      // Try to read it again from assets path
+      content = FileUtils::ReadFile(AssetManager::GetAssetFileSystemPath(filepath).string());
+      if (content)
+        OX_CORE_INFO("Could load the material file from assets path: {0}", filepath);
+      else {
+        return {};
+      }
+    }
+
+
+    const ryml::Tree tree = ryml::parse_in_arena(ryml::to_csubstr(content.value()));
 
     if (tree.empty()) {
       OX_CORE_BERROR("Couldn't parse the prefab file {0}", StringUtils::GetName(filepath))

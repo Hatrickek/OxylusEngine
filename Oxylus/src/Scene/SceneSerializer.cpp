@@ -9,6 +9,7 @@
 #include "Utils/FileUtils.h"
 
 #include "EntitySerializer.h"
+#include "Assets/AssetManager.h"
 #include "Utils/StringUtils.h"
 
 namespace Oxylus {
@@ -45,9 +46,20 @@ namespace Oxylus {
   bool SceneSerializer::Deserialize(const std::string& filePath) const {
     ProfilerTimer timer("Scene serializer");
 
-    const auto& content = FileUtils::ReadFile(filePath);
+    auto content = FileUtils::ReadFile(filePath);
+    if (!content) {
+      OX_CORE_ASSERT(content, fmt::format("Couldn't read scene file: {0}", filePath).c_str());
 
-    ryml::Tree tree = ryml::parse_in_arena(ryml::to_csubstr(content));
+      // Try to read it again from assets path
+      content = FileUtils::ReadFile(AssetManager::GetAssetFileSystemPath(filePath).string());
+      if (content)
+        OX_CORE_INFO("Could load the file from assets path: {0}", filePath);
+      else {
+        return false;
+      }
+    }
+
+    ryml::Tree tree = ryml::parse_in_arena(ryml::to_csubstr(content.value()));
 
     if (tree.empty()) {
       OX_CORE_ERROR("Scene was unable to load from YAML file {0}", filePath);

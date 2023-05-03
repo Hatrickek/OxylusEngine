@@ -32,6 +32,3 @@
 [submodule "Oxylus/vendor/glfw"]
 	path = Oxylus/vendor/glfw
 	url = https://github.com/glfw/glfw
-[submodule "Oxylus/vendor/VulkanMemoryAllocator"]
-	path = Oxylus/vendor/VulkanMemoryAllocator
-	url = https://github.com/GPUOpen-LibrariesAndSDKs/VulkanMemoryAllocator.git

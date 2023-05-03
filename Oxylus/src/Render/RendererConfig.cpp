@@ -82,11 +82,11 @@ namespace Oxylus {
   }
 
   bool RendererConfig::LoadConfig(const char* path) {
-    const auto& content = FileUtils::ReadFile(path, false);
-    if (content.empty())
+    const auto& content = FileUtils::ReadFile(path);
+    if (!content)
       return false;
 
-    ryml::Tree tree = ryml::parse_in_arena(c4::to_csubstr(content));
+    ryml::Tree tree = ryml::parse_in_arena(c4::to_csubstr(*content));
 
     const ryml::ConstNodeRef root = tree.rootref();
 

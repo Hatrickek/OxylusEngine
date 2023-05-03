@@ -7,6 +7,7 @@
 #include "EditorContext.h"
 #include "../EditorLayer.h"
 #include "Assets/AssetManager.h"
+#include "Assets/MaterialSerializer.h"
 #include "Core/Project.h"
 #include "UI/IGUI.h"
 #include "Utils/FileWatch.h"
@@ -786,6 +787,16 @@ namespace Oxylus {
           }
           EditorLayer::Get()->SetContextAsFileWithPath(newFolderPath);
           ImGui::CloseCurrentPopup();
+        }
+        if (ImGui::BeginMenu("Asset")) {
+          if (ImGui::MenuItem("Material")) {
+            const auto mat = CreateRef<Material>();
+            mat->Create();
+            const MaterialSerializer serializer(mat);
+            auto path = (context / "NewMaterial.oxmat").string();
+            serializer.Serialize(path);
+          }
+          ImGui::EndMenu();
         }
         ImGui::EndMenu();
       }

@@ -13,9 +13,7 @@ namespace Oxylus {
 
   class Project {
   public:
-    ProjectConfig& GetConfig() {
-      return m_Config;
-    }
+    ProjectConfig& GetConfig() { return m_Config; }
 
     static std::filesystem::path GetProjectDirectory() { return s_ActiveProject->m_ProjectDirectory; }
 
