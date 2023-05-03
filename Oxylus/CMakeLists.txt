@@ -253,19 +253,13 @@ target_link_libraries(${PROJECT_NAME} PUBLIC Vulkan-Headers)
 get_target_property(Vulkan_HEADERS_SOURCEDIR Vulkan-Headers SOURCE_DIR)
 
 # Vulkan dll
-find_package(Vulkan)
-target_link_libraries(${PROJECT_NAME} PUBLIC Vulkan::Vulkan)
+if (NOT IS_CONTAINER)
+    find_package(Vulkan)
+    target_link_libraries(${PROJECT_NAME} PUBLIC Vulkan::Vulkan)
+endif()
 
 # VMA
-set(VMA_STATIC_VULKAN_FUNCTIONS OFF)
-set(VMA_DYNAMIC_VULKAN_FUNCTIONS ON)
-FetchContent_Declare(
-        vma
-        GIT_REPOSITORY "https://github.com/GPUOpen-LibrariesAndSDKs/VulkanMemoryAllocator.git"
-        GIT_TAG "v3.0.1"
-)
-FetchContent_MakeAvailable(vma)
-target_include_directories(${PROJECT_NAME} PUBLIC ${vma_SOURCE_DIR}/include)
+target_include_directories(${PROJECT_NAME} PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/vendor/VulkanMemoryAllocator/include)
 
 # spirv-headers
 set(PROJECT_IS_TOP_LEVEL OFF)
