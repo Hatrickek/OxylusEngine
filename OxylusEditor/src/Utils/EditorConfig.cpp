@@ -3,7 +3,7 @@
 
 #include "EditorLayer.h"
 #include "Core/Application.h"
-#include "utils/Log.h"
+#include "Utils/Log.h"
 #include "Core/YamlHelpers.h"
 #include "Utils/FileUtils.h"
 #include "Utils/UIUtils.h"

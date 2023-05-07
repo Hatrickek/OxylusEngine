@@ -1,6 +1,5 @@
 #include "InspectorPanel.h"
 
-#include <format>
 #include <icons/IconsMaterialDesignIcons.h>
 
 #include <imgui.h>
@@ -16,7 +15,7 @@
 #include "Core/Entity.h"
 #include "UI/IGUI.h"
 #include "Utils/StringUtils.h"
-#include "utils/UIUtils.h"
+#include "Utils/UIUtils.h"
 #include "Assets/MaterialSerializer.h"
 #include "Render/Vulkan/VulkanRenderer.h"
 

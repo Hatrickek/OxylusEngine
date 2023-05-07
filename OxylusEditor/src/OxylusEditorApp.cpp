@@ -1,5 +1,5 @@
 #include <OxylusEngine.h>
-#include <core/EntryPoint.h>
+#include <Core/EntryPoint.h>
 #include "EditorLayer.h"
 #include "Core/Project.h"
 
