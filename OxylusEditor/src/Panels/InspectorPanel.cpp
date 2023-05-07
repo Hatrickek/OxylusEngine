@@ -1,6 +1,5 @@
 #include "InspectorPanel.h"
 
-#include <format>
 #include <icons/IconsMaterialDesignIcons.h>
 
 #include <imgui.h>
