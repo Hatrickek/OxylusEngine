@@ -147,11 +147,22 @@ namespace Oxylus {
   };
 
   struct RigidBodyComponent {
-    JPH::BodyID BodyID;
+    JPH::Body* Body = nullptr;
 
-    RigidBodyComponent() { }
+    RigidBodyComponent() {}
+  };
 
-    ~RigidBodyComponent() { }
+  struct KinematicCharacterControllerComponent {
+    // Size
+    float CharacterHeightStanding = 1.35f;
+    float CharacterRadiusStanding = 0.3f;
+    float CharacterHeightCrouching = 0.8f;
+    float CharacterRadiusCrouching = 0.3f;
+
+    // Movement
+    bool ControlMovementDuringJump = true;
+    float CharacterSpeed = 6.0f;
+    float JumpSpeed = 4.0f;
   };
 
   //Audio
@@ -168,17 +179,17 @@ namespace Oxylus {
     Ref<AudioListener> Listener;
   };
 
-  template<typename... Component>
+  template <typename... Component>
   struct ComponentGroup { };
 
   using AllComponents = ComponentGroup<TransformComponent, RelationshipComponent, PrefabComponent, CameraComponent,
 
-          //Render
-          LightComponent, MeshRendererComponent, SkyLightComponent, ParticleSystemComponent, MaterialComponent,
+                                       //Render
+                                       LightComponent, MeshRendererComponent, SkyLightComponent, ParticleSystemComponent, MaterialComponent,
 
-          //Physics
-          RigidBodyComponent, BoxColliderComponent, MeshColliderComponent,
+                                       //Physics
+                                       RigidBodyComponent, BoxColliderComponent, MeshColliderComponent,
 
-          //Audio
-          AudioSourceComponent, AudioListenerComponent>;
+                                       //Audio
+                                       AudioSourceComponent, AudioListenerComponent>;
 }

@@ -1,10 +1,10 @@
 #pragma once
 
 #include <filesystem>
-#include <imgui/imgui.h>
 #include <stack>
 
 #include "EditorPanel.h"
+#include <imgui.h>
 #include "Render/Vulkan/VulkanImage.h"
 
 namespace Oxylus {

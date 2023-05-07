@@ -1,16 +1,12 @@
 #include "SceneHierarchyPanel.h"
 
-#include <ranges>
-
 #include <Assets/AssetManager.h>
-
 #include <icons/IconsMaterialDesignIcons.h>
+#include <imgui.h>
+#include <imgui_internal.h>
+#include <misc/cpp/imgui_stdlib.h>
 
-#include <imgui/misc/cpp/imgui_stdlib.h>
 #include "EditorLayer.h"
-#include "imgui.h"
-#include "imgui_internal.h"
-
 #include "Scene/EntitySerializer.h"
 #include "UI/IGUI.h"
 #include "Utils/ImGuiScoped.h"
@@ -62,7 +58,7 @@ namespace Oxylus {
     }
 
     const bool highlight = m_SelectedEntity == entity;
-    const auto headerSelectedColor = ImGuiLayer::HeaderSelectedColor; 
+    const auto headerSelectedColor = ImGuiLayer::HeaderSelectedColor;
     const auto popupItemSpacing = ImGuiLayer::PopupItemSpacing;
     if (highlight) {
       ImGui::TableSetBgColor(ImGuiTableBgTarget_RowBg0, ImGui::GetColorU32(headerSelectedColor));
@@ -315,6 +311,30 @@ namespace Oxylus {
           toSelect = m_Context->CreateEntity("Light");
           toSelect.AddComponentI<LightComponent>();
         }
+
+        ImGui::EndMenu();
+      }
+
+      if (ImGui::BeginMenu("Physics")) {
+        if (ImGui::MenuItem("Sphere")) {
+          using namespace JPH;
+          toSelect = m_Context->CreateEntity("Sphere");
+          auto& rb = toSelect.AddComponent<RigidBodyComponent>();
+          BodyCreationSettings bcs(
+            new SphereShape(1.0f),
+            RVec3(0.0f, 0.0f, 0.0f),
+            Quat::sIdentity(),
+            EMotionType::Dynamic,
+            PhysicsLayers::MOVING);
+          bcs.mOverrideMassProperties = EOverrideMassProperties::CalculateInertia;
+          bcs.mMassPropertiesOverride.mMass = 10.0f;
+          rb.Body = m_Context->GetBodyInterface()->CreateBody(bcs);
+          m_Context->GetBodyInterface()->AddBody(rb.Body->GetID(), EActivation::Activate);
+
+          toSelect.AddComponentI<MeshRendererComponent>(AssetManager::GetMeshAsset("resources/objects/sphere.gltf").Data);
+        }
+
+        if (ImGui::MenuItem("Kinematic Char Controller")) { }
 
         ImGui::EndMenu();
       }

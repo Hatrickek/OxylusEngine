@@ -12,10 +12,10 @@
 #include <unordered_map>
 
 namespace Oxylus {
-  Scene::Scene() {
-    m_SceneRenderer.Init(*this);
-    for (const auto& system : m_Systems) {
-      system->OnInit();
+  Scene::Scene(bool initPhysics) {
+    Init();
+    if (initPhysics) {
+      InitPhysics();
     }
   }
 
@@ -27,6 +27,32 @@ namespace Oxylus {
     const auto& reg = scene.m_Registry;
     this->SceneName = scene.SceneName;
     this->m_Registry.assign(reg.data(), reg.data() + reg.size(), reg.released());
+  }
+
+  void Scene::Init() {
+    // Renderer
+    m_SceneRenderer.Init(*this);
+
+    // Systems
+    for (const auto& system : m_Systems) {
+      system->OnInit();
+    }
+  }
+
+  void Scene::InitPhysics() {
+    // Physics
+    m_JobSystem = CreateRef<JPH::JobSystemThreadPool>();
+    m_JobSystem->Init(JPH::cMaxPhysicsJobs, JPH::cMaxPhysicsBarriers, std::thread::hardware_concurrency() - 1);
+    m_PhysicsSystem = CreateRef<JPH::PhysicsSystem>();
+    m_PhysicsSystem->Init(
+      Physics::MAX_BODIES,
+      0,
+      Physics::MAX_BODY_PAIRS,
+      Physics::MAX_CONTACT_CONSTRAINS,
+      Physics::s_LayerInterface,
+      Physics::s_ObjectVsBroadPhaseLayerFilterInterface,
+      Physics::s_ObjectLayerPairFilterInterface);
+    m_BodyInterface = &m_PhysicsSystem->GetBodyInterface();
   }
 
   Entity Scene::CreateEntity(const std::string& name) {
@@ -41,6 +67,37 @@ namespace Oxylus {
     entity.AddComponentI<TransformComponent>();
     entity.AddComponentI<TagComponent>().Tag = name.empty() ? "Entity" : name;
     return entity;
+  }
+
+  void Scene::UpdatePhysics() {
+    constexpr float cDeltaTime = 1.0f / 60.0f; // Update rate
+    constexpr int cCollisionSteps = 1;
+    constexpr int cIntegrationSubSteps = 1;
+
+    m_PhysicsSystem->Update(cDeltaTime, cCollisionSteps, cIntegrationSubSteps, Physics::s_TempAllocator, m_JobSystem.get());
+
+    // Physics
+    {
+      ZoneScopedN("Physics System");
+      // Rigidbody
+      {
+        const auto group = m_Registry.view<TransformComponent, RigidBodyComponent>();
+        for (const auto entity : group) {
+          auto [transform, rb] = group.get<TransformComponent, RigidBodyComponent>(entity);
+          transform.Translation.x = rb.Body->GetPosition().GetX();
+          transform.Translation.y = rb.Body->GetPosition().GetY();
+          transform.Translation.z = rb.Body->GetPosition().GetZ();
+          rb.Body->AddForce({0,1,1});
+        }
+      }
+      // Box collider
+      {
+        const auto group = m_Registry.view<TransformComponent, RigidBodyComponent, BoxColliderComponent>();
+        for (const auto entity : group) {
+          auto [transform, rb, boxCollider] = group.get<TransformComponent, RigidBodyComponent, BoxColliderComponent>(entity);
+        }
+      }
+    }
   }
 
   void Scene::IterateOverMeshNode(const Ref<Mesh>& mesh, const std::vector<Mesh::Node*>& node, Entity parent) {
@@ -158,7 +215,7 @@ namespace Oxylus {
 
   Ref<Scene> Scene::Copy(const Ref<Scene>& other) {
     ZoneScoped;
-    Ref<Scene> newScene = CreateRef<Scene>();
+    Ref<Scene> newScene = CreateRef<Scene>(false);
 
     auto& srcSceneRegistry = other->m_Registry;
     auto& dstSceneRegistry = newScene->m_Registry;
@@ -178,6 +235,11 @@ namespace Oxylus {
       if (Entity srcParent = src.GetParent())
         dst.SetParent(newScene->GetEntityByUUID(srcParent.GetUUID()));
     }
+
+    // Copy physics
+    newScene->m_BodyInterface = other->m_BodyInterface;
+    newScene->m_PhysicsSystem = other->m_PhysicsSystem;
+    newScene->m_JobSystem = other->m_JobSystem;
 
     // Copy components (except IDComponent and TagComponent)
     CopyComponent(AllComponents{}, dstSceneRegistry, srcSceneRegistry, newScene->m_EntityMap);
@@ -200,12 +262,10 @@ namespace Oxylus {
     ZoneScoped;
 
     UpdateSystems();
-
     RenderScene();
+    UpdatePhysics();
 
-    Physics::Update(deltaTime);
-
-    //Camera
+    // Camera
     {
       ZoneScopedN("Camera System");
       const auto group = m_Registry.view<TransformComponent, CameraComponent>();
@@ -216,30 +276,7 @@ namespace Oxylus {
       }
     }
 
-    //Physics
-    {
-      ZoneScopedN("Physics System");
-      //Rigidbody
-      /*{
-        const auto group = m_Registry.view<TransformComponent, RigidBodyComponent>();
-        for (const auto entity : group) {
-          auto [transform, rb] = group.get<TransformComponent, RigidBodyComponent>(entity);
-          rb.Rigidbody->OnUpdate(transform.Translation, transform.Rotation);
-        }
-      }
-      //Box collider
-      {
-        const auto group = m_Registry.view<TransformComponent, RigidBodyComponent, BoxColliderComponent>();
-        for (const auto entity : group) {
-          auto [transform, rb, boxCollider] = group.get<
-            TransformComponent, RigidBodyComponent, BoxColliderComponent>(entity);
-          boxCollider.size = transform.Scale;
-          rb.Rigidbody->SetGeometry(physx::PxBoxGeometry(boxCollider.size.x, boxCollider.size.y, boxCollider.size.z));
-        }
-      }*/
-    }
-
-    //Audio
+    // Audio
     {
       const auto listenerView = m_Registry.group<AudioListenerComponent>(entt::get<TransformComponent>);
       for (auto&& [e, ac, tc] : listenerView.each()) {
@@ -269,7 +306,7 @@ namespace Oxylus {
     }
   }
 
-  void Scene::OnEditorUpdate([[maybe_unused]] float deltaTime, Camera& camera) {
+  void Scene::OnEditorUpdate([[maybe_unused]] float deltaTime, Camera& camera) const {
     RenderScene();
 
     VulkanRenderer::SetCamera(camera);

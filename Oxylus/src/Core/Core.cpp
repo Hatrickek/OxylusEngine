@@ -22,16 +22,16 @@ namespace Oxylus {
     VulkanContext::CreateContext(spec);
     VulkanRenderer::Init();
     Input::Init();
-    Physics::InitPhysics();
     AudioEngine::Init();
+    Physics::InitPhysics();
   }
 
   void Core::Shutdown() {
     FileDialogs::CloseNFD();
     VulkanRenderer::WaitDeviceIdle();
     VulkanRenderer::Shutdown();
-    Physics::Shutdown();
     AudioEngine::Shutdown();
+    Physics::ShutdownPhysics();
 
     ThreadManager::Get()->WaitAllThreads();
 

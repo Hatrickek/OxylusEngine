@@ -19,7 +19,7 @@ namespace Oxylus {
   void SceneRenderer::Render() const {
     ZoneScoped;
 
-    //Mesh
+    // Mesh
     {
       ZoneScopedN("Mesh System");
       const auto view = m_Scene->m_Registry.view<TransformComponent, MeshRendererComponent, MaterialComponent, TagComponent>();
@@ -29,7 +29,7 @@ namespace Oxylus {
       }
     }
 
-    //Particle system
+    // Particle system
     {
       ZoneScopedN("Particle System");
       const auto particleSystemView = m_Scene->m_Registry.view<TransformComponent, ParticleSystemComponent>();
@@ -39,10 +39,10 @@ namespace Oxylus {
       }
     }
 
-    //Lighting
+    // Lighting
     {
       ZoneScopedN("Lighting System");
-      //Scene lights
+      // Scene lights
       {
         std::vector<Entity> lights;
         const auto view = m_Scene->m_Registry.view<LightComponent>();
@@ -55,7 +55,7 @@ namespace Oxylus {
         }
         VulkanRenderer::SubmitLights(std::move(lights));
       }
-      //Sky light
+      // Sky light
       {
         const auto view = m_Scene->m_Registry.view<SkyLightComponent>();
         if (!view.empty()) {
@@ -67,7 +67,7 @@ namespace Oxylus {
   }
 
   void SceneRenderer::UpdateProbes() const {
-    //Post Process
+    // Post Process
     {
       ZoneScopedN("PostProcess Probe System");
       const auto view = m_Scene->m_Registry.view < PostProcessProbe > ();

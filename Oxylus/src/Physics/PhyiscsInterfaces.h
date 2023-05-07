@@ -1,7 +1,7 @@
 ﻿#pragma once
 #include "JoltBuild.h"
 
-namespace Layers {
+namespace PhysicsLayers {
   static constexpr JPH::ObjectLayer NON_MOVING = 0;
   static constexpr JPH::ObjectLayer MOVING = 1;
   static constexpr JPH::ObjectLayer NUM_LAYERS = 2;
@@ -39,7 +39,7 @@ public:
 #endif
 
 private:
-  JPH::BroadPhaseLayer mObjectToBroadPhase[Layers::NUM_LAYERS];
+  JPH::BroadPhaseLayer mObjectToBroadPhase[PhysicsLayers::NUM_LAYERS];
 };
 
 // Class that determines if an object layer can collide with a broadphase layer
