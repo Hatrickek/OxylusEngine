@@ -4,7 +4,6 @@
 
 #include <imgui.h>
 #include <imgui_internal.h>
-#include <misc/cpp/imgui_stdlib.h>
 #include <fmt/format.h>
 
 #include <Assets/AssetManager.h>
@@ -26,6 +25,7 @@ namespace Oxylus {
 
   void InspectorPanel::OnImGuiRender() {
     m_SelectedEntity = EditorLayer::Get()->GetSelectedEntity();
+    m_Scene = EditorLayer::Get()->GetSelectedScene();
 
     ImGui::Begin(fmt::format("{} {}", StringUtils::FromChar8T(ICON_MDI_INFORMATION), "Inspector").c_str());
     if (m_SelectedEntity) {
@@ -563,7 +563,41 @@ namespace Oxylus {
 
     DrawComponent<RigidBodyComponent>(ICON_MDI_SOCCER " Rigidbody Component",
       entity,
-      [](const RigidBodyComponent& component) { });
+      [this](RigidBodyComponent& component) {
+        const auto bodyInterface = m_Scene->GetBodyInterface();
+        IGUI::BeginProperties();
+        const char* motionTypes[3] = {"Static", "Kinematic", "Dynamic"};
+        if (IGUI::Property("Motion Type", component.MotionType, motionTypes, 3)) {
+          switch (component.MotionType) {
+            case 0: {
+              bodyInterface->SetMotionType(component.BodyID, JPH::EMotionType::Static, JPH::EActivation::DontActivate);
+              break;
+            }
+            case 1: {
+              bodyInterface->SetMotionType(component.BodyID, JPH::EMotionType::Kinematic, JPH::EActivation::DontActivate);
+              break;
+            }
+            case 2: {
+              bodyInterface->SetMotionType(component.BodyID, JPH::EMotionType::Dynamic, JPH::EActivation::DontActivate);
+              break;
+            }
+            default: {
+              bodyInterface->SetMotionType(component.BodyID, JPH::EMotionType::Dynamic, JPH::EActivation::DontActivate);
+            }
+          }
+        }
+        if (IGUI::Property("Friction", component.Friction, 0.0f, 10.0f)) {
+          bodyInterface->SetFriction(component.BodyID, component.Friction);
+        }
+        IGUI::EndProperties();
+        ImGui::Separator();
+        ImGui::Text("Shape");
+        IGUI::BeginProperties();
+        const char* shapeTypes[5] = {"Box", "Sphere", "Capsule", "Cylinder", "Mesh"};
+        IGUI::Property("Shape Type", component.Shape, shapeTypes, 5);
+        // TODO: Set shape
+        IGUI::EndProperties();
+      });
 
     DrawComponent<BoxColliderComponent>(ICON_MDI_CHECKBOX_BLANK_OUTLINE "Box Collider Component",
       entity,

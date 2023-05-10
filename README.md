@@ -12,7 +12,7 @@ Browser, Prefabs, Shader Hot Reloading, Entity Parenting, and other entity
 manipulations, Inspector Panel which draws any component with its properties,
 Asset Manager, Material System&Editor, In-Editor Console, and a lot more QOL
 features...
-- Abstracted Vulkan renderer with Scene Graph built from scratch with ECS
+- Abstracted Vulkan renderer with Render Graph built from scratch with ECS
 - Modern rendering features; Clustered Forward IBL PBR, SSAO, SSR, PCF Shadows,
 Bloom, Depth Of Field also various Post Processing techniques like HDR
 Tonemapping, Chromatic Aberration, Film Grain, Vignette, Sharpen

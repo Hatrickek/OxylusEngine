@@ -28,6 +28,9 @@
 #include "Core/Types.h"
 #include "Utils/Log.h"
 
+#define GLM_FORCE_RADIANS
+#define GLM_FORCE_DEPTH_ZERO_TO_ONE
+#define GLM_ENABLE_EXPERIMENTAL
 #include <glm/glm.hpp>
 #define VULKAN_HPP_DISPATCH_LOADER_DYNAMIC 1
 #include <Jolt/Jolt.h>

@@ -15,11 +15,12 @@ namespace Oxylus {
   private:
     void DrawComponents(Entity entity) const;
 
-    template<typename Component>
+    template <typename Component>
     void DrawAddComponent(Entity entity, const char* name) const;
 
-   void PP_ProbeProperty(bool value) const;
+    void PP_ProbeProperty(bool value) const;
 
     Entity m_SelectedEntity;
+    Ref<Scene> m_Scene;
   };
 }

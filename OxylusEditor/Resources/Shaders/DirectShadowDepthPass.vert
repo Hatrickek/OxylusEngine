@@ -28,7 +28,6 @@ void main() {
   out_Pos = in_Pos;
 
   mat4 projection = u_Ubo.projection[u_ModelUbo.cascadeIndex];
-  projection[1][1] *= -1.0f;
 
   gl_Position = projection * u_ModelUbo.model * vec4(in_Pos, 1.0);
 }

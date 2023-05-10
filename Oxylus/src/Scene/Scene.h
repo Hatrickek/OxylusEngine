@@ -18,7 +18,7 @@ namespace Oxylus {
 
   class Scene {
   public:
-    Scene(bool initPhysics = true);
+    Scene();
 
     Scene(std::string name);
 
@@ -41,7 +41,7 @@ namespace Oxylus {
     void OnPlay();
     void OnStop();
     void OnUpdate(float deltaTime);
-    void OnEditorUpdate(float deltaTime, Camera& camera) const;
+    void OnEditorUpdate(float deltaTime, Camera& camera);
     void RenderScene() const;
     void UpdateSystems();
     Entity FindEntity(const std::string_view& name);
@@ -52,6 +52,7 @@ namespace Oxylus {
 
     // Physics
     JPH::BodyInterface* GetBodyInterface() const { return m_BodyInterface; }
+    Ref<JPH::PhysicsSystem> GetPhysicsSystem() const { return m_PhysicsSystem; }
 
     std::string SceneName = "Untitled";
     entt::registry m_Registry;
@@ -60,7 +61,7 @@ namespace Oxylus {
   private:
     void Init();
     void InitPhysics();
-    void UpdatePhysics();
+    void UpdatePhysics(bool simulating = true);
     template <typename T>
     void OnComponentAdded(Entity entity, T& component);
 
@@ -76,7 +77,7 @@ namespace Oxylus {
     JPH::BodyInterface* m_BodyInterface = nullptr;
     Ref<JPH::PhysicsSystem> m_PhysicsSystem = nullptr;
     Ref<JPH::JobSystemThreadPool> m_JobSystem = nullptr;
-   
+
     friend class Entity;
     friend class SceneSerializer;
     friend class SceneHPanel;

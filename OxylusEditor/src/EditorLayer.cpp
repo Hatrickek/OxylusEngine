@@ -311,10 +311,6 @@ namespace Oxylus {
     m_SceneHierarchyPanel.SetSelectedEntity(entity);
   }
 
-  Entity EditorLayer::GetSelectedEntity() const {
-    return m_SceneHierarchyPanel.GetSelectedEntity();
-  }
-
   void EditorLayer::ClearSelectedEntity() {
     m_SceneHierarchyPanel.ClearSelectionContext();
   }

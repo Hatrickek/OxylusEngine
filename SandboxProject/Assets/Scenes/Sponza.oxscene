@@ -1,5 +1,36 @@
 Scene: Sponza.oxscene
 Entities:
+  - Entity: 3387240937509825056
+    TagComponent:
+      Tag: Camera
+    RelationshipComponent:
+      Parent: 0
+      ChildCount: 0
+      Children: []
+    TransformComponent:
+      Translation: [0,0.78519535,0]
+      Rotation: [-3.1415923,0,-3.1415923]
+      Scale: [1,1,1]
+    CameraComponent:
+      FOV: 45
+      NearClip: 0.01
+      FarClip: 67.3
+  - Entity: 1841558516047159859
+    TagComponent:
+      Tag: objdefault
+    RelationshipComponent:
+      Parent: 1295142427712947389
+      ChildCount: 0
+      Children: []
+    TransformComponent:
+      Translation: [0,0.2097916,0.66130614]
+      Rotation: [0,0,0]
+      Scale: [1,0.99999326,0.99999326]
+    MeshRendererComponent:
+      Mesh: 'C:\Users\Halim\Desktop\Projects\OxylusEngine\SandboxProject\Assets\models\chinesedragon.gltf'
+      SubmeshIndex: 0
+    MaterialComponent:
+      Path: 'C:\Users\Halim\Desktop\Projects\OxylusEngine\SandboxProject\Assets\Materials\dragon.oxmat'
   - Entity: 14731673965884388404
     TagComponent:
       Tag: Roof
@@ -240,3 +271,31 @@ Entities:
       CutOffAngle: 0.21816616
       OuterCutOffAngle: 0.30543262
       ShadowQuality: 2
+  - Entity: 1295142427712947389
+    TagComponent:
+      Tag: ChineseDragon
+    RelationshipComponent:
+      Parent: 0
+      ChildCount: 2
+      Children:
+        - 12374064746404956360
+        - 1841558516047159859
+    TransformComponent:
+      Translation: [-6.8305693,0.91838264,0.66197616]
+      Rotation: [1.57079,-0.8384563,-4.457345e-08]
+      Scale: [0.99999774,0.9999914,0.9999927]
+  - Entity: 12374064746404956360
+    TagComponent:
+      Tag: Sphere03.001
+    RelationshipComponent:
+      Parent: 1295142427712947389
+      ChildCount: 0
+      Children: []
+    TransformComponent:
+      Translation: [0.2757287,-0.77374125,0.119645]
+      Rotation: [-2.842172e-13,-3.3679726e-12,-2.9802322e-08]
+      Scale: [1,0.99999964,0.9999996]
+    MeshRendererComponent:
+      Mesh: 'C:\Users\Halim\Desktop\Projects\OxylusEngine\SandboxProject\Assets\models\chinesedragon.gltf'
+      SubmeshIndex: 1
+    MaterialComponent: {}

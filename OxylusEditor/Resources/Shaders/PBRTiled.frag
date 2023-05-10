@@ -1,6 +1,6 @@
 #version 450
 
-#include "shadows.glsl"
+#include "Shadows.glsl"
 
 #extension GL_ARB_separate_shader_objects : enable
 #extension GL_ARB_shading_language_420pack : enable
@@ -249,10 +249,10 @@ void main() {
   // Directional shadows
   uint cascadeIndex = GetCascadeIndex(u_ShadowUbo.cascadeSplits, in_ViewPos, SHADOW_MAP_CASCADE_COUNT);
   vec4 shadowCoord = GetShadowCoord(u_ShadowUbo.cascadeViewProjMat, inWorldPos, cascadeIndex);
-  float shadow = FilterPCF(in_DirectShadows, shadowCoord / shadowCoord.w, cascadeIndex, ambient.r);  // PCF filtered shadow
+  float shadow = FilterPCF(in_DirectShadows, shadowCoord / shadowCoord.w, cascadeIndex, ambient.r);
   color.rgb *= shadow;
   // Cascade debug
-  // color *= ColorCascades(in_DirectShadows, inUV, cascadeIndex);
+  // color *= ColorCascades(cascadeIndex);
 
   color += u_Material.Emmisive.rgb;
 

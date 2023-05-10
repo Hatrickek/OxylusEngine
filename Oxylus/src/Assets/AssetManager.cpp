@@ -14,7 +14,7 @@ namespace Oxylus {
     return Project::GetAssetDirectory() / path;
   }
 
-  const Asset<VulkanImage>& AssetManager::GetImageAsset(const std::string& path) {
+  Asset<VulkanImage> AssetManager::GetImageAsset(const std::string& path) {
     ZoneScoped;
     for (auto& asset : s_AssetsLibrary.ImageAssets) {
       if (asset.Path == path) {
@@ -28,7 +28,7 @@ namespace Oxylus {
     return LoadImageAsset(desc);
   }
 
-  const Asset<VulkanImage>& AssetManager::GetImageAsset(const VulkanImageDescription& description) {
+  Asset<VulkanImage> AssetManager::GetImageAsset(const VulkanImageDescription& description) {
     ZoneScoped;
     for (auto& asset : s_AssetsLibrary.ImageAssets) {
       if (asset.Path == description.Path) {
@@ -41,7 +41,7 @@ namespace Oxylus {
     return LoadImageAsset(desc);
   }
 
-  const Asset<Mesh>& AssetManager::GetMeshAsset(const std::string& path, const int32_t loadingFlags) {
+  Asset<Mesh> AssetManager::GetMeshAsset(const std::string& path, const int32_t loadingFlags) {
     ZoneScoped;
     for (auto& asset : s_AssetsLibrary.MeshAssets) {
       if (asset.Path == path) {
@@ -52,7 +52,7 @@ namespace Oxylus {
     return LoadMeshAsset(path, loadingFlags);
   }
 
-  const Asset<Material>& AssetManager::GetMaterialAsset(const std::string& path) {
+  Asset<Material> AssetManager::GetMaterialAsset(const std::string& path) {
     ZoneScoped;
     for (auto& asset : s_AssetsLibrary.MaterialAssets) {
       if (asset.Path == path) {
@@ -82,7 +82,7 @@ namespace Oxylus {
     }
   }
 
-  const Asset<VulkanImage>& AssetManager::LoadImageAsset(const VulkanImageDescription& description) {
+  Asset<VulkanImage> AssetManager::LoadImageAsset(const VulkanImageDescription& description) {
     ZoneScoped;
     Asset<VulkanImage> asset;
     std::lock_guard lock(s_AssetMutex);
@@ -92,7 +92,7 @@ namespace Oxylus {
     return s_AssetsLibrary.ImageAssets.emplace_back(asset);
   }
 
-  const Asset<Mesh>& AssetManager::LoadMeshAsset(const std::string& path, int32_t loadingFlags) {
+  Asset<Mesh> AssetManager::LoadMeshAsset(const std::string& path, int32_t loadingFlags) {
     ZoneScoped;
     Asset<Mesh> asset;
     asset.Data = CreateRef<Mesh>(path, loadingFlags);
@@ -101,7 +101,7 @@ namespace Oxylus {
     return s_AssetsLibrary.MeshAssets.emplace_back(asset);
   }
 
-  const Asset<Material>& AssetManager::LoadMaterialAsset(const std::string& path) {
+  Asset<Material> AssetManager::LoadMaterialAsset(const std::string& path) {
     ZoneScoped;
     Asset<Material> asset;
     asset.Data = CreateRef<Material>();

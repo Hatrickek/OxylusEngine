@@ -97,8 +97,8 @@ namespace Oxylus {
         Vec2 _pad{};
         Vec4 VignetteColor = Vec4(0.0f, 0.0f, 0.0f, 0.25f);     // rgb: color, a: intensity
         Vec4 VignetteOffset = Vec4(0.0f, 0.0f, 0.0f, 1.0f);     // xy: offset, z: useMask, w: enable effect
-        Vec2 FilmGrain = {};                                    //x: enable, y: amount
-        Vec2 ChromaticAberration = {};                          //x: enable, y: amount
+        Vec2 FilmGrain = {};                                    // x: enable, y: amount
+        Vec2 ChromaticAberration = {};                          // x: enable, y: amount
         Vec2 Sharpen = {};                                      // x: enable, y: amount
       } UBO_PostProcessParams;
 
@@ -267,7 +267,7 @@ namespace Oxylus {
     static std::vector<Entity> s_SceneLights;
     static std::vector<LightingData> s_PointLightsData;
 
-    static void UpdateCascades(const Mat4& Transform, Camera* camera, RendererData::DirectShadowUB& cascadesUbo);
+    static void UpdateCascades(const Entity& dirLightEntity, Camera* camera, RendererData::DirectShadowUB& cascadesUbo);
     static void UpdateLightingData();
 
     //Particle

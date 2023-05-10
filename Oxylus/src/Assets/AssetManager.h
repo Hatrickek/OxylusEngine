@@ -14,20 +14,20 @@ namespace Oxylus {
     static std::filesystem::path GetAssetFileSystemPath(const std::filesystem::path& path);
 
     // Assumes the path already points to an existing asset file.
-    static const Asset<VulkanImage>& GetImageAsset(const std::string& path);
+    static Asset<VulkanImage> GetImageAsset(const std::string& path);
     // Assumes the path already points to an existing asset file.
-    static const Asset<VulkanImage>& GetImageAsset(const VulkanImageDescription& description);
+    static Asset<VulkanImage> GetImageAsset(const VulkanImageDescription& description);
     // Assumes the path already points to an existing asset file.
-    static const Asset<Mesh>& GetMeshAsset(const std::string& path, int32_t loadingFlags = 0);
+    static Asset<Mesh> GetMeshAsset(const std::string& path, int32_t loadingFlags = 0);
     // Assumes the path already points to an existing asset file.
-    static const Asset<Material>& GetMaterialAsset(const std::string& path); 
+    static Asset<Material> GetMaterialAsset(const std::string& path); 
 
     static void FreeUnusedAssets();
 
   private:
-    static const Asset<VulkanImage>& LoadImageAsset(const VulkanImageDescription& description);
-    static const Asset<Mesh>& LoadMeshAsset(const std::string& path, int32_t loadingFlags);
-    static const Asset<Material>& LoadMaterialAsset(const std::string& path);
+    static Asset<VulkanImage> LoadImageAsset(const VulkanImageDescription& description);
+    static Asset<Mesh> LoadMeshAsset(const std::string& path, int32_t loadingFlags);
+    static Asset<Material> LoadMaterialAsset(const std::string& path);
 
     static struct AssetsLibrary {
       std::vector<Asset<Material>> MaterialAssets{};

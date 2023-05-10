@@ -60,7 +60,6 @@ namespace Oxylus {
     if (!m_PipelineDescription.DepthAttachmentFirst)
       CreateDepthAttachments(pipelineSpecification, attachmentDescriptions);
 
-
     std::vector<vk::SubpassDescription> subpasses;
 
     vk::AttachmentReference ColorAttachmentReference;
@@ -113,7 +112,7 @@ namespace Oxylus {
       renderPassCI.dependencyCount = static_cast<uint32_t>(dependencies.size());
 
       RenderPassDescription description = {};
-      description.Name = m_PipelineDescription.Name;
+      description.Name = m_PipelineDescription.Name.empty() ? "Pipeline" : m_PipelineDescription.Name;
       description.CreateInfo = renderPassCI;
       m_RenderPass.CreateRenderPass(description);
     }

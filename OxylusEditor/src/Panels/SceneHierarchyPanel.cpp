@@ -276,6 +276,8 @@ namespace Oxylus {
       m_SelectedEntity = {};
 
     Entity toSelect = {};
+    ImGuiScoped::StyleVar styleVar1(ImGuiStyleVar_ItemInnerSpacing, {0, 5});
+    ImGuiScoped::StyleVar styleVar2(ImGuiStyleVar_ItemSpacing, {1, 5});
     if (ImGui::BeginMenu("Create")) {
       if (ImGui::MenuItem("Empty Entity")) {
         toSelect = m_Context->CreateEntity("New Entity");
@@ -284,15 +286,15 @@ namespace Oxylus {
       if (ImGui::BeginMenu("Primitives")) {
         if (ImGui::MenuItem("Cube")) {
           toSelect = m_Context->CreateEntity("Cube");
-          toSelect.AddComponentI<MeshRendererComponent>(AssetManager::GetMeshAsset("resources/objects/cube.gltf").Data);
+          toSelect.AddComponentI<MeshRendererComponent>(AssetManager::GetMeshAsset("Resources/Objects/cube.gltf").Data);
         }
         if (ImGui::MenuItem("Plane")) {
           toSelect = m_Context->CreateEntity("Plane");
-          toSelect.AddComponentI<MeshRendererComponent>(AssetManager::GetMeshAsset("resources/objects/plane.gltf").Data);
+          toSelect.AddComponentI<MeshRendererComponent>(AssetManager::GetMeshAsset("Resources/Objects/plane.gltf").Data);
         }
         if (ImGui::MenuItem("Sphere")) {
           toSelect = m_Context->CreateEntity("Sphere");
-          toSelect.AddComponentI<MeshRendererComponent>(AssetManager::GetMeshAsset("resources/objects/sphere.gltf").Data);
+          toSelect.AddComponentI<MeshRendererComponent>(AssetManager::GetMeshAsset("Resources/Objects/sphere.gltf").Data);
         }
         ImGui::EndMenu();
       }
@@ -316,24 +318,42 @@ namespace Oxylus {
       }
 
       if (ImGui::BeginMenu("Physics")) {
+        using namespace JPH;
         if (ImGui::MenuItem("Sphere")) {
-          using namespace JPH;
           toSelect = m_Context->CreateEntity("Sphere");
-          auto& rb = toSelect.AddComponent<RigidBodyComponent>();
+          auto& pos = toSelect.GetComponent<TransformComponent>().Translation;
           BodyCreationSettings bcs(
             new SphereShape(1.0f),
-            RVec3(0.0f, 0.0f, 0.0f),
+            {pos.x, pos.y, pos.z},
             Quat::sIdentity(),
             EMotionType::Dynamic,
             PhysicsLayers::MOVING);
           bcs.mOverrideMassProperties = EOverrideMassProperties::CalculateInertia;
           bcs.mMassPropertiesOverride.mMass = 10.0f;
-          rb.Body = m_Context->GetBodyInterface()->CreateBody(bcs);
-          m_Context->GetBodyInterface()->AddBody(rb.Body->GetID(), EActivation::Activate);
-
-          toSelect.AddComponentI<MeshRendererComponent>(AssetManager::GetMeshAsset("resources/objects/sphere.gltf").Data);
+          auto& rb = toSelect.AddComponent<RigidBodyComponent>();
+          rb.BodyID = m_Context->GetBodyInterface()->CreateAndAddBody(bcs, EActivation::Activate);
+          rb.MotionType = RigidBodyComponent::DYNAMIC;
+          rb.Friction = m_Context->GetBodyInterface()->GetFriction(rb.BodyID);
+          toSelect.AddComponentI<MeshRendererComponent>(AssetManager::GetMeshAsset("Resources/Objects/sphere.gltf").Data);
         }
 
+        if (ImGui::MenuItem("Plane")) {
+          toSelect = m_Context->CreateEntity("Plane");
+          auto& pos = toSelect.GetComponent<TransformComponent>().Translation;
+          BodyCreationSettings bcs(
+            new BoxShape(Vec3Arg(1.0, .1f, 1.0)),
+            {pos.x, pos.y, pos.z},
+            Quat::sIdentity(),
+            EMotionType::Dynamic,
+            PhysicsLayers::MOVING);
+          bcs.mOverrideMassProperties = EOverrideMassProperties::CalculateInertia;
+          bcs.mMassPropertiesOverride.mMass = 10.0f;
+          auto& rb = toSelect.AddComponent<RigidBodyComponent>();
+          rb.BodyID = m_Context->GetBodyInterface()->CreateAndAddBody(bcs, EActivation::Activate);
+          rb.MotionType = RigidBodyComponent::DYNAMIC;
+          rb.Friction = m_Context->GetBodyInterface()->GetFriction(rb.BodyID);
+          toSelect.AddComponentI<MeshRendererComponent>(AssetManager::GetMeshAsset("Resources/Objects/plane.gltf").Data);
+        }
         if (ImGui::MenuItem("Kinematic Char Controller")) { }
 
         ImGui::EndMenu();

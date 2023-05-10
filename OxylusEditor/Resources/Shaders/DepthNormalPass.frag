@@ -12,23 +12,19 @@ layout(location = 0) out vec4 out_Normal;
 
 #include "Material.glsl"
 
-void main()
-{
-    const float normalMapStrenght = u_Material.UseNormal ? 1.0 : 0.0;
-    vec3 normal = texture(in_NormalSampler, in_UV).rgb;
-    normal = in_WorldTangent * normalize(normal * 2.0 - 1.0);
-    normal = normalize(mix(normalize(in_Normal), normal, normalMapStrenght));
+void main() {
+  const float normalMapStrenght = u_Material.UseNormal ? 1.0 : 0.0;
+  vec3 normal = texture(in_NormalSampler, in_UV).rgb;
+  normal = in_WorldTangent * normalize(normal * 2.0 - 1.0);
+  normal = normalize(mix(normalize(in_Normal), normal, normalMapStrenght));
 
-    float roughness = 0;
-    if (u_Material.UseRoughness)
-    {
-        roughness = 1.0 - texture(in_RoughnessSampler, in_UV * u_Material.UVScale).r;
-        roughness *= u_Material.Roughness;
-    }
-    else
-    {
-        // roughness = 1.0 - u_Material.Roughness;
-    }
+  float roughness = 0;
+  if (u_Material.UseRoughness) {
+    roughness = 1.0 - texture(in_RoughnessSampler, in_UV * u_Material.UVScale).r;
+    roughness *= u_Material.Roughness;
+  } else {
+    // roughness = 1.0 - u_Material.Roughness;
+  }
 
-    out_Normal = vec4(normal, roughness);
+  out_Normal = vec4(normal, roughness);
 }

@@ -10,13 +10,12 @@
 #include <glm/glm.hpp>
 
 #include <unordered_map>
+#include <glm/gtc/type_ptr.hpp>
 
 namespace Oxylus {
-  Scene::Scene(bool initPhysics) {
+  Scene::Scene() {
     Init();
-    if (initPhysics) {
-      InitPhysics();
-    }
+    InitPhysics();
   }
 
   Scene::Scene(std::string name) : SceneName(std::move(name)) { }
@@ -69,7 +68,18 @@ namespace Oxylus {
     return entity;
   }
 
-  void Scene::UpdatePhysics() {
+  void Scene::UpdatePhysics(bool simulating) {
+    if (!simulating) {
+      const auto group = m_Registry.view<TransformComponent, RigidBodyComponent>();
+      for (const auto entity : group) {
+        auto [transform, rb] = group.get<TransformComponent, RigidBodyComponent>(entity);
+        m_BodyInterface->SetPosition(rb.BodyID, {transform.Translation.x, transform.Translation.y, transform.Translation.z}, JPH::EActivation::DontActivate);
+        auto quat = glm::quat(transform.Rotation);
+        m_BodyInterface->SetRotation(rb.BodyID, {quat.x, quat.y, quat.z, quat.w}, JPH::EActivation::DontActivate);
+      }
+      return;
+    }
+
     constexpr float cDeltaTime = 1.0f / 60.0f; // Update rate
     constexpr int cCollisionSteps = 1;
     constexpr int cIntegrationSubSteps = 1;
@@ -84,17 +94,8 @@ namespace Oxylus {
         const auto group = m_Registry.view<TransformComponent, RigidBodyComponent>();
         for (const auto entity : group) {
           auto [transform, rb] = group.get<TransformComponent, RigidBodyComponent>(entity);
-          transform.Translation.x = rb.Body->GetPosition().GetX();
-          transform.Translation.y = rb.Body->GetPosition().GetY();
-          transform.Translation.z = rb.Body->GetPosition().GetZ();
-          rb.Body->AddForce({0,1,1});
-        }
-      }
-      // Box collider
-      {
-        const auto group = m_Registry.view<TransformComponent, RigidBodyComponent, BoxColliderComponent>();
-        for (const auto entity : group) {
-          auto [transform, rb, boxCollider] = group.get<TransformComponent, RigidBodyComponent, BoxColliderComponent>(entity);
+          transform.Translation = glm::make_vec3(m_BodyInterface->GetPosition(rb.BodyID).mF32);
+          transform.Rotation = glm::eulerAngles(glm::make_quat(m_BodyInterface->GetRotation(rb.BodyID).GetXYZW().mF32));
         }
       }
     }
@@ -215,7 +216,7 @@ namespace Oxylus {
 
   Ref<Scene> Scene::Copy(const Ref<Scene>& other) {
     ZoneScoped;
-    Ref<Scene> newScene = CreateRef<Scene>(false);
+    Ref<Scene> newScene = CreateRef<Scene>();
 
     auto& srcSceneRegistry = other->m_Registry;
     auto& dstSceneRegistry = newScene->m_Registry;
@@ -237,8 +238,33 @@ namespace Oxylus {
     }
 
     // Copy physics
-    newScene->m_BodyInterface = other->m_BodyInterface;
-    newScene->m_PhysicsSystem = other->m_PhysicsSystem;
+    newScene->m_PhysicsSystem = CreateRef<JPH::PhysicsSystem>();
+    newScene->m_PhysicsSystem->Init(
+      Physics::MAX_BODIES,
+      0,
+      Physics::MAX_BODY_PAIRS,
+      Physics::MAX_CONTACT_CONSTRAINS,
+      Physics::s_LayerInterface,
+      Physics::s_ObjectVsBroadPhaseLayerFilterInterface,
+      Physics::s_ObjectLayerPairFilterInterface);
+    newScene->m_BodyInterface = &newScene->m_PhysicsSystem->GetBodyInterface();
+
+    // Copy bodies
+    JPH::BodyIDVector otherBodyIDs = {};
+    other->m_PhysicsSystem->GetBodies(otherBodyIDs);
+    std::vector<JPH::Body*> otherBodies = {};
+    for (auto& id : otherBodyIDs) {
+      otherBodies.emplace_back(other->m_PhysicsSystem->GetBodyLockInterface().TryGetBody(id));
+    }
+
+    // Add copied bodies in batch
+    JPH::BodyIDVector newBodyIDs = {};
+    for (const auto& b : otherBodies) {
+      newBodyIDs.emplace_back(newScene->m_BodyInterface->CreateBody(b->GetBodyCreationSettings())->GetID());
+    }
+    const auto state = newScene->m_BodyInterface->AddBodiesPrepare(newBodyIDs.data(), (int)newBodyIDs.size());
+    newScene->m_BodyInterface->AddBodiesFinalize(newBodyIDs.data(), (int)newBodyIDs.size(), state, JPH::EActivation::Activate);
+
     newScene->m_JobSystem = other->m_JobSystem;
 
     // Copy components (except IDComponent and TagComponent)
@@ -306,8 +332,9 @@ namespace Oxylus {
     }
   }
 
-  void Scene::OnEditorUpdate([[maybe_unused]] float deltaTime, Camera& camera) const {
+  void Scene::OnEditorUpdate([[maybe_unused]] float deltaTime, Camera& camera) {
     RenderScene();
+    UpdatePhysics(false);
 
     VulkanRenderer::SetCamera(camera);
   }

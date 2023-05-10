@@ -46,7 +46,7 @@ namespace Oxylus {
   };
 
   static const char* GetCacheDirectory() {
-    return "resources/shaders/compiled/";
+    return "Resources/Shaders/Compiled/";
   }
 
   static void CreateCacheDirectoryIfNeeded() {

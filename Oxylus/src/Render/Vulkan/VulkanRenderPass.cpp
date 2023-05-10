@@ -13,7 +13,7 @@ namespace Oxylus {
   }
 
   void VulkanRenderPass::CreateRenderPass(const RenderPassDescription& description) {
-    OX_CORE_ASSERT(description.Name.empty());
+    OX_CORE_ASSERT(!description.Name.empty());
     m_Description = description;
     const auto& LogicalDevice = VulkanContext::GetDevice();
     m_RenderPass = LogicalDevice.createRenderPass(description.CreateInfo).value;

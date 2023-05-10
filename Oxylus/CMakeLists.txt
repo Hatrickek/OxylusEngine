@@ -151,6 +151,7 @@ if (MSVC)
     /GF;
     /Gy;
     /O2;
+    /Zi;
     ${DEFAULT_CXX_DEBUG_INFORMATION_FORMAT}
     >
     $<$<CONFIG:Distribution>:
@@ -169,9 +170,9 @@ if (MSVC)
     target_link_options(${PROJECT_NAME} PRIVATE
     $<$<CONFIG:Debug>:
         /DEBUG;
-        /INCREMENTAL
     >
     $<$<CONFIG:Release>:
+        /DEBUG;
         /OPT:REF;
         /OPT:ICF;
     >

@@ -18,6 +18,7 @@ namespace Oxylus {
 
     void ClearSelectionContext();
     Entity GetSelectedEntity() const;
+    Ref<Scene> GetScene() const { return m_Context; }
     void SetSelectedEntity(Entity entity);
 
     void DragDropTarget() const;

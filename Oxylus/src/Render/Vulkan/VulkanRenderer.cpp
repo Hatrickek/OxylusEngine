@@ -64,7 +64,7 @@ namespace Oxylus {
     Calculate frustum split depths and matrices for the shadow map cascades
     Based on https://johanmedestrom.wordpress.com/2016/03/18/opengl-cascaded-shadow-maps/
   */
-  void VulkanRenderer::UpdateCascades(const glm::mat4& Transform,
+  void VulkanRenderer::UpdateCascades(const Entity& dirLightEntity,
                                       Camera* camera,
                                       RendererData::DirectShadowUB& cascadesUbo) {
     ZoneScoped;
@@ -91,22 +91,28 @@ namespace Oxylus {
       cascadeSplits[i] = (d - nearClip) / clipRange;
     }
 
+    Mat4 invCam = inverse(camera->GetProjectionMatrix() * (camera->GetViewMatrix()));
+
     // Calculate orthographic projection matrix for each cascade
-    float lastSplitDist = 0.0;
     for (uint32_t i = 0; i < SHADOW_MAP_CASCADE_COUNT; i++) {
       float splitDist = cascadeSplits[i];
+      float lastSplitDist = i == 0 ? 0.0f : cascadeSplits[i - 1];
 
-      Vec3 frustumCorners[8] = {
-        Vec3(-1.0f, 1.0f, 0.0f), Vec3(1.0f, 1.0f, 0.0f), Vec3(1.0f, -1.0f, 0.0f),
-        Vec3(-1.0f, -1.0f, 0.0f), Vec3(-1.0f, 1.0f, 1.0f), Vec3(1.0f, 1.0f, 1.0f),
-        Vec3(1.0f, -1.0f, 1.0f), Vec3(-1.0f, -1.0f, 1.0f),
+      glm::vec3 frustumCorners[8] = {
+        glm::vec3(-1.0f, 1.0f, 0.0f),
+        glm::vec3(1.0f, 1.0f, 0.0f),
+        glm::vec3(1.0f, -1.0f, 0.0f),
+        glm::vec3(-1.0f, -1.0f, 0.0f),
+        glm::vec3(-1.0f, 1.0f, 1.0f),
+        glm::vec3(1.0f, 1.0f, 1.0f),
+        glm::vec3(1.0f, -1.0f, 1.0f),
+        glm::vec3(-1.0f, -1.0f, 1.0f),
       };
 
       // Project frustum corners into world space
-      Mat4 invCam = inverse(camera->GetProjectionMatrix() * camera->GetViewMatrix());
-      for (auto& frustumCorner : frustumCorners) {
-        Vec4 invCorner = invCam * Vec4(frustumCorner, 1.0f);
-        frustumCorner = invCorner / invCorner.w;
+      for (uint32_t j = 0; j < 8; j++) {
+        glm::vec4 invCorner = invCam * glm::vec4(frustumCorners[j], 1.0f);
+        frustumCorners[j] = (invCorner / invCorner.w);
       }
 
       for (uint32_t j = 0; j < 4; j++) {
@@ -116,51 +122,60 @@ namespace Oxylus {
       }
 
       // Get frustum center
-      auto frustumCenter = Vec3(0.0f);
-      for (auto& frustumCorner : frustumCorners) {
-        frustumCenter += frustumCorner;
+      auto frustumCenter = glm::vec3(0.0f);
+      for (uint32_t j = 0; j < 8; j++) {
+        frustumCenter += frustumCorners[j];
       }
       frustumCenter /= 8.0f;
 
       float radius = 0.0f;
-      for (auto& frustumCorner : frustumCorners) {
-        float distance = glm::length(frustumCorner - frustumCenter);
+      for (uint32_t j = 0; j < 8; j++) {
+        float distance = glm::length(frustumCorners[j] - frustumCenter);
         radius = glm::max(radius, distance);
       }
-      radius = std::ceil(radius * 16.0f) / 16.0f;
+
+      // Temp workaround to flickering when rotating camera
+      // Sphere radius for lightOrthoMatrix should fix this
+      // But radius changes as the camera is rotated which causes flickering
+      constexpr float value = 1.0f; // 16.0f;
+      radius = std::ceil(radius * value) / value;
 
       auto maxExtents = Vec3(radius);
       Vec3 minExtents = -maxExtents;
 
-      Vec4 zDir = Transform * Vec4(0, 0, 1, 0);
-      //glm::vec3 pos = Transform[3];
-      Vec3 dir = glm::normalize(Vec3(zDir));
-      //glm::vec3 lookAt = pos + dir;
-      Mat4 lightViewMatrix = glm::lookAt(frustumCenter - dir * -minExtents.z,
-        frustumCenter,
-        Vec3(0.0f, 1.0f, 0.0f));
+      auto worldTransform = dirLightEntity.GetWorldTransform();
+      Vec4 zDir = worldTransform * glm::vec4(0, 0, 1, 0);
+      Vec3 lightDir = glm::normalize(glm::vec3(zDir));
+      float CascadeFarPlaneOffset = 10.0f, CascadeNearPlaneOffset = -100.0f; // TODO: Make configurable.
       Mat4 lightOrthoMatrix = glm::ortho(minExtents.x,
         maxExtents.x,
         minExtents.y,
         maxExtents.y,
-        (maxExtents.z - minExtents.z) * -1,
-        maxExtents.z - minExtents.z);
+        CascadeNearPlaneOffset,
+        maxExtents.z - minExtents.z - CascadeFarPlaneOffset);
+      Mat4 lightViewMatrix = glm::lookAt(frustumCenter - lightDir * -minExtents.z, frustumCenter, Vec3(0.0f, 0.0f, 1.0f));
+      auto shadowProj = lightOrthoMatrix * lightViewMatrix;
 
-      //glm::vec4 zDir = Transform * glm::vec4(0, 0, 1, 0);
-      //float near_plane = -100.0f, far_plane = 100.0f;
-      //glm::mat4 lightProjection = glm::ortho(-20.0f, 20.0f, -10.0f, 10.0f, near_plane, far_plane);
-      //glm::vec3 pos = Transform[3];
-      //glm::vec3 dir = glm::normalize(glm::vec3(zDir));
-      //glm::vec3 lookAt = pos + dir;
-      //glm::mat4 dirLightView = glm::lookAt(pos, lookAt, glm::vec3(0, 1, 0));
-      //glm::mat4 dirLightViewProj = lightProjection * dirLightView;
+      constexpr bool stabilizeCascades = true;
+      if (stabilizeCascades) {
+        // Create the rounding matrix, by projecting the world-space origin and determining
+        // the fractional offset in texel space
+        glm::vec4 shadowOrigin = glm::vec4(0.0f, 0.0f, 0.0f, 1.0f);
+        shadowOrigin = shadowProj * shadowOrigin;
+        shadowOrigin *= (float)RendererConfig::Get()->DirectShadowsConfig.Size * 0.5f;
+
+        glm::vec4 roundedOrigin = glm::round(shadowOrigin);
+        glm::vec4 roundOffset = roundedOrigin - shadowOrigin;
+        roundOffset = roundOffset * (2.0f / (float)RendererConfig::Get()->DirectShadowsConfig.Size);
+        roundOffset.z = 0.0f;
+        roundOffset.w = 0.0f;
+
+        lightOrthoMatrix[3] += roundOffset;
+      }
 
       // Store split distance and matrix in cascade
       cascadesUbo.cascadeSplits[i] = (camera->NearClip + splitDist * clipRange) * -1.0f;
       cascadesUbo.cascadeViewProjMat[i] = lightOrthoMatrix * lightViewMatrix;
-      //cascadesUbo.cascadeViewProjMat[i] = dirLightViewProj;
-
-      lastSplitDist = cascadeSplits[i];
     }
   }
 
@@ -273,8 +288,8 @@ namespace Oxylus {
     });
     auto atmosphereShader = ShaderLibrary::CreateShaderAsync(ShaderCI{
       .EntryPoint = "main",
-      .Name = "AtmosphereScattering",
-      .ComputePath = Resources::GetResourcesPath("Shaders/AtmosphricScattering.comp").string(),
+      .Name = "AtmosphericScattering",
+      .ComputePath = Resources::GetResourcesPath("Shaders/AtmosphericScattering.comp").string(),
     });
     auto compositeShader = ShaderLibrary::CreateShaderAsync(ShaderCI{
       .EntryPoint = "main",
@@ -287,8 +302,8 @@ namespace Oxylus {
       .EntryPoint = "main", .Name = "PostProcess"
     });
     auto quadShader = ShaderLibrary::CreateShaderAsync(ShaderCI{
-      .VertexPath = Resources::GetResourcesPath("Shaders/quad.vert").string(),
-      .FragmentPath = Resources::GetResourcesPath("Shaders/quad.frag").string(),
+      .VertexPath = Resources::GetResourcesPath("Shaders/Quad.vert").string(),
+      .FragmentPath = Resources::GetResourcesPath("Shaders/Quad.frag").string(),
       .EntryPoint = "main",
       .Name = "Quad",
     });
@@ -301,8 +316,8 @@ namespace Oxylus {
       .ComputePath = Resources::GetResourcesPath("Shaders/ComputeLightList.comp").string(),
     });
     auto uiShader = ShaderLibrary::CreateShaderAsync(ShaderCI{
-      .VertexPath = Resources::GetResourcesPath("Shaders/ui.vert").string(),
-      .FragmentPath = Resources::GetResourcesPath("Shaders/ui.frag").string(),
+      .VertexPath = Resources::GetResourcesPath("Shaders/UI.vert").string(),
+      .FragmentPath = Resources::GetResourcesPath("Shaders/UI.frag").string(),
       .EntryPoint = "main",
       .Name = "UI",
     });
@@ -317,6 +332,7 @@ namespace Oxylus {
       .ComputePath = Resources::GetResourcesPath("Shaders/GaussianBlur.comp").string(),
     });
     PipelineDescription pipelineDescription{};
+    pipelineDescription.Name = "Skybox Pipeline";
     pipelineDescription.Shader = skyboxShader.get();
     pipelineDescription.ColorAttachmentCount = 1;
     pipelineDescription.RenderTargets[0].Format = SwapChain.m_ImageFormat;
@@ -373,6 +389,7 @@ namespace Oxylus {
       }
     };
 
+    pipelineDescription.Name = "PBR Pipeline";
     pipelineDescription.SetDescriptions = pbrDescriptorSet;
     pipelineDescription.PushConstantRanges.emplace_back(vk::ShaderStageFlagBits::eFragment,
       sizeof(glm::mat4),
@@ -399,6 +416,7 @@ namespace Oxylus {
     s_Pipelines.UnlitPipeline.CreateGraphicsPipelineAsync(unlitPipelineDesc).wait();
 
     PipelineDescription depthpassdescription;
+    depthpassdescription.Name = "Depth Pass Pipeline";
     depthpassdescription.Shader = depthPassShader.get();
     depthpassdescription.SetDescriptions = pbrDescriptorSet;
     depthpassdescription.DepthAttachmentFirst = true;
@@ -431,10 +449,11 @@ namespace Oxylus {
       sizeof Material::Parameters);
     s_Pipelines.DepthPrePassPipeline.CreateGraphicsPipelineAsync(depthpassdescription).wait();
 
+    pipelineDescription.Name = "Direct Shadow Pipeline";
     pipelineDescription.Shader = directShadowShader.get();
     pipelineDescription.PushConstantRanges = {vk::PushConstantRange{vk::ShaderStageFlagBits::eVertex, 0, 68}};
     pipelineDescription.ColorAttachmentCount = 0;
-    pipelineDescription.RasterizerDesc.CullMode = vk::CullModeFlagBits::eNone;
+    pipelineDescription.RasterizerDesc.CullMode = vk::CullModeFlagBits::eFront;
     pipelineDescription.DepthSpec.DepthEnable = true;
     pipelineDescription.RasterizerDesc.DepthClamppEnable = true;
     pipelineDescription.RasterizerDesc.FrontCounterClockwise = false;
@@ -452,6 +471,7 @@ namespace Oxylus {
     s_Pipelines.DirectShadowDepthPipeline.CreateGraphicsPipelineAsync(pipelineDescription).wait();
 
     PipelineDescription ssaoDescription;
+    ssaoDescription.Name = "SSAO Pipeline";
     ssaoDescription.RenderTargets[0].Format = vk::Format::eR8Unorm;
     ssaoDescription.DepthSpec.DepthEnable = false;
     ssaoDescription.SubpassDescription[0].DstAccessMask = vk::AccessFlagBits::eColorAttachmentWrite;
@@ -1016,7 +1036,7 @@ namespace Oxylus {
               const auto& material = mesh.Materials[part->materialIndex];
               if (!material->IsOpaque())
                 return false;
-              const auto layout = s_Pipelines.DepthPrePassPipeline.GetPipelineLayout();
+              const auto& layout = s_Pipelines.DepthPrePassPipeline.GetPipelineLayout();
               commandBuffer.PushConstants(layout, vk::ShaderStageFlagBits::eVertex, 0, sizeof(glm::mat4), &mesh.Transform);
               commandBuffer.PushConstants(layout, vk::ShaderStageFlagBits::eFragment, sizeof(glm::mat4), sizeof Material::Parameters, &material->Parameters);
               s_Pipelines.DepthPrePassPipeline.BindDescriptorSets(commandBuffer.Get(), {Material::s_DescriptorSet.Get(), material->MaterialDescriptorSet.Get()}, 0, 2);
@@ -1056,28 +1076,28 @@ namespace Oxylus {
           if (lightComponent.Type != LightComponent::LightType::Directional)
             continue;
 
-          glm::mat4 transform = e.GetWorldTransform();
-          UpdateCascades(transform, s_RendererContext.CurrentCamera, s_RendererData.UBO_DirectShadow);
+          UpdateCascades(e, s_RendererContext.CurrentCamera, s_RendererData.UBO_DirectShadow);
           s_RendererData.DirectShadowBuffer.Copy(&s_RendererData.UBO_DirectShadow, sizeof s_RendererData.UBO_DirectShadow);
 
           for (const auto& mesh : s_MeshDrawList) {
             if (!mesh.MeshGeometry)
               continue;
+            s_Pipelines.DirectShadowDepthPipeline.BindDescriptorSets(commandBuffer.Get(), {s_ShadowDepthDescriptorSet.Get()});
+            struct PushConst {
+              glm::mat4 modelMatrix{};
+              uint32_t cascadeIndex = 0;
+            } pushConst;
+            pushConst.modelMatrix = mesh.Transform;
+            pushConst.cascadeIndex = framebufferIndex;
+            const auto& layout = s_Pipelines.DirectShadowDepthPipeline.GetPipelineLayout();
+            commandBuffer.PushConstants(layout, vk::ShaderStageFlagBits::eVertex, 0, sizeof(PushConst), &pushConst);
             RenderMesh(mesh,
               commandBuffer.Get(),
               s_Pipelines.DirectShadowDepthPipeline,
               [&](const Mesh::Primitive*) {
-                struct PushConst {
-                  glm::mat4 modelMatrix{};
-                  uint32_t cascadeIndex = 0;
-                } pushConst;
-                pushConst.modelMatrix = mesh.Transform;
-                pushConst.cascadeIndex = framebufferIndex;
-                const auto& layout = s_Pipelines.DirectShadowDepthPipeline.GetPipelineLayout();
-                commandBuffer.PushConstants(layout, vk::ShaderStageFlagBits::eVertex, 0, sizeof(PushConst), &pushConst);
-                s_Pipelines.DirectShadowDepthPipeline.BindDescriptorSets(commandBuffer.Get(), {s_ShadowDepthDescriptorSet.Get()});
                 return true;
-              });
+              }
+            );
           }
         }
       },
@@ -1679,7 +1699,7 @@ namespace Oxylus {
     if (std::filesystem::exists(Resources::GetResourcesPath("HDRs/industrial_sky.ktx2").string()))
       CubeMapDesc.Path = Resources::GetResourcesPath("HDRs/industrial_sky.ktx2").string();
     else
-      CubeMapDesc.Path = Resources::GetResourcesPath("HDRs/HDRs/belfast_sunset.ktx2").string();
+      CubeMapDesc.Path = Resources::GetResourcesPath("HDRs/belfast_sunset.ktx2").string();
     CubeMapDesc.Type = ImageType::TYPE_CUBE;
     s_Resources.CubeMap.Create(CubeMapDesc);
 

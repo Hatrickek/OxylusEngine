@@ -114,7 +114,7 @@ namespace Oxylus {
     bool UseColorTemperatureMode = false;
     uint32_t Temperature = 6570;
     glm::vec3 Color = glm::vec3(1.0f);
-    float Intensity = 20.0f;
+    float Intensity = 1.0f;
 
     float Range = 1.0f;
     float CutOffAngle = glm::radians(12.5f);
@@ -147,9 +147,18 @@ namespace Oxylus {
   };
 
   struct RigidBodyComponent {
-    JPH::Body* Body = nullptr;
+    enum MotionType {
+      STATIC = 0,
+      KINEMATIC,
+      DYNAMIC
+    };
+    JPH::BodyID BodyID = {};
+    int32_t MotionType = STATIC;
+    float Friction = 1.0;
+    int32_t Shape = 0; // 0:Box, 1:Sphere, 2:Capsule, 3:Cylinder, 4:Mesh
 
-    RigidBodyComponent() {}
+    RigidBodyComponent() = default;
+    ~RigidBodyComponent() = default;
   };
 
   struct KinematicCharacterControllerComponent {

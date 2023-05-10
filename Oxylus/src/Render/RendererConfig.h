@@ -48,7 +48,7 @@ namespace Oxylus {
       bool Enabled = true;
       uint32_t Quality = 3;
       bool UsePCF = true;
-      uint32_t Size = 2048;
+      uint32_t Size = 4096;
     } DirectShadowsConfig;
 
     RendererConfig();

@@ -13,7 +13,7 @@ layout(local_size_x = 8, local_size_y = 8, local_size_z = 1) in;
 
 float focalDepth = 1.5;
 float focalLength = 12.0;
-float fstop = 2.0;
+float fstop = 10.0;
 bool showFocus = false;
 
 /*
@@ -283,5 +283,5 @@ void main() {
     col = debugFocus(col, blur, depth);
   }
 
-  imageStore(ImgResult, imgCoord, vec4(col, 1.0));
+  imageStore(ImgResult, imgCoord, vec4(texture(in_Color, uv.xy).rgb, 1.0));
 }

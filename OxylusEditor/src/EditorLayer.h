@@ -51,7 +51,8 @@ namespace Oxylus {
     bool OpenScene(const std::filesystem::path& path);
 
     void SetSelectedEntity(const Entity& entity);
-    Entity GetSelectedEntity() const;
+    Entity GetSelectedEntity() const{ return m_SceneHierarchyPanel.GetSelectedEntity(); }
+    Ref<Scene> GetSelectedScene() const { return m_SceneHierarchyPanel.GetScene(); }
     void ClearSelectedEntity();
 
   private:
