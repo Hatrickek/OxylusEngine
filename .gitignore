@@ -45,6 +45,7 @@
 *.vcxproj.user
 *.DotSettings.user
 build
+Build
 *.sln
 *.sln.DotSettings.user
 .editorconfig

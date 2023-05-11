@@ -243,6 +243,10 @@ function(set_targets_static_and_folder _target)
     set_target_properties(${targets} PROPERTIES MSVC_RUNTIME_LIBRARY ${MSVC_RUNTIME_LIBRARY_STR} FOLDER "Vendor/${_target}")
 endfunction()
 
+function(disable_ipo_target _target)
+    set_property(TARGET ${_target} PROPERTY INTERPROCEDURAL_OPTIMIZATION OFF)
+endfunction()
+
 # Suppress all warnings from dependencies.
 if(MSVC)
 set_property(DIRECTORY APPEND PROPERTY COMPILE_OPTIONS /W0)
@@ -356,6 +360,7 @@ add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/vendor/glfw)
 target_link_libraries(${PROJECT_NAME} PUBLIC glfw)
 set_targets_static_and_folder(glfw)
 FOLDER_DIR_TARGETS(uninstall)
+disable_ipo_target(glfw)
 
 # RYML
 add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/vendor/ryml)
@@ -365,6 +370,8 @@ target_link_libraries(${PROJECT_NAME} PUBLIC c4core)
 set_targets_static_and_folder(ryml)
 
 # KTX
+set(CLI OFF)
+set(KTX_FEATURE_TOOLS OFF)
 set(KTX_FEATURE_TESTS OFF)
 set(KTX_FEATURE_GL_UPLOAD OFF)
 set(KTX_FEATURE_STATIC_LIBRARY ON)
@@ -378,6 +385,7 @@ FetchContent_Declare(
 FetchContent_MakeAvailable(ktx)
 target_link_libraries(${PROJECT_NAME} PUBLIC ktx)
 set_targets_static_and_folder(ktx)
+disable_ipo_target(ktx)
 
 # FMT
 FetchContent_Declare(fmt
@@ -390,6 +398,7 @@ set_targets_static_and_folder(fmt)
 # Jolt
 set(COMPILE_AS_SHARED_LIBRARY OFF)
 set(ENABLE_ALL_WARNINGS OFF)
+set(INTERPROCEDURAL_OPTIMIZATION ON)
 FetchContent_Declare(
         JoltPhysics
         GIT_REPOSITORY "https://github.com/jrouwe/JoltPhysics"

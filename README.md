@@ -4,7 +4,7 @@
 Render and Game engine built with Vulkan and C++. It is focused on  stylistic and realistic 3D rendering.        
 This is my hobby project that I work on in my spare time to learn more about graphics programming and engine architectures. Also to produce some games including my dream game in the future.
 
-Currently Windows and Mac (with MoltenVK) is supported.
+Currently Windows, Linux and Mac (with MoltenVK) is supported.
 
 ## Features:     
 - Editor with features like Projects, Scenes and Saving/Loading Scenes, Content
@@ -30,10 +30,13 @@ PBR Testing scene with Depth Of Field, SSR, SSAO, Bloom, Vignette, Film Grain, C
 Sponza scene with IBL PBR, SSAO, SSR and Directional Shadows
 
 ## Building
-### Cmake
-- Directly run the root CMake script with a command like this:    
-`cmake -S . -B ./build/ -G "Visual Studio 17 2022" -A x64` to generate Visual Studio files in a `build` folder or open the project in a CMake supported environment.
-- Vulkan SDK must be installed and VULKAN_SDK env path in Windows and MacOS must be set in order to build the project (It is most of the time automatically set by the Vulkan SDK installer).  
+### CMake
+- Run the root CMake script with a command like this:       
+`cmake -S . -B ./Build/ -G "Visual Studio 17 2022" -A x64` to generate Visual Studio files (or with any generator you like) into `Build` folder.   
+Or with `cmake -B ./Build -DCMAKE_BUILD_TYPE=Release -DCMAKE_CXX_COMPILER=clang++` to generate for clang.    
+- Then run this command to build it with CMake:   
+`cmake --build ./Build -j 2`   
+- Vulkan SDK must be installed and VULKAN_SDK env path must be set in order to build the project (It is most of the time automatically set by the Vulkan SDK installer).  
 
 ## Dependencies
 - [Vulkan SDK](https://www.lunarg.com/vulkan-sdk/)

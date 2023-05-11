@@ -26,9 +26,6 @@
 [submodule "Oxylus/vendor/ryml"]
 	path = Oxylus/vendor/ryml
 	url = https://github.com/biojppm/rapidyaml
-[submodule "Oxylus/vendor/tiny_ktx"]
-	path = Oxylus/vendor/tiny_ktx
-	url = https://github.com/Hatrickek/tiny_ktx.git
 [submodule "Oxylus/vendor/glfw"]
 	path = Oxylus/vendor/glfw
 	url = https://github.com/glfw/glfw
