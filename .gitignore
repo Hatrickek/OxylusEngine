@@ -38,7 +38,8 @@
 /cmake-build-release
 /bin
 /bin-int
-/OxylusEditor/resources/shaders/compiled
+/OxylusEditor/Resources/Shaders/Compiled
+/OxylusEditor/logs
 *.ccls
 *.vcxproj
 *.vcxproj.filters

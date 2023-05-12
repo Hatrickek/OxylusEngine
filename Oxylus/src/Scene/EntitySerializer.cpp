@@ -318,13 +318,13 @@ namespace Oxylus {
     const ryml::Tree tree = ryml::parse_in_arena(ryml::to_csubstr(content.value()));
 
     if (tree.empty()) {
-      OX_CORE_BERROR("Couldn't parse the prefab file {0}", StringUtils::GetName(filepath))
+      OX_CORE_BERROR("Couldn't parse the prefab file {0}", StringUtils::GetName(filepath));
     }
 
     const ryml::ConstNodeRef root = tree.rootref();
 
     if (!root.has_child("Prefab")) {
-      OX_CORE_BERROR("Prefab file doesn't contain a prefab{0}", StringUtils::GetName(filepath))
+      OX_CORE_BERROR("Prefab file doesn't contain a prefab{0}", StringUtils::GetName(filepath));
       return {};
     }
 

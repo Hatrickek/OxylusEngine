@@ -10,6 +10,7 @@
 #include "Vulkan/VulkanContext.h"
 #include "Vulkan/VulkanRenderer.h"
 #include "Utils/Log.h"
+#include "Core/Resources.h"
 
 namespace Oxylus {
   Mesh::Mesh(const std::string_view path, uint32_t fileLoadingFlags) {
@@ -562,7 +563,9 @@ namespace Oxylus {
 
   void Mesh::LoadFailFallback() {
     ZoneScoped;
-    LoadFromFile("resources/objects/cube.gltf");
+    OX_CORE_ERROR("Could not load mesh file {0}. Falled back to a cube.", Path);
+    auto cubePath = "Resources/Objects/Cube.gltf";
+    LoadFromFile("Resources/Objects/Cube.gltf");
     m_Materials[0]->Parameters.Color.r = 1.0f;
     m_Materials[0]->Parameters.Specular = 0.0f;
   }

@@ -18,7 +18,8 @@ namespace Oxylus {
 
     s_Instance = this;
 
-    Core::Init(spec);
+    if (!Core::Init(spec))
+      return;
 
     if (spec.UseImGui) {
       m_ImGuiLayer = new ImGuiLayer();

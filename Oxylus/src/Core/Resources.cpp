@@ -23,6 +23,10 @@ namespace Oxylus {
     return Application::Get().Spec.WorkingDirectory / "Resources" / path;
   }
 
+  bool Resources::ResourcesPathExists() {
+    return std::filesystem::exists("Resources");
+  }
+
   void Resources::InitEngineResources() {
     VulkanImageDescription emptyDescription{};
     emptyDescription.Width = 1;

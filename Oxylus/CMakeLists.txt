@@ -256,9 +256,6 @@ endif()
 
 include(FetchContent)
 
-# Set build type (This is actually not required)
-set(CMAKE_BUILD_TYPE Release)
-
 # Vulkan Headers
 FetchContent_Declare(
         Vulkan-Headers
@@ -376,7 +373,6 @@ set(KTX_FEATURE_TESTS OFF)
 set(KTX_FEATURE_GL_UPLOAD OFF)
 set(KTX_FEATURE_STATIC_LIBRARY ON)
 set(BASISU_SUPPORT_OPENCL OFF)
-set(BASISU_SUPPORT_SSE OFF)
 FetchContent_Declare(
         ktx
         GIT_REPOSITORY "https://github.com/KhronosGroup/KTX-Software"

@@ -1,6 +1,6 @@
 #include "src/oxpch.h"
 #include "Core.h"
-
+#include "Resources.h"
 #include "Project.h"
 #include "Audio/AudioEngine.h"
 #include "Core/Input.h"
@@ -14,8 +14,14 @@
 namespace Oxylus {
   Core::RenderBackend Core::s_Backend = RenderBackend::Vulkan;
 
-  void Core::Init(const AppSpec& spec) {
-    s_Backend = spec.Backend;
+  bool Core::Init(const AppSpec& spec) {
+    ZoneScoped;
+    if (!Resources::ResourcesPathExists()) {
+      OX_CORE_FATAL("Resources path doesn't exists. Make sure the working directory is correct!");
+      Application::Get().Close();
+      return false;
+    }
+
     FileDialogs::InitNFD();
     Project::New();
     Window::InitWindow(spec);
@@ -24,6 +30,8 @@ namespace Oxylus {
     Input::Init();
     AudioEngine::Init();
     Physics::InitPhysics();
+
+    return true;
   }
 
   void Core::Shutdown() {

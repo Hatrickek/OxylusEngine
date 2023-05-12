@@ -9,7 +9,7 @@ namespace Oxylus {
       Vulkan
     };
 
-    static void Init(const AppSpec& spec);
+    static bool Init(const AppSpec& spec);
 
     static void Shutdown();
 
