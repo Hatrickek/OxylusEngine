@@ -209,49 +209,13 @@ set_target_properties(${PROJECT_NAME} PROPERTIES MSVC_RUNTIME_LIBRARY ${MSVC_RUN
 #-------------
 # Dependencies
 #-------------
-function(get_all_targets var dir)
-    set(targets)
-    get_all_targets_recursive(targets ${dir})
-    set(${var} ${targets} PARENT_SCOPE)
-endfunction()
-
-macro(get_all_targets_recursive targets dir)
-    get_property(subdirectories DIRECTORY ${dir} PROPERTY SUBDIRECTORIES)
-    foreach(subdir ${subdirectories})
-        get_all_targets_recursive(${targets} ${subdir})
-    endforeach()
-
-    get_property(current_targets DIRECTORY ${dir} PROPERTY BUILDSYSTEM_TARGETS)
-    list(APPEND ${targets} ${current_targets})
-endmacro()
-
-function(folder_dir_targets _target)
-    get_target_property(TARGET_SOURCE_DIR ${_target} SOURCE_DIR)
-    get_all_targets(targets ${TARGET_SOURCE_DIR})
-    set_target_properties(${targets} PROPERTIES FOLDER "Vendor/${_target}")
-endfunction()
-
-function(set_targets_static _target)
-    get_target_property(TARGET_SOURCE_DIR ${_target} SOURCE_DIR)
-    get_all_targets(targets ${TARGET_SOURCE_DIR})
-    set_target_properties(${targets} PROPERTIES MSVC_RUNTIME_LIBRARY ${MSVC_RUNTIME_LIBRARY_STR})
-endfunction()
-
-function(set_targets_static_and_folder _target)
-    get_target_property(TARGET_SOURCE_DIR ${_target} SOURCE_DIR)
-    get_all_targets(targets ${TARGET_SOURCE_DIR})
-    set_target_properties(${targets} PROPERTIES MSVC_RUNTIME_LIBRARY ${MSVC_RUNTIME_LIBRARY_STR} FOLDER "Vendor/${_target}")
-endfunction()
-
-function(disable_ipo_target _target)
-    set_property(TARGET ${_target} PROPERTY INTERPROCEDURAL_OPTIMIZATION OFF)
-endfunction()
+include(${CMAKE_CURRENT_SOURCE_DIR}/vendor/CMake-Utils/CMakeUtils.cmake)
 
 # Suppress all warnings from dependencies.
 if(MSVC)
-set_property(DIRECTORY APPEND PROPERTY COMPILE_OPTIONS /W0)
+    set_property(DIRECTORY APPEND PROPERTY COMPILE_OPTIONS /W0)
 else()
-set_property(DIRECTORY APPEND PROPERTY COMPILE_OPTIONS -w)
+    set_property(DIRECTORY APPEND PROPERTY COMPILE_OPTIONS -w)
 endif()
 
 include(FetchContent)
@@ -267,10 +231,8 @@ target_link_libraries(${PROJECT_NAME} PUBLIC Vulkan-Headers)
 get_target_property(Vulkan_HEADERS_SOURCEDIR Vulkan-Headers SOURCE_DIR)
 
 # Vulkan
-if (NOT IS_CONTAINER)
-    find_package(Vulkan)
-    target_link_libraries(${PROJECT_NAME} PUBLIC Vulkan::Vulkan)
-endif()
+find_package(Vulkan)
+target_link_libraries(${PROJECT_NAME} PUBLIC Vulkan::Vulkan)
 
 # VMA
 target_include_directories(${PROJECT_NAME} PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}/vendor/VulkanMemoryAllocator/include")
@@ -321,6 +283,7 @@ set_targets_static_and_folder(SPVRemapper)
 set_targets_static_and_folder(HLSL)
 
 # shaderc
+set(SHADERC_SKIP_INSTALL ON)
 set(SHADERC_ENABLE_SHARED_CRT OFF)
 set(SHADERC_SKIP_TESTS ON)
 set(SHADERC_SKIP_EXAMPLES ON)

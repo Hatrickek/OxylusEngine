@@ -668,6 +668,8 @@ namespace Oxylus {
   std::vector<vk::DescriptorImageInfo> VulkanImage::GetMipDescriptors() const {
     std::vector<vk::DescriptorImageInfo> result;
 
+    // TODO: Do caching with maps
+
     for (uint32_t i = 0; i < m_ImageDescription.MipLevels; i++) {
       vk::DescriptorImageInfo desc;
       desc.imageLayout = m_ImageLayout;

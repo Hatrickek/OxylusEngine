@@ -1,5 +1,5 @@
-[submodule "Oxylus/vendor/imgui"]
-	path = Oxylus/vendor/imgui
+[submodule "Oxylus/vendor/ImGui"]
+	path = Oxylus/vendor/ImGui
 	url = https://github.com/ocornut/imgui.git
 	branch = docking
 [submodule "Oxylus/vendor/ktx"]
@@ -29,3 +29,6 @@
 [submodule "Oxylus/vendor/glfw"]
 	path = Oxylus/vendor/glfw
 	url = https://github.com/glfw/glfw
+[submodule "Oxylus/vendor/CMake-Utils"]
+	path = Oxylus/vendor/CMake-Utils
+	url = https://github.com/Hatrickek/CMake-Utils.git

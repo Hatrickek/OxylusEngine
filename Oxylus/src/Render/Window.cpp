@@ -47,9 +47,7 @@ namespace Oxylus {
         s_WindowData.ScreenExtent.height = height;
         OnResize();
       });
-    // Maximize();
-    //if (spec.CustomWindowTitle)
-    //    glfwSetWindowCaptionArea(s_WindowHandle, 1, 1, 1, 1);
+    OnResize();
   }
 
   void Window::OnResize() {
