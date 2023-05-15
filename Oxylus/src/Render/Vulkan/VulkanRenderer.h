@@ -17,6 +17,8 @@
 namespace Oxylus {
   using vDT = vk::DescriptorType;
   using vSS = vk::ShaderStageFlagBits;
+  using vPS = vk::PipelineStageFlagBits;
+  using vDF = vk::DependencyFlagBits;
 
   class Entity;
   constexpr auto MAX_NUM_LIGHTS = 1000;

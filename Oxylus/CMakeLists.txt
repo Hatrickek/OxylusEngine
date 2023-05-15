@@ -238,7 +238,6 @@ target_link_libraries(${PROJECT_NAME} PUBLIC Vulkan::Vulkan)
 target_include_directories(${PROJECT_NAME} PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}/vendor/VulkanMemoryAllocator/include")
 
 # spirv-headers
-set(PROJECT_IS_TOP_LEVEL OFF)
 set(BUILD_TESTS OFF)
 FetchContent_Declare(
         SPIRV-Headers

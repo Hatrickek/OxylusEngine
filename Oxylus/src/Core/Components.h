@@ -49,15 +49,15 @@ namespace Oxylus {
   };
 
   struct TransformComponent {
-    glm::vec3 Translation = glm::vec3(0);
-    glm::vec3 Rotation = glm::vec3(0); //Stored in radians
-    glm::vec3 Scale = glm::vec3(1);
+    Vec3 Translation = Vec3(0);
+    Vec3 Rotation = Vec3(0); //Stored in radians
+    Vec3 Scale = Vec3(1);
 
     TransformComponent() = default;
 
     TransformComponent(const TransformComponent&) = default;
 
-    TransformComponent(const glm::vec3& translation) : Translation(translation) { }
+    TransformComponent(const Vec3& translation) : Translation(translation) { }
 
     glm::mat4 GetTransform() const {
       const glm::mat4 rotation = glm::toMat4(glm::quat(Rotation));
@@ -113,7 +113,7 @@ namespace Oxylus {
     LightType Type = LightType::Point;
     bool UseColorTemperatureMode = false;
     uint32_t Temperature = 6570;
-    glm::vec3 Color = glm::vec3(1.0f);
+    Vec3 Color = Vec3(1.0f);
     float Intensity = 1.0f;
 
     float Range = 1.0f;

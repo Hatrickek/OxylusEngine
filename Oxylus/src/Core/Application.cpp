@@ -32,9 +32,9 @@ namespace Oxylus {
   }
 
   void Application::InitSystems() {
-    for (const auto& system : m_Systems) {
-      system->SetDispatcher(&m_Dispatcher);
-      system->OnInit();
+    for (const auto& system : m_SystemManager.GetSystems()) {
+      system.second->SetDispatcher(&m_Dispatcher);
+      system.second->OnInit();
     }
   }
 
@@ -66,16 +66,14 @@ namespace Oxylus {
       UpdateImGui();
 
       //Systems
-      UpdateSystems();
+      m_SystemManager.OnUpdate();
 
       Window::UpdateWindow();
 
       FrameMark;
     }
 
-    for (const auto& system : m_Systems) {
-      system->OnShutdown();
-    }
+    m_SystemManager.Shutdown();
     Core::Shutdown();
   }
 
@@ -101,16 +99,9 @@ namespace Oxylus {
       }
       {
         ZoneScopedN("SystemImGuiRender");
-        for (const auto& system : m_Systems)
-          system->OnImGuiRender();
+        m_SystemManager.OnImGuiRender();
       }
       m_ImGuiLayer->End();
-    }
-  }
-
-  void Application::UpdateSystems() const {
-    for (const auto& system : m_Systems) {
-      system->OnUpdate();
     }
   }
 

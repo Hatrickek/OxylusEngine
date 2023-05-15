@@ -99,9 +99,9 @@ namespace Oxylus {
     if (m_ViewportFocused && !m_SimulationRunning && m_UseEditorCamera) {
       if (m_LockAspectRatio)
         Camera;
-      const glm::vec3& position = Camera.GetPosition();
+      const Vec3& position = Camera.GetPosition();
       const glm::vec2 yawPitch = glm::vec2(Camera.GetYaw(), Camera.GetPitch());
-      glm::vec3 finalPosition = position;
+      Vec3 finalPosition = position;
       glm::vec2 finalYawPitch = yawPitch;
 
       if (ImGui::IsMouseDown(ImGuiMouseButton_Right) && Camera.ShouldMove) {
@@ -142,7 +142,7 @@ namespace Oxylus {
         m_UsingEditorCamera = false;
       }
 
-      const glm::vec3 dampedPosition = Math::SmoothDamp(position,
+      const Vec3 dampedPosition = Math::SmoothDamp(position,
         finalPosition,
         m_TranslationVelocity,
         m_TranslationDampening,
@@ -243,10 +243,10 @@ namespace Oxylus {
       if (ImGuizmo::IsUsing()) {
         const Entity parent = selectedEntity.GetParent();
         const glm::mat4& parentWorldTransform = parent ? parent.GetWorldTransform() : glm::mat4(1.0f);
-        glm::vec3 translation, rotation, scale;
+        Vec3 translation, rotation, scale;
         if (Math::DecomposeTransform(glm::inverse(parentWorldTransform) * transform, translation, rotation, scale)) {
           tc.Translation = translation;
-          const glm::vec3 deltaRotation = rotation - tc.Rotation;
+          const Vec3 deltaRotation = rotation - tc.Rotation;
           tc.Rotation += deltaRotation;
           tc.Scale = scale;
         }

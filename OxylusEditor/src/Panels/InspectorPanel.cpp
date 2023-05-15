@@ -278,7 +278,7 @@ namespace Oxylus {
       [](TransformComponent& component) {
         IGUI::BeginProperties();
         IGUI::DrawVec3Control("Translation", component.Translation);
-        glm::vec3 rotation = glm::degrees(component.Rotation);
+        Vec3 rotation = glm::degrees(component.Rotation);
         IGUI::DrawVec3Control("Rotation", rotation);
         component.Rotation = glm::radians(rotation);
         IGUI::DrawVec3Control("Scale", component.Scale, nullptr, 1.0f);
@@ -472,7 +472,7 @@ namespace Oxylus {
 
         if (component.Source) {
           const glm::mat4 inverted = glm::inverse(entity.GetWorldTransform());
-          const glm::vec3 forward = normalize(glm::vec3(inverted[2]));
+          const Vec3 forward = normalize(Vec3(inverted[2]));
           component.Source->SetConfig(config);
           component.Source->SetPosition(entity.GetTransform().Translation);
           component.Source->SetDirection(-forward);

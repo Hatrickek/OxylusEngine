@@ -258,7 +258,7 @@ namespace Oxylus {
       ImGui::PushStyleColor(ImGuiCol_ButtonActive, color);
     }
 
-    bool clicked = ImGui::ButtonEx(label, size, buttonFlags);
+    const bool clicked = ImGui::ButtonEx(label, size, buttonFlags);
 
     ImGui::PopStyleColor(3);
 

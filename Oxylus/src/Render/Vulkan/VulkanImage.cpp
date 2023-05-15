@@ -481,9 +481,7 @@ namespace Oxylus {
     viewCreateInfo.subresourceRange.baseMipLevel = mipmapIndex;
     viewCreateInfo.subresourceRange.levelCount = VK_REMAINING_MIP_LEVELS;
     viewCreateInfo.subresourceRange.baseArrayLayer = m_ImageDescription.BaseArrayLayerIndex;
-    viewCreateInfo.subresourceRange.layerCount = GetDesc().Type == ImageType::TYPE_CUBE
-                                                   ? 6
-                                                   : m_ImageDescription.ViewArrayLayerCount;
+    viewCreateInfo.subresourceRange.layerCount = GetDesc().Type == ImageType::TYPE_CUBE ? 6 : m_ImageDescription.ViewArrayLayerCount;
 
     const auto res = LogicalDevice.createImageView(viewCreateInfo, nullptr);
     VulkanUtils::CheckResult(res.result);

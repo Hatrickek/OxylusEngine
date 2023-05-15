@@ -6,6 +6,7 @@
 #include <filesystem>
 
 #include "Systems/System.h"
+#include "Systems/SystemManager.h"
 #include "Thread/ThreadManager.h"
 #include "Utils/Log.h"
 
@@ -45,11 +46,7 @@ namespace Oxylus {
     Application& PushLayer(Layer* layer);
     Application& PushOverlay(Layer* layer);
 
-    template<typename T, typename... Args>
-    Application& AddSystem(Args&& ... args) {
-      m_Systems.emplace_back(CreateScope<T>(std::forward<Args>(args)...));
-      return *this;
-    }
+    SystemManager& GetSystemManager() { return m_SystemManager; }
 
     void Close();
 
@@ -62,12 +59,11 @@ namespace Oxylus {
     void UpdateLayers();
     void UpdateRenderer();
     void UpdateImGui();
-    void UpdateSystems() const;
 
     ImGuiLayer* m_ImGuiLayer;
     LayerStack m_LayerStack;
 
-    std::vector<Scope<System>> m_Systems;
+    SystemManager m_SystemManager;
     EventDispatcher m_Dispatcher;
 
     ThreadManager m_ThreadManager;
@@ -75,7 +71,7 @@ namespace Oxylus {
     bool m_IsRunning = true;
     static Application* s_Instance;
 
-    friend int::main(int argc, char** argv);
+    friend int ::main(int argc, char** argv);
   };
 
   Application* CreateApplication(ApplicationCommandLineArgs args);

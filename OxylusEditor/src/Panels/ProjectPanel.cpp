@@ -7,6 +7,7 @@
 #include "Assets/AssetManager.h"
 #include "Core/Project.h"
 #include "UI/IGUI.h"
+#include "UI/OxUI.h"
 #include "Utils/EditorConfig.h"
 #include "Utils/StringUtils.h"
 #include "Utils/UIUtils.h"
@@ -18,7 +19,6 @@ namespace Oxylus {
 
   void ProjectPanel::LoadProjectForEditor(const std::string& filepath) {
     if (Project::Load(filepath)) {
-      const auto projectDir = Project::GetProjectDirectory();
       const auto startScene = AssetManager::GetAssetFileSystemPath(Project::GetActive()->GetConfig().StartScene);
       EditorLayer::Get()->OpenScene(startScene);
       EditorConfig::Get()->AddRecentProject(filepath);
@@ -29,13 +29,9 @@ namespace Oxylus {
   void ProjectPanel::OnImGuiRender() {
     if (Visible)
       ImGui::OpenPopup("ProjectSelector");
-    ImGuiIO& io = ImGui::GetIO();
-    ImGui::SetNextWindowSize(ImVec2(480, 640), ImGuiCond_FirstUseEver);
-    ImGui::SetNextWindowPos(ImVec2(io.DisplaySize.x * 0.5f, io.DisplaySize.y * 0.5f), ImGuiCond_Always,
-                            ImVec2(0.5f, 0.5f));
-    if (ImGui::BeginPopupModal("ProjectSelector",
-                               nullptr,
-                               ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoSavedSettings)) {
+    ImGui::SetNextWindowSize(ImVec2(480, 320), ImGuiCond_FirstUseEver);
+    OxUI::CenterNextWindow({(float)Window::GetWidth(), (float)Window::GetHeight()});
+    if (ImGui::BeginPopupModal("ProjectSelector", nullptr, ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoSavedSettings)) {
       ImGui::Text("Recent Projects");
       const float x = ImGui::GetContentRegionAvail().x;
       const float y = ImGui::GetFrameHeight();

@@ -46,7 +46,7 @@ namespace Oxylus {
     bool m_UseEditorCamera = true;
     bool m_UsingEditorCamera = false;
     glm::vec2 m_LockedMousePosition = glm::vec2(0.0f);
-    glm::vec3 m_TranslationVelocity = glm::vec3(0);
+    Vec3 m_TranslationVelocity = Vec3(0);
     glm::vec2 m_RotationVelocity = glm::vec2(0);
   };
 }

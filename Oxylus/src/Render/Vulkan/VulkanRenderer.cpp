@@ -98,15 +98,15 @@ namespace Oxylus {
       float splitDist = cascadeSplits[i];
       float lastSplitDist = i == 0 ? 0.0f : cascadeSplits[i - 1];
 
-      glm::vec3 frustumCorners[8] = {
-        glm::vec3(-1.0f, 1.0f, 0.0f),
-        glm::vec3(1.0f, 1.0f, 0.0f),
-        glm::vec3(1.0f, -1.0f, 0.0f),
-        glm::vec3(-1.0f, -1.0f, 0.0f),
-        glm::vec3(-1.0f, 1.0f, 1.0f),
-        glm::vec3(1.0f, 1.0f, 1.0f),
-        glm::vec3(1.0f, -1.0f, 1.0f),
-        glm::vec3(-1.0f, -1.0f, 1.0f),
+      Vec3 frustumCorners[8] = {
+        Vec3(-1.0f, 1.0f, 0.0f),
+        Vec3(1.0f, 1.0f, 0.0f),
+        Vec3(1.0f, -1.0f, 0.0f),
+        Vec3(-1.0f, -1.0f, 0.0f),
+        Vec3(-1.0f, 1.0f, 1.0f),
+        Vec3(1.0f, 1.0f, 1.0f),
+        Vec3(1.0f, -1.0f, 1.0f),
+        Vec3(-1.0f, -1.0f, 1.0f),
       };
 
       // Project frustum corners into world space
@@ -122,7 +122,7 @@ namespace Oxylus {
       }
 
       // Get frustum center
-      auto frustumCenter = glm::vec3(0.0f);
+      auto frustumCenter = Vec3(0.0f);
       for (uint32_t j = 0; j < 8; j++) {
         frustumCenter += frustumCorners[j];
       }
@@ -145,7 +145,7 @@ namespace Oxylus {
 
       auto worldTransform = dirLightEntity.GetWorldTransform();
       Vec4 zDir = worldTransform * glm::vec4(0, 0, 1, 0);
-      Vec3 lightDir = glm::normalize(glm::vec3(zDir));
+      Vec3 lightDir = glm::normalize(Vec3(zDir));
       float CascadeFarPlaneOffset = 10.0f, CascadeNearPlaneOffset = -100.0f; // TODO: Make configurable.
       Mat4 lightOrthoMatrix = glm::ortho(minExtents.x,
         maxExtents.x,
@@ -883,10 +883,10 @@ namespace Oxylus {
         });
     }
     {
-      const auto lodCount = std::max((int32_t)VulkanImage::GetMaxMipmapLevel(Window::GetWidth() / 2, Window::GetHeight() / 2, 1), 2);
+      const auto lodCount = std::max((int32_t)VulkanImage::GetMaxMipmapLevel(Window::GetWidth(), Window::GetHeight(), 1), 2);
       VulkanImageDescription bloompassimage;
-      bloompassimage.Width = Window::GetWidth() / 2;
-      bloompassimage.Height = Window::GetHeight() / 2;
+      bloompassimage.Width = Window::GetWidth();
+      bloompassimage.Height = Window::GetHeight();
       bloompassimage.CreateDescriptorSet = true;
       bloompassimage.UsageFlags = vk::ImageUsageFlagBits::eStorage | vk::ImageUsageFlagBits::eSampled | vk::ImageUsageFlagBits::eTransferSrc | vk::ImageUsageFlagBits::eTransferDst;
       bloompassimage.Format = SwapChain.m_ImageFormat;
@@ -894,7 +894,7 @@ namespace Oxylus {
       bloompassimage.TransitionLayoutAtCreate = true;
       bloompassimage.SamplerAddressMode = vk::SamplerAddressMode::eClampToEdge;
       bloompassimage.SamplerBorderColor = vk::BorderColor::eFloatTransparentBlack;
-      bloompassimage.MinFiltering = vk::Filter::eNearest;
+      bloompassimage.MinFiltering = vk::Filter::eLinear;
       bloompassimage.MagFiltering = vk::Filter::eLinear;
       bloompassimage.MipLevels = lodCount;
       s_FrameBuffers.BloomDownsampleImage.Create(bloompassimage);
@@ -1258,68 +1258,55 @@ namespace Oxylus {
         imageMemoryBarrier.subresourceRange.aspectMask = vk::ImageAspectFlagBits::eColor;
         imageMemoryBarrier.subresourceRange.levelCount = lodCount;
         imageMemoryBarrier.subresourceRange.layerCount = 1;
+        //imageMemoryBarrier.subresourceRange.baseMipLevel = 0;
 
         s_Pipelines.BloomPipeline.BindPipeline(commandBuffer.Get());
         pushConst.Stage.x = PREFILTER_STAGE;
-        commandBuffer.PushConstants(layout, vk::ShaderStageFlagBits::eCompute, 0, sizeof pushConst, &pushConst);
+        commandBuffer.PushConstants(layout, vSS::eCompute, 0, sizeof pushConst, &pushConst);
 
         s_Pipelines.BloomPipeline.BindDescriptorSets(commandBuffer.Get(), {s_BloomDescriptorSet.Get()});
         IVec3 size = VulkanImage::GetMipMapLevelSize(s_FrameBuffers.BloomDownsampleImage.GetWidth(), s_FrameBuffers.BloomDownsampleImage.GetHeight(), 1, 0);
         commandBuffer.Dispatch((size.x + 8 - 1) / 8, (size.y + 8 - 1) / 8, 1);
-        commandBuffer.Get().pipelineBarrier(vk::PipelineStageFlagBits::eComputeShader,
-          vk::PipelineStageFlagBits::eComputeShader,
-          vk::DependencyFlagBits::eByRegion,
-          0,
-          nullptr,
-          0,
-          nullptr,
-          1,
-          &imageMemoryBarrier);
+        commandBuffer.Get().pipelineBarrier(vPS::eComputeShader, vPS::eComputeShader, vDF::eByRegion, 0, nullptr, 0, nullptr, 1, &imageMemoryBarrier);
 
-        //Downsample
+        // Downsample
         pushConst.Stage.x = DOWNSAMPLE_STAGE;
+        commandBuffer.PushConstants(layout, vSS::eCompute, 0, sizeof pushConst, &pushConst);
         for (int32_t i = 1; i < lodCount; i++) {
           size = VulkanImage::GetMipMapLevelSize(s_FrameBuffers.BloomDownsampleImage.GetWidth(), s_FrameBuffers.BloomDownsampleImage.GetHeight(), 1, i);
 
-          //Set lod in shader
+          // Set lod in shader
           pushConst.Stage.y = i - 1;
+          //imageMemoryBarrier.subresourceRange.baseMipLevel = i;
 
           s_Pipelines.BloomPipeline.BindDescriptorSets(commandBuffer.Get(), {s_BloomDescriptorSet.Get()});
-          commandBuffer.PushConstants(layout, vk::ShaderStageFlagBits::eCompute, 0, sizeof pushConst, &pushConst);
+          commandBuffer.PushConstants(layout, vSS::eCompute, 0, sizeof pushConst, &pushConst);
           commandBuffer.Dispatch((size.x + 8 - 1) / 8, (size.y + 8 - 1) / 8, 1);
-          commandBuffer.Get().pipelineBarrier(vk::PipelineStageFlagBits::eComputeShader,
-            vk::PipelineStageFlagBits::eComputeShader,
-            vk::DependencyFlagBits::eByRegion,
-            0,
-            nullptr,
-            0,
-            nullptr,
-            1,
-            &imageMemoryBarrier);
+          commandBuffer.Get().pipelineBarrier(vPS::eComputeShader, vPS::eComputeShader, vDF::eByRegion, 0, nullptr, 0, nullptr, 1, &imageMemoryBarrier);
         }
 
-        //Upsample
+        // Upsample
         pushConst.Stage.x = UPSAMPLE_STAGE;
-        commandBuffer.PushConstants(layout, vk::ShaderStageFlagBits::eCompute, 0, sizeof pushConst, &pushConst);
 
         size = VulkanImage::GetMipMapLevelSize(s_FrameBuffers.BloomUpsampleImage.GetWidth(), s_FrameBuffers.BloomUpsampleImage.GetHeight(), 1, lodCount - 1);
         pushConst.Stage.y = lodCount - 1;
-        commandBuffer.PushConstants(layout, vk::ShaderStageFlagBits::eCompute, 0, sizeof pushConst, &pushConst);
+        commandBuffer.PushConstants(layout, vSS::eCompute, 0, sizeof pushConst, &pushConst);
 
-        imageMemoryBarrier.subresourceRange.levelCount = s_FrameBuffers.BloomUpsampleImage.GetDesc().MipLevels;
         imageMemoryBarrier.image = s_FrameBuffers.BloomUpsampleImage.GetImage();
+        //imageMemoryBarrier.subresourceRange.baseMipLevel = lodCount - 1;
         commandBuffer.Dispatch((size.x + 8 - 1) / 8, (size.y + 8 - 1) / 8, 1);
-        commandBuffer.Get().pipelineBarrier(vk::PipelineStageFlagBits::eComputeShader, vk::PipelineStageFlagBits::eComputeShader, {}, 0, nullptr, 0, nullptr, 1, &imageMemoryBarrier);
+        commandBuffer.Get().pipelineBarrier(vPS::eComputeShader, vPS::eComputeShader, {}, 0, nullptr, 0, nullptr, 1, &imageMemoryBarrier);
 
         for (int32_t i = lodCount - 1; i >= 0; i--) {
           size = VulkanImage::GetMipMapLevelSize(s_FrameBuffers.BloomUpsampleImage.GetWidth(), s_FrameBuffers.BloomUpsampleImage.GetHeight(), 1, i);
 
-          //Set lod in shader
+          // Set lod in shader
           pushConst.Stage.y = i;
 
-          commandBuffer.Get().pipelineBarrier(vk::PipelineStageFlagBits::eComputeShader, vk::PipelineStageFlagBits::eComputeShader, vk::DependencyFlagBits::eByRegion, 0, nullptr, 0, nullptr, 1, &imageMemoryBarrier);
-          commandBuffer.PushConstants(layout, vk::ShaderStageFlagBits::eCompute, 0, sizeof pushConst, &pushConst);
+          //imageMemoryBarrier.subresourceRange.baseMipLevel = i;
+          commandBuffer.PushConstants(layout, vSS::eCompute, 0, sizeof pushConst, &pushConst);
           commandBuffer.Dispatch((size.x + 8 - 1) / 8, (size.y + 8 - 1) / 8, 1);
+          commandBuffer.Get().pipelineBarrier(vPS::eComputeShader, vPS::eComputeShader, vDF::eByRegion, 0, nullptr, 0, nullptr, 1, &imageMemoryBarrier);
         }
       },
       clearValues,

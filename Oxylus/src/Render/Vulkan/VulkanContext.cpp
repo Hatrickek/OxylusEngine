@@ -18,7 +18,7 @@ namespace Oxylus {
 
     std::vector<std::string> enabledInstanceExtensions = {};
 #if (defined(VK_USE_PLATFORM_IOS_MVK) || defined(VK_USE_PLATFORM_MACOS_MVK))
-	// SRS - When running on iOS/macOS with MoltenVK, enable VK_KHR_get_physical_device_properties2 if not already enabled by the example (required by VK_KHR_portability_subset)
+	// SRS - When running on iOS/macOS with MoltenVK, enable VK_KHR_get_physical_device_properties2 if not already enabled (required by VK_KHR_portability_subset)
     enabledInstanceExtensions.emplace_back(VK_KHR_GET_PHYSICAL_DEVICE_PROPERTIES_2_EXTENSION_NAME);
     enabledInstanceExtensions.emplace_back(VK_KHR_PORTABILITY_ENUMERATION_EXTENSION_NAME);
 #endif
@@ -87,10 +87,16 @@ namespace Oxylus {
     Context.DeviceMemoryProperties = Context.PhysicalDevice.getMemoryProperties();
 
     // Logical Device
-    vk::PhysicalDeviceVulkan13Features features{};
-    features.maintenance4 = VK_TRUE;
+    // TODO: Check if device supports these
+    vk::PhysicalDeviceVulkan13Features features13 = {};
+    features13.maintenance4 = VK_TRUE;
+    vk::PhysicalDeviceVulkan12Features features12 = {};
+    features12.descriptorIndexing = VK_TRUE;
+    features12.shaderInputAttachmentArrayNonUniformIndexing = VK_TRUE;
+    features12.shaderSampledImageArrayNonUniformIndexing = VK_TRUE;
+    features12.shaderUniformBufferArrayNonUniformIndexing = VK_TRUE;
+    features12.pNext = &features13;
     Context.DeviceFeatures = Context.PhysicalDevice.getFeatures();
-    //TODO: Check if device supports these
     Context.DeviceFeatures.shaderUniformBufferArrayDynamicIndexing = true;
     Context.DeviceFeatures.shaderSampledImageArrayDynamicIndexing = true;
     Context.DeviceFeatures.shaderStorageImageArrayDynamicIndexing = true;
@@ -99,7 +105,7 @@ namespace Oxylus {
       VulkanQueue.graphicsQueueFamilyIndex,
       ContextUtils::GetDeviceExtensions(),
       &Context.DeviceFeatures,
-      &features);
+      &features12);
 
     // function pointer specialization for device
     VULKAN_HPP_DEFAULT_DISPATCHER.init(Context.Device);
