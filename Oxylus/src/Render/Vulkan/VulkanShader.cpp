@@ -124,6 +124,11 @@ namespace Oxylus {
     if (m_ShaderDesc.Name.empty())
       m_ShaderDesc.Name = std::filesystem::path(m_ShaderDesc.VertexPath).filename().string();
 
+    // Clear caches
+    m_VulkanSourceCode.clear();
+    m_VulkanFilePath.clear();
+    m_VulkanSPIRV.clear();
+
     timer.Print(fmt::format("Shader {0} loaded", m_ShaderDesc.Name));
 
     m_Loaded = true;
@@ -207,7 +212,7 @@ namespace Oxylus {
 
   void VulkanShader::Reload() {
     VulkanRenderer::WaitDeviceIdle();
-    //Delete compiled files
+    // Delete compiled files
     for (const auto& [stage, flag] : m_ShaderStage) {
       const std::filesystem::path cacheDirectory = GetCacheDirectory();
       std::filesystem::path cachedPath = GetCachedDirectory(stage, cacheDirectory);

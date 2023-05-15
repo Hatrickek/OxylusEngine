@@ -7,8 +7,6 @@
 
 #include <vulkan/vulkan.hpp>
 
-#include "Core/UUID.h"
-
 namespace Oxylus {
   enum class DescriptorPropertyType {
     None = 0,
@@ -98,10 +96,6 @@ namespace Oxylus {
       return m_ShaderDesc;
     }
 
-    const UUID& GetID() const {
-      return m_ID;
-    }
-    
   private:
     void CreateShader();
     std::filesystem::path GetCachedDirectory(vk::ShaderStageFlagBits stage, std::filesystem::path cacheDirectory);
@@ -117,6 +111,5 @@ namespace Oxylus {
     std::function<void()> m_OnReloadBeginEvent;
     std::function<void()> m_OnReloadEndEvent;
     bool m_Loaded = false;
-    UUID m_ID;
   };
 }
