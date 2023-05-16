@@ -44,7 +44,7 @@ Or with `cmake -B ./Build -DCMAKE_BUILD_TYPE=Release -DCMAKE_CXX_COMPILER=clang+
 - [entt](https://github.com/skypjack/entt)
 - [Dear ImGui](https://github.com/ocornut/imgui)
 - [GLM](https://github.com/g-truc/glm)
-- [Joly](https://github.com/jrouwe/JoltPhysics)
+- [Jolt](https://github.com/jrouwe/JoltPhysics)
 - [MiniAudio](https://github.com/mackron/miniaudio)
 - [Tracy](https://github.com/wolfpld/tracy)
 - [ryml](https://github.com/biojppm/rapidyaml)

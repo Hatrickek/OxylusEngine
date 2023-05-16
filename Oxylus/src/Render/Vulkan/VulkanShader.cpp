@@ -5,11 +5,13 @@
 #include <filesystem>
 #include <fstream>
 #include <fmt/format.h>
+#include <spirv_reflect.h>
 
 #include "VulkanRenderer.h"
 #include "Render/ShaderLibrary.h"
 #include "Utils/Profiler.h"
 #include "Utils/FileUtils.h"
+#include "Utils/VulkanUtils.h"
 
 namespace Oxylus {
   struct Includer : shaderc::CompileOptions::IncluderInterface {
@@ -64,6 +66,11 @@ namespace Oxylus {
     return "";
   }
 
+  std::filesystem::path VulkanShader::GetCachedDirectory(vk::ShaderStageFlagBits stage,
+                                                         std::filesystem::path cacheDirectory) {
+    return cacheDirectory / (m_VulkanFilePath[stage].filename().string() + GetCompiledFileExtension(stage));
+  }
+
   static shaderc_shader_kind GLShaderStageToShaderC(vk::ShaderStageFlagBits stage) {
     switch (stage) {
       case vk::ShaderStageFlagBits::eVertex: return shaderc_glsl_vertex_shader;
@@ -111,9 +118,7 @@ namespace Oxylus {
     options.SetOptimizationLevel(shaderc_optimization_level_zero);
 #endif
     options.SetIncluder(std::make_unique<Includer>());
-    m_VulkanSPIRV.clear();
 
-    std::filesystem::path cacheDirectory = GetCacheDirectory();
     for (auto&& [stage, source] : m_VulkanSourceCode) {
       ReadOrCompile(stage, source, options);
     }
@@ -123,6 +128,31 @@ namespace Oxylus {
 
     if (m_ShaderDesc.Name.empty())
       m_ShaderDesc.Name = std::filesystem::path(m_ShaderDesc.VertexPath).filename().string();
+
+    // Reflection and layouts
+    std::vector<ReflectionData> reflectionData = {};
+
+    if (!m_VulkanSPIRV[vSS::eVertex].empty()) {
+      const auto vertexReflectionData = GetReflectionData(m_VulkanSPIRV[vSS::eVertex]);
+      reflectionData.emplace_back(vertexReflectionData);
+    }
+    if (!m_VulkanSPIRV[vSS::eFragment].empty()) {
+      const auto fragReflectionData = GetReflectionData(m_VulkanSPIRV[vSS::eFragment]);
+      reflectionData.emplace_back(fragReflectionData);
+    }
+    if (!m_VulkanSPIRV[vSS::eCompute].empty()) {
+      const auto compReflectionData = GetReflectionData(m_VulkanSPIRV[vSS::eCompute]);
+      reflectionData.emplace_back(compReflectionData);
+    }
+
+    m_DescriptorSetLayouts = CreateLayout(reflectionData);
+
+    m_PipelineLayout = CreatePipelineLayout(m_DescriptorSetLayouts, reflectionData);
+
+    // Free modules
+    for (auto& module : m_ReflectModules)
+      spvReflectDestroyShaderModule(&module);
+    m_ReflectModules.clear();
 
     // Clear caches
     m_VulkanSourceCode.clear();
@@ -134,14 +164,9 @@ namespace Oxylus {
     m_Loaded = true;
   }
 
-  std::filesystem::path VulkanShader::GetCachedDirectory(vk::ShaderStageFlagBits stage,
-                                                         std::filesystem::path cacheDirectory) {
-    return cacheDirectory / (m_VulkanFilePath[stage].filename().string() + GetCompiledFileExtension(stage));
-  }
-
   void VulkanShader::ReadOrCompile(vk::ShaderStageFlagBits stage,
                                    const std::string& source,
-                                   shaderc::CompileOptions options) {
+                                   const shaderc::CompileOptions& options) {
     std::filesystem::path cacheDirectory = GetCacheDirectory();
     std::filesystem::path cachedPath = GetCachedDirectory(stage, cacheDirectory);
     std::ifstream in(cachedPath, std::ios::in | std::ios::binary);
@@ -193,6 +218,86 @@ namespace Oxylus {
       OX_CORE_ERROR("Shader can't have an empty entry point: {} ", m_VulkanFilePath[stage].string());
     }
     m_ShaderStage[stage].pName = m_ShaderDesc.EntryPoint.c_str();
+  }
+
+  VulkanShader::ReflectionData VulkanShader::GetReflectionData(const std::vector<uint32_t>& spirvBytes) {
+    // Generate reflection data for a shader
+    SpvReflectShaderModule module;
+    SpvReflectResult result = spvReflectCreateShaderModule(spirvBytes.size(), spirvBytes.data(), &module);
+    OX_CORE_ASSERT(result == SPV_REFLECT_RESULT_SUCCESS);
+
+    // Descriptor sets
+    uint32_t count = 0;
+    result = spvReflectEnumerateDescriptorSets(&module, &count, nullptr);
+    OX_CORE_ASSERT(result == SPV_REFLECT_RESULT_SUCCESS);
+    std::vector<SpvReflectDescriptorSet*> descriptorSets(count);
+    result = spvReflectEnumerateDescriptorSets(&module, &count, descriptorSets.data());
+    OX_CORE_ASSERT(result == SPV_REFLECT_RESULT_SUCCESS);
+
+    // Block variables
+    result = spvReflectEnumeratePushConstantBlocks(&module, &count, nullptr);
+    OX_CORE_ASSERT(result == SPV_REFLECT_RESULT_SUCCESS);
+    std::vector<SpvReflectBlockVariable*> blockVariables(count);
+    result = spvReflectEnumeratePushConstantBlocks(&module, &count, blockVariables.data());
+    OX_CORE_ASSERT(result == SPV_REFLECT_RESULT_SUCCESS);
+
+    m_ReflectModules.emplace_back(module);
+
+    return {
+      descriptorSets,
+      blockVariables,
+      (vk::ShaderStageFlagBits)module.shader_stage
+    };
+  }
+
+  std::vector<vk::DescriptorSetLayout> VulkanShader::CreateLayout(const std::vector<ReflectionData>& reflectionData) const {
+    std::vector<std::vector<vk::DescriptorSetLayoutBinding>> layoutBindings = {};
+    for (const auto& [data, _, stage] : reflectionData) {
+      for (const auto& descriptor : data) {
+        std::vector<vk::DescriptorSetLayoutBinding> bindings = {};
+        for (uint32_t i = 0; i < descriptor->binding_count; i++) {
+          vk::DescriptorSetLayoutBinding binding;
+          binding.binding = descriptor->bindings[i]->binding;
+          binding.descriptorType = (vk::DescriptorType)descriptor->bindings[i]->descriptor_type;
+          binding.stageFlags = stage;
+          binding.descriptorCount = 1;
+          bindings.emplace_back(binding);
+        }
+        layoutBindings.emplace_back(bindings);
+      }
+    }
+
+    std::vector<vk::DescriptorSetLayout> layouts;
+
+    for (auto& bindings : layoutBindings) {
+      vk::DescriptorSetLayoutCreateInfo descriptorSetLayoutCreateInfo;
+      descriptorSetLayoutCreateInfo.bindingCount = (uint32_t)bindings.size();
+      descriptorSetLayoutCreateInfo.pBindings = bindings.data();
+      vk::DescriptorSetLayout setLayout;
+      const auto result = VulkanContext::GetDevice().createDescriptorSetLayout(&descriptorSetLayoutCreateInfo, nullptr, &setLayout);
+      VulkanUtils::CheckResult(result);
+      layouts.emplace_back(setLayout);
+    }
+
+    return layouts;
+  }
+
+  vk::PipelineLayout VulkanShader::CreatePipelineLayout(const std::vector<vk::DescriptorSetLayout>& descriptorSetLayouts,
+                                                        const std::vector<ReflectionData>& reflectionData) const {
+    vk::PipelineLayoutCreateInfo createInfo;
+    createInfo.setLayoutCount = (uint32_t)descriptorSetLayouts.size();
+    createInfo.pSetLayouts = descriptorSetLayouts.data();
+    std::vector<vk::PushConstantRange> pushConstantRanges = {};
+    for (auto& data : reflectionData) {
+      for (auto& block : data.BlockVariables) {
+        pushConstantRanges.emplace_back(vk::PushConstantRange{data.StageFlag, block->offset, block->size});
+      }
+    }
+    createInfo.pPushConstantRanges = pushConstantRanges.data();
+    createInfo.pushConstantRangeCount = pushConstantRanges.size();
+    const auto result = VulkanContext::GetDevice().createPipelineLayout(createInfo);
+    VulkanUtils::CheckResult(result.result);
+    return result.value;
   }
 
   void VulkanShader::Unload() {

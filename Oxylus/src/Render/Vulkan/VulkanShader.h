@@ -7,6 +7,8 @@
 
 #include <vulkan/vulkan.hpp>
 
+#include "spirv_reflect.h"
+
 namespace Oxylus {
   enum class DescriptorPropertyType {
     None = 0,
@@ -70,37 +72,21 @@ namespace Oxylus {
 
     void UpdateDescriptorSets() const;
 
-    unsigned GetStageCount() const {
-      return static_cast<uint32_t>(m_ShaderStage.size());
-    }
+    unsigned GetStageCount() const { return static_cast<uint32_t>(m_ShaderStage.size()); }
 
-    vk::PipelineShaderStageCreateInfo GetVertexShaderStage() {
-      return m_ShaderStage[vk::ShaderStageFlagBits::eVertex];
-    }
+    vk::PipelineShaderStageCreateInfo GetVertexShaderStage() { return m_ShaderStage[vk::ShaderStageFlagBits::eVertex]; }
 
-    vk::PipelineShaderStageCreateInfo GetComputeShaderStage() {
-      return m_ShaderStage[vk::ShaderStageFlagBits::eCompute];
-    }
+    vk::PipelineShaderStageCreateInfo GetComputeShaderStage() { return m_ShaderStage[vk::ShaderStageFlagBits::eCompute]; }
 
-    vk::PipelineShaderStageCreateInfo GetFragmentShaderStage() {
-      return m_ShaderStage[vk::ShaderStageFlagBits::eFragment];
-    }
+    vk::PipelineShaderStageCreateInfo GetFragmentShaderStage() { return m_ShaderStage[vk::ShaderStageFlagBits::eFragment]; }
 
-    const std::string& GetName() const {
-      return m_ShaderDesc.Name;
-    }
+    const std::string& GetName() const { return m_ShaderDesc.Name; }
 
     std::vector<vk::PipelineShaderStageCreateInfo>& GetShaderStages();
 
-    const ShaderCI& GetShaderDesc() const {
-      return m_ShaderDesc;
-    }
+    const ShaderCI& GetShaderDesc() const { return m_ShaderDesc; }
 
   private:
-    void CreateShader();
-    std::filesystem::path GetCachedDirectory(vk::ShaderStageFlagBits stage, std::filesystem::path cacheDirectory);
-    void ReadOrCompile(vk::ShaderStageFlagBits stage, const std::string& source, shaderc::CompileOptions options);
-    void CreateShaderModule(vk::ShaderStageFlagBits stage, const std::vector<unsigned>& source);
     std::unordered_map<vk::ShaderStageFlagBits, std::vector<uint32_t>> m_VulkanSPIRV;
     std::unordered_map<vk::ShaderStageFlagBits, std::string> m_VulkanSourceCode;
     std::unordered_map<vk::ShaderStageFlagBits, std::filesystem::path> m_VulkanFilePath;
@@ -111,5 +97,29 @@ namespace Oxylus {
     std::function<void()> m_OnReloadBeginEvent;
     std::function<void()> m_OnReloadEndEvent;
     bool m_Loaded = false;
+
+
+    void CreateShader();
+    void ReadOrCompile(vk::ShaderStageFlagBits stage, const std::string& source, const shaderc::CompileOptions& options);
+    void CreateShaderModule(vk::ShaderStageFlagBits stage, const std::vector<unsigned>& source);
+
+    std::filesystem::path GetCachedDirectory(vk::ShaderStageFlagBits stage, std::filesystem::path cacheDirectory);
+
+    // Layouts
+    std::vector<vk::DescriptorSetLayout> m_DescriptorSetLayouts = {};
+    vk::PipelineLayout m_PipelineLayout;
+
+    // Reflection
+    struct ReflectionData {
+      std::vector<SpvReflectDescriptorSet*> Bindings;
+      std::vector<SpvReflectBlockVariable*> BlockVariables;
+      vk::ShaderStageFlagBits StageFlag;
+    };
+
+    std::vector<SpvReflectShaderModule> m_ReflectModules = {};
+
+    ReflectionData GetReflectionData(const std::vector<uint32_t>& spirvBytes);
+    std::vector<vk::DescriptorSetLayout> CreateLayout(const std::vector<ReflectionData>& reflectionData) const;
+    vk::PipelineLayout CreatePipelineLayout(const std::vector<vk::DescriptorSetLayout>& descriptorSetLayouts, const std::vector<ReflectionData>& reflectionData) const;
   };
 }
