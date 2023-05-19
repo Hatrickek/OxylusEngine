@@ -14,41 +14,12 @@
 namespace Oxylus {
   vk::PipelineCache VulkanPipeline::s_Cache;
 
-  static std::pair<vk::PipelineLayout, std::vector<vk::DescriptorSetLayout>> CreatePipelineLayout(
-    const PipelineDescription& pipDesc) {
-    const auto& LogicalDevice = VulkanContext::Context.Device;
-
-    vk::PipelineLayoutCreateInfo pipelineLayoutCI;
-
-    std::vector<vk::DescriptorSetLayout> descriptorSetLayouts;
-
-    for (auto& bindings : pipDesc.SetDescriptions) {
-      vk::DescriptorSetLayoutCreateInfo descriptorSetLayoutCreateInfo;
-      std::vector<vk::DescriptorSetLayoutBinding> binds;
-      for (auto& bind : bindings) {
-        binds.emplace_back(bind.Binding, bind.DescriptorType, bind.DescriptorCount, bind.ShaderStage);
-      }
-      descriptorSetLayoutCreateInfo.pBindings = binds.data();
-      descriptorSetLayoutCreateInfo.bindingCount = (uint32_t)binds.size();
-
-      descriptorSetLayouts.emplace_back(
-        LogicalDevice.createDescriptorSetLayout(descriptorSetLayoutCreateInfo, nullptr).value);
-    }
-
-    pipelineLayoutCI.pSetLayouts = descriptorSetLayouts.data();
-    pipelineLayoutCI.setLayoutCount = (uint32_t)descriptorSetLayouts.size();
-
-    if (!pipDesc.PushConstantRanges.empty()) {
-      pipelineLayoutCI.pushConstantRangeCount = (uint32_t)pipDesc.PushConstantRanges.size();
-      pipelineLayoutCI.pPushConstantRanges = pipDesc.PushConstantRanges.data();
-    }
-    return {LogicalDevice.createPipelineLayout(pipelineLayoutCI, nullptr).value, descriptorSetLayouts};
-  }
-
   void VulkanPipeline::CreateGraphicsPipeline(PipelineDescription& pipelineSpecification) {
     const auto& LogicalDevice = VulkanContext::Context.Device;
 
     m_PipelineDescription = pipelineSpecification;
+
+    m_Shader = pipelineSpecification.Shader;
 
     std::vector<vk::AttachmentDescription> attachmentDescriptions;
 
@@ -119,16 +90,9 @@ namespace Oxylus {
     else {
       m_RenderPass = GetDesc().RenderPass;
     }
-    if (static_cast<uint32_t>(pipelineSpecification.PushConstantRanges.size()) > 0) {
-      if (static_cast<uint32_t>(pipelineSpecification.PushConstantRanges.size()) > 32) {
-        OX_CORE_ERROR("CreateGraphicsPipeline(): Cannot have more than 32 push constant ranges. Passed count: {}",
-          static_cast<uint32_t>(pipelineSpecification.PushConstantRanges.size()));
-      }
-    }
 
-    auto [fst, snd] = CreatePipelineLayout(m_PipelineDescription);
-    m_Layout = fst;
-    m_DescriptorSetLayouts = snd;
+    m_Layout = m_Shader->GetPipelineLayout();
+    m_DescriptorSetLayouts = m_Shader->GetDescriptorSetLayouts();
 
     vk::GraphicsPipelineCreateInfo PipelineCI;
     PipelineCI.stageCount = pipelineSpecification.Shader->GetStageCount();
@@ -322,13 +286,13 @@ namespace Oxylus {
   void VulkanPipeline::CreateComputePipeline(const PipelineDescription& pipelineSpecification) {
     const auto& LogicalDevice = VulkanContext::Context.Device;
     m_PipelineDescription = pipelineSpecification;
+    m_Shader = pipelineSpecification.Shader;
 
     vk::ComputePipelineCreateInfo PipelineCI;
     PipelineCI.stage = pipelineSpecification.Shader->GetComputeShaderStage();
 
-    auto [fst, scnd] = CreatePipelineLayout(pipelineSpecification);
-    m_Layout = fst;
-    m_DescriptorSetLayouts = scnd;
+    m_Layout = m_Shader->GetPipelineLayout();
+    m_DescriptorSetLayouts = m_Shader->GetDescriptorSetLayouts();
 
     PipelineCI.layout = m_Layout;
     const auto res = LogicalDevice.createComputePipeline(s_Cache, PipelineCI);
@@ -336,7 +300,7 @@ namespace Oxylus {
     m_Pipeline = res.value;
     m_IsCompute = true;
 
-    //Connect pipeline with shader
+    // Connect pipeline with shader
     pipelineSpecification.Shader->OnReloadBegin([this] {
       Destroy();
     });
@@ -354,14 +318,13 @@ namespace Oxylus {
   void VulkanPipeline::BindDescriptorSets(const vk::CommandBuffer& commandBuffer,
                                           const std::vector<vk::DescriptorSet>& descriptorSets,
                                           uint32_t firstSet,
-                                          uint32_t setCount,
                                           uint32_t dynamicOffsetCount,
                                           const uint32_t* pDynamicOffsets) const {
     const auto bindPoint = m_IsCompute ? vk::PipelineBindPoint::eCompute : vk::PipelineBindPoint::eGraphics;
     commandBuffer.bindDescriptorSets(bindPoint,
       m_Layout,
       firstSet,
-      setCount,
+      (uint32_t)descriptorSets.size(),
       descriptorSets.data(),
       dynamicOffsetCount,
       pDynamicOffsets);

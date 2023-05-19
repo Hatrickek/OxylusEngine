@@ -126,28 +126,35 @@ namespace Oxylus {
       CreateShaderModule(stage, source);
     }
 
-    if (m_ShaderDesc.Name.empty())
+    if (m_ShaderDesc.Name.empty()) {
       m_ShaderDesc.Name = std::filesystem::path(m_ShaderDesc.VertexPath).filename().string();
+    }
 
     // Reflection and layouts
-    std::vector<ReflectionData> reflectionData = {};
+    std::vector<std::vector<vk::DescriptorSetLayoutBinding>> layoutBindings{10};
 
     if (!m_VulkanSPIRV[vSS::eVertex].empty()) {
-      const auto vertexReflectionData = GetReflectionData(m_VulkanSPIRV[vSS::eVertex]);
-      reflectionData.emplace_back(vertexReflectionData);
+      auto data = GetReflectionData(m_VulkanSPIRV[vSS::eVertex]);
+      CreateLayoutBindings(data, layoutBindings);
+      m_ReflectionData.emplace_back(data);
     }
     if (!m_VulkanSPIRV[vSS::eFragment].empty()) {
-      const auto fragReflectionData = GetReflectionData(m_VulkanSPIRV[vSS::eFragment]);
-      reflectionData.emplace_back(fragReflectionData);
+      auto data = GetReflectionData(m_VulkanSPIRV[vSS::eFragment]);
+      CreateLayoutBindings(data, layoutBindings);
+      m_ReflectionData.emplace_back(data);
     }
     if (!m_VulkanSPIRV[vSS::eCompute].empty()) {
-      const auto compReflectionData = GetReflectionData(m_VulkanSPIRV[vSS::eCompute]);
-      reflectionData.emplace_back(compReflectionData);
+      auto data = GetReflectionData(m_VulkanSPIRV[vSS::eCompute]);
+      CreateLayoutBindings(data, layoutBindings);
+      m_ReflectionData.emplace_back(data);
     }
 
-    m_DescriptorSetLayouts = CreateLayout(reflectionData);
+    if (layoutBindings.empty())
+      layoutBindings.emplace_back().emplace_back();
 
-    m_PipelineLayout = CreatePipelineLayout(m_DescriptorSetLayouts, reflectionData);
+    m_DescriptorSetLayouts = CreateLayout(layoutBindings);
+
+    m_PipelineLayout = CreatePipelineLayout(m_DescriptorSetLayouts);
 
     // Free modules
     for (auto& module : m_ReflectModules)
@@ -223,56 +230,90 @@ namespace Oxylus {
   VulkanShader::ReflectionData VulkanShader::GetReflectionData(const std::vector<uint32_t>& spirvBytes) {
     // Generate reflection data for a shader
     SpvReflectShaderModule module;
-    SpvReflectResult result = spvReflectCreateShaderModule(spirvBytes.size(), spirvBytes.data(), &module);
+    SpvReflectResult result = spvReflectCreateShaderModule(spirvBytes.size() * 4, spirvBytes.data(), &module);
     OX_CORE_ASSERT(result == SPV_REFLECT_RESULT_SUCCESS);
 
     // Descriptor sets
-    uint32_t count = 0;
-    result = spvReflectEnumerateDescriptorSets(&module, &count, nullptr);
+    uint32_t setCount = 0;
+    result = spvReflectEnumerateDescriptorSets(&module, &setCount, nullptr);
     OX_CORE_ASSERT(result == SPV_REFLECT_RESULT_SUCCESS);
-    std::vector<SpvReflectDescriptorSet*> descriptorSets(count);
-    result = spvReflectEnumerateDescriptorSets(&module, &count, descriptorSets.data());
+    std::vector<SpvReflectDescriptorSet*> descriptorSets(setCount);
+    result = spvReflectEnumerateDescriptorSets(&module, &setCount, descriptorSets.data());
     OX_CORE_ASSERT(result == SPV_REFLECT_RESULT_SUCCESS);
 
     // Block variables
-    result = spvReflectEnumeratePushConstantBlocks(&module, &count, nullptr);
+    uint32_t blockCount = 0;
+    result = spvReflectEnumeratePushConstantBlocks(&module, &blockCount, nullptr);
     OX_CORE_ASSERT(result == SPV_REFLECT_RESULT_SUCCESS);
-    std::vector<SpvReflectBlockVariable*> blockVariables(count);
-    result = spvReflectEnumeratePushConstantBlocks(&module, &count, blockVariables.data());
+    std::vector<SpvReflectBlockVariable*> blockVariables(blockCount);
+    result = spvReflectEnumeratePushConstantBlocks(&module, &blockCount, blockVariables.data());
     OX_CORE_ASSERT(result == SPV_REFLECT_RESULT_SUCCESS);
 
     m_ReflectModules.emplace_back(module);
 
-    return {
-      descriptorSets,
-      blockVariables,
-      (vk::ShaderStageFlagBits)module.shader_stage
-    };
-  }
-
-  std::vector<vk::DescriptorSetLayout> VulkanShader::CreateLayout(const std::vector<ReflectionData>& reflectionData) const {
-    std::vector<std::vector<vk::DescriptorSetLayoutBinding>> layoutBindings = {};
-    for (const auto& [data, _, stage] : reflectionData) {
-      for (const auto& descriptor : data) {
-        std::vector<vk::DescriptorSetLayoutBinding> bindings = {};
-        for (uint32_t i = 0; i < descriptor->binding_count; i++) {
-          vk::DescriptorSetLayoutBinding binding;
-          binding.binding = descriptor->bindings[i]->binding;
-          binding.descriptorType = (vk::DescriptorType)descriptor->bindings[i]->descriptor_type;
-          binding.stageFlags = stage;
-          binding.descriptorCount = 1;
-          bindings.emplace_back(binding);
-        }
-        layoutBindings.emplace_back(bindings);
+    ReflectionData data = {};
+    for (const auto& set : descriptorSets) {
+      auto& binding = data.Bindings.emplace_back(set->set, set->binding_count);
+      for (uint32_t i = 0; i < set->binding_count; i++) {
+        binding.bindings.emplace_back(
+          "",
+          set->bindings[i]->binding,
+          set->bindings[i]->set,
+          (vk::DescriptorType)set->bindings[i]->descriptor_type,
+          set->bindings[i]->count
+        );
       }
     }
+    for (uint32_t i = 0; i < blockCount; i++)
+      data.PushConstants.emplace_back(blockVariables[i]->size, blockVariables[i]->members[0].offset, (vk::ShaderStageFlagBits)module.shader_stage);
+    data.Stage |= (vk::ShaderStageFlagBits)module.shader_stage;
 
+    return data;
+  }
+
+  void VulkanShader::CreateLayoutBindings(const ReflectionData& reflectionData,
+                                          std::vector<std::vector<vk::DescriptorSetLayoutBinding>>& layoutBindings) {
+    const auto& [data, block, stage] = reflectionData;
+    for (const auto& descriptor : data) {
+      for (uint32_t i = 0; i < descriptor.binding_count; i++) {
+        // TODO(hatrickek): Temporary solution to not add bindings that are in both stages.
+        if (!layoutBindings.empty()) {
+          if (layoutBindings[descriptor.bindings[i].set].size() > descriptor.bindings[i].binding) {
+            if (layoutBindings[descriptor.bindings[i].set][i].binding == descriptor.bindings[i].binding) {
+              layoutBindings[descriptor.bindings[i].set][i].stageFlags |= stage;
+              continue;
+            }
+          }
+        }
+        // Layout binding
+        vk::DescriptorSetLayoutBinding binding;
+        binding.binding = descriptor.bindings[i].binding;
+        binding.descriptorCount = descriptor.bindings[i].count;
+        binding.descriptorType = (vk::DescriptorType)descriptor.bindings[i].descriptor_type;
+        binding.stageFlags = stage;
+        layoutBindings[descriptor.bindings[i].set].emplace_back(binding);
+
+        // WriteDescriptorSet Data
+        m_WriteDescriptorSets.reserve(40);
+        m_WriteDescriptorSets[descriptor.bindings[i].set].emplace_back(vk::WriteDescriptorSet{
+          {},
+          descriptor.bindings[i].binding,
+          0,
+          descriptor.bindings[i].count,
+          (vk::DescriptorType)descriptor.bindings[i].descriptor_type
+        });
+      }
+    }
+  }
+
+  std::vector<vk::DescriptorSetLayout> VulkanShader::CreateLayout(const std::vector<std::vector<vk::DescriptorSetLayoutBinding>>& layoutBindings) {
     std::vector<vk::DescriptorSetLayout> layouts;
 
-    for (auto& bindings : layoutBindings) {
+    for (auto& layoutBinding : layoutBindings) {
+      // Set layout
       vk::DescriptorSetLayoutCreateInfo descriptorSetLayoutCreateInfo;
-      descriptorSetLayoutCreateInfo.bindingCount = (uint32_t)bindings.size();
-      descriptorSetLayoutCreateInfo.pBindings = bindings.data();
+      descriptorSetLayoutCreateInfo.bindingCount = (uint32_t)layoutBinding.size();
+      descriptorSetLayoutCreateInfo.pBindings = layoutBinding.data();
       vk::DescriptorSetLayout setLayout;
       const auto result = VulkanContext::GetDevice().createDescriptorSetLayout(&descriptorSetLayoutCreateInfo, nullptr, &setLayout);
       VulkanUtils::CheckResult(result);
@@ -282,19 +323,16 @@ namespace Oxylus {
     return layouts;
   }
 
-  vk::PipelineLayout VulkanShader::CreatePipelineLayout(const std::vector<vk::DescriptorSetLayout>& descriptorSetLayouts,
-                                                        const std::vector<ReflectionData>& reflectionData) const {
+  vk::PipelineLayout VulkanShader::CreatePipelineLayout(const std::vector<vk::DescriptorSetLayout>& descriptorSetLayouts) const {
     vk::PipelineLayoutCreateInfo createInfo;
     createInfo.setLayoutCount = (uint32_t)descriptorSetLayouts.size();
     createInfo.pSetLayouts = descriptorSetLayouts.data();
     std::vector<vk::PushConstantRange> pushConstantRanges = {};
-    for (auto& data : reflectionData) {
-      for (auto& block : data.BlockVariables) {
-        pushConstantRanges.emplace_back(vk::PushConstantRange{data.StageFlag, block->offset, block->size});
-      }
-    }
+    for (const auto& data : m_ReflectionData)
+      for (const auto& block : data.PushConstants)
+        pushConstantRanges.emplace_back(data.Stage, block.Offset, block.Size);
     createInfo.pPushConstantRanges = pushConstantRanges.data();
-    createInfo.pushConstantRangeCount = pushConstantRanges.size();
+    createInfo.pushConstantRangeCount = (uint32_t)pushConstantRanges.size();
     const auto result = VulkanContext::GetDevice().createPipelineLayout(createInfo);
     VulkanUtils::CheckResult(result.result);
     return result.value;
@@ -337,16 +375,27 @@ namespace Oxylus {
     m_OnReloadEndEvent = event;
   }
 
-  void VulkanShader::UpdateDescriptorSets() const {
-    const auto& LogicalDevice = VulkanContext::Context.Device;
-
-    LogicalDevice.updateDescriptorSets(*DescriptorSets.data(), nullptr);
-  }
-
   std::vector<vk::PipelineShaderStageCreateInfo>& VulkanShader::GetShaderStages() {
     if (m_ShaderStages.empty()) {
       m_ShaderStages = {GetVertexShaderStage(), GetFragmentShaderStage()};
     }
     return m_ShaderStages;
+  }
+
+  std::vector<vk::WriteDescriptorSet> VulkanShader::GetWriteDescriptorSets(const vk::DescriptorSet& descriptorSet, uint32_t set) {
+    std::vector<vk::WriteDescriptorSet> writeDescriptorSets = {};
+    const auto& blankImage = VulkanImage::GetBlankImage();
+
+    for (const auto& writeSet : m_WriteDescriptorSets[set]) {
+      writeDescriptorSets.emplace_back(
+        descriptorSet,
+        writeSet.dstBinding,
+        0,
+        writeSet.descriptorCount,
+        writeSet.descriptorType,
+        &blankImage->GetDescImageInfo()
+      );
+    }
+    return writeDescriptorSets;
   }
 }

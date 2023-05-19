@@ -2,6 +2,8 @@
 
 #include <vulkan/vulkan.hpp>
 
+#include "VulkanShader.h"
+
 namespace Oxylus {
   class VulkanPipeline;
 
@@ -22,13 +24,10 @@ namespace Oxylus {
 
     VulkanDescriptorSet() = default;
 
-    VulkanDescriptorSet& Allocate(const std::vector<vk::DescriptorSetLayout>& layouts, uint32_t layoutIndex = 0);
-    VulkanDescriptorSet& CreateFromPipeline(const VulkanPipeline& pipeline, uint32_t layoutIndex = 0);
+    VulkanDescriptorSet& CreateFromShader(const Ref<VulkanShader>& shader, uint32_t set = 0);
     void Update(bool waitForQueueIdle = false) const;
-    void Destroy();
 
-    const vk::DescriptorSet& Get() const { return m_DescriptorSet; }
-
+    vk::DescriptorSet& Get() { return m_DescriptorSet; }
   private:
     vk::DescriptorSet m_DescriptorSet;
   };

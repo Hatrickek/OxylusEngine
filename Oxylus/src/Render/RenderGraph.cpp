@@ -46,8 +46,18 @@ namespace Oxylus {
     return *this;
   }
 
+  RenderGraphPass& RenderGraphPass::AddToGraph(const Ref<RenderGraph>& renderGraph) {
+    renderGraph->AddRenderPass(*this);
+    return *this;
+  }
+
   RenderGraphPass& RenderGraphPass::AddToGraphCompute(RenderGraph& renderGraph) {
     renderGraph.AddComputePass(*this);
+    return *this;
+  }
+
+  RenderGraphPass& RenderGraphPass::AddToGraphCompute(const Ref<RenderGraph>& renderGraph) {
+    renderGraph->AddComputePass(*this);
     return *this;
   }
 
@@ -89,11 +99,6 @@ namespace Oxylus {
       return;
     }
     m_RenderGraphPasses.erase(Name);
-  }
-
-  RenderGraph& RenderGraph::SetSwapchain(const SwapchainPass& swapchainPass) {
-    m_SwapchainPass = swapchainPass;
-    return *this;
   }
 
   bool RenderGraph::Update(VulkanSwapchain& swapchain, const uint32_t* currentFrame) {

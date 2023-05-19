@@ -238,17 +238,8 @@ target_link_libraries(${PROJECT_NAME} PUBLIC Vulkan::Vulkan)
 target_include_directories(${PROJECT_NAME} PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}/vendor/VulkanMemoryAllocator/include")
 
 # spirv-reflect
-set(SPIRV_REFLECT_EXECUTABLE OFF)
-set(SPIRV_REFLECT_EXAMPLES OFF)
-set(SPIRV_REFLECT_STATIC_LIB ON)
-FetchContent_Declare(
-        spirv-reflect
-        GIT_REPOSITORY "https://github.com/KhronosGroup/SPIRV-Reflect.git"
-        GIT_TAG "sdk-1.3.246.1"
-)
-FetchContent_MakeAvailable(spirv-reflect)
-target_include_directories(${PROJECT_NAME} PUBLIC "${spirv-reflect_SOURCE_DIR}")
-folder_dir_targets(spirv-reflect-static)
+target_include_directories(${PROJECT_NAME} PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}/vendor/spirv-reflect/")
+target_sources(${PROJECT_NAME} PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}/vendor/spirv-reflect/spirv_reflect.c")
 
 # spirv-headers
 set(BUILD_TESTS OFF)

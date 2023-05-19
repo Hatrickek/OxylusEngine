@@ -116,7 +116,7 @@ namespace Oxylus {
       glm::mat4 transform = glm::translate(glm::mat4(1.0f), particle.Position) * glm::mat4(glm::quat(particle.Rotation))
                             * glm::scale(glm::mat4(1.0f), particle.Size);
 
-      VulkanRenderer::SubmitQuad(transform, m_Properties.Texture, particle.Color);
+      //VulkanRenderer::SubmitQuad(transform, m_Properties.Texture, particle.Color);
     }
   }
 

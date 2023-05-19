@@ -117,7 +117,7 @@ namespace Oxylus {
     vk::ImageLayout DepthAttachmentLayout = vk::ImageLayout::eDepthStencilAttachmentOptimal;
     SubpassDescription SubpassDescription[4];
     uint32_t SubpassDependencyCount = 1;
-    Ref<VulkanShader> Shader;
+    Ref<VulkanShader> Shader = nullptr;
     DepthStencilDescription DepthSpec;
     uint8_t ColorAttachmentCount = 1;
     RasterizerDescription RasterizerDesc;
@@ -131,9 +131,6 @@ namespace Oxylus {
     uint32_t SampleMask = 0xFFFFFFFF;
     BlendStateDescription BlendStateDesc;
     std::vector<vk::DynamicState> DynamicStates = {vk::DynamicState::eViewport, vk::DynamicState::eScissor};
-    std::vector<std::vector<vk::DescriptorSetLayoutBinding>> DescriptorSetLayoutBindings;
-    std::vector<std::vector<SetDescription>> SetDescriptions;
-    std::vector<vk::PushConstantRange> PushConstantRanges;
     VulkanRenderPass RenderPass;
   };
 
@@ -152,7 +149,6 @@ namespace Oxylus {
     void BindDescriptorSets(const vk::CommandBuffer& commandBuffer,
                             const std::vector<vk::DescriptorSet>& descriptorSets,
                             uint32_t firstSet = 0,
-                            uint32_t setCount = 1,
                             uint32_t dynamicOffsetCount = 0,
                             const uint32_t* pDynamicOffsets = nullptr) const;
 
@@ -160,25 +156,13 @@ namespace Oxylus {
 
     void Destroy() const;
 
-    const vk::Pipeline& Get() const {
-      return m_Pipeline;
-    }
+    const vk::Pipeline& Get() const { return m_Pipeline; }
 
-    const PipelineDescription& GetDesc() const {
-      return m_PipelineDescription;
-    }
-
-    const VulkanRenderPass& GetRenderPass() const {
-      return m_RenderPass;
-    }
-
-    const vk::PipelineLayout& GetPipelineLayout() const {
-      return m_Layout;
-    }
-
-    const std::vector<vk::DescriptorSetLayout>& GetDescriptorSetLayout() const {
-      return m_DescriptorSetLayouts;
-    }
+    const PipelineDescription& GetDesc() const { return m_PipelineDescription; }
+    const VulkanRenderPass& GetRenderPass() const { return m_RenderPass; }
+    const vk::PipelineLayout& GetPipelineLayout() const { return m_Layout; }
+    const std::vector<vk::DescriptorSetLayout>& GetDescriptorSetLayout() const { return m_DescriptorSetLayouts; }
+    Ref<VulkanShader> GetShader() { return m_Shader; }
 
   private:
     vk::Pipeline m_Pipeline;
@@ -188,6 +172,8 @@ namespace Oxylus {
     VulkanRenderPass m_RenderPass;
     PipelineDescription m_PipelineDescription;
     bool m_IsCompute = false;
+    Ref<VulkanShader> m_Shader = nullptr;
+
     void CreateColorAttachments(const PipelineDescription& pipelineSpecification,
                                 std::vector<vk::AttachmentDescription>& AttachmentDescriptions) const;
     void CreateDepthAttachments(const PipelineDescription& pipelineSpecification,

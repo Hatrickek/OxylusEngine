@@ -2,13 +2,13 @@
 #include "ShaderLibrary.h"
 
 namespace Oxylus {
-  std::unordered_map<std::string, Ref<VulkanShader>> ShaderLibrary::s_Shaders;
+  std::unordered_map<std::string, Ref<VulkanShader>> ShaderLibrary::s_Shaders = {};
 
   Ref<VulkanShader> ShaderLibrary::CreateShader(const ShaderCI& shaderCreateInfo) {
     return s_Shaders.emplace(shaderCreateInfo.Name, CreateRef<VulkanShader>(shaderCreateInfo)).first->second;
   }
 
-  std::future<Ref<VulkanShader>> ShaderLibrary::CreateShaderAsync(const ShaderCI& shaderCreateInfo) {
+  std::future<Ref<VulkanShader>> ShaderLibrary::CreateShaderAsync(ShaderCI shaderCreateInfo) {
     return std::async([shaderCreateInfo] {
       return s_Shaders.emplace(shaderCreateInfo.Name, CreateRef<VulkanShader>(shaderCreateInfo)).first->second;
     });

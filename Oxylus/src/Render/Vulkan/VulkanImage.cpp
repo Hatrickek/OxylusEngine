@@ -697,7 +697,7 @@ namespace Oxylus {
   }
 
   Ref<VulkanImage> VulkanImage::GetBlankImage() {
-    return CreateRef<VulkanImage>(Resources::s_EngineResources.EmptyTexture);
+    return Resources::s_EngineResources.EmptyTexture;
   }
 
   IVec3 VulkanImage::GetMipMapLevelSize(uint32_t width, uint32_t height, uint32_t depth, uint32_t level) {

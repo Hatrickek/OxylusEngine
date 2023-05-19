@@ -9,10 +9,6 @@
 namespace Oxylus {
   class RenderGraph;
 
-  struct SwapchainPass {
-    VulkanDescriptorSet* Desc;
-  };
-
   struct RenderGraphPass {
     std::string Name;
     std::vector<VulkanCommandBuffer*> CommandBuffers;
@@ -27,7 +23,7 @@ namespace Oxylus {
                     VulkanPipeline* pipeline,
                     std::vector<VulkanFramebuffer*> framebuffers,
                     std::function<void(VulkanCommandBuffer& commandBuffer, int32_t framebufferIndex)> execute,
-                    std::array<vk::ClearValue, 2> clearValues = {},
+                    const std::array<vk::ClearValue, 2>& clearValues = {},
                     vk::Queue* submitQueue = {}) : Name(std::move(name)), CommandBuffers(std::move(commandBuffers)),
                                                    Framebuffers(std::move(framebuffers)), Execute(std::move(execute)),
                                                    ClearValues(clearValues), SubmitQueue(submitQueue),
@@ -41,7 +37,9 @@ namespace Oxylus {
     RenderGraphPass& AddReadDependency(const RenderGraph& renderGraph, const std::string& passName);
     RenderGraphPass& SetRenderArea(const vk::Rect2D& renderArea);
     RenderGraphPass& AddToGraph(RenderGraph& renderGraph);
+    RenderGraphPass& AddToGraph(const Ref<RenderGraph>& renderGraph);
     RenderGraphPass& AddToGraphCompute(RenderGraph& renderGraph);
+    RenderGraphPass& AddToGraphCompute(const Ref<RenderGraph>& renderGraph);
     RenderGraphPass& RunWithCondition(bool& condition);
 
   private:
@@ -73,14 +71,11 @@ namespace Oxylus {
     RenderGraph& AddComputePass(RenderGraphPass& computePass);
     void RemoveRenderPass(const std::string& Name);
 
-    RenderGraph& SetSwapchain(const SwapchainPass& swapchainPass);
-
     const RenderGraphPass* FindRenderGraphPass(const std::string& name) const;
 
     bool Update(VulkanSwapchain& swapchain, const uint32_t* currentFrame);
 
   private:
     std::unordered_map<std::string, RenderGraphPass> m_RenderGraphPasses;
-    SwapchainPass m_SwapchainPass;
   };
 }

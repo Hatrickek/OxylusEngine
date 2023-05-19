@@ -32,3 +32,6 @@
 [submodule "Oxylus/vendor/CMake-Utils"]
 	path = Oxylus/vendor/CMake-Utils
 	url = https://github.com/Hatrickek/CMake-Utils.git
+[submodule "Oxylus/vendor/spirv-reflect"]
+	path = Oxylus/vendor/spirv-reflect
+	url = https://github.com/KhronosGroup/SPIRV-Reflect.git

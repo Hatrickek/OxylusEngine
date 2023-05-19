@@ -28,10 +28,11 @@ namespace Oxylus {
   }
 
   void Resources::InitEngineResources() {
+    s_EngineResources.EmptyTexture = CreateRef<VulkanImage>();
     VulkanImageDescription emptyDescription{};
     emptyDescription.Width = 1;
     emptyDescription.Height = 1;
     emptyDescription.CreateDescriptorSet = true;
-    s_EngineResources.EmptyTexture.Create(emptyDescription);
+    s_EngineResources.EmptyTexture->Create(emptyDescription);
   }
 }

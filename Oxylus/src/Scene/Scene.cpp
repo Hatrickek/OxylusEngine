@@ -30,7 +30,7 @@ namespace Oxylus {
 
   void Scene::Init() {
     // Renderer
-    m_SceneRenderer.Init(*this);
+    m_SceneRenderer.Init(this);
 
     // Systems
     for (const auto& system : m_Systems) {
@@ -201,7 +201,6 @@ namespace Oxylus {
 
   bool Scene::HasEntity(UUID uuid) const {
     ZoneScoped;
-
     return m_EntityMap.contains(uuid);
   }
 

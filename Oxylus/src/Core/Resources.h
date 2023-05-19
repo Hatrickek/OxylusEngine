@@ -13,7 +13,7 @@ namespace Oxylus {
     } s_EditorResources;
 
     static struct EngineRes {
-      VulkanImage EmptyTexture;
+      Ref<VulkanImage> EmptyTexture = nullptr;
       VulkanImage CheckboardTexture;
     } s_EngineResources;
 

@@ -70,7 +70,6 @@ namespace Oxylus {
       m_ViewportHovered = ImGui::IsWindowHovered();
 
       m_ViewportPanelSize = ImGui::GetContentRegionAvail();
-      VulkanRenderer::s_RendererContext.ViewportSize = m_ViewportPanelSize;
       if (m_ViewportSize.x != m_ViewportPanelSize.x || m_ViewportSize.y != m_ViewportPanelSize.y) {
         //VulkanRenderer::OnResize(); TODO: Currently causes lags while resizing viewport.
         m_ViewportSize = {m_ViewportPanelSize.x, m_ViewportPanelSize.y};
@@ -78,7 +77,7 @@ namespace Oxylus {
       constexpr auto sixteenNineAR = 1.7777777f;
       m_ViewportSize.x = m_ViewportSize.y * sixteenNineAR;
       ImGui::SetCursorPosX((m_ViewportPanelSize.x - m_ViewportSize.x) * 0.5f);
-      ImGui::Image(VulkanRenderer::GetFinalImage().GetDescriptorSet(), ImVec2{m_ViewportSize.x, m_ViewportSize.y});
+      ImGui::Image(m_Scene->GetRenderer().GetRenderPipeline()->GetFinalImage().GetDescriptorSet(), ImVec2{m_ViewportSize.x, m_ViewportSize.y});
 
       if (m_SceneHierarchyPanel)
         m_SceneHierarchyPanel->DragDropTarget();

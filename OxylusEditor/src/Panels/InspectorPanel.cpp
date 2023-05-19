@@ -330,7 +330,7 @@ namespace Oxylus {
 
     DrawComponent<SkyLightComponent>(ICON_MDI_WEATHER_SUNNY " Sky Light Component",
       entity,
-      [](SkyLightComponent& component) {
+      [this](SkyLightComponent& component) {
         const char* filepath = component.Cubemap
                                  ? component.Cubemap->GetDesc().Path.c_str()
                                  : "Drop a cubemap file";
@@ -346,10 +346,8 @@ namespace Oxylus {
               VulkanImageDescription CubeMapDesc;
               CubeMapDesc.Path = path.string();
               CubeMapDesc.Type = ImageType::TYPE_CUBE;
-              component.Cubemap = CreateRef<VulkanImage>(CubeMapDesc);
-              VulkanRenderer::s_Resources.CubeMap = *component.Cubemap.get();
-              VulkanRenderer::GeneratePrefilter();
-              VulkanRenderer::UpdateSkyboxDescriptorSets();
+              component.Cubemap = AssetManager::GetImageAsset(CubeMapDesc).Data;
+              m_Scene->GetRenderer().Dispatcher.trigger(SceneRenderer::SkyboxLoadEvent{component.Cubemap});
             }
           }
           ImGui::EndDragDropTarget();

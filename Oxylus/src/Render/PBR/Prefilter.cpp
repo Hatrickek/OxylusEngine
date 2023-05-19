@@ -291,14 +291,6 @@ namespace Oxylus {
     // Pipeline
     VulkanPipeline pipeline;
     PipelineDescription pipelineDescription;
-    pipelineDescription.SetDescriptions = {
-      {
-        SetDescription{0, 0, 1, vk::DescriptorType::eCombinedImageSampler, vk::ShaderStageFlagBits::eFragment}
-      }
-    };
-    pipelineDescription.PushConstantRanges = {
-      vk::PushConstantRange{vk::ShaderStageFlagBits::eVertex | vk::ShaderStageFlagBits::eFragment, 0, sizeof(PushBlock)}
-    };
     pipelineDescription.Shader = CreateRef<VulkanShader>(shader);
     pipelineDescription.RenderPass = renderpass;
     pipelineDescription.RasterizerDesc.CullMode = vk::CullModeFlagBits::eNone;
@@ -561,13 +553,6 @@ namespace Oxylus {
       uint32_t numSamples = 32u;
     } pushBlock;
 
-    vk::PushConstantRange pushConstantRange{
-      vk::ShaderStageFlagBits::eVertex | vk::ShaderStageFlagBits::eFragment, 0, sizeof(PushBlock)
-    };
-    vk::PipelineLayout pipelinelayout = LogicalDevice.createPipelineLayout({
-      {}, 1, &descriptorsetlayout, 1, &pushConstantRange
-    }).value;
-
     // Pipeline
     VulkanShader shader{
       ShaderCI{
@@ -576,15 +561,8 @@ namespace Oxylus {
         .EntryPoint = "main",
       }
     };
+    vk::PipelineLayout pipelinelayout =  shader.GetPipelineLayout();
     PipelineDescription pipelineDescription;
-    pipelineDescription.PushConstantRanges = {
-      vk::PushConstantRange{vk::ShaderStageFlagBits::eVertex | vk::ShaderStageFlagBits::eFragment, 0, sizeof(PushBlock)}
-    };
-    pipelineDescription.SetDescriptions = {
-      {
-        SetDescription{0, 0, 1, vk::DescriptorType::eCombinedImageSampler, vk::ShaderStageFlagBits::eFragment}
-      }
-    };
     pipelineDescription.Shader = CreateRef<VulkanShader>(shader);
     pipelineDescription.RenderPass = renderpass;
     pipelineDescription.DepthSpec.DepthEnable = false;

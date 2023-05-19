@@ -8,7 +8,7 @@ namespace Oxylus {
   class ShaderLibrary {
   public:
     static Ref<VulkanShader> CreateShader(const ShaderCI& shaderCreateInfo);
-    static std::future<Ref<VulkanShader>> CreateShaderAsync(const ShaderCI& shaderCreateInfo);
+    static std::future<Ref<VulkanShader>> CreateShaderAsync(ShaderCI shaderCreateInfo);
     static void AddShader(const Ref<VulkanShader>& shader);
     static void RemoveShader(const std::string& name);
 

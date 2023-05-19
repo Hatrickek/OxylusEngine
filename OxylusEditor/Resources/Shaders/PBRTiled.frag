@@ -40,25 +40,22 @@ layout(binding = 1) uniform UBOParams {
 u_UboParams;
 
 layout(binding = 2) buffer Lights { Light lights[]; };
-
-layout(binding = 3) buffer Frustums { Frustum frustums[]; };
-
-layout(binding = 4) buffer LighIndex { int lightIndices[]; };
-
-layout(binding = 5) buffer LightGrid { int lightGrid[]; };
+// layout(binding = 3) buffer Frustums { Frustum frustums[]; };
+layout(binding = 3) buffer LighIndex { int lightIndices[]; };
+// layout(binding = 4) buffer LightGrid { int lightGrid[]; };
 
 // IBL
-layout(binding = 6) uniform samplerCube samplerIrradiance;
-layout(binding = 7) uniform sampler2D samplerBRDFLUT;
-layout(binding = 8) uniform samplerCube prefilteredMap;
+layout(binding = 4) uniform samplerCube samplerIrradiance;
+layout(binding = 5) uniform sampler2D samplerBRDFLUT;
+layout(binding = 6) uniform samplerCube prefilteredMap;
 
 // Depth
-layout(binding = 9) uniform sampler2D depthTexSampler;
+// layout(binding = 9) uniform sampler2D depthTexSampler;
 
 // Shadows
-layout(binding = 10) uniform sampler2DArray in_DirectShadows;
+layout(binding = 7) uniform sampler2DArray in_DirectShadows;
 
-layout(binding = 11) uniform ShadowUBO {
+layout(binding = 8) uniform ShadowUBO {
   mat4 cascadeViewProjMat[SHADOW_MAP_CASCADE_COUNT];
   vec4 cascadeSplits;
 }
@@ -224,7 +221,7 @@ void main() {
   vec3 color;
 
   uint lightIndexBegin = tileIndex * MAX_NUM_LIGHTS_PER_TILE;
-  uint lightNum = lightGrid[tileIndex];
+  // uint lightNum = lightGrid[tileIndex];
   vec3 viewDir = normalize(u_Ubo.camPos.xyz - inWorldPos);
 
   // Point lights

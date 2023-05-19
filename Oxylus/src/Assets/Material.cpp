@@ -3,6 +3,7 @@
 #include "Material.h"
 
 #include "Core/Resources.h"
+#include "Render/ShaderLibrary.h"
 #include "Render/Vulkan/VulkanRenderer.h"
 
 namespace Oxylus {
@@ -10,22 +11,16 @@ namespace Oxylus {
 
   Material::~Material() { }
 
-  void Material::Create(const std::string& name, const UUID& shaderID) {
+  void Material::Create(const std::string& name) {
     ZoneScoped;
     Name = name;
 
-    //TODO:
-    //Shader = VulkanRenderer::GetShaderByID(shaderID); 
+    m_Shader = ShaderLibrary::GetShader("PBRTiled");
 
     ClearTextures();
 
-    if (!s_DescriptorSet.Get())
-      s_DescriptorSet.CreateFromPipeline(VulkanRenderer::s_Pipelines.PBRPipeline);
-    MaterialDescriptorSet.CreateFromPipeline(VulkanRenderer::s_Pipelines.PBRPipeline, 1);
-
-    s_DescriptorSet.WriteDescriptorSets[9].pImageInfo = &VulkanRenderer::s_FrameBuffers.DepthNormalPassFB.GetImage()[0].GetDescImageInfo();
-    s_DescriptorSet.WriteDescriptorSets[10].pImageInfo = &VulkanRenderer::s_Resources.DirectShadowsDepthArray.GetDescImageInfo();
-    s_DescriptorSet.Update(true);
+    MaterialDescriptorSet.CreateFromShader(m_Shader, 1);
+    DepthDescriptorSet.CreateFromShader(ShaderLibrary::GetShader("DepthPass"), 1);
 
     MaterialDescriptorSet.WriteDescriptorSets[0].pImageInfo = &AlbedoTexture->GetDescImageInfo();
     MaterialDescriptorSet.WriteDescriptorSets[1].pImageInfo = &NormalTexture->GetDescImageInfo();
@@ -33,6 +28,10 @@ namespace Oxylus {
     MaterialDescriptorSet.WriteDescriptorSets[3].pImageInfo = &MetallicTexture->GetDescImageInfo();
     MaterialDescriptorSet.WriteDescriptorSets[4].pImageInfo = &RoughnessTexture->GetDescImageInfo();
     MaterialDescriptorSet.Update(true);
+
+    DepthDescriptorSet.WriteDescriptorSets[0].pImageInfo = &NormalTexture->GetDescImageInfo();
+    DepthDescriptorSet.WriteDescriptorSets[1].pImageInfo = &RoughnessTexture->GetDescImageInfo();
+    DepthDescriptorSet.Update(true);
   }
 
   bool Material::IsOpaque() const {
@@ -41,27 +40,25 @@ namespace Oxylus {
 
   void Material::Update() {
     ZoneScoped;
-    s_DescriptorSet.WriteDescriptorSets[9].pImageInfo = &VulkanRenderer::s_FrameBuffers.DepthNormalPassFB.GetImage()[0].GetDescImageInfo();
-    s_DescriptorSet.WriteDescriptorSets[10].pImageInfo = &VulkanRenderer::s_Resources.DirectShadowsDepthArray.GetDescImageInfo();
-    s_DescriptorSet.Update(true);
-
     MaterialDescriptorSet.WriteDescriptorSets[0].pImageInfo = &AlbedoTexture->GetDescImageInfo();
     MaterialDescriptorSet.WriteDescriptorSets[1].pImageInfo = &NormalTexture->GetDescImageInfo();
     MaterialDescriptorSet.WriteDescriptorSets[2].pImageInfo = &AOTexture->GetDescImageInfo();
     MaterialDescriptorSet.WriteDescriptorSets[3].pImageInfo = &MetallicTexture->GetDescImageInfo();
     MaterialDescriptorSet.WriteDescriptorSets[4].pImageInfo = &RoughnessTexture->GetDescImageInfo();
     MaterialDescriptorSet.Update(true);
+
+    DepthDescriptorSet.WriteDescriptorSets[0].pImageInfo = &NormalTexture->GetDescImageInfo();
+    DepthDescriptorSet.WriteDescriptorSets[1].pImageInfo = &RoughnessTexture->GetDescImageInfo();
+    DepthDescriptorSet.Update(true);
   }
 
   void Material::Destroy() {
-    if (MaterialDescriptorSet.Get())
-      MaterialDescriptorSet.Destroy();
     ClearTextures();
     Parameters = {};
   }
 
   void Material::ClearTextures() {
-    const auto& EmptyTexture = CreateRef<VulkanImage>(Resources::s_EngineResources.EmptyTexture);
+    const auto& EmptyTexture = Resources::s_EngineResources.EmptyTexture;
 
     AlbedoTexture = EmptyTexture;
     NormalTexture = EmptyTexture;

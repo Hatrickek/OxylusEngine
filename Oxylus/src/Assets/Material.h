@@ -41,6 +41,7 @@ namespace Oxylus {
 
     static VulkanDescriptorSet s_DescriptorSet;
     VulkanDescriptorSet MaterialDescriptorSet;
+    VulkanDescriptorSet DepthDescriptorSet;
     Ref<VulkanShader> Shader = nullptr;
     Ref<VulkanImage> AlbedoTexture = nullptr;
     Ref<VulkanImage> NormalTexture = nullptr;
@@ -54,12 +55,13 @@ namespace Oxylus {
     Material() = default;
     ~Material();
 
-    //TODO: Use ShaderID
-    void Create(const std::string& name = "Material", const UUID& shaderID = {});
+    void Create(const std::string& name = "Material");
     bool IsOpaque() const;
     void Update();
     void Destroy();
   private:
+    Ref<VulkanShader> m_Shader = nullptr;
+
     void ClearTextures();
   };
 }

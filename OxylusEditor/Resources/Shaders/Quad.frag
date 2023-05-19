@@ -5,8 +5,6 @@ layout(location = 0) out vec4 outColor;
 
 layout(location = 1) in vec2 inUV;
 
-layout(binding = 7) uniform sampler2D texSampler;
-
 void main() {
   outColor = vec4(0);
 }

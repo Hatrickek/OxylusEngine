@@ -595,7 +595,7 @@ namespace Oxylus {
           // Background button
           static std::string id = "###";
           id[2] = static_cast<char>(i);
-          bool const clicked = IGUI::ToggleButton(id.c_str(), highlight, ImVec4(0.1f, 0.1f, 0.1f, 0.7f), backgroundThumbnailSize, 0.1f, 1.0f);
+          bool const clicked = IGUI::ToggleButton(id.c_str(), highlight, ImVec4(0.1f, 0.1f, 0.1f, 0.7f), backgroundThumbnailSize, 0.1f);
           if (m_ElapsedTime > 0.25f && clicked) {
             EditorLayer::Get()->SetContextAsFileWithPath(strPath);
           }

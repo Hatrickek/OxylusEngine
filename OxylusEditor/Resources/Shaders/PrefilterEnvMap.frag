@@ -6,6 +6,7 @@ layout(location = 0) out vec4 outColor;
 layout(binding = 0) uniform samplerCube samplerEnv;
 
 layout(push_constant) uniform PushConsts {
+  layout(offset = 0)  mat4 mvp; 
   layout(offset = 64) float roughness;
   layout(offset = 68) uint numSamples;
 }

@@ -2,7 +2,11 @@
 
 layout(location = 0) in vec3 inPos;
 
-layout(push_constant) uniform PushConsts { layout(offset = 0) mat4 mvp; }
+layout(push_constant) uniform PushConsts {
+  layout(offset = 0) mat4 mvp;
+  layout(offset = 64) float roughness;
+  layout(offset = 68) uint numSamples;
+}
 pushConsts;
 
 layout(location = 0) out vec3 outUVW;

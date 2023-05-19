@@ -10,54 +10,16 @@
 #include "spirv_reflect.h"
 
 namespace Oxylus {
-  enum class DescriptorPropertyType {
-    None = 0,
-    Sampler2D,
-    UniformBufer,
-    StorageBuffer,
-  };
-
-  struct DesciptorProperty {
-    DescriptorPropertyType Type;
-    uint32_t BindingPoint;
-    vk::DescriptorBufferInfo* DescriptorBufferInfo = nullptr;
-
-    const vk::DescriptorImageInfo* DescriptorImageInfo = nullptr;
-    uint32_t MaterialImageIndex;
-  };
-
-  enum class MaterialPropertyType {
-    None = 0,
-    Sampler2D,
-    Bool,
-    Int,
-    Float,
-    Float2,
-    Float3,
-    Float4,
-  };
-
-  struct MaterialProperty {
-    MaterialPropertyType Type;
-
-    std::string DisplayName;
-    bool IsSlider = false;
-    bool IsColor = false;
-  };
-
   struct ShaderCI {
     std::string VertexPath;
     std::string FragmentPath;
     std::string EntryPoint = "main";
     std::string Name;
     std::string ComputePath;
-    std::vector<DesciptorProperty> DesciptorProperties = {};
   };
 
   class VulkanShader {
   public:
-    std::vector<vk::WriteDescriptorSet> DescriptorSets;
-
     VulkanShader() = default;
     VulkanShader(const ShaderCI& shaderCI);
 
@@ -70,21 +32,19 @@ namespace Oxylus {
     void OnReloadBegin(const std::function<void()>& event);
     void OnReloadEnd(const std::function<void()>& event);
 
-    void UpdateDescriptorSets() const;
-
     unsigned GetStageCount() const { return static_cast<uint32_t>(m_ShaderStage.size()); }
 
     vk::PipelineShaderStageCreateInfo GetVertexShaderStage() { return m_ShaderStage[vk::ShaderStageFlagBits::eVertex]; }
-
     vk::PipelineShaderStageCreateInfo GetComputeShaderStage() { return m_ShaderStage[vk::ShaderStageFlagBits::eCompute]; }
-
     vk::PipelineShaderStageCreateInfo GetFragmentShaderStage() { return m_ShaderStage[vk::ShaderStageFlagBits::eFragment]; }
-
-    const std::string& GetName() const { return m_ShaderDesc.Name; }
-
     std::vector<vk::PipelineShaderStageCreateInfo>& GetShaderStages();
 
+    const std::string& GetName() const { return m_ShaderDesc.Name; }
     const ShaderCI& GetShaderDesc() const { return m_ShaderDesc; }
+
+    vk::PipelineLayout& GetPipelineLayout() { return m_PipelineLayout; }
+    std::vector<vk::DescriptorSetLayout>& GetDescriptorSetLayouts() { return m_DescriptorSetLayouts; }
+    std::vector<vk::WriteDescriptorSet> GetWriteDescriptorSets(const vk::DescriptorSet& descriptorSet, uint32_t set = 0);
 
   private:
     std::unordered_map<vk::ShaderStageFlagBits, std::vector<uint32_t>> m_VulkanSPIRV;
@@ -98,7 +58,6 @@ namespace Oxylus {
     std::function<void()> m_OnReloadEndEvent;
     bool m_Loaded = false;
 
-
     void CreateShader();
     void ReadOrCompile(vk::ShaderStageFlagBits stage, const std::string& source, const shaderc::CompileOptions& options);
     void CreateShaderModule(vk::ShaderStageFlagBits stage, const std::vector<unsigned>& source);
@@ -109,17 +68,41 @@ namespace Oxylus {
     std::vector<vk::DescriptorSetLayout> m_DescriptorSetLayouts = {};
     vk::PipelineLayout m_PipelineLayout;
 
+    std::unordered_map<uint32_t, std::vector<vk::WriteDescriptorSet>> m_WriteDescriptorSets = {};
+
     // Reflection
-    struct ReflectionData {
-      std::vector<SpvReflectDescriptorSet*> Bindings;
-      std::vector<SpvReflectBlockVariable*> BlockVariables;
-      vk::ShaderStageFlagBits StageFlag;
+    struct PushConstantData {
+      uint32_t Size = 0;
+      uint32_t Offset = 0;
+      vk::ShaderStageFlagBits Stage = {};
     };
 
+    struct DescriptorBindingData {
+      std::string name;
+      uint32_t binding;
+      uint32_t set;
+      vk::DescriptorType descriptor_type;
+      uint32_t count;
+    };
+
+    struct DescriptorSetData {
+      uint32_t set;
+      uint32_t binding_count;
+      std::vector<DescriptorBindingData> bindings;
+    };
+
+    struct ReflectionData {
+      std::vector<DescriptorSetData> Bindings = {};
+      std::vector<PushConstantData> PushConstants = {};
+      vk::ShaderStageFlags Stage = {};
+    };
+
+    std::vector<ReflectionData> m_ReflectionData = {};
     std::vector<SpvReflectShaderModule> m_ReflectModules = {};
 
     ReflectionData GetReflectionData(const std::vector<uint32_t>& spirvBytes);
-    std::vector<vk::DescriptorSetLayout> CreateLayout(const std::vector<ReflectionData>& reflectionData) const;
-    vk::PipelineLayout CreatePipelineLayout(const std::vector<vk::DescriptorSetLayout>& descriptorSetLayouts, const std::vector<ReflectionData>& reflectionData) const;
+    void CreateLayoutBindings(const ReflectionData& reflectionData, std::vector<std::vector<vk::DescriptorSetLayoutBinding>>& layoutBindings);
+    std::vector<vk::DescriptorSetLayout> CreateLayout(const std::vector<std::vector<vk::DescriptorSetLayoutBinding>>& layoutBindings);
+    vk::PipelineLayout CreatePipelineLayout(const std::vector<vk::DescriptorSetLayout>& descriptorSetLayouts) const;
   };
 }
