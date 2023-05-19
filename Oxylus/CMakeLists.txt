@@ -239,7 +239,7 @@ target_include_directories(${PROJECT_NAME} PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}/v
 
 # spirv-reflect
 target_include_directories(${PROJECT_NAME} PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}/vendor/spirv-reflect/")
-target_sources(${PROJECT_NAME} PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}/vendor/spirv-reflect/spirv_reflect.c")
+target_sources(${PROJECT_NAME} PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}/vendor/spirv-reflect/spirv_reflect.cpp")
 
 # spirv-headers
 set(BUILD_TESTS OFF)

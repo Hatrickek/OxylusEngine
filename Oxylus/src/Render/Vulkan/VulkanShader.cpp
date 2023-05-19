@@ -62,6 +62,7 @@ namespace Oxylus {
       case vk::ShaderStageFlagBits::eFragment: return "_compiled.frag";
       case vk::ShaderStageFlagBits::eVertex: return "_compiled.vert";
       case vk::ShaderStageFlagBits::eCompute: return "_compiled.comp";
+      default: break;
     }
     return "";
   }
@@ -76,6 +77,7 @@ namespace Oxylus {
       case vk::ShaderStageFlagBits::eVertex: return shaderc_glsl_vertex_shader;
       case vk::ShaderStageFlagBits::eFragment: return shaderc_glsl_fragment_shader;
       case vk::ShaderStageFlagBits::eCompute: return shaderc_glsl_compute_shader;
+      default: break;
     }
     return (shaderc_shader_kind)0;
   }
