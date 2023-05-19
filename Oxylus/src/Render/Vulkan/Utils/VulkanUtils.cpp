@@ -28,8 +28,24 @@ namespace Oxylus {
       enabledLayers.push_back(layer.data());
     }
 #if !(DISABLE_DEBUG_LAYERS)
-    // Enable standard validation layer to find as much errors as possible!
-    enabledLayers.push_back("VK_LAYER_KHRONOS_validation");
+    // Check if this layer is available at instance level
+    constexpr auto validationLayerName = "VK_LAYER_KHRONOS_validation";
+    uint32_t instanceLayerCount;
+    vkEnumerateInstanceLayerProperties(&instanceLayerCount, nullptr);
+    std::vector<VkLayerProperties> instanceLayerProperties(instanceLayerCount);
+    vkEnumerateInstanceLayerProperties(&instanceLayerCount, instanceLayerProperties.data());
+    bool validationLayerPresent = false;
+    for (const VkLayerProperties layer : instanceLayerProperties) {
+      if (strcmp(layer.layerName, validationLayerName) == 0) {
+        validationLayerPresent = true;
+        enabledLayers.push_back("VK_LAYER_KHRONOS_validation");
+        break;
+      }
+    }
+    if (validationLayerPresent)
+      OX_CORE_TRACE("Enabled validation layers.");
+    else
+      OX_CORE_ERROR("Couldn't enable validation layers. Layer VK_LAYER_KHRONOS_validation not present!");
 #endif
     return enabledLayers;
   }
@@ -184,16 +200,9 @@ static vk::StructureChain<vk::InstanceCreateInfo>
     std::vector<std::string> const& layers,
     std::vector<std::string> const& extensions,
     uint32_t apiVersion) {
-    const vk::ApplicationInfo applicationInfo(appName.c_str(),
-      1,
-      engineName.c_str(),
-      1,
-      apiVersion);
-    const std::vector<char const*> enabledLayers =
-      GatherLayers(layers, vk::enumerateInstanceLayerProperties().value);
-    std::vector<char const*> enabledExtensions = GatherExtensions(
-      extensions,
-      vk::enumerateInstanceExtensionProperties().value);
+    const vk::ApplicationInfo applicationInfo(appName.c_str(), 1, engineName.c_str(), 1, apiVersion);
+    const std::vector<char const*> enabledLayers = GatherLayers(layers, vk::enumerateInstanceLayerProperties().value);
+    std::vector<char const*> enabledExtensions = GatherExtensions(extensions, vk::enumerateInstanceExtensionProperties().value);
     uint32_t count = 0;
     const char** names = glfwGetRequiredInstanceExtensions(&count);
     if (count && names) {
@@ -201,39 +210,18 @@ static vk::StructureChain<vk::InstanceCreateInfo>
         enabledExtensions.emplace_back(names[i]);
       }
     }
-    const vk::Instance instance =
-      vk::createInstance(MakeInstanceCreateInfoChain(
-          applicationInfo,
-          enabledLayers,
-          enabledExtensions)
-       .get<vk::InstanceCreateInfo>())
-     .value;
+    const vk::Instance instance = vk::createInstance(MakeInstanceCreateInfoChain(applicationInfo, enabledLayers, enabledExtensions).get<vk::InstanceCreateInfo>()).value;
 #if (!DISABLE_DEBUG_LAYERS)
-    vkCreateDebugUtilsMessengerEXT =
-      reinterpret_cast<PFN_vkCreateDebugUtilsMessengerEXT>(
-        vkGetInstanceProcAddr(instance, "vkCreateDebugUtilsMessengerEXT"));
-    vkDestroyDebugUtilsMessengerEXT =
-      reinterpret_cast<PFN_vkDestroyDebugUtilsMessengerEXT>(
-        vkGetInstanceProcAddr(instance, "vkDestroyDebugUtilsMessengerEXT"));
-    vkSetDebugUtilsObjectNameExt =
-      reinterpret_cast<PFN_vkSetDebugUtilsObjectNameEXT>(
-        vkGetInstanceProcAddr(instance, "vkSetDebugUtilsObjectNameEXT"));
+    vkCreateDebugUtilsMessengerEXT = reinterpret_cast<PFN_vkCreateDebugUtilsMessengerEXT>(vkGetInstanceProcAddr(instance, "vkCreateDebugUtilsMessengerEXT"));
+    vkDestroyDebugUtilsMessengerEXT = reinterpret_cast<PFN_vkDestroyDebugUtilsMessengerEXT>(vkGetInstanceProcAddr(instance, "vkDestroyDebugUtilsMessengerEXT"));
+    vkSetDebugUtilsObjectNameExt = reinterpret_cast<PFN_vkSetDebugUtilsObjectNameEXT>(vkGetInstanceProcAddr(instance, "vkSetDebugUtilsObjectNameEXT"));
 
     VkDebugUtilsMessengerCreateInfoEXT debugUtilsMessengerCI{};
-    debugUtilsMessengerCI.sType =
-      VK_STRUCTURE_TYPE_DEBUG_UTILS_MESSENGER_CREATE_INFO_EXT;
-    debugUtilsMessengerCI.messageSeverity =
-      VK_DEBUG_UTILS_MESSAGE_SEVERITY_WARNING_BIT_EXT |
-      VK_DEBUG_UTILS_MESSAGE_SEVERITY_ERROR_BIT_EXT;
-    debugUtilsMessengerCI.messageType =
-      VK_DEBUG_UTILS_MESSAGE_TYPE_GENERAL_BIT_EXT |
-      VK_DEBUG_UTILS_MESSAGE_TYPE_VALIDATION_BIT_EXT;
+    debugUtilsMessengerCI.sType = VK_STRUCTURE_TYPE_DEBUG_UTILS_MESSENGER_CREATE_INFO_EXT;
+    debugUtilsMessengerCI.messageSeverity = VK_DEBUG_UTILS_MESSAGE_SEVERITY_WARNING_BIT_EXT | VK_DEBUG_UTILS_MESSAGE_SEVERITY_ERROR_BIT_EXT;
+    debugUtilsMessengerCI.messageType = VK_DEBUG_UTILS_MESSAGE_TYPE_GENERAL_BIT_EXT | VK_DEBUG_UTILS_MESSAGE_TYPE_VALIDATION_BIT_EXT;
     debugUtilsMessengerCI.pfnUserCallback = debugUtilsMessengerCallback;
-    VkResult result = vkCreateDebugUtilsMessengerEXT(
-      instance,
-      &debugUtilsMessengerCI,
-      nullptr,
-      &debugUtilsMessenger);
+    VkResult result = vkCreateDebugUtilsMessengerEXT(instance, &debugUtilsMessengerCI, nullptr, &debugUtilsMessenger);
     assert(result == VK_SUCCESS);
 #endif
     return instance;
