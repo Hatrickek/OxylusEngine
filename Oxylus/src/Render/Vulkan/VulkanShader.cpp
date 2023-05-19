@@ -253,19 +253,20 @@ namespace Oxylus {
 
     ReflectionData data = {};
     for (const auto& set : descriptorSets) {
-      auto& binding = data.Bindings.emplace_back(set->set, set->binding_count);
+      auto& binding = data.Bindings.emplace_back(DescriptorSetData{set->set, set->binding_count});
       for (uint32_t i = 0; i < set->binding_count; i++) {
-        binding.bindings.emplace_back(
+        binding.bindings.emplace_back(DescriptorBindingData{
           "",
           set->bindings[i]->binding,
           set->bindings[i]->set,
           (vk::DescriptorType)set->bindings[i]->descriptor_type,
           set->bindings[i]->count
+        }
         );
       }
     }
     for (uint32_t i = 0; i < blockCount; i++)
-      data.PushConstants.emplace_back(blockVariables[i]->size, blockVariables[i]->members[0].offset, (vk::ShaderStageFlagBits)module.shader_stage);
+      data.PushConstants.emplace_back(PushConstantData{blockVariables[i]->size, blockVariables[i]->members[0].offset, (vk::ShaderStageFlagBits)module.shader_stage});
     data.Stage |= (vk::ShaderStageFlagBits)module.shader_stage;
 
     return data;

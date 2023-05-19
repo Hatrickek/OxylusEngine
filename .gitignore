@@ -38,6 +38,7 @@
 /cmake-build-release
 /bin
 /bin-int
+/.cache
 /OxylusEditor/Resources/Shaders/Compiled
 /OxylusEditor/logs
 *.ccls

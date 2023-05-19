@@ -1,6 +1,7 @@
 ﻿#pragma once
-#pragma once
 #include "Core/Systems/System.h"
+#include "Utils/Log.h"
+#include "Core/Base.h"
 
 namespace Oxylus {
   class SystemManager {
