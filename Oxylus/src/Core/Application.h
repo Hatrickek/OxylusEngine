@@ -29,8 +29,7 @@ namespace Oxylus {
     Core::RenderBackend Backend = Core::RenderBackend::Vulkan;
     std::filesystem::path WorkingDirectory = std::filesystem::current_path();
     bool UseImGui = true;
-    bool isRunning;
-    bool CustomWindowTitle = true;
+    bool CustomWindowTitle = false;
     ApplicationCommandLineArgs CommandLineArgs;
   };
 

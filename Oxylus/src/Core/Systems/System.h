@@ -15,7 +15,6 @@ namespace Oxylus {
     System(std::string name) : Name(std::move(name)) { }
     virtual ~System() = default;
 
-
     /// Scene systems: Called right after when the scene gets created.
     /// Engine systems: Called right before core is initalized.
     virtual void OnInit() { }

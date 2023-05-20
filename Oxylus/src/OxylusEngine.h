@@ -9,6 +9,5 @@
 #include "Core/Components.h"
 #include "Scene/Scene.h"
 #include "Scene/SceneSerializer.h"
-#include "Core/ScriptableEntity.h"
 
 #include "Physics/Physics.h"

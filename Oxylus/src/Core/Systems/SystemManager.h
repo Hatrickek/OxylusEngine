@@ -10,9 +10,9 @@ namespace Oxylus {
     Ref<T> AddSystem(Args&&... args) {
       auto typeName = typeid(T).hash_code();
 
-      OX_CORE_ASSERT(m_Systems.contains(typeName), "Registering system more than once.");
+      OX_CORE_ASSERT(!m_Systems.contains(typeName), "Registering system more than once.");
 
-      Ref<T> system = CreateSharedPtr<T>(std::forward<Args>(args)...);
+      Ref<T> system = CreateRef<T>(std::forward<Args>(args)...);
       m_Systems.insert({typeName, std::move(system)});
       return system;
     }
@@ -21,7 +21,7 @@ namespace Oxylus {
     Ref<T> AddSystem(T* t) {
       auto typeName = typeid(T).hash_code();
 
-      OX_CORE_ASSERT(m_Systems.contains(typeName), "Registering system more than once.");
+      OX_CORE_ASSERT(!m_Systems.contains(typeName), "Registering system more than once.");
 
       Ref<T> system = CreateRef<T>(t);
       m_Systems.insert({typeName, std::move(system)});

@@ -1,5 +1,5 @@
 # Oxylus Engine
-![](/Resources/Branding/OXLogoBanner.png)     
+![Logo](https://cdn.discordapp.com/attachments/1012357737256058924/1109482685388312677/OXLogoBanner.png)     
 ## About   
 Render and Game engine built with Vulkan and C++. It is focused on  stylistic and realistic 3D rendering.        
 This is my hobby project that I work on in my spare time to learn more about graphics programming and engine architectures. Also to produce some games including my dream game in the future.
