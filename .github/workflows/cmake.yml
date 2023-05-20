@@ -22,11 +22,11 @@ jobs:
             build_type: [Release]
   
     steps:
-    - name: Prepare Vulkan SDK
-      uses: humbletim/setup-vulkan-sdk@v1.2.0
+    - name: Setup Vulkan SDK
+      uses: sjcobb2022/setup-vulkan-sdk@c2612401009bbce8002630e838bf91cc67f8b3c3
       with:
-        vulkan-query-version: latest
-        vulkan-components: Vulkan-Loader
+        vulkan-query-version: 1.3.204.0
+        vulkan-components: Vulkan-Headers, Vulkan-Loader, shaderc
         vulkan-use-cache: true
     - name: Set up GCC
       uses: egor-tensin/setup-gcc@v1
@@ -63,11 +63,11 @@ jobs:
             build_type: [Release]
 
     steps:
-    - name: Prepare Vulkan SDK
-      uses: humbletim/setup-vulkan-sdk@v1.2.0
+    - name: Setup Vulkan SDK
+      uses: sjcobb2022/setup-vulkan-sdk@c2612401009bbce8002630e838bf91cc67f8b3c3
       with:
-        vulkan-query-version: latest
-        vulkan-components: Vulkan-Loader
+        vulkan-query-version: 1.3.204.0
+        vulkan-components: Vulkan-Headers, Vulkan-Loader, shaderc
         vulkan-use-cache: true
     - name: Checkout Code
       uses: actions/checkout@v3
@@ -106,11 +106,11 @@ jobs:
             build_type: [Release]
   
     steps:
-    - name: Prepare Vulkan SDK
-      uses: humbletim/setup-vulkan-sdk@v1.2.0
+    - name: Setup Vulkan SDK
+      uses: sjcobb2022/setup-vulkan-sdk@c2612401009bbce8002630e838bf91cc67f8b3c3
       with:
-        vulkan-query-version: latest
-        vulkan-components: Vulkan-Loader
+        vulkan-query-version: 1.3.204.0
+        vulkan-components: Vulkan-Headers, Vulkan-Loader, shaderc
         vulkan-use-cache: true
     - name: Checkout Code
       uses: actions/checkout@v3
