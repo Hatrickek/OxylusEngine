@@ -220,19 +220,22 @@ endif()
 
 include(FetchContent)
 
-# Vulkan Headers
-FetchContent_Declare(
-        Vulkan-Headers
-        GIT_REPOSITORY "https://github.com/KhronosGroup/Vulkan-Headers.git"
-        GIT_TAG "v1.3.239"
-)
-FetchContent_MakeAvailable(Vulkan-Headers)
-target_link_libraries(${PROJECT_NAME} PUBLIC Vulkan-Headers)
-get_target_property(Vulkan_HEADERS_SOURCEDIR Vulkan-Headers SOURCE_DIR)
-
 # Vulkan
-find_package(Vulkan)
+find_package(Vulkan REQUIRED)
 target_link_libraries(${PROJECT_NAME} PUBLIC Vulkan::Vulkan)
+target_include_directories(${PROJECT_NAME} PUBLIC ${Vulkan_INCLUDE_DIRS})
+
+# shaderc from sdk
+add_library(shaderc UNKNOWN IMPORTED)
+if(WIN32)
+    # use the version in the SDK
+    set_target_properties(shaderc PROPERTIES IMPORTED_LOCATION $ENV{VULKAN_SDK}/Lib/shaderc_shared.lib)
+    set_property(TARGET shaderc PROPERTY INTERFACE_INCLUDE_DIRECTORIES $ENV{VULKAN_SDK}/Include)
+    target_link_libraries(${PROJECT_NAME} PRIVATE shaderc)
+else()
+    target_link_directories(${PROJECT_NAME} PUBLIC $ENV{VULKAN_SDK}/lib)
+    target_link_libraries(${PROJECT_NAME} PRIVATE shaderc_combined)
+endif()
 
 # VMA
 target_include_directories(${PROJECT_NAME} PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}/vendor/VulkanMemoryAllocator/include")
@@ -240,75 +243,6 @@ target_include_directories(${PROJECT_NAME} PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}/v
 # spirv-reflect
 target_include_directories(${PROJECT_NAME} PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}/vendor/spirv-reflect/")
 target_sources(${PROJECT_NAME} PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}/vendor/spirv-reflect/spirv_reflect.cpp")
-
-# spirv-headers
-set(BUILD_TESTS OFF)
-FetchContent_Declare(
-        SPIRV-Headers
-        GIT_REPOSITORY "https://github.com/KhronosGroup/SPIRV-Headers.git"
-        GIT_TAG "sdk-1.3.243.0"
-)
-FetchContent_MakeAvailable(SPIRV-Headers)
-get_target_property(SPIRV_HEADER_DIR SPIRV-Headers SOURCE_DIR)
-set(SPIRV_HEADERS_DIR ${SPIRV-Headers_SOURCE_DIR})
-set_targets_static_and_folder(SPIRV-Headers)
-
-# spirv-tools
-set(SPIRV_SKIP_TESTS ON)
-set(SPIRV_SKIP_EXECUTABLES ON)
-FetchContent_Declare(
-        SPIRV-Tools
-        GIT_REPOSITORY "https://github.com/KhronosGroup/SPIRV-Tools.git"
-        GIT_TAG "v2023.2"
-)
-FetchContent_MakeAvailable(SPIRV-Tools)
-get_target_property(SPIRV_TOOLS_DIR SPIRV-Tools SOURCE_DIR)
-set_targets_static_and_folder(SPIRV-Tools)
-FOLDER_DIR_TARGETS(spirv-tools-pkg-config)
-FOLDER_DIR_TARGETS(spirv-tools-shared-pkg-config)
-
-# glslang
-set(ENABLE_CTEST OFF)
-set(ENABLE_GLSLANG_BINARIES OFF)
-set(SKIP_GLSLANG_INSTALL ON)
-set(BUILD_EXTERNAL OFF)
-FetchContent_Declare(
-        glslang
-        GIT_REPOSITORY "https://github.com/KhronosGroup/glslang.git"
-        GIT_TAG "12.1.0"
-)
-FetchContent_MakeAvailable(glslang)
-get_target_property(GLSL_SOURCE_DIR glslang SOURCE_DIR)
-set_targets_static_and_folder(glslang)
-set_targets_static_and_folder(SPIRV)
-set_targets_static_and_folder(OGLCompiler)
-set_targets_static_and_folder(SPVRemapper)
-set_targets_static_and_folder(HLSL)
-
-# shaderc
-set(SHADERC_SKIP_INSTALL ON)
-set(SHADERC_ENABLE_SHARED_CRT OFF)
-set(SHADERC_SKIP_TESTS ON)
-set(SHADERC_SKIP_EXAMPLES ON)
-set(SHADERC_SKIP_COPYRIGHT_CHECK ON)    
-set(SHADERC_GLSLANG_DIR ${GLSL_SOURCE_DIR})
-FetchContent_Declare(
-        shaderc
-        GIT_REPOSITORY "https://github.com/google/shaderc.git"
-        GIT_TAG "v2023.3"
-)
-FetchContent_MakeAvailable(shaderc)
-target_link_libraries(${PROJECT_NAME} PUBLIC shaderc)
-get_target_property(SHADERC_SOURCE_DIR shaderc SOURCE_DIR)
-set_targets_static_and_folder(shaderc)
-set_targets_static_and_folder(shaderc_util)
-FOLDER_DIR_TARGETS(add-copyright)
-FOLDER_DIR_TARGETS(build-version)
-FOLDER_DIR_TARGETS(glslc)
-set_targets_static_and_folder(glslc_exe)
-FOLDER_DIR_TARGETS(shaderc_static-pkg-config)
-FOLDER_DIR_TARGETS(shaderc-pkg-config)
-FOLDER_DIR_TARGETS(shaderc_combined-pkg-config)
 
 # NFD
 add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/vendor/nativefiledialog-extended)
