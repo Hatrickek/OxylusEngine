@@ -67,8 +67,8 @@ namespace Oxylus {
     return "";
   }
 
-  std::filesystem::path VulkanShader::GetCachedDirectory(vk::ShaderStageFlagBits stage,
-                                                         std::filesystem::path cacheDirectory) {
+  std::filesystem::path VulkanShader::GetCachedDirectory(const vk::ShaderStageFlagBits stage,
+                                                         const std::filesystem::path& cacheDirectory) {
     return cacheDirectory / (m_VulkanFilePath[stage].filename().string() + GetCompiledFileExtension(stage));
   }
 
@@ -92,24 +92,6 @@ namespace Oxylus {
 
   void VulkanShader::CreateShader() {
     ProfilerTimer timer;
-    if (!m_ShaderDesc.ComputePath.empty()) {
-      m_VulkanFilePath[vk::ShaderStageFlagBits::eCompute] = m_ShaderDesc.ComputePath;
-      const auto& content = FileUtils::ReadFile(m_ShaderDesc.ComputePath);
-      OX_CORE_ASSERT(content, fmt::format("Couldn't load the shader file: {0}", m_ShaderDesc.ComputePath).c_str());
-      m_VulkanSourceCode[vk::ShaderStageFlagBits::eCompute] = content.value();
-    }
-    if (!m_ShaderDesc.VertexPath.empty()) {
-      m_VulkanFilePath[vk::ShaderStageFlagBits::eVertex] = m_ShaderDesc.VertexPath;
-      const auto& content = FileUtils::ReadFile(m_ShaderDesc.VertexPath);
-      OX_CORE_ASSERT(content, fmt::format("Couldn't load the shader file: {0}", m_ShaderDesc.ComputePath).c_str());
-      m_VulkanSourceCode[vk::ShaderStageFlagBits::eVertex] = content.value();
-    }
-    if (!m_ShaderDesc.FragmentPath.empty()) {
-      m_VulkanFilePath[vk::ShaderStageFlagBits::eFragment] = m_ShaderDesc.FragmentPath;
-      const auto& content = FileUtils::ReadFile(m_ShaderDesc.FragmentPath);
-      OX_CORE_ASSERT(content, fmt::format("Couldn't load the shader file: {0}", m_ShaderDesc.ComputePath).c_str());
-      m_VulkanSourceCode[vk::ShaderStageFlagBits::eFragment] = content.value();
-    }
 
     shaderc::CompileOptions options;
     options.SetTargetEnvironment(shaderc_target_env_vulkan, shaderc_env_version_vulkan_1_3);
@@ -121,15 +103,28 @@ namespace Oxylus {
 #endif
     options.SetIncluder(std::make_unique<Includer>());
 
-    for (auto&& [stage, source] : m_VulkanSourceCode) {
-      ReadOrCompile(stage, source, options);
+    if (!m_ShaderDesc.ComputePath.empty()) {
+      m_VulkanFilePath[vk::ShaderStageFlagBits::eCompute] = m_ShaderDesc.ComputePath;
+      const auto& content = FileUtils::ReadFile(m_ShaderDesc.ComputePath);
+      ReadOrCompile(vk::ShaderStageFlagBits::eCompute, content.value_or(""), options);
     }
+    if (!m_ShaderDesc.VertexPath.empty()) {
+      m_VulkanFilePath[vk::ShaderStageFlagBits::eVertex] = m_ShaderDesc.VertexPath;
+      const auto& content = FileUtils::ReadFile(m_ShaderDesc.VertexPath);
+      ReadOrCompile(vk::ShaderStageFlagBits::eVertex, content.value_or(""), options);
+    }
+    if (!m_ShaderDesc.FragmentPath.empty()) {
+      m_VulkanFilePath[vk::ShaderStageFlagBits::eFragment] = m_ShaderDesc.FragmentPath;
+      const auto& content = FileUtils::ReadFile(m_ShaderDesc.FragmentPath);
+      ReadOrCompile(vk::ShaderStageFlagBits::eFragment, content.value_or(""), options);
+    }
+
     for (auto&& [stage, source] : m_VulkanSPIRV) {
       CreateShaderModule(stage, source);
     }
 
     if (m_ShaderDesc.Name.empty()) {
-      m_ShaderDesc.Name = std::filesystem::path(m_ShaderDesc.VertexPath).filename().string();
+      m_ShaderDesc.Name = std::filesystem::path(m_ShaderDesc.VertexPath).stem().string();
     }
 
     // Reflection and layouts
@@ -164,7 +159,6 @@ namespace Oxylus {
     m_ReflectModules.clear();
 
     // Clear caches
-    m_VulkanSourceCode.clear();
     m_VulkanFilePath.clear();
     m_VulkanSPIRV.clear();
 
@@ -188,7 +182,7 @@ namespace Oxylus {
       data.resize(size / sizeof(uint32_t));
       in.read((char*)data.data(), size);
     }
-    else {
+    else if (!source.empty()) {
       shaderc::Compiler compiler;
       shaderc::SpvCompilationResult module = compiler.CompileGlslToSpv(source,
         GLShaderStageToShaderC(stage),
@@ -208,6 +202,7 @@ namespace Oxylus {
         out.close();
       }
     }
+    OX_CORE_ASSERT(!m_VulkanSPIRV[stage].empty());
   }
 
   void VulkanShader::CreateShaderModule(vk::ShaderStageFlagBits stage, const std::vector<unsigned>& source) {
@@ -258,12 +253,12 @@ namespace Oxylus {
       auto& binding = data.Bindings.emplace_back(DescriptorSetData{set->set, set->binding_count});
       for (uint32_t i = 0; i < set->binding_count; i++) {
         binding.bindings.emplace_back(DescriptorBindingData{
-          "",
-          set->bindings[i]->binding,
-          set->bindings[i]->set,
-          (vk::DescriptorType)set->bindings[i]->descriptor_type,
-          set->bindings[i]->count
-        }
+            "",
+            set->bindings[i]->binding,
+            set->bindings[i]->set,
+            (vk::DescriptorType)set->bindings[i]->descriptor_type,
+            set->bindings[i]->count
+          }
         );
       }
     }

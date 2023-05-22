@@ -48,7 +48,6 @@ namespace Oxylus {
 
   private:
     std::unordered_map<vk::ShaderStageFlagBits, std::vector<uint32_t>> m_VulkanSPIRV;
-    std::unordered_map<vk::ShaderStageFlagBits, std::string> m_VulkanSourceCode;
     std::unordered_map<vk::ShaderStageFlagBits, std::filesystem::path> m_VulkanFilePath;
     std::unordered_map<vk::ShaderStageFlagBits, vk::ShaderModule> m_ShaderModule;
     std::unordered_map<vk::ShaderStageFlagBits, vk::PipelineShaderStageCreateInfo> m_ShaderStage;
@@ -62,7 +61,7 @@ namespace Oxylus {
     void ReadOrCompile(vk::ShaderStageFlagBits stage, const std::string& source, const shaderc::CompileOptions& options);
     void CreateShaderModule(vk::ShaderStageFlagBits stage, const std::vector<unsigned>& source);
 
-    std::filesystem::path GetCachedDirectory(vk::ShaderStageFlagBits stage, std::filesystem::path cacheDirectory);
+    std::filesystem::path GetCachedDirectory(vk::ShaderStageFlagBits stage, const std::filesystem::path& cacheDirectory);
 
     // Layouts
     std::vector<vk::DescriptorSetLayout> m_DescriptorSetLayouts = {};
