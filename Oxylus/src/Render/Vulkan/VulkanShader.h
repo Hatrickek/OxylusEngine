@@ -7,7 +7,7 @@
 
 #include <vulkan/vulkan.hpp>
 
-#include "spirv_reflect.h"
+#include <spirv_reflect.h>
 
 namespace Oxylus {
   struct ShaderCI {

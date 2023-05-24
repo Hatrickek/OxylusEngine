@@ -23,7 +23,7 @@ namespace Oxylus {
     }
 
     VulkanImageDescription desc;
-    desc.Path = GetAssetFileSystemPath(path).string();
+    desc.Path = path;
     desc.CreateDescriptorSet = true;
     return LoadImageAsset(desc);
   }
@@ -35,10 +35,7 @@ namespace Oxylus {
         return asset;
       }
     }
-    auto desc = description;
-    desc.Path = (Project::GetProjectDirectory() / description.Path).string();
-
-    return LoadImageAsset(desc);
+    return LoadImageAsset(description);
   }
 
   Asset<Mesh> AssetManager::GetMeshAsset(const std::string& path, const int32_t loadingFlags) {

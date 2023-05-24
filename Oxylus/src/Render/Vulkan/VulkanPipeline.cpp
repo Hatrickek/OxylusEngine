@@ -23,31 +23,26 @@ namespace Oxylus {
 
     std::vector<vk::AttachmentDescription> attachmentDescriptions;
 
-    if (m_PipelineDescription.DepthAttachmentFirst)
-      CreateDepthAttachments(pipelineSpecification, attachmentDescriptions);
-
     CreateColorAttachments(pipelineSpecification, attachmentDescriptions);
-
-    if (!m_PipelineDescription.DepthAttachmentFirst)
-      CreateDepthAttachments(pipelineSpecification, attachmentDescriptions);
+    CreateDepthAttachments(pipelineSpecification, attachmentDescriptions);
 
     std::vector<vk::SubpassDescription> subpasses;
 
-    vk::AttachmentReference ColorAttachmentReference;
-    ColorAttachmentReference.attachment = m_PipelineDescription.ColorAttachment;
-    ColorAttachmentReference.layout = m_PipelineDescription.ColorAttachmentLayout;
+    vk::AttachmentReference colorAttachmentReference;
+    colorAttachmentReference.attachment = m_PipelineDescription.ColorAttachment;
+    colorAttachmentReference.layout = m_PipelineDescription.ColorAttachmentLayout;
 
-    vk::AttachmentReference DepthAttachmentReference;
-    DepthAttachmentReference.attachment = m_PipelineDescription.DepthSpec.DepthReferenceAttachment;
-    DepthAttachmentReference.layout = vk::ImageLayout::eDepthStencilAttachmentOptimal;
+    vk::AttachmentReference depthAttachmentReference;
+    depthAttachmentReference.attachment = m_PipelineDescription.DepthDesc.DepthReferenceAttachment;
+    depthAttachmentReference.layout = vk::ImageLayout::eDepthStencilAttachmentOptimal;
 
     vk::SubpassDescription subpassDescription;
     subpassDescription.pipelineBindPoint = vk::PipelineBindPoint::eGraphics;
     subpassDescription.colorAttachmentCount = pipelineSpecification.ColorAttachmentCount;
     if (pipelineSpecification.ColorAttachmentCount > 0)
-      subpassDescription.pColorAttachments = &ColorAttachmentReference;
-    if (pipelineSpecification.DepthSpec.DepthEnable)
-      subpassDescription.pDepthStencilAttachment = &DepthAttachmentReference;
+      subpassDescription.pColorAttachments = &colorAttachmentReference;
+    if (pipelineSpecification.DepthDesc.DepthEnable)
+      subpassDescription.pDepthStencilAttachment = &depthAttachmentReference;
 
     // Input from a shader
     subpassDescription.inputAttachmentCount = 0;
@@ -140,7 +135,7 @@ namespace Oxylus {
     PipelineCI.pViewportState = &ViewPortStateCI;
 
     vk::PipelineRasterizationStateCreateInfo RasterizerStateCI;
-    RasterizerStateCI.depthClampEnable = pipelineSpecification.RasterizerDesc.DepthClamppEnable ? VK_TRUE : VK_FALSE;
+    RasterizerStateCI.depthClampEnable = pipelineSpecification.RasterizerDesc.DepthClampEnable ? VK_TRUE : VK_FALSE;
     RasterizerStateCI.rasterizerDiscardEnable = VK_FALSE;
     RasterizerStateCI.polygonMode = pipelineSpecification.RasterizerDesc.FillMode;
     RasterizerStateCI.cullMode = pipelineSpecification.RasterizerDesc.CullMode;
@@ -169,31 +164,31 @@ namespace Oxylus {
     PipelineCI.pMultisampleState = &MSStateCI;
 
     vk::PipelineDepthStencilStateCreateInfo depthStencilStateCI;
-    depthStencilStateCI.depthTestEnable = pipelineSpecification.DepthSpec.DepthEnable ? VK_TRUE : VK_FALSE;
-    depthStencilStateCI.depthWriteEnable = pipelineSpecification.DepthSpec.DepthWriteEnable ? VK_TRUE : VK_FALSE;
-    depthStencilStateCI.depthCompareOp = pipelineSpecification.DepthSpec.CompareOp;
-    depthStencilStateCI.depthBoundsTestEnable = pipelineSpecification.DepthSpec.BoundTest ? VK_TRUE : VK_FALSE;
-    depthStencilStateCI.stencilTestEnable = pipelineSpecification.DepthSpec.StencilEnable ? VK_TRUE : VK_FALSE;
+    depthStencilStateCI.depthTestEnable = pipelineSpecification.DepthDesc.DepthEnable ? VK_TRUE : VK_FALSE;
+    depthStencilStateCI.depthWriteEnable = pipelineSpecification.DepthDesc.DepthWriteEnable ? VK_TRUE : VK_FALSE;
+    depthStencilStateCI.depthCompareOp = pipelineSpecification.DepthDesc.CompareOp;
+    depthStencilStateCI.depthBoundsTestEnable = pipelineSpecification.DepthDesc.BoundTest ? VK_TRUE : VK_FALSE;
+    depthStencilStateCI.stencilTestEnable = pipelineSpecification.DepthDesc.StencilEnable ? VK_TRUE : VK_FALSE;
     vk::StencilOpState FrontStencilState = {};
-    FrontStencilState.failOp = pipelineSpecification.DepthSpec.FrontFace.StencilFailOp;
-    FrontStencilState.passOp = pipelineSpecification.DepthSpec.FrontFace.StencilPassOp;
-    FrontStencilState.depthFailOp = pipelineSpecification.DepthSpec.FrontFace.StencilDepthFailOp;
-    FrontStencilState.compareOp = pipelineSpecification.DepthSpec.FrontFace.StencilFunc;
-    FrontStencilState.compareMask = pipelineSpecification.DepthSpec.StencilReadMask;
-    FrontStencilState.writeMask = pipelineSpecification.DepthSpec.StencilWriteMask;
+    FrontStencilState.failOp = pipelineSpecification.DepthDesc.FrontFace.StencilFailOp;
+    FrontStencilState.passOp = pipelineSpecification.DepthDesc.FrontFace.StencilPassOp;
+    FrontStencilState.depthFailOp = pipelineSpecification.DepthDesc.FrontFace.StencilDepthFailOp;
+    FrontStencilState.compareOp = pipelineSpecification.DepthDesc.FrontFace.StencilFunc;
+    FrontStencilState.compareMask = pipelineSpecification.DepthDesc.StencilReadMask;
+    FrontStencilState.writeMask = pipelineSpecification.DepthDesc.StencilWriteMask;
     FrontStencilState.reference = 0; // Set dynamically
     vk::StencilOpState BackStencilState = {};
-    BackStencilState.failOp = pipelineSpecification.DepthSpec.BackFace.StencilFailOp;
-    BackStencilState.passOp = pipelineSpecification.DepthSpec.BackFace.StencilPassOp;
-    BackStencilState.depthFailOp = pipelineSpecification.DepthSpec.BackFace.StencilDepthFailOp;
-    BackStencilState.compareOp = pipelineSpecification.DepthSpec.BackFace.StencilFunc;
-    BackStencilState.compareMask = pipelineSpecification.DepthSpec.StencilReadMask;
-    BackStencilState.writeMask = pipelineSpecification.DepthSpec.StencilWriteMask;
+    BackStencilState.failOp = pipelineSpecification.DepthDesc.BackFace.StencilFailOp;
+    BackStencilState.passOp = pipelineSpecification.DepthDesc.BackFace.StencilPassOp;
+    BackStencilState.depthFailOp = pipelineSpecification.DepthDesc.BackFace.StencilDepthFailOp;
+    BackStencilState.compareOp = pipelineSpecification.DepthDesc.BackFace.StencilFunc;
+    BackStencilState.compareMask = pipelineSpecification.DepthDesc.StencilReadMask;
+    BackStencilState.writeMask = pipelineSpecification.DepthDesc.StencilWriteMask;
     BackStencilState.reference = 0; // Set dynamically
     depthStencilStateCI.front = FrontStencilState;
     depthStencilStateCI.back = BackStencilState;
-    depthStencilStateCI.minDepthBounds = pipelineSpecification.DepthSpec.MinDepthBound;
-    depthStencilStateCI.maxDepthBounds = pipelineSpecification.DepthSpec.MaxDepthBound;
+    depthStencilStateCI.minDepthBounds = pipelineSpecification.DepthDesc.MinDepthBound;
+    depthStencilStateCI.maxDepthBounds = pipelineSpecification.DepthDesc.MaxDepthBound;
     PipelineCI.pDepthStencilState = &depthStencilStateCI;
 
     std::vector<vk::PipelineColorBlendAttachmentState> ColorBlendAttachmentStates(1);
@@ -259,9 +254,9 @@ namespace Oxylus {
 
   void VulkanPipeline::CreateDepthAttachments(const PipelineDescription& pipelineSpecification,
                                               std::vector<vk::AttachmentDescription>& attachmentDescriptions) const {
-    if (pipelineSpecification.DepthSpec.DepthEnable) {
+    if (pipelineSpecification.DepthDesc.DepthEnable) {
       vk::AttachmentDescription DepthAttachment = {
-        vk::AttachmentDescriptionFlags(), pipelineSpecification.DepthSpec.DepthStenctilFormat,
+        vk::AttachmentDescriptionFlags(), pipelineSpecification.DepthDesc.DepthStenctilFormat,
         pipelineSpecification.Samples, vk::AttachmentLoadOp::eClear, vk::AttachmentStoreOp::eStore,
         vk::AttachmentLoadOp::eDontCare, vk::AttachmentStoreOp::eDontCare, vk::ImageLayout::eUndefined,
         pipelineSpecification.DepthAttachmentLayout

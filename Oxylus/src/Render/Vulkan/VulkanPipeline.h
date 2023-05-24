@@ -67,7 +67,7 @@ namespace Oxylus {
   struct RasterizerDescription {
     vk::CullModeFlags CullMode = vk::CullModeFlagBits::eBack;
     bool ScissorEnable = false;
-    bool DepthClamppEnable = false;
+    bool DepthClampEnable = false;
     vk::PolygonMode FillMode = vk::PolygonMode::eFill;
     bool FrontCounterClockwise = true;
     int DepthBias = 0;
@@ -111,14 +111,13 @@ namespace Oxylus {
   struct PipelineDescription {
     std::string Name = {};
     RenderTargetDescription RenderTargets[MAX_RENDER_TARGETS];
-    bool DepthAttachmentFirst = false;
     uint32_t ColorAttachment = 0;
     vk::ImageLayout ColorAttachmentLayout = vk::ImageLayout::eColorAttachmentOptimal;
     vk::ImageLayout DepthAttachmentLayout = vk::ImageLayout::eDepthStencilAttachmentOptimal;
     SubpassDescription SubpassDescription[4];
     uint32_t SubpassDependencyCount = 1;
     Ref<VulkanShader> Shader = nullptr;
-    DepthStencilDescription DepthSpec;
+    DepthStencilDescription DepthDesc;
     uint8_t ColorAttachmentCount = 1;
     RasterizerDescription RasterizerDesc;
     VertexInputDescription VertexInputState;

@@ -87,8 +87,7 @@ namespace Oxylus {
     vk::DescriptorSetLayoutCreateInfo info = {};
     info.bindingCount = 1;
     info.pBindings = binding;
-    VulkanUtils::CheckResult(
-      LogicalDevice.createDescriptorSetLayout(&info, nullptr, &s_RendererData.ImageDescriptorSetLayout));
+    VulkanUtils::CheckResult(LogicalDevice.createDescriptorSetLayout(&info, nullptr, &s_RendererData.ImageDescriptorSetLayout));
 
     Resources::InitEngineResources();
 
@@ -138,13 +137,13 @@ namespace Oxylus {
       uiPipelineDecs.BlendStateDesc.RenderTargets[0].SrcBlend = vk::BlendFactor::eSrcAlpha;
       uiPipelineDecs.BlendStateDesc.RenderTargets[0].DestBlend = vk::BlendFactor::eOneMinusSrcAlpha;
       uiPipelineDecs.BlendStateDesc.RenderTargets[0].DestBlendAlpha = vk::BlendFactor::eOneMinusSrcAlpha;
-      uiPipelineDecs.DepthSpec.DepthEnable = false;
-      uiPipelineDecs.DepthSpec.DepthWriteEnable = false;
-      uiPipelineDecs.DepthSpec.CompareOp = vk::CompareOp::eNever;
-      uiPipelineDecs.DepthSpec.FrontFace.StencilFunc = vk::CompareOp::eNever;
-      uiPipelineDecs.DepthSpec.BackFace.StencilFunc = vk::CompareOp::eNever;
-      uiPipelineDecs.DepthSpec.MinDepthBound = 0;
-      uiPipelineDecs.DepthSpec.MaxDepthBound = 0;
+      uiPipelineDecs.DepthDesc.DepthEnable = false;
+      uiPipelineDecs.DepthDesc.DepthWriteEnable = false;
+      uiPipelineDecs.DepthDesc.CompareOp = vk::CompareOp::eNever;
+      uiPipelineDecs.DepthDesc.FrontFace.StencilFunc = vk::CompareOp::eNever;
+      uiPipelineDecs.DepthDesc.BackFace.StencilFunc = vk::CompareOp::eNever;
+      uiPipelineDecs.DepthDesc.MinDepthBound = 0;
+      uiPipelineDecs.DepthDesc.MaxDepthBound = 0;
       s_Pipelines.UIPipeline.CreateGraphicsPipelineAsync(uiPipelineDecs).wait();
     }
 

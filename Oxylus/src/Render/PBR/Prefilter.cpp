@@ -107,9 +107,9 @@ namespace Oxylus {
     PipelineDescription pipelineDescription;
     pipelineDescription.Shader = CreateRef<VulkanShader>(shader);
     pipelineDescription.RasterizerDesc.CullMode = vk::CullModeFlagBits::eNone;
-    pipelineDescription.DepthSpec.DepthEnable = false;
-    pipelineDescription.DepthSpec.DepthWriteEnable = false;
-    pipelineDescription.DepthSpec.CompareOp = vk::CompareOp::eNever;
+    pipelineDescription.DepthDesc.DepthEnable = false;
+    pipelineDescription.DepthDesc.DepthWriteEnable = false;
+    pipelineDescription.DepthDesc.CompareOp = vk::CompareOp::eNever;
     pipelineDescription.RenderPass = renderPass;
     pipeline.CreateGraphicsPipeline(pipelineDescription);
 
@@ -294,9 +294,9 @@ namespace Oxylus {
     pipelineDescription.Shader = CreateRef<VulkanShader>(shader);
     pipelineDescription.RenderPass = renderpass;
     pipelineDescription.RasterizerDesc.CullMode = vk::CullModeFlagBits::eNone;
-    pipelineDescription.DepthSpec.DepthEnable = false;
-    pipelineDescription.DepthSpec.DepthWriteEnable = false;
-    pipelineDescription.DepthSpec.CompareOp = vk::CompareOp::eNever;
+    pipelineDescription.DepthDesc.DepthEnable = false;
+    pipelineDescription.DepthDesc.DepthWriteEnable = false;
+    pipelineDescription.DepthDesc.CompareOp = vk::CompareOp::eNever;
     pipelineDescription.VertexInputState.bindingDescriptions = {
       {0, vertexLayout.stride(), vk::VertexInputRate::eVertex},
     };
@@ -565,9 +565,9 @@ namespace Oxylus {
     PipelineDescription pipelineDescription;
     pipelineDescription.Shader = CreateRef<VulkanShader>(shader);
     pipelineDescription.RenderPass = renderpass;
-    pipelineDescription.DepthSpec.DepthEnable = false;
-    pipelineDescription.DepthSpec.DepthWriteEnable = false;
-    pipelineDescription.DepthSpec.CompareOp = vk::CompareOp::eNever;
+    pipelineDescription.DepthDesc.DepthEnable = false;
+    pipelineDescription.DepthDesc.DepthWriteEnable = false;
+    pipelineDescription.DepthDesc.CompareOp = vk::CompareOp::eNever;
     pipelineDescription.RasterizerDesc.CullMode = vk::CullModeFlagBits::eNone;
     pipelineDescription.VertexInputState.bindingDescriptions = {
       {0, vertexLayout.stride(), vk::VertexInputRate::eVertex},

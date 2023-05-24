@@ -40,8 +40,10 @@ namespace Oxylus {
     framebufferCreateInfo.renderPass = m_FramebufferDescription.RenderPass;
     framebufferCreateInfo.pAttachments = fbAttachments.data();
     framebufferCreateInfo.attachmentCount = (uint32_t)fbAttachments.size();
-
     VulkanUtils::CheckResult(LogicalDevice.createFramebuffer(&framebufferCreateInfo, nullptr, &m_Framebuffer));
+    VulkanUtils::SetObjectName((uint64_t)(VkFramebuffer)m_Framebuffer,
+      vk::ObjectType::eFramebuffer,
+      m_FramebufferDescription.DebugName.c_str());
 
     if (!m_Resizing && m_FramebufferDescription.Resizable)
       FrameBufferPool::AddToPool(this);

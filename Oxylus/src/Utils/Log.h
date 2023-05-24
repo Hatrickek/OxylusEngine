@@ -22,7 +22,13 @@ namespace Oxylus {
 
 #define OX_ENABLE_ASSERTS
 
-#ifdef OX_DEBUG
+#ifdef OX_DISTRIBUTION
+#define OX_DISABLE_DEBUG_BREAKS
+#endif
+
+#define OX_DISABLE_DEBUG_BREAKS
+
+#ifndef OX_DISABLE_DEBUG_BREAKS
 #if defined(OX_PLATFORM_WINDOWS)
 #define OX_DEBUGBREAK() __debugbreak();
 #elif defined(OX_PLATFORM_LINUX)
@@ -37,7 +43,7 @@ namespace Oxylus {
 #define OX_DEBUGBREAK()
 #endif
 
-//log macros
+// log macros
 #define OX_CORE_TRACE(...) ::Oxylus::Log::GetCoreLogger()->trace(__VA_ARGS__)
 #define OX_CORE_INFO(...) ::Oxylus::Log::GetCoreLogger()->info(__VA_ARGS__)
 #define OX_CORE_WARN(...) ::Oxylus::Log::GetCoreLogger()->warn(__VA_ARGS__)

@@ -119,7 +119,7 @@ target_compile_definitions(${PROJECT_NAME} PRIVATE
   "TRACY_ENABLE"
   ">"
   "$<$<CONFIG:Distribution>:"
-  "OX_Distribution;"
+  "OX_DISTRIBUTION;"
   "NDEBUG"
   ">"
   "VULKAN_HPP_NO_EXCEPTIONS"

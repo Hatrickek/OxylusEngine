@@ -32,6 +32,13 @@ namespace Oxylus {
     ImGui::EndTable();
   }
 
+  void IGUI::Text(const char* text1, const char* text2, const char* tooltip) {
+    BeginPropertyGrid(text1, tooltip);
+    ImGui::SetCursorPosY(ImGui::GetCursorPosY() + ImGui::GetStyle().FramePadding.y * 0.5f);
+    ImGui::Text(text2);
+    EndPropertyGrid();
+  }
+
   bool IGUI::Property(const char* label, bool& flag, const char* tooltip) {
     BeginPropertyGrid(label, tooltip);
     const bool modified = ImGui::Checkbox(s_IDBuffer, &flag);

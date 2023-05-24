@@ -59,11 +59,13 @@ namespace Oxylus {
     {".gif", FileType::Texture},
     {".ktx", FileType::Texture},
     {".ktx2", FileType::Texture},
+    {".tiff", FileType::Texture},
 
     {".hdr", FileType::Cubemap},
     {".tga", FileType::Cubemap},
 
     {".gltf", FileType::Model},
+    {".glb", FileType::Model},
     {".oxmat", FileType::Material},
 
     {".mp3", FileType::Audio},
@@ -569,9 +571,7 @@ namespace Oxylus {
             }
           }
           else if (file.Type == FileType::Model) {
-            if (file.Thumbnail) {
-              textureId = m_MeshIcon->GetDescriptorSet();
-            }
+            textureId = m_MeshIcon->GetDescriptorSet();
           }
           else {
             textureId = m_FileIcon->GetDescriptorSet();

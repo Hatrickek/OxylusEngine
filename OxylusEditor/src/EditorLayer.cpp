@@ -490,8 +490,7 @@ namespace Oxylus {
     if (path.empty())
       return;
     if (Project::Load(path)) {
-      const auto projectDir = Project::GetProjectDirectory();
-      const auto startScene = AssetManager::GetAssetFileSystemPath(Project::GetActive()->GetConfig().StartScene);
+      const auto& startScene = AssetManager::GetAssetFileSystemPath(Project::GetActive()->GetConfig().StartScene);
       OpenScene(startScene);
     }
   }

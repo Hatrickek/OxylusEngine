@@ -15,7 +15,6 @@ namespace Oxylus {
     }
 
     static bool CheckResult(vk::Result result) {
-      //vk::resultCheck(result, "Vulkan Exception: \n");
       if (result != vk::Result::eSuccess) {
         OX_DEBUGBREAK();
         return false;

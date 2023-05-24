@@ -224,7 +224,7 @@ namespace Oxylus {
         for (const auto& childId : rc.Children) {
           Entity child = m_Context->GetEntityByUUID(childId);
           const float HorizontalTreeLineSize = child.GetRelationship().Children.empty() ? 18.0f : 9.0f;
-          //chosen arbitrarily
+          // chosen arbitrarily
           const ImRect childRect = DrawEntityNode(child, depth + 1, forceExpandTree, isPartOfPrefab);
 
           const float midpoint = (childRect.Min.y + childRect.Max.y) / 2.0f;
@@ -252,8 +252,7 @@ namespace Oxylus {
   void SceneHierarchyPanel::DragDropTarget() const {
     if (ImGui::BeginDragDropTarget()) {
       if (const ImGuiPayload* payload = ImGui::AcceptDragDropPayload("CONTENT_BROWSER_ITEM")) {
-        std::filesystem::path path = IGUI::GetPathFromImGuiPayload(payload);
-        path = AssetManager::GetAssetFileSystemPath(path);
+        const std::filesystem::path path = IGUI::GetPathFromImGuiPayload(payload);
         if (path.extension() == ".oxscene") {
           EditorLayer::Get()->OpenScene(path);
         }

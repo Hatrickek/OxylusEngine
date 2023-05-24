@@ -134,7 +134,7 @@ vec3 specularContribution(vec3 L, vec3 V, vec3 N, vec3 F0, float metallic,
 }
 
 // See http://www.thetenthplanet.de/archives/1180
-vec3 perturbNormal(vec2 uv) {
+vec3 GetNormal(vec2 uv) {
   vec3 tangentNormal = normalize(inNormal);
   if (u_Material.UseNormal) {
     tangentNormal = texture(normalMap, uv).xyz * 2.0 - 1.0;
@@ -176,7 +176,7 @@ void main() {
     discard;
   }
 
-  vec3 normal = perturbNormal(scaledUV);
+  vec3 normal = GetNormal(scaledUV);
   vec3 V = normalize(u_Ubo.camPos - inWorldPos);
   vec3 R = reflect(-V, normal);
 
@@ -251,7 +251,7 @@ void main() {
   // Cascade debug
   // color *= ColorCascades(cascadeIndex);
 
-  color += u_Material.Emmisive.rgb;
+  color += 0;//u_Material.Emmisive.rgb;
 
 
   // TODO: Make configurable via buffers

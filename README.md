@@ -32,10 +32,10 @@ Sponza scene with IBL PBR, SSAO, SSR and Directional Shadows
 ## Building
 ### CMake
 - Run the root CMake script with a command like this:       
-`cmake -S . -B ./Build/ -G "Visual Studio 17 2022" -A x64` to generate Visual Studio files (or with any generator you like) into `Build` folder.   
-Or with `cmake -B ./Build -DCMAKE_BUILD_TYPE=Release -DCMAKE_CXX_COMPILER=clang++` to generate for clang.    
+`cmake -S . -B ./build/ -G "Visual Studio 17 2022" -A x64` to generate Visual Studio files (or with any generator you like) into `Build` folder.   
+Or with `cmake -B ./build -DCMAKE_BUILD_TYPE=Release -DCMAKE_CXX_COMPILER=clang++` to generate for clang.    
 - Then run this command to build it with CMake:   
-`cmake --build ./Build --config Release`   
+`cmake --build ./build --config Release`   
 - Vulkan SDK must be installed and VULKAN_SDK env path must be set in order to build the project (It is most of the time automatically set by the Vulkan SDK installer).  
 
 ## Dependencies

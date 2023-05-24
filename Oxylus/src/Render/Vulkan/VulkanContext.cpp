@@ -1,4 +1,5 @@
 #include "src/oxpch.h"
+#define VULKAN_HPP_DISPATCH_LOADER_DYNAMIC 1
 #include "VulkanContext.h"
 
 #include "Utils/VulkanUtils.h"

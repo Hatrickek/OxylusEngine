@@ -336,12 +336,12 @@ namespace Oxylus {
                                  : "Drop a cubemap file";
         const float x = ImGui::GetContentRegionAvail().x;
         const float y = ImGui::GetFrameHeight();
-        ImGui::Button(filepath, {x, y});
+        if(ImGui::Button(filepath, {x, y}))
+          const auto& path = FileDialogs::OpenFile({{"CubeMap File", ".ktx, .ktx2"}});
         if (ImGui::BeginDragDropTarget()) {
           if (const ImGuiPayload* payload = ImGui::AcceptDragDropPayload("CONTENT_BROWSER_ITEM")) {
-            std::filesystem::path path = IGUI::GetPathFromImGuiPayload(payload);
+            const std::filesystem::path path = AssetManager::GetAssetFileSystemPath(IGUI::GetPathFromImGuiPayload(payload));
             const std::string ext = path.extension().string();
-            path = AssetManager::GetAssetFileSystemPath(path);
             if (ext == ".ktx" || ext == ".ktx2" || ext == ".hdr") {
               VulkanImageDescription CubeMapDesc;
               CubeMapDesc.Path = path.string();
@@ -403,13 +403,11 @@ namespace Oxylus {
         const float y = ImGui::GetFrameHeight();
         ImGui::Button(filepath, {x, y});
         if (ImGui::BeginDragDropTarget()) {
-          if (const ImGuiPayload* payload = ImGui::AcceptDragDropPayload(
-            "CONTENT_BROWSER_ITEM")) {
+          if (const ImGuiPayload* payload = ImGui::AcceptDragDropPayload("CONTENT_BROWSER_ITEM")) {
             const std::filesystem::path path = IGUI::GetPathFromImGuiPayload(payload);
             const std::string ext = path.extension().string();
             if (ext == ".mp3" || ext == ".wav")
-              component.Source = CreateRef<AudioSource>(
-                AssetManager::GetAssetFileSystemPath(path).string().c_str());
+              component.Source = CreateRef<AudioSource>(AssetManager::GetAssetFileSystemPath(path).string().c_str());
           }
           ImGui::EndDragDropTarget();
         }
@@ -564,36 +562,42 @@ namespace Oxylus {
       [this](RigidBodyComponent& component) {
         const auto bodyInterface = m_Scene->GetBodyInterface();
         IGUI::BeginProperties();
+        // TODO(hatrickek): Inspector panel for rigidbody component.
+
+        // Motion type
         const char* motionTypes[3] = {"Static", "Kinematic", "Dynamic"};
-        if (IGUI::Property("Motion Type", component.MotionType, motionTypes, 3)) {
-          switch (component.MotionType) {
-            case 0: {
-              bodyInterface->SetMotionType(component.BodyID, JPH::EMotionType::Static, JPH::EActivation::DontActivate);
-              break;
-            }
-            case 1: {
-              bodyInterface->SetMotionType(component.BodyID, JPH::EMotionType::Kinematic, JPH::EActivation::DontActivate);
-              break;
-            }
-            case 2: {
-              bodyInterface->SetMotionType(component.BodyID, JPH::EMotionType::Dynamic, JPH::EActivation::DontActivate);
-              break;
-            }
-            default: {
-              bodyInterface->SetMotionType(component.BodyID, JPH::EMotionType::Dynamic, JPH::EActivation::DontActivate);
-            }
-          }
+        const uint8_t currentType = (uint8_t)bodyInterface->GetMotionType(component.BodyID);
+        int selectedType = currentType;
+        if (IGUI::Property("Motion Type", selectedType, motionTypes, 3)) {
+          bodyInterface->SetMotionType(component.BodyID, (JPH::EMotionType)(uint8_t)selectedType, JPH::EActivation::Activate);
         }
-        if (IGUI::Property("Friction", component.Friction, 0.0f, 10.0f)) {
-          bodyInterface->SetFriction(component.BodyID, component.Friction);
+
+        // Friction
+        const float currentFriction = bodyInterface->GetFriction(component.BodyID);
+        float selectedFriction = currentFriction;
+        if (IGUI::Property("Friction", selectedFriction, 0.0f, 10.0f)) {
+          bodyInterface->SetFriction(component.BodyID, selectedFriction);
         }
-        IGUI::EndProperties();
+
         ImGui::Separator();
-        ImGui::Text("Shape");
-        IGUI::BeginProperties();
-        const char* shapeTypes[5] = {"Box", "Sphere", "Capsule", "Cylinder", "Mesh"};
-        IGUI::Property("Shape Type", component.Shape, shapeTypes, 5);
-        // TODO: Set shape
+
+        // Shape
+        auto shapeEnumToString = [](const JPH::EShapeSubType type) {
+          switch (type) {
+            case JPH::EShapeSubType::Sphere: return "Sphere";
+            case JPH::EShapeSubType::Box: return "Box";
+            case JPH::EShapeSubType::Triangle: return "Triangle";
+            case JPH::EShapeSubType::Capsule: return "Capsule";
+            case JPH::EShapeSubType::TaperedCapsule: return "TaperedCapsule";
+            case JPH::EShapeSubType::Cylinder: return "Cylinder";
+            case JPH::EShapeSubType::ConvexHull: return "ConvexHull";
+            case JPH::EShapeSubType::Mesh: return "Mesh";
+            default: return "Empty";
+          }
+        };
+        const auto currentShape = bodyInterface->GetShape(component.BodyID)->GetSubType();
+        IGUI::Text("Shape", shapeEnumToString(currentShape));
+
         IGUI::EndProperties();
       });
 

@@ -77,7 +77,7 @@ target_compile_definitions(${PROJECT_NAME} PRIVATE
         "TRACY_ENABLE"
     ">"
     "$<$<CONFIG:Distribution>:"
-        "OX_Distribution;"
+        "OX_DISTRIBUTION;"
         "NDEBUG"
     ">"
     "_HAS_EXCEPTIONS=0;"

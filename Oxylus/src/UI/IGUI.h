@@ -17,6 +17,9 @@ namespace Oxylus {
 
     static void EndProperties();
 
+    // Text
+    static void Text(const char* text1, const char* text2, const char* tooltip = nullptr);
+
     // Bool
     static bool Property(const char* label, bool& flag, const char* tooltip = nullptr);
 
@@ -115,7 +118,7 @@ namespace Oxylus {
       return modified;
     }
 
-    //Texture
+    // Texture
     static bool Property(const char* label,
                          Ref<VulkanImage>& texture,
                          uint64_t overrideTextureID = 0,

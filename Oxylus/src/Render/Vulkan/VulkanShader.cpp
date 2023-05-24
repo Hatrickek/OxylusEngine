@@ -158,8 +158,7 @@ namespace Oxylus {
       spvReflectDestroyShaderModule(&module);
     m_ReflectModules.clear();
 
-    // Clear caches
-    m_VulkanFilePath.clear();
+    // Clear cache
     m_VulkanSPIRV.clear();
 
     timer.Print(fmt::format("Shader {0} loaded", m_ShaderDesc.Name));
@@ -357,7 +356,7 @@ namespace Oxylus {
     for (const auto& [stage, flag] : m_ShaderStage) {
       const std::filesystem::path cacheDirectory = GetCacheDirectory();
       std::filesystem::path cachedPath = GetCachedDirectory(stage, cacheDirectory);
-      std::remove(cachedPath.string().c_str());
+      std::filesystem::remove(cachedPath);
     }
     m_OnReloadBeginEvent();
     Unload();

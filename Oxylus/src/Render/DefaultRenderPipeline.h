@@ -161,6 +161,7 @@ namespace Oxylus {
       VulkanPipeline CompositePipeline;
       VulkanPipeline AtmospherePipeline;
       VulkanPipeline DepthOfFieldPipeline;
+      VulkanPipeline DebugRenderPipeline;
     } m_Pipelines;
 
     struct FrameBuffers {
