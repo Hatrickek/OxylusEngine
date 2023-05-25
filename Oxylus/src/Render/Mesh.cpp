@@ -135,7 +135,7 @@ namespace Oxylus {
       nullptr,
       VMA_MEMORY_USAGE_AUTO_PREFER_DEVICE);
 
-    VulkanRenderer::SubmitOnce([&](const VulkanCommandBuffer copyCmd) {
+    VulkanRenderer::SubmitOnce(CommandPoolManager::Get()->GetFreePool(), [&](const VulkanCommandBuffer copyCmd) {
       vk::BufferCopy copyRegion{};
 
       copyRegion.size = vBufferSize;

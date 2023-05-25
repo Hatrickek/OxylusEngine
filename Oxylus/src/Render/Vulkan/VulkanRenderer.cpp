@@ -25,6 +25,9 @@ namespace Oxylus {
   VulkanRenderer::RendererContext VulkanRenderer::s_RendererContext;
   VulkanRenderer::RendererData VulkanRenderer::s_RendererData;
   VulkanRenderer::Pipelines VulkanRenderer::s_Pipelines;
+  Ref<DebugRenderer> VulkanRenderer::s_DebugRenderer = nullptr;
+  Ref<DescriptorPoolManager> VulkanRenderer::s_DescriptorPoolManager = nullptr;
+  Ref<CommandPoolManager> VulkanRenderer::s_CommandPoolManager = nullptr;
   RendererConfig VulkanRenderer::s_RendererConfig;
 
   Ref<DefaultRenderPipeline> VulkanRenderer::s_DefaultPipeline = nullptr;
@@ -51,28 +54,18 @@ namespace Oxylus {
       RendererConfig::Get()->ConfigChangeDispatcher.trigger(RendererConfig::ConfigChangeEvent{});
     }
 
+    // Debug renderer
+    s_DebugRenderer = CreateRef<DebugRenderer>();
+    s_DebugRenderer->Init();
+
     const auto& LogicalDevice = VulkanContext::GetDevice();
 
-    constexpr vk::DescriptorPoolSize poolSizes[] = {
-      {vk::DescriptorType::eSampler, 50}, {vk::DescriptorType::eCombinedImageSampler, 50},
-      {vk::DescriptorType::eSampledImage, 50}, {vk::DescriptorType::eStorageImage, 10},
-      {vk::DescriptorType::eUniformTexelBuffer, 50}, {vk::DescriptorType::eStorageTexelBuffer, 10},
-      {vk::DescriptorType::eUniformBuffer, 50}, {vk::DescriptorType::eStorageBuffer, 50},
-      {vk::DescriptorType::eUniformBufferDynamic, 50}, {vk::DescriptorType::eStorageBufferDynamic, 10},
-      {vk::DescriptorType::eInputAttachment, 50}
-    };
-    vk::DescriptorPoolCreateInfo poolInfo = {};
-    poolInfo.flags = vk::DescriptorPoolCreateFlagBits::eFreeDescriptorSet;
-    poolInfo.maxSets = 1000 * IM_ARRAYSIZE(poolSizes);
-    poolInfo.poolSizeCount = static_cast<uint32_t>(IM_ARRAYSIZE(poolSizes));
-    poolInfo.pPoolSizes = poolSizes;
-    VulkanUtils::CheckResult(LogicalDevice.createDescriptorPool(&poolInfo, nullptr, &s_RendererContext.DescriptorPool));
+    // Pool managers
+    s_DescriptorPoolManager = CreateRef<DescriptorPoolManager>();
+    s_DescriptorPoolManager->Init();
 
-    // Command Buffers
-    vk::CommandPoolCreateInfo cmdPoolInfo;
-    cmdPoolInfo.queueFamilyIndex = VulkanContext::VulkanQueue.graphicsQueueFamilyIndex;
-    cmdPoolInfo.flags = vk::CommandPoolCreateFlagBits::eResetCommandBuffer;
-    s_RendererContext.CommandPool = VulkanContext::Context.Device.createCommandPool(cmdPoolInfo).value;
+    s_CommandPoolManager = CreateRef<CommandPoolManager>();
+    s_CommandPoolManager->Init();
 
     SwapChain.SetVsync(RendererConfig::Get()->DisplayConfig.VSync, false);
     SwapChain.CreateSwapChain();
@@ -174,12 +167,13 @@ namespace Oxylus {
         vk::MemoryPropertyFlagBits::eDeviceLocal,
         vBufferSize);
 
-      SubmitOnce([&vBufferSize, &vertexStaging](const VulkanCommandBuffer copyCmd) {
-        vk::BufferCopy copyRegion{};
+      SubmitOnce(CommandPoolManager::Get()->GetFreePool(),
+        [&vBufferSize, &vertexStaging](const VulkanCommandBuffer copyCmd) {
+          vk::BufferCopy copyRegion{};
 
-        copyRegion.size = vBufferSize;
-        vertexStaging.CopyTo(s_TriangleVertexBuffer.Get(), copyCmd.Get(), copyRegion);
-      });
+          copyRegion.size = vBufferSize;
+          vertexStaging.CopyTo(s_TriangleVertexBuffer.Get(), copyCmd.Get(), copyRegion);
+        });
 
       vertexStaging.Destroy();
     }
@@ -198,39 +192,23 @@ namespace Oxylus {
 
   void VulkanRenderer::Shutdown() {
     RendererConfig::Get()->SaveConfig("renderer.oxconfig");
+    s_DebugRenderer->Release();
+    s_DescriptorPoolManager->Release();
+    s_CommandPoolManager->Release();
 #if GPU_PROFILER_ENABLED
     TracyProfiler::DestroyContext();
 #endif
   }
 
-  void VulkanRenderer::Submit(const std::function<void()>& submitFunc) {
-    const auto& LogicalDevice = VulkanContext::Context.Device;
-    const auto& CommandBuffer = SwapChain.GetCommandBuffer();
-    const auto& GraphicsQueue = VulkanContext::VulkanQueue.GraphicsQueue;
-
-    vk::CommandBufferBeginInfo beginInfo = {};
-    beginInfo.flags = vk::CommandBufferUsageFlagBits::eOneTimeSubmit;
-
-    vk::SubmitInfo endInfo;
-    endInfo.pCommandBuffers = &CommandBuffer.Get();
-    endInfo.commandBufferCount = 1;
-
-    LogicalDevice.resetCommandPool(s_RendererContext.CommandPool);
-    CommandBuffer.Begin(beginInfo);
-    submitFunc();
-    CommandBuffer.End();
-    VulkanUtils::CheckResult(GraphicsQueue.submit(endInfo));
-    WaitDeviceIdle();
-  }
-
-  void VulkanRenderer::SubmitOnce(const std::function<void(VulkanCommandBuffer& cmdBuffer)>& submitFunc) {
+  void VulkanRenderer::SubmitOnce(vk::CommandPool commandPool, const std::function<void(VulkanCommandBuffer& cmdBuffer)>& submitFunc) {
     VulkanCommandBuffer cmdBuffer;
-    cmdBuffer.CreateBuffer();
+    cmdBuffer.CreateBuffer(commandPool);
     cmdBuffer.Begin(vk::CommandBufferBeginInfo{vk::CommandBufferUsageFlagBits::eOneTimeSubmit});
     submitFunc(cmdBuffer);
     cmdBuffer.End();
     cmdBuffer.FlushBuffer();
     cmdBuffer.FreeBuffer();
+    CommandPoolManager::Get()->FreePool(commandPool);
   }
 
   void VulkanRenderer::SubmitQueue(const VulkanCommandBuffer& commandBuffer) {

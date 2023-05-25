@@ -9,7 +9,7 @@
 namespace Oxylus {
   VulkanDescriptorSet& VulkanDescriptorSet::CreateFromShader(const Ref<VulkanShader>& shader, const uint32_t set) {
     vk::DescriptorSetAllocateInfo allocateInfo;
-    allocateInfo.descriptorPool = VulkanRenderer::s_RendererContext.DescriptorPool;
+    allocateInfo.descriptorPool = DescriptorPoolManager::Get()->GetFreePool();
     allocateInfo.descriptorSetCount = 1;
     allocateInfo.pSetLayouts = &shader->GetDescriptorSetLayouts()[set];
     const auto result1 = VulkanContext::GetDevice().allocateDescriptorSets(allocateInfo);

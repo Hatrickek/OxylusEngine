@@ -144,7 +144,7 @@ namespace Oxylus {
     m_FontImage.Create(fontImageDesc);
 
     vk::DescriptorSetAllocateInfo allocInfo = {};
-    allocInfo.descriptorPool = VulkanRenderer::s_RendererContext.DescriptorPool;
+    allocInfo.descriptorPool = DescriptorPoolManager::Get()->GetFreePool();
     allocInfo.descriptorSetCount = 1;
     allocInfo.pSetLayouts = &VulkanRenderer::s_Pipelines.UIPipeline.GetDescriptorSetLayout()[0];
     VulkanUtils::CheckResult(LogicalDevice.allocateDescriptorSets(&allocInfo, &s_FontDescriptorSet));

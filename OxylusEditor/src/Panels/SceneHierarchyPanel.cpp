@@ -7,6 +7,10 @@
 #include <misc/cpp/imgui_stdlib.h>
 
 #include "EditorLayer.h"
+#include "Jolt/Physics/Character/Character.h"
+#include "Jolt/Physics/Collision/Shape/CapsuleShape.h"
+#include "Jolt/Physics/Collision/Shape/RotatedTranslatedShape.h"
+#include "Physics/PhysicsRigidbodies.h"
 #include "Scene/EntitySerializer.h"
 #include "UI/IGUI.h"
 #include "Utils/ImGuiScoped.h"
@@ -318,42 +322,45 @@ namespace Oxylus {
 
       if (ImGui::BeginMenu("Physics")) {
         using namespace JPH;
+
         if (ImGui::MenuItem("Sphere")) {
           toSelect = m_Context->CreateEntity("Sphere");
-          auto& pos = toSelect.GetComponent<TransformComponent>().Translation;
-          BodyCreationSettings bcs(
-            new SphereShape(1.0f),
-            {pos.x, pos.y, pos.z},
-            Quat::sIdentity(),
-            EMotionType::Dynamic,
-            PhysicsLayers::MOVING);
-          bcs.mOverrideMassProperties = EOverrideMassProperties::CalculateInertia;
-          bcs.mMassPropertiesOverride.mMass = 10.0f;
+          const auto& pos = toSelect.GetComponent<TransformComponent>().Translation;
           auto& rb = toSelect.AddComponent<RigidBodyComponent>();
-          rb.BodyID = m_Context->GetBodyInterface()->CreateAndAddBody(bcs, EActivation::Activate);
-          rb.MotionType = RigidBodyComponent::DYNAMIC;
-          rb.Friction = m_Context->GetBodyInterface()->GetFriction(rb.BodyID);
+          rb.BodyID = PhysicsRigidbodies::CreateSphereBody(m_Context->GetBodyInterface(), pos, 1.0f);
           toSelect.AddComponentI<MeshRendererComponent>(AssetManager::GetMeshAsset("Resources/Objects/sphere.gltf").Data);
         }
 
         if (ImGui::MenuItem("Plane")) {
           toSelect = m_Context->CreateEntity("Plane");
-          auto& pos = toSelect.GetComponent<TransformComponent>().Translation;
-          BodyCreationSettings bcs(
-            new BoxShape(Vec3Arg(1.0, .1f, 1.0)),
-            {pos.x, pos.y, pos.z},
-            Quat::sIdentity(),
-            EMotionType::Dynamic,
-            PhysicsLayers::MOVING);
-          bcs.mOverrideMassProperties = EOverrideMassProperties::CalculateInertia;
-          bcs.mMassPropertiesOverride.mMass = 10.0f;
+          const auto& pos = toSelect.GetComponent<TransformComponent>().Translation;
           auto& rb = toSelect.AddComponent<RigidBodyComponent>();
-          rb.BodyID = m_Context->GetBodyInterface()->CreateAndAddBody(bcs, EActivation::Activate);
-          rb.MotionType = RigidBodyComponent::DYNAMIC;
-          rb.Friction = m_Context->GetBodyInterface()->GetFriction(rb.BodyID);
+          rb.BodyID = PhysicsRigidbodies::CreateBoxBody(m_Context->GetBodyInterface(), pos, {1.0, .1f, 1.0});
           toSelect.AddComponentI<MeshRendererComponent>(AssetManager::GetMeshAsset("Resources/Objects/plane.gltf").Data);
         }
-        if (ImGui::MenuItem("Kinematic Char Controller")) { }
+
+        if (ImGui::MenuItem("Character Controller")) {
+          toSelect = m_Context->CreateEntity("Character Controller");
+          auto& pos = toSelect.GetComponent<TransformComponent>().Translation;
+          auto& component = toSelect.AddComponent<CharacterControllerComponent>();
+
+          // Create shape
+          component.Shape = RotatedTranslatedShapeSettings(
+            JPH::Vec3(pos.x, 0.5f * component.CharacterHeightStanding + component.CharacterRadiusStanding, pos.z),
+            Quat::sIdentity(),
+            new CapsuleShape(0.5f * component.CharacterHeightStanding, component.CharacterRadiusStanding)).Create().Get();
+
+          // Create character
+          Ref<CharacterSettings> settings = CreateRef<CharacterSettings>();
+          settings->mMaxSlopeAngle = DegreesToRadians(45.0f);
+          settings->mLayer = PhysicsLayers::MOVING;
+          settings->mShape = component.Shape;
+          settings->mFriction = 0.5f;
+          settings->mSupportingVolume = Plane(JPH::Vec3::sAxisY(), -component.CharacterRadiusStanding); // Accept contacts that touch the lower sphere of the capsule
+          component.Character = new Character(settings.get(), RVec3::sZero(), Quat::sIdentity(), 0, m_Context->GetPhysicsSystem().get());
+          component.Character->AddToPhysicsSystem(EActivation::Activate);
+          toSelect.AddComponentI<MeshRendererComponent>(AssetManager::GetMeshAsset("Resources/Objects/capsule.glb").Data);
+        }
 
         ImGui::EndMenu();
       }

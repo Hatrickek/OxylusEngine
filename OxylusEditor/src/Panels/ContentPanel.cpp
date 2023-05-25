@@ -562,12 +562,19 @@ namespace Oxylus {
               textureCreated = true;
               file.Thumbnail = VulkanImage::GetBlankImage();
               ThreadManager::Get()->AssetThread.QueueJob([&file] {
-                file.Thumbnail = AssetManager::GetImageAsset(file.Filepath).Data;
+                const bool isCubeMap = file.Extension == ".ktx" || file.Extension == ".ktx2";
+                VulkanImageDescription imageDescription = {};
+                imageDescription.Path = file.Filepath;
+                imageDescription.CreateDescriptorSet = true;
+                if (isCubeMap)
+                  file.Thumbnail = CreateRef<VulkanImage>(imageDescription);
+                else
+                  file.Thumbnail = AssetManager::GetImageAsset(imageDescription).Data;
               });
               textureId = file.Thumbnail->GetDescriptorSet();
             }
             else {
-              textureId = 0;
+              textureId = nullptr;
             }
           }
           else if (file.Type == FileType::Model) {

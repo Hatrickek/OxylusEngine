@@ -6,8 +6,18 @@
 
 namespace Oxylus {
   void VulkanCommandBuffer::CreateBuffer(vk::CommandBufferLevel level) {
+    m_CommandPool = CommandPoolManager::Get()->GetFreePool();
     vk::CommandBufferAllocateInfo cmdBufAllocateInfo;
-    cmdBufAllocateInfo.commandPool = VulkanRenderer::s_RendererContext.CommandPool;
+    cmdBufAllocateInfo.commandPool = m_CommandPool;
+    cmdBufAllocateInfo.level = level;
+    cmdBufAllocateInfo.commandBufferCount = 1;
+    m_Buffer = VulkanContext::GetDevice().allocateCommandBuffers(cmdBufAllocateInfo).value[0];
+  }
+
+  void VulkanCommandBuffer::CreateBuffer(vk::CommandPool commandPool, vk::CommandBufferLevel level) {
+    m_CommandPool = commandPool;
+    vk::CommandBufferAllocateInfo cmdBufAllocateInfo;
+    cmdBufAllocateInfo.commandPool = commandPool;
     cmdBufAllocateInfo.level = level;
     cmdBufAllocateInfo.commandBufferCount = 1;
     m_Buffer = VulkanContext::GetDevice().allocateCommandBuffers(cmdBufAllocateInfo).value[0];
@@ -90,6 +100,6 @@ namespace Oxylus {
   }
 
   void VulkanCommandBuffer::FreeBuffer() const {
-    VulkanContext::Context.Device.freeCommandBuffers(VulkanRenderer::s_RendererContext.CommandPool, this->m_Buffer);
+    VulkanContext::Context.Device.freeCommandBuffers(m_CommandPool, this->m_Buffer);
   }
 }

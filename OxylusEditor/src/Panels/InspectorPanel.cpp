@@ -56,7 +56,7 @@ namespace Oxylus {
 
       bool removeComponent = false;
       if (removable) {
-        ImGui::PushID(static_cast<int>(id));
+        ImGui::PushID((int)id);
 
         const float frameHeight = ImGui::GetFrameHeight();
         ImGui::SameLine(ImGui::GetContentRegionMax().x - frameHeight * 1.2f);
@@ -331,31 +331,37 @@ namespace Oxylus {
     DrawComponent<SkyLightComponent>(ICON_MDI_WEATHER_SUNNY " Sky Light Component",
       entity,
       [this](SkyLightComponent& component) {
-        const char* filepath = component.Cubemap
-                                 ? component.Cubemap->GetDesc().Path.c_str()
-                                 : "Drop a cubemap file";
+        const char* name = component.Cubemap
+                             ? component.Cubemap->GetDesc().Path.c_str()
+                             : "Drop a cubemap file";
         const float x = ImGui::GetContentRegionAvail().x;
         const float y = ImGui::GetFrameHeight();
-        if(ImGui::Button(filepath, {x, y}))
-          const auto& path = FileDialogs::OpenFile({{"CubeMap File", ".ktx, .ktx2"}});
+        auto loadCubeMap = [](const Ref<Scene>& scene, const std::string& path, SkyLightComponent& comp) {
+          if (path.empty())
+            return;
+          const auto ext = std::filesystem::path(path).extension().string();
+          if (ext == ".ktx" || ext == ".ktx2") {
+            VulkanImageDescription CubeMapDesc;
+            CubeMapDesc.Path = path;
+            CubeMapDesc.Type = ImageType::TYPE_CUBE;
+            comp.Cubemap = AssetManager::GetImageAsset(CubeMapDesc).Data;
+            scene->GetRenderer().Dispatcher.trigger(SceneRenderer::SkyboxLoadEvent{comp.Cubemap});
+          }
+        };
+        if (ImGui::Button(name, {x, y})) {
+          const std::string filePath = FileDialogs::OpenFile({{"CubeMap File", "ktx,ktx2"}});
+          loadCubeMap(m_Scene, filePath, component);
+        }
         if (ImGui::BeginDragDropTarget()) {
           if (const ImGuiPayload* payload = ImGui::AcceptDragDropPayload("CONTENT_BROWSER_ITEM")) {
-            const std::filesystem::path path = AssetManager::GetAssetFileSystemPath(IGUI::GetPathFromImGuiPayload(payload));
-            const std::string ext = path.extension().string();
-            if (ext == ".ktx" || ext == ".ktx2" || ext == ".hdr") {
-              VulkanImageDescription CubeMapDesc;
-              CubeMapDesc.Path = path.string();
-              CubeMapDesc.Type = ImageType::TYPE_CUBE;
-              component.Cubemap = AssetManager::GetImageAsset(CubeMapDesc).Data;
-              m_Scene->GetRenderer().Dispatcher.trigger(SceneRenderer::SkyboxLoadEvent{component.Cubemap});
-            }
+            const auto path = IGUI::GetPathFromImGuiPayload(payload).string();
+            loadCubeMap(m_Scene, path, component);
           }
           ImGui::EndDragDropTarget();
         }
         ImGui::Spacing();
         IGUI::BeginProperties();
         IGUI::Property("Cubemap Lod Bias", component.CubemapLodBias);
-        IGUI::Property("Flip Image", component.FlipImage);
         IGUI::EndProperties();
       });
 

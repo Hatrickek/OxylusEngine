@@ -115,6 +115,8 @@ namespace Oxylus {
   }
 
   void VulkanImage::Create(const VulkanImageDescription& imageDescription) {
+    m_CommandPool = CommandPoolManager::Get()->GetFreePool();
+
     m_ImageDescription = imageDescription;
 
     const bool hasPath = !m_ImageDescription.Path.empty();
@@ -127,6 +129,8 @@ namespace Oxylus {
   }
 
   void VulkanImage::CreateWithImage(const VulkanImageDescription& imageDescription, const vk::Image image) {
+    m_CommandPool = CommandPoolManager::Get()->GetFreePool();
+
     m_ImageDescription = imageDescription;
     m_Image = image;
 
@@ -175,7 +179,7 @@ namespace Oxylus {
       PhysicalDevice,
       LogicalDevice,
       VulkanContext::VulkanQueue.GraphicsQueue,
-      VulkanRenderer::s_RendererContext.CommandPool,
+      m_CommandPool,
       nullptr);
 
     if (version == 1) {
@@ -392,7 +396,7 @@ namespace Oxylus {
       PhysicalDevice,
       LogicalDevice,
       VulkanContext::VulkanQueue.GraphicsQueue,
-      VulkanRenderer::s_RendererContext.CommandPool,
+      m_CommandPool,
       nullptr);
 
     if (version == 1) {
@@ -522,7 +526,7 @@ namespace Oxylus {
       OX_CORE_WARN("Image format doesn't support linear blitting!");
       return;
     }
-    VulkanRenderer::SubmitOnce([this](const VulkanCommandBuffer& cmdBuffer) {
+    VulkanRenderer::SubmitOnce(m_CommandPool, [this](const VulkanCommandBuffer& cmdBuffer) {
       VkImageMemoryBarrier barrier{};
       barrier.sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER;
       barrier.image = GetImage();
@@ -595,7 +599,7 @@ namespace Oxylus {
     vk::DescriptorSet descriptorSet;
     {
       vk::DescriptorSetAllocateInfo allocInfo = {};
-      allocInfo.descriptorPool = VulkanRenderer::s_RendererContext.DescriptorPool;
+      allocInfo.descriptorPool = DescriptorPoolManager::Get()->GetFreePool();
       allocInfo.descriptorSetCount = 1;
       //if (m_ImageDescription.DescriptorSetLayout)
       //	allocInfo.pSetLayouts = &m_ImageDescription.DescriptorSetLayout;
@@ -642,7 +646,7 @@ namespace Oxylus {
         imageMemoryBarrier);
     }
     else {
-      VulkanRenderer::SubmitOnce([&](const VulkanCommandBuffer& cmd) {
+      VulkanRenderer::SubmitOnce(m_CommandPool, [&](const VulkanCommandBuffer& cmd) {
         vk::ImageMemoryBarrier imageMemoryBarrier;
         imageMemoryBarrier.oldLayout = oldImageLayout;
         imageMemoryBarrier.newLayout = newImageLayout;

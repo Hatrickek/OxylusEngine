@@ -125,17 +125,17 @@ namespace Oxylus {
     renderPassBeginInfo.pClearValues = clearValues;
     renderPassBeginInfo.framebuffer = framebuffer;
 
-    VulkanRenderer::SubmitOnce([&](const VulkanCommandBuffer& cmdBuf) {
-      cmdBuf.Get().beginRenderPass(renderPassBeginInfo, vk::SubpassContents::eInline);
-      vk::Viewport viewport{0, 0, static_cast<float>(dim), static_cast<float>(dim), 0, 1};
-      vk::Rect2D scissor{vk::Offset2D{}, vk::Extent2D{static_cast<uint32_t>(dim), static_cast<uint32_t>(dim)}};
-      cmdBuf.Get().setViewport(0, viewport);
-      cmdBuf.Get().setScissor(0, scissor);
-      pipeline.BindPipeline(cmdBuf.Get());
-      cmdBuf.Get().draw(3, 1, 0, 0);
-      cmdBuf.Get().endRenderPass();
-    });
-    VulkanRenderer::WaitGraphicsQueueIdle();
+    VulkanRenderer::SubmitOnce(CommandPoolManager::Get()->GetFreePool(),
+      [&](const VulkanCommandBuffer& cmdBuf) {
+        cmdBuf.Get().beginRenderPass(renderPassBeginInfo, vk::SubpassContents::eInline);
+        constexpr vk::Viewport viewport{0, 0, static_cast<float>(dim), static_cast<float>(dim), 0, 1};
+        constexpr vk::Rect2D scissor{vk::Offset2D{}, vk::Extent2D{static_cast<uint32_t>(dim), static_cast<uint32_t>(dim)}};
+        cmdBuf.Get().setViewport(0, viewport);
+        cmdBuf.Get().setScissor(0, scissor);
+        pipeline.BindPipeline(cmdBuf.Get());
+        cmdBuf.Get().draw(3, 1, 0, 0);
+        cmdBuf.Get().endRenderPass();
+      });
 
     pipeline.Destroy();
     LogicalDevice.destroyPipelineLayout(pipelinelayout);
@@ -331,93 +331,94 @@ namespace Oxylus {
       glm::rotate(glm::mat4(1.0f), glm::radians(180.0f), glm::vec3(0.0f, 0.0f, 1.0f)),
     };
 
-    VulkanRenderer::SubmitOnce([&](const VulkanCommandBuffer& cmdBuf) {
-      vk::Viewport viewport{0, 0, static_cast<float>(dim), static_cast<float>(dim), 0.0f, 1.0f};
-      vk::Rect2D scissor{vk::Offset2D{}, vk::Extent2D{static_cast<uint32_t>(dim), static_cast<uint32_t>(dim)}};
+    VulkanRenderer::SubmitOnce(CommandPoolManager::Get()->GetFreePool(),
+      [&](const VulkanCommandBuffer& cmdBuf) {
+        vk::Viewport viewport{0, 0, static_cast<float>(dim), static_cast<float>(dim), 0.0f, 1.0f};
+        vk::Rect2D scissor{vk::Offset2D{}, vk::Extent2D{static_cast<uint32_t>(dim), static_cast<uint32_t>(dim)}};
 
-      cmdBuf.Get().setViewport(0, viewport);
-      cmdBuf.Get().setScissor(0, scissor);
+        cmdBuf.Get().setViewport(0, viewport);
+        cmdBuf.Get().setScissor(0, scissor);
 
-      vk::ImageSubresourceRange subresourceRange = {};
-      subresourceRange.aspectMask = vk::ImageAspectFlagBits::eColor;
-      subresourceRange.levelCount = numMips;
-      subresourceRange.layerCount = 6;
+        vk::ImageSubresourceRange subresourceRange = {};
+        subresourceRange.aspectMask = vk::ImageAspectFlagBits::eColor;
+        subresourceRange.levelCount = numMips;
+        subresourceRange.layerCount = 6;
 
-      // Change image layout for all cubemap faces to transfer destination
-      target.SetImageLayout(vk::ImageLayout::eUndefined,
-        vk::ImageLayout::eTransferDstOptimal,
-        subresourceRange,
-        &cmdBuf);
+        // Change image layout for all cubemap faces to transfer destination
+        target.SetImageLayout(vk::ImageLayout::eUndefined,
+          vk::ImageLayout::eTransferDstOptimal,
+          subresourceRange,
+          &cmdBuf);
 
-      for (uint32_t m = 0; m < numMips; m++) {
-        for (uint32_t f = 0; f < 6; f++) {
-          viewport.width = static_cast<float>(dim * std::pow(0.5f, m));
-          viewport.height = static_cast<float>(dim * std::pow(0.5f, m));
-          cmdBuf.Get().setViewport(0, 1, &viewport);
-          // Render scene from cube face's point of view
-          cmdBuf.BeginRenderPass(renderPassBeginInfo);
+        for (uint32_t m = 0; m < numMips; m++) {
+          for (uint32_t f = 0; f < 6; f++) {
+            viewport.width = static_cast<float>(dim * std::pow(0.5f, m));
+            viewport.height = static_cast<float>(dim * std::pow(0.5f, m));
+            cmdBuf.Get().setViewport(0, 1, &viewport);
+            // Render scene from cube face's point of view
+            cmdBuf.BeginRenderPass(renderPassBeginInfo);
 
-          // Update shader push constant block
-          pushBlock.mvp = glm::perspective(static_cast<float>((M_PI / 2.0)), 1.0f, 0.1f, 512.0f) * matrices[f];
+            // Update shader push constant block
+            pushBlock.mvp = glm::perspective(static_cast<float>((M_PI / 2.0)), 1.0f, 0.1f, 512.0f) * matrices[f];
 
-          cmdBuf.Get().pushConstants<PushBlock>(pipelinelayout,
-            vk::ShaderStageFlagBits::eVertex | vk::ShaderStageFlagBits::eFragment,
-            0,
-            pushBlock);
+            cmdBuf.Get().pushConstants<PushBlock>(pipelinelayout,
+              vk::ShaderStageFlagBits::eVertex | vk::ShaderStageFlagBits::eFragment,
+              0,
+              pushBlock);
 
-          pipeline.BindPipeline(cmdBuf.Get());
-          pipeline.BindDescriptorSets(cmdBuf.Get(), {descriptorset});
+            pipeline.BindPipeline(cmdBuf.Get());
+            pipeline.BindDescriptorSets(cmdBuf.Get(), {descriptorset});
 
-          std::vector<vk::DeviceSize> offsets{0};
+            std::vector<vk::DeviceSize> offsets{0};
 
-          cmdBuf.Get().bindVertexBuffers(0, skybox.VerticiesBuffer.Get(), offsets);
-          cmdBuf.Get().bindIndexBuffer(skybox.IndiciesBuffer.Get(), 0, vk::IndexType::eUint32);
-          cmdBuf.Get().drawIndexed(skybox.IndexCount, 1, 0, 0, 0);
+            cmdBuf.Get().bindVertexBuffers(0, skybox.VerticiesBuffer.Get(), offsets);
+            cmdBuf.Get().bindIndexBuffer(skybox.IndiciesBuffer.Get(), 0, vk::IndexType::eUint32);
+            cmdBuf.Get().drawIndexed(skybox.IndexCount, 1, 0, 0, 0);
 
-          cmdBuf.EndRenderPass();
+            cmdBuf.EndRenderPass();
 
-          vk::ImageSubresourceRange subresourceRange;
-          subresourceRange.aspectMask = vk::ImageAspectFlagBits::eColor;
-          subresourceRange.levelCount = 1;
-          subresourceRange.layerCount = 1;
-          offscreen.image.SetImageLayout(vk::ImageLayout::eColorAttachmentOptimal,
-            vk::ImageLayout::eTransferSrcOptimal,
-            subresourceRange,
-            &cmdBuf);
+            vk::ImageSubresourceRange subresourceRange;
+            subresourceRange.aspectMask = vk::ImageAspectFlagBits::eColor;
+            subresourceRange.levelCount = 1;
+            subresourceRange.layerCount = 1;
+            offscreen.image.SetImageLayout(vk::ImageLayout::eColorAttachmentOptimal,
+              vk::ImageLayout::eTransferSrcOptimal,
+              subresourceRange,
+              &cmdBuf);
 
-          // Copy region for transfer from framebuffer to cube face
-          vk::ImageCopy copyRegion;
-          copyRegion.srcSubresource.aspectMask = vk::ImageAspectFlagBits::eColor;
-          copyRegion.srcSubresource.baseArrayLayer = 0;
-          copyRegion.srcSubresource.mipLevel = 0;
-          copyRegion.srcSubresource.layerCount = 1;
-          copyRegion.srcOffset = vk::Offset3D{};
-          copyRegion.dstSubresource.aspectMask = vk::ImageAspectFlagBits::eColor;
-          copyRegion.dstSubresource.baseArrayLayer = f;
-          copyRegion.dstSubresource.mipLevel = m;
-          copyRegion.dstSubresource.layerCount = 1;
-          copyRegion.dstOffset = vk::Offset3D{};
-          copyRegion.extent.width = static_cast<uint32_t>(viewport.width);
-          copyRegion.extent.height = static_cast<uint32_t>(viewport.height);
-          copyRegion.extent.depth = 1;
+            // Copy region for transfer from framebuffer to cube face
+            vk::ImageCopy copyRegion;
+            copyRegion.srcSubresource.aspectMask = vk::ImageAspectFlagBits::eColor;
+            copyRegion.srcSubresource.baseArrayLayer = 0;
+            copyRegion.srcSubresource.mipLevel = 0;
+            copyRegion.srcSubresource.layerCount = 1;
+            copyRegion.srcOffset = vk::Offset3D{};
+            copyRegion.dstSubresource.aspectMask = vk::ImageAspectFlagBits::eColor;
+            copyRegion.dstSubresource.baseArrayLayer = f;
+            copyRegion.dstSubresource.mipLevel = m;
+            copyRegion.dstSubresource.layerCount = 1;
+            copyRegion.dstOffset = vk::Offset3D{};
+            copyRegion.extent.width = static_cast<uint32_t>(viewport.width);
+            copyRegion.extent.height = static_cast<uint32_t>(viewport.height);
+            copyRegion.extent.depth = 1;
 
-          cmdBuf.Get().copyImage(offscreen.image.GetImage(),
-            vk::ImageLayout::eTransferSrcOptimal,
-            target.GetImage(),
-            vk::ImageLayout::eTransferDstOptimal,
-            copyRegion);
+            cmdBuf.Get().copyImage(offscreen.image.GetImage(),
+              vk::ImageLayout::eTransferSrcOptimal,
+              target.GetImage(),
+              vk::ImageLayout::eTransferDstOptimal,
+              copyRegion);
 
-          offscreen.image.SetImageLayout(vk::ImageLayout::eTransferSrcOptimal,
-            vk::ImageLayout::eColorAttachmentOptimal,
-            subresourceRange,
-            &cmdBuf);
+            offscreen.image.SetImageLayout(vk::ImageLayout::eTransferSrcOptimal,
+              vk::ImageLayout::eColorAttachmentOptimal,
+              subresourceRange,
+              &cmdBuf);
+          }
         }
-      }
-      target.SetImageLayout(vk::ImageLayout::eTransferDstOptimal,
-        vk::ImageLayout::eShaderReadOnlyOptimal,
-        subresourceRange,
-        &cmdBuf);
-    });
+        target.SetImageLayout(vk::ImageLayout::eTransferDstOptimal,
+          vk::ImageLayout::eShaderReadOnlyOptimal,
+          subresourceRange,
+          &cmdBuf);
+      });
 
     renderpass.Destroy();
     LogicalDevice.destroyFramebuffer(offscreen.framebuffer, nullptr);
@@ -561,7 +562,7 @@ namespace Oxylus {
         .EntryPoint = "main",
       }
     };
-    vk::PipelineLayout pipelinelayout =  shader.GetPipelineLayout();
+    vk::PipelineLayout pipelinelayout = shader.GetPipelineLayout();
     PipelineDescription pipelineDescription;
     pipelineDescription.Shader = CreateRef<VulkanShader>(shader);
     pipelineDescription.RenderPass = renderpass;
@@ -605,89 +606,90 @@ namespace Oxylus {
       glm::rotate(glm::mat4(1.0f), glm::radians(180.0f), glm::vec3(0.0f, 0.0f, 1.0f)),
     };
 
-    VulkanRenderer::SubmitOnce([&](const VulkanCommandBuffer& cmdBuf) {
-      vk::Viewport viewport{0, 0, static_cast<float>(dim), static_cast<float>(dim), 0, 1};
-      vk::Rect2D scissor{vk::Offset2D{}, vk::Extent2D{static_cast<uint32_t>(dim), static_cast<uint32_t>(dim)}};
-      cmdBuf.Get().setViewport(0, viewport);
-      cmdBuf.Get().setScissor(0, scissor);
-      const vk::ImageSubresourceRange subresourceRange{vk::ImageAspectFlagBits::eColor, 0, numMips, 0, 6};
-      // Change image layout for all cubemap faces to transfer destination
-      target.SetImageLayout(vk::ImageLayout::eUndefined,
-        vk::ImageLayout::eTransferDstOptimal,
-        subresourceRange,
-        &cmdBuf);
+    VulkanRenderer::SubmitOnce(CommandPoolManager::Get()->GetFreePool(),
+      [&](const VulkanCommandBuffer& cmdBuf) {
+        vk::Viewport viewport{0, 0, static_cast<float>(dim), static_cast<float>(dim), 0, 1};
+        vk::Rect2D scissor{vk::Offset2D{}, vk::Extent2D{static_cast<uint32_t>(dim), static_cast<uint32_t>(dim)}};
+        cmdBuf.Get().setViewport(0, viewport);
+        cmdBuf.Get().setScissor(0, scissor);
+        const vk::ImageSubresourceRange subresourceRange{vk::ImageAspectFlagBits::eColor, 0, numMips, 0, 6};
+        // Change image layout for all cubemap faces to transfer destination
+        target.SetImageLayout(vk::ImageLayout::eUndefined,
+          vk::ImageLayout::eTransferDstOptimal,
+          subresourceRange,
+          &cmdBuf);
 
-      for (uint32_t m = 0; m < numMips; m++) {
-        pushBlock.roughness = static_cast<float>(m) / static_cast<float>(numMips - 1);
-        for (uint32_t f = 0; f < 6; f++) {
-          viewport.width = static_cast<float>(dim * std::pow(0.5f, m));
-          viewport.height = static_cast<float>(dim * std::pow(0.5f, m));
-          cmdBuf.Get().setViewport(0, viewport);
+        for (uint32_t m = 0; m < numMips; m++) {
+          pushBlock.roughness = static_cast<float>(m) / static_cast<float>(numMips - 1);
+          for (uint32_t f = 0; f < 6; f++) {
+            viewport.width = static_cast<float>(dim * std::pow(0.5f, m));
+            viewport.height = static_cast<float>(dim * std::pow(0.5f, m));
+            cmdBuf.Get().setViewport(0, viewport);
 
-          // Render scene from cube face's point of view
-          cmdBuf.Get().beginRenderPass(renderPassBeginInfo, vk::SubpassContents::eInline);
+            // Render scene from cube face's point of view
+            cmdBuf.Get().beginRenderPass(renderPassBeginInfo, vk::SubpassContents::eInline);
 
-          // Update shader push constant block
-          pushBlock.mvp = glm::perspective(static_cast<float>((M_PI / 2.0)), 1.0f, 0.1f, 512.0f) * matrices[f];
+            // Update shader push constant block
+            pushBlock.mvp = glm::perspective(static_cast<float>((M_PI / 2.0)), 1.0f, 0.1f, 512.0f) * matrices[f];
 
-          cmdBuf.Get().pushConstants<PushBlock>(pipelinelayout,
-            vk::ShaderStageFlagBits::eVertex | vk::ShaderStageFlagBits::eFragment,
-            0,
-            pushBlock);
-          cmdBuf.Get().bindPipeline(vk::PipelineBindPoint::eGraphics, pipeline.Get());
-          cmdBuf.Get().bindDescriptorSets(vk::PipelineBindPoint::eGraphics, pipelinelayout, 0, descriptorset, nullptr);
+            cmdBuf.Get().pushConstants<PushBlock>(pipelinelayout,
+              vk::ShaderStageFlagBits::eVertex | vk::ShaderStageFlagBits::eFragment,
+              0,
+              pushBlock);
+            cmdBuf.Get().bindPipeline(vk::PipelineBindPoint::eGraphics, pipeline.Get());
+            cmdBuf.Get().bindDescriptorSets(vk::PipelineBindPoint::eGraphics, pipelinelayout, 0, descriptorset, nullptr);
 
-          std::vector<vk::DeviceSize> offsets{0};
-          cmdBuf.Get().bindVertexBuffers(0, skybox.VerticiesBuffer.Get(), offsets);
-          cmdBuf.Get().bindIndexBuffer(skybox.IndiciesBuffer.Get(), 0, vk::IndexType::eUint32);
-          cmdBuf.Get().drawIndexed(skybox.IndexCount, 1, 0, 0, 0);
+            std::vector<vk::DeviceSize> offsets{0};
+            cmdBuf.Get().bindVertexBuffers(0, skybox.VerticiesBuffer.Get(), offsets);
+            cmdBuf.Get().bindIndexBuffer(skybox.IndiciesBuffer.Get(), 0, vk::IndexType::eUint32);
+            cmdBuf.Get().drawIndexed(skybox.IndexCount, 1, 0, 0, 0);
 
-          cmdBuf.Get().endRenderPass();
+            cmdBuf.Get().endRenderPass();
 
-          vk::ImageSubresourceRange subresourceRange1;
-          subresourceRange1.aspectMask = vk::ImageAspectFlagBits::eColor;
-          subresourceRange1.levelCount = 1;
-          subresourceRange1.layerCount = 1;
-          offscreen.image.SetImageLayout(vk::ImageLayout::eColorAttachmentOptimal,
-            vk::ImageLayout::eTransferSrcOptimal,
-            subresourceRange1,
-            &cmdBuf);
+            vk::ImageSubresourceRange subresourceRange1;
+            subresourceRange1.aspectMask = vk::ImageAspectFlagBits::eColor;
+            subresourceRange1.levelCount = 1;
+            subresourceRange1.layerCount = 1;
+            offscreen.image.SetImageLayout(vk::ImageLayout::eColorAttachmentOptimal,
+              vk::ImageLayout::eTransferSrcOptimal,
+              subresourceRange1,
+              &cmdBuf);
 
-          // Copy region for transfer from framebuffer to cube face
-          vk::ImageCopy copyRegion;
-          copyRegion.srcSubresource.aspectMask = vk::ImageAspectFlagBits::eColor;
-          copyRegion.srcSubresource.baseArrayLayer = 0;
-          copyRegion.srcSubresource.mipLevel = 0;
-          copyRegion.srcSubresource.layerCount = 1;
-          copyRegion.srcOffset = vk::Offset3D{};
+            // Copy region for transfer from framebuffer to cube face
+            vk::ImageCopy copyRegion;
+            copyRegion.srcSubresource.aspectMask = vk::ImageAspectFlagBits::eColor;
+            copyRegion.srcSubresource.baseArrayLayer = 0;
+            copyRegion.srcSubresource.mipLevel = 0;
+            copyRegion.srcSubresource.layerCount = 1;
+            copyRegion.srcOffset = vk::Offset3D{};
 
-          copyRegion.dstSubresource.aspectMask = vk::ImageAspectFlagBits::eColor;
-          copyRegion.dstSubresource.baseArrayLayer = f;
-          copyRegion.dstSubresource.mipLevel = m;
-          copyRegion.dstSubresource.layerCount = 1;
-          copyRegion.dstOffset = vk::Offset3D{};
+            copyRegion.dstSubresource.aspectMask = vk::ImageAspectFlagBits::eColor;
+            copyRegion.dstSubresource.baseArrayLayer = f;
+            copyRegion.dstSubresource.mipLevel = m;
+            copyRegion.dstSubresource.layerCount = 1;
+            copyRegion.dstOffset = vk::Offset3D{};
 
-          copyRegion.extent.width = static_cast<uint32_t>(viewport.width);
-          copyRegion.extent.height = static_cast<uint32_t>(viewport.height);
-          copyRegion.extent.depth = 1;
+            copyRegion.extent.width = static_cast<uint32_t>(viewport.width);
+            copyRegion.extent.height = static_cast<uint32_t>(viewport.height);
+            copyRegion.extent.depth = 1;
 
-          cmdBuf.Get().copyImage(offscreen.image.GetImage(),
-            vk::ImageLayout::eTransferSrcOptimal,
-            target.GetImage(),
-            vk::ImageLayout::eTransferDstOptimal,
-            copyRegion);
-          // Transform framebuffer color attachment back
-          offscreen.image.SetImageLayout(vk::ImageLayout::eTransferSrcOptimal,
-            vk::ImageLayout::eColorAttachmentOptimal,
-            subresourceRange1,
-            &cmdBuf);
+            cmdBuf.Get().copyImage(offscreen.image.GetImage(),
+              vk::ImageLayout::eTransferSrcOptimal,
+              target.GetImage(),
+              vk::ImageLayout::eTransferDstOptimal,
+              copyRegion);
+            // Transform framebuffer color attachment back
+            offscreen.image.SetImageLayout(vk::ImageLayout::eTransferSrcOptimal,
+              vk::ImageLayout::eColorAttachmentOptimal,
+              subresourceRange1,
+              &cmdBuf);
+          }
         }
-      }
-      target.SetImageLayout(vk::ImageLayout::eTransferDstOptimal,
-        vk::ImageLayout::eShaderReadOnlyOptimal,
-        subresourceRange,
-        &cmdBuf);
-    });
+        target.SetImageLayout(vk::ImageLayout::eTransferDstOptimal,
+          vk::ImageLayout::eShaderReadOnlyOptimal,
+          subresourceRange,
+          &cmdBuf);
+      });
 
     // todo: cleanup
     renderpass.Destroy();

@@ -1,4 +1,5 @@
 #pragma once
+#include <future>
 #include <vulkan/vulkan.hpp>
 
 #include "vk_mem_alloc.h"
@@ -100,12 +101,13 @@ namespace Oxylus {
     vk::DescriptorSet CreateDescriptorSet() const;
 
     vk::ImageLayout m_ImageLayout = vk::ImageLayout::eUndefined;
-    VkImage m_Image{};
-    vk::ImageView m_View{};
-    vk::Sampler m_Sampler{};
-    vk::DescriptorSet m_DescSet{};
-    VulkanImageDescription m_ImageDescription{};
+    VkImage m_Image = {};
+    vk::ImageView m_View = {};
+    vk::Sampler m_Sampler = {};
+    vk::DescriptorSet m_DescSet = {};
+    VulkanImageDescription m_ImageDescription = {};
     const uint8_t* m_ImageData = nullptr;
-    VmaAllocation m_Allocation{};
+    VmaAllocation m_Allocation = {};
+    vk::CommandPool m_CommandPool = {};
   };
 }

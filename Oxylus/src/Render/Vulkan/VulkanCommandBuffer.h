@@ -7,6 +7,7 @@ namespace Oxylus {
     VulkanCommandBuffer() = default;
 
     void CreateBuffer(vk::CommandBufferLevel level = vk::CommandBufferLevel::ePrimary);
+    void CreateBuffer(vk::CommandPool commandPool, vk::CommandBufferLevel level = vk::CommandBufferLevel::ePrimary);
 
     const VulkanCommandBuffer& Begin(const vk::CommandBufferBeginInfo& beginInfo) const;
 
@@ -39,5 +40,6 @@ namespace Oxylus {
 
   private:
     vk::CommandBuffer m_Buffer;
+    vk::CommandPool m_CommandPool;
   };
 }
