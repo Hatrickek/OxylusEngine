@@ -110,7 +110,7 @@ namespace Oxylus {
     if (ImGui::BeginDragDropTarget()) {
       if (const ImGuiPayload* payload = ImGui::AcceptDragDropPayload("CONTENT_BROWSER_ITEM")) {
         const auto path = GetPathFromImGuiPayload(payload);
-        const auto& asset = AssetManager::GetImageAsset(AssetManager::GetAssetFileSystemPath(path).string());
+        const auto& asset = AssetManager::GetImageAsset(path.string());
         texture = asset.Data;
         changed = true;
       }

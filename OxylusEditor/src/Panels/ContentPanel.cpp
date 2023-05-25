@@ -423,7 +423,7 @@ namespace Oxylus {
     ImGui::PopStyleVar();
 
     if (!directoryToOpen.empty())
-      UpdateDirectoryEntries(m_AssetsDirectory / directoryToOpen);
+      UpdateDirectoryEntries(directoryToOpen);
   }
 
   void ContentPanel::RenderSideView() {

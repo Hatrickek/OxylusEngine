@@ -29,7 +29,7 @@ namespace Oxylus {
     uint32_t MaxFramesInFlight;
     VulkanRenderPass m_RenderPass;
     std::vector<vk::Framebuffer> m_FrameBuffers;
-    vk::PresentModeKHR m_PresentMode = vk::PresentModeKHR::eFifo;
+    vk::PresentModeKHR m_PresentMode = vk::PresentModeKHR::eImmediate;
     vk::SurfaceFormatKHR m_SurfaceFormat;
     SwapChainSupportDetails m_SupportDetails;
     std::vector<vk::Semaphore> ImageAcquiredSemaphores;

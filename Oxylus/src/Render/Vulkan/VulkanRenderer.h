@@ -8,7 +8,6 @@
 #include "CommandPoolManager.h"
 #include "VulkanCommandBuffer.h"
 #include "VulkanSwapchain.h"
-#include "VulkanFramebuffer.h"
 #include "VulkanPipeline.h"
 #include "Core/Components.h"
 
@@ -67,7 +66,6 @@ namespace Oxylus {
 
     // Queue
     static void SubmitOnce(vk::CommandPool commandPool, const std::function<void(VulkanCommandBuffer& cmdBuffer)>& submitFunc);
-    static void SubmitQueue(const VulkanCommandBuffer& commandBuffer);
 
     // Drawing
     static void Draw();

@@ -177,6 +177,9 @@ namespace Oxylus {
     // TODO:(hatrickek) Temporary solution for camera.
     m_RendererContext.CurrentCamera = VulkanRenderer::s_RendererContext.CurrentCamera;
 
+    if (!m_RendererContext.CurrentCamera)
+      OX_CORE_FATAL("No camera is set for rendering!");
+
     UpdateUniformBuffers();
 
     // Mesh

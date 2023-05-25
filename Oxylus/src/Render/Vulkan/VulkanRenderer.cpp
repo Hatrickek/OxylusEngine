@@ -211,15 +211,6 @@ namespace Oxylus {
     CommandPoolManager::Get()->FreePool(commandPool);
   }
 
-  void VulkanRenderer::SubmitQueue(const VulkanCommandBuffer& commandBuffer) {
-    vk::SubmitInfo end_info = {};
-    end_info.commandBufferCount = 1;
-    end_info.pCommandBuffers = &commandBuffer.Get();
-
-    VulkanUtils::CheckResult(VulkanContext::VulkanQueue.GraphicsQueue.submit(1, &end_info, VK_NULL_HANDLE));
-    WaitDeviceIdle();
-  }
-
   void VulkanRenderer::SetCamera(Camera& camera) {
     s_RendererContext.CurrentCamera = &camera;
   }
