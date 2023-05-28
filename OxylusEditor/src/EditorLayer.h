@@ -22,7 +22,7 @@ namespace Oxylus {
     void OnAttach(EventDispatcher& dispatcher) override;
     void OnDetach() override;
 
-    void OnUpdate(float deltaTime) override;
+    void OnUpdate(Timestep deltaTime) override;
     void OnImGuiRender() override;
 
     static EditorLayer* Get() { return s_Instance; }

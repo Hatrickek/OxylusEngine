@@ -5,7 +5,6 @@
 #include "Render/Window.h"
 #include "Render/Vulkan/VulkanRenderer.h"
 #include "Utils/Profiler.h"
-#include "Utils/TimeStep.h"
 
 namespace Oxylus {
   Application* Application::s_Instance = nullptr;
@@ -54,10 +53,12 @@ namespace Oxylus {
 
   void Application::Run() {
     while (m_IsRunning) {
-      Timestep::UpdateTime();
+      const auto time = static_cast<float>(glfwGetTime());
+      m_Timestep = time - m_LastFrameTime;
+      m_LastFrameTime = time;
 
       //Layers
-      UpdateLayers();
+      UpdateLayers(m_Timestep);
 
       //Render Loop
       UpdateRenderer();
@@ -77,10 +78,10 @@ namespace Oxylus {
     Core::Shutdown();
   }
 
-  void Application::UpdateLayers() {
+  void Application::UpdateLayers(Timestep ts) {
     ZoneScopedN("LayersLoop");
     for (Layer* layer : m_LayerStack)
-      layer->OnUpdate(Timestep::GetDeltaTime());
+      layer->OnUpdate(ts);
   }
 
   void Application::UpdateRenderer() {

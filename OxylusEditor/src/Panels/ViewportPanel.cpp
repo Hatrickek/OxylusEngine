@@ -53,8 +53,8 @@ namespace Oxylus {
           vsync = VulkanRenderer::SwapChain.ToggleVsync();
           RendererConfig::Get()->DisplayConfig.VSync = vsync;
         }
-        IGUI::Property<float>("Camera sensitivity", m_MouseSensitivity, 0.0f, 20.0f);
-        IGUI::Property<float>("Movement speed", m_MovementSpeed, 30.0f, 500.0f);
+        IGUI::Property<float>("Camera sensitivity", m_MouseSensitivity, 0.1f, 20.0f);
+        IGUI::Property<float>("Movement speed", m_MovementSpeed, 5, 100.0f);
         IGUI::Property("Smooth camera", m_SmoothCamera);
         IGUI::EndProperties();
         ImGui::EndPopup();
@@ -96,8 +96,6 @@ namespace Oxylus {
 
   void ViewportPanel::OnUpdate() {
     if (m_ViewportFocused && !m_SimulationRunning && m_UseEditorCamera) {
-      if (m_LockAspectRatio)
-        Camera;
       const Vec3& position = Camera.GetPosition();
       const glm::vec2 yawPitch = glm::vec2(Camera.GetYaw(), Camera.GetPitch());
       Vec3 finalPosition = position;
@@ -114,13 +112,11 @@ namespace Oxylus {
 
         Input::SetCursorPosition(m_LockedMousePosition.x, m_LockedMousePosition.y);
 
-        const glm::vec2 change = (newMousePosition - m_LockedMousePosition) * m_MouseSensitivity *
-                                 Timestep::GetDeltaTime();
+        const glm::vec2 change = (newMousePosition - m_LockedMousePosition) * m_MouseSensitivity;
         finalYawPitch.x += change.x;
         finalYawPitch.y = glm::clamp(finalYawPitch.y - change.y, -89.9f, 89.9f);
 
-        const float maxMoveSpeed = m_MovementSpeed * (ImGui::IsKeyDown(ImGuiKey_LeftShift) ? 3.0f : 1.0f) *
-                                   Timestep::GetDeltaTime();
+        const float maxMoveSpeed = m_MovementSpeed * (ImGui::IsKeyDown(ImGuiKey_LeftShift) ? 3.0f : 1.0f);
         if (ImGui::IsKeyDown(ImGuiKey_W))
           finalPosition += Camera.GetFront() * maxMoveSpeed;
         else if (ImGui::IsKeyDown(ImGuiKey_S))
@@ -146,13 +142,13 @@ namespace Oxylus {
         m_TranslationVelocity,
         m_TranslationDampening,
         10000.0f,
-        Timestep::GetDeltaTime());
+        Application::GetTimestep());
       const glm::vec2 dampedYawPitch = Math::SmoothDamp(yawPitch,
         finalYawPitch,
         m_RotationVelocity,
         m_RotationDampening,
         1000.0f,
-        Timestep::GetDeltaTime());
+        Application::GetTimestep());
 
       Camera.SetPosition(m_SmoothCamera ? dampedPosition : finalPosition);
       Camera.SetYaw(m_SmoothCamera ? dampedYawPitch.x : finalYawPitch.x);

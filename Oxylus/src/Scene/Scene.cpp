@@ -276,19 +276,15 @@ namespace Oxylus {
     m_SceneRenderer.Render();
   }
 
-  void Scene::UpdateSystems() {
+  void Scene::UpdateSystems(float deltaTime) {
     ZoneScopedN("Update Systems");
     for (const auto& system : m_Systems) {
-      system->OnUpdate(this);
+      system->OnUpdate(this, deltaTime);
     }
   }
 
   void Scene::OnUpdate(float deltaTime) {
     ZoneScoped;
-
-    UpdateSystems();
-    RenderScene();
-    UpdatePhysics();
 
     // Camera
     {
@@ -300,6 +296,10 @@ namespace Oxylus {
         VulkanRenderer::SetCamera(*camera.System);
       }
     }
+
+    UpdateSystems(deltaTime);
+    RenderScene();
+    UpdatePhysics();
 
     // Audio
     {

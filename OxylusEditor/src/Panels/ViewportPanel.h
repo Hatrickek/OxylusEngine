@@ -41,8 +41,8 @@ namespace Oxylus {
     float m_TranslationDampening = 0.6f;
     float m_RotationDampening = 0.3f;
     bool m_SmoothCamera = true;
-    float m_MouseSensitivity = 10.0f;
-    float m_MovementSpeed = 120.0f;
+    float m_MouseSensitivity = 0.5f;
+    float m_MovementSpeed = 5.0f;
     bool m_UseEditorCamera = true;
     bool m_UsingEditorCamera = false;
     glm::vec2 m_LockedMousePosition = glm::vec2(0.0f);

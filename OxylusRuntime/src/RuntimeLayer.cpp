@@ -26,7 +26,7 @@ namespace OxylusRuntime {
 
   void RuntimeLayer::OnDetach() { }
 
-  void RuntimeLayer::OnUpdate(float deltaTime) {
+  void RuntimeLayer::OnUpdate(Timestep deltaTime) {
     m_Scene->OnUpdate(deltaTime);
   }
 
@@ -37,7 +37,7 @@ namespace OxylusRuntime {
   void RuntimeLayer::LoadScene() {
     m_Scene = CreateRef<Scene>();
     const SceneSerializer serializer(m_Scene);
-    serializer.Deserialize(GetAssetsPath("Scenes/Main.oxscene"));
+    serializer.Deserialize(GetAssetsPath("Scenes/q3dm3.oxscene"));
 
     m_Scene->AddSystem<FreeCamera>();
   }

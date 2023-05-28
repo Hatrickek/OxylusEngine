@@ -3,6 +3,8 @@
 #include <string>
 #include <Event/Event.h>
 
+#include "Utils/TimeStep.h"
+
 namespace Oxylus {
   class Layer {
   public:
@@ -11,7 +13,7 @@ namespace Oxylus {
     
     virtual void OnAttach(EventDispatcher& dispatcher) { }
     virtual void OnDetach() { }
-    virtual void OnUpdate(float deltaTime) { }
+    virtual void OnUpdate(Timestep deltaTime) { }
     virtual void OnImGuiRender() { }
 
     const std::string& GetName() const { return m_DebugName; }

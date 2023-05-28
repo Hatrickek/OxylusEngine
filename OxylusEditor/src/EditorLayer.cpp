@@ -67,7 +67,7 @@ namespace Oxylus {
     m_EditorConfig.SaveConfig();
   }
 
-  void EditorLayer::OnUpdate(const float deltaTime) {
+  void EditorLayer::OnUpdate(Timestep deltaTime) {
     for (const auto& [name, panel] : m_EditorPanels) {
       if (!panel->Visible)
         continue;

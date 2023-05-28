@@ -57,11 +57,6 @@ namespace Oxylus {
 
     std::unordered_map<size_t, Ref<System>>& GetSystems() { return m_Systems; }
 
-    void OnUpdate(Scene* scene) const {
-      for (auto& system : m_Systems)
-        system.second->OnUpdate(scene);
-    }
-
     void OnUpdate() const {
       for (auto& system : m_Systems)
         system.second->OnUpdate();

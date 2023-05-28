@@ -26,6 +26,8 @@ namespace Oxylus {
 #define OX_DISABLE_DEBUG_BREAKS
 #endif
 
+#define OX_DISABLE_DEBUG_BREAKS
+
 #ifndef OX_DISABLE_DEBUG_BREAKS
 #if defined(OX_PLATFORM_WINDOWS)
 #define OX_DEBUGBREAK() __debugbreak();

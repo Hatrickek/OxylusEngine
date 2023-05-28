@@ -290,7 +290,7 @@ namespace Oxylus {
   }
 
   void ContentPanel::OnUpdate() {
-    m_ElapsedTime += Timestep::GetDeltaTime();
+    m_ElapsedTime += Application::GetTimestep();
   }
 
   void ContentPanel::OnImGuiRender() {

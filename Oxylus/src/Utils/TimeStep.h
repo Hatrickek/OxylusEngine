@@ -1,22 +1,20 @@
 #pragma once
 
-#include <GLFW/glfw3.h>
+namespace Oxylus
+{
+	class Timestep
+	{
+	public:
+		Timestep(float time = 0)
+			: m_Time(time)
+		{
+		}
 
-namespace Oxylus {
-  class Timestep {
-  public:
-    static float GetDeltaTime() {
-      return deltaTime;
-    }
-
-    static void UpdateTime() {
-      float currentFrame = static_cast<float>(glfwGetTime());
-      deltaTime = currentFrame - lastFrame;
-      lastFrame = currentFrame;
-    }
-
-  private:
-    inline static float deltaTime = 0.0f;
-    inline static float lastFrame = 0.0f;
-  };
+		operator float() const { return m_Time; }
+		
+		[[nodiscard]] float GetSeconds() const { return m_Time; }
+		[[nodiscard]] float GetMilliseconds() const { return m_Time * 1000.0f; }
+	private:
+		float m_Time;
+	};
 }

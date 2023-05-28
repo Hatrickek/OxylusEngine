@@ -12,7 +12,7 @@ namespace OxylusRuntime {
 
   void FreeCamera::OnInit() { }
 
-  void FreeCamera::OnUpdate(Scene* scene) {
+  void FreeCamera::OnUpdate(Scene* scene, Timestep deltaTime) {
     auto& registery = scene->m_Registry;
     const auto group = registery.view<TransformComponent, CameraComponent>();
     for (const auto entity : group) {
@@ -34,11 +34,11 @@ namespace OxylusRuntime {
 
         Input::SetCursorPosition(m_LockedMousePosition.x, m_LockedMousePosition.y);
 
-        const glm::vec2 change = (newMousePosition - m_LockedMousePosition) * m_MouseSensitivity * Timestep::GetDeltaTime();
+        const glm::vec2 change = (newMousePosition - m_LockedMousePosition) * m_MouseSensitivity;
         finalYawPitch.x += change.x;
         finalYawPitch.y = glm::clamp(finalYawPitch.y - change.y, -89.9f, 89.9f);
 
-        const float maxMoveSpeed = m_MovementSpeed * (ImGui::IsKeyDown(ImGuiKey_LeftShift) ? 3.0f : 1.0f) * Timestep::GetDeltaTime();
+        const float maxMoveSpeed = m_MovementSpeed * (ImGui::IsKeyDown(ImGuiKey_LeftShift) ? 3.0f : 1.0f);
         if (ImGui::IsKeyDown(ImGuiKey_W))
           finalPosition += camera->GetFront() * maxMoveSpeed;
         else if (ImGui::IsKeyDown(ImGuiKey_S))
@@ -64,13 +64,13 @@ namespace OxylusRuntime {
         m_TranslationVelocity,
         m_TranslationDampening,
         10000.0f,
-        Timestep::GetDeltaTime());
+        deltaTime);
       const glm::vec2 dampedYawPitch = Math::SmoothDamp(yawPitch,
         finalYawPitch,
         m_RotationVelocity,
         m_RotationDampening,
         1000.0f,
-        Timestep::GetDeltaTime());
+        deltaTime);
       transform.Translation = m_SmoothCamera ? dampedPosition : finalPosition;
       transform.Rotation.x = m_SmoothCamera ? dampedYawPitch.y : finalYawPitch.y;
       transform.Rotation.y = m_SmoothCamera ? dampedYawPitch.x : finalYawPitch.x;

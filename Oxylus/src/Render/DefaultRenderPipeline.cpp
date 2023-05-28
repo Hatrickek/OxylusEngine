@@ -197,7 +197,7 @@ namespace Oxylus {
       ZoneScopedN("Particle System");
       const auto particleSystemView = scene->m_Registry.view<TransformComponent, ParticleSystemComponent>();
       for (auto&& [e, tc, psc] : particleSystemView.each()) {
-        psc.System->OnUpdate(Timestep::GetDeltaTime(), tc.Translation);
+        psc.System->OnUpdate(Application::GetTimestep(), tc.Translation);
         psc.System->OnRender();
       }
     }

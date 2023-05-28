@@ -3,7 +3,7 @@
 
 #include <GLFW/glfw3.h>
 
-#define DISABLE_DEBUG_LAYERS 0
+#define DISABLE_DEBUG_LAYERS 1
 
 #ifdef OX_DIST
 #undef DISABLE_DEBUG_LAYERS

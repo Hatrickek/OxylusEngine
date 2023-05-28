@@ -9,6 +9,7 @@
 #include "Systems/SystemManager.h"
 #include "Thread/ThreadManager.h"
 #include "Utils/Log.h"
+#include "Utils/TimeStep.h"
 
 int main(int argc,
          char** argv);
@@ -52,10 +53,11 @@ namespace Oxylus {
     ImGuiLayer* GetImGuiLayer() const { return m_ImGuiLayer; }
     const LayerStack& GetLayerStack() const { return m_LayerStack; }
     static Application& Get() { return *s_Instance; }
+    static Timestep GetTimestep() { return s_Instance->m_Timestep; }
 
   private:
     void Run();
-    void UpdateLayers();
+    void UpdateLayers(Timestep ts);
     void UpdateRenderer();
     void UpdateImGui();
 
@@ -66,8 +68,10 @@ namespace Oxylus {
     EventDispatcher m_Dispatcher;
 
     ThreadManager m_ThreadManager;
+    Timestep m_Timestep;
 
     bool m_IsRunning = true;
+    float m_LastFrameTime = 0.0f;
     static Application* s_Instance;
 
     friend int ::main(int argc, char** argv);
