@@ -50,7 +50,7 @@ namespace Oxylus {
 
   struct TransformComponent {
     Vec3 Translation = Vec3(0);
-    Vec3 Rotation = Vec3(0); //Stored in radians
+    Vec3 Rotation = Vec3(0); // Stored in radians
     Vec3 Scale = Vec3(1);
 
     TransformComponent() = default;
@@ -66,7 +66,7 @@ namespace Oxylus {
     }
   };
 
-  //Rendering
+  // Rendering
   struct MaterialComponent {
     std::vector<Ref<Material>> Materials{};
     bool UsingMaterialAsset = false;
@@ -137,7 +137,7 @@ namespace Oxylus {
     float SharpenIntensity = 0.5f;
   };
 
-  //Physics
+  // Physics
   struct BoxColliderComponent {
     Vec3 Size = Vec3(1.0f);
   };
@@ -147,21 +147,18 @@ namespace Oxylus {
   };
 
   struct RigidBodyComponent {
-    enum MotionType {
-      STATIC = 0,
-      KINEMATIC,
-      DYNAMIC
-    };
     JPH::BodyID BodyID = {};
-    int32_t MotionType = STATIC;
-    float Friction = 1.0;
-    int32_t Shape = 0; // 0:Box, 1:Sphere, 2:Capsule, 3:Cylinder, 4:Mesh
 
     RigidBodyComponent() = default;
     ~RigidBodyComponent() = default;
   };
 
-  struct KinematicCharacterControllerComponent {
+  struct CharacterControllerComponent {
+    JPH::Ref<JPH::Character> Character = nullptr;
+
+    // Capsule shape
+    JPH::Ref<JPH::Shape> Shape = nullptr;
+
     // Size
     float CharacterHeightStanding = 1.35f;
     float CharacterRadiusStanding = 0.3f;
@@ -172,6 +169,10 @@ namespace Oxylus {
     bool ControlMovementDuringJump = true;
     float CharacterSpeed = 6.0f;
     float JumpSpeed = 4.0f;
+
+    float CollisionTolerance = 0.05f;
+
+    CharacterControllerComponent() = default;
   };
 
   //Audio

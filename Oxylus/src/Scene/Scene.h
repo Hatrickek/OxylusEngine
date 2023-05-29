@@ -61,7 +61,7 @@ namespace Oxylus {
   private:
     void Init();
     void InitPhysics();
-    void UpdatePhysics(bool simulating = true);
+    void UpdatePhysics(bool simulating, Timestep deltaTime);
     template <typename T>
     void OnComponentAdded(Entity entity, T& component);
 

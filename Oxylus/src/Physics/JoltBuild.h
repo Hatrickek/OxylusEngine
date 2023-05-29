@@ -16,4 +16,5 @@ JPH_SUPPRESS_WARNING_PUSH
 #include <Jolt/Physics/Collision/Shape/SphereShape.h>
 #include <Jolt/Physics/Body/BodyCreationSettings.h>
 #include <Jolt/Physics/Body/BodyActivationListener.h>
+#include "Jolt/Physics/Character/Character.h"
 JPH_SUPPRESS_WARNING_POP

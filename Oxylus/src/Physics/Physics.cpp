@@ -28,7 +28,7 @@ namespace Oxylus {
 #endif
 
   void Physics::InitPhysics() {
-    //TODO: Override default allocators with Oxylus allocators.
+    // TODO: Override default allocators with Oxylus allocators.
     JPH::RegisterDefaultAllocator();
 
     // Install callbacks

@@ -16,6 +16,7 @@
 #include "Utils/StringUtils.h"
 #include "Utils/UIUtils.h"
 #include "Assets/MaterialSerializer.h"
+#include "Physics/PhysicsUtils.h"
 #include "Render/Vulkan/VulkanRenderer.h"
 
 namespace Oxylus {
@@ -588,21 +589,8 @@ namespace Oxylus {
         ImGui::Separator();
 
         // Shape
-        auto shapeEnumToString = [](const JPH::EShapeSubType type) {
-          switch (type) {
-            case JPH::EShapeSubType::Sphere: return "Sphere";
-            case JPH::EShapeSubType::Box: return "Box";
-            case JPH::EShapeSubType::Triangle: return "Triangle";
-            case JPH::EShapeSubType::Capsule: return "Capsule";
-            case JPH::EShapeSubType::TaperedCapsule: return "TaperedCapsule";
-            case JPH::EShapeSubType::Cylinder: return "Cylinder";
-            case JPH::EShapeSubType::ConvexHull: return "ConvexHull";
-            case JPH::EShapeSubType::Mesh: return "Mesh";
-            default: return "Empty";
-          }
-        };
         const auto currentShape = bodyInterface->GetShape(component.BodyID)->GetSubType();
-        IGUI::Text("Shape", shapeEnumToString(currentShape));
+        IGUI::Text("Shape", PhysicsUtils::ShapeTypeToString(currentShape));
 
         IGUI::EndProperties();
       });

@@ -12,6 +12,9 @@
 #include <unordered_map>
 #include <glm/gtc/type_ptr.hpp>
 
+#include "Jolt/Physics/Character/Character.h"
+#include "Physics/PhysicsUtils.h"
+
 namespace Oxylus {
   Scene::Scene() {
     Init();
@@ -68,7 +71,8 @@ namespace Oxylus {
     return entity;
   }
 
-  void Scene::UpdatePhysics(bool simulating) {
+  void Scene::UpdatePhysics(bool simulating, Timestep deltaTime) {
+    // Editing mode
     if (!simulating) {
       const auto group = m_Registry.view<TransformComponent, RigidBodyComponent>();
       for (const auto entity : group) {
@@ -76,15 +80,15 @@ namespace Oxylus {
         m_BodyInterface->SetPosition(rb.BodyID, {transform.Translation.x, transform.Translation.y, transform.Translation.z}, JPH::EActivation::DontActivate);
         auto quat = glm::quat(transform.Rotation);
         m_BodyInterface->SetRotation(rb.BodyID, {quat.x, quat.y, quat.z, quat.w}, JPH::EActivation::DontActivate);
+        PhysicsUtils::DebugDraw(m_BodyInterface, rb.BodyID);
       }
       return;
     }
 
-    constexpr float cDeltaTime = 1.0f / 60.0f; // Update rate
     constexpr int cCollisionSteps = 1;
     constexpr int cIntegrationSubSteps = 1;
 
-    m_PhysicsSystem->Update(cDeltaTime, cCollisionSteps, cIntegrationSubSteps, Physics::s_TempAllocator, m_JobSystem.get());
+    m_PhysicsSystem->Update(deltaTime, cCollisionSteps, cIntegrationSubSteps, Physics::s_TempAllocator, m_JobSystem.get());
 
     // Physics
     {
@@ -96,6 +100,17 @@ namespace Oxylus {
           auto [transform, rb] = group.get<TransformComponent, RigidBodyComponent>(entity);
           transform.Translation = glm::make_vec3(m_BodyInterface->GetPosition(rb.BodyID).mF32);
           transform.Rotation = glm::eulerAngles(glm::make_quat(m_BodyInterface->GetRotation(rb.BodyID).GetXYZW().mF32));
+          PhysicsUtils::DebugDraw(m_BodyInterface, rb.BodyID);
+        }
+      }
+      // Character
+      {
+        const auto group = m_Registry.view<TransformComponent, CharacterControllerComponent>();
+        for (const auto entity : group) {
+          auto [transform, component] = group.get<TransformComponent, CharacterControllerComponent>(entity);
+          //transform.Translation = glm::make_vec3(m_BodyInterface->GetPosition(rb.BodyID).mF32);
+          //transform.Rotation = glm::eulerAngles(glm::make_quat(m_BodyInterface->GetRotation(rb.BodyID).GetXYZW().mF32));
+          component.Character->PostSimulation(component.CollisionTolerance);
         }
       }
     }
@@ -299,7 +314,7 @@ namespace Oxylus {
 
     UpdateSystems(deltaTime);
     RenderScene();
-    UpdatePhysics();
+    UpdatePhysics(true, deltaTime);
 
     // Audio
     {
@@ -331,9 +346,9 @@ namespace Oxylus {
     }
   }
 
-  void Scene::OnEditorUpdate([[maybe_unused]] float deltaTime, Camera& camera) {
+  void Scene::OnEditorUpdate(float deltaTime, Camera& camera) {
     RenderScene();
-    UpdatePhysics(false);
+    UpdatePhysics(false, deltaTime);
 
     VulkanRenderer::SetCamera(camera);
   }
