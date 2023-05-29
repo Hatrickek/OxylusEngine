@@ -1,6 +1,7 @@
 ﻿#include "oxpch.h"
 #include "DefaultRenderPipeline.h"
 
+#include "DebugRenderer.h"
 #include "ResourcePool.h"
 #include "ShaderLibrary.h"
 #include "Assets/AssetManager.h"
@@ -618,6 +619,28 @@ namespace Oxylus {
         }
         m_ForceUpdateMaterials = false;
         m_MeshDrawList.clear();
+
+        // Debug pass
+        auto& shapes = DebugRenderer::GetInstance()->GetShapes();
+
+        struct DebugPassData {
+          Mat4 ViewProjection = {};
+          Mat4 Model = {};
+          Vec4 Color = {};
+        } pushConst;
+
+        m_Pipelines.DebugRenderPipeline.BindPipeline(commandBuffer.Get());
+        const auto& debugLayout = m_Pipelines.DebugRenderPipeline.GetPipelineLayout();
+
+        pushConst.ViewProjection = m_RendererContext.CurrentCamera->GetProjectionMatrixFlipped() * m_RendererContext.CurrentCamera->GetViewMatrix();
+        for (auto& shape : shapes) {
+          pushConst.Model = shape.ModelMatrix;
+          pushConst.Color = shape.Color;
+          commandBuffer.PushConstants(debugLayout, vk::ShaderStageFlagBits::eVertex, 0, sizeof(DebugPassData), &pushConst);
+          shape.Mesh->Draw(commandBuffer.Get());
+        }
+
+        DebugRenderer::Reset();
       },
       {clearValues},
       &VulkanContext::VulkanQueue.GraphicsQueue);
@@ -1001,20 +1024,6 @@ namespace Oxylus {
     pbrPipelineDesc.RasterizerDesc.CullMode = vk::CullModeFlagBits::eBack;
     m_Pipelines.PBRPipeline.CreateGraphicsPipeline(pbrPipelineDesc);
 
-    PipelineDescription unlitPipelineDesc;
-    unlitPipelineDesc.Shader = unlitShader.get();
-    unlitPipelineDesc.ColorAttachmentCount = 1;
-    unlitPipelineDesc.DepthDesc.DepthWriteEnable = false;
-    unlitPipelineDesc.DepthDesc.DepthEnable = false;
-    unlitPipelineDesc.RasterizerDesc.CullMode = vk::CullModeFlagBits::eBack;
-    unlitPipelineDesc.VertexInputState = VertexInputDescription(VertexLayout({
-      VertexComponent::POSITION, VertexComponent::NORMAL, VertexComponent::UV, VertexComponent::COLOR
-    }));
-    unlitPipelineDesc.BlendStateDesc.RenderTargets[0].BlendEnable = true;
-    unlitPipelineDesc.BlendStateDesc.RenderTargets[0].DestBlend = vk::BlendFactor::eOneMinusSrcAlpha;
-
-    m_Pipelines.UnlitPipeline.CreateGraphicsPipeline(unlitPipelineDesc);
-
     PipelineDescription depthpassdescription;
     depthpassdescription.Name = "Depth Pass Pipeline";
     depthpassdescription.Shader = depthPassShader.get();
@@ -1047,6 +1056,19 @@ namespace Oxylus {
     directShadowPipelineDescription.DepthDesc.BackFace.StencilFunc = vk::CompareOp::eAlways;
     directShadowPipelineDescription.DepthAttachmentLayout = vk::ImageLayout::eDepthStencilReadOnlyOptimal;
     m_Pipelines.DirectShadowDepthPipeline.CreateGraphicsPipeline(directShadowPipelineDescription);
+
+    PipelineDescription debugDescription;
+    debugDescription.Shader = unlitShader.get();
+    debugDescription.ColorAttachmentCount = 1;
+    debugDescription.DepthDesc.DepthWriteEnable = false;
+    debugDescription.DepthDesc.DepthEnable = false;
+    debugDescription.RasterizerDesc.CullMode = vk::CullModeFlagBits::eBack;
+    debugDescription.RasterizerDesc.FillMode = vk::PolygonMode::eLine;
+    debugDescription.RasterizerDesc.LineWidth = 2.0f;
+    debugDescription.VertexInputState = VertexInputDescription(VertexLayout({
+      VertexComponent::POSITION, VertexComponent::NORMAL, VertexComponent::UV, VertexComponent::COLOR
+    }));
+    m_Pipelines.DebugRenderPipeline.CreateGraphicsPipeline(debugDescription);
 
     PipelineDescription ssaoDescription;
     ssaoDescription.Name = "SSAO Pipeline";

@@ -73,6 +73,7 @@ namespace Oxylus {
     int DepthBias = 0;
     float SlopeScaledDepthBias = 0;
     float DepthBiasClamp = 0;
+    float LineWidth = 1.0f;
   };
 
   struct RenderTargetBlendDesc {

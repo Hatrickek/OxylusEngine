@@ -70,6 +70,10 @@ namespace Oxylus {
     // Drawing
     static void Draw();
     static void DrawFullscreenQuad(const vk::CommandBuffer& commandBuffer, bool bindVertex = false);
+    static void DrawIndexed(const vk::CommandBuffer& cmdBuffer,
+                            const vk::Buffer& verticiesBuffer,
+                            const vk::Buffer& indexBuffer,
+                            uint32_t indexCount);
 
     // TODO(hatrickek): Temporary
     static void SetCamera(Camera& camera);
@@ -81,10 +85,7 @@ namespace Oxylus {
   private:
     // Default render pipeline
     static Ref<DefaultRenderPipeline> s_DefaultPipeline;
-
-    // Debug renderer
-    static Ref<DebugRenderer> s_DebugRenderer;
-
+    
     // Config
     static RendererConfig s_RendererConfig;
 

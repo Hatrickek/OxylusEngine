@@ -20,12 +20,13 @@
 
 #include <backends/imgui_impl_vulkan.h>
 
+#include "Render/DebugRenderer.h"
+
 namespace Oxylus {
   VulkanSwapchain VulkanRenderer::SwapChain;
   VulkanRenderer::RendererContext VulkanRenderer::s_RendererContext;
   VulkanRenderer::RendererData VulkanRenderer::s_RendererData;
   VulkanRenderer::Pipelines VulkanRenderer::s_Pipelines;
-  Ref<DebugRenderer> VulkanRenderer::s_DebugRenderer = nullptr;
   Ref<DescriptorPoolManager> VulkanRenderer::s_DescriptorPoolManager = nullptr;
   Ref<CommandPoolManager> VulkanRenderer::s_CommandPoolManager = nullptr;
   RendererConfig VulkanRenderer::s_RendererConfig;
@@ -54,9 +55,6 @@ namespace Oxylus {
       RendererConfig::Get()->ConfigChangeDispatcher.trigger(RendererConfig::ConfigChangeEvent{});
     }
 
-    // Debug renderer
-    s_DebugRenderer = CreateRef<DebugRenderer>();
-    s_DebugRenderer->Init();
 
     const auto& LogicalDevice = VulkanContext::GetDevice();
 
@@ -178,6 +176,9 @@ namespace Oxylus {
       vertexStaging.Destroy();
     }
 
+    // Debug renderer
+    DebugRenderer::Init();
+
     s_RendererConfig.ConfigChangeDispatcher.trigger(RendererConfig::ConfigChangeEvent{});
 
 #if GPU_PROFILER_ENABLED
@@ -192,7 +193,7 @@ namespace Oxylus {
 
   void VulkanRenderer::Shutdown() {
     RendererConfig::Get()->SaveConfig("renderer.oxconfig");
-    s_DebugRenderer->Release();
+    DebugRenderer::Release();
     s_DescriptorPoolManager->Release();
     s_CommandPoolManager->Release();
 #if GPU_PROFILER_ENABLED
@@ -247,6 +248,17 @@ namespace Oxylus {
     else {
       commandBuffer.draw(3, 1, 0, 0);
     }
+  }
+
+  void VulkanRenderer::DrawIndexed(const vk::CommandBuffer& cmdBuffer,
+                                   const vk::Buffer& verticiesBuffer,
+                                   const vk::Buffer& indexBuffer,
+                                   uint32_t indexCount) {
+    ZoneScoped;
+    constexpr vk::DeviceSize offsets[1] = {0};
+    cmdBuffer.bindVertexBuffers(0, verticiesBuffer, offsets);
+    cmdBuffer.bindIndexBuffer(indexBuffer, 0, vk::IndexType::eUint32);
+    cmdBuffer.drawIndexed(indexCount, 1, 0, 0, 0);
   }
 
   void VulkanRenderer::OnResize() {

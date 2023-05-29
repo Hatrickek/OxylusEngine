@@ -149,7 +149,7 @@ namespace Oxylus {
     RasterizerStateCI.depthBiasConstantFactor = static_cast<float>(pipelineSpecification.RasterizerDesc.DepthBias);
     RasterizerStateCI.depthBiasClamp = pipelineSpecification.RasterizerDesc.DepthBiasClamp;
     RasterizerStateCI.depthBiasSlopeFactor = pipelineSpecification.RasterizerDesc.SlopeScaledDepthBias;
-    RasterizerStateCI.lineWidth = 1.f;
+    RasterizerStateCI.lineWidth = pipelineSpecification.RasterizerDesc.LineWidth;
 
     PipelineCI.pRasterizationState = &RasterizerStateCI;
 

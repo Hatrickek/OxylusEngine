@@ -13,8 +13,8 @@
 #include "Core/Resources.h"
 
 namespace Oxylus {
-  Mesh::Mesh(const std::string_view path, uint32_t fileLoadingFlags) {
-    LoadFromFile(path.data(), fileLoadingFlags);
+  Mesh::Mesh(const std::string_view path, int fileLoadingFlags, float scale) {
+    LoadFromFile(path.data(), fileLoadingFlags, scale);
   }
 
   Mesh::~Mesh() {
@@ -43,12 +43,12 @@ namespace Oxylus {
     return tinygltf::LoadImageData(image, imageIndex, error, warning, req_width, req_height, bytes, size, userData);
   }
 
-  void Mesh::LoadFromFile(const std::string& path, uint32_t fileLoadingFlags, const float scale) {
+  void Mesh::LoadFromFile(const std::string& path, int fileLoadingFlags, const float scale) {
     ZoneScoped;
     ProfilerTimer timer;
 
     Path = path;
-    FileLoadingFlags = fileLoadingFlags;
+    LoadingFlags = fileLoadingFlags;
     ShouldUpdate = true;
 
     tinygltf::Model gltfModel;
@@ -88,11 +88,11 @@ namespace Oxylus {
       for (const Primitive* primitive : node->Primitives) {
         for (uint32_t i = 0; i < primitive->vertexCount; i++) {
           Vertex& vertex = m_VertexBuffer[primitive->firstVertex + i];
-          vertex.pos = Vec3(localMatrix * glm::vec4(vertex.pos, 1.0f));
-          vertex.normal = glm::normalize(glm::mat3(localMatrix) * vertex.normal);
+          vertex.Pos = Vec3(localMatrix * glm::vec4(vertex.Pos, 1.0f));
+          vertex.Normal = glm::normalize(glm::mat3(localMatrix) * vertex.Normal);
           if (flipY) {
-            vertex.pos.y *= -1.0f;
-            vertex.normal.y *= -1.0f;
+            vertex.Pos.y *= -1.0f;
+            vertex.Normal.y *= -1.0f;
           }
           if (preMultiplyColor) {
             //vertex.color = primitive->material.baseColorFactor * vertex.color;
@@ -211,7 +211,7 @@ namespace Oxylus {
     //Create a empty material if the mesh file doesn't have any.
     if (model.materials.empty()) {
       m_Materials.emplace_back(CreateRef<Material>());
-      const bool dontCreateMaterials = FileLoadingFlags & FileLoadingFlags::DontCreateMaterials;
+      const bool dontCreateMaterials = LoadingFlags & FileLoadingFlags::DontCreateMaterials;
       if (!dontCreateMaterials)
         m_Materials[0]->Create();
       return;
@@ -311,7 +311,7 @@ namespace Oxylus {
     }
   }
 
-  const Ref<Material>& Mesh::GetMaterial(uint32_t index) const {
+  const Ref<Material> Mesh::GetMaterial(uint32_t index) const {
     OX_CORE_ASSERT(index < m_Materials.size());
     return m_Materials.at(index);
   }
@@ -484,20 +484,20 @@ namespace Oxylus {
 
           for (size_t v = 0; v < posAccessor.count; v++) {
             Vertex vert{};
-            vert.pos = glm::vec4(glm::make_vec3(&bufferPos[v * 3]), 1.0f);
-            vert.normal = glm::normalize(
+            vert.Pos = glm::vec4(glm::make_vec3(&bufferPos[v * 3]), 1.0f);
+            vert.Normal = glm::normalize(
               Vec3(bufferNormals ? glm::make_vec3(&bufferNormals[v * 3]) : Vec3(0.0f)));
-            vert.uv = bufferTexCoords ? glm::make_vec2(&bufferTexCoords[v * 2]) : Vec3(0.0f);
+            vert.UV = bufferTexCoords ? glm::make_vec2(&bufferTexCoords[v * 2]) : Vec3(0.0f);
             if (bufferColors) {
               switch (numColorComponents) {
-                case 3: vert.color = glm::vec4(glm::make_vec3(&bufferColors[v * 3]), 1.0f);
-                case 4: vert.color = glm::make_vec4(&bufferColors[v * 4]);
+                case 3: vert.Color = glm::vec4(glm::make_vec3(&bufferColors[v * 3]), 1.0f);
+                case 4: vert.Color = glm::make_vec4(&bufferColors[v * 4]);
               }
             }
-            else { vert.color = glm::vec4(1.0f); }
-            vert.tangent = bufferTangents ? glm::vec4(glm::make_vec4(&bufferTangents[v * 4])) : glm::vec4(0.0f);
-            vert.joint0 = hasSkin ? glm::vec4(glm::make_vec4(&bufferJoints[v * 4])) : glm::vec4(0.0f);
-            vert.weight0 = hasSkin ? glm::make_vec4(&bufferWeights[v * 4]) : glm::vec4(0.0f);
+            else { vert.Color = glm::vec4(1.0f); }
+            vert.Tangent = bufferTangents ? glm::vec4(glm::make_vec4(&bufferTangents[v * 4])) : glm::vec4(0.0f);
+            vert.Joint0 = hasSkin ? glm::vec4(glm::make_vec4(&bufferJoints[v * 4])) : glm::vec4(0.0f);
+            vert.Weight0 = hasSkin ? glm::make_vec4(&bufferWeights[v * 4]) : glm::vec4(0.0f);
             vertexBuffer.push_back(vert);
           }
         }

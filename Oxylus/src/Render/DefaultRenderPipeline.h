@@ -155,7 +155,6 @@ namespace Oxylus {
       VulkanPipeline LightListPipeline;
       VulkanPipeline DirectShadowDepthPipeline;
       VulkanPipeline GaussianBlurPipeline;
-      VulkanPipeline UnlitPipeline;
       VulkanPipeline BloomPipeline;
       VulkanPipeline SSRPipeline;
       VulkanPipeline CompositePipeline;

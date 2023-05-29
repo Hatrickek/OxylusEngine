@@ -29,7 +29,7 @@ namespace Oxylus {
 
   class Mesh {
   public:
-    enum FileLoadingFlags {
+    enum FileLoadingFlags : int {
       None = 0,
       PreMultiplyVertexColors,
       FlipY,
@@ -76,13 +76,13 @@ namespace Oxylus {
     };
 
     struct Vertex {
-      glm::vec3 pos;
-      glm::vec3 normal;
-      glm::vec2 uv;
-      glm::vec4 tangent;
-      glm::vec4 color;
-      glm::vec4 joint0;
-      glm::vec4 weight0;
+      glm::vec3 Pos;
+      glm::vec3 Normal;
+      glm::vec2 UV;
+      glm::vec4 Tangent;
+      glm::vec4 Color;
+      glm::vec4 Joint0;
+      glm::vec4 Weight0;
     };
 
     std::vector<Ref<VulkanImage>> m_Textures;
@@ -93,19 +93,19 @@ namespace Oxylus {
     uint32_t IndexCount = 0;
     std::string Name;
     std::string Path;
-    uint32_t FileLoadingFlags = 0;
+    uint32_t LoadingFlags = 0;
     bool ShouldUpdate = false;
 
     Mesh() = default;
-    Mesh(std::string_view path, uint32_t fileLoadingFlags = None);
+    Mesh(std::string_view path, int fileLoadingFlags = None, float scale = 1);
     ~Mesh();
 
-    void LoadFromFile(const std::string& path, uint32_t fileLoadingFlags = None, float scale = 1);
+    void LoadFromFile(const std::string& path, int fileLoadingFlags = None, float scale = 1);
     void SetScale(const glm::vec3& scale);
     void Draw(const vk::CommandBuffer& cmdBuffer) const;
     void UpdateMaterials() const;
     size_t GetNodeCount() const { return Nodes.size(); }
-    const Ref<Material>& GetMaterial(uint32_t index) const;
+    const Ref<Material> GetMaterial(uint32_t index) const;
     std::vector<Ref<Material>> GetMaterialsAsRef() const;
     void Destroy();
 
