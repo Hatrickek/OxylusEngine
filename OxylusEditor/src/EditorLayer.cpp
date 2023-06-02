@@ -39,11 +39,13 @@ namespace Oxylus {
     m_EditorConfig.LoadConfig();
     Resources::InitEditorResources();
 
+    m_CrosshairCursor = Input::LoadCursorIconStandard(GLFW_CROSSHAIR_CURSOR);
+
     Input::SetCursorState(Input::CursorState::NORMAL, Window::GetGLFWWindow());
 
     m_EditorScene = CreateRef<Scene>();
 
-    //Initialize panels
+    // Initialize panels
     m_EditorPanels.emplace("EditorSettings", CreateScope<EditorSettingsPanel>());
     m_EditorPanels.emplace("RenderSettings", CreateScope<RendererSettingsPanel>());
     m_EditorPanels.emplace("Shaders", CreateScope<ShadersPanel>());
@@ -53,7 +55,7 @@ namespace Oxylus {
     m_EditorPanels.emplace("EditorDebugPanel", CreateScope<EditorDebugPanel>());
     m_ViewportPanels.emplace_back(CreateScope<ViewportPanel>())->Camera.SetPosition({-2, 2, 0});
 
-    //Register panel events
+    // Register panel events
     m_ConsolePanel.Events.StyleEditorEvent.emplace_back([this] {
       m_ShowStyleEditor = !m_ShowStyleEditor;
     });
@@ -64,6 +66,7 @@ namespace Oxylus {
   }
 
   void EditorLayer::OnDetach() {
+    Input::DestroyCursor(m_CrosshairCursor);
     m_EditorConfig.SaveConfig();
   }
 

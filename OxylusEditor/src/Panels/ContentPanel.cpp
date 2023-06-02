@@ -335,6 +335,7 @@ namespace Oxylus {
     if (ImGui::BeginPopup("SettingsPopup")) {
       IGUI::BeginProperties(ImGuiTableFlags_SizingStretchSame);
       IGUI::Property("Thumbnail Size", m_ThumbnailSize, 95.9f, 256.0f, nullptr, 0.1f, "");
+      IGUI::Property("Texture Previews", m_TexturePreviews, "Show texture previews");
       IGUI::EndProperties();
       ImGui::EndPopup();
     }
@@ -554,23 +555,23 @@ namespace Oxylus {
 
         VkDescriptorSet textureId = m_DirectoryIcon->GetDescriptorSet();
         if (!isDir) {
-          if (file.Type == FileType::Texture) {
+          if (file.Type == FileType::Texture && m_TexturePreviews) {
             if (file.Thumbnail) {
               textureId = file.Thumbnail->GetDescriptorSet();
             }
             else if (!textureCreated) {
               textureCreated = true;
               file.Thumbnail = VulkanImage::GetBlankImage();
-              ThreadManager::Get()->AssetThread.QueueJob([&file] {
-                const bool isCubeMap = file.Extension == ".ktx" || file.Extension == ".ktx2";
-                VulkanImageDescription imageDescription = {};
-                imageDescription.Path = file.Filepath;
-                imageDescription.CreateDescriptorSet = true;
-                if (isCubeMap)
-                  file.Thumbnail = CreateRef<VulkanImage>(imageDescription);
-                else
-                  file.Thumbnail = AssetManager::GetImageAsset(imageDescription).Data;
-              });
+                ThreadManager::Get()->AssetThread.QueueJob([&file] {
+                  const bool isCubeMap = file.Extension == ".ktx" || file.Extension == ".ktx2";
+                  VulkanImageDescription imageDescription = {};
+                  imageDescription.Path = file.Filepath;
+                  imageDescription.CreateDescriptorSet = true;
+                  if (isCubeMap)
+                    file.Thumbnail = CreateRef<VulkanImage>(imageDescription);
+                  else
+                    file.Thumbnail = AssetManager::GetImageAsset(imageDescription).Data;
+                });
               textureId = file.Thumbnail->GetDescriptorSet();
             }
             else {

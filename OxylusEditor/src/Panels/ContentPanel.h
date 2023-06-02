@@ -69,6 +69,7 @@ namespace Oxylus {
     float m_ThumbnailSize = 128.0f;
     ImGuiTextFilter m_Filter;
     float m_ElapsedTime = 0.0f;
+    bool m_TexturePreviews = true;
 
     Ref<VulkanImage> m_WhiteTexture;
     Ref<VulkanImage> m_DirectoryIcon;

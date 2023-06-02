@@ -5,7 +5,6 @@
 #include "Utils/Log.h"
 
 #include "tinygltf/stb_image.h"
-#include "Core/Resources.h"
 #include "Vulkan/VulkanRenderer.h"
 
 namespace Oxylus {

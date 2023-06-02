@@ -1,7 +1,7 @@
 #include "src/oxpch.h"
 #include "Input.h"
 #include "Render/Window.h"
-#include "Utils/TimeStep.h"
+#include "tinygltf/stb_image.h"
 
 namespace Oxylus {
   void ScrollCallback(GLFWwindow* window, double xoffset, double yoffset);
@@ -76,6 +76,28 @@ namespace Oxylus {
     return cursorState;
   }
 
+  GLFWcursor* Input::LoadCursorIcon(const char* imagePath) {
+    int width, height, channels = 4;
+    const auto imageData = stbi_load(imagePath, &width, &height, &channels, STBI_rgb_alpha);
+    const GLFWimage* cursorImage = new GLFWimage{.width = width, .height = height, .pixels = imageData};
+    const auto cursor = glfwCreateCursor(cursorImage, 0, 0);
+    stbi_image_free(imageData);
+
+    return cursor;
+  }
+
+  GLFWcursor* Input::LoadCursorIconStandard(const int cursor) {
+    return glfwCreateStandardCursor(cursor);
+  }
+
+  void Input::SetCursorIcon(GLFWcursor* cursor) {
+    glfwSetCursor(Window::GetGLFWWindow(), cursor);
+  }
+
+  void Input::SetCursorIconDefault() {
+    glfwSetCursor(Window::GetGLFWWindow(), nullptr);
+  }
+
   void Input::RegisterMouseEvent(const std::function<void()>& event) {
     s_Events.RegisteredMouseEvents.emplace_back(event);
   }
@@ -104,6 +126,10 @@ namespace Oxylus {
         glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_HIDDEN);
         break;
     }
+  }
+
+  void Input::DestroyCursor(GLFWcursor* cursor) {
+    glfwDestroyCursor(cursor);
   }
 
   void Input::MouseCallback([[maybe_unused]] GLFWwindow* window, const double xposIn, const double yposIn) {

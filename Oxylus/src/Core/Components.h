@@ -138,16 +138,9 @@ namespace Oxylus {
   };
 
   // Physics
-  struct BoxColliderComponent {
-    Vec3 Size = Vec3(1.0f);
-  };
-
-  struct MeshColliderComponent {
-    Vec3 Size = Vec3(1.0f);
-  };
-
   struct RigidBodyComponent {
     JPH::BodyID BodyID = {};
+    Vec3 ShapeSize = {};
 
     RigidBodyComponent() = default;
     ~RigidBodyComponent() = default;
@@ -198,7 +191,7 @@ namespace Oxylus {
                                        LightComponent, MeshRendererComponent, SkyLightComponent, ParticleSystemComponent, MaterialComponent,
 
                                        //Physics
-                                       RigidBodyComponent, BoxColliderComponent, MeshColliderComponent,
+                                       RigidBodyComponent,
 
                                        //Audio
                                        AudioSourceComponent, AudioListenerComponent>;

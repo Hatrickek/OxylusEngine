@@ -160,7 +160,7 @@ namespace Oxylus {
     if (extension != ".ktx" && extension != ".ktx2")
       LoadStbFile();
 
-    Name = filepath.filename().string();
+    Name = filepath.stem().string();
   }
 
   void VulkanImage::LoadCubeMapFromFile(const int version) {
@@ -268,8 +268,9 @@ namespace Oxylus {
           &texChannels,
           STBI_rgb_alpha);
       }
-      else
+      else {
         m_ImageData = stbi_load(path.c_str(), &texWidth, &texHeight, &texChannels, STBI_rgb_alpha);
+      }
       if (!m_ImageData) {
         OX_CORE_BERROR("Failed to load texture file {}", path);
       }

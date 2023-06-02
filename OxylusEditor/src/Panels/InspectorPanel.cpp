@@ -263,7 +263,6 @@ namespace Oxylus {
       DrawAddComponent<MeshRendererComponent>(m_SelectedEntity, "Mesh Renderer");
       DrawAddComponent<MaterialComponent>(m_SelectedEntity, "Material");
       DrawAddComponent<RigidBodyComponent>(m_SelectedEntity, "Rigidbody");
-      DrawAddComponent<BoxColliderComponent>(m_SelectedEntity, "Box Collider");
       DrawAddComponent<AudioSourceComponent>(m_SelectedEntity, "Audio Source");
       DrawAddComponent<LightComponent>(m_SelectedEntity, "Light");
       DrawAddComponent<ParticleSystemComponent>(m_SelectedEntity, "Particle System");
@@ -573,12 +572,12 @@ namespace Oxylus {
 
         // Motion type
         const char* motionTypes[3] = {"Static", "Kinematic", "Dynamic"};
-        const uint8_t currentType = (uint8_t)bodyInterface->GetMotionType(component.BodyID);
+        const auto currentType = (uint8_t)bodyInterface->GetMotionType(component.BodyID);
         int selectedType = currentType;
         if (IGUI::Property("Motion Type", selectedType, motionTypes, 3)) {
           bodyInterface->SetMotionType(component.BodyID, (JPH::EMotionType)(uint8_t)selectedType, JPH::EActivation::Activate);
         }
-
+        
         // Friction
         const float currentFriction = bodyInterface->GetFriction(component.BodyID);
         float selectedFriction = currentFriction;
@@ -592,12 +591,15 @@ namespace Oxylus {
         const auto currentShape = bodyInterface->GetShape(component.BodyID)->GetSubType();
         IGUI::Text("Shape", PhysicsUtils::ShapeTypeToString(currentShape));
 
+        const Vec3 currentSize = glm::make_vec3(bodyInterface->GetShape(component.BodyID)->GetLocalBounds().GetSize().mF32);
+        Vec3 selectedSize = currentSize;
+        IGUI::DrawVec3Control("Scale", selectedSize);
+        static bool flag = false;
+        if (IGUI::Property("size", flag))
+          bodyInterface->SetShape(component.BodyID, bodyInterface->GetShape(component.BodyID)->ScaleShape({31, 1, 31}).Get(), true, JPH::EActivation::Activate);
+
         IGUI::EndProperties();
       });
-
-    DrawComponent<BoxColliderComponent>(ICON_MDI_CHECKBOX_BLANK_OUTLINE "Box Collider Component",
-      entity,
-      [](BoxColliderComponent& component) { });
 
     DrawComponent<CameraComponent>(ICON_MDI_CAMERA "Camera Component",
       entity,

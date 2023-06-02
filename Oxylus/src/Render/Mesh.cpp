@@ -135,15 +135,16 @@ namespace Oxylus {
       nullptr,
       VMA_MEMORY_USAGE_AUTO_PREFER_DEVICE);
 
-    VulkanRenderer::SubmitOnce(CommandPoolManager::Get()->GetFreePool(), [&](const VulkanCommandBuffer copyCmd) {
-      vk::BufferCopy copyRegion{};
+    VulkanRenderer::SubmitOnce(CommandPoolManager::Get()->GetFreePool(),
+      [&](const VulkanCommandBuffer copyCmd) {
+        vk::BufferCopy copyRegion{};
 
-      copyRegion.size = vBufferSize;
-      vertexStaging.CopyTo(VerticiesBuffer.Get(), copyCmd.Get(), copyRegion);
+        copyRegion.size = vBufferSize;
+        vertexStaging.CopyTo(VerticiesBuffer.Get(), copyCmd.Get(), copyRegion);
 
-      copyRegion.size = iBufferSize;
-      indexStaging.CopyTo(IndiciesBuffer.Get(), copyCmd.Get(), copyRegion);
-    });
+        copyRegion.size = iBufferSize;
+        indexStaging.CopyTo(IndiciesBuffer.Get(), copyCmd.Get(), copyRegion);
+      });
 
     // Destroy staging resources
     vertexStaging.Destroy();
@@ -208,7 +209,7 @@ namespace Oxylus {
 
   void Mesh::LoadMaterials(tinygltf::Model& model) {
     ZoneScoped;
-    //Create a empty material if the mesh file doesn't have any.
+    // Create a empty material if the mesh file doesn't have any.
     if (model.materials.empty()) {
       m_Materials.emplace_back(CreateRef<Material>());
       const bool dontCreateMaterials = LoadingFlags & FileLoadingFlags::DontCreateMaterials;
@@ -563,9 +564,12 @@ namespace Oxylus {
 
   void Mesh::LoadFailFallback() {
     ZoneScoped;
-    OX_CORE_ERROR("Could not load mesh file {0}. Falled back to a cube.", Path);
-    auto cubePath = "Resources/Objects/Cube.gltf";
-    LoadFromFile("Resources/Objects/Cube.gltf");
+    if (std::filesystem::exists("Resources/Objects/cube.gltf")) {
+      LoadFromFile("Resources/Objects/cube.gltf");
+      OX_CORE_ERROR("Could not load mesh file {0}. Falled back to a cube.", Path);
+    }
+    else
+      OX_CORE_ERROR("Couldn't load mesh file {0}", Path);
     m_Materials[0]->Parameters.Color.r = 1.0f;
     m_Materials[0]->Parameters.Specular = 0.0f;
   }

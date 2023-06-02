@@ -407,13 +407,7 @@ namespace Oxylus {
   template <>
   void Scene::OnComponentAdded<ParticleSystemComponent>(Entity entity,
                                                         ParticleSystemComponent& component) { }
-
-  template <>
-  void Scene::OnComponentAdded<BoxColliderComponent>(Entity entity, BoxColliderComponent& component) { }
-
-  template <>
-  void Scene::OnComponentAdded<MeshColliderComponent>(Entity entity, MeshColliderComponent& component) { }
-
+  
   template <>
   void Scene::OnComponentAdded<RigidBodyComponent>(Entity entity, RigidBodyComponent& component) { }
 }

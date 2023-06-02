@@ -101,8 +101,7 @@ namespace Oxylus {
       Vec3 finalPosition = position;
       glm::vec2 finalYawPitch = yawPitch;
 
-      if (ImGui::IsMouseDown(ImGuiMouseButton_Right) && Camera.ShouldMove) {
-        ImGui::SetMouseCursor(ImGuiMouseCursor_None);
+      if (ImGui::IsMouseDown(ImGuiMouseButton_Right)) {
         const glm::vec2 newMousePosition = Input::GetMousePosition();
 
         if (!m_UsingEditorCamera) {
@@ -111,6 +110,7 @@ namespace Oxylus {
         }
 
         Input::SetCursorPosition(m_LockedMousePosition.x, m_LockedMousePosition.y);
+        //Input::SetCursorIcon(EditorLayer::Get()->m_CrosshairCursor);
 
         const glm::vec2 change = (newMousePosition - m_LockedMousePosition) * m_MouseSensitivity;
         finalYawPitch.x += change.x;
@@ -133,7 +133,26 @@ namespace Oxylus {
           finalPosition.y += maxMoveSpeed;
         }
       }
+      // Panning
+      else if (ImGui::IsMouseDown(ImGuiMouseButton_Middle)) {
+        const glm::vec2 newMousePosition = Input::GetMousePosition();
+
+        if (!m_UsingEditorCamera) {
+          m_UsingEditorCamera = true;
+          m_LockedMousePosition = newMousePosition;
+        }
+
+        Input::SetCursorPosition(m_LockedMousePosition.x, m_LockedMousePosition.y);
+        //Input::SetCursorIcon(EditorLayer::Get()->m_CrosshairCursor);
+
+        const glm::vec2 change = (newMousePosition - m_LockedMousePosition) * m_MouseSensitivity;
+
+        const float maxMoveSpeed = m_MovementSpeed * (ImGui::IsKeyDown(ImGuiKey_LeftShift) ? 3.0f : 1.0f);
+        finalPosition += Camera.GetFront() * change.y * maxMoveSpeed;
+        finalPosition += Camera.GetRight() * change.x * maxMoveSpeed;
+      }
       else {
+        Input::SetCursorIconDefault();
         m_UsingEditorCamera = false;
       }
 

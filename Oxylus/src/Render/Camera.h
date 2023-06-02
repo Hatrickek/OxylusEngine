@@ -25,8 +25,6 @@ namespace Oxylus {
   public:
     Mat4 SkyboxView;
 
-    bool ShouldMove = true;
-
     float Fov = FOV;
     float Aspect;
     uint32_t AspectRatioW = 1;

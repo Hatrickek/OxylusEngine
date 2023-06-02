@@ -38,6 +38,12 @@ namespace Oxylus {
     Ref<Scene> GetActiveScene();
     void SetEditorScene(const Ref<Scene>& scene);
     void SetRuntimeScene(const Ref<Scene>& scene);
+    bool OpenScene(const std::filesystem::path& path);
+
+    void SetSelectedEntity(const Entity& entity);
+    Entity GetSelectedEntity() const { return m_SceneHierarchyPanel.GetSelectedEntity(); }
+    Ref<Scene> GetSelectedScene() const { return m_SceneHierarchyPanel.GetScene(); }
+    void ClearSelectedEntity();
 
     enum class SceneState {
       Edit     = 0,
@@ -46,14 +52,11 @@ namespace Oxylus {
     };
 
     void SetSceneState(SceneState state);
+
     SceneState m_SceneState = SceneState::Edit;
 
-    bool OpenScene(const std::filesystem::path& path);
-
-    void SetSelectedEntity(const Entity& entity);
-    Entity GetSelectedEntity() const{ return m_SceneHierarchyPanel.GetSelectedEntity(); }
-    Ref<Scene> GetSelectedScene() const { return m_SceneHierarchyPanel.GetScene(); }
-    void ClearSelectedEntity();
+    // Cursors
+    GLFWcursor* m_CrosshairCursor = nullptr;
 
   private:
     // Project
@@ -74,13 +77,11 @@ namespace Oxylus {
     // Panels
     static void DrawWindowTitle();
     void DrawPanels();
-
-  private:
     std::unordered_map<std::string, Scope<EditorPanel>> m_EditorPanels;
     std::vector<Scope<ViewportPanel>> m_ViewportPanels;
-    ConsolePanel m_ConsolePanel;
     bool m_ShowStyleEditor = false;
     bool m_ShowDemoWindow = false;
+    ConsolePanel m_ConsolePanel;
     SceneHierarchyPanel m_SceneHierarchyPanel;
     InspectorPanel m_InspectorPanel;
     ContentPanel m_AssetsPanel;
