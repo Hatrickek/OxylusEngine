@@ -74,9 +74,9 @@ namespace Oxylus {
   void Scene::UpdatePhysics(bool simulating, Timestep deltaTime) {
     // Editing mode
     if (!simulating) {
-      const auto group = m_Registry.view<TransformComponent, RigidBodyComponent>();
+      const auto group = m_Registry.view<TransformComponent, RigidbodyComponent>();
       for (const auto entity : group) {
-        auto [transform, rb] = group.get<TransformComponent, RigidBodyComponent>(entity);
+        auto [transform, rb] = group.get<TransformComponent, RigidbodyComponent>(entity);
         m_BodyInterface->SetPosition(rb.BodyID, {transform.Translation.x, transform.Translation.y, transform.Translation.z}, JPH::EActivation::DontActivate);
         auto quat = glm::quat(transform.Rotation);
         m_BodyInterface->SetRotation(rb.BodyID, {quat.x, quat.y, quat.z, quat.w}, JPH::EActivation::DontActivate);
@@ -95,9 +95,9 @@ namespace Oxylus {
       ZoneScopedN("Physics System");
       // Rigidbody
       {
-        const auto group = m_Registry.view<TransformComponent, RigidBodyComponent>();
+        const auto group = m_Registry.view<TransformComponent, RigidbodyComponent>();
         for (const auto entity : group) {
-          auto [transform, rb] = group.get<TransformComponent, RigidBodyComponent>(entity);
+          auto [transform, rb] = group.get<TransformComponent, RigidbodyComponent>(entity);
           transform.Translation = glm::make_vec3(m_BodyInterface->GetPosition(rb.BodyID).mF32);
           transform.Rotation = glm::eulerAngles(glm::make_quat(m_BodyInterface->GetRotation(rb.BodyID).GetXYZW().mF32));
           PhysicsUtils::DebugDraw(m_BodyInterface, rb.BodyID);
@@ -108,8 +108,8 @@ namespace Oxylus {
         const auto group = m_Registry.view<TransformComponent, CharacterControllerComponent>();
         for (const auto entity : group) {
           auto [transform, component] = group.get<TransformComponent, CharacterControllerComponent>(entity);
-          //transform.Translation = glm::make_vec3(m_BodyInterface->GetPosition(rb.BodyID).mF32);
-          //transform.Rotation = glm::eulerAngles(glm::make_quat(m_BodyInterface->GetRotation(rb.BodyID).GetXYZW().mF32));
+          transform.Translation = glm::make_vec3(component.Character->GetPosition().mF32);
+          transform.Rotation = glm::eulerAngles(glm::make_quat(component.Character->GetRotation().GetXYZW().mF32));
           component.Character->PostSimulation(component.CollisionTolerance);
         }
       }
@@ -409,5 +409,5 @@ namespace Oxylus {
                                                         ParticleSystemComponent& component) { }
   
   template <>
-  void Scene::OnComponentAdded<RigidBodyComponent>(Entity entity, RigidBodyComponent& component) { }
+  void Scene::OnComponentAdded<RigidbodyComponent>(Entity entity, RigidbodyComponent& component) { }
 }

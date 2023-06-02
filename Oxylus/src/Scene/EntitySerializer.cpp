@@ -9,6 +9,8 @@
 
 #include "Core/Entity.h"
 #include "Core/YamlHelpers.h"
+#include "Physics/PhysicsHelpers.h"
+#include "Physics/PhysicsUtils.h"
 
 #include "Utils/FileUtils.h"
 #include "Utils/StringUtils.h"
@@ -21,7 +23,7 @@ namespace Oxylus {
     data = (T)type;
   }
 
-  void EntitySerializer::SerializeEntity(ryml::NodeRef& entities, Entity entity) {
+  void EntitySerializer::SerializeEntity(Scene* scene, ryml::NodeRef& entities, Entity entity) {
     ryml::NodeRef entityNode = entities.append_child({ryml::MAP});
 
     if (entity.HasComponent<TagComponent>()) {
@@ -125,9 +127,27 @@ namespace Oxylus {
       node["NearClip"] << camera.System->NearClip;
       node["FarClip"] << camera.System->FarClip;
     }
+
+    // Physics
+    if (entity.HasComponent<RigidbodyComponent>()) {
+      const auto& component = entity.GetComponent<RigidbodyComponent>();
+      auto node = entityNode["RigidbodyComponent"];
+      node |= ryml::MAP;
+      auto sizeNode = node["Size"];
+      glm::write(&sizeNode, component.ShapeSize);
+      node["MotionType"] << PhysicsUtils::MotionTypeToString(scene->GetBodyInterface()->GetMotionType(component.BodyID));
+    }
+
+    if (entity.HasComponent<CharacterControllerComponent>()) {
+      // TODO(hatrickek): Complete serialization
+      const auto& component = entity.GetComponent<CharacterControllerComponent>();
+      auto node = entityNode["CharacterControllerComponent"];
+      node |= ryml::MAP;
+      node["CharacterSpeed"] << component.CharacterSpeed;
+    }
   }
 
-  UUID EntitySerializer::DeserializeEntity(ryml::ConstNodeRef entityNode, Scene& scene, bool preserveUUID) {
+  UUID EntitySerializer::DeserializeEntity(ryml::ConstNodeRef entityNode, Scene* scene, bool preserveUUID) {
     const auto st = std::string(entityNode["Entity"].val().data());
     const uint64_t uuid = std::stoull(st.substr(0, st.find('\n')));
 
@@ -137,9 +157,9 @@ namespace Oxylus {
 
     Entity deserializedEntity;
     if (preserveUUID)
-      deserializedEntity = scene.CreateEntityWithUUID(uuid, name);
+      deserializedEntity = scene->CreateEntityWithUUID(uuid, name);
     else
-      deserializedEntity = scene.CreateEntity(name);
+      deserializedEntity = scene->CreateEntity(name);
 
     if (entityNode.has_child("TransformComponent")) {
       auto& tc = deserializedEntity.GetComponent<TransformComponent>();
@@ -266,6 +286,33 @@ namespace Oxylus {
       camera.System->SetFar(farclip);
     }
 
+    if (entityNode.has_child("RigidbodyComponent")) {
+      auto& component = deserializedEntity.AddComponent<RigidbodyComponent>();
+      const auto& node = entityNode["RigidbodyComponent"];
+      auto sizeNode = node["Size"];
+      glm::read(sizeNode, &component.ShapeSize);
+
+      component.BodyID = PhysicsHelpers::CreateBoxRigidbody(
+        scene->GetBodyInterface(),
+        deserializedEntity.GetComponent<TransformComponent>().Translation,
+        component.ShapeSize).BodyID;
+
+      std::string motionType = {};
+      node["MotionType"] >> motionType;
+
+      scene->GetBodyInterface()->SetMotionType(component.BodyID, PhysicsUtils::StringToMotionType(motionType), JPH::EActivation::Activate);
+    }
+
+    if (entityNode.has_child("CharacterControllerComponent")) {
+      auto& component = deserializedEntity.AddComponent<CharacterControllerComponent>();
+      const auto& node = entityNode["CharacterControllerComponent"];
+      node["CharacterSpeed"] >> component.CharacterSpeed;
+
+      component = PhysicsHelpers::CreateCharachterController(
+        scene->GetPhysicsSystem().get(),
+        deserializedEntity.GetComponent<TransformComponent>().Translation);
+    }
+
     return deserializedEntity.GetUUID();
   }
 
@@ -291,7 +338,7 @@ namespace Oxylus {
 
     for (const auto& child : entities) {
       if (child)
-        SerializeEntity(entitiesNode, child);
+        SerializeEntity(entity.GetScene(), entitiesNode, child);
     }
 
     std::stringstream ss;
@@ -300,7 +347,7 @@ namespace Oxylus {
     filestream << ss.str();
   }
 
-  Entity EntitySerializer::DeserializeEntityAsPrefab(const char* filepath, Scene& scene) {
+  Entity EntitySerializer::DeserializeEntityAsPrefab(const char* filepath, Scene* scene) {
     auto content = FileUtils::ReadFile(filepath);
     if (!content) {
       OX_CORE_ASSERT(content, fmt::format("Couldn't read prefab file: {0}", filepath).c_str());
@@ -347,14 +394,14 @@ namespace Oxylus {
         oldNewIdMap.emplace(oldUUID, newUUID);
 
         if (!rootEntity)
-          rootEntity = scene.GetEntityByUUID(newUUID);
+          rootEntity = scene->GetEntityByUUID(newUUID);
       }
 
       rootEntity.AddComponentI<PrefabComponent>().ID = prefabID;
 
       // Fix parent/children UUIDs
       for (const auto& [_, newId] : oldNewIdMap) {
-        auto& relationshipComponent = scene.GetEntityByUUID(newId).GetRelationship();
+        auto& relationshipComponent = scene->GetEntityByUUID(newId).GetRelationship();
         UUID parent = relationshipComponent.Parent;
         if (parent)
           relationshipComponent.Parent = oldNewIdMap.at(parent);

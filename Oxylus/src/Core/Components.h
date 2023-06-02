@@ -138,12 +138,12 @@ namespace Oxylus {
   };
 
   // Physics
-  struct RigidBodyComponent {
+  struct RigidbodyComponent {
     JPH::BodyID BodyID = {};
     Vec3 ShapeSize = {};
 
-    RigidBodyComponent() = default;
-    ~RigidBodyComponent() = default;
+    RigidbodyComponent() = default;
+    ~RigidbodyComponent() = default;
   };
 
   struct CharacterControllerComponent {
@@ -191,7 +191,7 @@ namespace Oxylus {
                                        LightComponent, MeshRendererComponent, SkyLightComponent, ParticleSystemComponent, MaterialComponent,
 
                                        //Physics
-                                       RigidBodyComponent,
+                                       RigidbodyComponent,
 
                                        //Audio
                                        AudioSourceComponent, AudioListenerComponent>;

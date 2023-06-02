@@ -11,12 +11,12 @@ namespace Oxylus {
 
   class EntitySerializer {
   public:
-    static void SerializeEntity(ryml::NodeRef& entities, Entity entity);
+    static void SerializeEntity(Scene* scene, ryml::NodeRef& entities, Entity entity);
 
-    static UUID DeserializeEntity(ryml::ConstNodeRef entityNode, Scene& scene, bool preserveUUID);
+    static UUID DeserializeEntity(ryml::ConstNodeRef entityNode, Scene* scene, bool preserveUUID);
 
     static void SerializeEntityAsPrefab(const char* filepath, Entity entity);
 
-    static Entity DeserializeEntityAsPrefab(const char* filepath, Scene& scene);
+    static Entity DeserializeEntityAsPrefab(const char* filepath, Scene* scene);
   };
 }

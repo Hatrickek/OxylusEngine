@@ -89,7 +89,7 @@ namespace Oxylus {
         modified = ImGui::SliderScalar(s_IDBuffer, dataType, &value, &min, &max, fmt);
       else
         modified = ImGui::DragScalar(s_IDBuffer, dataType, &value, delta, nullptr, nullptr, fmt);
-
+        
       EndPropertyGrid();
       return modified;
     }
@@ -125,7 +125,7 @@ namespace Oxylus {
                          const char* tooltip = nullptr);
 
     // Vec3 with reset button
-    static void DrawVec3Control(const char* label,
+    static bool DrawVec3Control(const char* label,
                                 glm::vec3& values,
                                 const char* tooltip = nullptr,
                                 float resetValue = 0.0f);

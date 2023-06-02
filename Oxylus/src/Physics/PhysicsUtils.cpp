@@ -16,8 +16,28 @@ namespace Oxylus {
       case JPH::EShapeSubType::Cylinder: return "Cylinder";
       case JPH::EShapeSubType::ConvexHull: return "ConvexHull";
       case JPH::EShapeSubType::Mesh: return "Mesh";
-      default: return "Empty";
+      default: return "Unkown";
     }
+  }
+
+  const char* PhysicsUtils::MotionTypeToString(JPH::EMotionType type) {
+    switch (type) {
+      case JPH::EMotionType::Static: return "Static";
+      case JPH::EMotionType::Kinematic: return "Kinematic";
+      case JPH::EMotionType::Dynamic: return "Dynamic";
+      default: return "Static";
+    }
+  }
+
+  JPH::EMotionType PhysicsUtils::StringToMotionType(const std::string& str) {
+    if (str == "Static")
+      return JPH::EMotionType::Static;
+    if (str == "Kinematic")
+      return JPH::EMotionType::Kinematic;
+    if (str == "Dynamic")
+      return JPH::EMotionType::Dynamic;
+
+    return JPH::EMotionType::Static;
   }
 
   void PhysicsUtils::DebugDraw(const JPH::BodyInterface* bodyInterface, JPH::BodyID bodyID) {

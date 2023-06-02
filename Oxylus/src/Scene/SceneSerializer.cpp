@@ -13,7 +13,7 @@
 #include "Utils/StringUtils.h"
 
 namespace Oxylus {
-  SceneSerializer::SceneSerializer(const Ref <Scene>& scene) : m_Scene(scene) { }
+  SceneSerializer::SceneSerializer(const Ref<Scene>& scene) : m_Scene(scene) { }
 
   void SceneSerializer::Serialize(const std::string& filePath) const {
     ryml::Tree tree;
@@ -32,7 +32,7 @@ namespace Oxylus {
       if (!entity)
         return;
 
-      EntitySerializer::SerializeEntity(entities, entity);
+      EntitySerializer::SerializeEntity(m_Scene.get(), entities, entity);
     });
 
     std::stringstream ss;
@@ -77,7 +77,7 @@ namespace Oxylus {
       const ryml::ConstNodeRef entities = root["Entities"];
 
       for (const auto entity : entities) {
-        EntitySerializer::DeserializeEntity(entity, *m_Scene, true);
+        EntitySerializer::DeserializeEntity(entity, m_Scene.get(), true);
       }
 
       timer.Stop();

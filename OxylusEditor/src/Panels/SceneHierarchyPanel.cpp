@@ -10,7 +10,7 @@
 #include "Jolt/Physics/Character/Character.h"
 #include "Jolt/Physics/Collision/Shape/CapsuleShape.h"
 #include "Jolt/Physics/Collision/Shape/RotatedTranslatedShape.h"
-#include "Physics/PhysicsRigidbodies.h"
+#include "Physics/PhysicsHelpers.h"
 #include "Scene/EntitySerializer.h"
 #include "UI/IGUI.h"
 #include "Utils/ImGuiScoped.h"
@@ -136,7 +136,7 @@ namespace Oxylus {
           std::filesystem::path path = std::filesystem::path((const char*)payload->Data);
           path = AssetManager::GetAssetFileSystemPath(path);
           if (path.extension() == ".oxprefab") {
-            m_DraggedEntity = EntitySerializer::DeserializeEntityAsPrefab(path.string().c_str(), *m_Context);
+            m_DraggedEntity = EntitySerializer::DeserializeEntityAsPrefab(path.string().c_str(), m_Context.get());
             m_DraggedEntity = entity;
           }
         }
@@ -264,7 +264,7 @@ namespace Oxylus {
           m_Context->CreateEntityWithMesh(AssetManager::GetMeshAsset(path.string()));
         }
         if (path.extension() == ".oxprefab") {
-          EntitySerializer::DeserializeEntityAsPrefab(path.string().c_str(), *m_Context);
+          EntitySerializer::DeserializeEntityAsPrefab(path.string().c_str(), m_Context.get());
         }
       }
 
@@ -326,39 +326,24 @@ namespace Oxylus {
         if (ImGui::MenuItem("Sphere")) {
           toSelect = m_Context->CreateEntity("Sphere");
           const auto& pos = toSelect.GetComponent<TransformComponent>().Translation;
-          auto& rb = toSelect.AddComponent<RigidBodyComponent>();
-          rb.BodyID = PhysicsRigidbodies::CreateSphereBody(m_Context->GetBodyInterface(), pos, 1.0f);
+          auto& rb = toSelect.AddComponent<RigidbodyComponent>();
+          rb = PhysicsHelpers::CreateSphereRigidbody(m_Context->GetBodyInterface(), pos, 1.0f);
           toSelect.AddComponentI<MeshRendererComponent>(AssetManager::GetMeshAsset("Resources/Objects/sphere.gltf").Data);
         }
 
         if (ImGui::MenuItem("Plane")) {
           toSelect = m_Context->CreateEntity("Plane");
           const auto& pos = toSelect.GetComponent<TransformComponent>().Translation;
-          auto& rb = toSelect.AddComponent<RigidBodyComponent>();
-          rb.BodyID = PhysicsRigidbodies::CreateBoxBody(m_Context->GetBodyInterface(), pos, {1.0, .1f, 1.0});
+          auto& rb = toSelect.AddComponent<RigidbodyComponent>();
+          rb = PhysicsHelpers::CreateBoxRigidbody(m_Context->GetBodyInterface(), pos, {1.0, .1f, 1.0});
           toSelect.AddComponentI<MeshRendererComponent>(AssetManager::GetMeshAsset("Resources/Objects/plane.gltf").Data);
         }
 
         if (ImGui::MenuItem("Character Controller")) {
           toSelect = m_Context->CreateEntity("Character Controller");
-          auto& pos = toSelect.GetComponent<TransformComponent>().Translation;
+          const auto& pos = toSelect.GetComponent<TransformComponent>().Translation;
           auto& component = toSelect.AddComponent<CharacterControllerComponent>();
-
-          // Create shape
-          component.Shape = RotatedTranslatedShapeSettings(
-            JPH::Vec3(pos.x, 0.5f * component.CharacterHeightStanding + component.CharacterRadiusStanding, pos.z),
-            Quat::sIdentity(),
-            new CapsuleShape(0.5f * component.CharacterHeightStanding, component.CharacterRadiusStanding)).Create().Get();
-
-          // Create character
-          Ref<CharacterSettings> settings = CreateRef<CharacterSettings>();
-          settings->mMaxSlopeAngle = DegreesToRadians(45.0f);
-          settings->mLayer = PhysicsLayers::MOVING;
-          settings->mShape = component.Shape;
-          settings->mFriction = 0.5f;
-          settings->mSupportingVolume = Plane(JPH::Vec3::sAxisY(), -component.CharacterRadiusStanding); // Accept contacts that touch the lower sphere of the capsule
-          component.Character = new Character(settings.get(), RVec3::sZero(), Quat::sIdentity(), 0, m_Context->GetPhysicsSystem().get());
-          component.Character->AddToPhysicsSystem(EActivation::Activate);
+          component = PhysicsHelpers::CreateCharachterController(m_Context->GetPhysicsSystem().get(), pos);
           toSelect.AddComponentI<MeshRendererComponent>(AssetManager::GetMeshAsset("Resources/Objects/capsule.glb").Data);
         }
 
@@ -411,6 +396,7 @@ namespace Oxylus {
       }
       if (ImGui::IsKeyPressed(ImGuiKey_Delete)) {
         m_Context->DestroyEntity(m_SelectedEntity);
+        m_SelectedEntity = {};
       }
       if (ImGui::IsKeyPressed(ImGuiKey_F2)) {
         m_RenamingEntity = m_SelectedEntity;

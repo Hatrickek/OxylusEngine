@@ -16,6 +16,7 @@
 #include "Utils/StringUtils.h"
 #include "Utils/UIUtils.h"
 #include "Assets/MaterialSerializer.h"
+#include "Physics/PhysicsHelpers.h"
 #include "Physics/PhysicsUtils.h"
 #include "Render/Vulkan/VulkanRenderer.h"
 
@@ -262,7 +263,7 @@ namespace Oxylus {
     if (ImGui::BeginPopup("Add Component")) {
       DrawAddComponent<MeshRendererComponent>(m_SelectedEntity, "Mesh Renderer");
       DrawAddComponent<MaterialComponent>(m_SelectedEntity, "Material");
-      DrawAddComponent<RigidBodyComponent>(m_SelectedEntity, "Rigidbody");
+      DrawAddComponent<RigidbodyComponent>(m_SelectedEntity, "Rigidbody");
       DrawAddComponent<AudioSourceComponent>(m_SelectedEntity, "Audio Source");
       DrawAddComponent<LightComponent>(m_SelectedEntity, "Light");
       DrawAddComponent<ParticleSystemComponent>(m_SelectedEntity, "Particle System");
@@ -563,9 +564,9 @@ namespace Oxylus {
         IGUI::EndProperties();
       });
 
-    DrawComponent<RigidBodyComponent>(ICON_MDI_SOCCER " Rigidbody Component",
+    DrawComponent<RigidbodyComponent>(ICON_MDI_SOCCER " Rigidbody Component",
       entity,
-      [this](RigidBodyComponent& component) {
+      [this](RigidbodyComponent& component) {
         const auto bodyInterface = m_Scene->GetBodyInterface();
         IGUI::BeginProperties();
         // TODO(hatrickek): Inspector panel for rigidbody component.
@@ -577,7 +578,7 @@ namespace Oxylus {
         if (IGUI::Property("Motion Type", selectedType, motionTypes, 3)) {
           bodyInterface->SetMotionType(component.BodyID, (JPH::EMotionType)(uint8_t)selectedType, JPH::EActivation::Activate);
         }
-        
+
         // Friction
         const float currentFriction = bodyInterface->GetFriction(component.BodyID);
         float selectedFriction = currentFriction;
@@ -591,14 +592,14 @@ namespace Oxylus {
         const auto currentShape = bodyInterface->GetShape(component.BodyID)->GetSubType();
         IGUI::Text("Shape", PhysicsUtils::ShapeTypeToString(currentShape));
 
-        const Vec3 currentSize = glm::make_vec3(bodyInterface->GetShape(component.BodyID)->GetLocalBounds().GetSize().mF32);
-        Vec3 selectedSize = currentSize;
-        IGUI::DrawVec3Control("Scale", selectedSize);
-        static bool flag = false;
-        if (IGUI::Property("size", flag))
-          bodyInterface->SetShape(component.BodyID, bodyInterface->GetShape(component.BodyID)->ScaleShape({31, 1, 31}).Get(), true, JPH::EActivation::Activate);
-
+        IGUI::DrawVec3Control("Scale", component.ShapeSize);
         IGUI::EndProperties();
+
+        const float x = ImGui::GetContentRegionAvail().x;
+        const float y = ImGui::GetFrameHeight();
+        if (ImGui::Button("Apply scale", {x, y})) {
+          PhysicsHelpers::ScaleShape(component, bodyInterface, true, JPH::EActivation::Activate);
+        }
       });
 
     DrawComponent<CameraComponent>(ICON_MDI_CAMERA "Camera Component",
