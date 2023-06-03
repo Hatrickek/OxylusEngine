@@ -19,11 +19,22 @@ namespace Oxylus {
     /// Scene systems: Called right after when the scene gets initalized.
     /// Engine systems: Called right before core is initalized.
     virtual void OnInit() { }
+
+    /// Called at the end of the core update loop.
     virtual void OnUpdate() { }
+
+    /// Called before physic system is updated.
     virtual void OnUpdate(Scene* scene, Timestep deltaTime) { }
+
+    /// Called in the main imgui loop which is right before `OnUpdate`
     virtual void OnImGuiRender() { }
-    virtual void OnDebugRender() { }
+
+    /// Called in the main imgui loop which is right after `OnUpdate`
+    virtual void OnImGuiRender(Scene* scene, Timestep deltaTime) { }
+
+    /// Called right after main loop is finished before the core shutdown process.
     virtual void OnShutdown() { }
+
     void SetDispatcher(EventDispatcher* dispatcher) { m_Dispatcher = dispatcher; }
 
   protected:

@@ -67,11 +67,6 @@ namespace Oxylus {
         system.second->OnImGuiRender();
     }
 
-    void OnDebugDraw() const {
-      for (const auto& system : m_Systems)
-        system.second->OnDebugRender();
-    }
-
     void Shutdown() const {
       for (const auto& system : m_Systems)
         system.second->OnShutdown();

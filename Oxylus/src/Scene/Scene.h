@@ -41,6 +41,7 @@ namespace Oxylus {
     void OnPlay();
     void OnStop();
     void OnUpdate(float deltaTime);
+    void OnImGuiRender(float deltaTime);
     void OnEditorUpdate(float deltaTime, Camera& camera);
     void RenderScene() const;
     void UpdateSystems(float deltaTime);

@@ -346,6 +346,11 @@ namespace Oxylus {
     }
   }
 
+  void Scene::OnImGuiRender(const float deltaTime) {
+    for (const auto& system : m_Systems)
+      system->OnImGuiRender(this, deltaTime);
+  }
+
   void Scene::OnEditorUpdate(float deltaTime, Camera& camera) {
     RenderScene();
     UpdatePhysics(false, deltaTime);
