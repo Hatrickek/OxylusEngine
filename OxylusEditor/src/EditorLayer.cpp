@@ -98,7 +98,7 @@ namespace Oxylus {
         break;
       }
       case SceneState::Play: {
-        m_ActiveScene->OnUpdate(deltaTime);
+        m_ActiveScene->OnRuntimeUpdate(deltaTime);
         break;
       }
       case SceneState::Simulate: {
@@ -340,18 +340,20 @@ namespace Oxylus {
   }
 
   void EditorLayer::OnScenePlay() {
-    SetSceneState(SceneState::Play);
+    ResetContext();
     m_ActiveScene = Scene::Copy(m_EditorScene);
     SetRuntimeScene(m_ActiveScene);
 
-    m_ActiveScene->OnPlay();
+    m_ActiveScene->OnRuntimeStart();
+    SetSceneState(SceneState::Play);
   }
 
   void EditorLayer::OnSceneStop() {
-    SetSceneState(SceneState::Edit);
+    ResetContext();
     SetEditorScene(m_EditorScene);
 
-    m_ActiveScene->OnStop();
+    m_ActiveScene->OnRuntimeStop();
+    SetSceneState(SceneState::Edit);
   }
 
   void EditorLayer::OnSceneSimulate() {

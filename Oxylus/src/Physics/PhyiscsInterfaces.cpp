@@ -1,6 +1,8 @@
 ﻿#include "src/oxpch.h"
 #include "PhyiscsInterfaces.h"
 
+#include "PhysicsMaterial.h"
+
 
 bool ObjectLayerPairFilterImpl::ShouldCollide(JPH::ObjectLayer inObject1, JPH::ObjectLayer inObject2) const {
   using namespace JPH;
@@ -50,4 +52,66 @@ bool ObjectVsBroadPhaseLayerFilterImpl::ShouldCollide(JPH::ObjectLayer inLayer1,
       OX_CORE_ASSERT(false);
       return false;
   }
+}
+
+void Physics3DBodyActivationListener::OnBodyActivated(const JPH::BodyID& inBodyID, JPH::uint64 inBodyUserData) {
+  ZoneScoped;
+
+  /* Body Activated */
+}
+void Physics3DBodyActivationListener::OnBodyDeactivated(const JPH::BodyID& inBodyID, JPH::uint64 inBodyUserData) {
+  ZoneScoped;
+
+  /* Body Deactivated */
+}
+
+void Physics3DContactListener::GetFrictionAndRestitution(const JPH::Body& inBody, const JPH::SubShapeID& inSubShapeID, float& outFriction, float& outRestitution) {
+  ZoneScoped;
+
+  // Get the material that corresponds to the sub shape ID
+  const JPH::PhysicsMaterial* material = inBody.GetShape()->GetMaterial(inSubShapeID);
+  if (material == JPH::PhysicsMaterial::sDefault) {
+    outFriction = inBody.GetFriction();
+    outRestitution = inBody.GetRestitution();
+  }
+  else {
+    const auto* phyMaterial = static_cast<const PhysicsMaterial3D*>(material);
+    outFriction = phyMaterial->Friction;
+    outRestitution = phyMaterial->Restitution;
+  }
+}
+void Physics3DContactListener::OverrideContactSettings(const JPH::Body& inBody1, const JPH::Body& inBody2, const JPH::ContactManifold& inManifold, JPH::ContactSettings& ioSettings) {
+  ZoneScoped;
+
+  // Get the custom friction and restitution for both bodies
+  float friction1, friction2, restitution1, restitution2;
+  GetFrictionAndRestitution(inBody1, inManifold.mSubShapeID1, friction1, restitution1);
+  GetFrictionAndRestitution(inBody2, inManifold.mSubShapeID2, friction2, restitution2);
+
+  // Use the default formulas for combining friction and restitution
+  ioSettings.mCombinedFriction = JPH::sqrt(friction1 * friction2);
+  ioSettings.mCombinedRestitution = JPH::max(restitution1, restitution2);
+}
+JPH::ValidateResult Physics3DContactListener::OnContactValidate(const JPH::Body &inBody1, const JPH::Body &inBody2, JPH::RVec3Arg inBaseOffset, const JPH::CollideShapeResult &inCollisionResult) {
+  ZoneScoped;
+
+  return JPH::ValidateResult::AcceptAllContactsForThisBodyPair;
+}
+
+void Physics3DContactListener::OnContactAdded(const JPH::Body& inBody1, const JPH::Body& inBody2, const JPH::ContactManifold& inManifold, JPH::ContactSettings& ioSettings) {
+  ZoneScoped;
+
+  OverrideContactSettings(inBody1, inBody2, inManifold, ioSettings);
+}
+
+void Physics3DContactListener::OnContactPersisted(const JPH::Body& inBody1, const JPH::Body& inBody2, const JPH::ContactManifold& inManifold, JPH::ContactSettings& ioSettings) {
+  ZoneScoped;
+
+  OverrideContactSettings(inBody1, inBody2, inManifold, ioSettings);
+}
+
+void Physics3DContactListener::OnContactRemoved(const JPH::SubShapeIDPair& inSubShapePair) {
+  ZoneScoped;
+
+  /* On Collision Exit */
 }

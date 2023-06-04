@@ -36,7 +36,7 @@ void main() {
 
   outUV = inUV;
 
-  vec3 T = normalize((u_ModelUbo.model * inTangent).xyz);
+  vec3 T = normalize((u_ModelUbo.model * (inTangent + vec4(0.00001))).xyz);
   vec3 N = normalize((u_ModelUbo.model * vec4(inNormal, 0.0)).xyz);
   T = normalize(T - dot(T, N) * N);
   vec3 B = cross(N, T);

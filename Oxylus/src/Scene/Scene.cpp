@@ -13,12 +13,17 @@
 #include <glm/gtc/type_ptr.hpp>
 
 #include "Jolt/Physics/Character/Character.h"
+#include "Jolt/Physics/Collision/Shape/CapsuleShape.h"
+#include "Jolt/Physics/Collision/Shape/CylinderShape.h"
+#include "Jolt/Physics/Collision/Shape/MutableCompoundShape.h"
+#include "Jolt/Physics/Collision/Shape/RotatedTranslatedShape.h"
+#include "Jolt/Physics/Collision/Shape/TaperedCapsuleShape.h"
+#include "Physics/PhysicsMaterial.h"
 #include "Physics/PhysicsUtils.h"
 
 namespace Oxylus {
   Scene::Scene() {
     Init();
-    InitPhysics();
   }
 
   Scene::Scene(std::string name) : SceneName(std::move(name)) { }
@@ -41,22 +46,6 @@ namespace Oxylus {
     }
   }
 
-  void Scene::InitPhysics() {
-    // Physics
-    m_JobSystem = CreateRef<JPH::JobSystemThreadPool>();
-    m_JobSystem->Init(JPH::cMaxPhysicsJobs, JPH::cMaxPhysicsBarriers, std::thread::hardware_concurrency() - 1);
-    m_PhysicsSystem = CreateRef<JPH::PhysicsSystem>();
-    m_PhysicsSystem->Init(
-      Physics::MAX_BODIES,
-      0,
-      Physics::MAX_BODY_PAIRS,
-      Physics::MAX_CONTACT_CONSTRAINS,
-      Physics::s_LayerInterface,
-      Physics::s_ObjectVsBroadPhaseLayerFilterInterface,
-      Physics::s_ObjectLayerPairFilterInterface);
-    m_BodyInterface = &m_PhysicsSystem->GetBodyInterface();
-  }
-
   Entity Scene::CreateEntity(const std::string& name) {
     return CreateEntityWithUUID(UUID(), name);
   }
@@ -71,47 +60,70 @@ namespace Oxylus {
     return entity;
   }
 
-  void Scene::UpdatePhysics(bool simulating, Timestep deltaTime) {
-    // Editing mode
-    if (!simulating) {
-      const auto group = m_Registry.view<TransformComponent, RigidbodyComponent>();
-      for (const auto entity : group) {
-        auto [transform, rb] = group.get<TransformComponent, RigidbodyComponent>(entity);
-        m_BodyInterface->SetPosition(rb.BodyID, {transform.Translation.x, transform.Translation.y, transform.Translation.z}, JPH::EActivation::DontActivate);
-        auto quat = glm::quat(transform.Rotation);
-        m_BodyInterface->SetRotation(rb.BodyID, {quat.x, quat.y, quat.z, quat.w}, JPH::EActivation::DontActivate);
-        PhysicsUtils::DebugDraw(m_BodyInterface, rb.BodyID);
-      }
-      return;
+  void Scene::UpdatePhysics(Timestep deltaTime) {
+    ZoneScoped;
+    // Minimum stable value is 16.0
+    constexpr float physicsStepRate = 50.0f;
+    constexpr float physicsTs = 1.0f / physicsStepRate;
+
+    bool stepped = false;
+    m_PhysicsFrameAccumulator += deltaTime;
+
+    while (m_PhysicsFrameAccumulator >= physicsTs) {
+      Physics::Step(physicsTs);
+
+      m_PhysicsFrameAccumulator -= physicsTs;
+      stepped = true;
     }
 
-    constexpr int cCollisionSteps = 1;
-    constexpr int cIntegrationSubSteps = 1;
+    const float interpolationFactor = m_PhysicsFrameAccumulator / physicsTs;
 
-    m_PhysicsSystem->Update(deltaTime, cCollisionSteps, cIntegrationSubSteps, Physics::s_TempAllocator, m_JobSystem.get());
+    const auto& bodyInterface = Physics::GetPhysicsSystem()->GetBodyInterface();
+    const auto view = m_Registry.group<RigidbodyComponent>(entt::get<TransformComponent>);
+    for (auto&& [e, rb, tc] : view.each()) {
+      if (!rb.RuntimeBody)
+        continue;
 
-    // Physics
-    {
-      ZoneScopedN("Physics System");
-      // Rigidbody
-      {
-        const auto group = m_Registry.view<TransformComponent, RigidbodyComponent>();
-        for (const auto entity : group) {
-          auto [transform, rb] = group.get<TransformComponent, RigidbodyComponent>(entity);
-          transform.Translation = glm::make_vec3(m_BodyInterface->GetPosition(rb.BodyID).mF32);
-          transform.Rotation = glm::eulerAngles(glm::make_quat(m_BodyInterface->GetRotation(rb.BodyID).GetXYZW().mF32));
-          PhysicsUtils::DebugDraw(m_BodyInterface, rb.BodyID);
+      const auto* body = static_cast<const JPH::Body*>(rb.RuntimeBody);
+
+      if (!bodyInterface.IsActive(body->GetID()))
+        continue;
+
+      if (rb.Interpolation) {
+        if (stepped) {
+          JPH::Vec3 position = body->GetPosition();
+          JPH::Vec3 rotation = body->GetRotation().GetEulerAngles();
+
+          rb.PreviousTranslation = rb.Translation;
+          rb.PreviousRotation = rb.Rotation;
+          rb.Translation = {position.GetX(), position.GetY(), position.GetZ()};
+          rb.Rotation = glm::vec3(rotation.GetX(), rotation.GetY(), rotation.GetZ());
         }
+
+        tc.Translation = glm::lerp(rb.PreviousTranslation, rb.Translation, interpolationFactor);
+        tc.Rotation = glm::eulerAngles(glm::slerp(rb.PreviousRotation, rb.Rotation, interpolationFactor));
       }
-      // Character
-      {
-        const auto group = m_Registry.view<TransformComponent, CharacterControllerComponent>();
-        for (const auto entity : group) {
-          auto [transform, component] = group.get<TransformComponent, CharacterControllerComponent>(entity);
-          transform.Translation = glm::make_vec3(component.Character->GetPosition().mF32);
-          transform.Rotation = glm::eulerAngles(glm::make_quat(component.Character->GetRotation().GetXYZW().mF32));
-          component.Character->PostSimulation(component.CollisionTolerance);
-        }
+      else {
+        const JPH::Vec3 position = body->GetPosition();
+        JPH::Vec3 rotation = body->GetRotation().GetEulerAngles();
+
+        rb.PreviousTranslation = rb.Translation;
+        rb.PreviousRotation = rb.Rotation;
+        rb.Translation = {position.GetX(), position.GetY(), position.GetZ()};
+        rb.Rotation = glm::vec3(rotation.GetX(), rotation.GetY(), rotation.GetZ());
+        tc.Translation = rb.Translation;
+        tc.Rotation = glm::eulerAngles(rb.Rotation);
+      }
+    }
+
+    // Character
+    {
+      const auto group = m_Registry.view<TransformComponent, CharacterControllerComponent>();
+      for (const auto entity : group) {
+        auto [transform, component] = group.get<TransformComponent, CharacterControllerComponent>(entity);
+        transform.Translation = glm::make_vec3(component.Character->GetPosition().mF32);
+        transform.Rotation = glm::eulerAngles(glm::make_quat(component.Character->GetRotation().GetXYZW().mF32));
+        component.Character->PostSimulation(component.CollisionTolerance);
       }
     }
   }
@@ -196,11 +208,69 @@ namespace Oxylus {
     CopyComponentIfExists(AllComponents{}, newEntity, entity);
   }
 
-  void Scene::OnPlay() {
+  void Scene::OnRuntimeStart() {
     ZoneScoped;
+
+    m_IsRunning = true;
+
+    m_PhysicsFrameAccumulator = 0.0f;
+
+    // Physics
+    {
+      ZoneScopedN("Physics Start");
+      Physics::Init();
+      m_BodyActivationListener3D = new Physics3DBodyActivationListener();
+      m_ContactListener3D = new Physics3DContactListener();
+      const auto physicsSystem = Physics::GetPhysicsSystem();
+      physicsSystem->SetBodyActivationListener(m_BodyActivationListener3D);
+      physicsSystem->SetContactListener(m_ContactListener3D);
+
+      // Rigidbodies
+      {
+        const auto group = m_Registry.group<RigidbodyComponent>(entt::get<TransformComponent>);
+        for (auto&& [e, rb, tc] : group.each()) {
+          rb.PreviousTranslation = rb.Translation = tc.Translation;
+          rb.PreviousRotation = rb.Rotation = tc.Rotation;
+          CreateRigidbody({e, this}, tc, rb);
+        }
+      }
+
+      // Characters
+      {
+        const auto group = m_Registry.group<CharacterControllerComponent>(entt::get<TransformComponent>);
+        for (auto&& [e, ch, tc] : group.each()) {
+          CreateCharacterController({e, this}, tc, ch);
+        }
+      }
+
+      physicsSystem->OptimizeBroadPhase();
+    }
   }
 
-  void Scene::OnStop() { }
+  void Scene::OnRuntimeStop() {
+    ZoneScoped;
+
+    m_IsRunning = false;
+
+    // Physics
+    {
+      JPH::BodyInterface& bodyInterface = Physics::GetPhysicsSystem()->GetBodyInterface();
+      const auto view = m_Registry.view<RigidbodyComponent>();
+      for (auto&& [e, rb] : view.each()) {
+        if (rb.RuntimeBody) {
+          const auto* body = static_cast<const JPH::Body*>(rb.RuntimeBody);
+          bodyInterface.RemoveBody(body->GetID());
+          bodyInterface.DestroyBody(body->GetID());
+        }
+      }
+
+      delete m_BodyActivationListener3D;
+      delete m_ContactListener3D;
+      m_BodyActivationListener3D = nullptr;
+      m_ContactListener3D = nullptr;
+      Physics::Shutdown();
+    }
+  }
 
   Entity Scene::FindEntity(const std::string_view& name) {
     ZoneScoped;
@@ -251,44 +321,142 @@ namespace Oxylus {
         dst.SetParent(newScene->GetEntityByUUID(srcParent.GetUUID()));
     }
 
-    // Copy physics
-    newScene->m_PhysicsSystem = CreateRef<JPH::PhysicsSystem>();
-    newScene->m_PhysicsSystem->Init(
-      Physics::MAX_BODIES,
-      0,
-      Physics::MAX_BODY_PAIRS,
-      Physics::MAX_CONTACT_CONSTRAINS,
-      Physics::s_LayerInterface,
-      Physics::s_ObjectVsBroadPhaseLayerFilterInterface,
-      Physics::s_ObjectLayerPairFilterInterface);
-    newScene->m_BodyInterface = &newScene->m_PhysicsSystem->GetBodyInterface();
-
-    // Copy bodies
-    JPH::BodyIDVector otherBodyIDs = {};
-    other->m_PhysicsSystem->GetBodies(otherBodyIDs);
-    std::vector<JPH::Body*> otherBodies = {};
-    for (auto& id : otherBodyIDs) {
-      otherBodies.emplace_back(other->m_PhysicsSystem->GetBodyLockInterface().TryGetBody(id));
-    }
-
-    // Add copied bodies in batch
-    JPH::BodyIDVector newBodyIDs = {};
-    for (const auto& b : otherBodies) {
-      newBodyIDs.emplace_back(newScene->m_BodyInterface->CreateBody(b->GetBodyCreationSettings())->GetID());
-    }
-    const auto state = newScene->m_BodyInterface->AddBodiesPrepare(newBodyIDs.data(), (int)newBodyIDs.size());
-    newScene->m_BodyInterface->AddBodiesFinalize(newBodyIDs.data(), (int)newBodyIDs.size(), state, JPH::EActivation::Activate);
-
-    newScene->m_JobSystem = other->m_JobSystem;
-
     // Copy components (except IDComponent and TagComponent)
     CopyComponent(AllComponents{}, dstSceneRegistry, srcSceneRegistry, newScene->m_EntityMap);
 
     return newScene;
   }
 
-  void Scene::RenderScene() const {
+  void Scene::RenderScene() {
+    const auto view = m_Registry.view<RigidbodyComponent>();
+    for (auto&& [e, rb] : view.each()) {
+      PhysicsUtils::DebugDraw(this, e);
+    }
+
     m_SceneRenderer.Render();
+  }
+
+  void Scene::CreateRigidbody(Entity entity, const TransformComponent& transform, RigidbodyComponent& component) const {
+    ZoneScoped;
+    if (!m_IsRunning)
+      return;
+
+    auto& bodyInterface = Physics::GetBodyInterface();
+    if (component.RuntimeBody) {
+      bodyInterface.DestroyBody(static_cast<JPH::Body*>(component.RuntimeBody)->GetID());
+      component.RuntimeBody = nullptr;
+    }
+
+    JPH::MutableCompoundShapeSettings compoundShapeSettings;
+    float maxScaleComponent = glm::max(glm::max(transform.Scale.x, transform.Scale.y), transform.Scale.z);
+
+    const auto& entityName = entity.GetComponent<TagComponent>().Tag;
+
+    if (entity.HasComponent<BoxColliderComponent>()) {
+      const auto& bc = entity.GetComponent<BoxColliderComponent>();
+      const auto* mat = new PhysicsMaterial3D(entityName, JPH::ColorArg(255, 0, 0), bc.Friction, bc.Restitution);
+
+      Vec3 scale = bc.Size;
+      JPH::BoxShapeSettings shapeSettings({glm::abs(scale.x), glm::abs(scale.y), glm::abs(scale.z)}, 0.05f, mat);
+      shapeSettings.SetDensity(glm::max(0.001f, bc.Density));
+
+      compoundShapeSettings.AddShape({bc.Offset.x, bc.Offset.y, bc.Offset.z}, JPH::Quat::sIdentity(), shapeSettings.Create().Get());
+    }
+
+    if (entity.HasComponent<SphereColliderComponent>()) {
+      const auto& sc = entity.GetComponent<SphereColliderComponent>();
+      const auto* mat = new PhysicsMaterial3D(entityName, JPH::ColorArg(255, 0, 0), sc.Friction, sc.Restitution);
+
+      float radius = 2.0f * sc.Radius * maxScaleComponent;
+      JPH::SphereShapeSettings shapeSettings(glm::max(0.01f, radius), mat);
+      shapeSettings.SetDensity(glm::max(0.001f, sc.Density));
+
+      compoundShapeSettings.AddShape({sc.Offset.x, sc.Offset.y, sc.Offset.z}, JPH::Quat::sIdentity(), shapeSettings.Create().Get());
+    }
+
+    if (entity.HasComponent<CapsuleColliderComponent>()) {
+      const auto& cc = entity.GetComponent<CapsuleColliderComponent>();
+      const auto* mat = new PhysicsMaterial3D(entityName, JPH::ColorArg(255, 0, 0), cc.Friction, cc.Restitution);
+
+      float radius = 2.0f * cc.Radius * maxScaleComponent;
+      JPH::CapsuleShapeSettings shapeSettings(glm::max(0.01f, cc.Height) * 0.5f, glm::max(0.01f, radius), mat);
+      shapeSettings.SetDensity(glm::max(0.001f, cc.Density));
+
+      compoundShapeSettings.AddShape({cc.Offset.x, cc.Offset.y, cc.Offset.z}, JPH::Quat::sIdentity(), shapeSettings.Create().Get());
+    }
+
+    if (entity.HasComponent<TaperedCapsuleColliderComponent>()) {
+      const auto& tcc = entity.GetComponent<TaperedCapsuleColliderComponent>();
+      const auto* mat = new PhysicsMaterial3D(entityName, JPH::ColorArg(255, 0, 0), tcc.Friction, tcc.Restitution);
+
+      float topRadius = 2.0f * tcc.TopRadius * maxScaleComponent;
+      float bottomRadius = 2.0f * tcc.BottomRadius * maxScaleComponent;
+      JPH::TaperedCapsuleShapeSettings shapeSettings(glm::max(0.01f, tcc.Height) * 0.5f, glm::max(0.01f, topRadius), glm::max(0.01f, bottomRadius), mat);
+      shapeSettings.SetDensity(glm::max(0.001f, tcc.Density));
+
+      compoundShapeSettings.AddShape({tcc.Offset.x, tcc.Offset.y, tcc.Offset.z}, JPH::Quat::sIdentity(), shapeSettings.Create().Get());
+    }
+
+    if (entity.HasComponent<CylinderColliderComponent>()) {
+      const auto& cc = entity.GetComponent<CylinderColliderComponent>();
+      const auto* mat = new PhysicsMaterial3D(entityName, JPH::ColorArg(255, 0, 0), cc.Friction, cc.Restitution);
+
+      float radius = 2.0f * cc.Radius * maxScaleComponent;
+      JPH::CylinderShapeSettings shapeSettings(glm::max(0.01f, cc.Height) * 0.5f, glm::max(0.01f, radius), 0.05f, mat);
+      shapeSettings.SetDensity(glm::max(0.001f, cc.Density));
+
+      compoundShapeSettings.AddShape({cc.Offset.x, cc.Offset.y, cc.Offset.z}, JPH::Quat::sIdentity(), shapeSettings.Create().Get());
+    }
+
+    // Body
+    auto rotation = glm::quat(transform.Rotation);
+
+    auto layer = entity.GetComponent<TagComponent>().Layer;
+    uint8_t layerIndex = 1;	// Default Layer
+    auto collisionMaskIt = Physics::LayerCollisionMask.find(layer);
+    if (collisionMaskIt != Physics::LayerCollisionMask.end())
+      layerIndex = collisionMaskIt->second.Index;
+
+    JPH::BodyCreationSettings bodySettings(compoundShapeSettings.Create().Get(), {transform.Translation.x, transform.Translation.y, transform.Translation.z}, {rotation.x, rotation.y, rotation.z, rotation.w}, static_cast<JPH::EMotionType>(component.Type), layerIndex);
+
+    JPH::MassProperties massProperties;
+    massProperties.mMass = glm::max(0.01f, component.Mass);
+    bodySettings.mMassPropertiesOverride = massProperties;
+    bodySettings.mOverrideMassProperties = JPH::EOverrideMassProperties::CalculateInertia;
+    bodySettings.mAllowSleeping = component.AllowSleep;
+    bodySettings.mLinearDamping = glm::max(0.0f, component.LinearDrag);
+    bodySettings.mAngularDamping = glm::max(0.0f, component.AngularDrag);
+    bodySettings.mMotionQuality = component.Continuous ? JPH::EMotionQuality::LinearCast : JPH::EMotionQuality::Discrete;
+    bodySettings.mGravityFactor = component.GravityScale;
+
+    bodySettings.mIsSensor = component.IsSensor;
+
+    JPH::Body* body = bodyInterface.CreateBody(bodySettings);
+
+    JPH::EActivation activation = component.Awake && component.Type != RigidbodyComponent::BodyType::Static ? JPH::EActivation::Activate : JPH::EActivation::DontActivate;
+    bodyInterface.AddBody(body->GetID(), activation);
+
+    component.RuntimeBody = body;
+  }
+
+  void Scene::CreateCharacterController(Entity entity, const TransformComponent& transform, CharacterControllerComponent& component) const {
+    if (!m_IsRunning)
+      return;
+    auto& position = transform.Translation;
+    const auto capsuleShape = JPH::RotatedTranslatedShapeSettings(
+      JPH::Vec3(position.x, 0.5f * component.CharacterHeightStanding + component.CharacterRadiusStanding, position.z),
+      JPH::Quat::sIdentity(),
+      new JPH::CapsuleShape(0.5f * component.CharacterHeightStanding, component.CharacterRadiusStanding)).Create().Get();
+
+    // Create character
+    const Ref<JPH::CharacterSettings> settings = CreateRef<JPH::CharacterSettings>();
+    settings->mMaxSlopeAngle = JPH::DegreesToRadians(45.0f);
+    settings->mLayer = PhysicsLayers::MOVING;
+    settings->mShape = capsuleShape;
+    settings->mFriction = component.Friction;
+    settings->mSupportingVolume = JPH::Plane(JPH::Vec3::sAxisY(), -component.CharacterRadiusStanding); // Accept contacts that touch the lower sphere of the capsule
+    component.Character = new JPH::Character(settings.get(), JPH::RVec3::sZero(), JPH::Quat::sIdentity(), 0, Physics::GetPhysicsSystem());
+    component.Character->AddToPhysicsSystem(JPH::EActivation::Activate);
   }
 
   void Scene::UpdateSystems(float deltaTime) {
@@ -298,7 +466,7 @@ namespace Oxylus {
     }
   }
 
-  void Scene::OnUpdate(float deltaTime) {
+  void Scene::OnRuntimeUpdate(float deltaTime) {
     ZoneScoped;
 
     // Camera
@@ -314,7 +482,7 @@ namespace Oxylus {
 
     UpdateSystems(deltaTime);
     RenderScene();
-    UpdatePhysics(true, deltaTime);
+    UpdatePhysics(deltaTime);
 
     // Audio
     {
@@ -353,7 +521,6 @@ namespace Oxylus {
 
   void Scene::OnEditorUpdate(float deltaTime, Camera& camera) {
     RenderScene();
-    UpdatePhysics(false, deltaTime);
 
     VulkanRenderer::SetCamera(camera);
   }
@@ -412,7 +579,44 @@ namespace Oxylus {
   template <>
   void Scene::OnComponentAdded<ParticleSystemComponent>(Entity entity,
                                                         ParticleSystemComponent& component) { }
-  
+
   template <>
-  void Scene::OnComponentAdded<RigidbodyComponent>(Entity entity, RigidbodyComponent& component) { }
+  void Scene::OnComponentAdded<RigidbodyComponent>([[maybe_unused]] Entity entity, [[maybe_unused]] RigidbodyComponent& component) {
+    CreateRigidbody(entity, entity.GetComponent<TransformComponent>(), component);
+  }
+
+  template <>
+  void Scene::OnComponentAdded<BoxColliderComponent>([[maybe_unused]] Entity entity, [[maybe_unused]] BoxColliderComponent& component) {
+    if (entity.HasComponent<RigidbodyComponent>())
+      CreateRigidbody(entity, entity.GetComponent<TransformComponent>(), entity.GetComponent<RigidbodyComponent>());
+  }
+
+  template <>
+  void Scene::OnComponentAdded<SphereColliderComponent>([[maybe_unused]] Entity entity, [[maybe_unused]] SphereColliderComponent& component) {
+    if (entity.HasComponent<RigidbodyComponent>())
+      CreateRigidbody(entity, entity.GetComponent<TransformComponent>(), entity.GetComponent<RigidbodyComponent>());
+  }
+
+  template <>
+  void Scene::OnComponentAdded<CapsuleColliderComponent>([[maybe_unused]] Entity entity, [[maybe_unused]] CapsuleColliderComponent& component) {
+    if (entity.HasComponent<RigidbodyComponent>())
+      CreateRigidbody(entity, entity.GetComponent<TransformComponent>(), entity.GetComponent<RigidbodyComponent>());
+  }
+
+  template <>
+  void Scene::OnComponentAdded<TaperedCapsuleColliderComponent>([[maybe_unused]] Entity entity, [[maybe_unused]] TaperedCapsuleColliderComponent& component) {
+    if (entity.HasComponent<RigidbodyComponent>())
+      CreateRigidbody(entity, entity.GetComponent<TransformComponent>(), entity.GetComponent<RigidbodyComponent>());
+  }
+
+  template <>
+  void Scene::OnComponentAdded<CylinderColliderComponent>([[maybe_unused]] Entity entity, [[maybe_unused]] CylinderColliderComponent& component) {
+    if (entity.HasComponent<RigidbodyComponent>())
+      CreateRigidbody(entity, entity.GetComponent<TransformComponent>(), entity.GetComponent<RigidbodyComponent>());
+  }
+
+  template <>
+  void Scene::OnComponentAdded<CharacterControllerComponent>([[maybe_unused]] Entity entity, [[maybe_unused]] CharacterControllerComponent& component) {
+    CreateCharacterController(entity, entity.GetComponent<TransformComponent>(), component);
+  }
 }

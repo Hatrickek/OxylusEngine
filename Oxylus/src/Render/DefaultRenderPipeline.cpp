@@ -105,7 +105,7 @@ namespace Oxylus {
     // Mesh data
     m_MeshDrawList.reserve(MAX_NUM_MESHES);
 
-    m_SkyboxCube.LoadFromFile(Resources::GetResourcesPath("Objects/cube.gltf").string(), Mesh::FlipY | Mesh::DontCreateMaterials);
+    m_SkyboxCube.LoadFromFile(Resources::GetResourcesPath("Objects/cube.glb").string(), Mesh::FlipY | Mesh::DontCreateMaterials);
 
     VulkanImageDescription CubeMapDesc{};
     // TODO:(hatrickek) Load skylight from scene or start using the atmosphere
@@ -139,8 +139,6 @@ namespace Oxylus {
                               .WriteDescriptorSets[0].pBufferInfo = &m_RendererData.DirectShadowBuffer.GetDescriptor();
 
     m_SSRDescriptorSet.CreateFromShader(m_Pipelines.SSRPipeline.GetShader());
-    m_SSRDescriptorSet.WriteDescriptorSets[5].pBufferInfo = &m_RendererData.VSBuffer.GetDescriptor();
-    m_SSRDescriptorSet.WriteDescriptorSets[6].pBufferInfo = &m_RendererData.SSRBuffer.GetDescriptor();
 
     m_CompositeDescriptorSet.CreateFromShader(m_Pipelines.CompositePipeline.GetShader());
     m_CompositeDescriptorSet.WriteDescriptorSets[5].pBufferInfo = &m_RendererData.PostProcessBuffer.GetDescriptor();
@@ -454,8 +452,6 @@ namespace Oxylus {
             m_Pipelines.DepthPrePassPipeline,
             [&](const Mesh::Primitive* part) {
               const auto& material = mesh.Materials[part->materialIndex];
-              if (!material->IsOpaque())
-                return false;
               const auto& layout = m_Pipelines.DepthPrePassPipeline.GetPipelineLayout();
               commandBuffer.PushConstants(layout, vk::ShaderStageFlagBits::eVertex, 0, sizeof(glm::mat4), &mesh.Transform);
               commandBuffer.PushConstants(layout, vk::ShaderStageFlagBits::eFragment, sizeof(glm::mat4), sizeof Material::Parameters, &material->Parameters);
@@ -1301,6 +1297,8 @@ namespace Oxylus {
           m_SSRDescriptorSet.WriteDescriptorSets[2].pImageInfo = &m_FrameBuffers.DepthNormalPassFB.GetImage()[1].GetDescImageInfo();
           m_SSRDescriptorSet.WriteDescriptorSets[3].pImageInfo = &m_Resources.CubeMap->GetDescImageInfo();
           m_SSRDescriptorSet.WriteDescriptorSets[4].pImageInfo = &m_FrameBuffers.DepthNormalPassFB.GetImage()[0].GetDescImageInfo();
+          m_SSRDescriptorSet.WriteDescriptorSets[5].pBufferInfo = &m_RendererData.VSBuffer.GetDescriptor();
+          m_SSRDescriptorSet.WriteDescriptorSets[6].pBufferInfo = &m_RendererData.SSRBuffer.GetDescriptor();
           m_SSRDescriptorSet.Update();
           m_FrameBuffers.PostProcessPassFB.GetDescription().OnResize();
         });

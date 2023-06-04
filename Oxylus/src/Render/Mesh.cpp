@@ -564,8 +564,8 @@ namespace Oxylus {
 
   void Mesh::LoadFailFallback() {
     ZoneScoped;
-    if (std::filesystem::exists("Resources/Objects/cube.gltf")) {
-      LoadFromFile("Resources/Objects/cube.gltf");
+    if (std::filesystem::exists("Resources/Objects/cube.glb")) {
+      LoadFromFile("Resources/Objects/cube.glb");
       OX_CORE_ERROR("Could not load mesh file {0}. Falled back to a cube.", Path);
     }
     else

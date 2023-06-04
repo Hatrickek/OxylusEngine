@@ -71,6 +71,7 @@ namespace OxylusRuntime {
         m_RotationDampening,
         1000.0f,
         deltaTime);
+      
       transform.Translation = m_SmoothCamera ? dampedPosition : finalPosition;
       transform.Rotation.x = m_SmoothCamera ? dampedYawPitch.y : finalYawPitch.y;
       transform.Rotation.y = m_SmoothCamera ? dampedYawPitch.x : finalYawPitch.x;

@@ -1,4 +1,6 @@
 ﻿#pragma once
+#include <tracy/Tracy.hpp>
+
 #include "JoltBuild.h"
 
 namespace PhysicsLayers {
@@ -46,4 +48,27 @@ private:
 class ObjectVsBroadPhaseLayerFilterImpl : public JPH::ObjectVsBroadPhaseLayerFilter {
 public:
   bool ShouldCollide(JPH::ObjectLayer inLayer1, JPH::BroadPhaseLayer inLayer2) const override;
+};
+
+class Physics3DBodyActivationListener : public JPH::BodyActivationListener {
+public:
+  void OnBodyActivated([[maybe_unused]] const JPH::BodyID& inBodyID, [[maybe_unused]] JPH::uint64 inBodyUserData) override;
+
+  void OnBodyDeactivated([[maybe_unused]] const JPH::BodyID& inBodyID, [[maybe_unused]] JPH::uint64 inBodyUserData) override;
+};
+
+class Physics3DContactListener : public JPH::ContactListener {
+private:
+  static void GetFrictionAndRestitution(const JPH::Body& inBody, const JPH::SubShapeID& inSubShapeID, float& outFriction, float& outRestitution);
+
+  static void OverrideContactSettings(const JPH::Body& inBody1, const JPH::Body& inBody2, const JPH::ContactManifold& inManifold, JPH::ContactSettings& ioSettings);
+
+public:
+  JPH::ValidateResult OnContactValidate(const JPH::Body &inBody1, const JPH::Body &inBody2, JPH::RVec3Arg inBaseOffset, const JPH::CollideShapeResult &inCollisionResult) override;
+
+  void OnContactAdded(const JPH::Body& inBody1, const JPH::Body& inBody2, const JPH::ContactManifold& inManifold, JPH::ContactSettings& ioSettings) override;
+
+  void OnContactPersisted(const JPH::Body& inBody1, const JPH::Body& inBody2, const JPH::ContactManifold& inManifold, JPH::ContactSettings& ioSettings) override;
+
+  void OnContactRemoved([[maybe_unused]] const JPH::SubShapeIDPair& inSubShapePair) override;
 };

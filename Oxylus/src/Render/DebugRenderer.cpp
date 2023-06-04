@@ -16,11 +16,11 @@ namespace Oxylus {
 
     s_Instance = new DebugRenderer();
 
-    s_Instance->m_DebugDrawData.Cube = CreateRef<Mesh>(Resources::GetResourcesPath("Objects/cube.gltf").string(),
-      Mesh::FileLoadingFlags::DontLoadImages | Mesh::FileLoadingFlags::DontCreateMaterials, 0.1f);
+    s_Instance->m_DebugDrawData.Cube = CreateRef<Mesh>(Resources::GetResourcesPath("Objects/cube.glb").string(),
+      Mesh::FileLoadingFlags::DontLoadImages | Mesh::FileLoadingFlags::DontCreateMaterials, 1.0f);
 
     s_Instance->m_DebugDrawData.Sphere = CreateRef<Mesh>(Resources::GetResourcesPath("Objects/sphere.gltf").string(),
-      Mesh::FileLoadingFlags::DontLoadImages | Mesh::FileLoadingFlags::DontCreateMaterials, 0.5f);
+      Mesh::FileLoadingFlags::DontLoadImages | Mesh::FileLoadingFlags::DontCreateMaterials, 1.0f);
   }
 
   void DebugRenderer::Release() {

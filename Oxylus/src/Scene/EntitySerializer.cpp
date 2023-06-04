@@ -5,12 +5,9 @@
 #include <ranges>
 
 #include "Assets/AssetManager.h"
-#include "Assets/MaterialSerializer.h"
 
 #include "Core/Entity.h"
 #include "Core/YamlHelpers.h"
-#include "Physics/PhysicsHelpers.h"
-#include "Physics/PhysicsUtils.h"
 
 #include "Utils/FileUtils.h"
 #include "Utils/StringUtils.h"
@@ -130,20 +127,104 @@ namespace Oxylus {
 
     // Physics
     if (entity.HasComponent<RigidbodyComponent>()) {
-      const auto& component = entity.GetComponent<RigidbodyComponent>();
       auto node = entityNode["RigidbodyComponent"];
       node |= ryml::MAP;
-      auto sizeNode = node["Size"];
-      glm::write(&sizeNode, component.ShapeSize);
-      node["MotionType"] << PhysicsUtils::MotionTypeToString(scene->GetBodyInterface()->GetMotionType(component.BodyID));
+
+      const auto& rb = entity.GetComponent<RigidbodyComponent>();
+      node["Type"] << static_cast<int>(rb.Type);
+      node["Mass"] << rb.Mass;
+      node["LinearDrag"] << rb.LinearDrag;
+      node["AngularDrag"] << rb.AngularDrag;
+      node["GravityScale"] << rb.GravityScale;
+      node["AllowSleep"] << rb.AllowSleep;
+      node["Awake"] << rb.Awake;
+      node["Continuous"] << rb.Continuous;
+      node["Interpolation"] << rb.Interpolation;
+      node["IsSensor"] << rb.IsSensor;
+    }
+
+    if (entity.HasComponent<BoxColliderComponent>()) {
+      auto node = entityNode["BoxColliderComponent"];
+      node |= ryml::MAP;
+
+      const auto& bc = entity.GetComponent<BoxColliderComponent>();
+      node["Size"] << bc.Size;
+      node["Offset"] << bc.Offset;
+      node["Density"] << bc.Density;
+      node["Friction"] << bc.Friction;
+      node["Restitution"] << bc.Restitution;
+    }
+
+    if (entity.HasComponent<SphereColliderComponent>()) {
+      auto node = entityNode["SphereColliderComponent"];
+      node |= ryml::MAP;
+
+      const auto& sc = entity.GetComponent<SphereColliderComponent>();
+      node["Radius"] << sc.Radius;
+      node["Offset"] << sc.Offset;
+      node["Density"] << sc.Density;
+      node["Friction"] << sc.Friction;
+      node["Restitution"] << sc.Restitution;
+    }
+
+    if (entity.HasComponent<CapsuleColliderComponent>()) {
+      auto node = entityNode["CapsuleColliderComponent"];
+      node |= ryml::MAP;
+
+      const auto& cc = entity.GetComponent<CapsuleColliderComponent>();
+      node["Height"] << cc.Height;
+      node["Radius"] << cc.Radius;
+      node["Offset"] << cc.Offset;
+      node["Density"] << cc.Density;
+      node["Friction"] << cc.Friction;
+      node["Restitution"] << cc.Restitution;
+    }
+
+    if (entity.HasComponent<TaperedCapsuleColliderComponent>()) {
+      auto node = entityNode["TaperedCapsuleColliderComponent"];
+      node |= ryml::MAP;
+
+      const auto& tcc = entity.GetComponent<TaperedCapsuleColliderComponent>();
+      node["Height"] << tcc.Height;
+      node["TopRadius"] << tcc.TopRadius;
+      node["BottomRadius"] << tcc.BottomRadius;
+      node["Offset"] << tcc.Offset;
+      node["Density"] << tcc.Density;
+      node["Friction"] << tcc.Friction;
+      node["Restitution"] << tcc.Restitution;
+    }
+
+    if (entity.HasComponent<CylinderColliderComponent>()) {
+      auto node = entityNode["CylinderColliderComponent"];
+      node |= ryml::MAP;
+
+      const auto& cc = entity.GetComponent<CapsuleColliderComponent>();
+      node["Height"] << cc.Height;
+      node["Radius"] << cc.Radius;
+      node["Offset"] << cc.Offset;
+      node["Density"] << cc.Density;
+      node["Friction"] << cc.Friction;
+      node["Restitution"] << cc.Restitution;
     }
 
     if (entity.HasComponent<CharacterControllerComponent>()) {
-      // TODO(hatrickek): Complete serialization
-      const auto& component = entity.GetComponent<CharacterControllerComponent>();
       auto node = entityNode["CharacterControllerComponent"];
       node |= ryml::MAP;
+
+      const auto& component = entity.GetComponent<CharacterControllerComponent>();
+
+      // Size
+      node["CharacterHeightStanding"] << component.CharacterHeightStanding;
+      node["CharacterRadiusStanding"] << component.CharacterRadiusStanding;
+      node["CharacterRadiusCrouching"] << component.CharacterRadiusCrouching;
+
+      // Movement
       node["CharacterSpeed"] << component.CharacterSpeed;
+      node["ControlMovementDuringJump"] << component.ControlMovementDuringJump;
+      node["JumpSpeed"] << component.JumpSpeed;
+
+      node["Friction"] << component.Friction;
+      node["CollisionTolerance"] << component.CollisionTolerance;
     }
   }
 
@@ -287,30 +368,97 @@ namespace Oxylus {
     }
 
     if (entityNode.has_child("RigidbodyComponent")) {
-      auto& component = deserializedEntity.AddComponent<RigidbodyComponent>();
-      const auto& node = entityNode["RigidbodyComponent"];
-      auto sizeNode = node["Size"];
-      glm::read(sizeNode, &component.ShapeSize);
+      auto& rb = deserializedEntity.AddComponentI<RigidbodyComponent>();
+      const auto node = entityNode["RigidbodyComponent"];
 
-      component.BodyID = PhysicsHelpers::CreateBoxRigidbody(
-        scene->GetBodyInterface(),
-        deserializedEntity.GetComponent<TransformComponent>().Translation,
-        component.ShapeSize).BodyID;
+      SetEnum(node["Type"], rb.Type);
+      node["Mass"] >> rb.Mass;
+      node["LinearDrag"] >> rb.LinearDrag;
+      node["AngularDrag"] >> rb.AngularDrag;
+      node["GravityScale"] >> rb.GravityScale;
+      node["AllowSleep"] >> rb.AllowSleep;
+      node["Awake"] >> rb.Awake;
+      node["Continuous"] >> rb.Continuous;
+      node["Interpolation"] >> rb.Interpolation;
+      node["IsSensor"] >> rb.IsSensor;
+    }
 
-      std::string motionType = {};
-      node["MotionType"] >> motionType;
+    if (entityNode.has_child("BoxColliderComponent")) {
+      const auto node = entityNode["BoxColliderComponent"];
+      auto& bc = deserializedEntity.AddComponentI<BoxColliderComponent>();
 
-      scene->GetBodyInterface()->SetMotionType(component.BodyID, PhysicsUtils::StringToMotionType(motionType), JPH::EActivation::Activate);
+      node["Size"] >> bc.Size;
+      glm::read(node["Offset"], &bc.Offset);
+      node["Density"] >> bc.Density;
+      node["Friction"] >> bc.Friction;
+      node["Restitution"] >> bc.Restitution;
+    }
+
+    if (entityNode.has_child("SphereColliderComponent")) {
+      auto node = entityNode["SphereColliderComponent"];
+
+      auto& sc = deserializedEntity.AddComponentI<SphereColliderComponent>();
+      node["Radius"] >> sc.Radius;
+      glm::read(node["Offset"], &sc.Offset);
+      node["Offset"] >> sc.Offset;
+      node["Density"] >> sc.Density;
+      node["Friction"] >> sc.Friction;
+      node["Restitution"] >> sc.Restitution;
+    }
+
+    if (entityNode.has_child("CapsuleColliderComponent")) {
+      auto node = entityNode["CapsuleColliderComponent"];
+
+      auto& cc = deserializedEntity.AddComponentI<CapsuleColliderComponent>();
+      node["Height"] >> cc.Height;
+      node["Radius"] >> cc.Radius;
+      glm::read(node["Offset"], &cc.Offset);
+      node["Density"] >> cc.Density;
+      node["Friction"] >> cc.Friction;
+      node["Restitution"] >> cc.Restitution;
+    }
+
+    if (entityNode.has_child("TaperedCapsuleColliderComponent")) {
+      const auto node = entityNode["TaperedCapsuleColliderComponent"];
+
+      auto& tcc = deserializedEntity.AddComponentI<TaperedCapsuleColliderComponent>();
+      node["Height"] >> tcc.Height;
+      node["TopRadius"] >> tcc.TopRadius;
+      node["BottomRadius"] >> tcc.BottomRadius;
+      glm::read(node["Offset"], &tcc.Offset);
+      node["Density"] >> tcc.Density;
+      node["Friction"] >> tcc.Friction;
+      node["Restitution"] >> tcc.Restitution;
+    }
+
+    if (entityNode.has_child("CylinderColliderComponent")) {
+      auto node = entityNode["CylinderColliderComponent"];
+
+      auto& cc = deserializedEntity.AddComponentI<CapsuleColliderComponent>();
+      node["Height"] >> cc.Height;
+      node["Radius"] >> cc.Radius;
+      glm::read(node["Offset"], &cc.Offset);
+      node["Density"] >> cc.Density;
+      node["Friction"] >> cc.Friction;
+      node["Restitution"] >> cc.Restitution;
     }
 
     if (entityNode.has_child("CharacterControllerComponent")) {
-      auto& component = deserializedEntity.AddComponent<CharacterControllerComponent>();
+      auto& component = deserializedEntity.AddComponentI<CharacterControllerComponent>();
       const auto& node = entityNode["CharacterControllerComponent"];
-      node["CharacterSpeed"] >> component.CharacterSpeed;
 
-      component = PhysicsHelpers::CreateCharachterController(
-        scene->GetPhysicsSystem().get(),
-        deserializedEntity.GetComponent<TransformComponent>().Translation);
+      // Size
+      node["CharacterHeightStanding"] >> component.CharacterHeightStanding;
+      node["CharacterRadiusStanding"] >> component.CharacterRadiusStanding;
+      node["CharacterRadiusCrouching"] >> component.CharacterRadiusCrouching;
+
+      // Movement
+      node["CharacterSpeed"] >> component.CharacterSpeed;
+      node["ControlMovementDuringJump"] >> component.ControlMovementDuringJump;
+      node["JumpSpeed"] >> component.JumpSpeed;
+
+      node["Friction"] >> component.Friction;
+      node["CollisionTolerance"] >> component.CollisionTolerance;
     }
 
     return deserializedEntity.GetUUID();

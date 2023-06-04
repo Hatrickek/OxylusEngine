@@ -4,7 +4,6 @@
 #include <string>
 #include <glm/glm.hpp>
 #include <glm/gtx/quaternion.hpp>
-#include <glm/gtc/matrix_transform.hpp>
 
 #include "Types.h"
 #include "UUID.h"
@@ -58,12 +57,6 @@ namespace Oxylus {
     TransformComponent(const TransformComponent&) = default;
 
     TransformComponent(const Vec3& translation) : Translation(translation) { }
-
-    glm::mat4 GetTransform() const {
-      const glm::mat4 rotation = glm::toMat4(glm::quat(Rotation));
-
-      return glm::translate(glm::mat4(1.0f), Translation) * rotation * glm::scale(glm::mat4(1.0f), Scale);
-    }
   };
 
   // Rendering
@@ -139,18 +132,81 @@ namespace Oxylus {
 
   // Physics
   struct RigidbodyComponent {
-    JPH::BodyID BodyID = {};
-    Vec3 ShapeSize = {};
+    enum class BodyType { Static = 0, Kinematic, Dynamic };
 
-    RigidbodyComponent() = default;
-    ~RigidbodyComponent() = default;
+    BodyType Type = BodyType::Dynamic;
+    float Mass = 1.0f;
+    float LinearDrag = 0.0f;
+    float AngularDrag = 0.05f;
+    float GravityScale = 1.0f;
+    bool AllowSleep = true;
+    bool Awake = true;
+    bool Continuous = false;
+    bool Interpolation = true;
+
+    bool IsSensor = false;
+
+    // Stored as JPH::BodyID
+    void* RuntimeBody = nullptr;
+
+    // For interpolation/extrapolation
+    Vec3 PreviousTranslation = Vec3(0.0f);
+    glm::quat PreviousRotation = Vec3(0.0f);
+    Vec3 Translation = Vec3(0.0f);
+    glm::quat Rotation = Vec3(0.0f);
+  };
+
+  struct BoxColliderComponent {
+    Vec3 Size = {0.5f, 0.5f, 0.5f};
+    Vec3 Offset = {0.0f, 0.0f, 0.0f};
+    float Density = 1.0f;
+
+    float Friction = 0.5f;
+    float Restitution = 0.0f;
+  };
+
+  struct SphereColliderComponent {
+    float Radius = 0.5f;
+    Vec3 Offset = {0.0f, 0.0f, 0.0f};
+    float Density = 1.0f;
+
+    float Friction = 0.5f;
+    float Restitution = 0.0f;
+  };
+
+  struct CapsuleColliderComponent {
+    float Height = 1.0f;
+    float Radius = 0.5f;
+    Vec3 Offset = {0.0f, 0.0f, 0.0f};
+    float Density = 1.0f;
+
+    float Friction = 0.5f;
+    float Restitution = 0.0f;
+  };
+
+  struct TaperedCapsuleColliderComponent {
+    float Height = 1.0f;
+    float TopRadius = 0.5f;
+    float BottomRadius = 0.5f;
+    Vec3 Offset = {0.0f, 0.0f, 0.0f};
+    float Density = 1.0f;
+
+    float Friction = 0.5f;
+    float Restitution = 0.0f;
+  };
+
+  struct CylinderColliderComponent {
+    float Height = 1.0f;
+    float Radius = 0.5f;
+    Vec3 Offset = {0.0f, 0.0f, 0.0f};
+    float Density = 1.0f;
+
+    float Friction = 0.5f;
+    float Restitution = 0.0f;
   };
 
   struct CharacterControllerComponent {
     JPH::Ref<JPH::Character> Character = nullptr;
-
-    // Capsule shape
-    JPH::Ref<JPH::Shape> Shape = nullptr;
 
     // Size
     float CharacterHeightStanding = 1.35f;
@@ -161,8 +217,9 @@ namespace Oxylus {
     // Movement
     bool ControlMovementDuringJump = true;
     float CharacterSpeed = 6.0f;
-    float JumpSpeed = 4.0f;
+    float JumpSpeed = .1f;
 
+    float Friction = 0.5f;
     float CollisionTolerance = 0.05f;
 
     CharacterControllerComponent() = default;
@@ -187,12 +244,17 @@ namespace Oxylus {
 
   using AllComponents = ComponentGroup<TransformComponent, RelationshipComponent, PrefabComponent, CameraComponent,
 
-                                       //Render
+                                       // Render
                                        LightComponent, MeshRendererComponent, SkyLightComponent, ParticleSystemComponent, MaterialComponent,
 
-                                       //Physics
+                                       //  Physics
                                        RigidbodyComponent,
+                                       BoxColliderComponent,
+                                       SphereColliderComponent,
+                                       CapsuleColliderComponent,
+                                       TaperedCapsuleColliderComponent,
+                                       CylinderColliderComponent,
 
-                                       //Audio
+                                       // Audio
                                        AudioSourceComponent, AudioListenerComponent>;
 }

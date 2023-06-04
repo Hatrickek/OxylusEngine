@@ -16,8 +16,6 @@
 #include "Utils/StringUtils.h"
 #include "Utils/UIUtils.h"
 #include "Assets/MaterialSerializer.h"
-#include "Physics/PhysicsHelpers.h"
-#include "Physics/PhysicsUtils.h"
 #include "Render/Vulkan/VulkanRenderer.h"
 
 namespace Oxylus {
@@ -116,7 +114,6 @@ namespace Oxylus {
       if (const ImGuiPayload* payload = ImGui::AcceptDragDropPayload("CONTENT_BROWSER_ITEM")) {
         std::filesystem::path path = IGUI::GetPathFromImGuiPayload(payload);
         const std::string ext = path.extension().string();
-        path = AssetManager::GetAssetFileSystemPath(path);
         if (ext == ".oxmat") {
           MaterialSerializer(material).Deserialize(path.string());
           loadAsset = true;
@@ -263,12 +260,17 @@ namespace Oxylus {
     if (ImGui::BeginPopup("Add Component")) {
       DrawAddComponent<MeshRendererComponent>(m_SelectedEntity, "Mesh Renderer");
       DrawAddComponent<MaterialComponent>(m_SelectedEntity, "Material");
-      DrawAddComponent<RigidbodyComponent>(m_SelectedEntity, "Rigidbody");
       DrawAddComponent<AudioSourceComponent>(m_SelectedEntity, "Audio Source");
       DrawAddComponent<LightComponent>(m_SelectedEntity, "Light");
       DrawAddComponent<ParticleSystemComponent>(m_SelectedEntity, "Particle System");
       DrawAddComponent<CameraComponent>(m_SelectedEntity, "Camera");
       DrawAddComponent<PostProcessProbe>(m_SelectedEntity, "PostProcess Probe");
+      DrawAddComponent<RigidbodyComponent>(m_SelectedEntity, "Rigidbody");
+      DrawAddComponent<BoxColliderComponent>(entity, "Box Collider");
+      DrawAddComponent<SphereColliderComponent>(entity, "Sphere Collider");
+      DrawAddComponent<CapsuleColliderComponent>(entity, "Capsule Collider");
+      DrawAddComponent<TaperedCapsuleColliderComponent>(entity, "Tapered Capsule Collider");
+      DrawAddComponent<CylinderColliderComponent>(entity, "Cylinder Collider");
 
       ImGui::EndPopup();
     }
@@ -567,39 +569,103 @@ namespace Oxylus {
     DrawComponent<RigidbodyComponent>(ICON_MDI_SOCCER " Rigidbody Component",
       entity,
       [this](RigidbodyComponent& component) {
-        const auto bodyInterface = m_Scene->GetBodyInterface();
         IGUI::BeginProperties();
-        // TODO(hatrickek): Inspector panel for rigidbody component.
 
-        // Motion type
-        const char* motionTypes[3] = {"Static", "Kinematic", "Dynamic"};
-        const auto currentType = (uint8_t)bodyInterface->GetMotionType(component.BodyID);
-        int selectedType = currentType;
-        if (IGUI::Property("Motion Type", selectedType, motionTypes, 3)) {
-          bodyInterface->SetMotionType(component.BodyID, (JPH::EMotionType)(uint8_t)selectedType, JPH::EActivation::Activate);
+        const char* bodyTypeStrings[] = {"Static", "Kinematic", "Dynamic"};
+        int bodyType = static_cast<int>(component.Type);
+        if (IGUI::Property("Body Type", bodyType, bodyTypeStrings, 3))
+          component.Type = static_cast<RigidbodyComponent::BodyType>(bodyType);
+
+        if (component.Type == RigidbodyComponent::BodyType::Dynamic) {
+          IGUI::Property("Mass", component.Mass, 0.01f, 10000.0f);
+          IGUI::Property("Linear Drag", component.LinearDrag);
+          IGUI::Property("Angular Drag", component.AngularDrag);
+          IGUI::Property("Gravity Scale", component.GravityScale);
+          IGUI::Property("Allow Sleep", component.AllowSleep);
+          IGUI::Property("Awake", component.Awake);
+          IGUI::Property("Continuous", component.Continuous);
+          IGUI::Property("Interpolation", component.Interpolation);
+
+          component.LinearDrag = glm::max(component.LinearDrag, 0.0f);
+          component.AngularDrag = glm::max(component.AngularDrag, 0.0f);
         }
 
-        // Friction
-        const float currentFriction = bodyInterface->GetFriction(component.BodyID);
-        float selectedFriction = currentFriction;
-        if (IGUI::Property("Friction", selectedFriction, 0.0f, 10.0f)) {
-          bodyInterface->SetFriction(component.BodyID, selectedFriction);
-        }
+        IGUI::Property("Is Sensor", component.IsSensor);
+        IGUI::EndProperties();
+      });
 
-        ImGui::Separator();
-
-        // Shape
-        const auto currentShape = bodyInterface->GetShape(component.BodyID)->GetSubType();
-        IGUI::Text("Shape", PhysicsUtils::ShapeTypeToString(currentShape));
-
-        IGUI::DrawVec3Control("Scale", component.ShapeSize);
+    DrawComponent<BoxColliderComponent>(ICON_MDI_CHECKBOX_BLANK_OUTLINE " Box Collider",
+      entity,
+      [](BoxColliderComponent& component) {
+        IGUI::BeginProperties();
+        IGUI::PropertyVector("Size", component.Size);
+        IGUI::PropertyVector("Offset", component.Offset);
+        IGUI::Property("Density", component.Density);
+        IGUI::Property("Friction", component.Friction, 0.0f, 1.0f);
+        IGUI::Property("Restitution", component.Restitution, 0.0f, 1.0f);
         IGUI::EndProperties();
 
-        const float x = ImGui::GetContentRegionAvail().x;
-        const float y = ImGui::GetFrameHeight();
-        if (ImGui::Button("Apply scale", {x, y})) {
-          PhysicsHelpers::ScaleShape(component, bodyInterface, true, JPH::EActivation::Activate);
-        }
+        component.Density = glm::max(component.Density, 0.001f);
+      });
+
+    DrawComponent<SphereColliderComponent>(ICON_MDI_CIRCLE_OUTLINE " Sphere Collider",
+      entity,
+      [](SphereColliderComponent& component) {
+        IGUI::BeginProperties();
+        IGUI::Property("Radius", component.Radius);
+        IGUI::PropertyVector("Offset", component.Offset);
+        IGUI::Property("Density", component.Density);
+        IGUI::Property("Friction", component.Friction, 0.0f, 1.0f);
+        IGUI::Property("Restitution", component.Restitution, 0.0f, 1.0f);
+        IGUI::EndProperties();
+
+        component.Density = glm::max(component.Density, 0.001f);
+      });
+
+    DrawComponent<CapsuleColliderComponent>(ICON_MDI_CIRCLE_OUTLINE " Capsule Collider",
+      entity,
+      [](CapsuleColliderComponent& component) {
+        IGUI::BeginProperties();
+        IGUI::Property("Height", component.Height);
+        IGUI::Property("Radius", component.Radius);
+        IGUI::PropertyVector("Offset", component.Offset);
+        IGUI::Property("Density", component.Density);
+        IGUI::Property("Friction", component.Friction, 0.0f, 1.0f);
+        IGUI::Property("Restitution", component.Restitution, 0.0f, 1.0f);
+        IGUI::EndProperties();
+
+        component.Density = glm::max(component.Density, 0.001f);
+      });
+
+    DrawComponent<TaperedCapsuleColliderComponent>(ICON_MDI_CIRCLE_OUTLINE " Tapered Capsule Collider",
+      entity,
+      [](TaperedCapsuleColliderComponent& component) {
+        IGUI::BeginProperties();
+        IGUI::Property("Height", component.Height);
+        IGUI::Property("Top Radius", component.TopRadius);
+        IGUI::Property("Bottom Radius", component.BottomRadius);
+        IGUI::PropertyVector("Offset", component.Offset);
+        IGUI::Property("Density", component.Density);
+        IGUI::Property("Friction", component.Friction, 0.0f, 1.0f);
+        IGUI::Property("Restitution", component.Restitution, 0.0f, 1.0f);
+        IGUI::EndProperties();
+
+        component.Density = glm::max(component.Density, 0.001f);
+      });
+
+    DrawComponent<CylinderColliderComponent>(ICON_MDI_CIRCLE_OUTLINE " Cylinder Collider",
+      entity,
+      [](CylinderColliderComponent& component) {
+        IGUI::BeginProperties();
+        IGUI::Property("Height", component.Height);
+        IGUI::Property("Radius", component.Radius);
+        IGUI::PropertyVector("Offset", component.Offset);
+        IGUI::Property("Density", component.Density);
+        IGUI::Property("Friction", component.Friction, 0.0f, 1.0f);
+        IGUI::Property("Restitution", component.Restitution, 0.0f, 1.0f);
+        IGUI::EndProperties();
+
+        component.Density = glm::max(component.Density, 0.001f);
       });
 
     DrawComponent<CameraComponent>(ICON_MDI_CAMERA "Camera Component",

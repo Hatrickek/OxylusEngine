@@ -3,6 +3,7 @@
 #include "EntitySerializer.h"
 #include "SceneRenderer.h"
 #include "Assets/Assets.h"
+#include "Core/Components.h"
 
 #include "Core/UUID.h"
 #include "Core/Systems/System.h"
@@ -10,6 +11,7 @@
 #include "Jolt/Core/JobSystemThreadPool.h"
 #include "Jolt/Physics/PhysicsSystem.h"
 #include "Jolt/Physics/Body/BodyInterface.h"
+#include "Physics/PhyiscsInterfaces.h"
 #include "Render/Mesh.h"
 #include "Render/Camera.h"
 
@@ -38,22 +40,20 @@ namespace Oxylus {
 
     void DestroyEntity(Entity entity);
     void DuplicateEntity(Entity entity);
-    void OnPlay();
-    void OnStop();
-    void OnUpdate(float deltaTime);
-    void OnImGuiRender(float deltaTime);
+
+    void OnRuntimeStart();
+    void OnRuntimeStop();
+
+    void OnRuntimeUpdate(float deltaTime);
     void OnEditorUpdate(float deltaTime, Camera& camera);
-    void RenderScene() const;
-    void UpdateSystems(float deltaTime);
+
+    void OnImGuiRender(float deltaTime);
+
     Entity FindEntity(const std::string_view& name);
     bool HasEntity(UUID uuid) const;
     Entity GetEntityByUUID(UUID uuid);
     static Ref<Scene> Copy(const Ref<Scene>& other);
     SceneRenderer& GetRenderer() { return m_SceneRenderer; }
-
-    // Physics
-    JPH::BodyInterface* GetBodyInterface() const { return m_BodyInterface; }
-    Ref<JPH::PhysicsSystem> GetPhysicsSystem() const { return m_PhysicsSystem; }
 
     std::string SceneName = "Untitled";
     entt::registry m_Registry;
@@ -61,12 +61,21 @@ namespace Oxylus {
 
   private:
     void Init();
-    void InitPhysics();
-    void UpdatePhysics(bool simulating, Timestep deltaTime);
+
+    void UpdateSystems(float deltaTime);
+
+    // Physics
+    void UpdatePhysics(Timestep deltaTime);
+    void CreateRigidbody(Entity entity, const TransformComponent& transform, RigidbodyComponent& component) const;
+    void CreateCharacterController(Entity entity, const TransformComponent& transform, CharacterControllerComponent& component) const;
+
+    void RenderScene();
     template <typename T>
     void OnComponentAdded(Entity entity, T& component);
 
     void IterateOverMeshNode(const Ref<Mesh>& mesh, const std::vector<Mesh::Node*>& node, Entity parent);
+
+    bool m_IsRunning = false;
 
     // Renderer
     SceneRenderer m_SceneRenderer;
@@ -75,9 +84,9 @@ namespace Oxylus {
     std::vector<Scope<System>> m_Systems;
 
     // Physics
-    JPH::BodyInterface* m_BodyInterface = nullptr;
-    Ref<JPH::PhysicsSystem> m_PhysicsSystem = nullptr;
-    Ref<JPH::JobSystemThreadPool> m_JobSystem = nullptr;
+    Physics3DContactListener* m_ContactListener3D = nullptr;
+    Physics3DBodyActivationListener* m_BodyActivationListener3D = nullptr;
+    float m_PhysicsFrameAccumulator = 0.0f;
 
     friend class Entity;
     friend class SceneSerializer;

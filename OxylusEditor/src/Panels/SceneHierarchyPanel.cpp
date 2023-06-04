@@ -7,10 +7,6 @@
 #include <misc/cpp/imgui_stdlib.h>
 
 #include "EditorLayer.h"
-#include "Jolt/Physics/Character/Character.h"
-#include "Jolt/Physics/Collision/Shape/CapsuleShape.h"
-#include "Jolt/Physics/Collision/Shape/RotatedTranslatedShape.h"
-#include "Physics/PhysicsHelpers.h"
 #include "Scene/EntitySerializer.h"
 #include "UI/IGUI.h"
 #include "Utils/ImGuiScoped.h"
@@ -289,7 +285,7 @@ namespace Oxylus {
       if (ImGui::BeginMenu("Primitives")) {
         if (ImGui::MenuItem("Cube")) {
           toSelect = m_Context->CreateEntity("Cube");
-          toSelect.AddComponentI<MeshRendererComponent>(AssetManager::GetMeshAsset("Resources/Objects/cube.gltf").Data);
+          toSelect.AddComponentI<MeshRendererComponent>(AssetManager::GetMeshAsset("Resources/Objects/cube.glb").Data);
         }
         if (ImGui::MenuItem("Plane")) {
           toSelect = m_Context->CreateEntity("Plane");
@@ -325,25 +321,21 @@ namespace Oxylus {
 
         if (ImGui::MenuItem("Sphere")) {
           toSelect = m_Context->CreateEntity("Sphere");
-          const auto& pos = toSelect.GetComponent<TransformComponent>().Translation;
-          auto& rb = toSelect.AddComponent<RigidbodyComponent>();
-          rb = PhysicsHelpers::CreateSphereRigidbody(m_Context->GetBodyInterface(), pos, 1.0f);
+          toSelect.AddComponentI<RigidbodyComponent>();
+          toSelect.AddComponentI<SphereColliderComponent>();
           toSelect.AddComponentI<MeshRendererComponent>(AssetManager::GetMeshAsset("Resources/Objects/sphere.gltf").Data);
         }
 
-        if (ImGui::MenuItem("Plane")) {
-          toSelect = m_Context->CreateEntity("Plane");
-          const auto& pos = toSelect.GetComponent<TransformComponent>().Translation;
-          auto& rb = toSelect.AddComponent<RigidbodyComponent>();
-          rb = PhysicsHelpers::CreateBoxRigidbody(m_Context->GetBodyInterface(), pos, {1.0, .1f, 1.0});
-          toSelect.AddComponentI<MeshRendererComponent>(AssetManager::GetMeshAsset("Resources/Objects/plane.gltf").Data);
+        if (ImGui::MenuItem("Cube")) {
+          toSelect = m_Context->CreateEntity("Cube");
+          toSelect.AddComponentI<RigidbodyComponent>();
+          toSelect.AddComponentI<BoxColliderComponent>();
+          toSelect.AddComponentI<MeshRendererComponent>(AssetManager::GetMeshAsset("Resources/Objects/cube.glb").Data);
         }
 
         if (ImGui::MenuItem("Character Controller")) {
           toSelect = m_Context->CreateEntity("Character Controller");
-          const auto& pos = toSelect.GetComponent<TransformComponent>().Translation;
-          auto& component = toSelect.AddComponent<CharacterControllerComponent>();
-          component = PhysicsHelpers::CreateCharachterController(m_Context->GetPhysicsSystem().get(), pos);
+          toSelect.AddComponentI<CharacterControllerComponent>();
           toSelect.AddComponentI<MeshRendererComponent>(AssetManager::GetMeshAsset("Resources/Objects/capsule.glb").Data);
         }
 

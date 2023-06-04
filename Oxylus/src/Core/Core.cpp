@@ -29,7 +29,6 @@ namespace Oxylus {
     VulkanRenderer::Init();
     Input::Init();
     AudioEngine::Init();
-    Physics::InitPhysics();
 
     return true;
   }
@@ -39,7 +38,6 @@ namespace Oxylus {
     VulkanRenderer::WaitDeviceIdle();
     VulkanRenderer::Shutdown();
     AudioEngine::Shutdown();
-    Physics::ShutdownPhysics();
 
     ThreadManager::Get()->WaitAllThreads();
 
