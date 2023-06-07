@@ -120,7 +120,7 @@ namespace Oxylus {
     for (auto& [name, renderPass] : m_RenderGraphPasses) {
       if (renderPass.m_RunCondition != nullptr && !renderPass.m_RunCondition)
         continue;
-      ZoneScoped;
+      OX_SCOPED_ZONE;
       //Render pass
       if (!isFirstPass) {
         VulkanUtils::CheckResult(LogicalDevice.waitForFences(1, &renderPass.m_Fence, true, UINT64_MAX));

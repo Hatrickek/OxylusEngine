@@ -15,7 +15,7 @@ namespace Oxylus {
   }
 
   Asset<VulkanImage> AssetManager::GetImageAsset(const std::string& path) {
-    ZoneScoped;
+    OX_SCOPED_ZONE;
     for (auto& asset : s_AssetsLibrary.ImageAssets) {
       if (asset.Path == path) {
         return asset;
@@ -29,7 +29,7 @@ namespace Oxylus {
   }
 
   Asset<VulkanImage> AssetManager::GetImageAsset(const VulkanImageDescription& description) {
-    ZoneScoped;
+    OX_SCOPED_ZONE;
     for (auto& asset : s_AssetsLibrary.ImageAssets) {
       if (asset.Path == description.Path) {
         return asset;
@@ -39,7 +39,7 @@ namespace Oxylus {
   }
 
   Asset<Mesh> AssetManager::GetMeshAsset(const std::string& path, const int32_t loadingFlags) {
-    ZoneScoped;
+    OX_SCOPED_ZONE;
     for (auto& asset : s_AssetsLibrary.MeshAssets) {
       if (asset.Path == path) {
         return asset;
@@ -50,7 +50,7 @@ namespace Oxylus {
   }
 
   Asset<Material> AssetManager::GetMaterialAsset(const std::string& path) {
-    ZoneScoped;
+    OX_SCOPED_ZONE;
     for (auto& asset : s_AssetsLibrary.MaterialAssets) {
       if (asset.Path == path) {
         return asset;
@@ -61,7 +61,7 @@ namespace Oxylus {
   }
 
   void AssetManager::FreeUnusedAssets() {
-    ZoneScoped;
+    OX_SCOPED_ZONE;
     for (auto& asset : s_AssetsLibrary.MeshAssets) {
       asset.Data.reset();
       asset.Path.clear();
@@ -80,7 +80,7 @@ namespace Oxylus {
   }
 
   Asset<VulkanImage> AssetManager::LoadImageAsset(const VulkanImageDescription& description) {
-    ZoneScoped;
+    OX_SCOPED_ZONE;
     Asset<VulkanImage> asset;
     std::lock_guard lock(s_AssetMutex);
     asset.Data = CreateRef<VulkanImage>(description);
@@ -90,7 +90,7 @@ namespace Oxylus {
   }
 
   Asset<Mesh> AssetManager::LoadMeshAsset(const std::string& path, int32_t loadingFlags) {
-    ZoneScoped;
+    OX_SCOPED_ZONE;
     Asset<Mesh> asset;
     asset.Data = CreateRef<Mesh>(path, loadingFlags);
     asset.Path = path;
@@ -99,7 +99,7 @@ namespace Oxylus {
   }
 
   Asset<Material> AssetManager::LoadMaterialAsset(const std::string& path) {
-    ZoneScoped;
+    OX_SCOPED_ZONE;
     Asset<Material> asset;
     asset.Data = CreateRef<Material>();
     asset.Data->Create();

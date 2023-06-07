@@ -12,7 +12,7 @@ namespace Oxylus {
   Material::~Material() { }
 
   void Material::Create(const std::string& name) {
-    ZoneScoped;
+    OX_SCOPED_ZONE;
     Name = name;
 
     m_Shader = ShaderLibrary::GetShader("PBRTiled");
@@ -39,7 +39,7 @@ namespace Oxylus {
   }
 
   void Material::Update() {
-    ZoneScoped;
+    OX_SCOPED_ZONE;
     MaterialDescriptorSet.WriteDescriptorSets[0].pImageInfo = &AlbedoTexture->GetDescImageInfo();
     MaterialDescriptorSet.WriteDescriptorSets[1].pImageInfo = &NormalTexture->GetDescImageInfo();
     MaterialDescriptorSet.WriteDescriptorSets[2].pImageInfo = &AOTexture->GetDescImageInfo();

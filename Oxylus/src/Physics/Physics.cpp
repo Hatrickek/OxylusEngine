@@ -66,7 +66,7 @@ namespace Oxylus {
   }
 
   void Physics::Step(float physicsTs) {
-    ZoneScoped;
+    OX_SCOPED_ZONE;
 
     OX_CORE_ASSERT(s_PhysicsSystem, "Physics system not initialized")
 
@@ -83,7 +83,7 @@ namespace Oxylus {
   }
 
   JPH::PhysicsSystem* Physics::GetPhysicsSystem() {
-    ZoneScoped;
+    OX_SCOPED_ZONE;
 
     OX_CORE_ASSERT(s_PhysicsSystem, "Physics system not initialized")
 

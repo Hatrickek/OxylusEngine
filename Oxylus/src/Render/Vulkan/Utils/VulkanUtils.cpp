@@ -1,11 +1,11 @@
-﻿#include "VulkanUtils.h"
-#include "src/oxpch.h"
+﻿#include "src/oxpch.h"
+#include "VulkanUtils.h"
 
 #include <GLFW/glfw3.h>
 
 #define DISABLE_DEBUG_LAYERS 1
 
-#ifdef OX_DIST
+#ifdef OX_DISTRIBUTION
 #undef DISABLE_DEBUG_LAYERS
 #define DISABLE_DEBUG_LAYERS 1
 #endif

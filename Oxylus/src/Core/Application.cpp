@@ -79,27 +79,27 @@ namespace Oxylus {
   }
 
   void Application::UpdateLayers(Timestep ts) {
-    ZoneScopedN("LayersLoop");
+    OX_SCOPED_ZONE_N("LayersLoop");
     for (Layer* layer : m_LayerStack)
       layer->OnUpdate(ts);
   }
 
   void Application::UpdateRenderer() {
-    ZoneScopedN("RenderLoop");
+    OX_SCOPED_ZONE_N("RenderLoop");
     VulkanRenderer::Draw();
   }
 
   void Application::UpdateImGui() {
-    ZoneScopedN("ImGuiLoop");
+    OX_SCOPED_ZONE_N("ImGuiLoop");
     if (this->Spec.UseImGui) {
       m_ImGuiLayer->Begin();
       {
-        ZoneScopedN("LayerImGuiRender");
+        OX_SCOPED_ZONE_N("LayerImGuiRender");
         for (Layer* layer : m_LayerStack)
           layer->OnImGuiRender();
       }
       {
-        ZoneScopedN("SystemImGuiRender");
+        OX_SCOPED_ZONE_N("SystemImGuiRender");
         m_SystemManager.OnImGuiRender();
       }
       m_ImGuiLayer->End();

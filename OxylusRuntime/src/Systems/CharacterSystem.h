@@ -4,6 +4,7 @@
 #include "Core/Systems/System.h"
 
 namespace OxylusRuntime {
+
   class CharacterSystem : public Oxylus::System {
   public:
     ~CharacterSystem() override;

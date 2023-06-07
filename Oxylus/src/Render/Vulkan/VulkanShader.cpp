@@ -96,7 +96,7 @@ namespace Oxylus {
     shaderc::CompileOptions options;
     options.SetTargetEnvironment(shaderc_target_env_vulkan, shaderc_env_version_vulkan_1_3);
     options.SetTargetSpirv(shaderc_spirv_version_1_6);
-#if defined (OX_RELEASE) || defined (OX_DIST)
+#if defined (OX_RELEASE) || defined (OX_DISTRIBUTION)
     options.SetOptimizationLevel(shaderc_optimization_level_performance);
 #else
     options.SetOptimizationLevel(shaderc_optimization_level_zero);

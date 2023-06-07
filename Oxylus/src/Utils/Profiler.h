@@ -6,8 +6,12 @@
 
 #include <chrono>
 
+// Profilers 
 #define GPU_PROFILER_ENABLED 0
-#ifdef OX_DIST
+#define CPU_PROFILER_ENABLED 0
+#define MEMORY_PROFILER_ENABLED 0
+
+#ifdef OX_DISTRIBUTION
 #undef GPU_PROFILER_ENABLED
 #define GPU_PROFILER_ENABLED 0
 #endif
@@ -16,6 +20,32 @@
 #define OX_TRACE_GPU(cmdbuf, name) TracyVkZone(Oxylus::TracyProfiler::GetContext(), cmdbuf, name)
 #else
 #define OX_TRACE_GPU(cmdbuf, name)
+#endif
+
+#ifdef OX_DISTRIBUTION
+#undef CPU_PROFILER_ENABLED
+#define CPU_PROFILER_ENABLED 0
+#endif
+
+#if CPU_PROFILER_ENABLED
+#define OX_SCOPED_ZONE ZoneScoped
+#define OX_SCOPED_ZONE_N(name) OX_SCOPED_ZONE_N(name)
+#else
+#define OX_SCOPED_ZONE
+#define OX_SCOPED_ZONE_N(name) 
+#endif
+
+#ifdef OX_DISTRIBUTION
+#undef MEMORY_PROFILER_ENABLED
+#define MEMORY_PROFILER_ENABLED 0
+#endif
+
+#if MEMORY_PROFILER_ENABLED
+#define OX_ALLOC(ptr, size) TracyAlloc(ptr, size)
+#define OX_FREE(ptr) TracyFree(ptr)
+#else
+#define OX_ALLOC
+#define OX_FREE
 #endif
 
 namespace Oxylus {

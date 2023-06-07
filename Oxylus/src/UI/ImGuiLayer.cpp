@@ -180,21 +180,21 @@ namespace Oxylus {
   }
 
   void ImGuiLayer::Begin() {
-    ZoneScoped;
+    OX_SCOPED_ZONE;
     ImGui_ImplGlfw_NewFrame();
     ImGui::NewFrame();
   }
 
   void ImGuiLayer::RenderDrawData(const vk::CommandBuffer& commandBuffer,
                                   const vk::Pipeline& pipeline) const {
-    ZoneScoped;
+    OX_SCOPED_ZONE;
     if (!m_DrawData || m_DrawData->CmdListsCount == 0)
       return;
     ImGui_ImplVulkan_RenderDrawData(m_DrawData, commandBuffer, pipeline);
   }
 
   void ImGuiLayer::End() {
-    ZoneScoped;
+    OX_SCOPED_ZONE;
     ImGui::Render();
     m_DrawData = ImGui::GetDrawData();
 

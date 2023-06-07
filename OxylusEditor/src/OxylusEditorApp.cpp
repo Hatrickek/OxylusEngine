@@ -17,7 +17,7 @@ namespace Oxylus {
 #ifdef OX_DEBUG
     spec.Name = "Oxylus Engine - Editor (Vulkan) - Debug";
 #endif
-#ifdef OX_DIST
+#ifdef OX_DISTRIBUTION
     spec.Name = "Oxylus Engine - Editor (Vulkan) - Dist";
 #endif
     spec.Backend = Core::RenderBackend::Vulkan;

@@ -44,7 +44,7 @@ namespace Oxylus {
   }
 
   void Mesh::LoadFromFile(const std::string& path, int fileLoadingFlags, const float scale) {
-    ZoneScoped;
+    OX_SCOPED_ZONE;
     ProfilerTimer timer;
 
     Path = path;
@@ -170,7 +170,7 @@ namespace Oxylus {
   }
 
   void Mesh::Draw(const vk::CommandBuffer& cmdBuffer) const {
-    ZoneScoped;
+    OX_SCOPED_ZONE;
     constexpr vk::DeviceSize offsets[1] = {0};
     cmdBuffer.bindVertexBuffers(0, VerticiesBuffer.Get(), offsets);
     cmdBuffer.bindIndexBuffer(IndiciesBuffer.Get(), 0, vk::IndexType::eUint32);
@@ -208,7 +208,7 @@ namespace Oxylus {
   }
 
   void Mesh::LoadMaterials(tinygltf::Model& model) {
-    ZoneScoped;
+    OX_SCOPED_ZONE;
     // Create a empty material if the mesh file doesn't have any.
     if (model.materials.empty()) {
       m_Materials.emplace_back(CreateRef<Material>());
@@ -318,12 +318,12 @@ namespace Oxylus {
   }
 
   std::vector<Ref<Material>> Mesh::GetMaterialsAsRef() const {
-    ZoneScoped;
+    OX_SCOPED_ZONE;
     return m_Materials;
   }
 
   void Mesh::Destroy() {
-    ZoneScoped;
+    OX_SCOPED_ZONE;
     for (const auto& node : LinearNodes) {
       for (const auto primitive : node->Primitives) {
         delete primitive;
@@ -338,7 +338,7 @@ namespace Oxylus {
   }
 
   void Mesh::Primitive::SetDimensions(Vec3 min, Vec3 max) {
-    ZoneScoped;
+    OX_SCOPED_ZONE;
     dimensions.min = min;
     dimensions.max = max;
     dimensions.size = max - min;
@@ -347,13 +347,13 @@ namespace Oxylus {
   }
 
   Mat4 Mesh::Node::LocalMatrix() const {
-    ZoneScoped;
+    OX_SCOPED_ZONE;
     return glm::translate(Mat4(1.0f), Translation) * Mat4(Rotation) * glm::scale(Mat4(1.0f), Scale) *
            Matrix;
   }
 
   Mat4 Mesh::Node::GetMatrix() const {
-    ZoneScoped;
+    OX_SCOPED_ZONE;
     Mat4 m = LocalMatrix();
     const Node* p = Parent;
     while (p) {
@@ -370,7 +370,7 @@ namespace Oxylus {
                       std::vector<uint32_t>& indexBuffer,
                       std::vector<Vertex>& vertexBuffer,
                       float globalscale) {
-    ZoneScoped;
+    OX_SCOPED_ZONE;
     Node* newNode = new Node{};
     newNode->Index = nodeIndex;
     newNode->Parent = parent;
@@ -563,7 +563,7 @@ namespace Oxylus {
   }
 
   void Mesh::LoadFailFallback() {
-    ZoneScoped;
+    OX_SCOPED_ZONE;
     if (std::filesystem::exists("Resources/Objects/cube.glb")) {
       LoadFromFile("Resources/Objects/cube.glb");
       OX_CORE_ERROR("Could not load mesh file {0}. Falled back to a cube.", Path);

@@ -183,7 +183,7 @@ namespace Oxylus {
 
     // Mesh
     {
-      ZoneScopedN("Mesh System");
+      OX_SCOPED_ZONE_N("Mesh System");
       const auto view = scene->m_Registry.view<TransformComponent, MeshRendererComponent, MaterialComponent, TagComponent>();
       for (const auto&& [entity, transform, meshrenderer, material, tag] : view.each()) {
         if (tag.Enabled)
@@ -193,7 +193,7 @@ namespace Oxylus {
 
     // Particle system
     {
-      ZoneScopedN("Particle System");
+      OX_SCOPED_ZONE_N("Particle System");
       const auto particleSystemView = scene->m_Registry.view<TransformComponent, ParticleSystemComponent>();
       for (auto&& [e, tc, psc] : particleSystemView.each()) {
         psc.System->OnUpdate(Application::GetTimestep(), tc.Translation);
@@ -203,7 +203,7 @@ namespace Oxylus {
 
     // Lighting
     {
-      ZoneScopedN("Lighting System");
+      OX_SCOPED_ZONE_N("Lighting System");
       // Scene lights
       {
         std::vector<Entity> lights;
@@ -283,7 +283,7 @@ namespace Oxylus {
   }
 
   void DefaultRenderPipeline::UpdateCascades(const Entity& dirLightEntity, Camera* camera, RendererData::DirectShadowUB& cascadesUbo) const {
-    ZoneScoped;
+    OX_SCOPED_ZONE;
     float cascadeSplits[SHADOW_MAP_CASCADE_COUNT]{};
 
     float nearClip = camera->NearClip;
@@ -396,7 +396,7 @@ namespace Oxylus {
   }
 
   void DefaultRenderPipeline::UpdateLightingData() {
-    ZoneScoped;
+    OX_SCOPED_ZONE;
     for (auto& e : m_SceneLights) {
       auto& lightComponent = e.GetComponent<LightComponent>();
       auto& transformComponent = e.GetComponent<TransformComponent>();
@@ -420,7 +420,7 @@ namespace Oxylus {
   }
 
   void DefaultRenderPipeline::GeneratePrefilter() {
-    ZoneScoped;
+    OX_SCOPED_ZONE;
     const auto vertexLayout = VertexLayout({VertexComponent::POSITION, VertexComponent::NORMAL, VertexComponent::UV});
     Prefilter::GenerateBRDFLUT(m_Resources.LutBRDF);
     Prefilter::GenerateIrradianceCube(m_Resources.IrradianceCube, m_SkyboxCube, vertexLayout, m_Resources.CubeMap->GetDescImageInfo());
@@ -440,7 +440,7 @@ namespace Oxylus {
       &m_Pipelines.DepthPrePassPipeline,
       {&m_FrameBuffers.DepthNormalPassFB},
       [this](VulkanCommandBuffer& commandBuffer, int32_t) {
-        ZoneScopedN("DepthPrePass");
+        OX_SCOPED_ZONE_N("DepthPrePass");
         OX_TRACE_GPU(commandBuffer.Get(), "Depth Pre Pass")
         commandBuffer.SetViwportWindow().SetScissorWindow();
         for (const auto& mesh : m_MeshDrawList) {
@@ -476,7 +476,7 @@ namespace Oxylus {
         }
       },
       [this](VulkanCommandBuffer& commandBuffer, int32_t framebufferIndex) {
-        ZoneScopedN("DirectShadowDepthPass");
+        OX_SCOPED_ZONE_N("DirectShadowDepthPass");
         OX_TRACE_GPU(commandBuffer.Get(), "Direct Shadow Depth Pass")
         commandBuffer.SetViewport(vk::Viewport{
           0, 0, (float)RendererConfig::Get()->DirectShadowsConfig.Size,
@@ -526,7 +526,7 @@ namespace Oxylus {
       &m_Pipelines.SSAOPassPipeline,
       {},
       [this](const VulkanCommandBuffer& commandBuffer, int32_t) {
-        ZoneScopedN("SSAOPass");
+        OX_SCOPED_ZONE_N("SSAOPass");
         OX_TRACE_GPU(commandBuffer.Get(), "SSAO Pass")
         m_Pipelines.SSAOPassPipeline.BindPipeline(commandBuffer.Get());
         m_Pipelines.SSAOPassPipeline.BindDescriptorSets(commandBuffer.Get(), {m_SSAODescriptorSet.Get()});
@@ -542,7 +542,7 @@ namespace Oxylus {
         &m_Pipelines.GaussianBlurPipeline,
         {},
         [this](VulkanCommandBuffer& commandBuffer, int32_t) {
-          ZoneScopedN("SSAO Blur Pass");
+          OX_SCOPED_ZONE_N("SSAO Blur Pass");
           OX_TRACE_GPU(commandBuffer.Get(), "SSAO Blur Pass")
           vk::ImageMemoryBarrier imageMemoryBarrier{};
           imageMemoryBarrier.image = m_FrameBuffers.SSAOPassImage.GetImage();
@@ -584,7 +584,7 @@ namespace Oxylus {
       &m_Pipelines.SkyboxPipeline,
       {&m_FrameBuffers.PBRPassFB},
       [this](VulkanCommandBuffer& commandBuffer, int32_t) {
-        ZoneScopedN("PBRPass");
+        OX_SCOPED_ZONE_N("PBRPass");
         OX_TRACE_GPU(commandBuffer.Get(), "PBR Pass")
         commandBuffer.SetViwportWindow().SetScissorWindow();
 
@@ -648,7 +648,7 @@ namespace Oxylus {
       &m_Pipelines.SSRPipeline,
       {},
       [this](const VulkanCommandBuffer& commandBuffer, int32_t) {
-        ZoneScopedN("SSR Pass");
+        OX_SCOPED_ZONE_N("SSR Pass");
         OX_TRACE_GPU(commandBuffer.Get(), "SSR Pass")
         m_Pipelines.SSRPipeline.BindPipeline(commandBuffer.Get());
         m_Pipelines.SSRPipeline.BindDescriptorSets(commandBuffer.Get(), {m_SSRDescriptorSet.Get()});
@@ -665,7 +665,7 @@ namespace Oxylus {
       &m_Pipelines.BloomPipeline,
       {},
       [this](VulkanCommandBuffer& commandBuffer, int32_t) {
-        ZoneScopedN("BloomPass");
+        OX_SCOPED_ZONE_N("BloomPass");
         OX_TRACE_GPU(commandBuffer.Get(), "Bloom Pass")
         struct PushConst {
           Vec4 Params = {
@@ -755,7 +755,7 @@ namespace Oxylus {
       &m_Pipelines.DepthOfFieldPipeline,
       {},
       [this](const VulkanCommandBuffer& commandBuffer, int32_t) {
-        ZoneScopedN("DepthOfField Pass");
+        OX_SCOPED_ZONE_N("DepthOfField Pass");
         OX_TRACE_GPU(commandBuffer.Get(), "DepthOfField Pass");
         m_Pipelines.DepthOfFieldPipeline.BindPipeline(commandBuffer.Get());
         m_Pipelines.DepthOfFieldPipeline.BindDescriptorSets(commandBuffer.Get(), {m_DepthOfFieldDescriptorSet.Get()});
@@ -772,7 +772,7 @@ namespace Oxylus {
       &m_Pipelines.AtmospherePipeline,
       {},
       [this](const VulkanCommandBuffer& commandBuffer, int32_t) {
-        ZoneScopedN("Atmosphere Pass");
+        OX_SCOPED_ZONE_N("Atmosphere Pass");
         OX_TRACE_GPU(commandBuffer.Get(), "Atmosphere Pass")
         vk::ImageSubresourceRange subresourceRange;
         subresourceRange.aspectMask = m_FrameBuffers.AtmosphereImage.GetDesc().AspectFlag;
@@ -813,7 +813,7 @@ namespace Oxylus {
       &m_Pipelines.CompositePipeline,
       {},
       [this](VulkanCommandBuffer& commandBuffer, int32_t) {
-        ZoneScopedN("Composite Pass");
+        OX_SCOPED_ZONE_N("Composite Pass");
         OX_TRACE_GPU(commandBuffer.Get(), "Composite Pass")
         m_Pipelines.CompositePipeline.BindPipeline(commandBuffer.Get());
         m_Pipelines.CompositePipeline.BindDescriptorSets(commandBuffer.Get(), {m_CompositeDescriptorSet.Get()});
@@ -829,7 +829,7 @@ namespace Oxylus {
       &m_Pipelines.PostProcessPipeline,
       {&m_FrameBuffers.PostProcessPassFB},
       [this](VulkanCommandBuffer& commandBuffer, int32_t) {
-        ZoneScopedN("PP Pass");
+        OX_SCOPED_ZONE_N("PP Pass");
         OX_TRACE_GPU(commandBuffer.Get(), "PP Pass")
         commandBuffer.SetFlippedViwportWindow().SetScissorWindow();
         m_Pipelines.PostProcessPipeline.BindPipeline(commandBuffer.Get());
@@ -846,7 +846,7 @@ namespace Oxylus {
       {},
       {},
       [this](const VulkanCommandBuffer& commandBuffer, int32_t) {
-        ZoneScopedN("FrustumPass");
+        OX_SCOPED_ZONE_N("FrustumPass");
         OX_TRACE_GPU(commandBuffer.Get(), "Frustum Pass")
         m_Pipelines.FrustumGridPipeline.BindPipeline(commandBuffer.Get());
         m_Pipelines.FrustumGridPipeline.BindDescriptorSets(m_RendererContext.FrustumCommandBuffer.Get(), {m_LightListDescriptorSet.Get()});
@@ -862,7 +862,7 @@ namespace Oxylus {
       {},
       {},
       [this](const VulkanCommandBuffer& commandBuffer, int32_t) {
-        ZoneScopedN("Light List Pass");
+        OX_SCOPED_ZONE_N("Light List Pass");
         OX_TRACE_GPU(commandBuffer.Get(), "Light List Pass")
         std::vector<vk::BufferMemoryBarrier> barriers1;
         std::vector<vk::BufferMemoryBarrier> barriers2;
@@ -913,7 +913,7 @@ namespace Oxylus {
   }
 
   void DefaultRenderPipeline::CreateGraphicsPipelines() {
-    ZoneScoped;
+    OX_SCOPED_ZONE;
     // Create shaders
     auto skyboxShader = ShaderLibrary::CreateShaderAsync(ShaderCI{
       .VertexPath = Resources::GetResourcesPath("Shaders/Skybox.vert").string(),
@@ -1126,7 +1126,7 @@ namespace Oxylus {
   }
 
   void DefaultRenderPipeline::CreateFramebuffers() {
-    ZoneScoped;
+    OX_SCOPED_ZONE;
     VulkanImageDescription colorImageDesc{};
     colorImageDesc.Format = VulkanRenderer::SwapChain.m_ImageFormat;
     colorImageDesc.UsageFlags = vk::ImageUsageFlagBits::eColorAttachment | vk::ImageUsageFlagBits::eSampled;
@@ -1441,7 +1441,7 @@ namespace Oxylus {
   }
 
   void DefaultRenderPipeline::UpdateUniformBuffers() {
-    ZoneScoped;
+    OX_SCOPED_ZONE;
     m_RendererData.UBO_VS.projection = m_RendererContext.CurrentCamera->GetProjectionMatrixFlipped();
     m_RendererData.SkyboxBuffer.Copy(&m_RendererData.UBO_VS, sizeof m_RendererData.UBO_VS);
 
@@ -1472,7 +1472,7 @@ namespace Oxylus {
   void DefaultRenderPipeline::UpdateProbes() {
     // Post Process
     {
-      ZoneScopedN("PostProcess Probe System");
+      OX_SCOPED_ZONE_N("PostProcess Probe System");
       const auto view = m_Scene->m_Registry.view<PostProcessProbe>();
       if (!view.empty()) {
         //TODO: Check if the camera is inside this probe.

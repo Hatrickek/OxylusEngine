@@ -9,7 +9,7 @@
 
 namespace Oxylus {
   void MaterialSerializer::Serialize(const std::string& path) const {
-    ZoneScoped;
+    OX_SCOPED_ZONE;
     m_Material->Path = path;
 
     ryml::Tree tree;
@@ -60,7 +60,7 @@ namespace Oxylus {
   void MaterialSerializer::Deserialize(const std::string& path) const {
     if (path.empty())
       return;
-    ZoneScoped;
+    OX_SCOPED_ZONE;
 
     m_Material->Destroy();
 

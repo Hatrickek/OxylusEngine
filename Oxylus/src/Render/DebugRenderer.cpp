@@ -29,7 +29,7 @@ namespace Oxylus {
   }
 
   void DebugRenderer::Reset() {
-    ZoneScoped;
+    OX_SCOPED_ZONE;
     s_Instance->m_DrawList.m_DebugLines.clear();
     s_Instance->m_DrawList.m_DebugThickLines.clear();
     s_Instance->m_DrawList.m_DebugPoints.clear();
@@ -42,7 +42,7 @@ namespace Oxylus {
   }
 
   void DebugRenderer::DrawPoint(const Vec3& pos, float pointRadius, const Vec4& color, bool ndt) {
-    ZoneScoped;
+    OX_SCOPED_ZONE;
     if (ndt)
       s_Instance->m_DrawListNDT.m_DebugPoints.emplace_back(pos, pointRadius, color);
     else
@@ -50,7 +50,7 @@ namespace Oxylus {
   }
 
   void DebugRenderer::DrawThickLine(const Vec3& start, const Vec3& end, float lineWidth, const Vec4& color, bool ndt) {
-    ZoneScoped;
+    OX_SCOPED_ZONE;
     if (ndt)
       s_Instance->m_DrawListNDT.m_DebugThickLines.emplace_back(start, end, color);
     else
@@ -58,7 +58,7 @@ namespace Oxylus {
   }
 
   void DebugRenderer::DrawHairLine(const Vec3& start, const Vec3& end, const Vec4& color, bool ndt) {
-    ZoneScoped;
+    OX_SCOPED_ZONE;
     if (ndt)
       s_Instance->m_DrawListNDT.m_DebugLines.emplace_back(start, end, color);
     else

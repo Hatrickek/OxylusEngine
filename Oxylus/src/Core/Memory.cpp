@@ -12,14 +12,14 @@ namespace Oxylus {
 
 void Delete(void* _Block, size_t _Size) {
   Oxylus::Memory::TotalFreed += _Size;
-  TracyFree(_Block);
+  OX_FREE(_Block);
   free(_Block);
 }
 
 void* New(size_t _Size) {
   Oxylus::Memory::TotalAllocated += _Size;
   const auto ptr = malloc(_Size);
-  TracyAlloc(ptr, _Size);
+  OX_ALLOC(ptr, _Size);
   return ptr;
 }
 

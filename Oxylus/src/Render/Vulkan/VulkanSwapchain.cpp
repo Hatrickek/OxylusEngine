@@ -275,7 +275,7 @@ namespace Oxylus {
   }
 
   VulkanSwapchain* VulkanSwapchain::Submit() {
-    ZoneScoped;
+    OX_SCOPED_ZONE;
     //Swapchain pass submit
     vk::SubmitInfo submitInfo;
     submitInfo.commandBufferCount = 1;
@@ -323,7 +323,7 @@ namespace Oxylus {
   }
 
   void VulkanSwapchain::Present() {
-    ZoneScoped;
+    OX_SCOPED_ZONE;
     vk::PresentInfoKHR presentInfo;
     presentInfo.waitSemaphoreCount = 1;
     presentInfo.pWaitSemaphores = &RenderCompleteSemaphores[CurrentFrame];

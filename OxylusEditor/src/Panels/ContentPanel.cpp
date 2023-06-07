@@ -163,7 +163,7 @@ namespace Oxylus {
   }
 
   std::pair<bool, uint32_t> ContentPanel::DirectoryTreeViewRecursive(const std::filesystem::path& path, uint32_t* count, int* selectionMask, ImGuiTreeNodeFlags flags) {
-    ZoneScoped;
+    OX_SCOPED_ZONE;
     bool anyNodeClicked = false;
     uint32_t nodeClicked = 0;
 
@@ -428,7 +428,7 @@ namespace Oxylus {
   }
 
   void ContentPanel::RenderSideView() {
-    ZoneScoped;
+    OX_SCOPED_ZONE;
     static int selectionMask = 0;
 
     constexpr ImGuiTableFlags tableFlags = ImGuiTableFlags_RowBg
@@ -746,7 +746,7 @@ namespace Oxylus {
   }
 
   void ContentPanel::UpdateDirectoryEntries(const std::filesystem::path& directory) {
-    ZoneScoped;
+    OX_SCOPED_ZONE;
     m_CurrentDirectory = directory;
     m_DirectoryEntries.clear();
     const auto directoryIt = std::filesystem::directory_iterator(directory);

@@ -13,14 +13,14 @@ namespace Oxylus {
   }
 
   glm::mat4 Camera::GetProjectionMatrixFlipped() const {
-    ZoneScoped;
+    OX_SCOPED_ZONE;
     auto projection = glm::perspective(glm::radians(Fov), Aspect, NearClip, FarClip);
     projection[1][1] *= -1.0f;
     return projection;
   }
 
   glm::mat4 Camera::GetProjectionMatrix() const {
-    ZoneScoped;
+    OX_SCOPED_ZONE;
     return glm::perspective(glm::radians(Fov), Aspect, NearClip, FarClip);
   }
 
@@ -109,7 +109,7 @@ namespace Oxylus {
   }
 
   void Camera::Update(const glm::vec3& pos, const glm::vec3& rotation) {
-    ZoneScoped;
+    OX_SCOPED_ZONE;
     SetPosition(pos);
     SetPitch(rotation.x);
     SetYaw(rotation.y);
@@ -117,7 +117,7 @@ namespace Oxylus {
   }
 
   void Camera::UpdateViewMatrix() {
-    ZoneScoped;
+    OX_SCOPED_ZONE;
     const float cosYaw = glm::cos(m_Yaw);
     const float sinYaw = glm::sin(m_Yaw);
     const float cosPitch = glm::cos(m_Pitch);

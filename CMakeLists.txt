@@ -1,9 +1,8 @@
 cmake_minimum_required(VERSION 3.24.0 FATAL_ERROR)
 
-set(CMAKE_SYSTEM_VERSION 10.0 CACHE STRING "" FORCE)
-
 project(Oxylus CXX C)
 set(CMAKE_CXX_STANDARD 20)
+set(CMAKE_CXX_STANDARD_REQUIRED ON)
 # Enable IPO with its policy
 set(CMAKE_INTERPROCEDURAL_OPTIMIZATION ON)
 cmake_policy(SET CMP0069 NEW) 
@@ -28,6 +27,12 @@ set(CMAKE_CONFIGURATION_TYPES
 )
 
 set_property(GLOBAL PROPERTY USE_FOLDERS ON)
+
+# ASAN
+if (ENABLE_ASAN)
+    add_compile_options(-fsanitize=address)
+    add_link_options(-fsanitize=address)
+endif()
 
 # Sub-projects
 add_subdirectory(Oxylus)

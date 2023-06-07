@@ -30,7 +30,7 @@ namespace Oxylus {
   }
 
   void ParticleSystem::OnUpdate(float ts, const glm::vec3& position) {
-    ZoneScoped;
+    OX_SCOPED_ZONE;
     const float simTs = ts * m_Properties.SimulationSpeed;
 
     if (m_Playing && !m_Properties.Looping)

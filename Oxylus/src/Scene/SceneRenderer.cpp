@@ -19,7 +19,7 @@ namespace Oxylus {
   }
 
   void SceneRenderer::Render() const {
-    ZoneScoped;
+    OX_SCOPED_ZONE;
 
     m_RenderPipeline->OnRender(m_Scene);
   }

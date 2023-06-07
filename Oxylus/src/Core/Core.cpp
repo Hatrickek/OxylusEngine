@@ -15,7 +15,7 @@ namespace Oxylus {
   Core::RenderBackend Core::s_Backend = RenderBackend::Vulkan;
 
   bool Core::Init(const AppSpec& spec) {
-    ZoneScoped;
+    OX_SCOPED_ZONE;
     if (!Resources::ResourcesPathExists()) {
       OX_CORE_FATAL("Resources path doesn't exists. Make sure the working directory is correct!");
       Application::Get().Close();

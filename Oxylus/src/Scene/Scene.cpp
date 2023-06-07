@@ -28,7 +28,10 @@ namespace Oxylus {
 
   Scene::Scene(std::string name) : SceneName(std::move(name)) { }
 
-  Scene::~Scene() = default;
+  Scene::~Scene() {
+    if (m_IsRunning)
+      OnRuntimeStop();
+  }
 
   Scene::Scene(const Scene& scene) {
     const auto& reg = scene.m_Registry;
@@ -61,7 +64,7 @@ namespace Oxylus {
   }
 
   void Scene::UpdatePhysics(Timestep deltaTime) {
-    ZoneScoped;
+    OX_SCOPED_ZONE;
     // Minimum stable value is 16.0
     constexpr float physicsStepRate = 50.0f;
     constexpr float physicsTs = 1.0f / physicsStepRate;
@@ -203,13 +206,13 @@ namespace Oxylus {
   }
 
   void Scene::DuplicateEntity(Entity entity) {
-    ZoneScoped;
+    OX_SCOPED_ZONE;
     const Entity newEntity = CreateEntity(entity.GetName());
     CopyComponentIfExists(AllComponents{}, newEntity, entity);
   }
 
   void Scene::OnRuntimeStart() {
-    ZoneScoped;
+    OX_SCOPED_ZONE;
 
     m_IsRunning = true;
 
@@ -217,7 +220,7 @@ namespace Oxylus {
 
     // Physics
     {
-      ZoneScopedN("Physics Start");
+      OX_SCOPED_ZONE_N("Physics Start");
       Physics::Init();
       m_BodyActivationListener3D = new Physics3DBodyActivationListener();
       m_ContactListener3D = new Physics3DContactListener();
@@ -248,19 +251,26 @@ namespace Oxylus {
   }
 
   void Scene::OnRuntimeStop() {
-    ZoneScoped;
+    OX_SCOPED_ZONE;
 
     m_IsRunning = false;
 
     // Physics
     {
       JPH::BodyInterface& bodyInterface = Physics::GetPhysicsSystem()->GetBodyInterface();
-      const auto view = m_Registry.view<RigidbodyComponent>();
-      for (auto&& [e, rb] : view.each()) {
+      const auto rbView = m_Registry.view<RigidbodyComponent>();
+      for (auto&& [e, rb] : rbView.each()) {
         if (rb.RuntimeBody) {
           const auto* body = static_cast<const JPH::Body*>(rb.RuntimeBody);
           bodyInterface.RemoveBody(body->GetID());
           bodyInterface.DestroyBody(body->GetID());
+        }
+      }
+      const auto chView = m_Registry.view<CharacterControllerComponent>();
+      for (auto&& [e, ch] : chView.each()) {
+        if (ch.Character) {
+          bodyInterface.RemoveBody(ch.Character->GetBodyID());
+          ch.Character = nullptr;
         }
       }
 
@@ -273,7 +283,7 @@ namespace Oxylus {
   }
 
   Entity Scene::FindEntity(const std::string_view& name) {
-    ZoneScoped;
+    OX_SCOPED_ZONE;
     const auto group = m_Registry.view<TagComponent>();
     for (const auto& entity : group) {
       auto& tag = group.get<TagComponent>(entity);
@@ -285,12 +295,12 @@ namespace Oxylus {
   }
 
   bool Scene::HasEntity(UUID uuid) const {
-    ZoneScoped;
+    OX_SCOPED_ZONE;
     return m_EntityMap.contains(uuid);
   }
 
   Entity Scene::GetEntityByUUID(UUID uuid) {
-    ZoneScoped;
+    OX_SCOPED_ZONE;
     const auto& it = m_EntityMap.find(uuid);
     if (it != m_EntityMap.end())
       return {it->second, this};
@@ -299,7 +309,7 @@ namespace Oxylus {
   }
 
   Ref<Scene> Scene::Copy(const Ref<Scene>& other) {
-    ZoneScoped;
+    OX_SCOPED_ZONE;
     Ref<Scene> newScene = CreateRef<Scene>();
 
     auto& srcSceneRegistry = other->m_Registry;
@@ -329,7 +339,7 @@ namespace Oxylus {
 
   void Scene::RenderScene() {
     const auto rbView = m_Registry.view<RigidbodyComponent>();
-    for (auto&& [e, rb] : rbView .each()) {
+    for (auto&& [e, rb] : rbView.each()) {
       PhysicsUtils::DebugDraw(this, e);
     }
     const auto chView = m_Registry.view<CharacterControllerComponent>();
@@ -341,7 +351,7 @@ namespace Oxylus {
   }
 
   void Scene::CreateRigidbody(Entity entity, const TransformComponent& transform, RigidbodyComponent& component) const {
-    ZoneScoped;
+    OX_SCOPED_ZONE;
     if (!m_IsRunning)
       return;
 
@@ -464,11 +474,11 @@ namespace Oxylus {
   }
 
   void Scene::OnRuntimeUpdate(float deltaTime) {
-    ZoneScoped;
+    OX_SCOPED_ZONE;
 
     // Camera
     {
-      ZoneScopedN("Camera System");
+      OX_SCOPED_ZONE_N("Camera System");
       const auto group = m_Registry.view<TransformComponent, CameraComponent>();
       for (const auto entity : group) {
         auto [transform, camera] = group.get<TransformComponent, CameraComponent>(entity);
@@ -480,14 +490,14 @@ namespace Oxylus {
     RenderScene();
 
     {
-      ZoneScopedN("OnUpdate Systems");
+      OX_SCOPED_ZONE_N("OnUpdate Systems");
       for (const auto& system : m_Systems) {
         system->OnUpdate(this, deltaTime);
       }
     }
     UpdatePhysics(deltaTime);
     {
-      ZoneScopedN("PostOnUpdate Systems");
+      OX_SCOPED_ZONE_N("PostOnUpdate Systems");
       for (const auto& system : m_Systems) {
         system->PostOnUpdate(this, deltaTime);
       }

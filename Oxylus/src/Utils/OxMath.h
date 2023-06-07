@@ -15,7 +15,7 @@ namespace Oxylus::Math {
                       float smoothTime,
                       float maxSpeed,
                       float deltaTime) {
-    ZoneScoped;
+    OX_SCOPED_ZONE;
     // Based on Game Programming Gems 4 Chapter 1.10
     smoothTime = glm::max(0.0001F, smoothTime);
     const float omega = 2.0f / smoothTime;
@@ -59,7 +59,7 @@ namespace Oxylus::Math {
   }
 
   static float InverseLerp(float a, float b, float value) {
-    ZoneScoped;
+    OX_SCOPED_ZONE;
     const float den = b - a;
     if (den == 0.0f)
       return 0.0f;
@@ -67,7 +67,7 @@ namespace Oxylus::Math {
   }
 
   static float InverseLerpClamped(float a, float b, float value) {
-    ZoneScoped;
+    OX_SCOPED_ZONE;
     const float den = b - a;
     if (den == 0.0f)
       return 0.0f;

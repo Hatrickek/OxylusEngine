@@ -11,12 +11,10 @@
 #include "Core/Resources.h"
 #include "Render/Mesh.h"
 #include "Render/Window.h"
-#include "Render/PBR/Prefilter.h"
 #include "Render/Vulkan/VulkanBuffer.h"
 #include "Render/ResourcePool.h"
 #include "Render/ShaderLibrary.h"
 #include "Utils/Profiler.h"
-#include "Core/Entity.h"
 
 #include <backends/imgui_impl_vulkan.h>
 
@@ -217,7 +215,7 @@ namespace Oxylus {
   }
 
   void VulkanRenderer::Draw() {
-    ZoneScoped;
+    OX_SCOPED_ZONE;
     if (!s_RendererContext.CurrentCamera) {
       OX_CORE_ERROR("Renderer couldn't find a camera!");
       return;
@@ -228,7 +226,7 @@ namespace Oxylus {
     }
 
     SwapChain.SubmitPass([](const VulkanCommandBuffer& commandBuffer) {
-      ZoneScopedN("Swapchain pass");
+      OX_SCOPED_ZONE_N("Swapchain pass");
       OX_TRACE_GPU(commandBuffer.Get(), "Swapchain Pass")
       s_Pipelines.QuadPipeline.BindPipeline(commandBuffer.Get());
       s_Pipelines.QuadPipeline.BindDescriptorSets(commandBuffer.Get(), {s_QuadDescriptorSet.Get()});
@@ -239,7 +237,7 @@ namespace Oxylus {
   }
 
   void VulkanRenderer::DrawFullscreenQuad(const vk::CommandBuffer& commandBuffer, const bool bindVertex) {
-    ZoneScoped;
+    OX_SCOPED_ZONE;
     if (bindVertex) {
       constexpr vk::DeviceSize offsets[1] = {0};
       commandBuffer.bindVertexBuffers(0, s_TriangleVertexBuffer.Get(), offsets);
@@ -254,7 +252,7 @@ namespace Oxylus {
                                    const vk::Buffer& verticiesBuffer,
                                    const vk::Buffer& indexBuffer,
                                    uint32_t indexCount) {
-    ZoneScoped;
+    OX_SCOPED_ZONE;
     constexpr vk::DeviceSize offsets[1] = {0};
     cmdBuffer.bindVertexBuffers(0, verticiesBuffer, offsets);
     cmdBuffer.bindIndexBuffer(indexBuffer, 0, vk::IndexType::eUint32);
