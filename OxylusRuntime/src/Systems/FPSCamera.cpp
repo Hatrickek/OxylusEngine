@@ -2,6 +2,7 @@
 
 #include "Core/Components.h"
 #include "Scene/Scene.h"
+#include "UI/IGUI.h"
 
 namespace OxylusRuntime {
   using namespace Oxylus;
@@ -54,5 +55,22 @@ namespace OxylusRuntime {
     }
   }
 
-  void FPSCamera::OnImGuiRender(Scene* scene, Timestep deltaTime) { }
+  void FPSCamera::OnImGuiRender(Scene* scene, Timestep deltaTime) {
+    const auto cameraView = scene->m_Registry.view<TransformComponent, CameraComponent>();
+    const CameraComponent* cameraComponent = nullptr;
+    for (const auto entity : cameraView) {
+      auto&& [transform, component] = cameraView.get<TransformComponent, CameraComponent>(entity);
+      cameraComponent = &component;
+    }
+    if (ImGui::Begin("Camera Debug")) {
+      IGUI::BeginProperties();
+      if (IGUI::Property("FOV", cameraComponent->System->Fov)) {
+        cameraComponent->System->SetFov(cameraComponent->System->Fov);
+      }
+      IGUI::Property("Sensitivity", m_MouseSensitivity);
+      IGUI::EndProperties();
+
+      ImGui::End();
+    }
+  }
 }

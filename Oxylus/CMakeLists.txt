@@ -298,7 +298,7 @@ set(INTERPROCEDURAL_OPTIMIZATION ON)
 FetchContent_Declare(
         JoltPhysics
         GIT_REPOSITORY "https://github.com/jrouwe/JoltPhysics"
-        GIT_TAG "v3.0.1"
+        GIT_TAG "master"
 		SOURCE_SUBDIR "Build"
 )
 FetchContent_MakeAvailable(JoltPhysics)

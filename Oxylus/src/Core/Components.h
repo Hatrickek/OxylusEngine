@@ -209,7 +209,7 @@ namespace Oxylus {
     JPH::Ref<JPH::Character> Character = nullptr;
 
     // Size
-    float CharacterHeightStanding = 0.5f;
+    float CharacterHeightStanding = 1.35f;
     float CharacterRadiusStanding = 0.3f;
     float CharacterHeightCrouching = 0.8f;
     float CharacterRadiusCrouching = 0.3f;
@@ -217,7 +217,7 @@ namespace Oxylus {
     // Movement
     bool ControlMovementDuringJump = true;
     float CharacterSpeed = 6.0f;
-    float JumpSpeed = 1.0f;
+    float JumpSpeed = 6.0f;
 
     float Friction = 0.5f;
     float CollisionTolerance = 0.05f;

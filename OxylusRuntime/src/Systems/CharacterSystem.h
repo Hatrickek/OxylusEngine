@@ -13,7 +13,7 @@ namespace OxylusRuntime {
     void OnImGuiRender(Oxylus::Scene* scene, Oxylus::Timestep deltaTime) override;
 
   private:
-    void HandleInput(Oxylus::CharacterControllerComponent& characterComponent,
+    void HandleInput(const Oxylus::CharacterControllerComponent& characterComponent,
                      JPH::Vec3Arg inMovementDirection,
                      bool inJump,
                      bool inSwitchStance,

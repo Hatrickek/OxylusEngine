@@ -218,6 +218,7 @@ namespace Oxylus {
       node["CharacterHeightStanding"] << component.CharacterHeightStanding;
       node["CharacterRadiusStanding"] << component.CharacterRadiusStanding;
       node["CharacterRadiusCrouching"] << component.CharacterRadiusCrouching;
+      node["CharacterHeightCrouching"] << component.CharacterHeightCrouching;
 
       // Movement
       node["CharacterSpeed"] << component.CharacterSpeed;
@@ -452,6 +453,7 @@ namespace Oxylus {
       node["CharacterHeightStanding"] >> component.CharacterHeightStanding;
       node["CharacterRadiusStanding"] >> component.CharacterRadiusStanding;
       node["CharacterRadiusCrouching"] >> component.CharacterRadiusCrouching;
+      node["CharacterHeightCrouching"] >> component.CharacterHeightCrouching;
 
       // Movement
       node["CharacterSpeed"] >> component.CharacterSpeed;

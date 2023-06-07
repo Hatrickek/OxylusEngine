@@ -7,7 +7,11 @@
 namespace OxylusRuntime {
   using namespace Oxylus;
 
-  CharacterSystem::~CharacterSystem() { }
+  // Temporary globals
+  static float s_MaxHorizontalVelocity = 0.0f;
+  static float s_MaxVerticalVelocity = 0.0f;
+
+  CharacterSystem::~CharacterSystem() = default;
 
   void CharacterSystem::OnInit() { }
 
@@ -34,16 +38,16 @@ namespace OxylusRuntime {
         if (controlInput != Vec3(0))
           controlInput = normalize(controlInput);
 
-        JPH::Vec3 cam_fwd = {cameraComponent.System->GetFront().x, cameraComponent.System->GetFront().y, cameraComponent.System->GetFront().z};
-        cam_fwd.SetY(0.0f);
-        cam_fwd = cam_fwd.NormalizedOr(JPH::Vec3::sAxisX());
-        JPH::Quat rotation = JPH::Quat::sFromTo(JPH::Vec3::sAxisX(), cam_fwd);
+        JPH::Vec3 camFwd = {cameraComponent.System->GetFront().x, cameraComponent.System->GetFront().y, cameraComponent.System->GetFront().z};
+        camFwd.SetY(0.0f);
+        camFwd = camFwd.NormalizedOr(JPH::Vec3::sAxisX());
+        JPH::Quat rotation = JPH::Quat::sFromTo(JPH::Vec3::sAxisX(), camFwd);
         controlInput = glm::make_quat(rotation.GetXYZW().mF32) * controlInput;
 
         //controlInput = controlInput * cameraComponent.System->GetFront();
 
         bool jump = false;
-        if (Input::GetKeyDown(Key::Space))
+        if (ImGui::IsKeyPressed(ImGuiKey_Space, false))
           jump = true;
 
         HandleInput(component, {controlInput.x, controlInput.y, controlInput.z}, jump, false, deltaTime);
@@ -65,29 +69,39 @@ namespace OxylusRuntime {
     if (controllerComponent) {
       if (ImGui::Begin("Character Debug")) {
         IGUI::BeginProperties();
-        IGUI::DrawVec3Control("Position", controllerTransform->Translation);
+        IGUI::PropertyVector("Position", controllerTransform->Translation);
         IGUI::Property("ControlMovementDuringJump", controllerComponent->ControlMovementDuringJump);
         IGUI::Property("CharacterSpeed", controllerComponent->CharacterSpeed, 1.0f, 10.0f);
         IGUI::Property("JumpSpeed", controllerComponent->JumpSpeed, 1.0f, 10.0f);
         IGUI::Property("CollisionTolerance", controllerComponent->CollisionTolerance, 0.05f, 0.5f);
-        auto velocity = glm::make_vec3(controllerComponent->Character->GetLinearVelocity().mF32);
-        IGUI::PropertyVector("Velocity", velocity);
         IGUI::EndProperties();
+        
+        auto velocity = glm::make_vec3(controllerComponent->Character->GetLinearVelocity().mF32);
+        IGUI::BeginProperties();
+        IGUI::PropertyVector("Velocity", velocity);
+        if (s_MaxVerticalVelocity <= velocity.y)
+          s_MaxVerticalVelocity = velocity.y;
+        IGUI::Text("Max Vertical Velocity", fmt::format("{}", s_MaxVerticalVelocity).c_str());
+        if (s_MaxHorizontalVelocity <= velocity.x)
+          s_MaxHorizontalVelocity = velocity.x;
+        IGUI::Text("Max Horizontal Velocity", fmt::format("{}", s_MaxHorizontalVelocity).c_str());
+        IGUI::EndProperties();
+
         ImGui::End();
       }
     }
   }
 
-  void CharacterSystem::HandleInput(CharacterControllerComponent& characterComponent,
+  void CharacterSystem::HandleInput(const CharacterControllerComponent& characterComponent,
                                     JPH::Vec3Arg movementDirection,
                                     bool jump,
                                     bool switchStance,
                                     float deltaTime) {
-    auto character = characterComponent.Character;
+    auto& character = characterComponent.Character;
     // Cancel movement in opposite direction of normal when touching something we can't walk up
-    JPH::Character::EGroundState ground_state = character->GetGroundState();
-    if (ground_state == JPH::Character::EGroundState::OnSteepGround
-        || ground_state == JPH::Character::EGroundState::NotSupported) {
+    const JPH::Character::EGroundState groundState = character->GetGroundState();
+    if (groundState == JPH::Character::EGroundState::OnSteepGround
+        || groundState == JPH::Character::EGroundState::NotSupported) {
       JPH::Vec3 normal = character->GetGroundNormal();
       normal.SetY(0.0f);
       const float dot = normal.Dot(movementDirection);
@@ -104,17 +118,17 @@ namespace OxylusRuntime {
 
     if (characterComponent.ControlMovementDuringJump || character->IsSupported()) {
       // Update velocity
-      JPH::Vec3 current_velocity = character->GetLinearVelocity();
-      JPH::Vec3 desired_velocity = characterComponent.CharacterSpeed * movementDirection;
-      desired_velocity.SetY(current_velocity.GetY());
-      JPH::Vec3 new_velocity = 0.75f * current_velocity + 0.25f * desired_velocity;
+      const JPH::Vec3 currentVelocity = character->GetLinearVelocity();
+      JPH::Vec3 desiredVelocity = characterComponent.CharacterSpeed * movementDirection;
+      desiredVelocity.SetY(currentVelocity.GetY());
+      JPH::Vec3 newVelocity = 0.75f * currentVelocity + 0.25f * desiredVelocity;
 
       // Jump
-      if (jump && ground_state == JPH::Character::EGroundState::OnGround)
-        new_velocity += JPH::Vec3(0, characterComponent.JumpSpeed, 0);
+      if (jump && groundState == JPH::Character::EGroundState::OnGround)
+        newVelocity += JPH::Vec3(0, characterComponent.JumpSpeed, 0);
 
       // Update the velocity
-      character->SetLinearVelocity(new_velocity);
+      character->SetLinearVelocity(newVelocity);
     }
   }
 }

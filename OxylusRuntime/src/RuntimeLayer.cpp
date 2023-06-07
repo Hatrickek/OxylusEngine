@@ -26,8 +26,7 @@ namespace OxylusRuntime {
     LoadScene();
   }
 
-  void RuntimeLayer::OnDetach() {
-  }
+  void RuntimeLayer::OnDetach() { }
 
   void RuntimeLayer::OnUpdate(Timestep deltaTime) {
     m_Scene->OnRuntimeUpdate(deltaTime);
@@ -40,7 +39,7 @@ namespace OxylusRuntime {
     constexpr ImGuiWindowFlags window_flags = ImGuiWindowFlags_NoDecoration | ImGuiWindowFlags_NoDocking |
                                               ImGuiWindowFlags_AlwaysAutoResize | ImGuiWindowFlags_NoSavedSettings |
                                               ImGuiWindowFlags_NoFocusOnAppearing | ImGuiWindowFlags_NoNav | ImGuiWindowFlags_NoMove;
-     constexpr float PAD = 10.0f;
+    constexpr float PAD = 10.0f;
     const ImGuiViewport* viewport = ImGui::GetMainViewport();
     const ImVec2 work_pos = viewport->WorkPos; // Use work area to avoid menu-bar/task-bar, if any!
     ImVec2 window_pos;

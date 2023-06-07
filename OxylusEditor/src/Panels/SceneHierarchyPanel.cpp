@@ -41,8 +41,7 @@ namespace Oxylus {
     auto& tag = tagComponent.Tag;
 
     if (m_Filter.IsActive() && !m_Filter.PassFilter(tag.c_str())) {
-      for (const auto& child : rc.Children) {
-        const UUID childId = entity.GetRelationship().Children[child];
+      for (const auto& childId : rc.Children) {
         DrawEntityNode(m_Context->GetEntityByUUID(childId));
       }
       return {0, 0, 0, 0};
