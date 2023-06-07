@@ -62,8 +62,6 @@ namespace Oxylus {
   private:
     void Init();
 
-    void UpdateSystems(float deltaTime);
-
     // Physics
     void UpdatePhysics(Timestep deltaTime);
     void CreateRigidbody(Entity entity, const TransformComponent& transform, RigidbodyComponent& component) const;

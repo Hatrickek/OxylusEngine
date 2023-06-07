@@ -16,8 +16,15 @@ namespace Oxylus {
         tc.Rotation);
     }
     if (e.HasComponent<SphereColliderComponent>()) {
-        DebugRenderer::DrawSphere(tc.Translation,
+      DebugRenderer::DrawSphere(tc.Translation,
         Vec3(e.GetComponent<SphereColliderComponent>().Radius * 2.0f),
+        Vec4(0, 1, 0, 1),
+        tc.Rotation);
+    }
+    if (e.HasComponent<CharacterControllerComponent>()) {
+      const auto& ch = e.GetComponent<CharacterControllerComponent>();
+      DebugRenderer::DrawSphere(tc.Translation,
+        Vec3(ch.CharacterRadiusStanding, 0.5f * ch.CharacterHeightStanding, ch.CharacterRadiusStanding),
         Vec4(0, 1, 0, 1),
         tc.Rotation);
     }

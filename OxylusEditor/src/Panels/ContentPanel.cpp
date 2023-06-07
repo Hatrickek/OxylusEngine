@@ -335,7 +335,7 @@ namespace Oxylus {
     if (ImGui::BeginPopup("SettingsPopup")) {
       IGUI::BeginProperties(ImGuiTableFlags_SizingStretchSame);
       IGUI::Property("Thumbnail Size", m_ThumbnailSize, 95.9f, 256.0f, nullptr, 0.1f, "");
-      IGUI::Property("Texture Previews", m_TexturePreviews, "Show texture previews");
+      IGUI::Property("Texture Previews", m_TexturePreviews, "Show texture previews (experimental)");
       IGUI::EndProperties();
       ImGui::EndPopup();
     }

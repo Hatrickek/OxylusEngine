@@ -26,6 +26,9 @@ namespace Oxylus {
     /// Called before physic system is updated.
     virtual void OnUpdate(Scene* scene, Timestep deltaTime) { }
 
+    /// Called after physics system is updated.
+    virtual void PostOnUpdate(Scene* scene, Timestep deltaTime) { }
+
     /// Called in the main imgui loop which is right before `OnUpdate`
     virtual void OnImGuiRender() { }
 

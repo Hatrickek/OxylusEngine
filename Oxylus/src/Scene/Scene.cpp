@@ -121,9 +121,9 @@ namespace Oxylus {
       const auto group = m_Registry.view<TransformComponent, CharacterControllerComponent>();
       for (const auto entity : group) {
         auto [transform, component] = group.get<TransformComponent, CharacterControllerComponent>(entity);
+        component.Character->PostSimulation(component.CollisionTolerance);
         transform.Translation = glm::make_vec3(component.Character->GetPosition().mF32);
         transform.Rotation = glm::eulerAngles(glm::make_quat(component.Character->GetRotation().GetXYZW().mF32));
-        component.Character->PostSimulation(component.CollisionTolerance);
       }
     }
   }
@@ -328,8 +328,12 @@ namespace Oxylus {
   }
 
   void Scene::RenderScene() {
-    const auto view = m_Registry.view<RigidbodyComponent>();
-    for (auto&& [e, rb] : view.each()) {
+    const auto rbView = m_Registry.view<RigidbodyComponent>();
+    for (auto&& [e, rb] : rbView .each()) {
+      PhysicsUtils::DebugDraw(this, e);
+    }
+    const auto chView = m_Registry.view<CharacterControllerComponent>();
+    for (auto&& [e, ch] : chView.each()) {
       PhysicsUtils::DebugDraw(this, e);
     }
 
@@ -459,13 +463,6 @@ namespace Oxylus {
     component.Character->AddToPhysicsSystem(JPH::EActivation::Activate);
   }
 
-  void Scene::UpdateSystems(float deltaTime) {
-    ZoneScopedN("Update Systems");
-    for (const auto& system : m_Systems) {
-      system->OnUpdate(this, deltaTime);
-    }
-  }
-
   void Scene::OnRuntimeUpdate(float deltaTime) {
     ZoneScoped;
 
@@ -480,9 +477,21 @@ namespace Oxylus {
       }
     }
 
-    UpdateSystems(deltaTime);
     RenderScene();
+
+    {
+      ZoneScopedN("OnUpdate Systems");
+      for (const auto& system : m_Systems) {
+        system->OnUpdate(this, deltaTime);
+      }
+    }
     UpdatePhysics(deltaTime);
+    {
+      ZoneScopedN("PostOnUpdate Systems");
+      for (const auto& system : m_Systems) {
+        system->PostOnUpdate(this, deltaTime);
+      }
+    }
 
     // Audio
     {
