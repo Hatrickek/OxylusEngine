@@ -495,7 +495,9 @@ namespace Oxylus {
                 case 4: vert.Color = glm::make_vec4(&bufferColors[v * 4]);
               }
             }
-            else { vert.Color = glm::vec4(1.0f); }
+            else {
+              vert.Color = glm::vec4(1.0f);
+            }
             vert.Tangent = bufferTangents ? glm::vec4(glm::make_vec4(&bufferTangents[v * 4])) : glm::vec4(0.0f);
             vert.Joint0 = hasSkin ? glm::vec4(glm::make_vec4(&bufferJoints[v * 4])) : glm::vec4(0.0f);
             vert.Weight0 = hasSkin ? glm::make_vec4(&bufferWeights[v * 4]) : glm::vec4(0.0f);

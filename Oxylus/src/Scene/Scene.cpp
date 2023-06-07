@@ -135,7 +135,7 @@ namespace Oxylus {
     for (const auto child : node) {
       Entity entity = CreateEntity(child->Name).SetParent(parent);
       if (child->ContainsMesh) {
-        entity.AddComponentI<MeshRendererComponent>(mesh).SubmesIndex = child->MeshIndex;
+        entity.AddComponentI<MeshRendererComponent>(mesh).SubmesIndex = child->Index;
         entity.GetComponent<MaterialComponent>().Materials = mesh->GetMaterialsAsRef();
       }
       IterateOverMeshNode(mesh, child->Children, entity);
@@ -147,7 +147,7 @@ namespace Oxylus {
     for (const auto& node : mesh->Nodes) {
       Entity entity = CreateEntity(node->Name);
       if (node->ContainsMesh) {
-        entity.AddComponentI<MeshRendererComponent>(mesh).SubmesIndex = node->MeshIndex;
+        entity.AddComponentI<MeshRendererComponent>(mesh).SubmesIndex = node->Index;
         entity.GetComponent<MaterialComponent>().Materials = mesh->GetMaterialsAsRef();
       }
       IterateOverMeshNode(mesh, node->Children, entity);
