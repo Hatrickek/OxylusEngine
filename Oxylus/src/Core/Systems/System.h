@@ -5,6 +5,12 @@
 
 #include <string>
 
+namespace JPH {
+  class ContactSettings;
+  class ContactManifold;
+  class Body;
+}
+
 namespace Oxylus {
   class Scene;
 
@@ -37,6 +43,9 @@ namespace Oxylus {
 
     /// Called right after main loop is finished before the core shutdown process.
     virtual void OnShutdown() { }
+
+    /// Physics interfaces
+    virtual void OnContactAdded(Scene* scene, const JPH::Body& body1, const JPH::Body& body2, const JPH::ContactManifold& manifold, const JPH::ContactSettings& settings) { }
 
     void SetDispatcher(EventDispatcher* dispatcher) { m_Dispatcher = dispatcher; }
 

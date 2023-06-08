@@ -1058,7 +1058,7 @@ namespace Oxylus {
     debugDescription.ColorAttachmentCount = 1;
     debugDescription.DepthDesc.DepthWriteEnable = false;
     debugDescription.DepthDesc.DepthEnable = false;
-    debugDescription.RasterizerDesc.CullMode = vk::CullModeFlagBits::eBack;
+    debugDescription.RasterizerDesc.CullMode = vk::CullModeFlagBits::eNone;
     debugDescription.RasterizerDesc.FillMode = vk::PolygonMode::eLine;
     debugDescription.RasterizerDesc.LineWidth = 2.0f;
     debugDescription.VertexInputState = VertexInputDescription(VertexLayout({

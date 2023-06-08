@@ -223,7 +223,7 @@ namespace Oxylus {
       OX_SCOPED_ZONE_N("Physics Start");
       Physics::Init();
       m_BodyActivationListener3D = new Physics3DBodyActivationListener();
-      m_ContactListener3D = new Physics3DContactListener();
+      m_ContactListener3D = new Physics3DContactListener(this);
       const auto physicsSystem = Physics::GetPhysicsSystem();
       physicsSystem->SetBodyActivationListener(m_BodyActivationListener3D);
       physicsSystem->SetContactListener(m_ContactListener3D);
@@ -335,6 +335,11 @@ namespace Oxylus {
     CopyComponent(AllComponents{}, dstSceneRegistry, srcSceneRegistry, newScene->m_EntityMap);
 
     return newScene;
+  }
+
+  void Scene::OnContactAdded(const JPH::Body& body1, const JPH::Body& body2, const JPH::ContactManifold& manifold, const JPH::ContactSettings& settings) {
+    for (const auto& system : m_Systems)
+      system->OnContactAdded(this, body1, body2, manifold, settings);
   }
 
   void Scene::RenderScene() {

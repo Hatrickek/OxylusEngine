@@ -25,7 +25,6 @@ namespace Oxylus {
     Scene(std::string name);
 
     ~Scene();
-
     Scene(const Scene&);
 
     Entity CreateEntity(const std::string& name);
@@ -51,8 +50,12 @@ namespace Oxylus {
 
     Entity FindEntity(const std::string_view& name);
     bool HasEntity(UUID uuid) const;
-    Entity GetEntityByUUID(UUID uuid);
     static Ref<Scene> Copy(const Ref<Scene>& other);
+
+    // Physics interfaces
+    void OnContactAdded(const JPH::Body& body1, const JPH::Body& body2, const JPH::ContactManifold& manifold, const JPH::ContactSettings& settings);
+
+    Entity GetEntityByUUID(UUID uuid);
     SceneRenderer& GetRenderer() { return m_SceneRenderer; }
 
     std::string SceneName = "Untitled";

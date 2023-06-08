@@ -3,6 +3,10 @@
 
 #include "JoltBuild.h"
 
+namespace Oxylus {
+  class Scene;
+}
+
 namespace PhysicsLayers {
   static constexpr JPH::ObjectLayer NON_MOVING = 0;
   static constexpr JPH::ObjectLayer MOVING = 1;
@@ -58,17 +62,19 @@ public:
 };
 
 class Physics3DContactListener : public JPH::ContactListener {
-private:
-  static void GetFrictionAndRestitution(const JPH::Body& inBody, const JPH::SubShapeID& inSubShapeID, float& outFriction, float& outRestitution);
-
-  static void OverrideContactSettings(const JPH::Body& inBody1, const JPH::Body& inBody2, const JPH::ContactManifold& inManifold, JPH::ContactSettings& ioSettings);
-
 public:
-  JPH::ValidateResult OnContactValidate(const JPH::Body &inBody1, const JPH::Body &inBody2, JPH::RVec3Arg inBaseOffset, const JPH::CollideShapeResult &inCollisionResult) override;
+  Physics3DContactListener(Oxylus::Scene* scene) : m_Scene(scene) {}
+  JPH::ValidateResult OnContactValidate(const JPH::Body& inBody1, const JPH::Body& inBody2, JPH::RVec3Arg inBaseOffset, const JPH::CollideShapeResult& inCollisionResult) override;
 
   void OnContactAdded(const JPH::Body& inBody1, const JPH::Body& inBody2, const JPH::ContactManifold& inManifold, JPH::ContactSettings& ioSettings) override;
 
   void OnContactPersisted(const JPH::Body& inBody1, const JPH::Body& inBody2, const JPH::ContactManifold& inManifold, JPH::ContactSettings& ioSettings) override;
 
   void OnContactRemoved([[maybe_unused]] const JPH::SubShapeIDPair& inSubShapePair) override;
+
+private:
+  Oxylus::Scene* m_Scene = nullptr;
+  static void GetFrictionAndRestitution(const JPH::Body& inBody, const JPH::SubShapeID& inSubShapeID, float& outFriction, float& outRestitution);
+
+  static void OverrideContactSettings(const JPH::Body& inBody1, const JPH::Body& inBody2, const JPH::ContactManifold& inManifold, JPH::ContactSettings& ioSettings);
 };

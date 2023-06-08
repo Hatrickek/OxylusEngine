@@ -97,7 +97,6 @@ namespace Oxylus {
       std::string path = light.Cubemap ? light.Cubemap->GetDesc().Path : "";
       node["ImagePath"] << path;
       node["CubemapLodBias"] << light.CubemapLodBias;
-      scene->GetRenderer().Dispatcher.enqueue(SceneRenderer::SkyboxLoadEvent{light.Cubemap});
     }
 
     if (entity.HasComponent<PostProcessProbe>()) {
@@ -331,6 +330,7 @@ namespace Oxylus {
         CubeMapDesc.Path = path;
         CubeMapDesc.Type = ImageType::TYPE_CUBE;
         light.Cubemap = AssetManager::GetImageAsset(CubeMapDesc).Data;
+        scene->GetRenderer().Dispatcher.trigger(SceneRenderer::SkyboxLoadEvent{light.Cubemap});
       }
 
       node["CubemapLodBias"] >> light.CubemapLodBias;

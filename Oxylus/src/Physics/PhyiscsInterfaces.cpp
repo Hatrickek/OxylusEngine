@@ -2,6 +2,7 @@
 #include "PhyiscsInterfaces.h"
 
 #include "PhysicsMaterial.h"
+#include "Scene/Scene.h"
 #include "Utils/Profiler.h"
 
 
@@ -103,6 +104,8 @@ void Physics3DContactListener::OnContactAdded(const JPH::Body& inBody1, const JP
   OX_SCOPED_ZONE;
 
   OverrideContactSettings(inBody1, inBody2, inManifold, ioSettings);
+
+  m_Scene->OnContactAdded(inBody1, inBody2, inManifold, ioSettings);
 }
 
 void Physics3DContactListener::OnContactPersisted(const JPH::Body& inBody1, const JPH::Body& inBody2, const JPH::ContactManifold& inManifold, JPH::ContactSettings& ioSettings) {
