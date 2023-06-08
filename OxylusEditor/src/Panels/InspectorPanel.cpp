@@ -271,6 +271,7 @@ namespace Oxylus {
       DrawAddComponent<CapsuleColliderComponent>(entity, "Capsule Collider");
       DrawAddComponent<TaperedCapsuleColliderComponent>(entity, "Tapered Capsule Collider");
       DrawAddComponent<CylinderColliderComponent>(entity, "Cylinder Collider");
+      DrawAddComponent<CharacterControllerComponent>(entity, "Character Controller");
 
       ImGui::EndPopup();
     }
@@ -666,6 +667,25 @@ namespace Oxylus {
         IGUI::EndProperties();
 
         component.Density = glm::max(component.Density, 0.001f);
+      });
+
+    DrawComponent<CharacterControllerComponent>(ICON_MDI_CIRCLE_OUTLINE " Cylinder Collider",
+      entity,
+      [](CharacterControllerComponent& component) {
+        IGUI::BeginProperties();
+        IGUI::Property("CharacterHeightStanding", component.CharacterHeightStanding);
+        IGUI::Property("CharacterRadiusStanding", component.CharacterRadiusStanding);
+        IGUI::Property("CharacterHeightCrouching", component.CharacterHeightCrouching);
+        IGUI::Property("CharacterRadiusCrouching", component.CharacterRadiusCrouching);
+
+        // Movement
+        IGUI::Property("ControlMovementDuringJump", component.ControlMovementDuringJump);
+        IGUI::Property("CharacterSpeed", component.CharacterSpeed);
+        IGUI::Property("JumpSpeed", component.JumpSpeed);
+
+        IGUI::Property("Friction", component.Friction, 0.0f, 1.0f);
+        IGUI::Property("CollisionTolerance", component.CollisionTolerance);
+        IGUI::EndProperties();
       });
 
     DrawComponent<CameraComponent>(ICON_MDI_CAMERA "Camera Component",

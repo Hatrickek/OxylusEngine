@@ -456,9 +456,9 @@ namespace Oxylus {
   void Scene::CreateCharacterController(Entity entity, const TransformComponent& transform, CharacterControllerComponent& component) const {
     if (!m_IsRunning)
       return;
-    auto& position = transform.Translation;
+    auto position = JPH::Vec3(transform.Translation.x, transform.Translation.y, transform.Translation.z);
     const auto capsuleShape = JPH::RotatedTranslatedShapeSettings(
-      JPH::Vec3(position.x, 0.5f * component.CharacterHeightStanding + component.CharacterRadiusStanding, position.z),
+      JPH::Vec3(0, 0.5f * component.CharacterHeightStanding + component.CharacterRadiusStanding, 0),
       JPH::Quat::sIdentity(),
       new JPH::CapsuleShape(0.5f * component.CharacterHeightStanding, component.CharacterRadiusStanding)).Create().Get();
 
@@ -469,7 +469,7 @@ namespace Oxylus {
     settings->mShape = capsuleShape;
     settings->mFriction = component.Friction;
     settings->mSupportingVolume = JPH::Plane(JPH::Vec3::sAxisY(), -component.CharacterRadiusStanding); // Accept contacts that touch the lower sphere of the capsule
-    component.Character = new JPH::Character(settings.get(), JPH::RVec3::sZero(), JPH::Quat::sIdentity(), 0, Physics::GetPhysicsSystem());
+    component.Character = new JPH::Character(settings.get(), position, JPH::Quat::sIdentity(), 0, Physics::GetPhysicsSystem());
     component.Character->AddToPhysicsSystem(JPH::EActivation::Activate);
   }
 
