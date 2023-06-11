@@ -58,10 +58,7 @@ namespace Oxylus {
       colors[ImGuizmo::PLANE_Z] = colors[ImGuizmo::DIRECTION_Z];
     }
 
-    switch (Core::s_Backend) {
-      case Core::RenderBackend::Vulkan: InitForVulkan();
-        break;
-    }
+    InitForVulkan();
   }
 
   void ImGuiLayer::AddIconFont(float fontSize) {

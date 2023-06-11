@@ -66,7 +66,7 @@ namespace Oxylus {
   void Scene::UpdatePhysics(Timestep deltaTime) {
     OX_SCOPED_ZONE;
     // Minimum stable value is 16.0
-    constexpr float physicsStepRate = 50.0f;
+    constexpr float physicsStepRate = 60.0f;
     constexpr float physicsTs = 1.0f / physicsStepRate;
 
     bool stepped = false;
@@ -86,6 +86,8 @@ namespace Oxylus {
     for (auto&& [e, rb, tc] : view.each()) {
       if (!rb.RuntimeBody)
         continue;
+
+      PhysicsUtils::DebugDraw(this, e);
 
       const auto* body = static_cast<const JPH::Body*>(rb.RuntimeBody);
 
@@ -121,12 +123,12 @@ namespace Oxylus {
 
     // Character
     {
-      const auto group = m_Registry.view<TransformComponent, CharacterControllerComponent>();
-      for (const auto entity : group) {
-        auto [transform, component] = group.get<TransformComponent, CharacterControllerComponent>(entity);
-        component.Character->PostSimulation(component.CollisionTolerance);
-        transform.Translation = glm::make_vec3(component.Character->GetPosition().mF32);
-        transform.Rotation = glm::eulerAngles(glm::make_quat(component.Character->GetRotation().GetXYZW().mF32));
+      const auto group = m_Registry.group<TransformComponent, CharacterControllerComponent>();
+      for (auto&& [e, tc, ch] : group.each()) {
+        ch.Character->PostSimulation(ch.CollisionTolerance);
+        tc.Translation = glm::make_vec3(ch.Character->GetPosition().mF32);
+        tc.Rotation = glm::make_vec3(ch.Character->GetRotation().GetEulerAngles().mF32);
+        PhysicsUtils::DebugDraw(this, e);
       }
     }
   }
@@ -342,16 +344,12 @@ namespace Oxylus {
       system->OnContactAdded(this, body1, body2, manifold, settings);
   }
 
-  void Scene::RenderScene() {
-    const auto rbView = m_Registry.view<RigidbodyComponent>();
-    for (auto&& [e, rb] : rbView.each()) {
-      PhysicsUtils::DebugDraw(this, e);
-    }
-    const auto chView = m_Registry.view<CharacterControllerComponent>();
-    for (auto&& [e, ch] : chView.each()) {
-      PhysicsUtils::DebugDraw(this, e);
-    }
+  void Scene::OnContactPersisted(const JPH::Body& body1, const JPH::Body& body2, const JPH::ContactManifold& manifold, JPH::ContactSettings& settings) {
+    for (const auto& system : m_Systems)
+      system->OnContactPersisted(this, body1, body2, manifold, settings);
+  }
 
+  void Scene::RenderScene() {
     m_SceneRenderer.Render();
   }
 
@@ -545,6 +543,15 @@ namespace Oxylus {
 
   void Scene::OnEditorUpdate(float deltaTime, Camera& camera) {
     RenderScene();
+
+    const auto rbView = m_Registry.view<RigidbodyComponent>();
+    for (auto&& [e, rb] : rbView.each()) {
+      PhysicsUtils::DebugDraw(this, e);
+    }
+    const auto chView = m_Registry.view<CharacterControllerComponent>();
+    for (auto&& [e, ch] : chView.each()) {
+      PhysicsUtils::DebugDraw(this, e);
+    }
 
     VulkanRenderer::SetCamera(camera);
   }

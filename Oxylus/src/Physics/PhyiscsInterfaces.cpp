@@ -112,6 +112,8 @@ void Physics3DContactListener::OnContactPersisted(const JPH::Body& inBody1, cons
   OX_SCOPED_ZONE;
 
   OverrideContactSettings(inBody1, inBody2, inManifold, ioSettings);
+
+  m_Scene->OnContactPersisted(inBody1, inBody2, inManifold, ioSettings);
 }
 
 void Physics3DContactListener::OnContactRemoved(const JPH::SubShapeIDPair& inSubShapePair) {

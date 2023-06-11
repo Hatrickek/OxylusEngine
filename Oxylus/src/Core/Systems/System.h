@@ -46,6 +46,7 @@ namespace Oxylus {
 
     /// Physics interfaces
     virtual void OnContactAdded(Scene* scene, const JPH::Body& body1, const JPH::Body& body2, const JPH::ContactManifold& manifold, const JPH::ContactSettings& settings) { }
+    virtual void OnContactPersisted(Scene* scene, const JPH::Body& body1, const JPH::Body& body2, const JPH::ContactManifold& manifold, const JPH::ContactSettings& settings) { }
 
     void SetDispatcher(EventDispatcher* dispatcher) { m_Dispatcher = dispatcher; }
 

@@ -142,11 +142,11 @@ namespace Oxylus {
     bool AllowSleep = true;
     bool Awake = true;
     bool Continuous = false;
-    bool Interpolation = true;
+    bool Interpolation = false;
 
     bool IsSensor = false;
 
-    // Stored as JPH::BodyID
+    // Stored as JPH::Body
     void* RuntimeBody = nullptr;
 
     // For interpolation/extrapolation

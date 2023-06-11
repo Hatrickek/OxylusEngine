@@ -54,6 +54,7 @@ namespace Oxylus {
 
     // Physics interfaces
     void OnContactAdded(const JPH::Body& body1, const JPH::Body& body2, const JPH::ContactManifold& manifold, const JPH::ContactSettings& settings);
+    void OnContactPersisted(const JPH::Body& body1, const JPH::Body& body2, const JPH::ContactManifold& manifold, JPH::ContactSettings& settings);
 
     Entity GetEntityByUUID(UUID uuid);
     SceneRenderer& GetRenderer() { return m_SceneRenderer; }
