@@ -37,15 +37,15 @@ namespace OxylusRuntime {
 
           Input::SetCursorPosition(m_LockedMousePosition.x, m_LockedMousePosition.y);
 
-          const Vec2 change = (newMousePosition - m_LockedMousePosition) * m_MouseSensitivity * (float)deltaTime;
+          const Vec2 change = (newMousePosition - m_LockedMousePosition) * (m_MouseSensitivity / 1000.0f);
           finalYawPitch.x += change.x;
-          finalYawPitch.y = glm::clamp(finalYawPitch.y - change.y, -89.9f, 89.9f);
+          finalYawPitch.y = glm::clamp(finalYawPitch.y - change.y, -89.0f, 89.9f);
         }
         else {
           m_UsingCamera = false;
         }
 
-        Vec3 finalPosition = charTransform.Translation;
+        Vec3 finalPosition = charComponent.Translation;
         finalPosition.y += charComponent.CharacterHeightStanding;
 
         transform.Translation = finalPosition;

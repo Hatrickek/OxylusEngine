@@ -669,7 +669,7 @@ namespace Oxylus {
         component.Density = glm::max(component.Density, 0.001f);
       });
 
-    DrawComponent<CharacterControllerComponent>(ICON_MDI_CIRCLE_OUTLINE " Cylinder Collider",
+    DrawComponent<CharacterControllerComponent>(ICON_MDI_CIRCLE_OUTLINE " Character Controller",
       entity,
       [](CharacterControllerComponent& component) {
         IGUI::BeginProperties();
@@ -680,8 +680,7 @@ namespace Oxylus {
 
         // Movement
         IGUI::Property("ControlMovementDuringJump", component.ControlMovementDuringJump);
-        IGUI::Property("CharacterSpeed", component.CharacterSpeed);
-        IGUI::Property("JumpSpeed", component.JumpSpeed);
+        IGUI::Property("JumpForce", component.JumpForce);
 
         IGUI::Property("Friction", component.Friction, 0.0f, 1.0f);
         IGUI::Property("CollisionTolerance", component.CollisionTolerance);

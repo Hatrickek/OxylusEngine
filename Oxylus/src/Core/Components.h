@@ -215,12 +215,35 @@ namespace Oxylus {
     float CharacterRadiusCrouching = 0.3f;
 
     // Movement
-    bool ControlMovementDuringJump = true;
-    float CharacterSpeed = 6.0f;
-    float JumpSpeed = 6.0f;
+    struct MovementSettings {
+      float MaxSpeed;
+      float Acceleration;
+      float Deceleration;
 
-    float Friction = 0.5f;
+      MovementSettings(float maxSpeed, float accel, float decel)
+        : MaxSpeed(maxSpeed), Acceleration(accel), Deceleration(decel) { }
+    };
+
+    bool Interpolation = true;
+
+    JPH::Vec3 CurrentVelocity = {};
+    bool ControlMovementDuringJump = true;
+    float JumpForce = 8.0f;
+    bool AutoBunnyHop = true;
+    float AirControl = 0.3f;
+    MovementSettings GroundSettings = MovementSettings(7, 14, 10);
+    MovementSettings AirSettings = MovementSettings(7, 2, 2);
+    MovementSettings StrafeSettings = MovementSettings(1, 50, 50);
+
+    float Friction = 6.0f;
+    float Gravity = 20;
     float CollisionTolerance = 0.05f;
+
+    // For interpolation/extrapolation
+    Vec3 PreviousTranslation = Vec3(0.0f);
+    glm::quat PreviousRotation = Vec3(0.0f);
+    Vec3 Translation = Vec3(0.0f);
+    glm::quat Rotation = Vec3(0.0f);
 
     CharacterControllerComponent() = default;
   };

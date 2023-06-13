@@ -220,9 +220,8 @@ namespace Oxylus {
       node["CharacterHeightCrouching"] << component.CharacterHeightCrouching;
 
       // Movement
-      node["CharacterSpeed"] << component.CharacterSpeed;
       node["ControlMovementDuringJump"] << component.ControlMovementDuringJump;
-      node["JumpSpeed"] << component.JumpSpeed;
+      node["JumpForce"] << component.JumpForce;
 
       node["Friction"] << component.Friction;
       node["CollisionTolerance"] << component.CollisionTolerance;
@@ -456,9 +455,8 @@ namespace Oxylus {
       node["CharacterHeightCrouching"] >> component.CharacterHeightCrouching;
 
       // Movement
-      node["CharacterSpeed"] >> component.CharacterSpeed;
       node["ControlMovementDuringJump"] >> component.ControlMovementDuringJump;
-      node["JumpSpeed"] >> component.JumpSpeed;
+      node["JumpForce"] >> component.JumpForce;
 
       node["Friction"] >> component.Friction;
       node["CollisionTolerance"] >> component.CollisionTolerance;

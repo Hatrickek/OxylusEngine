@@ -22,6 +22,9 @@ namespace OxylusRuntime {
   RuntimeLayer::~RuntimeLayer() = default;
 
   void RuntimeLayer::OnAttach(EventDispatcher& dispatcher) {
+    auto& style = ImGui::GetStyle();
+    style.WindowMenuButtonPosition = ImGuiDir_Left;
+
     dispatcher.sink<ReloadSceneEvent>().connect<&RuntimeLayer::OnSceneReload>(*this);
     LoadScene();
   }
@@ -60,8 +63,7 @@ namespace OxylusRuntime {
 
     m_Scene->OnRuntimeStart();
 
-    m_Scene->AddSystem<FPSCamera>()
-           ->AddSystem<CharacterSystem>();
+    m_Scene->AddSystem<CharacterSystem>();
   }
 
   bool RuntimeLayer::OnSceneReload(ReloadSceneEvent&) {

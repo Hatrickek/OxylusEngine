@@ -23,20 +23,10 @@ namespace Oxylus {
     }
     if (e.HasComponent<CharacterControllerComponent>()) {
       const auto& ch = e.GetComponent<CharacterControllerComponent>();
-      Vec3 pos;
-      Vec3 rot;
-      if (ch.Character) {
-        pos = glm::make_vec3(ch.Character->GetPosition(false).mF32);
-        rot = glm::make_vec3(ch.Character->GetRotation(false).GetEulerAngles().mF32);
-      }
-      else {
-        pos = tc.Translation;
-        rot = tc.Rotation;
-      }
-      DebugRenderer::DrawSphere(pos,
+      DebugRenderer::DrawSphere(tc.Translation,
         Vec3(ch.CharacterRadiusStanding, 0.5f * ch.CharacterHeightStanding, ch.CharacterRadiusStanding),
         Vec4(0, 1, 0, 1),
-        rot);
+        tc.Rotation);
     }
   }
 }
