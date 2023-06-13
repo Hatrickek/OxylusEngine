@@ -39,7 +39,7 @@ namespace Oxylus {
     parNode["UseSpecular"] << Parameters.UseSpecular;
     parNode["FlipImage"] << Parameters.FlipImage;
     parNode["DoubleSided"] << Parameters.DoubleSided;
-    parNode["DoubleSided"] << Parameters.UVScale;
+    parNode["UVScale"] << Parameters.UVScale;
 
     auto textureNode = nodeRoot["Textures"];
     textureNode |= ryml::MAP;
