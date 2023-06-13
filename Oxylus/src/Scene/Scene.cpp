@@ -66,7 +66,7 @@ namespace Oxylus {
   void Scene::UpdatePhysics(Timestep deltaTime) {
     OX_SCOPED_ZONE;
     // Minimum stable value is 16.0
-    constexpr float physicsStepRate = 60.0f;
+    constexpr float physicsStepRate = 64.0f;
     constexpr float physicsTs = 1.0f / physicsStepRate;
 
     bool stepped = false;
@@ -123,11 +123,34 @@ namespace Oxylus {
 
     // Character
     {
-      const auto group = m_Registry.group<TransformComponent, CharacterControllerComponent>();
-      for (auto&& [e, tc, ch] : group.each()) {
+      const auto chView = m_Registry.view<TransformComponent, CharacterControllerComponent>();
+      for (auto&& [e, tc, ch] : chView.each()) {
         ch.Character->PostSimulation(ch.CollisionTolerance);
-        tc.Translation = glm::make_vec3(ch.Character->GetPosition().mF32);
-        tc.Rotation = glm::make_vec3(ch.Character->GetRotation().GetEulerAngles().mF32);
+        if (ch.Interpolation) {
+          if (stepped) {
+            JPH::Vec3 position = ch.Character->GetPosition();
+            JPH::Vec3 rotation = ch.Character->GetRotation().GetEulerAngles();
+
+            ch.PreviousTranslation = ch.Translation;
+            ch.PreviousRotation = ch.Rotation;
+            ch.Translation = {position.GetX(), position.GetY(), position.GetZ()};
+            ch.Rotation = glm::vec3(rotation.GetX(), rotation.GetY(), rotation.GetZ());
+          }
+
+          tc.Translation = glm::lerp(ch.PreviousTranslation, ch.Translation, interpolationFactor);
+          tc.Rotation = glm::eulerAngles(glm::slerp(ch.PreviousRotation, ch.Rotation, interpolationFactor));
+        }
+        else {
+          const JPH::Vec3 position = ch.Character->GetPosition();
+          JPH::Vec3 rotation = ch.Character->GetRotation().GetEulerAngles();
+
+          ch.PreviousTranslation = ch.Translation;
+          ch.PreviousRotation = ch.Rotation;
+          ch.Translation = {position.GetX(), position.GetY(), position.GetZ()};
+          ch.Rotation = glm::vec3(rotation.GetX(), rotation.GetY(), rotation.GetZ());
+          tc.Translation = ch.Translation;
+          tc.Rotation = glm::eulerAngles(ch.Rotation);
+        }
         PhysicsUtils::DebugDraw(this, e);
       }
     }
