@@ -37,6 +37,9 @@ Or with `cmake -B ./build -DCMAKE_BUILD_TYPE=Release -DCMAKE_CXX_COMPILER=clang+
 - Then run this command to build it with CMake:   
 `cmake --build ./build --config Release`   
 - Vulkan SDK must be installed and VULKAN_SDK env path must be set in order to build the project (It is most of the time automatically set by the Vulkan SDK installer).  
+- NOTE: If you don't have shaderc installed with VulkanSDK then you can pass `-DSHADERC_FROM_SOURCE` and build shaderc from source instead of getting it from the SDK.
+
+
 
 ## Dependencies
 - [Vulkan SDK](https://www.lunarg.com/vulkan-sdk/)

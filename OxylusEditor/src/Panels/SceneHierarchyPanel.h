@@ -31,7 +31,7 @@ namespace Oxylus {
     Entity m_DeletedEntity;
     void DrawContextMenu();
 
-    Ref<Scene> m_Context;
+    Ref<Scene> m_Context = nullptr;
 
     ImGuiTextFilter m_Filter;
   };

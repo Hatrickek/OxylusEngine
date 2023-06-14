@@ -56,12 +56,14 @@ namespace Oxylus {
     m_ViewportPanels.emplace_back(CreateScope<ViewportPanel>())->Camera.SetPosition({-2, 2, 0});
 
     // Register panel events
-    m_ConsolePanel.Events.StyleEditorEvent.emplace_back([this] {
-      m_ShowStyleEditor = !m_ShowStyleEditor;
-    });
-    m_ConsolePanel.Events.DemoWindowEvent.emplace_back([this] {
-      m_ShowDemoWindow = !m_ShowDemoWindow;
-    });
+    m_ConsolePanel.m_RuntimeConsole.RegisterCommand("show_style_editor",
+      [this] {
+        m_ShowStyleEditor = !m_ShowStyleEditor;
+      });
+    m_ConsolePanel.m_RuntimeConsole.RegisterCommand("show_imgui_demo",
+      [this] {
+        m_ShowDemoWindow = !m_ShowDemoWindow;
+      });
     SetEditorScene(m_EditorScene);
   }
 
@@ -81,8 +83,6 @@ namespace Oxylus {
         continue;
       panel->OnUpdate();
     }
-    if (m_ConsolePanel.Visible)
-      m_ConsolePanel.OnUpdate();
     if (m_SceneHierarchyPanel.Visible)
       m_SceneHierarchyPanel.OnUpdate();
     if (m_AssetsPanel.Visible)
@@ -204,7 +204,7 @@ namespace Oxylus {
           }
           ImGui::MenuItem("Inspector", nullptr, &m_InspectorPanel.Visible);
           ImGui::MenuItem("Scene hierarchy", nullptr, &m_SceneHierarchyPanel.Visible);
-          ImGui::MenuItem("Console window", nullptr, &m_ConsolePanel.Visible);
+          ImGui::MenuItem("Console window", nullptr, &m_ConsolePanel.m_RuntimeConsole.Visible);
           ImGui::MenuItem("Performance Overlay", nullptr, &m_ViewportPanels[0]->PerformanceOverlayVisible);
           ImGui::MenuItem("Statistics", nullptr, &m_EditorPanels["StatisticsPanel"]->Visible);
           ImGui::MenuItem("Editor Debug", nullptr, &m_EditorPanels["EditorDebugPanel"]->Visible);
@@ -450,7 +450,7 @@ namespace Oxylus {
       m_SceneHierarchyPanel.OnImGuiRender();
     if (m_InspectorPanel.Visible)
       m_InspectorPanel.OnImGuiRender();
-    if (m_ConsolePanel.Visible)
+    if (m_ConsolePanel.m_RuntimeConsole.Visible)
       m_ConsolePanel.OnImGuiRender();
     if (m_AssetsPanel.Visible)
       m_AssetsPanel.OnImGuiRender();
