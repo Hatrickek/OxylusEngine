@@ -186,7 +186,7 @@ namespace Oxylus {
       ktxResult result = ktxTexture1_CreateFromNamedFile(path.c_str(), KTX_TEXTURE_CREATE_NO_FLAGS, &kTexture1);
 
       if (result != KTX_SUCCESS)
-        OX_CORE_ERROR("Couldn't load the KTX texture file. {}", ktxErrorString(result));
+        OX_CORE_ERROR("Couldn't load the KTX texture file. {0}, {1}", path, ktxErrorString(result));
 
       result = ktxTexture1_VkUploadEx(kTexture1,
         &kvdi,
@@ -196,7 +196,7 @@ namespace Oxylus {
         static_cast<VkImageLayout>(m_ImageDescription.FinalImageLayout));
 
       if (result != KTX_SUCCESS)
-        OX_CORE_ERROR("Failed to upload the ktx texture. {}", ktxErrorString(result));
+        OX_CORE_ERROR("Failed to upload the ktx texture. {0}, {1}", path, ktxErrorString(result));
 
       m_ImageDescription.Width = kTexture1->baseWidth;
       m_ImageDescription.Height = kTexture1->baseHeight;
@@ -209,7 +209,7 @@ namespace Oxylus {
       ktxResult result = ktxTexture2_CreateFromNamedFile(path.c_str(), KTX_TEXTURE_CREATE_NO_FLAGS, &kTexture2);
 
       if (result != KTX_SUCCESS)
-        OX_CORE_ERROR("Couldn't load the KTX texture file. {}", ktxErrorString(result));
+        OX_CORE_ERROR("Couldn't load the KTX texture file. {0}, {1}", path, ktxErrorString(result));
       result = ktxTexture2_VkUploadEx(kTexture2,
         &kvdi,
         &texture,
@@ -218,7 +218,7 @@ namespace Oxylus {
         static_cast<VkImageLayout>(m_ImageDescription.FinalImageLayout));
 
       if (result != KTX_SUCCESS)
-        OX_CORE_ERROR("Failed to upload the ktx texture. {}", ktxErrorString(result));
+        OX_CORE_ERROR("Failed to upload the ktx texture. {0}, {1}", path, ktxErrorString(result));
 
       m_ImageDescription.Width = kTexture2->baseWidth;
       m_ImageDescription.Height = kTexture2->baseHeight;
