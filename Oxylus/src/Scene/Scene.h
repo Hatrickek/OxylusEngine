@@ -8,7 +8,6 @@
 #include "Core/UUID.h"
 #include "Core/Systems/System.h"
 #include "entt/entt.hpp"
-#include "Jolt/Core/JobSystemThreadPool.h"
 #include "Jolt/Physics/PhysicsSystem.h"
 #include "Jolt/Physics/Body/BodyInterface.h"
 #include "Physics/PhyiscsInterfaces.h"
@@ -69,7 +68,7 @@ namespace Oxylus {
     // Physics
     void UpdatePhysics(Timestep deltaTime);
     void CreateRigidbody(Entity entity, const TransformComponent& transform, RigidbodyComponent& component) const;
-    void CreateCharacterController(Entity entity, const TransformComponent& transform, CharacterControllerComponent& component) const;
+    void CreateCharacterController(const TransformComponent& transform, CharacterControllerComponent& component) const;
 
     void RenderScene();
     template <typename T>

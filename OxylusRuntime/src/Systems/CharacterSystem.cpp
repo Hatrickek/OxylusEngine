@@ -256,9 +256,9 @@ namespace OxylusRuntime {
     }
 
     Accelerate(velocity, args.WishDir, wishspeed, accel);
-    if (args.CharacterController.AirControl > 0) {
+    /*if (args.CharacterController.AirControl > 0) {
       AirControl(velocity, args.WishDir, args.WishDir, wishspeed2, args.CharacterController.AirControl);
-    }
+    }*/
 
     // Apply gravity
     velocity.SetY(velocity.GetY() - args.CharacterController.Gravity * deltaTime);

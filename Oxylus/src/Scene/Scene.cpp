@@ -267,7 +267,7 @@ namespace Oxylus {
       {
         const auto group = m_Registry.group<CharacterControllerComponent>(entt::get<TransformComponent>);
         for (auto&& [e, ch, tc] : group.each()) {
-          CreateCharacterController({e, this}, tc, ch);
+          CreateCharacterController(tc, ch);
         }
       }
 
@@ -479,7 +479,7 @@ namespace Oxylus {
     component.RuntimeBody = body;
   }
 
-  void Scene::CreateCharacterController(Entity entity, const TransformComponent& transform, CharacterControllerComponent& component) const {
+  void Scene::CreateCharacterController(const TransformComponent& transform, CharacterControllerComponent& component) const {
     if (!m_IsRunning)
       return;
     auto position = JPH::Vec3(transform.Translation.x, transform.Translation.y, transform.Translation.z);
@@ -671,6 +671,6 @@ namespace Oxylus {
 
   template <>
   void Scene::OnComponentAdded<CharacterControllerComponent>([[maybe_unused]] Entity entity, [[maybe_unused]] CharacterControllerComponent& component) {
-    CreateCharacterController(entity, entity.GetComponent<TransformComponent>(), component);
+    CreateCharacterController(entity.GetComponent<TransformComponent>(), component);
   }
 }

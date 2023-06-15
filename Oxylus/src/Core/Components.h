@@ -233,7 +233,7 @@ namespace Oxylus {
     float AirControl = 0.3f;
     MovementSettings GroundSettings = MovementSettings(7, 14, 10);
     MovementSettings AirSettings = MovementSettings(7, 2, 2);
-    MovementSettings StrafeSettings = MovementSettings(1, 50, 50);
+    MovementSettings StrafeSettings = MovementSettings(0.0f, 50, 50);
 
     float Friction = 6.0f;
     float Gravity = 20;
