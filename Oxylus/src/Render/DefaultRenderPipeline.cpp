@@ -287,6 +287,11 @@ namespace Oxylus {
     GeneratePrefilter();
     m_SkyboxDescriptorSet.WriteDescriptorSets[1].pImageInfo = &m_Resources.CubeMap->GetDescImageInfo();
     m_SkyboxDescriptorSet.Update();
+
+    Material::s_DescriptorSet.WriteDescriptorSets[4].pImageInfo = &m_Resources.IrradianceCube.GetDescImageInfo();
+    Material::s_DescriptorSet.WriteDescriptorSets[5].pImageInfo = &m_Resources.LutBRDF.GetDescImageInfo();
+    Material::s_DescriptorSet.WriteDescriptorSets[6].pImageInfo = &m_Resources.PrefilteredCube.GetDescImageInfo();
+    Material::s_DescriptorSet.Update();
   }
 
   void DefaultRenderPipeline::UpdateCascades(const Entity& dirLightEntity, Camera* camera, RendererData::DirectShadowUB& cascadesUbo) const {
