@@ -51,7 +51,7 @@ namespace Oxylus {
   }
 
   void RuntimeConsole::AddLog(const char* fmt, spdlog::level::level_enum level) {
-    m_TextBuffer.emplace_back(fmt);
+    m_TextBuffer.emplace_back(ConsoleText{fmt});
   }
 
   void RuntimeConsole::ClearLog() {
