@@ -9,7 +9,7 @@
 #include "Core/Resources.h"
 #include "PBR/Prefilter.h"
 #include "Utils/Profiler.h"
-#include "Utils/TimeStep.h"
+#include "Utils/Timestep.h"
 #include "Vulkan/VulkanContext.h"
 
 #include "Vulkan/VulkanRenderer.h"

@@ -9,7 +9,7 @@
 #include "Systems/SystemManager.h"
 #include "Thread/ThreadManager.h"
 #include "Utils/Log.h"
-#include "Utils/TimeStep.h"
+#include "Utils/Timestep.h"
 
 int main(int argc,
          char** argv);

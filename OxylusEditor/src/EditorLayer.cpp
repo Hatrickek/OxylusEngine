@@ -378,7 +378,8 @@ namespace Oxylus {
     {
       ImGuiScoped::StyleVar st(ImGuiStyleVar_FramePadding, {0, 8});
       ImGui::Image(Resources::s_EditorResources.EngineIcon.GetDescriptorSet(), {30, 30});
-      ImGui::Text(Application::Get().Spec.Name.c_str());
+      auto name = Application::Get().Spec.Name;
+      ImGui::Text("%s", name.c_str());
     }
 
     ImGui::SameLine();

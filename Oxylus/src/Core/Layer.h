@@ -3,7 +3,7 @@
 #include <string>
 #include <Event/Event.h>
 
-#include "Utils/TimeStep.h"
+#include "Utils/Timestep.h"
 
 namespace Oxylus {
   class Layer {

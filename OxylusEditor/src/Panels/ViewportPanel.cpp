@@ -10,7 +10,7 @@
 #include "UI/IGUI.h"
 #include "Utils/OxMath.h"
 #include "Utils/StringUtils.h"
-#include "Utils/TimeStep.h"
+#include "Utils/Timestep.h"
 
 namespace Oxylus {
   ViewportPanel::ViewportPanel() : EditorPanel("Viewport", ICON_MDI_TERRAIN, true) {

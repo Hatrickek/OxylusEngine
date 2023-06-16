@@ -35,7 +35,7 @@ namespace Oxylus {
   void IGUI::Text(const char* text1, const char* text2, const char* tooltip) {
     BeginPropertyGrid(text1, tooltip);
     ImGui::SetCursorPosY(ImGui::GetCursorPosY() + ImGui::GetStyle().FramePadding.y * 0.5f);
-    ImGui::Text(text2);
+    ImGui::Text("%s", text2);
     EndPropertyGrid();
   }
 
@@ -388,7 +388,7 @@ namespace Oxylus {
     ImGui::TableNextColumn();
 
     if (rightAlignNextColumn)
-      ImGui::SetNextItemWidth(-FLT_MIN);
+      ImGui::SetNextItemWidth(-1);
 
     s_IDBuffer[0] = '#';
     s_IDBuffer[1] = '#';

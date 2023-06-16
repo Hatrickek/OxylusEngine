@@ -12,7 +12,7 @@
 #include "UI/IGUI.h"
 #include "Utils/FileWatch.h"
 #include "Utils/StringUtils.h"
-#include "Utils/TimeStep.h"
+#include "Utils/Timestep.h"
 #include "Utils/UIUtils.h"
 #include "Utils/Profiler.h"
 
