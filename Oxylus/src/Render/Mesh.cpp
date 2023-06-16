@@ -194,7 +194,7 @@ namespace Oxylus {
       desc.CreateDescriptorSet = true;
       desc.Width = img.width;
       desc.Height = img.height;
-      //desc.MipLevels = VulkanImage::GetMaxMipmapLevel(img.width, img.height, 1) - 1;
+      //desc.GenerateMips = true;
       if (IsImageKtx(img) || !img.uri.empty()) {
         desc.Path = (std::filesystem::path(Path).remove_filename() / img.uri).string();
         m_Textures[i] = AssetManager::GetImageAsset(desc).Data;

@@ -283,6 +283,8 @@ namespace Oxylus {
       node["Mesh"] >> meshPath;
       node["SubmeshIndex"] >> submeshIndex;
 
+      meshPath = FileUtils::GetPreferredPath(meshPath);
+
       deserializedEntity.AddComponent<MeshRendererComponent>(AssetManager::GetMeshAsset(meshPath).Data).SubmesIndex = submeshIndex;
     }
 
@@ -296,6 +298,7 @@ namespace Oxylus {
         node["Path"] >> assetPath;
 
       if (!assetPath.empty()) {
+        assetPath = FileUtils::GetPreferredPath(assetPath);
         mc.Materials.clear();
         mc.Materials.emplace_back(AssetManager::GetMaterialAsset(assetPath).Data);
         mc.UsingMaterialAsset = true;
@@ -326,7 +329,7 @@ namespace Oxylus {
 
       if (!path.empty()) {
         VulkanImageDescription CubeMapDesc;
-        CubeMapDesc.Path = path;
+        CubeMapDesc.Path = FileUtils::GetPreferredPath(path);
         CubeMapDesc.Type = ImageType::TYPE_CUBE;
         light.Cubemap = AssetManager::GetImageAsset(CubeMapDesc).Data;
         scene->GetRenderer().Dispatcher.trigger(SceneRenderer::SkyboxLoadEvent{light.Cubemap});

@@ -131,6 +131,7 @@ namespace Oxylus {
     std::string path{};
     if (parentNode.has_child(ryml::to_csubstr(nodeName))) {
       parentNode[ryml::to_csubstr(nodeName)] >> path;
+      path = FileUtils::GetPreferredPath(path);
       desc.Path = path;
       texture = AssetManager::GetImageAsset(desc).Data;
     }

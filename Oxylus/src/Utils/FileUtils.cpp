@@ -19,4 +19,8 @@ namespace Oxylus {
 
     return buffer.str();
   }
+
+  std::string FileUtils::GetPreferredPath(const std::string& path) {
+    return std::filesystem::path(path).make_preferred().string();
+  }
 }
