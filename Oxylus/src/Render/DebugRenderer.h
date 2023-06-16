@@ -35,7 +35,7 @@ namespace Oxylus {
 
     static void Init();
     static void Release();
-    static void Reset();
+    static void Reset(bool clearNDT = true);
 
     /// Note: 'NDT' parameter: No Depth Testing.
 

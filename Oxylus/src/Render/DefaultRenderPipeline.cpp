@@ -628,7 +628,6 @@ namespace Oxylus {
         m_ForceUpdateMaterials = false;
         m_MeshDrawList.clear();
 
-        // Debug pass
         auto& shapes = DebugRenderer::GetInstance()->GetShapes();
 
         struct DebugPassData {
@@ -648,10 +647,43 @@ namespace Oxylus {
           shape.Mesh->Draw(commandBuffer.Get());
         }
 
-        DebugRenderer::Reset();
+        DebugRenderer::Reset(false);
       },
       {clearValues},
       &VulkanContext::VulkanQueue.GraphicsQueue);
+
+    pbrPass.AddInnerPass(RenderGraphPass(
+      "Debug Renderer NDT Pass",
+      {&m_RendererContext.PBRPassCommandBuffer},
+      &m_Pipelines.DebugRenderPipelineNDT,
+      {&m_FrameBuffers.PBRPassFB},
+      [this](VulkanCommandBuffer& commandBuffer, int32_t) {
+        // Not depth tested pass
+
+        auto& shapes = DebugRenderer::GetInstance()->GetShapes(false);
+
+        struct DebugPassData {
+          Mat4 ViewProjection = {};
+          Mat4 Model = {};
+          Vec4 Color = {};
+        } pushConst;
+
+        m_Pipelines.DebugRenderPipelineNDT.BindPipeline(commandBuffer.Get());
+        const auto& debugLayout = m_Pipelines.DebugRenderPipelineNDT.GetPipelineLayout();
+
+        pushConst.ViewProjection = m_RendererContext.CurrentCamera->GetProjectionMatrixFlipped() * m_RendererContext.CurrentCamera->GetViewMatrix();
+        for (auto& shape : shapes) {
+          pushConst.Model = shape.ModelMatrix;
+          pushConst.Color = shape.Color;
+          commandBuffer.PushConstants(debugLayout, vk::ShaderStageFlagBits::eVertex, 0, sizeof(DebugPassData), &pushConst);
+          shape.Mesh->Draw(commandBuffer.Get());
+        }
+
+        DebugRenderer::Reset();
+      },
+      clearValues,
+      &VulkanContext::VulkanQueue.GraphicsQueue
+    ));
     pbrPass.AddToGraph(m_RenderGraph);
 
     RenderGraphPass ssrPass(
@@ -1066,17 +1098,22 @@ namespace Oxylus {
     m_Pipelines.DirectShadowDepthPipeline.CreateGraphicsPipeline(directShadowPipelineDescription);
 
     PipelineDescription debugDescription;
+    debugDescription.Name = "Debug Renderer Pipeline";
     debugDescription.Shader = unlitShader.get();
     debugDescription.ColorAttachmentCount = 1;
-    debugDescription.DepthDesc.DepthWriteEnable = false;
-    debugDescription.DepthDesc.DepthEnable = false;
-    debugDescription.RasterizerDesc.CullMode = vk::CullModeFlagBits::eNone;
+    debugDescription.DepthDesc.DepthEnable = true;
+    debugDescription.DepthDesc.DepthReferenceAttachment = 1;
+    debugDescription.RasterizerDesc.CullMode = vk::CullModeFlagBits::eBack;
     debugDescription.RasterizerDesc.FillMode = vk::PolygonMode::eLine;
     debugDescription.RasterizerDesc.LineWidth = 1.0f;
     debugDescription.VertexInputState = VertexInputDescription(VertexLayout({
       VertexComponent::POSITION, VertexComponent::NORMAL, VertexComponent::UV, VertexComponent::COLOR
     }));
     m_Pipelines.DebugRenderPipeline.CreateGraphicsPipeline(debugDescription);
+
+    debugDescription.RenderTargets[0].InitialLayout = vk::ImageLayout::eShaderReadOnlyOptimal;
+    debugDescription.RenderTargets[0].LoadOp = vk::AttachmentLoadOp::eLoad;
+    m_Pipelines.DebugRenderPipelineNDT.CreateGraphicsPipeline(debugDescription);
 
     PipelineDescription ssaoDescription;
     ssaoDescription.Name = "SSAO Pipeline";

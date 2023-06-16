@@ -8,7 +8,6 @@
 #include <entt.hpp>
 
 #include "Systems/CharacterSystem.h"
-#include "Systems/FPSCamera.h"
 #include "Systems/FreeCamera.h"
 
 namespace OxylusRuntime {

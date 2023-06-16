@@ -28,17 +28,19 @@ namespace Oxylus {
     s_Instance = nullptr;
   }
 
-  void DebugRenderer::Reset() {
+  void DebugRenderer::Reset(bool clearNDT) {
     OX_SCOPED_ZONE;
     s_Instance->m_DrawList.m_DebugLines.clear();
     s_Instance->m_DrawList.m_DebugThickLines.clear();
     s_Instance->m_DrawList.m_DebugPoints.clear();
     s_Instance->m_DrawList.m_DebugShapes.clear();
 
-    s_Instance->m_DrawListNDT.m_DebugLines.clear();
-    s_Instance->m_DrawListNDT.m_DebugThickLines.clear();
-    s_Instance->m_DrawListNDT.m_DebugPoints.clear();
-    s_Instance->m_DrawListNDT.m_DebugShapes.clear();
+    if (clearNDT) {
+      s_Instance->m_DrawListNDT.m_DebugLines.clear();
+      s_Instance->m_DrawListNDT.m_DebugThickLines.clear();
+      s_Instance->m_DrawListNDT.m_DebugPoints.clear();
+      s_Instance->m_DrawListNDT.m_DebugShapes.clear();
+    }
   }
 
   void DebugRenderer::DrawPoint(const Vec3& pos, float pointRadius, const Vec4& color, bool ndt) {
