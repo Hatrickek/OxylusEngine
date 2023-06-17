@@ -23,11 +23,13 @@ namespace Oxylus {
       return s_WindowData.ScreenExtent;
     }
 
+    static bool IsFocused();
     static bool IsMinimized();
     static void Minimize();
     static void Maximize();
     static bool IsMaximized();
     static void Restore();
+
     static void WaitForEvents();
 
   private:

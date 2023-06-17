@@ -70,6 +70,10 @@ namespace Oxylus {
     return s_WindowHandle;
   }
 
+  bool Window::IsFocused() {
+    return glfwGetWindowAttrib(GetGLFWWindow(), GLFW_FOCUSED);
+  }
+
   bool Window::IsMinimized() {
     return glfwGetWindowAttrib(GetGLFWWindow(), GLFW_ICONIFIED);
   }
