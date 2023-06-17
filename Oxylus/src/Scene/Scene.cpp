@@ -493,7 +493,7 @@ namespace Oxylus {
     settings->mMaxSlopeAngle = JPH::DegreesToRadians(45.0f);
     settings->mLayer = PhysicsLayers::MOVING;
     settings->mShape = capsuleShape;
-    settings->mFriction = component.Friction;
+    settings->mFriction = 0.0f; // For now this is not set. 
     settings->mSupportingVolume = JPH::Plane(JPH::Vec3::sAxisY(), -component.CharacterRadiusStanding); // Accept contacts that touch the lower sphere of the capsule
     component.Character = new JPH::Character(settings.get(), position, JPH::Quat::sIdentity(), 0, Physics::GetPhysicsSystem());
     component.Character->AddToPhysicsSystem(JPH::EActivation::Activate);
