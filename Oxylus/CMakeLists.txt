@@ -221,6 +221,11 @@ endif()
 include(FetchContent)
 
 # Vulkan
+if (VULKAN_SDK)
+    message("Within Oxylus CMake, setting VULKAN_SDK env var to " ${VULKAN_SDK})
+    set(ENV{VULKAN_SDK} ${VULKAN_SDK})
+endif()
+
 find_package(Vulkan REQUIRED)
 target_link_libraries(${PROJECT_NAME} PUBLIC Vulkan::Vulkan)
 target_include_directories(${PROJECT_NAME} PUBLIC ${Vulkan_INCLUDE_DIRS})
