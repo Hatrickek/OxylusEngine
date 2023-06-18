@@ -65,10 +65,6 @@ set(ALL_FILES
 # Target
 add_library(${PROJECT_NAME} STATIC ${ALL_FILES})
 
-target_precompile_headers(${PROJECT_NAME} PRIVATE
-  "$<$<COMPILE_LANGUAGE:CXX>:${CMAKE_CURRENT_SOURCE_DIR}/src/oxpch.h>"
-  )
-
 set(ROOT_NAMESPACE Oxylus)
 
 set_target_properties(${PROJECT_NAME} PROPERTIES

@@ -78,7 +78,6 @@ jobs:
       with:
         arch: ${{ matrix.arch }}
         vsversion: 2022
-        toolset: 17.4
     - name: Add msbuild to PATH
       uses: microsoft/setup-msbuild@v1.3
     - name: Configure CMake
@@ -96,35 +95,35 @@ jobs:
     #      ${{github.workspace}}/build/Oxylus/Release/Oxylus.lib
     #      ${{github.workspace}}/build/OxylusEditor/Release/OxylusEditor.exe
 
-  mac_clang:
-    runs-on: macos-latest
-    name: Mac Clang
-    strategy:
-        fail-fast: false
-        matrix:
-            build_type: [Release]
-  
-    steps:
-    - name: Checkout Code
-      uses: actions/checkout@v3
-      with:
-        submodules: recursive
-    - name: Install Vulkan SDK
-      uses: humbletim/install-vulkan-sdk@v1.1.1
-      with:
-        version: ${{env.VULKAN_VERSION}}
-        cache: true
-    - name: Configure CMake
-      run: cmake -B ${{github.workspace}}/build -DCMAKE_BUILD_TYPE=${{env.BUILD_TYPE}}
-    - name: Build
-      run: cmake --build ./build --config ${{env.BUILD_TYPE}}
-    #- name: "Release"
-    #  uses: "marvinpinto/action-automatic-releases@latest"
-    #  with:
-    #    repo_token: "${{ secrets.GITHUB_TOKEN }}"
-    #    automatic_release_tag: "latest"
-    #    prerelease: true
-    #    title: "Development Build"
-    #    files: |
-    #      build/Oxylus/Release/Oxylus
-    #      build/OxylusEditor/Release/OxylusEditor
+  #mac_clang:
+  #  runs-on: macos-latest
+  #  name: Mac Clang
+  #  strategy:
+  #      fail-fast: false
+  #      matrix:
+  #          build_type: [Release]
+  #
+  #  steps:
+  #  - name: Checkout Code
+  #    uses: actions/checkout@v3
+  #    with:
+  #      submodules: recursive
+  #  - name: Install Vulkan SDK
+  #    uses: humbletim/install-vulkan-sdk@v1.1.1
+  #    with:
+  #      version: ${{env.VULKAN_VERSION}}
+  #      cache: true
+  #  - name: Configure CMake
+  #    run: cmake -B ${{github.workspace}}/build -DCMAKE_BUILD_TYPE=${{env.BUILD_TYPE}}
+  #  - name: Build
+  #    run: cmake --build ./build --config ${{env.BUILD_TYPE}}
+  #  #- name: "Release"
+  #  #  uses: "marvinpinto/action-automatic-releases@latest"
+  #  #  with:
+  #  #    repo_token: "${{ secrets.GITHUB_TOKEN }}"
+  #  #    automatic_release_tag: "latest"
+  #  #    prerelease: true
+  #  #    title: "Development Build"
+  #  #    files: |
+  #  #      build/Oxylus/Release/Oxylus
+  #  #      build/OxylusEditor/Release/OxylusEditor
