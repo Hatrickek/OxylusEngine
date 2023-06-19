@@ -1,5 +1,4 @@
-﻿#include "src/oxpch.h"
-#include "RuntimeConsole.h"
+﻿#include "RuntimeConsole.h"
 
 #include <icons/IconsMaterialDesignIcons.h>
 
@@ -11,9 +10,10 @@
 namespace Oxylus {
   static ImVec4 GetColor(const spdlog::level::level_enum level) {
     switch (level) {
-      case SPDLOG_LEVEL_INFO: return {1, 1, 1, 1};
-      case SPDLOG_LEVEL_WARN: return {0.2f, 0, 0, 1};
-      case SPDLOG_LEVEL_ERROR: return {1, 0, 0, 1};
+      case spdlog::level::info: return {0, 1, 0, 1};
+      case spdlog::level::warn: return {0.2f, 0, 0, 1};
+      case spdlog::level::err: return {1, 0, 0, 1};
+      case spdlog::level::trace: return {1, 1, 1, 1};
       default: return {1, 1, 1, 1};
     }
   }
@@ -42,12 +42,12 @@ namespace Oxylus {
     });
 
     // Default commands
-    RegisterCommand("quit", [] { Application::Get().Close(); });
-    RegisterCommand("clear", [this] { ClearLog(); });
+    RegisterCommand("quit", "", [] { Application::Get()->Close(); });
+    RegisterCommand("clear", "", [this] { ClearLog(); });
   }
 
-  void RuntimeConsole::RegisterCommand(const std::string& command, const std::function<void()>& action) {
-    m_CommandMap.emplace(command, action);
+  void RuntimeConsole::RegisterCommand(const std::string& command, const std::string& onSuccesLog, const std::function<void()>& action) {
+    m_CommandMap.emplace(command, ConsoleCommand{action, onSuccesLog});
   }
 
   void RuntimeConsole::AddLog(const char* fmt, spdlog::level::level_enum level) {
@@ -78,7 +78,7 @@ namespace Oxylus {
 
       float width = 0;
       if (ImGui::BeginChild("TextTable", ImVec2(0, -35))) {
-        ImGuiScoped::StyleVar style1(ImGuiStyleVar_CellPadding, {1, 1});
+        [[maybe_unused]] ImGuiScoped::StyleVar style1(ImGuiStyleVar_CellPadding, {1, 1});
         if (ImGui::BeginTable("ScrollRegionTable", 1, tableFlags)) {
           width = ImGui::GetWindowSize().x;
           for (auto& text : m_TextBuffer) {
@@ -99,7 +99,7 @@ namespace Oxylus {
                                                  ImGuiInputTextFlags_CallbackHistory |
                                                  ImGuiInputTextFlags_EscapeClearsAll;
       static char s_InputBuf[256];
-      ImGui::PushFont(Application::Get().GetImGuiLayer()->BoldFont);
+      ImGui::PushFont(Application::Get()->GetImGuiLayer()->BoldFont);
       ImGui::SetKeyboardFocusHere();
       if (ImGui::InputText(
         "##",
@@ -149,8 +149,10 @@ namespace Oxylus {
 
   void RuntimeConsole::ProcessCommand(const std::string& command) {
     if (m_CommandMap.contains(command)) {
-      m_CommandMap[command]();
-      AddLog(command.c_str(), spdlog::level::level_enum::info);
+      const auto& c = m_CommandMap[command];
+      c.Action();
+      if (!c.OnSuccesLog.empty())
+        AddLog(c.OnSuccesLog.c_str(), spdlog::level::level_enum::info);
     }
     else {
       AddLog("Non existent command.", spdlog::level::level_enum::err);

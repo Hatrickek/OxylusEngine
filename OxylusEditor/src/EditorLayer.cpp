@@ -57,10 +57,12 @@ namespace Oxylus {
 
     // Register panel events
     m_ConsolePanel.m_RuntimeConsole.RegisterCommand("show_style_editor",
+      "show_style_editor",
       [this] {
         m_ShowStyleEditor = !m_ShowStyleEditor;
       });
     m_ConsolePanel.m_RuntimeConsole.RegisterCommand("show_imgui_demo",
+      "show_imgui_demo",
       [this] {
         m_ShowDemoWindow = !m_ShowDemoWindow;
       });
