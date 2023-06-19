@@ -15,7 +15,7 @@ namespace Oxylus {
     RuntimeConsole();
     ~RuntimeConsole() = default;
 
-    void RegisterCommand(const std::string& command, const std::function<void()>& action);
+    void RegisterCommand(const std::string& command, const std::string& onSuccesLog, const std::function<void()>& action);
     void AddLog(const char* fmt, spdlog::level::level_enum level);
     void ClearLog();
 
@@ -28,8 +28,13 @@ namespace Oxylus {
       void Render() const;
     };
 
+    struct ConsoleCommand {
+      std::function<void()> Action = {};
+      std::string OnSuccesLog = {};
+    };
+
     // Commands
-    std::unordered_map<std::string, std::function<void()>> m_CommandMap;
+    std::unordered_map<std::string, ConsoleCommand> m_CommandMap;
     void ProcessCommand(const std::string& command);
 
     // Input field

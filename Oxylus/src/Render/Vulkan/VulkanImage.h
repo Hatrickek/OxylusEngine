@@ -5,10 +5,8 @@
 #include "VulkanCommandBuffer.h"
 #include "Core/Base.h"
 #include "Core/Types.h"
-#include "Core/Buffer.h"
 
 namespace Oxylus {
-  struct Buffer;
 
   enum class ImageType {
     TYPE_2D,
