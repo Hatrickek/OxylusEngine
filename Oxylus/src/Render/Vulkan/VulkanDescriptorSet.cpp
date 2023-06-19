@@ -1,5 +1,4 @@
-﻿#include "src/oxpch.h"
-#include "VulkanDescriptorSet.h"
+﻿#include "VulkanDescriptorSet.h"
 
 #include "VulkanContext.h"
 #include "VulkanRenderer.h"

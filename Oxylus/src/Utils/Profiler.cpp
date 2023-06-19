@@ -1,7 +1,7 @@
-#include "src/oxpch.h"
 #include "Profiler.h"
 
 #include "Render/Vulkan/VulkanContext.h"
+#include "Core/PlatformDetection.h"
 
 namespace Oxylus {
   TracyVkCtx TracyProfiler::s_VulkanContext;

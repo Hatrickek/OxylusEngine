@@ -1,5 +1,4 @@
-﻿#include "oxpch.h"
-#include "DebugRenderer.h"
+﻿#include "DebugRenderer.h"
 
 #include "Mesh.h"
 #include "Core/Resources.h"

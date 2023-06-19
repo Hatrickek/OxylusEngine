@@ -3,6 +3,7 @@
 #include <vulkan/vulkan.hpp>
 
 #include "VulkanShader.h"
+#include "Core/Base.h"
 
 namespace Oxylus {
   class VulkanPipeline;

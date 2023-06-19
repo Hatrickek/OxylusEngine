@@ -1,9 +1,8 @@
-﻿#include "src/oxpch.h"
-
-#include <vk_mem_alloc.h>
+﻿#include <vk_mem_alloc.h>
 #include "VulkanBuffer.h"
 
 #include "VulkanContext.h"
+#include "Core/Memory.h"
 
 namespace Oxylus {
   VulkanBuffer::~VulkanBuffer() { }

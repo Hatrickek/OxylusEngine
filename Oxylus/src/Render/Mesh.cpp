@@ -1,4 +1,3 @@
-#include "src/oxpch.h"
 #define TINYGLTF_IMPLEMENTATION
 #define STB_IMAGE_IMPLEMENTATION
 #include "Mesh.h"

@@ -1,4 +1,3 @@
-#include "src/oxpch.h"
 #include "OxMath.h"
 
 #define GLM_ENABLE_EXPERIMENTAL

@@ -1,5 +1,4 @@
-﻿#include "src/oxpch.h"
-#include "VulkanUtils.h"
+﻿#include "VulkanUtils.h"
 
 #include <GLFW/glfw3.h>
 

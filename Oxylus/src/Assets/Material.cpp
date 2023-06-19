@@ -1,5 +1,3 @@
-#include "src/oxpch.h"
-
 #include "Material.h"
 
 #include "Core/Resources.h"

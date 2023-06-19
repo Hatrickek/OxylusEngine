@@ -1,10 +1,10 @@
-#include "src/oxpch.h"
 #include "MaterialSerializer.h"
 #include "Material.h"
 #include <fstream>
 
 #include "AssetManager.h"
 #include "Utils/FileUtils.h"
+#include "Utils/Log.h"
 #include "Utils/Profiler.h"
 
 namespace Oxylus {

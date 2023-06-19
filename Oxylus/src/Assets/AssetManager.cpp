@@ -1,4 +1,3 @@
-#include "src/oxpch.h"
 #include "AssetManager.h"
 
 #include "MaterialSerializer.h"

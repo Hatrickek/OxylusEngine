@@ -1,4 +1,3 @@
-#include "src/oxpch.h"
 #include "SceneManager.h"
 
 namespace Oxylus {
@@ -8,7 +7,7 @@ namespace Oxylus {
     return m_ActiveScene;
   }
 
-  void SceneManager::SetActiveScene(Ref <Scene> scene) {
+  void SceneManager::SetActiveScene(const Ref <Scene>& scene) {
     m_ActiveScene = scene;
   }
 }

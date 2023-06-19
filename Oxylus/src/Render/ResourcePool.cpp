@@ -1,5 +1,6 @@
-﻿#include "oxpch.h"
-#include "ResourcePool.h"
+﻿#include "ResourcePool.h"
+
+#include "Utils/Log.h"
 
 namespace Oxylus {
   std::vector<VulkanFramebuffer*> FrameBufferPool::m_Pool;

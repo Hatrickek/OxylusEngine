@@ -1,6 +1,7 @@
 #pragma once
 
 #include "Project.h"
+#include "Base.h"
 
 namespace Oxylus {
   class ProjectSerializer {

@@ -1,13 +1,10 @@
-﻿#include "src/oxpch.h"
-#include "SceneRenderer.h"
+﻿#include "SceneRenderer.h"
 
 #include "Core/Components.h"
-#include "Core/Entity.h"
 
 #include "Render/Vulkan/VulkanRenderer.h"
 
 #include "Utils/Profiler.h"
-#include "Utils/Timestep.h"
 
 namespace Oxylus {
   void SceneRenderer::Init(Scene* scene) {

@@ -3,6 +3,7 @@
 #include "Assets/Assets.h"
 
 #include <filesystem>
+#include <vector>
 
 namespace Oxylus {
   class VulkanImage;

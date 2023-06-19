@@ -1,4 +1,3 @@
-#include "src/oxpch.h"
 #include "Resources.h"
 
 #include "Application.h"

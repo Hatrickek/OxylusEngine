@@ -1,5 +1,6 @@
 ﻿#pragma once
 #include <cstring>
+#include <filesystem>
 
 namespace Oxylus {
   enum class EditorContextType {

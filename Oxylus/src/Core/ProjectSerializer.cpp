@@ -1,11 +1,11 @@
-#include "src/oxpch.h"
 #include "ProjectSerializer.h"
+
+#include "Core/YamlHelpers.h"
+#include <Utils/FileUtils.h>
+#include "Utils/Log.h"
 
 #include <fstream>
 
-#include "Core/YamlHelpers.h"
-
-#include <Utils/FileUtils.h>
 
 namespace Oxylus {
   ProjectSerializer::ProjectSerializer(Ref<Project> project) : m_Project(std::move(project)) { }

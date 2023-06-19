@@ -1,5 +1,4 @@
-﻿#include "oxpch.h"
-#include "PhysicsUtils.h"
+﻿#include "PhysicsUtils.h"
 
 #include <glm/gtc/type_ptr.hpp>
 

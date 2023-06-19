@@ -1,11 +1,9 @@
 #pragma once
 
-#include <oxpch.h>
-
 #include "Core/UUID.h"
-#include "Render/Vulkan/VulkanImage.h"
-
 #include "Core/Base.h"
+
+#include <string>
 
 namespace Oxylus {
   struct VulkanImageDescription;

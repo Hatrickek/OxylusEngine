@@ -1,7 +1,8 @@
 #pragma once
+#include <nfd.h>
 
 #include <string>
-#include <nfd.h>
+#include <vector>
 
 namespace Oxylus {
   class FileDialogs {

@@ -1,4 +1,3 @@
-#include "src/oxpch.h"
 #include "VulkanImage.h"
 #include "VulkanContext.h"
 #include "VulkanRenderer.h"
@@ -10,6 +9,8 @@
 #include <ktx.h>
 #include <ktxvulkan.h>
 #include <stb_image.h>
+
+#include "Core/Memory.h"
 
 namespace Oxylus {
   vk::AccessFlags AccessFlagsForLayout(const vk::ImageLayout layout) {

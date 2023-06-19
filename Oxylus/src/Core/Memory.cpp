@@ -1,4 +1,3 @@
-#include <oxpch.h>
 #include "Memory.h"
 #include "Utils/Profiler.h"
 
@@ -10,23 +9,23 @@ namespace Oxylus {
   uint64_t GPUMemory::TotalFreed = 0;
 }
 
-void Delete(void* _Block, size_t _Size) {
-  Oxylus::Memory::TotalFreed += _Size;
-  OX_FREE(_Block);
-  free(_Block);
+void Delete(void* block, std::size_t size) {
+  Oxylus::Memory::TotalFreed += size;
+  OX_FREE(block);
+  free(block);
 }
 
-void* New(size_t _Size) {
-  Oxylus::Memory::TotalAllocated += _Size;
-  const auto ptr = malloc(_Size);
-  OX_ALLOC(ptr, _Size);
+void* New(std::size_t size) {
+  Oxylus::Memory::TotalAllocated += size;
+  const auto ptr = malloc(size);
+  OX_ALLOC(ptr, size);
   return ptr;
 }
 
-void* operator new(const size_t _Size) {
-  return New(_Size);
+void* operator new(const std::size_t size) {
+  return New(size);
 }
 
-void operator delete(void* _Block, const size_t _Size) {
-  Delete(_Block, _Size);
+void operator delete(void* block, const std::size_t size) {
+  Delete(block, size);
 }

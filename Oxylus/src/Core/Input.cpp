@@ -1,4 +1,3 @@
-#include "src/oxpch.h"
 #include "Input.h"
 #include "Render/Window.h"
 #include "tinygltf/stb_image.h"

@@ -3,6 +3,7 @@
 
 #include <glm/gtx/compatibility.hpp>
 
+#include "Core/Base.h"
 #include "Utils/OxMath.h"
 
 namespace Oxylus {

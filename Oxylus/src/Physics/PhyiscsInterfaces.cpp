@@ -1,5 +1,4 @@
-﻿#include "src/oxpch.h"
-#include "PhyiscsInterfaces.h"
+﻿#include "PhyiscsInterfaces.h"
 
 #include "PhysicsMaterial.h"
 #include "Scene/Scene.h"

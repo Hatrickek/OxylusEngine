@@ -1,4 +1,3 @@
-#include "src/oxpch.h"
 #include "Window.h"
 
 #include "Core/EmbeddedResources.h"
@@ -24,13 +23,13 @@ namespace Oxylus {
     glfwWindowHint(GLFW_CLIENT_API, GLFW_NO_API);
     if (spec.CustomWindowTitle)
       glfwWindowHint(GLFW_DECORATED, GLFW_FALSE);
-    s_WindowHandle = glfwCreateWindow(GetWidth(), GetHeight(), spec.Name.c_str(), nullptr, nullptr);
+    s_WindowHandle = glfwCreateWindow((int)GetWidth(), (int)GetHeight(), spec.Name.c_str(), nullptr, nullptr);
     glfwSetWindowUserPointer(s_WindowHandle, &s_WindowData);
 
     //Load file icon
     {
       int width, height, channels;
-      const auto imageData = stbi_load_from_memory(EngineLogo, EngineLogoLen, &width, &height, &channels, 4);
+      const auto imageData = stbi_load_from_memory(EngineLogo, (int)EngineLogoLen, &width, &height, &channels, 4);
       const GLFWimage windowIcon{.width = 40, .height = 40, .pixels = imageData,};
       glfwSetWindowIcon(s_WindowHandle, 1, &windowIcon);
       stbi_image_free(imageData);

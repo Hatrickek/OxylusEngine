@@ -1,4 +1,6 @@
 #pragma once
+#include <cstddef>
+#include <cstdint>
 
 namespace Oxylus {
   struct Memory {
@@ -16,9 +18,9 @@ namespace Oxylus {
   };
 }
 
-extern void Delete(void* _Block, size_t _Size);
-extern void* New(size_t _Size);
+extern void Delete(void* block, std::size_t size);
+extern void* New(std::size_t size);
 
-void* operator new(size_t _Size);
+void* operator new(std::size_t size);
 
-void operator delete(void* _Block, size_t _Size);
+void operator delete(void* block, std::size_t size);

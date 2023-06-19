@@ -1,5 +1,4 @@
-﻿#include "oxpch.h"
-#include "DefaultRenderPipeline.h"
+﻿#include "DefaultRenderPipeline.h"
 
 #include "DebugRenderer.h"
 #include "ResourcePool.h"

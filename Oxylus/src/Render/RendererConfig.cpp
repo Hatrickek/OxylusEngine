@@ -1,10 +1,10 @@
-#include "src/oxpch.h"
 #include "RendererConfig.h"
 
 #include "Core/YamlHelpers.h"
 #include "Utils/FileUtils.h"
 
 #include <fstream>
+#include <sstream>
 
 namespace Oxylus {
   RendererConfig* RendererConfig::s_Instance = nullptr;

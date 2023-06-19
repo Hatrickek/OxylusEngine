@@ -44,8 +44,8 @@
 #define OX_ALLOC(ptr, size) TracyAlloc(ptr, size)
 #define OX_FREE(ptr) TracyFree(ptr)
 #else
-#define OX_ALLOC
-#define OX_FREE
+#define OX_ALLOC(ptr, size)
+#define OX_FREE(ptr)
 #endif
 
 namespace Oxylus {

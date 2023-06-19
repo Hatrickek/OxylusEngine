@@ -1,9 +1,9 @@
-#include "src/oxpch.h"
 #include "UIUtils.h"
 #include "Render/Window.h"
 
-#ifdef OX_PLATFORM_WINDOWS
+#include "Core/PlatformDetection.h"
 
+#ifdef OX_PLATFORM_WINDOWS
 #include <ShlObj_core.h>
 #include <comdef.h>
 #include <shellapi.h>

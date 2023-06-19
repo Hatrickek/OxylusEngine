@@ -1,4 +1,3 @@
-#include "src/oxpch.h"
 #include "ParticleSystem.h"
 
 #include <glm/gtx/norm.hpp>

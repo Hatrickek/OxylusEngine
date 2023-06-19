@@ -1,11 +1,6 @@
-﻿#include "src/oxpch.h"
-#include "VulkanPipeline.h"
+﻿#include "VulkanPipeline.h"
 
 #include <future>
-#include <type_traits>
-#include <type_traits>
-#include <type_traits>
-#include <type_traits>
 
 #include "Render/ShaderLibrary.h"
 #include "VulkanContext.h"

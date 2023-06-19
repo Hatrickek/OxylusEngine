@@ -1,11 +1,11 @@
-#include "src/oxpch.h"
 #include "Project.h"
 
+#include "Base.h"
 #include "ProjectSerializer.h"
 #include "Utils/Log.h"
 
 namespace Oxylus {
-  Ref <Project> Project::New() {
+  Ref<Project> Project::New() {
     s_ActiveProject = CreateRef<Project>();
     return s_ActiveProject;
   }

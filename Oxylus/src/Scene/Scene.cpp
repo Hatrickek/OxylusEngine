@@ -1,4 +1,3 @@
-#include "src/oxpch.h"
 #include "Scene.h"
 
 #include "Core/Entity.h"

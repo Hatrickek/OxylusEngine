@@ -3,6 +3,8 @@
 #include <filesystem>
 #include <string>
 
+#include "Base.h"
+
 namespace Oxylus {
   struct ProjectConfig {
     std::string Name = "Untitled";

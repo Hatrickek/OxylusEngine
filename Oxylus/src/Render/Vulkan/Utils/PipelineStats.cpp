@@ -1,5 +1,4 @@
-﻿#include "src/oxpch.h"
-#include "PipelineStats.h"
+﻿#include "PipelineStats.h"
 
 #include "VulkanUtils.h"
 

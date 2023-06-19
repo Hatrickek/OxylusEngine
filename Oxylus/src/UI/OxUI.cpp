@@ -1,5 +1,4 @@
-﻿#include "src/oxpch.h"
-#include "OxUI.h"
+﻿#include "OxUI.h"
 #include "IGUI.h"
 
 namespace Oxylus {

@@ -7,7 +7,7 @@ namespace Oxylus {
   public:
     static Ref<Scene> GetActiveScene();
 
-    static void SetActiveScene(Ref<Scene> scene);
+    static void SetActiveScene(const Ref<Scene>& scene);
 
     static Ref<Scene> m_ActiveScene;
   };

@@ -1,4 +1,3 @@
-#include "src/oxpch.h"
 #include "LayerStack.h"
 
 namespace Oxylus {

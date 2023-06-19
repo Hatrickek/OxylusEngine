@@ -1,5 +1,4 @@
-﻿#include "src/oxpch.h"
-#include "RuntimeConsole.h"
+﻿#include "RuntimeConsole.h"
 
 #include <icons/IconsMaterialDesignIcons.h>
 

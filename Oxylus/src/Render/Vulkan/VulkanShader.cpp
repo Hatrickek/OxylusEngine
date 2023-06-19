@@ -1,5 +1,4 @@
-﻿#include "src/oxpch.h"
-#include "VulkanShader.h"
+﻿#include "VulkanShader.h"
 #include "VulkanContext.h"
 
 #include <filesystem>

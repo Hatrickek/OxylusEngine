@@ -1,5 +1,4 @@
-﻿#include "oxpch.h"
-#include "DescriptorPoolManager.h"
+﻿#include "DescriptorPoolManager.h"
 
 #include "Utils/VulkanUtils.h"
 
