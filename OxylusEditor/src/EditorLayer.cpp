@@ -181,7 +181,7 @@ namespace Oxylus {
 
           ImGui::Separator();
           if (ImGui::MenuItem("Exit")) {
-            Application::Get().Close();
+            Application::Get()->Close();
           }
           ImGui::EndMenu();
         }
@@ -363,7 +363,7 @@ namespace Oxylus {
   }
 
   void EditorLayer::DrawWindowTitle() {
-    if (!Application::Get().Spec.CustomWindowTitle)
+    if (!Application::Get()->Spec.CustomWindowTitle)
       return;
 
     ImGuiScoped::StyleColor col(ImGuiCol_MenuBarBg, {0, 0, 0, 1});
@@ -378,7 +378,7 @@ namespace Oxylus {
     {
       ImGuiScoped::StyleVar st(ImGuiStyleVar_FramePadding, {0, 8});
       ImGui::Image(Resources::s_EditorResources.EngineIcon.GetDescriptorSet(), {30, 30});
-      auto name = Application::Get().Spec.Name;
+      auto name = Application::Get()->Spec.Name;
       ImGui::Text("%s", name.c_str());
     }
 
@@ -416,7 +416,7 @@ namespace Oxylus {
     ImGui::PushStyleColor(ImGuiCol_ButtonActive, {0.920f, 0.066f, 0.120f, 1.0f});
     // Close Button
     if (ImGui::Button(StringUtils::FromChar8T(ICON_MDI_WINDOW_CLOSE), buttonSize) && isNormalCursor)
-      Application::Get().Close();
+      Application::Get()->Close();
     ImGui::PopStyleColor(2);
 
     ImGui::PopStyleColor();

@@ -38,9 +38,9 @@ namespace Oxylus {
       auto totalAllocated = showInMegabytes ? (float)Memory::TotalAllocated / 1024.0f / 1024.0f : (float)Memory::TotalAllocated / 1024.0f;
       auto totalFreed = showInMegabytes ? (float)Memory::TotalFreed / 1024.0f / 1024.0f : (float)Memory::TotalFreed / 1024.0f;
       auto currentUsage = showInMegabytes ? (float)Memory::CurrentUsage() / 1024.0f / 1024.0f : (float)Memory::CurrentUsage() / 1024.0f;
-      ImGui::Text(fmt::format("Total Allocated: {0} {1}", totalAllocated, sizetype).c_str());
-      ImGui::Text(fmt::format("Total Freed: {0} {1}", totalFreed, sizetype).c_str());
-      ImGui::Text(fmt::format("Current Usage: {0} {1}", currentUsage, sizetype).c_str());
+      ImGui::Text("%s", fmt::format("Total Allocated: {0} {1}", totalAllocated, sizetype).c_str());
+      ImGui::Text("%s", fmt::format("Total Freed: {0} {1}", totalFreed, sizetype).c_str());
+      ImGui::Text("%s", fmt::format("Current Usage: {0} {1}", currentUsage, sizetype).c_str());
     }
     ImGui::Separator();
     //GPU
@@ -54,9 +54,9 @@ namespace Oxylus {
       auto totalAllocated = showInMegabytes ? (float)GPUMemory::TotalAllocated / 1024.0f / 1024.0f : (float)GPUMemory::TotalAllocated / 1024.0f;
       auto totalFreed = showInMegabytes ? (float)GPUMemory::TotalFreed / 1024.0f / 1024.0f : (float)GPUMemory::TotalFreed / 1024.0f;
       auto currentUsage = showInMegabytes ? (float)GPUMemory::CurrentUsage() / 1024.0f / 1024.0f : (float)GPUMemory::CurrentUsage() / 1024.0f;
-      ImGui::Text(fmt::format("Total Allocated: {0} {1}", totalAllocated, sizetype).c_str());
-      ImGui::Text(fmt::format("Total Freed: {0} {1}", totalFreed, sizetype).c_str());
-      ImGui::Text(fmt::format("Current Usage: {0} {1}", currentUsage, sizetype).c_str());
+      ImGui::Text("%s", fmt::format("Total Allocated: {0} {1}", totalAllocated, sizetype).c_str());
+      ImGui::Text("%s", fmt::format("Total Freed: {0} {1}", totalFreed, sizetype).c_str());
+      ImGui::Text("%s", fmt::format("Current Usage: {0} {1}", currentUsage, sizetype).c_str());
     }
   }
 

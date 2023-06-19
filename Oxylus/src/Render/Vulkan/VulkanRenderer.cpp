@@ -231,7 +231,7 @@ namespace Oxylus {
       s_Pipelines.QuadPipeline.BindDescriptorSets(commandBuffer.Get(), {s_QuadDescriptorSet.Get()});
       DrawFullscreenQuad(commandBuffer.Get());
       //UI pass
-      Application::Get().GetImGuiLayer()->RenderDrawData(commandBuffer.Get(), s_Pipelines.UIPipeline.Get());
+      Application::Get()->GetImGuiLayer()->RenderDrawData(commandBuffer.Get(), s_Pipelines.UIPipeline.Get());
     })->Submit()->Present();
   }
 

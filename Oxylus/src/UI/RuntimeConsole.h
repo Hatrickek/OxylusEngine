@@ -19,7 +19,7 @@ namespace Oxylus {
     void AddLog(const char* fmt, spdlog::level::level_enum level);
     void ClearLog();
 
-    void OnImGuiRender();
+    void OnImGuiRender(ImGuiWindowFlags windowFlags = ImGuiWindowFlags_NoNavInputs | ImGuiWindowFlags_MenuBar | ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_NoCollapse);
   private:
     struct ConsoleText {
       std::string Text = {};

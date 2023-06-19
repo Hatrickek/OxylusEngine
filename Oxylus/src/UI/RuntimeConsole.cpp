@@ -1,4 +1,5 @@
-﻿#include "RuntimeConsole.h"
+﻿#include "src/oxpch.h"
+#include "RuntimeConsole.h"
 
 #include <icons/IconsMaterialDesignIcons.h>
 
@@ -57,10 +58,11 @@ namespace Oxylus {
     m_TextBuffer.clear();
   }
 
-  void RuntimeConsole::OnImGuiRender() {
-    constexpr ImGuiWindowFlags windowFlags = ImGuiWindowFlags_NoNavInputs | ImGuiWindowFlags_MenuBar;
+  void RuntimeConsole::OnImGuiRender(ImGuiWindowFlags windowFlags) {
+    if (!Visible)
+      return;
     const auto name = fmt::format(" {} {}\t\t###{}{}", StringUtils::FromChar8T(ICON_MDI_CONSOLE), PanelName, 0, PanelName);
-    if (ImGui::Begin(name.c_str(), &Visible, windowFlags | ImGuiWindowFlags_NoCollapse)) {
+    if (ImGui::Begin(name.c_str(), &Visible, windowFlags)) {
       if (RenderMenuBar) {
         if (ImGui::BeginMenuBar()) {
           if (ImGui::MenuItem(StringUtils::FromChar8T(ICON_MDI_TRASH_CAN))) {
@@ -68,8 +70,8 @@ namespace Oxylus {
           }
           ImGui::EndMenuBar();
         }
+        ImGui::Separator();
       }
-      ImGui::Separator();
 
       constexpr ImGuiTableFlags tableFlags = ImGuiTableFlags_RowBg | ImGuiTableFlags_ContextMenuInBody |
                                              ImGuiTableFlags_ScrollY;
@@ -97,7 +99,10 @@ namespace Oxylus {
                                                  ImGuiInputTextFlags_CallbackHistory |
                                                  ImGuiInputTextFlags_EscapeClearsAll;
       static char s_InputBuf[256];
-      if (ImGui::InputText("##",
+      ImGui::PushFont(Application::Get().GetImGuiLayer()->BoldFont);
+      ImGui::SetKeyboardFocusHere();
+      if (ImGui::InputText(
+        "##",
         s_InputBuf,
         OX_ARRAYSIZE(s_InputBuf),
         inputFlags,
@@ -110,6 +115,7 @@ namespace Oxylus {
         m_InputLog.emplace_back(s_InputBuf);
         memset(s_InputBuf, 0, sizeof s_InputBuf);
       }
+      ImGui::PopFont();
       ImGui::PopItemWidth();
 
       ImGui::End();

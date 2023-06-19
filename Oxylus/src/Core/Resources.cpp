@@ -19,7 +19,7 @@ namespace Oxylus {
   }
 
   std::filesystem::path Resources::GetResourcesPath(const std::filesystem::path& path) {
-    return Application::Get().Spec.WorkingDirectory / "Resources" / path;
+    return Application::Get()->Spec.WorkingDirectory / "Resources" / path;
   }
 
   bool Resources::ResourcesPathExists() {

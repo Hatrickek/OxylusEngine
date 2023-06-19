@@ -52,7 +52,7 @@ namespace Oxylus {
     if (m_ImageDescription.FlipOnLoad)
       stbi_set_flip_vertically_on_load(true);
 
-    if (!hasPath && !m_ImageDescription.EmbeddedStbData && !m_ImageDescription.EmbeddedKtxData) {
+    if (!hasPath && !m_ImageDescription.EmbeddedStbData) {
       vk::ImageCreateInfo imageCreateInfo;
       imageCreateInfo.imageType = vk::ImageType::e2D;
       imageCreateInfo.extent = vk::Extent3D{m_ImageDescription.Width, m_ImageDescription.Height, m_ImageDescription.Depth};
@@ -89,7 +89,7 @@ namespace Oxylus {
   }
 
   void VulkanImage::LoadAndCreateResources(const bool hasPath) {
-    if (hasPath || m_ImageDescription.EmbeddedData || m_ImageDescription.EmbeddedStbData || m_ImageDescription.EmbeddedKtxData) {
+    if (hasPath || m_ImageDescription.EmbeddedData || m_ImageDescription.EmbeddedStbData) {
       LoadTextureFromFile();
     }
 
@@ -138,28 +138,30 @@ namespace Oxylus {
     const bool hasPath = !m_ImageDescription.Path.empty();
     LoadAndCreateResources(hasPath);
   }
-
+  
   void VulkanImage::LoadTextureFromFile() {
-    const auto& path = m_ImageDescription.Path;
-    const std::filesystem::path filepath = path;
+    const std::filesystem::path filepath = m_ImageDescription.Path;
     const auto extension = filepath.extension();
 
-    if (extension == ".hdr")
-      OX_CORE_ERROR("Loading .hdr files are not supported! .hdr files should be converted to .KTX files to load.");
     if (extension == ".ktx") {
-      if (m_ImageDescription.Type == ImageType::TYPE_CUBE)
+      if (m_ImageDescription.Type == ImageType::TYPE_CUBE) {
         LoadCubeMapFromFile(1);
-      else
+      }
+      else {
         LoadKtxFile(1);
+      }
     }
-    if (extension == ".ktx2" || m_ImageDescription.EmbeddedKtxData) {
-      if (m_ImageDescription.Type == ImageType::TYPE_CUBE)
+    else if (extension == ".ktx2") {
+      if (m_ImageDescription.Type == ImageType::TYPE_CUBE) {
         LoadCubeMapFromFile(2);
-      else
+      }
+      else {
         LoadKtxFile(2);
+      }
     }
-    if (extension != ".ktx" && extension != ".ktx2")
+    else {
       LoadStbFile();
+    }
 
     Name = filepath.stem().string();
   }
@@ -245,21 +247,12 @@ namespace Oxylus {
     ProfilerTimer timer;
 
     const auto& path = m_ImageDescription.Path;
+
     int texWidth = 0, texHeight = 0, texChannels = 4;
-    vk::ImageCreateInfo imageCreateInfo;
-    imageCreateInfo.imageType = vk::ImageType::e2D;
-    imageCreateInfo.extent = vk::Extent3D{m_ImageDescription.Width, m_ImageDescription.Height, m_ImageDescription.Depth};
-    imageCreateInfo.arrayLayers = m_ImageDescription.Type == ImageType::TYPE_CUBE ? 6 : 1;
-    imageCreateInfo.tiling = m_ImageDescription.ImageTiling;
-    imageCreateInfo.initialLayout = vk::ImageLayout::eUndefined;
-    imageCreateInfo.usage = m_ImageDescription.UsageFlags;
-    imageCreateInfo.samples = m_ImageDescription.SampleCount;
-    imageCreateInfo.sharingMode = m_ImageDescription.SharingMode;
 
     if (m_ImageDescription.EmbeddedStbData) {
       m_ImageData = m_ImageDescription.EmbeddedStbData;
     }
-
     else {
       if (m_ImageDescription.EmbeddedData) {
         m_ImageData = stbi_load_from_memory(m_ImageDescription.EmbeddedData,
@@ -276,12 +269,21 @@ namespace Oxylus {
         OX_CORE_BERROR("Failed to load texture file {}", path);
       }
     }
+
     if (m_ImageDescription.Width == 0)
       m_ImageDescription.Width = texWidth;
     if (m_ImageDescription.Height == 0)
       m_ImageDescription.Height = texHeight;
 
-    imageCreateInfo.mipLevels = 1;
+    vk::ImageCreateInfo imageCreateInfo;
+    imageCreateInfo.imageType = vk::ImageType::e2D;
+    imageCreateInfo.arrayLayers = m_ImageDescription.Type == ImageType::TYPE_CUBE ? 6 : 1;
+    imageCreateInfo.tiling = m_ImageDescription.ImageTiling;
+    imageCreateInfo.initialLayout = vk::ImageLayout::eUndefined;
+    imageCreateInfo.usage = m_ImageDescription.UsageFlags;
+    imageCreateInfo.samples = m_ImageDescription.SampleCount;
+    imageCreateInfo.sharingMode = m_ImageDescription.SharingMode;
+    imageCreateInfo.mipLevels = 1; // TODO: miplevels 
     imageCreateInfo.extent.width = m_ImageDescription.Width;
     imageCreateInfo.extent.height = m_ImageDescription.Height;
     imageCreateInfo.format = m_ImageDescription.Format;
@@ -421,14 +423,7 @@ namespace Oxylus {
     }
 
     if (version == 2) {
-      ktxResult result;
-      if (m_ImageDescription.EmbeddedKtxData)
-        result = ktxTexture2_CreateFromMemory(m_ImageDescription.EmbeddedKtxData,
-          sizeof m_ImageDescription.EmbeddedKtxData,
-          KTX_TEXTURE_CREATE_NO_FLAGS,
-          &kTexture2);
-      else
-        result = ktxTexture2_CreateFromNamedFile(path.c_str(), KTX_TEXTURE_CREATE_NO_FLAGS, &kTexture2);
+      ktxResult result = ktxTexture2_CreateFromNamedFile(path.c_str(), KTX_TEXTURE_CREATE_NO_FLAGS, &kTexture2);
 
       if (result != KTX_SUCCESS)
         OX_CORE_ERROR("Couldn't load the KTX texture file. {}", ktxErrorString(result));

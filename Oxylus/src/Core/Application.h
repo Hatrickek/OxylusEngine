@@ -52,7 +52,7 @@ namespace Oxylus {
 
     ImGuiLayer* GetImGuiLayer() const { return m_ImGuiLayer; }
     const LayerStack& GetLayerStack() const { return m_LayerStack; }
-    static Application& Get() { return *s_Instance; }
+    static Application* Get() { return s_Instance; }
     static Timestep GetTimestep() { return s_Instance->m_Timestep; }
 
   private:

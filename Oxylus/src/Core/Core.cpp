@@ -17,7 +17,7 @@ namespace Oxylus {
     OX_SCOPED_ZONE;
     if (!Resources::ResourcesPathExists()) {
       OX_CORE_FATAL("Resources path doesn't exists. Make sure the working directory is correct!");
-      Application::Get().Close();
+      Application::Get()->Close();
       return false;
     }
 

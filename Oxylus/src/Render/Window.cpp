@@ -58,7 +58,7 @@ namespace Oxylus {
   }
 
   void Window::CloseWindow(GLFWwindow*) {
-    Application::Get().Close();
+    Application::Get()->Close();
     glfwTerminate();
   }
 

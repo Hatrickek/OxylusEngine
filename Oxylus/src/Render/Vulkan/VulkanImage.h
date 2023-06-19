@@ -1,13 +1,15 @@
 #pragma once
 #include <future>
-#include <vulkan/vulkan.hpp>
+#include <vk_mem_alloc.h>
 
-#include "vk_mem_alloc.h"
 #include "VulkanCommandBuffer.h"
 #include "Core/Base.h"
 #include "Core/Types.h"
+#include "Core/Buffer.h"
 
 namespace Oxylus {
+  struct Buffer;
+
   enum class ImageType {
     TYPE_2D,
     TYPE_CUBE,
@@ -35,7 +37,6 @@ namespace Oxylus {
     vk::ImageLayout FinalImageLayout = vk::ImageLayout::eShaderReadOnlyOptimal;
     unsigned char* EmbeddedData = nullptr;
     const unsigned char* EmbeddedStbData = nullptr;
-    unsigned char* EmbeddedKtxData = nullptr;
     size_t EmbeddedDataLength = 0;
     bool CreateDescriptorSet = false;
     bool FlipOnLoad = false;
@@ -50,7 +51,7 @@ namespace Oxylus {
     int32_t BaseArrayLayerIndex = 0;
   };
 
-  class VulkanImage {
+  class VulkanImage { 
   public:
     vk::DescriptorImageInfo DescriptorImageInfo;
     std::string Name = "Image";

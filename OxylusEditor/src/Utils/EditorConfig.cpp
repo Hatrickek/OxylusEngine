@@ -32,7 +32,7 @@ namespace Oxylus {
     const ryml::ConstNodeRef node = nodeRoot["EditorConfig"];
     int32_t selectedTheme = 0;
     node["Theme"] >> selectedTheme;
-    Application::Get().GetImGuiLayer()->SetTheme(selectedTheme);
+    Application::Get()->GetImGuiLayer()->SetTheme(selectedTheme);
 
     const auto projectsNode = node["RecentProjects"];
     for (size_t i = 0; i < projectsNode.num_children(); i++) {
@@ -50,7 +50,7 @@ namespace Oxylus {
 
     auto node = nodeRoot["EditorConfig"];
     node |= ryml::MAP;
-    node["Theme"] << Application::Get().GetImGuiLayer()->SelectedTheme;
+    node["Theme"] << Application::Get()->GetImGuiLayer()->SelectedTheme;
     auto projectsNode = node["RecentProjects"];
     projectsNode |= ryml::SEQ;
     for (auto& project : m_RecentProjects) {
