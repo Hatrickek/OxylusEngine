@@ -138,30 +138,28 @@ namespace Oxylus {
     const bool hasPath = !m_ImageDescription.Path.empty();
     LoadAndCreateResources(hasPath);
   }
-  
+
   void VulkanImage::LoadTextureFromFile() {
-    const std::filesystem::path filepath = m_ImageDescription.Path;
+    const auto& path = m_ImageDescription.Path;
+    const std::filesystem::path filepath = path;
     const auto extension = filepath.extension();
 
+    if (extension == ".hdr")
+      OX_CORE_ERROR("Loading .hdr files are not supported! .hdr files should be converted to .KTX files to load.");
     if (extension == ".ktx") {
-      if (m_ImageDescription.Type == ImageType::TYPE_CUBE) {
+      if (m_ImageDescription.Type == ImageType::TYPE_CUBE)
         LoadCubeMapFromFile(1);
-      }
-      else {
+      else
         LoadKtxFile(1);
-      }
     }
-    else if (extension == ".ktx2") {
-      if (m_ImageDescription.Type == ImageType::TYPE_CUBE) {
+    if (extension == ".ktx2") {
+      if (m_ImageDescription.Type == ImageType::TYPE_CUBE)
         LoadCubeMapFromFile(2);
-      }
-      else {
+      else
         LoadKtxFile(2);
-      }
     }
-    else {
+    if (extension != ".ktx" && extension != ".ktx2")
       LoadStbFile();
-    }
 
     Name = filepath.stem().string();
   }
@@ -247,12 +245,21 @@ namespace Oxylus {
     ProfilerTimer timer;
 
     const auto& path = m_ImageDescription.Path;
-
     int texWidth = 0, texHeight = 0, texChannels = 4;
+    vk::ImageCreateInfo imageCreateInfo;
+    imageCreateInfo.imageType = vk::ImageType::e2D;
+    imageCreateInfo.extent = vk::Extent3D{m_ImageDescription.Width, m_ImageDescription.Height, m_ImageDescription.Depth};
+    imageCreateInfo.arrayLayers = m_ImageDescription.Type == ImageType::TYPE_CUBE ? 6 : 1;
+    imageCreateInfo.tiling = m_ImageDescription.ImageTiling;
+    imageCreateInfo.initialLayout = vk::ImageLayout::eUndefined;
+    imageCreateInfo.usage = m_ImageDescription.UsageFlags;
+    imageCreateInfo.samples = m_ImageDescription.SampleCount;
+    imageCreateInfo.sharingMode = m_ImageDescription.SharingMode;
 
     if (m_ImageDescription.EmbeddedStbData) {
       m_ImageData = m_ImageDescription.EmbeddedStbData;
     }
+
     else {
       if (m_ImageDescription.EmbeddedData) {
         m_ImageData = stbi_load_from_memory(m_ImageDescription.EmbeddedData,
@@ -269,21 +276,12 @@ namespace Oxylus {
         OX_CORE_BERROR("Failed to load texture file {}", path);
       }
     }
-
     if (m_ImageDescription.Width == 0)
       m_ImageDescription.Width = texWidth;
     if (m_ImageDescription.Height == 0)
       m_ImageDescription.Height = texHeight;
 
-    vk::ImageCreateInfo imageCreateInfo;
-    imageCreateInfo.imageType = vk::ImageType::e2D;
-    imageCreateInfo.arrayLayers = m_ImageDescription.Type == ImageType::TYPE_CUBE ? 6 : 1;
-    imageCreateInfo.tiling = m_ImageDescription.ImageTiling;
-    imageCreateInfo.initialLayout = vk::ImageLayout::eUndefined;
-    imageCreateInfo.usage = m_ImageDescription.UsageFlags;
-    imageCreateInfo.samples = m_ImageDescription.SampleCount;
-    imageCreateInfo.sharingMode = m_ImageDescription.SharingMode;
-    imageCreateInfo.mipLevels = 1; // TODO: miplevels 
+    imageCreateInfo.mipLevels = 1;
     imageCreateInfo.extent.width = m_ImageDescription.Width;
     imageCreateInfo.extent.height = m_ImageDescription.Height;
     imageCreateInfo.format = m_ImageDescription.Format;
