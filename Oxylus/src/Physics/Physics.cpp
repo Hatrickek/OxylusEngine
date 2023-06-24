@@ -70,7 +70,7 @@ namespace Oxylus {
 
     OX_CORE_ASSERT(s_PhysicsSystem, "Physics system not initialized")
 
-    s_PhysicsSystem->Update(physicsTs, 1, 1, s_TempAllocator, s_JobSystem);
+    s_PhysicsSystem->Update(physicsTs, 1, s_TempAllocator, s_JobSystem);
   }
 
   void Physics::Shutdown() {
