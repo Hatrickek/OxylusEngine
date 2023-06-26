@@ -6,6 +6,7 @@
 #include "Utils/UIUtils.h"
 
 #include <imgui_internal.h>
+#include <misc/cpp/imgui_stdlib.h>
 #include <fmt/format.h>
 
 namespace Oxylus {
@@ -45,6 +46,13 @@ namespace Oxylus {
     return modified;
   }
 
+  bool IGUI::Property(const char* label, std::string* text, ImGuiInputFlags flags, const char* tooltip) {
+    BeginPropertyGrid(label, tooltip);
+    const bool modified = ImGui::InputText(s_IDBuffer, text, flags);
+    EndPropertyGrid();
+    return modified;
+  }
+
   bool IGUI::Property(const char* label, int& value, const char** dropdownStrings, int count, const char* tooltip) {
     BeginPropertyGrid(label, tooltip);
 
@@ -66,7 +74,7 @@ namespace Oxylus {
       ImGui::EndCombo();
     }
 
-    IGUI::EndPropertyGrid();
+    EndPropertyGrid();
 
     return modified;
   }

@@ -5,6 +5,7 @@
 #include <imgui.h>
 #include <imgui_internal.h>
 #include <fmt/format.h>
+#include <misc/cpp/imgui_stdlib.h>
 
 #include <Assets/AssetManager.h>
 
@@ -87,7 +88,7 @@ namespace Oxylus {
     bool loadAsset = false;
 
     if (ImGui::Button("Save")) {
-      std::string path = {};
+      std::string path;
       if (saveToCurrentPath)
         path = FileDialogs::SaveFile({{"Material file", "oxmat"}}, "NewMaterial");
       else
@@ -272,6 +273,7 @@ namespace Oxylus {
       DrawAddComponent<TaperedCapsuleColliderComponent>(entity, "Tapered Capsule Collider");
       DrawAddComponent<CylinderColliderComponent>(entity, "Cylinder Collider");
       DrawAddComponent<CharacterControllerComponent>(entity, "Character Controller");
+      DrawAddComponent<CustomComponent>(entity, "Custom Component");
 
       ImGui::EndPopup();
     }
@@ -315,8 +317,8 @@ namespace Oxylus {
           return;
 
         constexpr ImGuiTreeNodeFlags flags =
-          ImGuiTreeNodeFlags_OpenOnArrow | ImGuiTreeNodeFlags_SpanFullWidth |
-          ImGuiTreeNodeFlags_FramePadding;
+        ImGuiTreeNodeFlags_OpenOnArrow | ImGuiTreeNodeFlags_SpanFullWidth |
+        ImGuiTreeNodeFlags_FramePadding;
 
         for (auto& material : component.Materials) {
           if (ImGui::TreeNodeEx(material->Name.c_str(),
@@ -450,7 +452,9 @@ namespace Oxylus {
         if (config.Spatialization) {
           ImGui::Indent();
           const char* attenuationTypeStrings[] = {
-            "None", "Inverse", "Linear",
+            "None",
+            "Inverse",
+            "Linear",
             "Exponential"
           };
           int attenuationType = static_cast<int>(config.AttenuationModel);
@@ -762,6 +766,68 @@ namespace Oxylus {
         DrawParticleOverLifetimeModule("Rotation Over Lifetime", props.RotationOverLifetime, false, true);
         DrawParticleBySpeedModule("Rotation By Speed", props.RotationBySpeed, false, true);
       });
+
+    if (entity.HasComponent<CustomComponent>()) {
+      const auto n = entity.GetComponent<CustomComponent>().Name;
+      const char8_t* n2 = (const char8_t*)n.c_str();
+      DrawComponent<CustomComponent>(n2,
+        entity,
+        [](CustomComponent& component) {
+          IGUI::BeginProperties();
+          IGUI::Property("Component Name", &component.Name, ImGuiInputTextFlags_EnterReturnsTrue);
+          IGUI::EndProperties();
+
+          ImGui::Text("Fields");
+          ImGui::BeginTable("FieldTable",
+            3,
+            ImGuiTableFlags_Resizable | ImGuiTableFlags_SizingStretchSame |
+            ImGuiTableFlags_BordersInner | ImGuiTableFlags_BordersOuterH);
+          ImGui::TableSetupColumn("Name", ImGuiTableColumnFlags_WidthStretch, 100.0f);
+          ImGui::TableSetupColumn("Type", ImGuiTableColumnFlags_WidthStretch, 70.0f);
+          ImGui::TableSetupColumn("Value", ImGuiTableColumnFlags_WidthStretch, 100.0f);
+          ImGui::TableHeadersRow();
+          for (int i = 0; i < (int)component.Fields.size(); i++) {
+            constexpr auto inputFlags = ImGuiInputTextFlags_EnterReturnsTrue |
+                                        ImGuiInputTextFlags_CallbackHistory | ImGuiInputTextFlags_EscapeClearsAll;
+            ImGui::TableNextRow();
+            ImGui::TableNextColumn();
+
+            auto& field = component.Fields[i];
+            auto id = fmt::format("{0}_{1}", field.Name, i);
+
+            ImGui::PushID(id.c_str());
+            ImGui::SetCursorPosY(ImGui::GetCursorPosY() + ImGui::GetStyle().FramePadding.y * 0.5f);
+
+            ImGui::PushID("FieldName");
+            ImGui::SetNextItemWidth(-1);
+            ImGui::InputText("##", &field.Name, inputFlags);
+            ImGui::PopID();
+
+            ImGui::TableNextColumn();
+            const char* fieldTypes[] = {"INT", "FLOAT", "STRING", "BOOL"};
+            int type = field.Type;
+            ImGui::SetNextItemWidth(-1);
+            if (ImGui::Combo("##", &type, fieldTypes, 4))
+              field.Type = (CustomComponent::FieldType)type;
+
+            ImGui::PushID("FieldValue");
+            ImGui::TableNextColumn();
+            ImGui::SetNextItemWidth(-1);
+            ImGui::InputText("##", &field.Value, inputFlags);
+            ImGui::PopID();
+
+            ImGui::PopID();
+          }
+          ImGui::EndTable();
+
+          const float x = ImGui::GetContentRegionAvail().x;
+          const float y = ImGui::GetFrameHeight();
+          if (ImGui::Button("+ Add Field", {x, y})) {
+            component.Fields.emplace_back();
+          }
+        });
+    }
+
   }
 
   void InspectorPanel::PP_ProbeProperty(const bool value) const {

@@ -224,6 +224,23 @@ namespace Oxylus {
       node["Friction"] << component.Friction;
       node["CollisionTolerance"] << component.CollisionTolerance;
     }
+
+    if (entity.HasComponent<CustomComponent>()) {
+      auto node = entityNode["CustomComponent"];
+      node |= ryml::MAP;
+
+      const auto& component = entity.GetComponent<CustomComponent>();
+
+      node["Name"] << component.Name;
+      auto fieldsNode = node["Fields"];
+      fieldsNode |= ryml::MAP;
+      for (const auto& field : component.Fields) {
+        auto fieldNode = fieldsNode[field.Name.c_str()];
+        fieldNode |= ryml::MAP;
+        fieldNode["Type"] << (int)field.Type;
+        fieldNode["Value"] << field.Value;
+      }
+    }
   }
 
   UUID EntitySerializer::DeserializeEntity(ryml::ConstNodeRef entityNode, Scene* scene, bool preserveUUID) {
@@ -283,7 +300,8 @@ namespace Oxylus {
 
       meshPath = FileUtils::GetPreferredPath(meshPath);
 
-      deserializedEntity.AddComponent<MeshRendererComponent>(AssetManager::GetMeshAsset(meshPath).Data).SubmesIndex = submeshIndex;
+      deserializedEntity.AddComponent<MeshRendererComponent>(AssetManager::GetMeshAsset(meshPath).Data).SubmesIndex =
+      submeshIndex;
     }
 
     if (entityNode.has_child("MaterialComponent")) {
@@ -463,6 +481,22 @@ namespace Oxylus {
       node["CollisionTolerance"] >> component.CollisionTolerance;
     }
 
+    if (entityNode.has_child("CustomComponent")) {
+      auto& component = deserializedEntity.AddComponentI<CustomComponent>();
+      const auto& node = entityNode["CustomComponent"];
+
+      node["Name"] >> component.Name;
+      auto fieldsNode = node["Fields"];
+      for (size_t i = 0; i < fieldsNode.num_children(); i++) {
+        CustomComponent::ComponentField field;
+        auto key = std::string(fieldsNode[i].get()->m_key.scalar.data());
+        field.Name = key.substr(0, key.find(':'));
+        SetEnum(fieldsNode[i]["Type"], field.Type);
+        fieldsNode[i]["Value"] >> field.Value;
+        component.Fields.emplace_back(field);
+      }
+    }
+
     return deserializedEntity.GetUUID();
   }
 
@@ -505,12 +539,11 @@ namespace Oxylus {
       // Try to read it again from assets path
       content = FileUtils::ReadFile(AssetManager::GetAssetFileSystemPath(filepath).string());
       if (content)
-        OX_CORE_INFO("Could load the material file from assets path: {0}", filepath);
+        OX_CORE_INFO("Could load the prefab file from assets path: {0}", filepath);
       else {
         return {};
       }
     }
-
 
     const ryml::Tree tree = ryml::parse_in_arena(ryml::to_csubstr(content.value()));
 

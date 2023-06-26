@@ -385,7 +385,7 @@ namespace Oxylus {
       if (ImGui::IsKeyDown(ImGuiKey_LeftCtrl) && ImGui::IsKeyPressed(ImGuiKey_D)) {
         m_Context->DuplicateEntity(m_SelectedEntity);
       }
-      if (ImGui::IsKeyPressed(ImGuiKey_Delete)) {
+      if (ImGui::IsKeyPressed(ImGuiKey_Delete) && m_TableHovered) {
         m_Context->DestroyEntity(m_SelectedEntity);
         m_SelectedEntity = {};
       }
@@ -474,11 +474,15 @@ namespace Oxylus {
 
         ImGui::EndTable();
 
+        m_TableHovered = ImGui::IsItemHovered();
+
         if (ImGui::IsItemClicked())
           ClearSelectionContext();
       }
 
-      if (ImGui::IsMouseDown(0) && ImGui::IsWindowHovered())
+      m_WindowHovered = ImGui::IsWindowHovered();
+
+      if (ImGui::IsMouseDown(0) && m_WindowHovered)
         ClearSelectionContext();
 
       if (m_DraggedEntity && m_DraggedEntityTarget) {

@@ -100,7 +100,8 @@ namespace Oxylus {
                                                  ImGuiInputTextFlags_EscapeClearsAll;
       static char s_InputBuf[256];
       ImGui::PushFont(Application::Get()->GetImGuiLayer()->BoldFont);
-      ImGui::SetKeyboardFocusHere();
+      if (SetFocusToKeyboardAlways)
+        ImGui::SetKeyboardFocusHere();
       if (ImGui::InputText(
         "##",
         s_InputBuf,

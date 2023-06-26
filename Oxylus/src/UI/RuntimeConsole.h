@@ -9,6 +9,7 @@ namespace Oxylus {
   public:
 
     bool RenderMenuBar = false;
+    bool SetFocusToKeyboardAlways = false;
     const char* PanelName = "RuntimeConsole";
     bool Visible = true;
 

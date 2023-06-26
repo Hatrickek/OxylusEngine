@@ -262,6 +262,25 @@ namespace Oxylus {
     Ref<AudioListener> Listener;
   };
 
+  // Custom
+  struct CustomComponent {
+    enum FieldType {
+      INT = 0,
+      FLOAT,
+      STRING,
+      BOOL,
+    };
+
+    struct ComponentField {
+      std::string Name = "NewField";
+      FieldType Type = INT;
+      std::string Value = {};
+    };
+
+    std::string Name = "NewComponent";
+    std::vector<ComponentField> Fields;
+  };
+
   template <typename... Component>
   struct ComponentGroup { };
 
@@ -279,5 +298,8 @@ namespace Oxylus {
                                        CylinderColliderComponent,
 
                                        // Audio
-                                       AudioSourceComponent, AudioListenerComponent>;
+                                       AudioSourceComponent, AudioListenerComponent,
+                                       
+                                       // Custom  
+                                       CustomComponent>;
 }

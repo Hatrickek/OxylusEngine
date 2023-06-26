@@ -23,6 +23,9 @@ namespace Oxylus {
     // Bool
     static bool Property(const char* label, bool& flag, const char* tooltip = nullptr);
 
+    // InputField
+    static bool Property(const char* label, std::string* text, ImGuiInputFlags flags, const char* tooltip = nullptr);
+
     // Dropdown
     static bool Property(const char* label,
                          int& value,

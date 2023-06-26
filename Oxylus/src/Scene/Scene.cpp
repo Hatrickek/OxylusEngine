@@ -634,42 +634,46 @@ namespace Oxylus {
                                                         ParticleSystemComponent& component) { }
 
   template <>
-  void Scene::OnComponentAdded<RigidbodyComponent>([[maybe_unused]] Entity entity, [[maybe_unused]] RigidbodyComponent& component) {
+  void Scene::OnComponentAdded<RigidbodyComponent>(Entity entity, RigidbodyComponent& component) {
     CreateRigidbody(entity, entity.GetComponent<TransformComponent>(), component);
   }
 
   template <>
-  void Scene::OnComponentAdded<BoxColliderComponent>([[maybe_unused]] Entity entity, [[maybe_unused]] BoxColliderComponent& component) {
+  void Scene::OnComponentAdded<BoxColliderComponent>(Entity entity, BoxColliderComponent& component) {
     if (entity.HasComponent<RigidbodyComponent>())
       CreateRigidbody(entity, entity.GetComponent<TransformComponent>(), entity.GetComponent<RigidbodyComponent>());
   }
 
   template <>
-  void Scene::OnComponentAdded<SphereColliderComponent>([[maybe_unused]] Entity entity, [[maybe_unused]] SphereColliderComponent& component) {
+  void Scene::OnComponentAdded<SphereColliderComponent>(Entity entity, SphereColliderComponent& component) {
     if (entity.HasComponent<RigidbodyComponent>())
       CreateRigidbody(entity, entity.GetComponent<TransformComponent>(), entity.GetComponent<RigidbodyComponent>());
   }
 
   template <>
-  void Scene::OnComponentAdded<CapsuleColliderComponent>([[maybe_unused]] Entity entity, [[maybe_unused]] CapsuleColliderComponent& component) {
+  void Scene::OnComponentAdded<CapsuleColliderComponent>(Entity entity, CapsuleColliderComponent& component) {
     if (entity.HasComponent<RigidbodyComponent>())
       CreateRigidbody(entity, entity.GetComponent<TransformComponent>(), entity.GetComponent<RigidbodyComponent>());
   }
 
   template <>
-  void Scene::OnComponentAdded<TaperedCapsuleColliderComponent>([[maybe_unused]] Entity entity, [[maybe_unused]] TaperedCapsuleColliderComponent& component) {
+  void Scene::OnComponentAdded<TaperedCapsuleColliderComponent>(Entity entity, TaperedCapsuleColliderComponent& component) {
     if (entity.HasComponent<RigidbodyComponent>())
       CreateRigidbody(entity, entity.GetComponent<TransformComponent>(), entity.GetComponent<RigidbodyComponent>());
   }
 
   template <>
-  void Scene::OnComponentAdded<CylinderColliderComponent>([[maybe_unused]] Entity entity, [[maybe_unused]] CylinderColliderComponent& component) {
+  void Scene::OnComponentAdded<CylinderColliderComponent>(Entity entity, CylinderColliderComponent& component) {
     if (entity.HasComponent<RigidbodyComponent>())
       CreateRigidbody(entity, entity.GetComponent<TransformComponent>(), entity.GetComponent<RigidbodyComponent>());
   }
 
   template <>
-  void Scene::OnComponentAdded<CharacterControllerComponent>([[maybe_unused]] Entity entity, [[maybe_unused]] CharacterControllerComponent& component) {
+  void Scene::OnComponentAdded<CharacterControllerComponent>(Entity entity, CharacterControllerComponent& component) {
     CreateCharacterController(entity.GetComponent<TransformComponent>(), component);
+  }
+
+  template <>
+  void Scene::OnComponentAdded<CustomComponent>(Entity entity, CustomComponent& component) {
   }
 }

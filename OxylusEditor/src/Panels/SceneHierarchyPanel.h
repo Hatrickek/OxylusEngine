@@ -24,6 +24,8 @@ namespace Oxylus {
     void DragDropTarget() const;
 
   private:
+    bool m_TableHovered = false;
+    bool m_WindowHovered = false;
     Entity m_SelectedEntity;
     Entity m_RenamingEntity;
     Entity m_DraggedEntity;
