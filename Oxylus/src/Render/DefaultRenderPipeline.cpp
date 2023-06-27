@@ -8,7 +8,6 @@
 #include "Core/Resources.h"
 #include "PBR/Prefilter.h"
 #include "Utils/Profiler.h"
-#include "Utils/Timestep.h"
 #include "Vulkan/VulkanContext.h"
 
 #include "Vulkan/VulkanRenderer.h"
@@ -103,6 +102,7 @@ namespace Oxylus {
 
     // Mesh data
     m_MeshDrawList.reserve(MAX_NUM_MESHES);
+    m_TransparentMeshDrawList.reserve(MAX_NUM_MESHES);
 
     m_SkyboxCube.LoadFromFile(Resources::GetResourcesPath("Objects/cube.glb").string(), Mesh::FlipY | Mesh::DontCreateMaterials);
 
@@ -616,6 +616,10 @@ namespace Oxylus {
             m_Pipelines.PBRPipeline,
             [&](const Mesh::Primitive* part) {
               const auto& material = mesh.Materials[part->materialIndex];
+              if (material->AlphaMode == Material::AlphaMode::Blend) {
+                m_TransparentMeshDrawList.emplace_back(mesh);
+                return false;
+              }
               const auto& layout = m_Pipelines.PBRPipeline.GetPipelineLayout();
               commandBuffer.PushConstants(layout, vk::ShaderStageFlagBits::eVertex, 0, sizeof(glm::mat4), &mesh.Transform);
               commandBuffer.PushConstants(layout, vk::ShaderStageFlagBits::eFragment, sizeof(glm::mat4), sizeof Material::Parameters, &material->Parameters);
@@ -627,6 +631,27 @@ namespace Oxylus {
         m_ForceUpdateMaterials = false;
         m_MeshDrawList.clear();
 
+        // Transparency pass
+        for (const auto& mesh : m_TransparentMeshDrawList) {
+          if (!mesh.MeshGeometry)
+            continue;
+
+          RenderMesh(mesh,
+            commandBuffer.Get(),
+            m_Pipelines.PBRBlendPipeline,
+            [&](const Mesh::Primitive* part) {
+              const auto& material = mesh.Materials[part->materialIndex];
+              const auto& layout = m_Pipelines.PBRBlendPipeline.GetPipelineLayout();
+              commandBuffer.PushConstants(layout, vk::ShaderStageFlagBits::eVertex, 0, sizeof(glm::mat4), &mesh.Transform);
+              commandBuffer.PushConstants(layout, vk::ShaderStageFlagBits::eFragment, sizeof(glm::mat4), sizeof Material::Parameters, &material->Parameters);
+
+              m_Pipelines.PBRBlendPipeline.BindDescriptorSets(commandBuffer.Get(), {Material::s_DescriptorSet.Get(), material->MaterialDescriptorSet.Get()}, 0);
+              return true;
+            });
+        }
+        m_TransparentMeshDrawList.clear();
+
+        // Depth-tested debug renderer pass
         auto& shapes = DebugRenderer::GetInstance()->GetShapes();
 
         struct DebugPassData {
@@ -1062,6 +1087,14 @@ namespace Oxylus {
     pbrPipelineDesc.DepthDesc.DepthEnable = true;
     pbrPipelineDesc.RasterizerDesc.CullMode = vk::CullModeFlagBits::eBack;
     m_Pipelines.PBRPipeline.CreateGraphicsPipeline(pbrPipelineDesc);
+
+    pbrPipelineDesc.Name = "PBR Blend Pipeline";
+    pbrPipelineDesc.BlendStateDesc.RenderTargets[0].BlendEnable = true;
+    pbrPipelineDesc.BlendStateDesc.RenderTargets[0].SrcBlend = vk::BlendFactor::eSrcAlpha;
+    pbrPipelineDesc.BlendStateDesc.RenderTargets[0].DestBlend = vk::BlendFactor::eOneMinusSrcAlpha;
+    pbrPipelineDesc.BlendStateDesc.RenderTargets[0].BlendOp = vk::BlendOp::eAdd;
+    pbrPipelineDesc.BlendStateDesc.RenderTargets[0].BlendOpAlpha = vk::BlendOp::eAdd;
+    m_Pipelines.PBRBlendPipeline.CreateGraphicsPipeline(pbrPipelineDesc);
 
     PipelineDescription depthpassdescription;
     depthpassdescription.Name = "Depth Pass Pipeline";

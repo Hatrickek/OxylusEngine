@@ -148,6 +148,7 @@ namespace Oxylus {
     struct Pipelines {
       VulkanPipeline SkyboxPipeline;
       VulkanPipeline PBRPipeline;
+      VulkanPipeline PBRBlendPipeline;
       VulkanPipeline PostProcessPipeline;
       VulkanPipeline DepthPrePassPipeline;
       VulkanPipeline SSAOPassPipeline;
@@ -212,6 +213,7 @@ namespace Oxylus {
     };
 
     std::vector<MeshData> m_MeshDrawList;
+    std::vector<MeshData> m_TransparentMeshDrawList;
 
     void RenderNode(const Mesh::Node* node,
                     const vk::CommandBuffer& commandBuffer,

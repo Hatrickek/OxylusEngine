@@ -172,9 +172,9 @@ void main() {
     alpha = u_Material.Color.a;
   }
 
-  if (alpha < 0.1) {
-    discard;
-  }
+  //if (alpha < 0.1) {
+  //  discard;
+  //}
 
   vec3 normal = GetNormal(scaledUV);
   vec3 V = normalize(u_Ubo.camPos - inWorldPos);
@@ -212,8 +212,7 @@ void main() {
   // Ambient part
   vec3 kD = 1.0 - F;
   kD *= 1.0 - metallic;
-  // vec3 ambient = (kD * diffuse + specular) * texture(aoMap, scaledUV).rrr *
-  // u_Material.ao;
+  // vec3 ambient = (kD * diffuse + specular) * texture(aoMap, scaledUV).rrr * u_Material.ao;
   vec3 ambient = (kD * diffuse + specular);
   if (u_Material.UseAO)
     ambient = (kD * diffuse + specular) * texture(aoMap, scaledUV).rrr;
@@ -253,7 +252,6 @@ void main() {
 
   color += 0;//u_Material.Emmisive.rgb;
 
-
   // TODO: Make configurable via buffers
   //float far = 50.0;
   //float fogCord = (gl_FragCoord.z / gl_FragCoord.w) / far;
@@ -262,5 +260,5 @@ void main() {
   //vec4 fogColor = vec4(vec3(1), 0);
   //vec4 outFog = mix(fogColor, vec4(color, 1.0), clamp(1.0 - fog, 0.0, 1.0));
 
-  outColor = vec4(color, 1.0);
+  outColor = vec4(color, alpha);
 }

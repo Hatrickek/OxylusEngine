@@ -257,15 +257,12 @@ namespace Oxylus {
       if (mat.additionalValues.contains("occlusionTexture")) {
         material.AOTexture = m_Textures.at(model.textures[mat.additionalValues["occlusionTexture"].TextureIndex()].source);
       }
-      if (mat.additionalValues.contains("alphaMode")) {
-        tinygltf::Parameter param = mat.additionalValues["alphaMode"];
-        if (param.string_value == "BLEND") {
+      if (mat.alphaMode == "BLEND") {
           material.AlphaMode = Material::AlphaMode::Blend;
-        }
-        if (param.string_value == "MASK") {
+      }
+      else if (mat.alphaMode == "MASK") {
           material.Parameters.AlphaCutoff = 0.5f;
           material.AlphaMode = Material::AlphaMode::Mask;
-        }
       }
       if (mat.additionalValues.contains("alphaCutoff")) {
         material.Parameters.AlphaCutoff = static_cast<float>(mat.additionalValues["alphaCutoff"].Factor());
