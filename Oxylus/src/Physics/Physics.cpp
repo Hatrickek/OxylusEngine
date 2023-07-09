@@ -3,6 +3,7 @@
 #include "Core/Base.h"
 #include "Utils/Log.h"
 #include "Utils/Profiler.h"
+#include <iostream>
 
 namespace Oxylus {
   BPLayerInterfaceImpl Physics::s_LayerInterface;
@@ -40,7 +41,6 @@ namespace Oxylus {
   void Physics::Init() {
     // TODO: Override default allocators with Oxylus allocators.
     JPH::RegisterDefaultAllocator();
-
     // Install callbacks
     JPH::Trace = TraceImpl;
 #ifdef JPH_ENABLE_ASSERTS

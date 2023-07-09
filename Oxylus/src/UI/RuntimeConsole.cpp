@@ -6,6 +6,7 @@
 #include "Core/Application.h"
 #include "Utils/ImGuiScoped.h"
 #include "Utils/StringUtils.h"
+#include <string>
 
 namespace Oxylus {
   static ImVec4 GetColor(const spdlog::level::level_enum level) {
