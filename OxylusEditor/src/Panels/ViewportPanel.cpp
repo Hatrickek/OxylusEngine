@@ -114,7 +114,7 @@ namespace Oxylus {
 
         const glm::vec2 change = (newMousePosition - m_LockedMousePosition) * m_MouseSensitivity;
         finalYawPitch.x += change.x;
-        finalYawPitch.y = glm::clamp(finalYawPitch.y - change.y, -89.9f, 89.9f);
+        finalYawPitch.y = glm::clamp(finalYawPitch.y - change.y, glm::radians(-89.9f), glm::radians(89.9f));
 
         const float maxMoveSpeed = m_MovementSpeed * (ImGui::IsKeyDown(ImGuiKey_LeftShift) ? 3.0f : 1.0f);
         if (ImGui::IsKeyDown(ImGuiKey_W))

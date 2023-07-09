@@ -95,7 +95,6 @@ target_include_directories(${PROJECT_NAME} PUBLIC
   "${CMAKE_CURRENT_SOURCE_DIR}/vendor/ImGuizmo;"
   "${CMAKE_CURRENT_SOURCE_DIR}/.;"
   "${CMAKE_CURRENT_SOURCE_DIR}/vendor/tinygltf;"
-  "${CMAKE_CURRENT_SOURCE_DIR}/vendor/ktx/include;"
   "${CMAKE_CURRENT_SOURCE_DIR}/vendor/miniaudio;"
   "${CMAKE_CURRENT_SOURCE_DIR}/vendor/tracy/public"
   )
@@ -251,6 +250,7 @@ target_sources(${PROJECT_NAME} PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}/vendor/spirv-
 if(SHADERC_FROM_SOURCE)
     # spirv-headers
     set(BUILD_TESTS OFF)
+    set(SPIRV_HEADERS_SKIP_EXAMPLES ON)
     FetchContent_Declare(
             SPIRV-Headers
             GIT_REPOSITORY "https://github.com/KhronosGroup/SPIRV-Headers.git"
