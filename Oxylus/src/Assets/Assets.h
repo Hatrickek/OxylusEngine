@@ -6,10 +6,6 @@
 #include <string>
 
 namespace Oxylus {
-  struct VulkanImageDescription;
-  class VulkanImage;
-  class Mesh;
-
   enum class AssetType {
     None = 0,
     Mesh,
@@ -18,13 +14,7 @@ namespace Oxylus {
     Material
   };
 
-  struct AssetHandle {
-    UUID ID;
-
-    bool operator==(const AssetHandle& other) const {
-      return ID == other.ID;
-    }
-  };
+  using AssetHandle = UUID;
 
   template<typename T>
   struct Asset {

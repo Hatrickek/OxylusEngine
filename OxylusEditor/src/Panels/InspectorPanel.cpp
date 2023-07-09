@@ -769,7 +769,7 @@ namespace Oxylus {
 
     if (entity.HasComponent<CustomComponent>()) {
       const auto n = entity.GetComponent<CustomComponent>().Name;
-      const char8_t* n2 = (const char8_t*)n.c_str();
+      const auto* n2 = (const char8_t*)n.c_str();
       DrawComponent<CustomComponent>(n2,
         entity,
         [](CustomComponent& component) {
@@ -787,8 +787,8 @@ namespace Oxylus {
           ImGui::TableSetupColumn("Value", ImGuiTableColumnFlags_WidthStretch, 100.0f);
           ImGui::TableHeadersRow();
           for (int i = 0; i < (int)component.Fields.size(); i++) {
-            constexpr auto inputFlags = ImGuiInputTextFlags_EnterReturnsTrue |
-                                        ImGuiInputTextFlags_CallbackHistory | ImGuiInputTextFlags_EscapeClearsAll;
+            auto inputFlags = ImGuiInputTextFlags_EnterReturnsTrue |
+                              ImGuiInputTextFlags_CallbackHistory | ImGuiInputTextFlags_EscapeClearsAll;
             ImGui::TableNextRow();
             ImGui::TableNextColumn();
 
@@ -813,6 +813,11 @@ namespace Oxylus {
             ImGui::PushID("FieldValue");
             ImGui::TableNextColumn();
             ImGui::SetNextItemWidth(-1);
+            if (field.Type == CustomComponent::FieldType::INT
+                || field.Type == CustomComponent::FieldType::BOOL
+                || field.Type == CustomComponent::FieldType::FLOAT) {
+              inputFlags |= ImGuiInputTextFlags_CharsDecimal;
+            }
             ImGui::InputText("##", &field.Value, inputFlags);
             ImGui::PopID();
 

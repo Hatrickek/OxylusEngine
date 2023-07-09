@@ -9,7 +9,6 @@
 #include "Vulkan/VulkanContext.h"
 #include "Vulkan/VulkanRenderer.h"
 #include "Utils/Log.h"
-#include "Core/Resources.h"
 
 namespace Oxylus {
   Mesh::Mesh(const std::string_view path, int fileLoadingFlags, float scale) {
@@ -40,6 +39,28 @@ namespace Oxylus {
       return true;
 
     return tinygltf::LoadImageData(image, imageIndex, error, warning, req_width, req_height, bytes, size, userData);
+  }
+
+  bool Mesh::ExportAsBinary(const std::string& inPath, const std::string& outPath) {
+    tinygltf::TinyGLTF gltfContext;
+    tinygltf::Model gltfModel;
+    std::string error, warning;
+
+    bool fileLoaded;
+    if (std::filesystem::path(inPath).extension() == ".gltf")
+      fileLoaded = gltfContext.LoadASCIIFromFile(&gltfModel, &error, &warning, inPath);
+    else
+      fileLoaded = gltfContext.LoadBinaryFromFile(&gltfModel, &error, &warning, inPath);
+
+    if (!fileLoaded) {
+      OX_CORE_ERROR("Couldnt load gltf file: {}", error);
+      return false;
+    }
+    if (!warning.empty()) {
+      OX_CORE_WARN("GLTF loader warning: {}", warning);
+    }
+
+    return gltfContext.WriteGltfSceneToFile(&gltfModel, outPath, true, true, false, true);
   }
 
   void Mesh::LoadFromFile(const std::string& path, int fileLoadingFlags, const float scale) {

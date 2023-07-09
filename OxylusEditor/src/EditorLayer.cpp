@@ -212,11 +212,56 @@ namespace Oxylus {
           ImGui::MenuItem("Editor Debug", nullptr, &m_EditorPanels["EditorDebugPanel"]->Visible);
           ImGui::EndMenu();
         }
+
+        static bool renderAssetManager = false;
+
+        if (ImGui::BeginMenu("Assets")) {
+          if (ImGui::MenuItem("Asset Manager")) {
+            renderAssetManager = true;
+          }
+          ImGui::EndMenu();
+        }
         if (ImGui::BeginMenu("Help")) {
           if (ImGui::MenuItem("About")) { }
           ImGui::EndMenu();
         }
         ImGui::SameLine();
+
+        if (renderAssetManager) {
+          if (ImGui::Begin("Asset Manager")) {
+            const auto& assets = AssetManager::GetAssetLibrary();
+            if (!assets.MeshAssets.empty()) {
+              ImGui::Text("Mesh assets");
+              IGUI::BeginProperties();
+              for (const auto& [handle, asset] : assets.MeshAssets) {
+                auto handleStr = fmt::format("{}", handle);
+                IGUI::Text(handleStr.c_str(), asset.Path.c_str());
+              }
+              IGUI::EndProperties();
+            }
+            if (!assets.ImageAssets.empty()) {
+              ImGui::Text("Image assets");
+              IGUI::BeginProperties();
+              for (const auto& [handle, asset] : assets.ImageAssets) {
+                auto handleStr = fmt::format("{}", handle);
+                IGUI::Text(handleStr.c_str(), asset.Path.c_str());
+              }
+              IGUI::EndProperties();
+            }
+            if (!assets.MaterialAssets.empty()) {
+              ImGui::Text("Material assets");
+              IGUI::BeginProperties();
+              for (const auto& [handle, asset] : assets.MaterialAssets) {
+                auto handleStr = fmt::format("{}", handle);
+                IGUI::Text(handleStr.c_str(), asset.Path.c_str());
+              }
+              IGUI::EndProperties();
+            }
+            if (ImGui::Button("Package assets")) {
+              AssetManager::PackageAssets();
+            }
+          }
+        }
 
         {
           //Project name text

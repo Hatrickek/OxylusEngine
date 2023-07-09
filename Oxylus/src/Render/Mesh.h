@@ -101,6 +101,10 @@ namespace Oxylus {
     ~Mesh();
 
     void LoadFromFile(const std::string& path, int fileLoadingFlags = None, float scale = 1);
+
+    /// Export a mesh file as glb file.
+    static bool ExportAsBinary(const std::string& inPath, const std::string& outPath);
+
     void SetScale(const glm::vec3& scale);
     void Draw(const vk::CommandBuffer& cmdBuffer) const;
     void UpdateMaterials() const;
@@ -130,7 +134,6 @@ namespace Oxylus {
                   std::vector<uint32_t>& indexBuffer,
                   std::vector<Vertex>& vertexBuffer,
                   float globalscale);
-    void LoadFailFallback();
   };
 
   struct VertexLayout {
