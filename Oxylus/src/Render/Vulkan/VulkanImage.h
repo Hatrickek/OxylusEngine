@@ -14,6 +14,7 @@ namespace Oxylus {
     TYPE_2DARRAY
   };
 
+  // TODO(hatrickek): Cleanup
   struct VulkanImageDescription {
     std::string Path{};
     ImageType Type = ImageType::TYPE_2D;

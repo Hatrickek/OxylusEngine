@@ -144,8 +144,6 @@ namespace Oxylus {
     const std::filesystem::path filepath = path;
     const auto extension = filepath.extension();
 
-    if (extension == ".hdr")
-      OX_CORE_ERROR("Loading .hdr files are not supported! .hdr files should be converted to .KTX files to load.");
     if (extension == ".ktx") {
       if (m_ImageDescription.Type == ImageType::TYPE_CUBE)
         LoadCubeMapFromFile(1);
@@ -158,8 +156,9 @@ namespace Oxylus {
       else
         LoadKtxFile(2);
     }
-    if (extension != ".ktx" && extension != ".ktx2")
+    if (extension != ".ktx" && extension != ".ktx2") {
       LoadStbFile();
+    }
 
     Name = filepath.stem().string();
   }
@@ -281,7 +280,10 @@ namespace Oxylus {
     if (m_ImageDescription.Height == 0)
       m_ImageDescription.Height = texHeight;
 
-    imageCreateInfo.mipLevels = 1;
+    if (m_ImageDescription.MipLevels > 1 || m_ImageDescription.GenerateMips)
+      imageCreateInfo.mipLevels = GetMaxMipmapLevel(m_ImageDescription.Width, m_ImageDescription.Height, 1);
+    else
+      imageCreateInfo.mipLevels = 1;
     imageCreateInfo.extent.width = m_ImageDescription.Width;
     imageCreateInfo.extent.height = m_ImageDescription.Height;
     imageCreateInfo.format = m_ImageDescription.Format;
@@ -381,14 +383,14 @@ namespace Oxylus {
 
   void VulkanImage::LoadKtxFile(const int version) {
     ProfilerTimer timer;
-    const auto& LogicalDevice = VulkanContext::Context.Device;
-    const auto& PhysicalDevice = VulkanContext::Context.PhysicalDevice;
+    const auto& LogicalDevice = VulkanContext::GetDevice();
+    const auto& PhysicalDevice = VulkanContext::GetPhysicalDevice();
 
     const auto& path = m_ImageDescription.Path;
     ktxTexture1* kTexture1 = nullptr;
     ktxTexture2* kTexture2 = nullptr;
-    ktxVulkanTexture texture;
-    ktxVulkanDeviceInfo kvdi;
+    ktxVulkanTexture texture = {};
+    ktxVulkanDeviceInfo kvdi = {};
 
     ktxVulkanDeviceInfo_Construct(&kvdi,
       PhysicalDevice,
@@ -401,7 +403,7 @@ namespace Oxylus {
       ktxResult result = ktxTexture1_CreateFromNamedFile(path.c_str(), KTX_TEXTURE_CREATE_NO_FLAGS, &kTexture1);
 
       if (result != KTX_SUCCESS)
-        OX_CORE_ERROR("Couldn't load the KTX texture file. {}", ktxErrorString(result));
+        OX_CORE_ERROR("Couldn't load the KTX texture file. {0}, {1}", ktxErrorString(result), path);
 
       result = ktxTexture1_VkUploadEx(kTexture1,
         &kvdi,
@@ -411,7 +413,7 @@ namespace Oxylus {
         static_cast<VkImageLayout>(m_ImageDescription.FinalImageLayout));
 
       if (result != KTX_SUCCESS)
-        OX_CORE_ERROR("Failed to upload the ktx texture. {}", ktxErrorString(result));
+        OX_CORE_ERROR("Failed to upload the ktx texture. {0}, {1}", ktxErrorString(result), path);
 
       m_ImageDescription.Width = kTexture1->baseWidth;
       m_ImageDescription.Height = kTexture1->baseHeight;
@@ -424,17 +426,17 @@ namespace Oxylus {
       ktxResult result = ktxTexture2_CreateFromNamedFile(path.c_str(), KTX_TEXTURE_CREATE_NO_FLAGS, &kTexture2);
 
       if (result != KTX_SUCCESS)
-        OX_CORE_ERROR("Couldn't load the KTX texture file. {}", ktxErrorString(result));
+        OX_CORE_ERROR("Couldn't load the KTX texture file. {0}, {1}", ktxErrorString(result), path);
 
       result = ktxTexture2_VkUploadEx(kTexture2,
         &kvdi,
         &texture,
         VK_IMAGE_TILING_OPTIMAL,
         static_cast<VkImageUsageFlags>(m_ImageDescription.UsageFlags),
-        static_cast<VkImageLayout>(m_ImageDescription.FinalImageLayout));
+        VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL);
 
       if (result != KTX_SUCCESS)
-        OX_CORE_ERROR("Failed to upload the ktx texture. {}", ktxErrorString(result));
+        OX_CORE_ERROR("Failed to upload the ktx texture. {0}, {1}", ktxErrorString(result), path);
 
       m_ImageDescription.Width = kTexture2->baseWidth;
       m_ImageDescription.Height = kTexture2->baseHeight;
@@ -574,6 +576,7 @@ namespace Oxylus {
         }
 
         barrier.subresourceRange.baseMipLevel = m_ImageDescription.MipLevels - 1;
+        barrier.subresourceRange.levelCount = VK_REMAINING_MIP_LEVELS;
         barrier.oldLayout = VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL;
         barrier.newLayout = (VkImageLayout)m_ImageDescription.FinalImageLayout;
         barrier.srcAccessMask = VK_ACCESS_TRANSFER_WRITE_BIT;

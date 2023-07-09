@@ -104,17 +104,13 @@ namespace Oxylus {
     TryLoad(parNode, "DoubleSided", Parameters.DoubleSided);
     TryLoad(parNode, "UVScale", Parameters.UVScale);
 
-    VulkanImageDescription desc;
-    desc.FlipOnLoad = true;
-    desc.CreateDescriptorSet = true;
-
-    LoadIfPathExists(nodeRoot["Textures"], "Albedo", m_Material->AlbedoTexture, desc);
-    LoadIfPathExists(nodeRoot["Textures"], "Normal", m_Material->NormalTexture, desc);
-    LoadIfPathExists(nodeRoot["Textures"], "Roughness", m_Material->RoughnessTexture, desc);
-    LoadIfPathExists(nodeRoot["Textures"], "Metallic", m_Material->MetallicTexture, desc);
-    LoadIfPathExists(nodeRoot["Textures"], "AO", m_Material->AOTexture, desc);
-    LoadIfPathExists(nodeRoot["Textures"], "AO", m_Material->AOTexture, desc);
-    LoadIfPathExists(nodeRoot["Textures"], "Emmisive", m_Material->EmissiveTexture, desc);
+    LoadIfPathExists(nodeRoot["Textures"], "Albedo", m_Material->AlbedoTexture);
+    LoadIfPathExists(nodeRoot["Textures"], "Normal", m_Material->NormalTexture);
+    LoadIfPathExists(nodeRoot["Textures"], "Roughness", m_Material->RoughnessTexture);
+    LoadIfPathExists(nodeRoot["Textures"], "Metallic", m_Material->MetallicTexture);
+    LoadIfPathExists(nodeRoot["Textures"], "AO", m_Material->AOTexture);
+    LoadIfPathExists(nodeRoot["Textures"], "AO", m_Material->AOTexture);
+    LoadIfPathExists(nodeRoot["Textures"], "Emmisive", m_Material->EmissiveTexture);
 
     m_Material->Update();
   }
@@ -126,13 +122,16 @@ namespace Oxylus {
 
   void MaterialSerializer::LoadIfPathExists(ryml::ConstNodeRef parentNode,
                                             const char* nodeName,
-                                            Ref<VulkanImage>& texture,
-                                            VulkanImageDescription& desc) const {
+                                            Ref<VulkanImage>& texture) const {
     std::string path{};
     if (parentNode.has_child(ryml::to_csubstr(nodeName))) {
       parentNode[ryml::to_csubstr(nodeName)] >> path;
       path = FileUtils::GetPreferredPath(path);
+
+      VulkanImageDescription desc;
+      desc.CreateDescriptorSet = true;
       desc.Path = path;
+      desc.GenerateMips = true;
       texture = AssetManager::GetImageAsset(desc).Data;
     }
   }

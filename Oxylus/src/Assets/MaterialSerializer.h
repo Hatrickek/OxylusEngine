@@ -16,8 +16,7 @@ namespace Oxylus {
     void SaveIfPathExists(ryml::NodeRef node, const Ref<VulkanImage>& texture) const;
     void LoadIfPathExists(ryml::ConstNodeRef parentNode,
                           const char* nodeName,
-                          Ref<VulkanImage>& texture,
-                          VulkanImageDescription& desc) const;
+                          Ref<VulkanImage>& texture) const;
 
     Material* m_Material;
   };
