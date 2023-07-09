@@ -19,10 +19,12 @@ namespace Oxylus {
                                        const char* requesting_source,
                                        size_t include_depth) override {
       const std::string name = std::string(requested_source);
-      const std::string filepath = std::string(fmt::format("Resources/Shaders/{0}", name));
+      const auto dir = std::filesystem::path(Application::Get()->Spec.ResourcesPath) / fmt::format("Shaders/{0}", name);
+      const std::string filepath = dir.string();
       const auto content = FileUtils::ReadFile(filepath);
       OX_CORE_ASSERT(content,
-        fmt::format("Couldn't load the include file: {0} for shader: {1}", requested_source, requesting_source).c_str());
+        fmt::format("Couldn't load the include file: {0} for shader: {1}", requested_source, requesting_source).c_str(
+        ));
 
       const auto container = new std::array<std::string, 2>;
       (*container)[0] = name;
@@ -47,7 +49,7 @@ namespace Oxylus {
   };
 
   static const char* GetCacheDirectory() {
-    return "Resources/Shaders/Compiled/";
+    return (std::filesystem::path(Application::Get()->Spec.ResourcesPath) / "Shaders/Compiled/").string().c_str();
   }
 
   static void CreateCacheDirectoryIfNeeded() {
@@ -68,7 +70,9 @@ namespace Oxylus {
 
   std::filesystem::path VulkanShader::GetCachedDirectory(const vk::ShaderStageFlagBits stage,
                                                          const std::filesystem::path& cacheDirectory) {
-    return cacheDirectory / (m_VulkanFilePath[stage].filename().string() + GetCompiledFileExtension(stage));
+    return cacheDirectory / m_VulkanFilePath[stage].stem()
+                                                   .string()
+                                                   .append(GetCompiledFileExtension(stage));
   }
 
   static shaderc_shader_kind GLShaderStageToShaderC(vk::ShaderStageFlagBits stage) {
@@ -261,7 +265,11 @@ namespace Oxylus {
       }
     }
     for (uint32_t i = 0; i < blockCount; i++)
-      data.PushConstants.emplace_back(PushConstantData{blockVariables[i]->size, blockVariables[i]->members[0].offset, (vk::ShaderStageFlagBits)module.shader_stage});
+      data.PushConstants.emplace_back(PushConstantData{
+        blockVariables[i]->size,
+        blockVariables[i]->members[0].offset,
+        (vk::ShaderStageFlagBits)module.shader_stage
+      });
     data.Stage |= (vk::ShaderStageFlagBits)module.shader_stage;
 
     return data;
@@ -302,7 +310,8 @@ namespace Oxylus {
     }
   }
 
-  std::vector<vk::DescriptorSetLayout> VulkanShader::CreateLayout(const std::vector<std::vector<vk::DescriptorSetLayoutBinding>>& layoutBindings) {
+  std::vector<vk::DescriptorSetLayout> VulkanShader::CreateLayout(
+    const std::vector<std::vector<vk::DescriptorSetLayoutBinding>>& layoutBindings) {
     std::vector<vk::DescriptorSetLayout> layouts;
 
     for (auto& layoutBinding : layoutBindings) {
@@ -311,7 +320,9 @@ namespace Oxylus {
       descriptorSetLayoutCreateInfo.bindingCount = (uint32_t)layoutBinding.size();
       descriptorSetLayoutCreateInfo.pBindings = layoutBinding.data();
       vk::DescriptorSetLayout setLayout;
-      const auto result = VulkanContext::GetDevice().createDescriptorSetLayout(&descriptorSetLayoutCreateInfo, nullptr, &setLayout);
+      const auto result = VulkanContext::GetDevice().createDescriptorSetLayout(&descriptorSetLayoutCreateInfo,
+        nullptr,
+        &setLayout);
       VulkanUtils::CheckResult(result);
       layouts.emplace_back(setLayout);
     }
@@ -319,7 +330,8 @@ namespace Oxylus {
     return layouts;
   }
 
-  vk::PipelineLayout VulkanShader::CreatePipelineLayout(const std::vector<vk::DescriptorSetLayout>& descriptorSetLayouts) const {
+  vk::PipelineLayout VulkanShader::CreatePipelineLayout(
+    const std::vector<vk::DescriptorSetLayout>& descriptorSetLayouts) const {
     vk::PipelineLayoutCreateInfo createInfo;
     createInfo.setLayoutCount = (uint32_t)descriptorSetLayouts.size();
     createInfo.pSetLayouts = descriptorSetLayouts.data();
@@ -378,7 +390,9 @@ namespace Oxylus {
     return m_ShaderStages;
   }
 
-  std::vector<vk::WriteDescriptorSet> VulkanShader::GetWriteDescriptorSets(const vk::DescriptorSet& descriptorSet, uint32_t set) {
+  std::vector<vk::WriteDescriptorSet> VulkanShader::GetWriteDescriptorSets(
+    const vk::DescriptorSet& descriptorSet,
+    uint32_t set) {
     std::vector<vk::WriteDescriptorSet> writeDescriptorSets = {};
     const auto& blankImage = VulkanImage::GetBlankImage();
 

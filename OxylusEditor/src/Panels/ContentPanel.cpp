@@ -262,15 +262,15 @@ namespace Oxylus {
     buttonImageDescripton.Format = vk::Format::eR8G8B8A8Unorm;
     buttonImageDescripton.CreateDescriptorSet = true;
 
-    buttonImageDescripton.Path = Resources::GetResourcesPath("Icons/FileIcon.png").string();
+    buttonImageDescripton.Path = Resources::GetResourcesPath("Icons/FileIcon.png");
     m_FileIcon = CreateRef<VulkanImage>();
     m_FileIcon->Create(buttonImageDescripton);
 
-    buttonImageDescripton.Path = Resources::GetResourcesPath("Icons/FolderIcon.png").string();
+    buttonImageDescripton.Path = Resources::GetResourcesPath("Icons/FolderIcon.png");
     m_DirectoryIcon = CreateRef<VulkanImage>();
     m_DirectoryIcon->Create(buttonImageDescripton);
 
-    buttonImageDescripton.Path = Resources::GetResourcesPath("Icons/MeshFileIcon.png").string();
+    buttonImageDescripton.Path = Resources::GetResourcesPath("Icons/MeshFileIcon.png");
     m_MeshIcon = CreateRef<VulkanImage>();
     m_MeshIcon->Create(buttonImageDescripton);
   }

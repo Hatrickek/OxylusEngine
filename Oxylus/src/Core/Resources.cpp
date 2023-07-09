@@ -18,12 +18,13 @@ namespace Oxylus {
     s_EditorResources.EngineIcon.Create(imageDescription);
   }
 
-  std::filesystem::path Resources::GetResourcesPath(const std::filesystem::path& path) {
-    return Application::Get()->Spec.WorkingDirectory / "Resources" / path;
+  std::string Resources::GetResourcesPath(const std::filesystem::path& path) {
+    const auto& spec = Application::Get()->Spec;
+    return (spec.WorkingDirectory / spec.ResourcesPath / path).string();
   }
 
   bool Resources::ResourcesPathExists() {
-    return std::filesystem::exists("Resources");
+    return std::filesystem::exists(Application::Get()->Spec.ResourcesPath);
   }
 
   void Resources::InitEngineResources() {

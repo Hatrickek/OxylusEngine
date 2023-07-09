@@ -95,8 +95,8 @@ namespace Oxylus {
     // Load shader
     VulkanShader shader = {
       ShaderCI{
-        .VertexPath = Resources::GetResourcesPath("Shaders/GenBrdfLut.vert").string(),
-        .FragmentPath = Resources::GetResourcesPath("Shaders/GenBrdfLut.frag").string(),
+        .VertexPath = Resources::GetResourcesPath("Shaders/GenBrdfLut.vert"),
+        .FragmentPath = Resources::GetResourcesPath("Shaders/GenBrdfLut.frag"),
         .EntryPoint = "main", .Name = "BRDFLUT",
       }
     };
@@ -281,8 +281,8 @@ namespace Oxylus {
     // Load shader
     VulkanShader shader = {
       ShaderCI{
-        .VertexPath = Resources::GetResourcesPath("Shaders/FilterCube.vert").string(),
-        .FragmentPath = Resources::GetResourcesPath("Shaders/IrradianceCube.frag").string(),
+        .VertexPath = Resources::GetResourcesPath("Shaders/FilterCube.vert"),
+        .FragmentPath = Resources::GetResourcesPath("Shaders/IrradianceCube.frag"),
         .EntryPoint = "main",
       }
     };
@@ -556,8 +556,8 @@ namespace Oxylus {
     // Pipeline
     VulkanShader shader{
       ShaderCI{
-        .VertexPath = Resources::GetResourcesPath("Shaders/FilterCube.vert").string(),
-        .FragmentPath = Resources::GetResourcesPath("Shaders/PrefilterEnvMap.frag").string(),
+        .VertexPath = Resources::GetResourcesPath("Shaders/FilterCube.vert"),
+        .FragmentPath = Resources::GetResourcesPath("Shaders/PrefilterEnvMap.frag"),
         .EntryPoint = "main",
       }
     };

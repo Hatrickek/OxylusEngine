@@ -82,8 +82,8 @@ namespace Oxylus {
     // Quad pipeline
     {
       auto quadShader = ShaderLibrary::CreateShaderAsync(ShaderCI{
-        .VertexPath = Resources::GetResourcesPath("Shaders/Quad.vert").string(),
-        .FragmentPath = Resources::GetResourcesPath("Shaders/Quad.frag").string(),
+        .VertexPath = Resources::GetResourcesPath("Shaders/Quad.vert"),
+        .FragmentPath = Resources::GetResourcesPath("Shaders/Quad.frag"),
         .EntryPoint = "main",
         .Name = "Quad",
       });
@@ -101,8 +101,8 @@ namespace Oxylus {
     // UI pipeline
     {
       auto uiShader = ShaderLibrary::CreateShaderAsync(ShaderCI{
-        .VertexPath = Resources::GetResourcesPath("Shaders/UI.vert").string(),
-        .FragmentPath = Resources::GetResourcesPath("Shaders/UI.frag").string(),
+        .VertexPath = Resources::GetResourcesPath("Shaders/UI.vert"),
+        .FragmentPath = Resources::GetResourcesPath("Shaders/UI.frag"),
         .EntryPoint = "main",
         .Name = "UI",
       });

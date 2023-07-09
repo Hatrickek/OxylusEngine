@@ -62,7 +62,7 @@ namespace Oxylus {
       fileLoaded = gltfContext.LoadBinaryFromFile(&gltfModel, &error, &warning, path);
     if (!fileLoaded) {
       OX_CORE_ERROR("Couldnt load gltf file: {}", error);
-      LoadFailFallback();
+      return;
     }
     if (!warning.empty())
       OX_CORE_WARN("GLTF loader warning: {}", warning);
@@ -558,17 +558,5 @@ namespace Oxylus {
       Nodes.push_back(newNode);
     }
     LinearNodes.push_back(newNode);
-  }
-
-  void Mesh::LoadFailFallback() {
-    OX_SCOPED_ZONE;
-    if (std::filesystem::exists("Resources/Objects/cube.glb")) {
-      LoadFromFile("Resources/Objects/cube.glb");
-      OX_CORE_ERROR("Could not load mesh file {0}. Falled back to a cube.", Path);
-    }
-    else
-      OX_CORE_ERROR("Couldn't load mesh file {0}", Path);
-    m_Materials[0]->Parameters.Color.r = 1.0f;
-    m_Materials[0]->Parameters.Specular = 0.0f;
   }
 }

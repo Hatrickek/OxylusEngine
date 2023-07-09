@@ -104,10 +104,10 @@ namespace Oxylus {
     m_MeshDrawList.reserve(MAX_NUM_MESHES);
     m_TransparentMeshDrawList.reserve(MAX_NUM_MESHES);
 
-    m_SkyboxCube.LoadFromFile(Resources::GetResourcesPath("Objects/cube.glb").string(), Mesh::FlipY | Mesh::DontCreateMaterials);
+    m_SkyboxCube.LoadFromFile(Resources::GetResourcesPath("Objects/cube.glb"), Mesh::FlipY | Mesh::DontCreateMaterials);
 
     VulkanImageDescription cubeMapDesc{};
-    const auto path = Resources::GetResourcesPath("HDRs/belfast_sunset.ktx2").string();
+    const auto path = Resources::GetResourcesPath("HDRs/belfast_sunset.ktx2");
     cubeMapDesc.Type = ImageType::TYPE_CUBE;
     if (!std::filesystem::exists(path)) {
       cubeMapDesc.Width = 1;
@@ -192,8 +192,13 @@ namespace Oxylus {
       OX_SCOPED_ZONE_N("Mesh System");
       const auto view = scene->m_Registry.view<TransformComponent, MeshRendererComponent, MaterialComponent, TagComponent>();
       for (const auto&& [entity, transform, meshrenderer, material, tag] : view.each()) {
-        if (tag.Enabled)
-          m_MeshDrawList.emplace_back(*meshrenderer.MeshGeometry, Entity(entity, scene).GetWorldTransform(), material.Materials, meshrenderer.SubmesIndex);
+        auto e = Entity(entity, scene);
+        auto parent = e.GetParent();
+        bool parentEnabled = true;
+        if (parent)
+            parentEnabled = parent.GetComponent<TagComponent>().Enabled;
+        if (tag.Enabled && parentEnabled)
+          m_MeshDrawList.emplace_back(*meshrenderer.MeshGeometry, e.GetWorldTransform(), material.Materials, meshrenderer.SubmesIndex);
       }
     }
 
@@ -984,77 +989,77 @@ namespace Oxylus {
     OX_SCOPED_ZONE;
     // Create shaders
     auto skyboxShader = ShaderLibrary::CreateShaderAsync(ShaderCI{
-      .VertexPath = Resources::GetResourcesPath("Shaders/Skybox.vert").string(),
-      .FragmentPath = Resources::GetResourcesPath("Shaders/Skybox.frag").string(),
+      .VertexPath = Resources::GetResourcesPath("Shaders/Skybox.vert"),
+      .FragmentPath = Resources::GetResourcesPath("Shaders/Skybox.frag"),
       .EntryPoint = "main", .Name = "Skybox"
     });
     auto pbrShader = ShaderLibrary::CreateShaderAsync(ShaderCI{
-      .VertexPath = Resources::GetResourcesPath("Shaders/PBRTiled.vert").string(),
-      .FragmentPath = Resources::GetResourcesPath("Shaders/PBRTiled.frag").string(),
+      .VertexPath = Resources::GetResourcesPath("Shaders/PBRTiled.vert"),
+      .FragmentPath = Resources::GetResourcesPath("Shaders/PBRTiled.frag"),
       .EntryPoint = "main", .Name = "PBRTiled",
     });
     auto unlitShader = ShaderLibrary::CreateShaderAsync(ShaderCI{
-      .VertexPath = Resources::GetResourcesPath("Shaders/Unlit.vert").string(),
-      .FragmentPath = Resources::GetResourcesPath("Shaders/Unlit.frag").string(),
+      .VertexPath = Resources::GetResourcesPath("Shaders/Unlit.vert"),
+      .FragmentPath = Resources::GetResourcesPath("Shaders/Unlit.frag"),
       .EntryPoint = "main", .Name = "Unlit",
     });
     auto directShadowShader = ShaderLibrary::CreateShaderAsync(ShaderCI{
-      .VertexPath = Resources::GetResourcesPath("Shaders/DirectShadowDepthPass.vert").string(),
-      .FragmentPath = Resources::GetResourcesPath("Shaders/DirectShadowDepthPass.frag").string(),
+      .VertexPath = Resources::GetResourcesPath("Shaders/DirectShadowDepthPass.vert"),
+      .FragmentPath = Resources::GetResourcesPath("Shaders/DirectShadowDepthPass.frag"),
       .EntryPoint = "main", .Name = "DirectShadowDepth"
     });
     auto depthPassShader = ShaderLibrary::CreateShaderAsync(ShaderCI{
-      .VertexPath = Resources::GetResourcesPath("Shaders/DepthNormalPass.vert").string(),
-      .FragmentPath = Resources::GetResourcesPath("Shaders/DepthNormalPass.frag").string(),
+      .VertexPath = Resources::GetResourcesPath("Shaders/DepthNormalPass.vert"),
+      .FragmentPath = Resources::GetResourcesPath("Shaders/DepthNormalPass.frag"),
       .EntryPoint = "main", .Name = "DepthPass"
     });
     auto ssaoShader = ShaderLibrary::CreateShaderAsync(ShaderCI{
       .EntryPoint = "main",
       .Name = "SSAO",
-      .ComputePath = Resources::GetResourcesPath("Shaders/SSAO.comp").string(),
+      .ComputePath = Resources::GetResourcesPath("Shaders/SSAO.comp"),
     });
     auto bloomShader = ShaderLibrary::CreateShaderAsync(ShaderCI{
       .EntryPoint = "main",
       .Name = "Bloom",
-      .ComputePath = Resources::GetResourcesPath("Shaders/Bloom.comp").string(),
+      .ComputePath = Resources::GetResourcesPath("Shaders/Bloom.comp"),
     });
     auto ssrShader = ShaderLibrary::CreateShaderAsync(ShaderCI{
       .EntryPoint = "main",
       .Name = "SSR",
-      .ComputePath = Resources::GetResourcesPath("Shaders/SSR.comp").string(),
+      .ComputePath = Resources::GetResourcesPath("Shaders/SSR.comp"),
     });
     auto atmosphereShader = ShaderLibrary::CreateShaderAsync(ShaderCI{
       .EntryPoint = "main",
       .Name = "AtmosphericScattering",
-      .ComputePath = Resources::GetResourcesPath("Shaders/AtmosphericScattering.comp").string(),
+      .ComputePath = Resources::GetResourcesPath("Shaders/AtmosphericScattering.comp"),
     });
     auto compositeShader = ShaderLibrary::CreateShaderAsync(ShaderCI{
       .EntryPoint = "main",
       .Name = "Composite",
-      .ComputePath = Resources::GetResourcesPath("Shaders/Composite.comp").string(),
+      .ComputePath = Resources::GetResourcesPath("Shaders/Composite.comp"),
     });
     auto postProcessShader = ShaderLibrary::CreateShaderAsync(ShaderCI{
-      .VertexPath = Resources::GetResourcesPath("Shaders/PostProcess.vert").string(),
-      .FragmentPath = Resources::GetResourcesPath("Shaders/PostProcess.frag").string(),
+      .VertexPath = Resources::GetResourcesPath("Shaders/PostProcess.vert"),
+      .FragmentPath = Resources::GetResourcesPath("Shaders/PostProcess.frag"),
       .EntryPoint = "main", .Name = "PostProcess"
     });
     auto frustumGridShader = ShaderLibrary::CreateShaderAsync(ShaderCI{
       .EntryPoint = "main", .Name = "FrustumGrid",
-      .ComputePath = Resources::GetResourcesPath("Shaders/ComputeFrustumGrid.comp").string(),
+      .ComputePath = Resources::GetResourcesPath("Shaders/ComputeFrustumGrid.comp"),
     });
     auto lightListShader = ShaderLibrary::CreateShaderAsync(ShaderCI{
       .EntryPoint = "main", .Name = "LightList",
-      .ComputePath = Resources::GetResourcesPath("Shaders/ComputeLightList.comp").string(),
+      .ComputePath = Resources::GetResourcesPath("Shaders/ComputeLightList.comp"),
     });
     auto depthOfFieldShader = ShaderLibrary::CreateShaderAsync(ShaderCI{
       .EntryPoint = "main",
       .Name = "DepthOfField",
-      .ComputePath = Resources::GetResourcesPath("Shaders/DepthOfField.comp").string(),
+      .ComputePath = Resources::GetResourcesPath("Shaders/DepthOfField.comp"),
     });
     auto gaussianBlurShader = ShaderLibrary::CreateShaderAsync(ShaderCI{
       .EntryPoint = "main",
       .Name = "GaussianBlur",
-      .ComputePath = Resources::GetResourcesPath("Shaders/GaussianBlur.comp").string(),
+      .ComputePath = Resources::GetResourcesPath("Shaders/GaussianBlur.comp"),
     });
 
     PipelineDescription pbrPipelineDesc{};

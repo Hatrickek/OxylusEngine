@@ -20,7 +20,7 @@ namespace Oxylus {
     static void InitEngineResources();
     static void InitEditorResources();
 
-    static std::filesystem::path GetResourcesPath(const std::filesystem::path& path);
+    static std::string GetResourcesPath(const std::filesystem::path& path);
     static bool ResourcesPathExists();
   };
 }

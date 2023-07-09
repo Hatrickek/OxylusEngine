@@ -5,6 +5,9 @@
 #include <backends/imgui_impl_vulkan.h>
 #include <icons/IconsMaterialDesignIcons.h>
 #include <icons/MaterialDesign.inl>
+
+#include "Core/Resources.h"
+
 #include "Render/Window.h"
 #include "Render/Vulkan/VulkanContext.h"
 #include "Render/Vulkan/VulkanRenderer.h"
@@ -94,8 +97,8 @@ namespace Oxylus {
     ImGui_ImplGlfw_InitForVulkan(Window::GetGLFWWindow(), true);
 
     // Upload Fonts
-    constexpr const char* regularFontPath = "Resources/Fonts/jetbrains-mono/JetBrainsMono-Regular.ttf";
-    constexpr const char* boldFontPath = "Resources/Fonts/jetbrains-mono/JetBrainsMono-Bold.ttf";
+    const auto regularFontPath = Resources::GetResourcesPath("Fonts/jetbrains-mono/JetBrainsMono-Regular.ttf");
+    const auto boldFontPath = Resources::GetResourcesPath("Fonts/jetbrains-mono/JetBrainsMono-Bold.ttf");
 
     const ImGuiIO& io = ImGui::GetIO();
     constexpr float fontSize = 16.0f;
@@ -108,11 +111,11 @@ namespace Oxylus {
     iconsConfig.GlyphMinAdvanceX = 4.0f;
     iconsConfig.SizePixels = 12.0f;
 
-    RegularFont = io.Fonts->AddFontFromFileTTF(regularFontPath, fontSize, &iconsConfig);
+    RegularFont = io.Fonts->AddFontFromFileTTF(regularFontPath.c_str(), fontSize, &iconsConfig);
     AddIconFont(fontSize);
-    SmallFont = io.Fonts->AddFontFromFileTTF(regularFontPath, fontSizeSmall, &iconsConfig);
+    SmallFont = io.Fonts->AddFontFromFileTTF(regularFontPath.c_str(), fontSizeSmall, &iconsConfig);
     AddIconFont(fontSizeSmall);
-    BoldFont = io.Fonts->AddFontFromFileTTF(boldFontPath, fontSize, &iconsConfig);
+    BoldFont = io.Fonts->AddFontFromFileTTF(boldFontPath.c_str(), fontSize, &iconsConfig);
     AddIconFont(fontSize);
 
     io.Fonts->TexGlyphPadding = 1;
