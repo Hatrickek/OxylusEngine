@@ -112,6 +112,7 @@ namespace Oxylus {
     SetPosition(pos);
     SetPitch(rotation.x);
     SetYaw(rotation.y);
+    m_Tilt = rotation.z;
     UpdateViewMatrix();
   }
 
@@ -127,7 +128,7 @@ namespace Oxylus {
     m_Forward.z = sinYaw * cosPitch;
 
     m_Forward = glm::normalize(m_Forward);
-    m_Right = glm::normalize(glm::cross(m_Forward, {0, 1, 0}));
+    m_Right = glm::normalize(glm::cross(m_Forward, {m_Tilt, 1, m_Tilt}));
     m_Up = glm::normalize(glm::cross(m_Right, m_Forward));
 
     m_ViewMatrix = glm::lookAt(m_Position, m_Position + m_Forward, m_Up);

@@ -18,6 +18,9 @@ namespace Oxylus {
   constexpr float NEARCLIP = 0.01f;
   constexpr float FARCLIP = 1000.0f;
 
+
+  // TODO(hatrickek): Cleanup
+
   /**
    * \brief Camera class only to be used for the Editor. For Runtime `Camera Component` must be used.
    */
@@ -68,5 +71,6 @@ namespace Oxylus {
     Mat4 m_ViewMatrix;
     float m_Yaw = 0;
     float m_Pitch = 0;
+    float m_Tilt = 0;
   };
 }
