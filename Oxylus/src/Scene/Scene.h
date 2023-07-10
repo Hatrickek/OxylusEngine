@@ -7,12 +7,12 @@
 
 #include "Core/UUID.h"
 #include "Core/Systems/System.h"
-#include "entt/entt.hpp"
 #include "Jolt/Physics/PhysicsSystem.h"
 #include "Jolt/Physics/Body/BodyInterface.h"
 #include "Physics/PhyiscsInterfaces.h"
 #include "Render/Mesh.h"
 #include "Render/Camera.h"
+#include <entt/entity/registry.hpp>
 
 namespace Oxylus {
   class Entity;

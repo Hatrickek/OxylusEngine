@@ -33,9 +33,10 @@ namespace Oxylus {
   }
 
   Scene::Scene(const Scene& scene) {
-    const auto& reg = scene.m_Registry;
     this->SceneName = scene.SceneName;
-    this->m_Registry.assign(reg.data(), reg.data() + reg.size(), reg.released());
+    const auto pack = this->m_Registry.storage<entt::entity>().data();
+    const auto packSize = this->m_Registry.storage<entt::entity>().size();
+    this->m_Registry.storage<entt::entity>().push(pack, pack + packSize);
   }
 
   void Scene::Init() {

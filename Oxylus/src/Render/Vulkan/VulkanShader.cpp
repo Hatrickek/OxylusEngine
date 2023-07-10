@@ -48,8 +48,8 @@ namespace Oxylus {
     }
   };
 
-  static const char* GetCacheDirectory() {
-    return (std::filesystem::path(Application::Get()->Spec.ResourcesPath) / "Shaders/Compiled/").string().c_str();
+  static std::string GetCacheDirectory() {
+    return (std::filesystem::path(Application::Get()->Spec.ResourcesPath) / "Shaders/Compiled/").string();
   }
 
   static void CreateCacheDirectoryIfNeeded() {

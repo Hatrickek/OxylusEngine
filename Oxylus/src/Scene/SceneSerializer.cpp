@@ -26,13 +26,13 @@ namespace Oxylus {
     ryml::NodeRef entities = root["Entities"];
     entities |= ryml::SEQ;
 
-    m_Scene->m_Registry.each([&](auto entityID) {
-      const Entity entity = {entityID, m_Scene.get()};
+    for(const auto [e] : m_Scene->m_Registry.storage<entt::entity>().each()) {
+      const Entity entity = {e, m_Scene.get()};
       if (!entity)
         return;
 
       EntitySerializer::SerializeEntity(m_Scene.get(), entities, entity);
-    });
+    }
 
     std::stringstream ss;
     ss << tree;

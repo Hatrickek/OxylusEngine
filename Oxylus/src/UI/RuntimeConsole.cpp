@@ -208,7 +208,7 @@ namespace Oxylus {
   }
 
   RuntimeConsole::ParsedCommandValue RuntimeConsole::ParseValue(const std::string& command) {
-    if (!command.contains(' '))
+    if (command.find(' ') == std::string::npos)
       return {""};
     const auto offset = command.find(' ');
     const auto value = command.substr(offset + 1, command.size() - offset);

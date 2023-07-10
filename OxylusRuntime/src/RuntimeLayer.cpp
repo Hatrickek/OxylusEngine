@@ -5,7 +5,6 @@
 #include <Render/Vulkan/VulkanRenderer.h>
 #include <Scene/SceneSerializer.h>
 #include <Utils/ImGuiScoped.h>
-#include <entt.hpp>
 
 #include "Systems/CharacterSystem.h"
 #include "Systems/FreeCamera.h"

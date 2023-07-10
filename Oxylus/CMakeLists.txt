@@ -67,21 +67,11 @@ add_library(${PROJECT_NAME} STATIC ${ALL_FILES})
 
 set(ROOT_NAMESPACE Oxylus)
 
-set_target_properties(${PROJECT_NAME} PROPERTIES
-  VS_GLOBAL_KEYWORD "Win32Proj"
-  )
-
 # Target name
 set_target_properties(${PROJECT_NAME} PROPERTIES
   TARGET_NAME_DEBUG "Oxylus"
   TARGET_NAME_RELEASE "Oxylus"
   TARGET_NAME_Distribution "Oxylus"
-  )
-# Output directory
-set_target_properties(${PROJECT_NAME} PROPERTIES
-  OUTPUT_DIRECTORY_DEBUG "${CMAKE_CURRENT_SOURCE_DIR}/../../bin/Debug-windows-x86_64/Oxylus/"
-  OUTPUT_DIRECTORY_RELEASE "${CMAKE_CURRENT_SOURCE_DIR}/../../bin/Release-windows-x86_64/Oxylus/"
-  OUTPUT_DIRECTORY_Distribution "${CMAKE_CURRENT_SOURCE_DIR}/../../bin/Distribution-windows-x86_64/Oxylus/"
   )
 
 # Include directories
@@ -91,9 +81,7 @@ target_include_directories(${PROJECT_NAME} PUBLIC
   "${CMAKE_CURRENT_SOURCE_DIR}/vendor/GLFW/include;"
   "${CMAKE_CURRENT_SOURCE_DIR}/vendor/ImGui;"
   "${CMAKE_CURRENT_SOURCE_DIR}/vendor/glm;"
-  "${CMAKE_CURRENT_SOURCE_DIR}/vendor/entt;"
   "${CMAKE_CURRENT_SOURCE_DIR}/vendor/ImGuizmo;"
-  "${CMAKE_CURRENT_SOURCE_DIR}/.;"
   "${CMAKE_CURRENT_SOURCE_DIR}/vendor/tinygltf;"
   "${CMAKE_CURRENT_SOURCE_DIR}/vendor/miniaudio;"
   "${CMAKE_CURRENT_SOURCE_DIR}/vendor/tracy/public"
@@ -239,12 +227,37 @@ if(NOT SHADERC_FROM_SOURCE)
     endif()
 endif()
 
+# entt
+FetchContent_Declare(
+    EnTT
+    GIT_REPOSITORY "https://github.com/skypjack/entt.git"
+    GIT_TAG "master"
+    GIT_SHALLOW    TRUE
+    GIT_PROGRESS   TRUE
+)
+FetchContent_MakeAvailable(EnTT)
+target_link_libraries(${PROJECT_NAME} PUBLIC EnTT)
+set_targets_static_and_folder(EnTT)
+
 # VMA
 target_include_directories(${PROJECT_NAME} PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}/vendor/VulkanMemoryAllocator/include")
 
 # spirv-reflect
-target_include_directories(${PROJECT_NAME} PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}/vendor/spirv-reflect/")
-target_sources(${PROJECT_NAME} PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}/vendor/spirv-reflect/spirv_reflect.cpp")
+set(SPIRV_REFLECT_EXECUTABLE OFF CACHE BOOL "" FORCE)
+set(SPIRV_REFLECT_EXAMPLES OFF CACHE BOOL "" FORCE)
+set(SPIRV_REFLECT_STATIC_LIB ON CACHE BOOL "" FORCE)
+FetchContent_Declare(
+    spirv-reflect
+    GIT_REPOSITORY "https://github.com/KhronosGroup/SPIRV-Reflect.git"
+    GIT_TAG "main"
+    GIT_SHALLOW    TRUE
+    GIT_PROGRESS   TRUE
+)
+FetchContent_MakeAvailable(spirv-reflect)
+get_target_property(SPIRV_REFLECT_DIR spirv-reflect-static SOURCE_DIR)
+target_include_directories(${PROJECT_NAME} PUBLIC ${SPIRV_REFLECT_DIR})
+target_sources(${PROJECT_NAME} PUBLIC "${SPIRV_REFLECT_DIR}/spirv_reflect.cpp")
+set_targets_static_and_folder(spirv-reflect-static)
 
 # Build shaderc from source
 if(SHADERC_FROM_SOURCE)
@@ -252,9 +265,11 @@ if(SHADERC_FROM_SOURCE)
     set(BUILD_TESTS OFF)
     set(SPIRV_HEADERS_SKIP_EXAMPLES ON)
     FetchContent_Declare(
-            SPIRV-Headers
-            GIT_REPOSITORY "https://github.com/KhronosGroup/SPIRV-Headers.git"
-            GIT_TAG "sdk-1.3.243.0"
+        SPIRV-Headers
+        GIT_REPOSITORY "https://github.com/KhronosGroup/SPIRV-Headers.git"
+        GIT_TAG "sdk-1.3.243.0"
+        GIT_SHALLOW    TRUE
+        GIT_PROGRESS   TRUE
     )
     FetchContent_MakeAvailable(SPIRV-Headers)
     get_target_property(SPIRV_HEADER_DIR SPIRV-Headers SOURCE_DIR)
@@ -265,9 +280,11 @@ if(SHADERC_FROM_SOURCE)
     set(SPIRV_SKIP_TESTS ON)
     set(SPIRV_SKIP_EXECUTABLES ON)
     FetchContent_Declare(
-            SPIRV-Tools
-            GIT_REPOSITORY "https://github.com/KhronosGroup/SPIRV-Tools.git"
-            GIT_TAG "v2023.2"
+        SPIRV-Tools
+        GIT_REPOSITORY "https://github.com/KhronosGroup/SPIRV-Tools.git"
+        GIT_TAG "v2023.2"
+        GIT_SHALLOW    TRUE
+        GIT_PROGRESS   TRUE
     )
     FetchContent_MakeAvailable(SPIRV-Tools)
     get_target_property(SPIRV_TOOLS_DIR SPIRV-Tools SOURCE_DIR)
@@ -281,9 +298,11 @@ if(SHADERC_FROM_SOURCE)
     set(SKIP_GLSLANG_INSTALL ON)
     set(BUILD_EXTERNAL OFF)
     FetchContent_Declare(
-            glslang
-            GIT_REPOSITORY "https://github.com/KhronosGroup/glslang.git"
-            GIT_TAG "12.1.0"
+        glslang
+        GIT_REPOSITORY "https://github.com/KhronosGroup/glslang.git"
+        GIT_TAG "12.1.0"
+        GIT_SHALLOW    TRUE
+        GIT_PROGRESS   TRUE
     )
     FetchContent_MakeAvailable(glslang)
     get_target_property(GLSL_SOURCE_DIR glslang SOURCE_DIR)
@@ -301,9 +320,11 @@ if(SHADERC_FROM_SOURCE)
     set(SHADERC_SKIP_COPYRIGHT_CHECK ON)    
     set(SHADERC_GLSLANG_DIR ${GLSL_SOURCE_DIR})
     FetchContent_Declare(
-            shaderc
-            GIT_REPOSITORY "https://github.com/google/shaderc.git"
-            GIT_TAG "v2023.3"
+        shaderc
+        GIT_REPOSITORY "https://github.com/google/shaderc.git"
+        GIT_TAG "v2023.3"
+        GIT_SHALLOW    TRUE
+        GIT_PROGRESS   TRUE
     )
     FetchContent_MakeAvailable(shaderc)
     target_link_libraries(${PROJECT_NAME} PUBLIC shaderc)
@@ -319,8 +340,17 @@ if(SHADERC_FROM_SOURCE)
 endif()
 
 # NFD
-add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/vendor/nativefiledialog-extended)
+FetchContent_Declare(
+    nfd
+    GIT_REPOSITORY "https://github.com/btzy/nativefiledialog-extended.git"
+    GIT_TAG "master"
+    GIT_SHALLOW    TRUE
+    GIT_PROGRESS   TRUE
+)
+FetchContent_MakeAvailable(nfd)
 target_link_libraries(${PROJECT_NAME} PUBLIC nfd)
+get_target_property(NFD_DIR nfd SOURCE_DIR)
+target_include_directories(${PROJECT_NAME} PUBLIC ${NFD_DIR}/include)
 set_targets_static_and_folder(nfd)
 
 # GLFW
@@ -334,9 +364,15 @@ FOLDER_DIR_TARGETS(uninstall)
 disable_ipo_target(glfw)
 
 # RYML
-add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/vendor/ryml)
+FetchContent_Declare(
+    ryml
+    GIT_REPOSITORY "https://github.com/biojppm/rapidyaml.git"
+    GIT_TAG "master"
+    GIT_SHALLOW    TRUE
+    GIT_PROGRESS   TRUE
+)
+FetchContent_MakeAvailable(ryml)
 target_link_libraries(${PROJECT_NAME} PUBLIC ryml::ryml)
-set_target_properties(ryml PROPERTIES  FOLDER "Vendor")
 target_link_libraries(${PROJECT_NAME} PUBLIC c4core)
 set_targets_static_and_folder(ryml)
 
@@ -348,9 +384,11 @@ set(KTX_FEATURE_GL_UPLOAD OFF)
 set(KTX_FEATURE_STATIC_LIBRARY ON)
 set(BASISU_SUPPORT_OPENCL OFF)
 FetchContent_Declare(
-        ktx
-        GIT_REPOSITORY "https://github.com/KhronosGroup/KTX-Software"
-        GIT_TAG "v4.1.0"
+    ktx
+    GIT_REPOSITORY "https://github.com/KhronosGroup/KTX-Software"
+    GIT_TAG "v4.1.0"
+    GIT_SHALLOW    TRUE
+    GIT_PROGRESS   TRUE
 )
 FetchContent_MakeAvailable(ktx)
 target_link_libraries(${PROJECT_NAME} PUBLIC ktx)
@@ -358,9 +396,13 @@ set_targets_static_and_folder(ktx)
 disable_ipo_target(ktx)
 
 # FMT
-FetchContent_Declare(fmt
-  GIT_REPOSITORY https://github.com/fmtlib/fmt.git
-  GIT_TAG master)
+FetchContent_Declare(
+    fmt
+    GIT_REPOSITORY https://github.com/fmtlib/fmt.git
+    GIT_TAG master
+    GIT_SHALLOW    TRUE
+    GIT_PROGRESS   TRUE
+)
 FetchContent_MakeAvailable(fmt)
 target_link_libraries(${PROJECT_NAME} PUBLIC fmt)
 set_targets_static_and_folder(fmt)
@@ -370,10 +412,12 @@ set(COMPILE_AS_SHARED_LIBRARY OFF)
 set(ENABLE_ALL_WARNINGS OFF)
 set(INTERPROCEDURAL_OPTIMIZATION ON)
 FetchContent_Declare(
-        JoltPhysics
-        GIT_REPOSITORY "https://github.com/jrouwe/JoltPhysics"
-        GIT_TAG "master"
-		SOURCE_SUBDIR "Build"
+    JoltPhysics
+    GIT_REPOSITORY "https://github.com/jrouwe/JoltPhysics"
+    GIT_TAG "master"
+    SOURCE_SUBDIR "Build"
+    GIT_SHALLOW    TRUE
+    GIT_PROGRESS   TRUE
 )
 FetchContent_MakeAvailable(JoltPhysics)
 target_link_libraries(${PROJECT_NAME} PUBLIC Jolt)

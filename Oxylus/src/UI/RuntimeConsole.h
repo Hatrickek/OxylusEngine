@@ -2,6 +2,8 @@
 
 #include <imgui.h>
 #include <functional>
+#include <optional>
+#include <charconv>
 
 #include "Utils/Log.h"
 
