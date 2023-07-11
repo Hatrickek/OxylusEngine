@@ -3,7 +3,6 @@
 #include "Core/Base.h"
 #include "Utils/Log.h"
 #include "Utils/Profiler.h"
-#include <iostream>
 
 namespace Oxylus {
   BPLayerInterfaceImpl Physics::s_LayerInterface;
@@ -33,8 +32,8 @@ namespace Oxylus {
 
 #ifdef JPH_ENABLE_ASSERTS
   static bool AssertFailedImpl(const char* inExpression, const char* inMessage, const char* inFile, JPH::uint inLine) {
-    std::cout << inFile << ":" << inLine << ": (" << inExpression << ") " << (inMessage != nullptr ? inMessage : "") << std::endl;
-    return true;
+      OX_CORE_FATAL("{0}:{1}:{2} {3}", inFile, inLine, inExpression, inMessage != nullptr ? inMessage : "");
+      return true;
   };
 #endif
 
