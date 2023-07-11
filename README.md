@@ -32,6 +32,7 @@ PBR Testing scene with Depth Of Field, SSR, SSAO, Bloom, Vignette, Film Grain, C
 Sponza scene with IBL PBR, SSAO, SSR and Directional Shadows
 
 ## Building
+Currently supported and tested compilers are only: MSVC and Clang
 - Install [Vulkan SDK](https://vulkan.lunarg.com/sdk/home).
 - Run the root CMake script with a command like this:       
 `cmake -S . -B ./build/ -G "Visual Studio 17 2022" -A x64` to generate Visual Studio files (or with any generator you like) into `build` folder.   
