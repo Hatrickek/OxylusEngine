@@ -3,6 +3,7 @@
 #include "Core/Base.h"
 #include "Utils/Log.h"
 #include "Utils/Profiler.h"
+#include <iostream>
 
 namespace Oxylus {
   BPLayerInterfaceImpl Physics::s_LayerInterface;
