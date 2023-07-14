@@ -32,9 +32,8 @@ namespace Oxylus {
     return value;
   }
 
-  void OxUI::CenterNextWindow(ImVec2 windowSize) {
-    windowSize.x *= 0.5f;
-    windowSize.y *= 0.5f;
-    ImGui::SetNextWindowPos(windowSize, ImGuiCond_Always, ImVec2(0.5f, 0.5f));
+  void OxUI::CenterNextWindow() {
+    const auto center = ImGui::GetMainViewport()->GetCenter();
+    ImGui::SetNextWindowPos(center, ImGuiCond_Always, ImVec2(0.5f, 0.5f));
   }
 }

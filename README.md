@@ -4,7 +4,11 @@
 Render and Game engine built with Vulkan and C++. It is focused on  stylistic and realistic 3D rendering.        
 This is my hobby project that I work on in my spare time to learn more about graphics programming and engine architectures. Also to produce some games including my dream game in the future.
 
-Currently Windows, Linux and Mac (with MoltenVK) is supported.
+Currently I'm developing [OxArena](https://github.com/Hatrickek/OxArena) -a quake-like movement shooter- using Oxylus!
+
+Windows, Linux and Mac (with MoltenVK) is supported.
+
+If you liked my work and would like to donate, you can do so with my [ko-fi page](https://ko-fi.com/hatrickek). Thanks!
 
 ## Features:     
 - Editor with features like Projects, Scenes and Saving/Loading Scenes, Content

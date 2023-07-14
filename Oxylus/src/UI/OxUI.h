@@ -18,7 +18,7 @@ namespace Oxylus {
     static void Property(const char* label, const char* fmt, ...);
     // Button
     static bool Button(const char* label, ImVec2 size = ImVec2(0.0f, 0.0f));
-    // Centers the next window with given size.
-    static void CenterNextWindow(ImVec2 windowSize);
+    // Centers the next window in the main viewport.
+    static void CenterNextWindow();
   };
 }

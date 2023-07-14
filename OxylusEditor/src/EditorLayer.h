@@ -84,7 +84,7 @@ namespace Oxylus {
     ConsolePanel m_ConsolePanel;
     SceneHierarchyPanel m_SceneHierarchyPanel;
     InspectorPanel m_InspectorPanel;
-    ContentPanel m_AssetsPanel;
+    ContentPanel m_ContentPanel;
     AssetInspectorPanel m_AssetInspectorPanel;
 
     // Config

@@ -6,7 +6,6 @@
 #include "EditorLayer.h"
 #include "Assets/AssetManager.h"
 #include "Core/Project.h"
-#include "UI/IGUI.h"
 #include "UI/OxUI.h"
 #include "Utils/EditorConfig.h"
 #include "Utils/StringUtils.h"
@@ -27,10 +26,10 @@ namespace Oxylus {
   }
 
   void ProjectPanel::OnImGuiRender() {
-    if (Visible)
+    if (Visible && !ImGui::IsPopupOpen("ProjectSelector"))
       ImGui::OpenPopup("ProjectSelector");
     ImGui::SetNextWindowSize(ImVec2(480, 320), ImGuiCond_FirstUseEver);
-    OxUI::CenterNextWindow({(float)Window::GetWidth(), (float)Window::GetHeight()});
+    OxUI::CenterNextWindow();
     if (ImGui::BeginPopupModal("ProjectSelector", nullptr, ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoSavedSettings)) {
       ImGui::Text("Recent Projects");
       const float x = ImGui::GetContentRegionAvail().x;

@@ -1,8 +1,6 @@
 #include "ContentPanel.h"
 
 #include <icons/IconsMaterialDesignIcons.h>
-#define IMGUI_DEFINE_MATH_OPERATORS
-#include <imgui_internal.h>
 
 #include "EditorContext.h"
 #include "../EditorLayer.h"
@@ -255,7 +253,7 @@ namespace Oxylus {
     return {anyNodeClicked, nodeClicked};
   }
 
-  ContentPanel::ContentPanel(const char* name) : EditorPanel(name, ICON_MDI_FOLDER_STAR, true) {
+  ContentPanel::ContentPanel() : EditorPanel("Contents", ICON_MDI_FOLDER_STAR, true) {
     m_WhiteTexture = VulkanImage::GetBlankImage();
 
     VulkanImageDescription buttonImageDescripton;
@@ -304,7 +302,8 @@ namespace Oxylus {
       Init();
     }
 
-    if (OnBegin(windowFlags)) {
+    OnBegin(windowFlags);
+    {
       RenderHeader();
       ImGui::Separator();
       const ImVec2 availableRegion = ImGui::GetContentRegionAvail();
@@ -318,9 +317,8 @@ namespace Oxylus {
 
         ImGui::EndTable();
       }
-
-      OnEnd();
     }
+    OnEnd();
   }
 
   void ContentPanel::Invalidate() {

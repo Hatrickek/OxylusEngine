@@ -621,7 +621,7 @@ namespace Oxylus {
 
   void VulkanImage::SetImageLayout(const vk::ImageLayout oldImageLayout,
                                    const vk::ImageLayout newImageLayout,
-                                   const vk::ImageSubresourceRange subresourceRange,
+                                   const vk::ImageSubresourceRange& subresourceRange,
                                    const VulkanCommandBuffer* cmdBuffer) {
     if (cmdBuffer) {
       vk::ImageMemoryBarrier imageMemoryBarrier;

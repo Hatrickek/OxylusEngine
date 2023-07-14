@@ -22,7 +22,7 @@ namespace Oxylus {
 
   class ContentPanel : public EditorPanel {
   public:
-    explicit ContentPanel(const char* name = "Assets");
+    ContentPanel();
 
     ~ContentPanel() override = default;
 

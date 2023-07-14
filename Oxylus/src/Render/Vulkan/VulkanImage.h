@@ -66,7 +66,7 @@ namespace Oxylus {
 
     void SetImageLayout(vk::ImageLayout oldImageLayout,
                         vk::ImageLayout newImageLayout,
-                        vk::ImageSubresourceRange subresourceRange,
+                        const vk::ImageSubresourceRange& subresourceRange,
                         const VulkanCommandBuffer* cmdBuffer = nullptr);
 
     uint32_t GetWidth() const { return m_ImageDescription.Width; }

@@ -52,7 +52,6 @@ namespace Oxylus {
       RendererConfig::Get()->ConfigChangeDispatcher.trigger(RendererConfig::ConfigChangeEvent{});
     }
 
-
     const auto& LogicalDevice = VulkanContext::GetDevice();
 
     // Pool managers

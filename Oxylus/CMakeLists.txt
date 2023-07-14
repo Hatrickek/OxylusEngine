@@ -25,20 +25,6 @@ source_group("src/Utils" FILES ${Utils})
 
 set(SOURCE_FILES ${src} ${Core} ${Assets} ${Audio} ${Event} ${Physics} ${Render} ${Scene} ${Thread} ${UI} ${Utils})
 
-file(GLOB vendor__ImGui "vendor/ImGui/*.h" "vendor/ImGui/*.cpp")
-source_group("vendor/ImGui" FILES ${vendor__ImGui})
-
-set(vendor__ImGui__backends
-  "vendor/ImGui/backends/imgui_impl_glfw.cpp"
-  "vendor/ImGui/backends/imgui_impl_glfw.h"
-  "vendor/ImGui/backends/imgui_impl_vulkan.cpp"
-  "vendor/ImGui/backends/imgui_impl_vulkan.h"
-  )
-source_group("vendor/ImGui/backends" FILES ${vendor__ImGui__backends})
-
-set(vendor__ImGui__misc__cpp "vendor/ImGui/misc/cpp/imgui_stdlib.cpp" "vendor/ImGui/misc/cpp/imgui_stdlib.h")
-source_group("vendor/ImGui/misc/cpp" FILES ${vendor__ImGui__misc__cpp})
-
 set(vendor__ImGuizmo "vendor/ImGuizmo/ImGuizmo.cpp" "vendor/ImGuizmo/ImGuizmo.h")
 source_group("vendor/ImGuizmo" FILES ${vendor__ImGuizmo})
 
@@ -53,7 +39,6 @@ source_group("vendor/tracy/public" FILES ${vendor__tracy__public})
 
 set(ALL_FILES
   ${SOURCE_FILES}
-  ${vendor__ImGui}
   ${vendor__ImGui__backends}
   ${vendor__ImGui__misc__cpp}
   ${vendor__ImGuizmo}
@@ -226,6 +211,32 @@ if(NOT SHADERC_FROM_SOURCE)
         target_link_libraries(${PROJECT_NAME} PRIVATE shaderc_combined)
     endif()
 endif()
+
+# dear imgui
+FetchContent_Declare(
+    ImGui
+    GIT_REPOSITORY "https://github.com/ocornut/imgui.git"
+    GIT_TAG "docking"
+    GIT_SHALLOW    TRUE
+    GIT_PROGRESS   TRUE
+)
+set(IMGUI_DIR "${FETCHCONTENT_BASE_DIR}/imgui-src")
+FetchContent_MakeAvailable(ImGui)
+target_include_directories(${PROJECT_NAME} PUBLIC ${IMGUI_DIR})
+
+file(GLOB ImGuiFiles "${IMGUI_DIR}/*.h" "${IMGUI_DIR}/*.cpp")
+target_sources(${PROJECT_NAME} PUBLIC "${ImGuiFiles}")
+
+set(ImGui_Backends
+    "${IMGUI_DIR}/backends/imgui_impl_glfw.cpp"
+    "${IMGUI_DIR}/backends/imgui_impl_glfw.h"
+    "${IMGUI_DIR}/backends/imgui_impl_vulkan.cpp"
+    "${IMGUI_DIR}/backends/imgui_impl_vulkan.h"
+)
+target_sources(${PROJECT_NAME} PUBLIC "${ImGui_Backends}")
+
+set(ImGui_Misc "${IMGUI_DIR}/misc/cpp/imgui_stdlib.cpp" "${IMGUI_DIR}/misc/cpp/imgui_stdlib.h")
+target_sources(${PROJECT_NAME} PUBLIC "${ImGui_Misc}")
 
 # entt
 FetchContent_Declare(

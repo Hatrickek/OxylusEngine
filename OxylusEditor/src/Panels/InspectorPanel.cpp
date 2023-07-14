@@ -132,7 +132,7 @@ namespace Oxylus {
     IGUI::PropertyVector("Color", material->Parameters.Color, true, true);
 
     IGUI::Property("Specular", material->Parameters.Specular);
-    IGUI::PropertyVector("Emmisive", material->Parameters.Emmisive, true, false);
+    IGUI::PropertyVector("Emmisive", material->Parameters.Emmisive, true, true);
 
     IGUI::Property("Use Normal", (bool&)material->Parameters.UseNormal);
     if (IGUI::Property("Normal", material->NormalTexture)) {

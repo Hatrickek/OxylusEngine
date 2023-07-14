@@ -282,11 +282,10 @@ namespace Oxylus {
       for (uint32_t i = 0; i < descriptor.binding_count; i++) {
         // TODO(hatrickek): Temporary solution to not add bindings that are in both stages.
         if (!layoutBindings.empty()) {
-          if (layoutBindings[descriptor.bindings[i].set].size() > descriptor.bindings[i].binding) {
-            if (layoutBindings[descriptor.bindings[i].set][i].binding == descriptor.bindings[i].binding) {
-              layoutBindings[descriptor.bindings[i].set][i].stageFlags |= stage;
-              continue;
-            }
+          if (layoutBindings[descriptor.bindings[i].set].size() > descriptor.bindings[i].binding
+              && layoutBindings[descriptor.bindings[i].set][i].binding == descriptor.bindings[i].binding) {
+            layoutBindings[descriptor.bindings[i].set][i].stageFlags |= stage;
+            continue;
           }
         }
         // Layout binding

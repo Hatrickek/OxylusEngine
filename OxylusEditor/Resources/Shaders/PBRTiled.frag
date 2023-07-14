@@ -172,10 +172,6 @@ void main() {
     alpha = u_Material.Color.a;
   }
 
-  //if (alpha < 0.1) {
-  //  discard;
-  //}
-
   vec3 normal = GetNormal(scaledUV);
   vec3 V = normalize(u_Ubo.camPos - inWorldPos);
   vec3 R = reflect(-V, normal);
@@ -250,7 +246,7 @@ void main() {
   // Cascade debug
   // color *= ColorCascades(cascadeIndex);
 
-  color += 0;//u_Material.Emmisive.rgb;
+  color += u_Material.Emmisive.rgb;
 
   // TODO: Make configurable via buffers
   //float far = 50.0;

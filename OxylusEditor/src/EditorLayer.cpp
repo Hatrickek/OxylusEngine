@@ -87,8 +87,8 @@ namespace Oxylus {
     }
     if (m_SceneHierarchyPanel.Visible)
       m_SceneHierarchyPanel.OnUpdate();
-    if (m_AssetsPanel.Visible)
-      m_AssetsPanel.OnUpdate();
+    if (m_ContentPanel.Visible)
+      m_ContentPanel.OnUpdate();
     if (m_InspectorPanel.Visible)
       m_InspectorPanel.OnUpdate();
 
@@ -133,181 +133,182 @@ namespace Oxylus {
     ImGui::PushStyleVar(ImGuiStyleVar_WindowRounding, 0.0f);
     ImGui::PushStyleVar(ImGuiStyleVar_WindowBorderSize, 0.0f);
     ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2(0.0f, 0.0f));
-    ImGui::Begin("DockSpace Demo", nullptr, window_flags);
-    ImGui::PopStyleVar(3);
+    if (ImGui::Begin("DockSpace Demo", nullptr, window_flags)) {
+      ImGui::PopStyleVar(3);
 
-    // Submit the DockSpace
-    const ImGuiIO& io = ImGui::GetIO();
-    if (io.ConfigFlags & ImGuiConfigFlags_DockingEnable) {
-      const ImGuiID dockspace_id = ImGui::GetID("Main dockspace");
-      ImGui::DockSpace(dockspace_id, ImVec2(0.0f, 0.0f), dockspace_flags);
-    }
-
-    const float frameHeight = ImGui::GetFrameHeight();
-
-    constexpr ImGuiWindowFlags menu_flags = ImGuiWindowFlags_NoScrollbar | ImGuiWindowFlags_NoSavedSettings |
-                                            ImGuiWindowFlags_MenuBar | ImGuiWindowFlags_NoNavFocus;
-
-    ImVec2 framePadding = ImGui::GetStyle().FramePadding;
-    DrawWindowTitle();
-    ImGui::PushStyleVar(ImGuiStyleVar_FramePadding, {framePadding.x, 4.0f});
-
-    if (ImGui::BeginViewportSideBar("##PrimaryMenuBar", viewport, ImGuiDir_Up, frameHeight, menu_flags)) {
-      if (ImGui::BeginMenuBar()) {
-        if (ImGui::BeginMenu("File")) {
-          if (ImGui::MenuItem("New Scene", "Ctrl + N")) {
-            NewScene();
-          }
-          if (ImGui::MenuItem("Open Scene", "Ctrl + O")) {
-            OpenScene();
-          }
-          if (ImGui::MenuItem("Save Scene", "Ctrl + S")) {
-            SaveScene();
-          }
-          if (ImGui::MenuItem("Save Scene As...", "Ctrl + Shift + S")) {
-            SaveSceneAs();
-          }
-
-          ImGui::Separator();
-          if (ImGui::MenuItem("New Project")) {
-            NewProject();
-          }
-          if (ImGui::MenuItem("Open Project")) {
-            const std::string filepath = FileDialogs::OpenFile({{"Oxylus Project", "oxproj"}});
-            OpenProject(filepath);
-          }
-          if (ImGui::MenuItem("Save Project")) {
-            const std::string filepath = FileDialogs::SaveFile({{"Oxylus Project", "oxproj"}}, "New Project");
-            SaveProject(filepath);
-          }
-
-          ImGui::Separator();
-          if (ImGui::MenuItem("Exit")) {
-            Application::Get()->Close();
-          }
-          ImGui::EndMenu();
-        }
-        if (ImGui::BeginMenu("Edit")) {
-          if (ImGui::MenuItem("Settings")) {
-            m_EditorPanels["EditorSettings"]->Visible = true;
-          }
-          ImGui::EndMenu();
-        }
-        if (ImGui::BeginMenu("Window")) {
-          if (ImGui::MenuItem("Add viewport", nullptr)) {
-            m_ViewportPanels.emplace_back(CreateScope<ViewportPanel>())->SetContext(m_ActiveScene,
-              m_SceneHierarchyPanel);
-          }
-          if (ImGui::MenuItem("Shaders", nullptr)) {
-            m_EditorPanels["Shaders"]->Visible = true;
-          }
-          if (ImGui::MenuItem("Framebuffer Viewer", nullptr)) {
-            m_EditorPanels["FramebufferViewer"]->Visible = true;
-          }
-          ImGui::MenuItem("Inspector", nullptr, &m_InspectorPanel.Visible);
-          ImGui::MenuItem("Scene hierarchy", nullptr, &m_SceneHierarchyPanel.Visible);
-          ImGui::MenuItem("Console window", nullptr, &m_ConsolePanel.m_RuntimeConsole.Visible);
-          ImGui::MenuItem("Performance Overlay", nullptr, &m_ViewportPanels[0]->PerformanceOverlayVisible);
-          ImGui::MenuItem("Statistics", nullptr, &m_EditorPanels["StatisticsPanel"]->Visible);
-          ImGui::MenuItem("Editor Debug", nullptr, &m_EditorPanels["EditorDebugPanel"]->Visible);
-          ImGui::EndMenu();
-        }
-
-        static bool renderAssetManager = false;
-
-        if (ImGui::BeginMenu("Assets")) {
-          if (ImGui::MenuItem("Asset Manager")) {
-            renderAssetManager = true;
-          }
-          ImGui::EndMenu();
-        }
-        if (ImGui::BeginMenu("Help")) {
-          if (ImGui::MenuItem("About")) { }
-          ImGui::EndMenu();
-        }
-        ImGui::SameLine();
-
-        if (renderAssetManager) {
-          if (ImGui::Begin("Asset Manager")) {
-            const auto& assets = AssetManager::GetAssetLibrary();
-            if (!assets.MeshAssets.empty()) {
-              ImGui::Text("Mesh assets");
-              IGUI::BeginProperties();
-              for (const auto& [handle, asset] : assets.MeshAssets) {
-                auto handleStr = fmt::format("{}", handle);
-                IGUI::Text(handleStr.c_str(), asset.Path.c_str());
-              }
-              IGUI::EndProperties();
-            }
-            if (!assets.ImageAssets.empty()) {
-              ImGui::Text("Image assets");
-              IGUI::BeginProperties();
-              for (const auto& [handle, asset] : assets.ImageAssets) {
-                auto handleStr = fmt::format("{}", handle);
-                IGUI::Text(handleStr.c_str(), asset.Path.c_str());
-              }
-              IGUI::EndProperties();
-            }
-            if (!assets.MaterialAssets.empty()) {
-              ImGui::Text("Material assets");
-              IGUI::BeginProperties();
-              for (const auto& [handle, asset] : assets.MaterialAssets) {
-                auto handleStr = fmt::format("{}", handle);
-                IGUI::Text(handleStr.c_str(), asset.Path.c_str());
-              }
-              IGUI::EndProperties();
-            }
-            if (ImGui::Button("Package assets")) {
-              AssetManager::PackageAssets();
-            }
-          }
-        }
-
-        {
-          //Project name text
-          ImGui::SetCursorPos(ImVec2(
-            (float)Window::GetWidth() - 10 -
-            ImGui::CalcTextSize(Project::GetActive()->GetConfig().Name.c_str()).x,
-            0));
-          ImGuiScoped::StyleColor bColor1(ImGuiCol_Button, ImVec4(0.2f, 0.2f, 0.2f, 0.7f));
-          ImGuiScoped::StyleColor bColor2(ImGuiCol_ButtonHovered, ImVec4(0.2f, 0.2f, 0.2f, 0.7f));
-          ImGui::Button(Project::GetActive()->GetConfig().Name.c_str());
-        }
-
-        ImGui::EndMenuBar();
+      // Submit the DockSpace
+      const ImGuiIO& io = ImGui::GetIO();
+      if (io.ConfigFlags & ImGuiConfigFlags_DockingEnable) {
+        const ImGuiID dockspace_id = ImGui::GetID("Main dockspace");
+        ImGui::DockSpace(dockspace_id, ImVec2(0.0f, 0.0f), dockspace_flags);
       }
-      ImGui::End();
-    }
-    ImGui::PopStyleVar();
 
-    if (ImGui::BeginViewportSideBar("##SecondaryMenuBar", viewport, ImGuiDir_Up, frameHeight, menu_flags)) {
-      if (ImGui::BeginMenuBar()) {
-        const ImVec2 buttonSize = {frameHeight * 1.5f, frameHeight};
-        const bool highlight = m_SceneState == SceneState::Play;
-        ImGui::SetCursorPos(ImVec2((float)Window::GetWidth() * 0.5f, 0));
-        const char8_t* icon = m_SceneState == SceneState::Edit ? ICON_MDI_PLAY : ICON_MDI_STOP;
-        if (IGUI::ToggleButton(StringUtils::FromChar8T(icon), highlight, ImVec4(0.2f, 0.2f, 0.2f, 0.4f), buttonSize)) {
-          if (m_SceneState == SceneState::Edit)
-            OnScenePlay();
-          else if (m_SceneState == SceneState::Play)
+      const float frameHeight = ImGui::GetFrameHeight();
+
+      constexpr ImGuiWindowFlags menu_flags = ImGuiWindowFlags_NoScrollbar | ImGuiWindowFlags_NoSavedSettings |
+                                              ImGuiWindowFlags_MenuBar | ImGuiWindowFlags_NoNavFocus;
+
+      ImVec2 framePadding = ImGui::GetStyle().FramePadding;
+      DrawWindowTitle();
+      ImGui::PushStyleVar(ImGuiStyleVar_FramePadding, {framePadding.x, 4.0f});
+
+      if (ImGui::BeginViewportSideBar("##PrimaryMenuBar", viewport, ImGuiDir_Up, frameHeight, menu_flags)) {
+        if (ImGui::BeginMenuBar()) {
+          if (ImGui::BeginMenu("File")) {
+            if (ImGui::MenuItem("New Scene", "Ctrl + N")) {
+              NewScene();
+            }
+            if (ImGui::MenuItem("Open Scene", "Ctrl + O")) {
+              OpenScene();
+            }
+            if (ImGui::MenuItem("Save Scene", "Ctrl + S")) {
+              SaveScene();
+            }
+            if (ImGui::MenuItem("Save Scene As...", "Ctrl + Shift + S")) {
+              SaveSceneAs();
+            }
+
+            ImGui::Separator();
+            if (ImGui::MenuItem("New Project")) {
+              NewProject();
+            }
+            if (ImGui::MenuItem("Open Project")) {
+              const std::string filepath = FileDialogs::OpenFile({{"Oxylus Project", "oxproj"}});
+              OpenProject(filepath);
+            }
+            if (ImGui::MenuItem("Save Project")) {
+              const std::string filepath = FileDialogs::SaveFile({{"Oxylus Project", "oxproj"}}, "New Project");
+              SaveProject(filepath);
+            }
+
+            ImGui::Separator();
+            if (ImGui::MenuItem("Exit")) {
+              Application::Get()->Close();
+            }
+            ImGui::EndMenu();
+          }
+          if (ImGui::BeginMenu("Edit")) {
+            if (ImGui::MenuItem("Settings")) {
+              m_EditorPanels["EditorSettings"]->Visible = true;
+            }
+            ImGui::EndMenu();
+          }
+          if (ImGui::BeginMenu("Window")) {
+            if (ImGui::MenuItem("Add viewport", nullptr)) {
+              m_ViewportPanels.emplace_back(CreateScope<ViewportPanel>())->SetContext(m_ActiveScene,
+                m_SceneHierarchyPanel);
+            }
+            if (ImGui::MenuItem("Shaders", nullptr)) {
+              m_EditorPanels["Shaders"]->Visible = true;
+            }
+            if (ImGui::MenuItem("Framebuffer Viewer", nullptr)) {
+              m_EditorPanels["FramebufferViewer"]->Visible = true;
+            }
+            ImGui::MenuItem("Inspector", nullptr, &m_InspectorPanel.Visible);
+            ImGui::MenuItem("Scene hierarchy", nullptr, &m_SceneHierarchyPanel.Visible);
+            ImGui::MenuItem("Console window", nullptr, &m_ConsolePanel.m_RuntimeConsole.Visible);
+            ImGui::MenuItem("Performance Overlay", nullptr, &m_ViewportPanels[0]->PerformanceOverlayVisible);
+            ImGui::MenuItem("Statistics", nullptr, &m_EditorPanels["StatisticsPanel"]->Visible);
+            ImGui::MenuItem("Editor Debug", nullptr, &m_EditorPanels["EditorDebugPanel"]->Visible);
+            ImGui::EndMenu();
+          }
+
+          static bool renderAssetManager = false;
+
+          if (ImGui::BeginMenu("Assets")) {
+            if (ImGui::MenuItem("Asset Manager")) {
+              renderAssetManager = true;
+            }
+            ImGui::EndMenu();
+          }
+          if (ImGui::BeginMenu("Help")) {
+            if (ImGui::MenuItem("About")) { }
+            ImGui::EndMenu();
+          }
+          ImGui::SameLine();
+
+          if (renderAssetManager) {
+            if (ImGui::Begin("Asset Manager")) {
+              const auto& assets = AssetManager::GetAssetLibrary();
+              if (!assets.MeshAssets.empty()) {
+                ImGui::Text("Mesh assets");
+                IGUI::BeginProperties();
+                for (const auto& [handle, asset] : assets.MeshAssets) {
+                  auto handleStr = fmt::format("{}", handle);
+                  IGUI::Text(handleStr.c_str(), asset.Path.c_str());
+                }
+                IGUI::EndProperties();
+              }
+              if (!assets.ImageAssets.empty()) {
+                ImGui::Text("Image assets");
+                IGUI::BeginProperties();
+                for (const auto& [handle, asset] : assets.ImageAssets) {
+                  auto handleStr = fmt::format("{}", handle);
+                  IGUI::Text(handleStr.c_str(), asset.Path.c_str());
+                }
+                IGUI::EndProperties();
+              }
+              if (!assets.MaterialAssets.empty()) {
+                ImGui::Text("Material assets");
+                IGUI::BeginProperties();
+                for (const auto& [handle, asset] : assets.MaterialAssets) {
+                  auto handleStr = fmt::format("{}", handle);
+                  IGUI::Text(handleStr.c_str(), asset.Path.c_str());
+                }
+                IGUI::EndProperties();
+              }
+              if (ImGui::Button("Package assets")) {
+                AssetManager::PackageAssets();
+              }
+            }
+          }
+
+          {
+            //Project name text
+            ImGui::SetCursorPos(ImVec2(
+              (float)Window::GetWidth() - 10 -
+              ImGui::CalcTextSize(Project::GetActive()->GetConfig().Name.c_str()).x,
+              0));
+            ImGuiScoped::StyleColor bColor1(ImGuiCol_Button, ImVec4(0.2f, 0.2f, 0.2f, 0.7f));
+            ImGuiScoped::StyleColor bColor2(ImGuiCol_ButtonHovered, ImVec4(0.2f, 0.2f, 0.2f, 0.7f));
+            ImGui::Button(Project::GetActive()->GetConfig().Name.c_str());
+          }
+
+          ImGui::EndMenuBar();
+        }
+        ImGui::End();
+      }
+      ImGui::PopStyleVar();
+
+      if (ImGui::BeginViewportSideBar("##SecondaryMenuBar", viewport, ImGuiDir_Up, frameHeight, menu_flags)) {
+        if (ImGui::BeginMenuBar()) {
+          const ImVec2 buttonSize = {frameHeight * 1.5f, frameHeight};
+          const bool highlight = m_SceneState == SceneState::Play;
+          ImGui::SetCursorPos(ImVec2((float)Window::GetWidth() * 0.5f, 0));
+          const char8_t* icon = m_SceneState == SceneState::Edit ? ICON_MDI_PLAY : ICON_MDI_STOP;
+          if (IGUI::ToggleButton(StringUtils::FromChar8T(icon), highlight, ImVec4(0.2f, 0.2f, 0.2f, 0.4f), buttonSize)) {
+            if (m_SceneState == SceneState::Edit)
+              OnScenePlay();
+            else if (m_SceneState == SceneState::Play)
+              OnSceneStop();
+          }
+          ImGui::SameLine();
+          ImGuiScoped::StyleColor bColor(ImGuiCol_Button, ImVec4(0.2f, 0.2f, 0.2f, 0.4f));
+          if (ImGui::Button(StringUtils::FromChar8T(ICON_MDI_PAUSE), buttonSize)) {
             OnSceneStop();
+          }
+          if (ImGui::Button(StringUtils::FromChar8T(ICON_MDI_STEP_FORWARD), buttonSize)) {
+            OnSceneSimulate();
+          }
+          ImGui::EndMenuBar();
         }
-        ImGui::SameLine();
-        ImGuiScoped::StyleColor bColor(ImGuiCol_Button, ImVec4(0.2f, 0.2f, 0.2f, 0.4f));
-        if (ImGui::Button(StringUtils::FromChar8T(ICON_MDI_PAUSE), buttonSize)) {
-          OnSceneStop();
-        }
-        if (ImGui::Button(StringUtils::FromChar8T(ICON_MDI_STEP_FORWARD), buttonSize)) {
-          OnSceneSimulate();
-        }
-        ImGui::EndMenuBar();
+        ImGui::End();
       }
+
+      DrawPanels();
+
       ImGui::End();
     }
-
-    DrawPanels();
-
-    ImGui::End();
   }
 
   void EditorLayer::EditorShortcuts() {
@@ -494,14 +495,13 @@ namespace Oxylus {
         panel->OnImGuiRender();
     }
 
+    m_ConsolePanel.OnImGuiRender();
     if (m_SceneHierarchyPanel.Visible)
       m_SceneHierarchyPanel.OnImGuiRender();
     if (m_InspectorPanel.Visible)
       m_InspectorPanel.OnImGuiRender();
-    if (m_ConsolePanel.m_RuntimeConsole.Visible)
-      m_ConsolePanel.OnImGuiRender();
-    if (m_AssetsPanel.Visible)
-      m_AssetsPanel.OnImGuiRender();
+    if (m_ContentPanel.Visible)
+      m_ContentPanel.OnImGuiRender();
     if (m_AssetInspectorPanel.Visible)
       m_AssetInspectorPanel.OnImGuiRender();
   }

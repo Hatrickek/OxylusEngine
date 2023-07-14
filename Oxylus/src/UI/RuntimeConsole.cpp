@@ -4,7 +4,6 @@
 
 #include "ExternalConsoleSink.h"
 #include "Core/Application.h"
-#include "Utils/ImGuiScoped.h"
 #include "Utils/StringUtils.h"
 
 namespace Oxylus {
@@ -69,7 +68,7 @@ namespace Oxylus {
 
   void RuntimeConsole::AddLog(const char* fmt, spdlog::level::level_enum level) {
     if ((int32_t)m_TextBuffer.size() >= MAX_TEXT_BUFFER_SIZE)
-        m_TextBuffer.erase(m_TextBuffer.begin());
+      m_TextBuffer.erase(m_TextBuffer.begin());
     m_TextBuffer.emplace_back(ConsoleText{fmt, level});
     m_RequestScrollToBottom = true;
   }
@@ -81,12 +80,8 @@ namespace Oxylus {
   void RuntimeConsole::OnImGuiRender(ImGuiWindowFlags windowFlags) {
     if (!Visible)
       return;
-    const auto name = fmt::format(" {} {}\t\t###{}{}",
-      StringUtils::FromChar8T(ICON_MDI_CONSOLE),
-      PanelName,
-      0,
-      PanelName);
-    if (ImGui::Begin(name.c_str(), &Visible, windowFlags)) {
+    const auto name = fmt::format(" {} {}", StringUtils::FromChar8T(ICON_MDI_CONSOLE), PanelName);
+    if (ImGui::Begin(name.c_str(), nullptr, windowFlags)) {
       if (RenderMenuBar) {
         if (ImGui::BeginMenuBar()) {
           if (ImGui::MenuItem(StringUtils::FromChar8T(ICON_MDI_TRASH_CAN))) {
@@ -102,7 +97,7 @@ namespace Oxylus {
 
       float width = 0;
       if (ImGui::BeginChild("TextTable", ImVec2(0, -35))) {
-        [[maybe_unused]] ImGuiScoped::StyleVar style1(ImGuiStyleVar_CellPadding, {1, 1});
+        ImGui::PushStyleVar(ImGuiStyleVar_CellPadding, {1, 1});
         if (ImGui::BeginTable("ScrollRegionTable", 1, tableFlags)) {
           width = ImGui::GetWindowSize().x;
           ImGui::PushFont(Application::Get()->GetImGuiLayer()->BoldFont);
@@ -116,8 +111,9 @@ namespace Oxylus {
           }
           ImGui::EndTable();
         }
-        ImGui::EndChild();
+        ImGui::PopStyleVar();
       }
+      ImGui::EndChild();
 
       ImGui::Separator();
       ImGui::PushItemWidth(width - 10);
@@ -145,8 +141,8 @@ namespace Oxylus {
       ImGui::PopFont();
       ImGui::PopItemWidth();
 
-      ImGui::End();
     }
+      ImGui::End();
   }
 
   void RuntimeConsole::ConsoleText::Render() const {
