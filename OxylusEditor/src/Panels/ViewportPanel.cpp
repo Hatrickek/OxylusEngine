@@ -48,9 +48,9 @@ namespace Oxylus {
       ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2(10, 10));
       if (ImGui::BeginPopup("ViewportSettings")) {
         IGUI::BeginProperties();
-        static bool vsync = VulkanRenderer::SwapChain.m_PresentMode == vk::PresentModeKHR::eFifo ? true : false;
+        static bool vsync = VulkanRenderer::s_SwapChain.m_PresentMode == vk::PresentModeKHR::eFifo ? true : false;
         if (IGUI::Property("VSync", vsync)) {
-          vsync = VulkanRenderer::SwapChain.ToggleVsync();
+          vsync = VulkanRenderer::s_SwapChain.ToggleVsync();
           RendererConfig::Get()->DisplayConfig.VSync = vsync;
         }
         IGUI::Property<float>("Camera sensitivity", m_MouseSensitivity, 0.1f, 20.0f);

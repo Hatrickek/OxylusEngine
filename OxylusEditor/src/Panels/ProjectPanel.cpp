@@ -30,7 +30,9 @@ namespace Oxylus {
       ImGui::OpenPopup("ProjectSelector");
     ImGui::SetNextWindowSize(ImVec2(480, 320), ImGuiCond_FirstUseEver);
     OxUI::CenterNextWindow();
-    if (ImGui::BeginPopupModal("ProjectSelector", nullptr, ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoSavedSettings)) {
+    constexpr auto flags = ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoSavedSettings 
+      | ImGuiWindowFlags_NoDecoration | ImGuiWindowFlags_NoDocking;
+    if (ImGui::BeginPopupModal("ProjectSelector", nullptr, flags)) {
       ImGui::Text("Recent Projects");
       const float x = ImGui::GetContentRegionAvail().x;
       const float y = ImGui::GetFrameHeight();
@@ -52,8 +54,7 @@ namespace Oxylus {
           LoadProjectForEditor(filepath);
         }
       }
-
-      ImGui::EndPopup();
     }
+    ImGui::EndPopup();
   }
 }
