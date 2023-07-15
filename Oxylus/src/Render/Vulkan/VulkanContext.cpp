@@ -87,25 +87,29 @@ namespace Oxylus {
     Context.DeviceMemoryProperties = Context.PhysicalDevice.getMemoryProperties();
 
     // Logical Device
-    // TODO: Check if device supports these
-    vk::PhysicalDeviceVulkan13Features features13 = {};
-    features13.maintenance4 = VK_TRUE;
+    // TODO(hatrickek): Check if device supports these
     vk::PhysicalDeviceVulkan12Features features12 = {};
     features12.descriptorIndexing = VK_TRUE;
     features12.shaderInputAttachmentArrayNonUniformIndexing = VK_TRUE;
     features12.shaderSampledImageArrayNonUniformIndexing = VK_TRUE;
     features12.shaderUniformBufferArrayNonUniformIndexing = VK_TRUE;
-    features12.pNext = &features13;
+
+    vk::PhysicalDeviceVulkan13Features features13 = {};
+    features13.maintenance4 = VK_TRUE;
+    features13.synchronization2 = VK_TRUE;
+    features13.pNext = &features12;
+
     Context.DeviceFeatures = Context.PhysicalDevice.getFeatures();
-    Context.DeviceFeatures.shaderUniformBufferArrayDynamicIndexing = true;
-    Context.DeviceFeatures.shaderSampledImageArrayDynamicIndexing = true;
-    Context.DeviceFeatures.shaderStorageImageArrayDynamicIndexing = true;
+    Context.DeviceFeatures.shaderUniformBufferArrayDynamicIndexing = VK_TRUE;
+    Context.DeviceFeatures.shaderSampledImageArrayDynamicIndexing = VK_TRUE;
+    Context.DeviceFeatures.shaderStorageImageArrayDynamicIndexing = VK_TRUE;
     Context.DeviceFeatures.depthClamp = VK_TRUE;
+
     Context.Device = ContextUtils::CreateDevice(Context.PhysicalDevice,
       VulkanQueue.graphicsQueueFamilyIndex,
       ContextUtils::GetDeviceExtensions(),
       &Context.DeviceFeatures,
-      &features12);
+      &features13);
 
     // function pointer specialization for device
     VULKAN_HPP_DEFAULT_DISPATCHER.init(Context.Device);

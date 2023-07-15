@@ -26,11 +26,11 @@ namespace Oxylus {
   class VulkanRenderer {
   public:
     static struct RendererContext {
-      Ref<RenderGraph> RenderGraph = nullptr;
-      VulkanCommandBuffer TimelineCommandBuffer;
+      Ref<RenderGraph> m_RenderGraph = nullptr;
+      VulkanCommandBuffer m_TimelineCommandBuffer;
 
       //Camera
-      Camera* CurrentCamera = nullptr;
+      Camera* m_CurrentCamera = nullptr;
     } s_RendererContext;
 
     static struct RendererData {
@@ -52,7 +52,7 @@ namespace Oxylus {
       VulkanPipeline UIPipeline;
     } s_Pipelines;
 
-    static VulkanSwapchain SwapChain;
+    static VulkanSwapchain s_SwapChain;
 
     static void Init();
     static void Shutdown();
@@ -60,7 +60,7 @@ namespace Oxylus {
     static Ref<DefaultRenderPipeline> GetDefaultRenderPipeline() { return s_DefaultPipeline; }
 
     // TODO(hatrickek): Temporary solution
-    static void SetRenderGraph(const Ref<RenderGraph>& renderGraph) { s_RendererContext.RenderGraph = renderGraph; }
+    static void SetRenderGraph(const Ref<RenderGraph>& renderGraph) { s_RendererContext.m_RenderGraph = renderGraph; }
 
     static void ResizeBuffers();
 

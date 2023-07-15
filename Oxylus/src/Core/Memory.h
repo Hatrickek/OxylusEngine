@@ -23,4 +23,4 @@ extern void* New(std::size_t size);
 
 void* operator new(std::size_t size);
 
-void operator delete(void* block, std::size_t size);
+void operator delete(void* block, std::size_t size) noexcept;

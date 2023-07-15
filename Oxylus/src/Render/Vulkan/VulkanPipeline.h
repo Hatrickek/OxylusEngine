@@ -115,7 +115,7 @@ namespace Oxylus {
     uint32_t ColorAttachment = 0;
     vk::ImageLayout ColorAttachmentLayout = vk::ImageLayout::eColorAttachmentOptimal;
     vk::ImageLayout DepthAttachmentLayout = vk::ImageLayout::eDepthStencilAttachmentOptimal;
-    SubpassDescription SubpassDescription[4];
+    SubpassDescription SubpassDesc[4];
     uint32_t SubpassDependencyCount = 1;
     Ref<VulkanShader> Shader = nullptr;
     DepthStencilDescription DepthDesc;

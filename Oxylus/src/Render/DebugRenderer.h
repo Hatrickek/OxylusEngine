@@ -25,7 +25,7 @@ namespace Oxylus {
   struct ShapeInfo {
     Mat4 ModelMatrix = {};
     Vec4 Color = {};
-    Ref<Mesh> Mesh = nullptr;
+    Ref<Mesh> ShapeMesh = nullptr;
   };
 
   class DebugRenderer {

@@ -6,6 +6,8 @@
 #include "spdlog/sinks/stdout_color_sinks.h"
 #include <filesystem>
 
+#include "Core/PlatformDetection.h"
+
 namespace Oxylus {
   class Log {
   public:
@@ -26,7 +28,7 @@ namespace Oxylus {
 #define OX_DISABLE_DEBUG_BREAKS
 #endif
 
-#define OX_DISABLE_DEBUG_BREAKS
+//#define OX_DISABLE_DEBUG_BREAKS
 
 #ifndef OX_DISABLE_DEBUG_BREAKS
 #if defined(OX_PLATFORM_WINDOWS)

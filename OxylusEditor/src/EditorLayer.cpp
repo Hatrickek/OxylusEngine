@@ -50,7 +50,7 @@ namespace Oxylus {
     m_EditorPanels.emplace("RenderSettings", CreateScope<RendererSettingsPanel>());
     m_EditorPanels.emplace("Shaders", CreateScope<ShadersPanel>());
     m_EditorPanels.emplace("FramebufferViewer", CreateScope<FramebufferViewerPanel>());
-    m_EditorPanels.emplace("ProjectPanel", CreateScope<ProjectPanel>());
+    //m_EditorPanels.emplace("ProjectPanel", CreateScope<ProjectPanel>());
     m_EditorPanels.emplace("StatisticsPanel", CreateScope<StatisticsPanel>());
     m_EditorPanels.emplace("EditorDebugPanel", CreateScope<EditorDebugPanel>());
     m_ViewportPanels.emplace_back(CreateScope<ViewportPanel>())->Camera.SetPosition({-2, 2, 0});

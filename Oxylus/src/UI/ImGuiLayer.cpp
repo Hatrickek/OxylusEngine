@@ -167,10 +167,10 @@ namespace Oxylus {
     init_info.QueueFamily = VulkanContext::VulkanQueue.graphicsQueueFamilyIndex;
     init_info.Queue = VulkanContext::VulkanQueue.GraphicsQueue;
     init_info.DescriptorPool = ImGuiDescPool;
-    init_info.MinImageCount = static_cast<uint32_t>(VulkanRenderer::SwapChain.m_Images.size());
-    init_info.ImageCount = static_cast<uint32_t>(VulkanRenderer::SwapChain.m_Images.size());
+    init_info.MinImageCount = static_cast<uint32_t>(VulkanRenderer::s_SwapChain.m_Images.size());
+    init_info.ImageCount = static_cast<uint32_t>(VulkanRenderer::s_SwapChain.m_Images.size());
     init_info.MSAASamples = VK_SAMPLE_COUNT_1_BIT;
-    ImGui_ImplVulkan_Init(&init_info, VulkanRenderer::SwapChain.m_RenderPass.Get());
+    ImGui_ImplVulkan_Init(&init_info, VulkanRenderer::s_SwapChain.m_RenderPass.Get());
   }
 
   void ImGuiLayer::OnDetach() {

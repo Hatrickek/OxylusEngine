@@ -54,12 +54,12 @@ namespace Oxylus {
 
     for (uint32_t i = 0; i < m_PipelineDescription.SubpassDependencyCount; ++i) {
       vk::SubpassDependency subpassDependency;
-      subpassDependency.srcSubpass = m_PipelineDescription.SubpassDescription[i].SrcSubpass;
-      subpassDependency.dstSubpass = m_PipelineDescription.SubpassDescription[i].DstSubpass;
-      subpassDependency.srcStageMask = m_PipelineDescription.SubpassDescription[i].SrcStageMask;
-      subpassDependency.dstStageMask = m_PipelineDescription.SubpassDescription[i].DstStageMask;
-      subpassDependency.srcAccessMask = m_PipelineDescription.SubpassDescription[i].SrcAccessMask;
-      subpassDependency.dstAccessMask = m_PipelineDescription.SubpassDescription[i].DstAccessMask;
+      subpassDependency.srcSubpass = m_PipelineDescription.SubpassDesc[i].SrcSubpass;
+      subpassDependency.dstSubpass = m_PipelineDescription.SubpassDesc[i].DstSubpass;
+      subpassDependency.srcStageMask = m_PipelineDescription.SubpassDesc[i].SrcStageMask;
+      subpassDependency.dstStageMask = m_PipelineDescription.SubpassDesc[i].DstStageMask;
+      subpassDependency.srcAccessMask = m_PipelineDescription.SubpassDesc[i].SrcAccessMask;
+      subpassDependency.dstAccessMask = m_PipelineDescription.SubpassDesc[i].DstAccessMask;
       dependencies.emplace_back(subpassDependency);
     }
 

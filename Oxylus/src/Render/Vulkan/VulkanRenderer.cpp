@@ -20,7 +20,7 @@
 #include "Render/DebugRenderer.h"
 
 namespace Oxylus {
-  VulkanSwapchain VulkanRenderer::SwapChain;
+  VulkanSwapchain VulkanRenderer::s_SwapChain;
   VulkanRenderer::RendererContext VulkanRenderer::s_RendererContext;
   VulkanRenderer::RendererData VulkanRenderer::s_RendererData;
   VulkanRenderer::Pipelines VulkanRenderer::s_Pipelines;
@@ -36,10 +36,10 @@ namespace Oxylus {
   void VulkanRenderer::ResizeBuffers() {
     WaitDeviceIdle();
     WaitGraphicsQueueIdle();
-    SwapChain.RecreateSwapChain();
+    s_SwapChain.RecreateSwapChain();
     FrameBufferPool::ResizeBuffers();
     ImagePool::ResizeImages();
-    SwapChain.Resizing = false;
+    s_SwapChain.Resizing = false;
   }
 
   void VulkanRenderer::Init() {
@@ -61,10 +61,10 @@ namespace Oxylus {
     s_CommandPoolManager = CreateRef<CommandPoolManager>();
     s_CommandPoolManager->Init();
 
-    SwapChain.SetVsync(RendererConfig::Get()->DisplayConfig.VSync, false);
-    SwapChain.CreateSwapChain();
+    s_SwapChain.SetVsync(RendererConfig::Get()->DisplayConfig.VSync, false);
+    s_SwapChain.CreateSwapChain();
 
-    s_RendererContext.TimelineCommandBuffer.CreateBuffer();
+    s_RendererContext.m_TimelineCommandBuffer.CreateBuffer();
 
     vk::DescriptorSetLayoutBinding binding[1];
     binding[0].descriptorType = vk::DescriptorType::eCombinedImageSampler;
@@ -87,7 +87,7 @@ namespace Oxylus {
         .Name = "Quad",
       });
       PipelineDescription quadDescription;
-      quadDescription.RenderPass = SwapChain.m_RenderPass;
+      quadDescription.RenderPass = s_SwapChain.m_RenderPass;
       quadDescription.VertexInputState.attributeDescriptions.clear();
       quadDescription.VertexInputState.bindingDescriptions.clear();
       quadDescription.Shader = quadShader.get();
@@ -116,7 +116,7 @@ namespace Oxylus {
       PipelineDescription uiPipelineDecs;
       uiPipelineDecs.Name = "UI Pipeline";
       uiPipelineDecs.Shader = uiShader.get();
-      uiPipelineDecs.RenderPass = SwapChain.m_RenderPass;
+      uiPipelineDecs.RenderPass = s_SwapChain.m_RenderPass;
       uiPipelineDecs.VertexInputState.attributeDescriptions = vertexInputAttributes;
       uiPipelineDecs.VertexInputState.bindingDescriptions = vertexInputBindings;
       uiPipelineDecs.RasterizerDesc.CullMode = vk::CullModeFlagBits::eNone;
@@ -183,7 +183,7 @@ namespace Oxylus {
     TracyProfiler::InitTracyForVulkan(physicalDevice,
       LogicalDevice,
       VulkanContext::VulkanQueue.GraphicsQueue,
-      s_RendererContext.TimelineCommandBuffer.Get());
+      s_RendererContext.m_TimelineCommandBuffer.Get());
 #endif
   }
 
@@ -209,21 +209,21 @@ namespace Oxylus {
   }
 
   void VulkanRenderer::SetCamera(Camera& camera) {
-    s_RendererContext.CurrentCamera = &camera;
+    s_RendererContext.m_CurrentCamera = &camera;
   }
 
   void VulkanRenderer::Draw() {
     OX_SCOPED_ZONE;
-    if (!s_RendererContext.CurrentCamera) {
+    if (!s_RendererContext.m_CurrentCamera) {
       OX_CORE_ERROR("Renderer couldn't find a camera!");
       return;
     }
 
-    if (!s_RendererContext.RenderGraph->Update(SwapChain, &SwapChain.CurrentFrame)) {
+    if (!s_RendererContext.m_RenderGraph->Update(s_SwapChain, &s_SwapChain.CurrentFrame)) {
       return;
     }
 
-    SwapChain.SubmitPass([](const VulkanCommandBuffer& commandBuffer) {
+    s_SwapChain.SubmitPass([](const VulkanCommandBuffer& commandBuffer) {
       OX_SCOPED_ZONE_N("Swapchain pass");
       OX_TRACE_GPU(commandBuffer.Get(), "Swapchain Pass")
       s_Pipelines.QuadPipeline.BindPipeline(commandBuffer.Get());
@@ -258,7 +258,7 @@ namespace Oxylus {
   }
 
   void VulkanRenderer::OnResize() {
-    SwapChain.Resizing = true;
+    s_SwapChain.Resizing = true;
   }
 
   void VulkanRenderer::WaitDeviceIdle() {

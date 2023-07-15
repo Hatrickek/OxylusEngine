@@ -180,7 +180,7 @@ namespace Oxylus {
     m_Scene = scene;
 
     // TODO:(hatrickek) Temporary solution for camera.
-    m_RendererContext.CurrentCamera = VulkanRenderer::s_RendererContext.CurrentCamera;
+    m_RendererContext.CurrentCamera = VulkanRenderer::s_RendererContext.m_CurrentCamera;
 
     if (!m_RendererContext.CurrentCamera)
       OX_CORE_FATAL("No camera is set for rendering!");
@@ -1066,7 +1066,7 @@ namespace Oxylus {
     pbrPipelineDesc.Name = "Skybox Pipeline";
     pbrPipelineDesc.Shader = skyboxShader.get();
     pbrPipelineDesc.ColorAttachmentCount = 1;
-    pbrPipelineDesc.RenderTargets[0].Format = VulkanRenderer::SwapChain.m_ImageFormat;
+    pbrPipelineDesc.RenderTargets[0].Format = VulkanRenderer::s_SwapChain.m_ImageFormat;
     pbrPipelineDesc.RasterizerDesc.CullMode = vk::CullModeFlagBits::eNone;
     pbrPipelineDesc.RasterizerDesc.DepthBias = false;
     pbrPipelineDesc.RasterizerDesc.FrontCounterClockwise = true;
@@ -1156,8 +1156,8 @@ namespace Oxylus {
     ssaoDescription.Name = "SSAO Pipeline";
     ssaoDescription.RenderTargets[0].Format = vk::Format::eR8Unorm;
     ssaoDescription.DepthDesc.DepthEnable = false;
-    ssaoDescription.SubpassDescription[0].DstAccessMask = vk::AccessFlagBits::eColorAttachmentWrite;
-    ssaoDescription.SubpassDescription[0].SrcAccessMask = {};
+    ssaoDescription.SubpassDesc[0].DstAccessMask = vk::AccessFlagBits::eColorAttachmentWrite;
+    ssaoDescription.SubpassDesc[0].SrcAccessMask = {};
     ssaoDescription.Shader = ssaoShader.get();
     m_Pipelines.SSAOPassPipeline.CreateComputePipeline(ssaoDescription);
 
@@ -1214,11 +1214,11 @@ namespace Oxylus {
   void DefaultRenderPipeline::CreateFramebuffers() {
     OX_SCOPED_ZONE;
     VulkanImageDescription colorImageDesc{};
-    colorImageDesc.Format = VulkanRenderer::SwapChain.m_ImageFormat;
+    colorImageDesc.Format = VulkanRenderer::s_SwapChain.m_ImageFormat;
     colorImageDesc.UsageFlags = vk::ImageUsageFlagBits::eColorAttachment | vk::ImageUsageFlagBits::eSampled;
     colorImageDesc.ImageTiling = vk::ImageTiling::eOptimal;
-    colorImageDesc.Width = VulkanRenderer::SwapChain.m_Extent.width;
-    colorImageDesc.Height = VulkanRenderer::SwapChain.m_Extent.height;
+    colorImageDesc.Width = VulkanRenderer::s_SwapChain.m_Extent.width;
+    colorImageDesc.Height = VulkanRenderer::s_SwapChain.m_Extent.height;
     colorImageDesc.CreateView = true;
     colorImageDesc.CreateSampler = true;
     colorImageDesc.CreateDescriptorSet = true;
@@ -1228,8 +1228,8 @@ namespace Oxylus {
     {
       VulkanImageDescription depthImageDesc{};
       depthImageDesc.Format = vk::Format::eD32Sfloat;
-      depthImageDesc.Height = VulkanRenderer::SwapChain.m_Extent.height;
-      depthImageDesc.Width = VulkanRenderer::SwapChain.m_Extent.width;
+      depthImageDesc.Height = VulkanRenderer::s_SwapChain.m_Extent.height;
+      depthImageDesc.Width = VulkanRenderer::s_SwapChain.m_Extent.width;
       depthImageDesc.UsageFlags = vk::ImageUsageFlagBits::eDepthStencilAttachment | vk::ImageUsageFlagBits::eSampled;
       depthImageDesc.ImageTiling = vk::ImageTiling::eOptimal;
       depthImageDesc.CreateSampler = true;
@@ -1242,8 +1242,8 @@ namespace Oxylus {
       FramebufferDescription framebufferDescription;
       framebufferDescription.DebugName = "Depth Pass";
       framebufferDescription.RenderPass = m_Pipelines.DepthPrePassPipeline.GetRenderPass().Get();
-      framebufferDescription.Width = VulkanRenderer::SwapChain.m_Extent.width;
-      framebufferDescription.Height = VulkanRenderer::SwapChain.m_Extent.height;
+      framebufferDescription.Width = VulkanRenderer::s_SwapChain.m_Extent.width;
+      framebufferDescription.Height = VulkanRenderer::s_SwapChain.m_Extent.height;
       framebufferDescription.Extent = &Window::GetWindowExtent();
       framebufferDescription.ImageDescription = {colorImageDesc, depthImageDesc};
       framebufferDescription.OnResize = [this] {
@@ -1297,26 +1297,26 @@ namespace Oxylus {
       }
     }
     {
-      VulkanImageDescription DepthImageDesc;
-      DepthImageDesc.Format = vk::Format::eD32Sfloat;
-      DepthImageDesc.UsageFlags = vk::ImageUsageFlagBits::eDepthStencilAttachment |
+      VulkanImageDescription depthImageDesc;
+      depthImageDesc.Format = vk::Format::eD32Sfloat;
+      depthImageDesc.UsageFlags = vk::ImageUsageFlagBits::eDepthStencilAttachment |
                                   vk::ImageUsageFlagBits::eInputAttachment;
-      DepthImageDesc.ImageTiling = vk::ImageTiling::eOptimal;
-      DepthImageDesc.Width = VulkanRenderer::SwapChain.m_Extent.width;
-      DepthImageDesc.Height = VulkanRenderer::SwapChain.m_Extent.height;
-      DepthImageDesc.CreateView = true;
-      DepthImageDesc.CreateSampler = true;
-      DepthImageDesc.CreateDescriptorSet = false;
-      DepthImageDesc.AspectFlag = vk::ImageAspectFlagBits::eDepth;
-      DepthImageDesc.FinalImageLayout = vk::ImageLayout::eDepthStencilAttachmentOptimal;
+      depthImageDesc.ImageTiling = vk::ImageTiling::eOptimal;
+      depthImageDesc.Width = VulkanRenderer::s_SwapChain.m_Extent.width;
+      depthImageDesc.Height = VulkanRenderer::s_SwapChain.m_Extent.height;
+      depthImageDesc.CreateView = true;
+      depthImageDesc.CreateSampler = true;
+      depthImageDesc.CreateDescriptorSet = false;
+      depthImageDesc.AspectFlag = vk::ImageAspectFlagBits::eDepth;
+      depthImageDesc.FinalImageLayout = vk::ImageLayout::eDepthStencilAttachmentOptimal;
 
       FramebufferDescription framebufferDescription;
       framebufferDescription.DebugName = "PBR Pass";
-      framebufferDescription.Width = VulkanRenderer::SwapChain.m_Extent.width;
-      framebufferDescription.Height = VulkanRenderer::SwapChain.m_Extent.height;
+      framebufferDescription.Width = VulkanRenderer::s_SwapChain.m_Extent.width;
+      framebufferDescription.Height = VulkanRenderer::s_SwapChain.m_Extent.height;
       framebufferDescription.Extent = &Window::GetWindowExtent();
       framebufferDescription.RenderPass = m_Pipelines.PBRPipeline.GetRenderPass().Get();
-      framebufferDescription.ImageDescription = {colorImageDesc, DepthImageDesc};
+      framebufferDescription.ImageDescription = {colorImageDesc, depthImageDesc};
       m_FrameBuffers.PBRPassFB.CreateFramebuffer(framebufferDescription);
     }
     {
@@ -1367,7 +1367,7 @@ namespace Oxylus {
       ssrPassImage.Width = Window::GetWidth();
       ssrPassImage.CreateDescriptorSet = true;
       ssrPassImage.UsageFlags = vk::ImageUsageFlagBits::eStorage | vk::ImageUsageFlagBits::eSampled;
-      ssrPassImage.Format = VulkanRenderer::SwapChain.m_ImageFormat;
+      ssrPassImage.Format = VulkanRenderer::s_SwapChain.m_ImageFormat;
       ssrPassImage.FinalImageLayout = vk::ImageLayout::eGeneral;
       ssrPassImage.TransitionLayoutAtCreate = true;
       ssrPassImage.SamplerAddressMode = vk::SamplerAddressMode::eClampToBorder;
@@ -1396,7 +1396,7 @@ namespace Oxylus {
       atmImage.CreateDescriptorSet = true;
       atmImage.Type = ImageType::TYPE_CUBE;
       atmImage.UsageFlags = vk::ImageUsageFlagBits::eStorage | vk::ImageUsageFlagBits::eSampled;
-      atmImage.Format = VulkanRenderer::SwapChain.m_ImageFormat;
+      atmImage.Format = VulkanRenderer::s_SwapChain.m_ImageFormat;
       atmImage.FinalImageLayout = vk::ImageLayout::eGeneral;
       atmImage.TransitionLayoutAtCreate = true;
       m_FrameBuffers.AtmosphereImage.Create(atmImage);
@@ -1416,7 +1416,7 @@ namespace Oxylus {
       dofImage.Width = Window::GetWidth();
       dofImage.CreateDescriptorSet = true;
       dofImage.UsageFlags = vk::ImageUsageFlagBits::eStorage | vk::ImageUsageFlagBits::eSampled;
-      dofImage.Format = VulkanRenderer::SwapChain.m_ImageFormat;
+      dofImage.Format = VulkanRenderer::s_SwapChain.m_ImageFormat;
       dofImage.FinalImageLayout = vk::ImageLayout::eGeneral;
       dofImage.TransitionLayoutAtCreate = true;
       dofImage.SamplerAddressMode = vk::SamplerAddressMode::eClampToBorder;
@@ -1441,7 +1441,7 @@ namespace Oxylus {
       bloompassimage.Height = Window::GetHeight();
       bloompassimage.CreateDescriptorSet = true;
       bloompassimage.UsageFlags = vk::ImageUsageFlagBits::eStorage | vk::ImageUsageFlagBits::eSampled | vk::ImageUsageFlagBits::eTransferSrc | vk::ImageUsageFlagBits::eTransferDst;
-      bloompassimage.Format = VulkanRenderer::SwapChain.m_ImageFormat;
+      bloompassimage.Format = VulkanRenderer::s_SwapChain.m_ImageFormat;
       bloompassimage.FinalImageLayout = vk::ImageLayout::eGeneral;
       bloompassimage.TransitionLayoutAtCreate = true;
       bloompassimage.SamplerAddressMode = vk::SamplerAddressMode::eClampToEdge;
@@ -1488,7 +1488,7 @@ namespace Oxylus {
       composite.Width = Window::GetWidth();
       composite.CreateDescriptorSet = true;
       composite.UsageFlags = vk::ImageUsageFlagBits::eStorage | vk::ImageUsageFlagBits::eSampled;
-      composite.Format = VulkanRenderer::SwapChain.m_ImageFormat;
+      composite.Format = VulkanRenderer::s_SwapChain.m_ImageFormat;
       composite.FinalImageLayout = vk::ImageLayout::eGeneral;
       composite.TransitionLayoutAtCreate = true;
       composite.SamplerAddressMode = vk::SamplerAddressMode::eClampToBorder;
@@ -1516,7 +1516,7 @@ namespace Oxylus {
       postProcess.Height = Window::GetHeight();
       postProcess.Extent = &Window::GetWindowExtent();
       postProcess.RenderPass = m_Pipelines.PostProcessPipeline.GetRenderPass().Get();
-      colorImageDesc.Format = VulkanRenderer::SwapChain.m_ImageFormat;
+      colorImageDesc.Format = VulkanRenderer::s_SwapChain.m_ImageFormat;
       postProcess.ImageDescription = {colorImageDesc};
       postProcess.OnResize = [this] {
         m_PostProcessDescriptorSet.WriteDescriptorSets[0].pImageInfo = &m_FrameBuffers.CompositePassImage.GetDescImageInfo();
