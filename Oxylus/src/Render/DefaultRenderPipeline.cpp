@@ -673,7 +673,7 @@ namespace Oxylus {
           pushConst.Model = shape.ModelMatrix;
           pushConst.Color = shape.Color;
           commandBuffer.PushConstants(debugLayout, vk::ShaderStageFlagBits::eVertex, 0, sizeof(DebugPassData), &pushConst);
-          shape.Mesh->Draw(commandBuffer.Get());
+          shape.ShapeMesh->Draw(commandBuffer.Get());
         }
 
         DebugRenderer::Reset(false);
@@ -705,7 +705,7 @@ namespace Oxylus {
           pushConst.Model = shape.ModelMatrix;
           pushConst.Color = shape.Color;
           commandBuffer.PushConstants(debugLayout, vk::ShaderStageFlagBits::eVertex, 0, sizeof(DebugPassData), &pushConst);
-          shape.Mesh->Draw(commandBuffer.Get());
+          shape.ShapeMesh->Draw(commandBuffer.Get());
         }
 
         DebugRenderer::Reset();
@@ -1260,10 +1260,8 @@ namespace Oxylus {
       framebufferDescription.Extent = nullptr;
       depthImageDesc.Type = ImageType::TYPE_2DARRAY;
       depthImageDesc.ImageArrayLayerCount = SHADOW_MAP_CASCADE_COUNT;
-      depthImageDesc.ViewArrayLayerCount = SHADOW_MAP_CASCADE_COUNT;
       depthImageDesc.FinalImageLayout = vk::ImageLayout::eDepthStencilReadOnlyOptimal;
       depthImageDesc.TransitionLayoutAtCreate = true;
-      depthImageDesc.BaseArrayLayerIndex = 0;
       m_Resources.DirectShadowsDepthArray.Create(depthImageDesc);
 
       framebufferDescription.Width = RendererConfig::Get()->DirectShadowsConfig.Size;
@@ -1274,26 +1272,13 @@ namespace Oxylus {
         m_ShadowDepthDescriptorSet.WriteDescriptorSets[0].pBufferInfo = &m_RendererData.DirectShadowBuffer.GetDescriptor();
         m_ShadowDepthDescriptorSet.Update();
       };
+      framebufferDescription.ImageDescription = {depthImageDesc};
+
       m_FrameBuffers.DirectionalCascadesFB.resize(SHADOW_MAP_CASCADE_COUNT);
-      int baseArrayLayer = 0;
-      depthImageDesc.ViewArrayLayerCount = 1;
-      for (auto& fb : m_FrameBuffers.DirectionalCascadesFB) {
-        depthImageDesc.BaseArrayLayerIndex = baseArrayLayer;
-        framebufferDescription.ImageDescription = {depthImageDesc};
-        vk::ImageViewCreateInfo viewInfo{};
-        viewInfo.viewType = vk::ImageViewType::e2DArray;
-        viewInfo.format = vk::Format::eD32Sfloat;
-        viewInfo.subresourceRange.aspectMask = vk::ImageAspectFlagBits::eDepth;
-        viewInfo.subresourceRange.baseMipLevel = 0;
-        viewInfo.subresourceRange.levelCount = 1;
-        viewInfo.subresourceRange.baseArrayLayer = baseArrayLayer;
-        viewInfo.subresourceRange.layerCount = 1;
-        viewInfo.image = m_Resources.DirectShadowsDepthArray.GetImage();
-        const auto& LogicalDevice = VulkanContext::GetDevice();
-        vk::ImageView view;
-        VulkanUtils::CheckResult(LogicalDevice.createImageView(&viewInfo, nullptr, &view));
-        fb.CreateFramebufferWithImageView(framebufferDescription, view);
-        baseArrayLayer++;
+      for (uint32_t i = 0; i < (uint32_t)m_FrameBuffers.DirectionalCascadesFB.size(); i++) {
+        m_FrameBuffers.DirectionalCascadesFB[i].CreateFramebuffer(
+          framebufferDescription,
+          m_Resources.DirectShadowsDepthArray.GetImageViews()[i]);
       }
     }
     {

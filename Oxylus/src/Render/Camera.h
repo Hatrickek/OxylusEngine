@@ -38,13 +38,21 @@ namespace Oxylus {
 
     Camera(Vec3 position = Vec3(0.0f, 0.0f, 0.0f));
 
+    void Update();
+    void Update(const Vec3& pos, const Vec3& rotation);
+
     Mat4 GetProjectionMatrixFlipped() const;
     Mat4 GetProjectionMatrix() const;
     Mat4 GetViewMatrix() const;
-    void SetYaw(float value);
-    float GetYaw() const;
-    void SetPitch(float value);
-    float GetPitch() const;
+    Mat4 GetWorldMatrix() const;
+
+    void SetYaw(const float value) { m_Yaw = value;}
+    void SetPitch(const float value) { m_Pitch = value; }
+
+    float GetYaw() const { return m_Yaw; }
+    float GetPitch() const { return m_Pitch; }
+    float GetTilt() const { return m_Tilt;}
+
     void SetNear(float newNear);
     void SetFar(float newFar);
     void Dolly(float z);
@@ -57,8 +65,7 @@ namespace Oxylus {
     Vec3 GetFront() const;
     Vec3 GetRight() const;
     const Vec3& GetPosition() const;
-    void Update();
-    void Update(const Vec3& pos, const Vec3& rotation);
+
     void UpdateViewMatrix();
     static Mat4 GenerateViewMatrix(const Vec3& position, const Vec3& viewDir, const Vec3& up);
 

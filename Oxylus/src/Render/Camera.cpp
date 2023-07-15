@@ -23,22 +23,6 @@ namespace Oxylus {
     return glm::perspective(glm::radians(Fov), Aspect, NearClip, FarClip);
   }
 
-  void Camera::SetYaw(const float value) {
-    m_Yaw = value;
-  }
-
-  float Camera::GetYaw() const {
-    return m_Yaw;
-  }
-
-  void Camera::SetPitch(const float value) {
-    m_Pitch = value;
-  }
-
-  float Camera::GetPitch() const {
-    return m_Pitch;
-  }
-
   void Camera::SetNear(float newNear) {
     SetPerspective(Fov, Aspect, newNear, FarClip);
   }
@@ -53,6 +37,11 @@ namespace Oxylus {
 
   glm::mat4 Camera::GetViewMatrix() const {
     return m_ViewMatrix;
+  }
+
+  Mat4 Camera::GetWorldMatrix() const {
+    return glm::translate(glm::mat4(1.0f), m_Position) *
+           glm::toMat4(glm::quat(Vec3(GetPitch(), GetYaw(), m_Tilt)));
   }
 
   void Camera::SetPosition(const glm::vec3 pos) {

@@ -10,49 +10,11 @@ namespace Oxylus {
     CreateFramebuffer(desc);
   }
 
-  void VulkanFramebuffer::CreateFramebuffer(const FramebufferDescription& framebufferDescription) {
+  void VulkanFramebuffer::CreateFramebuffer(const FramebufferDescription& framebufferDescription, vk::ImageView imageView) {
     const auto& LogicalDevice = VulkanContext::Context.Device;
     m_FramebufferDescription = framebufferDescription;
+    m_ImageView = imageView;
 
-    m_DebugName = m_FramebufferDescription.DebugName;
-    std::vector<vk::ImageView> fbAttachments;
-
-    vk::FramebufferCreateInfo framebufferCreateInfo;
-    if (m_FramebufferDescription.Extent) {
-      framebufferCreateInfo.width = m_FramebufferDescription.Extent->width;
-      framebufferCreateInfo.height = m_FramebufferDescription.Extent->height;
-    }
-
-    m_FramebufferDescription.Width = framebufferCreateInfo.width;
-    m_FramebufferDescription.Height = framebufferCreateInfo.height;
-
-    m_Images.clear();
-    for (auto& id : m_FramebufferDescription.ImageDescription) {
-      id.Width = framebufferCreateInfo.width;
-      id.Height = framebufferCreateInfo.height;
-      VulkanImage image(id);
-      m_Images.emplace_back(image);
-      fbAttachments.emplace_back(image.GetImageView());
-    }
-
-    framebufferCreateInfo.layers = 1;
-    framebufferCreateInfo.renderPass = m_FramebufferDescription.RenderPass;
-    framebufferCreateInfo.pAttachments = fbAttachments.data();
-    framebufferCreateInfo.attachmentCount = (uint32_t)fbAttachments.size();
-    VulkanUtils::CheckResult(LogicalDevice.createFramebuffer(&framebufferCreateInfo, nullptr, &m_Framebuffer));
-    VulkanUtils::SetObjectName((uint64_t)(VkFramebuffer)m_Framebuffer,
-      vk::ObjectType::eFramebuffer,
-      m_FramebufferDescription.DebugName.c_str());
-
-    if (!m_Resizing && m_FramebufferDescription.Resizable)
-      FrameBufferPool::AddToPool(this);
-  }
-
-  void VulkanFramebuffer::CreateFramebufferWithImageView(const FramebufferDescription& framebufferDescription,
-                                                         vk::ImageView& view) {
-    const auto& LogicalDevice = VulkanContext::Context.Device;
-    m_FramebufferDescription = framebufferDescription;
-    m_VkImageView = view;
     m_DebugName = m_FramebufferDescription.DebugName;
     std::vector<vk::ImageView> fbAttachments;
 
@@ -69,14 +31,28 @@ namespace Oxylus {
     m_FramebufferDescription.Width = framebufferCreateInfo.width;
     m_FramebufferDescription.Height = framebufferCreateInfo.height;
 
-    fbAttachments.emplace_back(view);
+    m_Images.clear();
+    for (auto& id : m_FramebufferDescription.ImageDescription) {
+      id.Width = framebufferCreateInfo.width;
+      id.Height = framebufferCreateInfo.height;
+      if (!imageView) {
+        VulkanImage image(id);
+        m_Images.emplace_back(image);
+        fbAttachments.emplace_back(image.GetImageView());
+      }
+      else {
+        fbAttachments.emplace_back(imageView);
+      }
+    }
 
     framebufferCreateInfo.layers = 1;
     framebufferCreateInfo.renderPass = m_FramebufferDescription.RenderPass;
     framebufferCreateInfo.pAttachments = fbAttachments.data();
     framebufferCreateInfo.attachmentCount = (uint32_t)fbAttachments.size();
-
     VulkanUtils::CheckResult(LogicalDevice.createFramebuffer(&framebufferCreateInfo, nullptr, &m_Framebuffer));
+    VulkanUtils::SetObjectName((uint64_t)(VkFramebuffer)m_Framebuffer,
+      vk::ObjectType::eFramebuffer,
+      m_FramebufferDescription.DebugName.c_str());
 
     if (!m_Resizing && m_FramebufferDescription.Resizable)
       FrameBufferPool::AddToPool(this);
@@ -92,10 +68,8 @@ namespace Oxylus {
     m_Images.clear();
     LogicalDevice.destroyFramebuffer(m_Framebuffer);
 
-    if (m_VkImageView)
-      CreateFramebufferWithImageView(m_FramebufferDescription, m_VkImageView);
-    else
-      CreateFramebuffer(m_FramebufferDescription);
+    CreateFramebuffer(m_FramebufferDescription, m_ImageView);
+
     if (m_FramebufferDescription.OnResize)
       m_FramebufferDescription.OnResize();
     m_Resizing = false;
@@ -109,6 +83,5 @@ namespace Oxylus {
     m_Images.clear();
     LogicalDevice.destroyFramebuffer(m_Framebuffer);
     FrameBufferPool::RemoveFromPool(GetDescription().DebugName);
-    LogicalDevice.destroyImageView(m_VkImageView);
   }
 }

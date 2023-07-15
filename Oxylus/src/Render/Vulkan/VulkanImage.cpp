@@ -98,7 +98,7 @@ namespace Oxylus {
 
     // Create view
     if (m_ImageDescription.CreateView)
-      m_View = CreateImageView();
+      m_Views = CreateImageView();
 
     // Create sampler
     if (m_ImageDescription.CreateSampler)
@@ -108,7 +108,7 @@ namespace Oxylus {
       m_DescSet = CreateDescriptorSet();
 
     DescriptorImageInfo.imageLayout = m_ImageLayout;
-    DescriptorImageInfo.imageView = m_View;
+    DescriptorImageInfo.imageView = m_Views[0];
     DescriptorImageInfo.sampler = m_Sampler;
 
     if (m_ImageDescription.FlipOnLoad)
@@ -458,31 +458,37 @@ namespace Oxylus {
       timer.ElapsedMilliSeconds());
   }
 
-  vk::ImageView VulkanImage::CreateImageView(const uint32_t mipmapIndex) const {
+  std::vector<vk::ImageView> VulkanImage::CreateImageView(const uint32_t mipmapIndex) const {
     const auto& LogicalDevice = VulkanContext::GetDevice();
 
-    vk::ImageViewCreateInfo viewCreateInfo;
-    viewCreateInfo.image = m_Image;
-    if (GetDesc().Type == ImageType::TYPE_CUBE)
-      viewCreateInfo.viewType = vk::ImageViewType::eCube;
-    else if (GetDesc().Type == ImageType::TYPE_2D)
-      viewCreateInfo.viewType = vk::ImageViewType::e2D;
-    else if (GetDesc().Type == ImageType::TYPE_2DARRAY)
-      viewCreateInfo.viewType = vk::ImageViewType::e2DArray;
+    std::vector<vk::ImageView> views = {};
 
-    viewCreateInfo.format = GetDesc().Format;
-    viewCreateInfo.components = {
-      vk::ComponentSwizzle::eR, vk::ComponentSwizzle::eG, vk::ComponentSwizzle::eB, vk::ComponentSwizzle::eA
-    };
-    viewCreateInfo.subresourceRange.aspectMask = m_ImageDescription.AspectFlag;
-    viewCreateInfo.subresourceRange.baseMipLevel = mipmapIndex;
-    viewCreateInfo.subresourceRange.levelCount = VK_REMAINING_MIP_LEVELS;
-    viewCreateInfo.subresourceRange.baseArrayLayer = m_ImageDescription.BaseArrayLayerIndex;
-    viewCreateInfo.subresourceRange.layerCount = GetDesc().Type == ImageType::TYPE_CUBE ? 6 : m_ImageDescription.ViewArrayLayerCount;
+    for (int i = 0; i < m_ImageDescription.ImageArrayLayerCount; i++) {
+      vk::ImageViewCreateInfo viewCreateInfo;
+      viewCreateInfo.image = m_Image;
+      if (GetDesc().Type == ImageType::TYPE_CUBE)
+        viewCreateInfo.viewType = vk::ImageViewType::eCube;
+      else if (GetDesc().Type == ImageType::TYPE_2D)
+        viewCreateInfo.viewType = vk::ImageViewType::e2D;
+      else if (GetDesc().Type == ImageType::TYPE_2DARRAY)
+        viewCreateInfo.viewType = vk::ImageViewType::e2DArray;
 
-    const auto res = LogicalDevice.createImageView(viewCreateInfo, nullptr);
-    VulkanUtils::CheckResult(res.result);
-    return res.value;
+      viewCreateInfo.format = GetDesc().Format;
+      viewCreateInfo.components = {
+        vk::ComponentSwizzle::eR, vk::ComponentSwizzle::eG, vk::ComponentSwizzle::eB, vk::ComponentSwizzle::eA
+      };
+      viewCreateInfo.subresourceRange.aspectMask = m_ImageDescription.AspectFlag;
+      viewCreateInfo.subresourceRange.baseMipLevel = mipmapIndex;
+      viewCreateInfo.subresourceRange.levelCount = VK_REMAINING_MIP_LEVELS;
+      viewCreateInfo.subresourceRange.baseArrayLayer = i;
+      viewCreateInfo.subresourceRange.layerCount = GetDesc().Type == ImageType::TYPE_CUBE ? 6 : VK_REMAINING_ARRAY_LAYERS;
+
+      const auto res = LogicalDevice.createImageView(viewCreateInfo, nullptr);
+      VulkanUtils::CheckResult(res.result);
+      views.emplace_back(res.value);
+    }
+
+    return views;
   }
 
   void VulkanImage::CreateSampler() {
@@ -671,7 +677,7 @@ namespace Oxylus {
     for (uint32_t i = 0; i < m_ImageDescription.MipLevels; i++) {
       vk::DescriptorImageInfo desc;
       desc.imageLayout = m_ImageLayout;
-      desc.imageView = CreateImageView(i);
+      desc.imageView = CreateImageView(i)[0];
       desc.sampler = m_Sampler;
       result.emplace_back(desc);
     }
@@ -705,13 +711,14 @@ namespace Oxylus {
   }
 
   uint32_t VulkanImage::GetMaxMipmapLevel(uint32_t width, uint32_t height, uint32_t depth) {
-    return std::ilogb(std::max(width, std::max(height, depth)));
+    return std::ilogb(std::max(width, std::max(height, depth))) - 1;
   }
 
-  void VulkanImage::Destroy() {
+  void VulkanImage::Destroy() const {
     const auto& LogicalDevice = VulkanContext::Context.Device;
-    if (m_View) {
-      LogicalDevice.destroyImageView(m_View, nullptr);
+    for (auto& view : m_Views) {
+      if (view)
+      LogicalDevice.destroyImageView(view, nullptr);
     }
     vmaDestroyImage(VulkanContext::GetAllocator(), m_Image, m_Allocation);
     GPUMemory::TotalFreed += ImageSize;

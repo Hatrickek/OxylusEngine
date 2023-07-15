@@ -23,8 +23,7 @@ namespace Oxylus {
 
     ~VulkanFramebuffer() { }
 
-    void CreateFramebuffer(const FramebufferDescription& framebufferDescription);
-    void CreateFramebufferWithImageView(const FramebufferDescription& framebufferDescription, vk::ImageView& view);
+    void CreateFramebuffer(const FramebufferDescription& framebufferDescription, vk::ImageView imageView = nullptr);
 
     void Resize();
     void Destroy();
@@ -46,7 +45,7 @@ namespace Oxylus {
     vk::Framebuffer m_Framebuffer;
     std::vector<VulkanImage> m_Images;
     std::string m_DebugName;
-    vk::ImageView m_VkImageView;
+    vk::ImageView m_ImageView = nullptr;
     bool m_Resizing = false;
   };
 }

@@ -46,7 +46,6 @@ namespace Oxylus {
     vk::BorderColor SamplerBorderColor = vk::BorderColor::eFloatOpaqueWhite;
     vk::SamplerAddressMode SamplerAddressMode = vk::SamplerAddressMode::eRepeat;
     int32_t ImageArrayLayerCount = 1;
-    int32_t ViewArrayLayerCount = 1;
     int32_t BaseArrayLayerIndex = 0;
   };
 
@@ -72,7 +71,8 @@ namespace Oxylus {
     uint32_t GetWidth() const { return m_ImageDescription.Width; }
     uint32_t GetHeight() const { return m_ImageDescription.Height; }
     vk::Image GetImage() const { return m_Image; }
-    const vk::ImageView& GetImageView() const { return m_View; }
+    const vk::ImageView& GetImageView() const { return m_Views[0]; }
+    const std::vector<vk::ImageView>& GetImageViews() const { return m_Views; }
     const vk::Sampler& GetImageSampler() const { return m_Sampler; }
     const VulkanImageDescription& GetDesc() const { return m_ImageDescription; }
     const vk::DescriptorSet& GetDescriptorSet() const { return m_DescSet; }
@@ -86,7 +86,7 @@ namespace Oxylus {
     static IVec3 GetMipMapLevelSize(uint32_t width, uint32_t height, uint32_t depth, uint32_t level);
     static uint32_t GetMaxMipmapLevel(uint32_t width, uint32_t height, uint32_t depth);
 
-    void Destroy();
+    void Destroy() const;
 
   private:
     void LoadTextureFromFile();
@@ -95,14 +95,14 @@ namespace Oxylus {
     void LoadStbFile();
     void CreateImage(bool hasPath);
     void LoadAndCreateResources(bool hasPath);
-    vk::ImageView CreateImageView(uint32_t mipmapIndex = 0) const;
+    std::vector<vk::ImageView> CreateImageView(uint32_t mipmapIndex = 0) const;
     void CreateSampler();
     void GenerateMips();
     vk::DescriptorSet CreateDescriptorSet() const;
 
     vk::ImageLayout m_ImageLayout = vk::ImageLayout::eUndefined;
     VkImage m_Image = {};
-    vk::ImageView m_View = {};
+    std::vector<vk::ImageView> m_Views = {};
     vk::Sampler m_Sampler = {};
     vk::DescriptorSet m_DescSet = {};
     VulkanImageDescription m_ImageDescription = {};
