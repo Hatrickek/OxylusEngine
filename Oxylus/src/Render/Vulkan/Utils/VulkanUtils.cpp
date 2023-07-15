@@ -3,13 +3,14 @@
 
 #include <GLFW/glfw3.h>
 
-#define DISABLE_DEBUG_LAYERS 1
+#define DISABLE_DEBUG_LAYERS 0
 
 #ifdef OX_DISTRIBUTION
 #undef DISABLE_DEBUG_LAYERS
 #define DISABLE_DEBUG_LAYERS 1
 #endif
 
+#if 0 // Currently handled by the `glfwCreateWindowSurface`
 #if defined(VK_USE_PLATFORM_ANDROID_KHR)
 #include <vulkan/vulkan_android.h>
 #elif defined(VK_USE_PLATFORM_IOS_MVK)
@@ -26,6 +27,7 @@
 #include <vulkan/vulkan_xlib.h>
 #elif defined(VK_USE_PLATFORM_XLIB_XRANDR_EXT)
 #include <vulkan/vulkan_xlib_xrandr.h>
+#endif
 #endif
 
 namespace Oxylus {
@@ -247,25 +249,22 @@ static vk::StructureChain<vk::InstanceCreateInfo>
 
   std::vector<std::string> ContextUtils::GetInstanceExtensions() {
     std::vector<std::string> extensions;
+#if 0 // Currently handled by the `glfwCreateWindowSurface`
+
     extensions.emplace_back(VK_KHR_SURFACE_EXTENSION_NAME);
 #if defined(VK_USE_PLATFORM_ANDROID_KHR)
-#include <vulkan/vulkan_android.h>
   extensions.push_back(VK_KHR_ANDROID_SURFACE_EXTENSION_NAME);
 #elif defined(VK_USE_PLATFORM_IOS_MVK)
-#include <vulkan/vulkan_ios.h>
   extensions.push_back(VK_MVK_IOS_SURFACE_EXTENSION_NAME);
 #elif defined(VK_USE_PLATFORM_MACOS_MVK)
-#include <vulkan/vulkan_macos.h>
   extensions.push_back(VK_MVK_MACOS_SURFACE_EXTENSION_NAME);
 #elif defined(VK_USE_PLATFORM_MIR_KHR)
   extensions.push_back(VK_KHR_MIR_SURFACE_EXTENSION_NAME);
 #elif defined(VK_USE_PLATFORM_VI_NN)
   extensions.push_back(VK_NN_VI_SURFACE_EXTENSION_NAME);
 #elif defined(VK_USE_PLATFORM_WAYLAND_KHR)
-#include <vulkan/vulkan_wayland.h>
   extensions.push_back(VK_KHR_WAYLAND_SURFACE_EXTENSION_NAME);
 #elif defined(VK_USE_PLATFORM_WIN32_KHR)
-#include <vulkan/vulkan_win32.h>
     extensions.emplace_back(VK_KHR_WIN32_SURFACE_EXTENSION_NAME);
 #elif defined(VK_USE_PLATFORM_XCB_KHR)
 #include <vulkan/vulkan_xcb.h>
@@ -276,6 +275,8 @@ static vk::StructureChain<vk::InstanceCreateInfo>
 #elif defined(VK_USE_PLATFORM_XLIB_XRANDR_EXT)
 #include <vulkan/vulkan_xlib_xrandr.h>
   extensions.push_back(VK_EXT_ACQUIRE_XLIB_DISPLAY_EXTENSION_NAME);
+#endif
+
 #endif
     return extensions;
   }
