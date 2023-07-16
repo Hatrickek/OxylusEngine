@@ -14,7 +14,7 @@
 
 namespace Oxylus {
   ViewportPanel::ViewportPanel() : EditorPanel("Viewport", ICON_MDI_TERRAIN, true) {
-    VulkanRenderer::SetCamera(Camera);
+    VulkanRenderer::SetCamera(m_Camera);
   }
 
   void ViewportPanel::OnImGuiRender() {
@@ -96,8 +96,8 @@ namespace Oxylus {
 
   void ViewportPanel::OnUpdate() {
     if (m_ViewportFocused && !m_SimulationRunning && m_UseEditorCamera) {
-      const Vec3& position = Camera.GetPosition();
-      const glm::vec2 yawPitch = glm::vec2(Camera.GetYaw(), Camera.GetPitch());
+      const Vec3& position = m_Camera.GetPosition();
+      const glm::vec2 yawPitch = glm::vec2(m_Camera.GetYaw(), m_Camera.GetPitch());
       Vec3 finalPosition = position;
       glm::vec2 finalYawPitch = yawPitch;
 
@@ -118,13 +118,13 @@ namespace Oxylus {
 
         const float maxMoveSpeed = m_MovementSpeed * (ImGui::IsKeyDown(ImGuiKey_LeftShift) ? 3.0f : 1.0f);
         if (ImGui::IsKeyDown(ImGuiKey_W))
-          finalPosition += Camera.GetFront() * maxMoveSpeed;
+          finalPosition += m_Camera.GetFront() * maxMoveSpeed;
         else if (ImGui::IsKeyDown(ImGuiKey_S))
-          finalPosition -= Camera.GetFront() * maxMoveSpeed;
+          finalPosition -= m_Camera.GetFront() * maxMoveSpeed;
         if (ImGui::IsKeyDown(ImGuiKey_D))
-          finalPosition += Camera.GetRight() * maxMoveSpeed;
+          finalPosition += m_Camera.GetRight() * maxMoveSpeed;
         else if (ImGui::IsKeyDown(ImGuiKey_A))
-          finalPosition -= Camera.GetRight() * maxMoveSpeed;
+          finalPosition -= m_Camera.GetRight() * maxMoveSpeed;
 
         if (ImGui::IsKeyDown(ImGuiKey_Q)) {
           finalPosition.y -= maxMoveSpeed;
@@ -148,8 +148,8 @@ namespace Oxylus {
         const glm::vec2 change = (newMousePosition - m_LockedMousePosition) * m_MouseSensitivity;
 
         const float maxMoveSpeed = m_MovementSpeed * (ImGui::IsKeyDown(ImGuiKey_LeftShift) ? 3.0f : 1.0f);
-        finalPosition += Camera.GetFront() * change.y * maxMoveSpeed;
-        finalPosition += Camera.GetRight() * change.x * maxMoveSpeed;
+        finalPosition += m_Camera.GetFront() * change.y * maxMoveSpeed;
+        finalPosition += m_Camera.GetRight() * change.x * maxMoveSpeed;
       }
       else {
         Input::SetCursorIconDefault();
@@ -169,11 +169,11 @@ namespace Oxylus {
         1000.0f,
         Application::GetTimestep());
 
-      Camera.SetPosition(m_SmoothCamera ? dampedPosition : finalPosition);
-      Camera.SetYaw(m_SmoothCamera ? dampedYawPitch.x : finalYawPitch.x);
-      Camera.SetPitch(m_SmoothCamera ? dampedYawPitch.y : finalYawPitch.y);
+      m_Camera.SetPosition(m_SmoothCamera ? dampedPosition : finalPosition);
+      m_Camera.SetYaw(m_SmoothCamera ? dampedYawPitch.x : finalYawPitch.x);
+      m_Camera.SetPitch(m_SmoothCamera ? dampedYawPitch.y : finalYawPitch.y);
 
-      Camera.Update();
+      m_Camera.Update();
     }
   }
 
@@ -231,8 +231,8 @@ namespace Oxylus {
         m_ViewportBounds[1].x - m_ViewportBounds[0].x,
         m_ViewportBounds[1].y - m_ViewportBounds[0].y);
 
-      const glm::mat4& cameraProjection = Camera.GetProjectionMatrix();
-      const glm::mat4& cameraView = Camera.GetViewMatrix();
+      const glm::mat4& cameraProjection = m_Camera.GetProjectionMatrix();
+      const glm::mat4& cameraView = m_Camera.GetViewMatrix();
 
       auto& tc = selectedEntity.GetComponent<TransformComponent>();
       glm::mat4 transform = selectedEntity.GetWorldTransform();

@@ -48,53 +48,70 @@ namespace Oxylus {
     Create(imageDescription);
   }
 
-  void VulkanImage::CreateImage(const bool hasPath) {
+  void VulkanImage::TransitionLayout() {
+    vk::ImageSubresourceRange subresourceRange;
+    subresourceRange.aspectMask = m_ImageDescription.AspectFlag;
+    subresourceRange.levelCount = m_ImageDescription.MipLevels;
+    subresourceRange.layerCount = 1;
+    if ((m_ImageDescription.MipLevels > 1 || m_ImageDescription.GenerateMips) && m_ImageDescription.Type != ImageType::TYPE_CUBE) {
+      if (m_ImageDescription.MipLevels == 1)
+        m_ImageDescription.MipLevels = GetMaxMipmapLevel(GetWidth(), GetHeight(), 1);
+
+      subresourceRange.levelCount = m_ImageDescription.MipLevels;
+      for (uint32_t i = 0; i <= m_ImageDescription.MipLevels - 1; i++) {
+        subresourceRange.baseMipLevel = i;
+        subresourceRange.levelCount = VK_REMAINING_MIP_LEVELS;
+        SetImageLayout(m_ImageDescription.InitalImageLayout, vk::ImageLayout::eTransferDstOptimal, subresourceRange);
+      }
+    }
+    else {
+      SetImageLayout(m_ImageDescription.InitalImageLayout, m_ImageDescription.FinalImageLayout, subresourceRange);
+    }
+  }
+
+  void VulkanImage::CreateImage() {
     if (m_ImageDescription.FlipOnLoad)
       stbi_set_flip_vertically_on_load(true);
 
-    if (!hasPath && !m_ImageDescription.EmbeddedStbData) {
-      vk::ImageCreateInfo imageCreateInfo;
-      imageCreateInfo.imageType = vk::ImageType::e2D;
-      imageCreateInfo.extent = vk::Extent3D{m_ImageDescription.Width, m_ImageDescription.Height, m_ImageDescription.Depth};
-      imageCreateInfo.mipLevels = m_ImageDescription.MipLevels;
-      imageCreateInfo.format = m_ImageDescription.Format;
-      imageCreateInfo.arrayLayers = m_ImageDescription.Type == ImageType::TYPE_CUBE ? 6 : m_ImageDescription.ImageArrayLayerCount;
-      imageCreateInfo.tiling = m_ImageDescription.ImageTiling;
-      imageCreateInfo.initialLayout = vk::ImageLayout::eUndefined;
-      imageCreateInfo.usage = m_ImageDescription.UsageFlags;
-      imageCreateInfo.samples = m_ImageDescription.SampleCount;
-      imageCreateInfo.sharingMode = m_ImageDescription.SharingMode;
-      imageCreateInfo.flags = m_ImageDescription.Type == ImageType::TYPE_CUBE
-                                ? vk::ImageCreateFlagBits::eCubeCompatible
-                                : vk::ImageCreateFlags{};
+    vk::ImageCreateInfo imageCreateInfo;
+    imageCreateInfo.imageType = vk::ImageType::e2D;
+    imageCreateInfo.extent = vk::Extent3D{m_ImageDescription.Width, m_ImageDescription.Height, m_ImageDescription.Depth};
+    imageCreateInfo.mipLevels = m_ImageDescription.MipLevels;
+    imageCreateInfo.format = m_ImageDescription.Format;
+    imageCreateInfo.arrayLayers = m_ImageDescription.Type == ImageType::TYPE_CUBE ? 6 : m_ImageDescription.ImageArrayLayerCount;
+    imageCreateInfo.tiling = m_ImageDescription.ImageTiling;
+    imageCreateInfo.initialLayout = vk::ImageLayout::eUndefined;
+    imageCreateInfo.usage = m_ImageDescription.UsageFlags;
+    imageCreateInfo.samples = m_ImageDescription.SampleCount;
+    imageCreateInfo.sharingMode = m_ImageDescription.SharingMode;
+    imageCreateInfo.flags = m_ImageDescription.Type == ImageType::TYPE_CUBE
+                              ? vk::ImageCreateFlagBits::eCubeCompatible
+                              : vk::ImageCreateFlags{};
 
-      const VkImageCreateInfo _imageci = (VkImageCreateInfo)imageCreateInfo;
-      VmaAllocationCreateInfo allocationCreateInfo{};
-      allocationCreateInfo.usage = VMA_MEMORY_USAGE_AUTO_PREFER_DEVICE;
-      VmaAllocationInfo allocInfo{};
-      vmaCreateImage(VulkanContext::GetAllocator(), &_imageci, &allocationCreateInfo, &m_Image, &m_Allocation, &allocInfo);
-      if (m_ImageDescription.TransitionLayoutAtCreate) {
-        vk::ImageSubresourceRange subresourceRange;
-        subresourceRange.aspectMask = m_ImageDescription.AspectFlag;
-        subresourceRange.levelCount = m_ImageDescription.MipLevels;
-        subresourceRange.layerCount = 1;
-        if (m_ImageDescription.MipLevels > 1 && m_ImageDescription.Type != ImageType::TYPE_CUBE)
-          SetImageLayout(m_ImageDescription.InitalImageLayout, (vk::ImageLayout)VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, subresourceRange);
-        else
-          SetImageLayout(m_ImageDescription.InitalImageLayout, m_ImageDescription.FinalImageLayout, subresourceRange);
-      }
-      GPUMemory::TotalAllocated += allocInfo.size;
-      ImageSize = allocInfo.size;
-    }
+    const VkImageCreateInfo _imageci = (VkImageCreateInfo)imageCreateInfo;
+    VmaAllocationCreateInfo allocationCreateInfo{};
+    allocationCreateInfo.usage = VMA_MEMORY_USAGE_AUTO_PREFER_DEVICE;
+    VmaAllocationInfo allocInfo{};
+    vmaCreateImage(VulkanContext::GetAllocator(), &_imageci, &allocationCreateInfo, &m_Image, &m_Allocation, &allocInfo);
+    GPUMemory::TotalAllocated += allocInfo.size;
+    ImageSize = allocInfo.size;
   }
 
   void VulkanImage::LoadAndCreateResources(const bool hasPath) {
     if (hasPath || m_ImageDescription.EmbeddedData || m_ImageDescription.EmbeddedStbData) {
       LoadTextureFromFile();
     }
+    else {
+      CreateImage();
+    }
 
-    if (m_ImageDescription.MipLevels > 1 && m_ImageDescription.Type != ImageType::TYPE_CUBE || m_ImageDescription.GenerateMips)
+    if (m_ImageDescription.TransitionLayoutAtCreate) {
+      TransitionLayout();
+    }
+
+    if (m_ImageDescription.MipLevels > 1 && m_ImageDescription.Type != ImageType::TYPE_CUBE || m_ImageDescription.GenerateMips) {
       GenerateMips();
+    }
 
     // Create view
     if (m_ImageDescription.CreateView)
@@ -122,8 +139,6 @@ namespace Oxylus {
 
     const bool hasPath = !m_ImageDescription.Path.empty();
 
-    CreateImage(hasPath);
-
     LoadAndCreateResources(hasPath);
 
     LoadCallback = true;
@@ -137,6 +152,63 @@ namespace Oxylus {
 
     const bool hasPath = !m_ImageDescription.Path.empty();
     LoadAndCreateResources(hasPath);
+  }
+
+  uint8_t* VulkanImage::LoadStbRawImage(const std::string& filename, uint32_t* width, uint32_t* height, uint32_t* bits, bool flipY, bool srgb) {
+    const auto filePath = std::filesystem::path(filename);
+
+    if (!exists(filePath))
+      OX_CORE_ERROR("Couldn't load image, file doesn't exists. {}", filePath.string());
+      
+    int texWidth = 0, texHeight = 0, texChannels = 0;
+    constexpr int sizeOfChannel = 8;
+    stbi_uc* pixels = stbi_load(filename.c_str(), &texWidth, &texHeight, &texChannels, STBI_rgb_alpha);
+
+    if (!pixels) {
+      OX_CORE_ERROR("Could not load image '{0}'!", filename);
+      // Return magenta checkerboad image
+
+      texChannels = 4;
+
+      if (width)
+        *width = 2;
+      if (height)
+        *height = 2;
+      if (bits)
+        *bits = texChannels * sizeOfChannel;
+
+      const int32_t size = (*width) * (*height) * texChannels;
+      uint8_t* data = new uint8_t[size];
+
+      const uint8_t datatwo[16] = {
+        255, 0, 255, 255,
+        0, 0, 0, 255,
+        0, 0, 0, 255,
+        255, 0, 255, 255
+      };
+
+      memcpy(data, datatwo, size);
+
+      return data;
+    }
+
+    // TODO support different texChannels
+    if (texChannels != 4)
+      texChannels = 4;
+
+    if (width)
+      *width = texWidth;
+    if (height)
+      *height = texHeight;
+    if (bits)
+      *bits = texChannels * sizeOfChannel; // texChannels;	  //32 bits for 4 bytes r g b a
+
+    const int32_t size = texWidth * texHeight * texChannels * sizeOfChannel / 8;
+    auto* result = new uint8_t[size];
+    memcpy(result, pixels, size);
+
+    stbi_image_free(pixels);
+    return result;
   }
 
   void VulkanImage::LoadTextureFromFile() {
@@ -258,7 +330,6 @@ namespace Oxylus {
     if (m_ImageDescription.EmbeddedStbData) {
       m_ImageData = m_ImageDescription.EmbeddedStbData;
     }
-
     else {
       if (m_ImageDescription.EmbeddedData) {
         m_ImageData = stbi_load_from_memory(m_ImageDescription.EmbeddedData,
@@ -525,6 +596,7 @@ namespace Oxylus {
       OX_CORE_WARN("Image format doesn't support linear blitting!");
       return;
     }
+
     VulkanRenderer::SubmitOnce(m_CommandPool,
       [this](const VulkanCommandBuffer& cmdBuffer) {
         VkImageMemoryBarrier barrier{};
@@ -540,8 +612,7 @@ namespace Oxylus {
         auto mipWidth = (int32_t)GetWidth();
         auto mipHeight = (int32_t)GetHeight();
 
-        if (m_ImageDescription.GenerateMips)
-          m_ImageDescription.MipLevels = GetMaxMipmapLevel(GetWidth(), GetHeight(), 1);
+        vkCmdPipelineBarrier(cmdBuffer.Get(), VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT, 0, 0, nullptr, 0, nullptr, 1, &barrier);
 
         for (uint32_t i = 1; i < m_ImageDescription.MipLevels; i++) {
           barrier.subresourceRange.baseMipLevel = i - 1;

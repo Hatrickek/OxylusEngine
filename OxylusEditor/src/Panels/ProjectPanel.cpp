@@ -33,9 +33,13 @@ namespace Oxylus {
     constexpr auto flags = ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoSavedSettings 
       | ImGuiWindowFlags_NoDecoration | ImGuiWindowFlags_NoDocking;
     if (ImGui::BeginPopupModal("ProjectSelector", nullptr, flags)) {
-      ImGui::Text("Recent Projects");
       const float x = ImGui::GetContentRegionAvail().x;
       const float y = ImGui::GetFrameHeight();
+
+      const VkDescriptorSet banner = EditorLayer::Get()->m_EngineBanner->GetDescriptorSet();
+      ImGui::Image(banner, {x,111});
+
+      ImGui::Text("Recent Projects");
       for (auto& project : EditorConfig::Get()->GetRecentProjects()) {
         if (ImGui::Button(std::filesystem::path(project).filename().string().c_str(), {x, y})) {
           LoadProjectForEditor(project);

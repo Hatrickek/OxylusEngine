@@ -196,7 +196,7 @@ namespace Oxylus {
         auto parent = e.GetParent();
         bool parentEnabled = true;
         if (parent)
-            parentEnabled = parent.GetComponent<TagComponent>().Enabled;
+          parentEnabled = parent.GetComponent<TagComponent>().Enabled;
         if (tag.Enabled && parentEnabled)
           m_MeshDrawList.emplace_back(*meshrenderer.MeshGeometry, e.GetWorldTransform(), material.Materials, meshrenderer.SubmesIndex);
       }
@@ -246,7 +246,7 @@ namespace Oxylus {
   }
 
   const VulkanImage& DefaultRenderPipeline::GetFinalImage() {
-    return m_FrameBuffers.PostProcessPassFB.GetImage()[0];
+    return m_Framebuffers.PostProcessPassFB.GetImage()[0];
   }
 
   void DefaultRenderPipeline::OnDispatcherEvents(EventDispatcher& dispatcher) {
@@ -323,12 +323,13 @@ namespace Oxylus {
       cascadeSplits[i] = (d - nearClip) / clipRange;
     }
 
-    Mat4 invCam = inverse(camera->GetProjectionMatrix() * (camera->GetViewMatrix()));
+    const Mat4 invCam = glm::inverse(camera->GetProjectionMatrix() * camera->GetViewMatrix());
+
+    float lastSplitDist = 0.0f;
 
     // Calculate orthographic projection matrix for each cascade
     for (uint32_t i = 0; i < SHADOW_MAP_CASCADE_COUNT; i++) {
       float splitDist = cascadeSplits[i];
-      float lastSplitDist = i == 0 ? 0.0f : cascadeSplits[i - 1];
 
       Vec3 frustumCorners[8] = {
         Vec3(-1.0f, 1.0f, 0.0f),
@@ -343,8 +344,8 @@ namespace Oxylus {
 
       // Project frustum corners into world space
       for (uint32_t j = 0; j < 8; j++) {
-        glm::vec4 invCorner = invCam * glm::vec4(frustumCorners[j], 1.0f);
-        frustumCorners[j] = (invCorner / invCorner.w);
+        Vec4 invCorner = invCam * Vec4(frustumCorners[j], 1.0f);
+        frustumCorners[j] = invCorner / invCorner.w;
       }
 
       for (uint32_t j = 0; j < 4; j++) {
@@ -353,6 +354,8 @@ namespace Oxylus {
         frustumCorners[j] = frustumCorners[j] + dist * lastSplitDist;
       }
 
+      lastSplitDist = cascadeSplits[i];
+
       // Get frustum center
       auto frustumCenter = Vec3(0.0f);
       for (uint32_t j = 0; j < 8; j++) {
@@ -360,32 +363,45 @@ namespace Oxylus {
       }
       frustumCenter /= 8.0f;
 
+      //float radius = 0.0f;
+      //for (uint32_t j = 0; j < 8; j++) {
+      //  float distance = glm::distance(frustumCorners[j], frustumCenter);
+      //  radius = glm::max(radius, distance);
+      //}
+
+      // Temp workaround to flickering when rotating camera
+      // Sphere radius for lightOrthoMatrix should fix this
+      // But radius changes as the camera is rotated which causes flickering
+      //constexpr float value = 1.0f; // 16.0f;
+      //radius = std::ceil(radius * value) / value;
+
+      // Divide the value by 5 and round it up to the nearest integer
+      //int roundedValue = static_cast<int>(std::ceil(radius / 5.0f));
+
+      // Multiply the rounded value by 5 to get the nearest multiple of 5
+      //float result = (float)roundedValue * 5.0f;
+
       float radius = 0.0f;
       for (uint32_t j = 0; j < 8; j++) {
         float distance = glm::length(frustumCorners[j] - frustumCenter);
         radius = glm::max(radius, distance);
       }
-
-      // Temp workaround to flickering when rotating camera
-      // Sphere radius for lightOrthoMatrix should fix this
-      // But radius changes as the camera is rotated which causes flickering
-      constexpr float value = 1.0f; // 16.0f;
-      radius = std::ceil(radius * value) / value;
+      radius = std::ceil(radius * 16.0f) / 16.0f;
 
       auto maxExtents = Vec3(radius);
       Vec3 minExtents = -maxExtents;
 
-      auto worldTransform = dirLightEntity.GetWorldTransform();
-      Vec4 zDir = worldTransform * glm::vec4(0, 0, 1, 0);
-      Vec3 lightDir = glm::normalize(Vec3(zDir));
-      float CascadeFarPlaneOffset = 10.0f, CascadeNearPlaneOffset = -100.0f; // TODO: Make configurable.
+      auto& lc = dirLightEntity.GetComponent<LightComponent>();
+
+      Vec3 lightDir = glm::normalize(-lc.Direction);
+      float cascadeFarPlaneOffset = 50.0f, cascadeNearPlaneOffset = -50.0f;
       Mat4 lightOrthoMatrix = glm::ortho(minExtents.x,
         maxExtents.x,
         minExtents.y,
         maxExtents.y,
-        CascadeNearPlaneOffset,
-        maxExtents.z - minExtents.z - CascadeFarPlaneOffset);
-      Mat4 lightViewMatrix = glm::lookAt(frustumCenter - lightDir * -minExtents.z, frustumCenter, Vec3(0.0f, 0.0f, 1.0f));
+        cascadeNearPlaneOffset,
+        maxExtents.z - minExtents.z + cascadeFarPlaneOffset);
+      Mat4 lightViewMatrix = glm::lookAt(frustumCenter - lightDir * -minExtents.z, frustumCenter, Vec3(0.0f, 1.0f, 0.0f));
       auto shadowProj = lightOrthoMatrix * lightViewMatrix;
 
       constexpr bool stabilizeCascades = true;
@@ -454,7 +470,7 @@ namespace Oxylus {
       "Depth Pre Pass",
       {&m_RendererContext.DepthPassCommandBuffer},
       &m_Pipelines.DepthPrePassPipeline,
-      {&m_FrameBuffers.DepthNormalPassFB},
+      {&m_Framebuffers.DepthNormalPassFB},
       [this](VulkanCommandBuffer& commandBuffer, int32_t) {
         OX_SCOPED_ZONE_N("DepthPrePass");
         OX_TRACE_GPU(commandBuffer.Get(), "Depth Pre Pass")
@@ -487,8 +503,8 @@ namespace Oxylus {
       &m_Pipelines.DirectShadowDepthPipeline,
       {
         {
-          &m_FrameBuffers.DirectionalCascadesFB[0], &m_FrameBuffers.DirectionalCascadesFB[1],
-          &m_FrameBuffers.DirectionalCascadesFB[2], &m_FrameBuffers.DirectionalCascadesFB[3]
+          &m_Framebuffers.DirectionalCascadesFB[0], &m_Framebuffers.DirectionalCascadesFB[1],
+          &m_Framebuffers.DirectionalCascadesFB[2], &m_Framebuffers.DirectionalCascadesFB[3]
         }
       },
       [this](VulkanCommandBuffer& commandBuffer, int32_t framebufferIndex) {
@@ -561,7 +577,7 @@ namespace Oxylus {
           OX_SCOPED_ZONE_N("SSAO Blur Pass");
           OX_TRACE_GPU(commandBuffer.Get(), "SSAO Blur Pass")
           vk::ImageMemoryBarrier imageMemoryBarrier{};
-          imageMemoryBarrier.image = m_FrameBuffers.SSAOPassImage.GetImage();
+          imageMemoryBarrier.image = m_Framebuffers.SSAOPassImage.GetImage();
           imageMemoryBarrier.oldLayout = vk::ImageLayout::eGeneral;
           imageMemoryBarrier.newLayout = vk::ImageLayout::eGeneral;
           imageMemoryBarrier.dstAccessMask = vk::AccessFlagBits::eShaderRead;
@@ -598,7 +614,7 @@ namespace Oxylus {
       "PBR Pass",
       {&m_RendererContext.PBRPassCommandBuffer},
       &m_Pipelines.SkyboxPipeline,
-      {&m_FrameBuffers.PBRPassFB},
+      {&m_Framebuffers.PBRPassFB},
       [this](VulkanCommandBuffer& commandBuffer, int32_t) {
         OX_SCOPED_ZONE_N("PBRPass");
         OX_TRACE_GPU(commandBuffer.Get(), "PBR Pass")
@@ -685,7 +701,7 @@ namespace Oxylus {
       "Debug Renderer NDT Pass",
       {&m_RendererContext.PBRPassCommandBuffer},
       &m_Pipelines.DebugRenderPipelineNDT,
-      {&m_FrameBuffers.PBRPassFB},
+      {&m_Framebuffers.PBRPassFB},
       [this](VulkanCommandBuffer& commandBuffer, int32_t) {
         // Not depth tested pass
 
@@ -753,12 +769,12 @@ namespace Oxylus {
           DOWNSAMPLE_STAGE = 1,
           UPSAMPLE_STAGE   = 2,
         };
-        const int32_t lodCount = (int32_t)m_FrameBuffers.BloomDownsampleImage.GetDesc().MipLevels - 3;
+        const int32_t lodCount = (int32_t)m_Framebuffers.BloomDownsampleImage.GetDesc().MipLevels - 3;
 
         const auto& layout = m_Pipelines.BloomPipeline.GetPipelineLayout();
 
         vk::ImageMemoryBarrier imageMemoryBarrier{};
-        imageMemoryBarrier.image = m_FrameBuffers.BloomDownsampleImage.GetImage();
+        imageMemoryBarrier.image = m_Framebuffers.BloomDownsampleImage.GetImage();
         imageMemoryBarrier.oldLayout = vk::ImageLayout::eGeneral;
         imageMemoryBarrier.newLayout = vk::ImageLayout::eGeneral;
         imageMemoryBarrier.dstAccessMask = vk::AccessFlagBits::eShaderRead;
@@ -773,7 +789,7 @@ namespace Oxylus {
         commandBuffer.PushConstants(layout, vSS::eCompute, 0, sizeof pushConst, &pushConst);
 
         m_Pipelines.BloomPipeline.BindDescriptorSets(commandBuffer.Get(), {m_BloomDescriptorSet.Get()});
-        IVec3 size = VulkanImage::GetMipMapLevelSize(m_FrameBuffers.BloomDownsampleImage.GetWidth(), m_FrameBuffers.BloomDownsampleImage.GetHeight(), 1, 0);
+        IVec3 size = VulkanImage::GetMipMapLevelSize(m_Framebuffers.BloomDownsampleImage.GetWidth(), m_Framebuffers.BloomDownsampleImage.GetHeight(), 1, 0);
         commandBuffer.Dispatch((size.x + 8 - 1) / 8, (size.y + 8 - 1) / 8, 1);
         commandBuffer.Get().pipelineBarrier(vPS::eComputeShader, vPS::eComputeShader, vDF::eByRegion, 0, nullptr, 0, nullptr, 1, &imageMemoryBarrier);
 
@@ -781,7 +797,7 @@ namespace Oxylus {
         pushConst.Stage.x = DOWNSAMPLE_STAGE;
         commandBuffer.PushConstants(layout, vSS::eCompute, 0, sizeof pushConst, &pushConst);
         for (int32_t i = 1; i < lodCount; i++) {
-          size = VulkanImage::GetMipMapLevelSize(m_FrameBuffers.BloomDownsampleImage.GetWidth(), m_FrameBuffers.BloomDownsampleImage.GetHeight(), 1, i);
+          size = VulkanImage::GetMipMapLevelSize(m_Framebuffers.BloomDownsampleImage.GetWidth(), m_Framebuffers.BloomDownsampleImage.GetHeight(), 1, i);
 
           // Set lod in shader
           pushConst.Stage.y = i - 1;
@@ -796,17 +812,17 @@ namespace Oxylus {
         // Upsample
         pushConst.Stage.x = UPSAMPLE_STAGE;
 
-        size = VulkanImage::GetMipMapLevelSize(m_FrameBuffers.BloomUpsampleImage.GetWidth(), m_FrameBuffers.BloomUpsampleImage.GetHeight(), 1, lodCount - 1);
+        size = VulkanImage::GetMipMapLevelSize(m_Framebuffers.BloomUpsampleImage.GetWidth(), m_Framebuffers.BloomUpsampleImage.GetHeight(), 1, lodCount - 1);
         pushConst.Stage.y = lodCount - 1;
         commandBuffer.PushConstants(layout, vSS::eCompute, 0, sizeof pushConst, &pushConst);
 
-        imageMemoryBarrier.image = m_FrameBuffers.BloomUpsampleImage.GetImage();
+        imageMemoryBarrier.image = m_Framebuffers.BloomUpsampleImage.GetImage();
         //imageMemoryBarrier.subresourceRange.baseMipLevel = lodCount - 1;
         commandBuffer.Dispatch((size.x + 8 - 1) / 8, (size.y + 8 - 1) / 8, 1);
         commandBuffer.Get().pipelineBarrier(vPS::eComputeShader, vPS::eComputeShader, {}, 0, nullptr, 0, nullptr, 1, &imageMemoryBarrier);
 
         for (int32_t i = lodCount - 1; i >= 0; i--) {
-          size = VulkanImage::GetMipMapLevelSize(m_FrameBuffers.BloomUpsampleImage.GetWidth(), m_FrameBuffers.BloomUpsampleImage.GetHeight(), 1, i);
+          size = VulkanImage::GetMipMapLevelSize(m_Framebuffers.BloomUpsampleImage.GetWidth(), m_Framebuffers.BloomUpsampleImage.GetHeight(), 1, i);
 
           // Set lod in shader
           pushConst.Stage.y = i;
@@ -848,7 +864,7 @@ namespace Oxylus {
         OX_SCOPED_ZONE_N("Atmosphere Pass");
         OX_TRACE_GPU(commandBuffer.Get(), "Atmosphere Pass")
         vk::ImageSubresourceRange subresourceRange;
-        subresourceRange.aspectMask = m_FrameBuffers.AtmosphereImage.GetDesc().AspectFlag;
+        subresourceRange.aspectMask = m_Framebuffers.AtmosphereImage.GetDesc().AspectFlag;
         subresourceRange.levelCount = 1;
         subresourceRange.layerCount = 6;
         const vk::ImageMemoryBarrier imageMemoryBarrier = {
@@ -858,7 +874,7 @@ namespace Oxylus {
           vk::ImageLayout::eGeneral,
           0,
           0,
-          m_FrameBuffers.AtmosphereImage.GetImage(),
+          m_Framebuffers.AtmosphereImage.GetImage(),
           subresourceRange
         };
         commandBuffer.Get().pipelineBarrier(
@@ -900,7 +916,7 @@ namespace Oxylus {
       "PP Pass",
       {&m_RendererContext.PostProcessCommandBuffer},
       &m_Pipelines.PostProcessPipeline,
-      {&m_FrameBuffers.PostProcessPassFB},
+      {&m_Framebuffers.PostProcessPassFB},
       [this](VulkanCommandBuffer& commandBuffer, int32_t) {
         OX_SCOPED_ZONE_N("PP Pass");
         OX_TRACE_GPU(commandBuffer.Get(), "PP Pass")
@@ -1128,7 +1144,7 @@ namespace Oxylus {
     directShadowPipelineDescription.RasterizerDesc.FrontCounterClockwise = false;
     directShadowPipelineDescription.DepthDesc.BoundTest = false;
     directShadowPipelineDescription.DepthDesc.CompareOp = vk::CompareOp::eLessOrEqual;
-    directShadowPipelineDescription.DepthDesc.MaxDepthBound = 0; // SUSSY
+    directShadowPipelineDescription.DepthDesc.MaxDepthBound = 1;
     directShadowPipelineDescription.DepthDesc.DepthReferenceAttachment = 0;
     directShadowPipelineDescription.DepthDesc.BackFace.StencilFunc = vk::CompareOp::eAlways;
     directShadowPipelineDescription.DepthAttachmentLayout = vk::ImageLayout::eDepthStencilReadOnlyOptimal;
@@ -1251,7 +1267,7 @@ namespace Oxylus {
          m_LightListDescriptorSet.WriteDescriptorSets[6].pImageInfo = &m_FrameBuffers.DepthNormalPassFB.GetImage()[0].GetDescImageInfo();
          m_LightListDescriptorSet.Update();*/
       };
-      m_FrameBuffers.DepthNormalPassFB.CreateFramebuffer(framebufferDescription);
+      m_Framebuffers.DepthNormalPassFB.CreateFramebuffer(framebufferDescription);
 
       //Direct shadow depth pass
       depthImageDesc.Format = vk::Format::eD32Sfloat;
@@ -1272,13 +1288,11 @@ namespace Oxylus {
         m_ShadowDepthDescriptorSet.WriteDescriptorSets[0].pBufferInfo = &m_RendererData.DirectShadowBuffer.GetDescriptor();
         m_ShadowDepthDescriptorSet.Update();
       };
-      framebufferDescription.ImageDescription = {depthImageDesc};
+      framebufferDescription.ImageDescription = {};
 
-      m_FrameBuffers.DirectionalCascadesFB.resize(SHADOW_MAP_CASCADE_COUNT);
-      for (uint32_t i = 0; i < (uint32_t)m_FrameBuffers.DirectionalCascadesFB.size(); i++) {
-        m_FrameBuffers.DirectionalCascadesFB[i].CreateFramebuffer(
-          framebufferDescription,
-          m_Resources.DirectShadowsDepthArray.GetImageViews()[i]);
+      m_Framebuffers.DirectionalCascadesFB.resize(SHADOW_MAP_CASCADE_COUNT);
+      for (uint32_t i = 0; i < (uint32_t)m_Framebuffers.DirectionalCascadesFB.size(); i++) {
+        m_Framebuffers.DirectionalCascadesFB[i].CreateFramebuffer(framebufferDescription, m_Resources.DirectShadowsDepthArray.GetImageView(i));
       }
     }
     {
@@ -1302,7 +1316,7 @@ namespace Oxylus {
       framebufferDescription.Extent = &Window::GetWindowExtent();
       framebufferDescription.RenderPass = m_Pipelines.PBRPipeline.GetRenderPass().Get();
       framebufferDescription.ImageDescription = {colorImageDesc, depthImageDesc};
-      m_FrameBuffers.PBRPassFB.CreateFramebuffer(framebufferDescription);
+      m_Framebuffers.PBRPassFB.CreateFramebuffer(framebufferDescription);
     }
     {
       VulkanImageDescription ssaopassimage;
@@ -1315,35 +1329,35 @@ namespace Oxylus {
       ssaopassimage.TransitionLayoutAtCreate = true;
       ssaopassimage.SamplerAddressMode = vk::SamplerAddressMode::eClampToEdge;
       ssaopassimage.SamplerBorderColor = vk::BorderColor::eFloatTransparentBlack;
-      m_FrameBuffers.SSAOPassImage.Create(ssaopassimage);
+      m_Framebuffers.SSAOPassImage.Create(ssaopassimage);
 
       auto updateSSAODescriptorSet = [this] {
-        m_SSAODescriptorSet.WriteDescriptorSets[1].pImageInfo = &m_FrameBuffers.DepthNormalPassFB.GetImage()[1].GetDescImageInfo();
-        m_SSAODescriptorSet.WriteDescriptorSets[2].pImageInfo = &m_FrameBuffers.SSAOPassImage.GetDescImageInfo();
-        m_SSAODescriptorSet.WriteDescriptorSets[3].pImageInfo = &m_FrameBuffers.DepthNormalPassFB.GetImage()[0].GetDescImageInfo();
+        m_SSAODescriptorSet.WriteDescriptorSets[1].pImageInfo = &m_Framebuffers.DepthNormalPassFB.GetImage()[1].GetDescImageInfo();
+        m_SSAODescriptorSet.WriteDescriptorSets[2].pImageInfo = &m_Framebuffers.SSAOPassImage.GetDescImageInfo();
+        m_SSAODescriptorSet.WriteDescriptorSets[3].pImageInfo = &m_Framebuffers.DepthNormalPassFB.GetImage()[0].GetDescImageInfo();
         m_SSAODescriptorSet.Update();
 
-        m_SSAOBlurDescriptorSet.WriteDescriptorSets[0].pImageInfo = &m_FrameBuffers.SSAOBlurPassImage.GetDescImageInfo();
-        m_SSAOBlurDescriptorSet.WriteDescriptorSets[1].pImageInfo = &m_FrameBuffers.SSAOPassImage.GetDescImageInfo();
+        m_SSAOBlurDescriptorSet.WriteDescriptorSets[0].pImageInfo = &m_Framebuffers.SSAOBlurPassImage.GetDescImageInfo();
+        m_SSAOBlurDescriptorSet.WriteDescriptorSets[1].pImageInfo = &m_Framebuffers.SSAOPassImage.GetDescImageInfo();
         m_SSAOBlurDescriptorSet.Update();
       };
 
       ImagePool::AddToPool(
-        &m_FrameBuffers.SSAOPassImage,
+        &m_Framebuffers.SSAOPassImage,
         &Window::GetWindowExtent(),
         [this, updateSSAODescriptorSet] {
           updateSSAODescriptorSet();
-          m_FrameBuffers.PostProcessPassFB.GetDescription().OnResize();
+          m_Framebuffers.PostProcessPassFB.GetDescription().OnResize();
         });
 
-      m_FrameBuffers.SSAOBlurPassImage.Create(ssaopassimage);
+      m_Framebuffers.SSAOBlurPassImage.Create(ssaopassimage);
 
       ImagePool::AddToPool(
-        &m_FrameBuffers.SSAOBlurPassImage,
+        &m_Framebuffers.SSAOBlurPassImage,
         &Window::GetWindowExtent(),
         [this, updateSSAODescriptorSet] {
           updateSSAODescriptorSet();
-          m_FrameBuffers.PostProcessPassFB.GetDescription().OnResize();
+          m_Framebuffers.PostProcessPassFB.GetDescription().OnResize();
         });
     }
     {
@@ -1357,21 +1371,21 @@ namespace Oxylus {
       ssrPassImage.TransitionLayoutAtCreate = true;
       ssrPassImage.SamplerAddressMode = vk::SamplerAddressMode::eClampToBorder;
       ssrPassImage.SamplerBorderColor = vk::BorderColor::eFloatTransparentBlack;
-      m_FrameBuffers.SSRPassImage.Create(ssrPassImage);
+      m_Framebuffers.SSRPassImage.Create(ssrPassImage);
 
       ImagePool::AddToPool(
-        &m_FrameBuffers.SSRPassImage,
+        &m_Framebuffers.SSRPassImage,
         &Window::GetWindowExtent(),
         [this] {
-          m_SSRDescriptorSet.WriteDescriptorSets[0].pImageInfo = &m_FrameBuffers.SSRPassImage.GetDescImageInfo();
-          m_SSRDescriptorSet.WriteDescriptorSets[1].pImageInfo = &m_FrameBuffers.PBRPassFB.GetImage()[0].GetDescImageInfo();
-          m_SSRDescriptorSet.WriteDescriptorSets[2].pImageInfo = &m_FrameBuffers.DepthNormalPassFB.GetImage()[1].GetDescImageInfo();
+          m_SSRDescriptorSet.WriteDescriptorSets[0].pImageInfo = &m_Framebuffers.SSRPassImage.GetDescImageInfo();
+          m_SSRDescriptorSet.WriteDescriptorSets[1].pImageInfo = &m_Framebuffers.PBRPassFB.GetImage()[0].GetDescImageInfo();
+          m_SSRDescriptorSet.WriteDescriptorSets[2].pImageInfo = &m_Framebuffers.DepthNormalPassFB.GetImage()[1].GetDescImageInfo();
           m_SSRDescriptorSet.WriteDescriptorSets[3].pImageInfo = &m_Resources.CubeMap->GetDescImageInfo();
-          m_SSRDescriptorSet.WriteDescriptorSets[4].pImageInfo = &m_FrameBuffers.DepthNormalPassFB.GetImage()[0].GetDescImageInfo();
+          m_SSRDescriptorSet.WriteDescriptorSets[4].pImageInfo = &m_Framebuffers.DepthNormalPassFB.GetImage()[0].GetDescImageInfo();
           m_SSRDescriptorSet.WriteDescriptorSets[5].pBufferInfo = &m_RendererData.VSBuffer.GetDescriptor();
           m_SSRDescriptorSet.WriteDescriptorSets[6].pBufferInfo = &m_RendererData.SSRBuffer.GetDescriptor();
           m_SSRDescriptorSet.Update();
-          m_FrameBuffers.PostProcessPassFB.GetDescription().OnResize();
+          m_Framebuffers.PostProcessPassFB.GetDescription().OnResize();
         });
     }
     {
@@ -1384,15 +1398,15 @@ namespace Oxylus {
       atmImage.Format = VulkanRenderer::s_SwapChain.m_ImageFormat;
       atmImage.FinalImageLayout = vk::ImageLayout::eGeneral;
       atmImage.TransitionLayoutAtCreate = true;
-      m_FrameBuffers.AtmosphereImage.Create(atmImage);
+      m_Framebuffers.AtmosphereImage.Create(atmImage);
 
       ImagePool::AddToPool(
-        &m_FrameBuffers.AtmosphereImage,
+        &m_Framebuffers.AtmosphereImage,
         nullptr,
         [this] {
-          m_AtmosphereDescriptorSet.WriteDescriptorSets[0].pImageInfo = &m_FrameBuffers.AtmosphereImage.GetDescImageInfo();
+          m_AtmosphereDescriptorSet.WriteDescriptorSets[0].pImageInfo = &m_Framebuffers.AtmosphereImage.GetDescImageInfo();
           m_AtmosphereDescriptorSet.Update();
-          m_FrameBuffers.PostProcessPassFB.GetDescription().OnResize();
+          m_Framebuffers.PostProcessPassFB.GetDescription().OnResize();
         });
     }
     {
@@ -1406,17 +1420,17 @@ namespace Oxylus {
       dofImage.TransitionLayoutAtCreate = true;
       dofImage.SamplerAddressMode = vk::SamplerAddressMode::eClampToBorder;
       dofImage.SamplerBorderColor = vk::BorderColor::eFloatTransparentBlack;
-      m_FrameBuffers.DepthOfFieldImage.Create(dofImage);
+      m_Framebuffers.DepthOfFieldImage.Create(dofImage);
 
       ImagePool::AddToPool(
-        &m_FrameBuffers.DepthOfFieldImage,
+        &m_Framebuffers.DepthOfFieldImage,
         &Window::GetWindowExtent(),
         [this] {
-          m_DepthOfFieldDescriptorSet.WriteDescriptorSets[0].pImageInfo = &m_FrameBuffers.DepthOfFieldImage.GetDescImageInfo();
-          m_DepthOfFieldDescriptorSet.WriteDescriptorSets[1].pImageInfo = &m_FrameBuffers.PBRPassFB.GetImage()[0].GetDescImageInfo();
+          m_DepthOfFieldDescriptorSet.WriteDescriptorSets[0].pImageInfo = &m_Framebuffers.DepthOfFieldImage.GetDescImageInfo();
+          m_DepthOfFieldDescriptorSet.WriteDescriptorSets[1].pImageInfo = &m_Framebuffers.PBRPassFB.GetImage()[0].GetDescImageInfo();
           //m_DepthOfFieldDescriptorSet.WriteDescriptorSets[2].pImageInfo = &m_FrameBuffers.DepthNormalPassFB.GetImage()[0].GetDescImageInfo();
           m_DepthOfFieldDescriptorSet.Update();
-          m_FrameBuffers.PostProcessPassFB.GetDescription().OnResize();
+          m_Framebuffers.PostProcessPassFB.GetDescription().OnResize();
         });
     }
     {
@@ -1434,33 +1448,33 @@ namespace Oxylus {
       bloompassimage.MinFiltering = vk::Filter::eLinear;
       bloompassimage.MagFiltering = vk::Filter::eLinear;
       bloompassimage.MipLevels = lodCount;
-      m_FrameBuffers.BloomDownsampleImage.Create(bloompassimage);
+      m_Framebuffers.BloomDownsampleImage.Create(bloompassimage);
       bloompassimage.MipLevels = lodCount - 1;
-      m_FrameBuffers.BloomUpsampleImage.Create(bloompassimage);
+      m_Framebuffers.BloomUpsampleImage.Create(bloompassimage);
       auto updateBloomSet = [this] {
         const std::vector samplerImageInfos = {
-          m_FrameBuffers.PBRPassFB.GetImage()[0].GetDescImageInfo(),
-          m_FrameBuffers.BloomDownsampleImage.GetDescImageInfo(),
-          m_FrameBuffers.BloomUpsampleImage.GetDescImageInfo()
+          m_Framebuffers.PBRPassFB.GetImage()[0].GetDescImageInfo(),
+          m_Framebuffers.BloomDownsampleImage.GetDescImageInfo(),
+          m_Framebuffers.BloomUpsampleImage.GetDescImageInfo()
         };
         m_BloomDescriptorSet.WriteDescriptorSets[0].pImageInfo = samplerImageInfos.data();
-        const auto& downsamplerViews = m_FrameBuffers.BloomDownsampleImage.GetMipDescriptors();
+        const auto& downsamplerViews = m_Framebuffers.BloomDownsampleImage.GetMipDescriptors();
         m_BloomDescriptorSet.WriteDescriptorSets[1].pImageInfo = downsamplerViews.data();
-        const auto& upsamplerViews = m_FrameBuffers.BloomUpsampleImage.GetMipDescriptors();
+        const auto& upsamplerViews = m_Framebuffers.BloomUpsampleImage.GetMipDescriptors();
         m_BloomDescriptorSet.WriteDescriptorSets[2].pImageInfo = upsamplerViews.data();
         m_BloomDescriptorSet.Update();
 
-        m_FrameBuffers.PostProcessPassFB.GetDescription().OnResize();
+        m_Framebuffers.PostProcessPassFB.GetDescription().OnResize();
       };
       ImagePool::AddToPool(
-        &m_FrameBuffers.BloomUpsampleImage,
+        &m_Framebuffers.BloomUpsampleImage,
         &Window::GetWindowExtent(),
         [updateBloomSet] {
           updateBloomSet();
         },
         2);
       ImagePool::AddToPool(
-        &m_FrameBuffers.BloomDownsampleImage,
+        &m_Framebuffers.BloomDownsampleImage,
         &Window::GetWindowExtent(),
         [updateBloomSet] {
           updateBloomSet();
@@ -1478,20 +1492,20 @@ namespace Oxylus {
       composite.TransitionLayoutAtCreate = true;
       composite.SamplerAddressMode = vk::SamplerAddressMode::eClampToBorder;
       composite.SamplerBorderColor = vk::BorderColor::eFloatTransparentBlack;
-      m_FrameBuffers.CompositePassImage.Create(composite);
+      m_Framebuffers.CompositePassImage.Create(composite);
 
       ImagePool::AddToPool(
-        &m_FrameBuffers.CompositePassImage,
+        &m_Framebuffers.CompositePassImage,
         &Window::GetWindowExtent(),
         [this] {
-          m_CompositeDescriptorSet.WriteDescriptorSets[0].pImageInfo = &m_FrameBuffers.CompositePassImage.GetDescImageInfo();
-          m_CompositeDescriptorSet.WriteDescriptorSets[1].pImageInfo = &m_FrameBuffers.DepthOfFieldImage.GetDescImageInfo();
-          m_CompositeDescriptorSet.WriteDescriptorSets[2].pImageInfo = &m_FrameBuffers.SSAOBlurPassImage.GetDescImageInfo();
-          m_CompositeDescriptorSet.WriteDescriptorSets[3].pImageInfo = &m_FrameBuffers.BloomUpsampleImage.GetDescImageInfo();
-          m_CompositeDescriptorSet.WriteDescriptorSets[4].pImageInfo = &m_FrameBuffers.SSRPassImage.GetDescImageInfo();
-          m_CompositeDescriptorSet.WriteDescriptorSets[5].pImageInfo = &m_FrameBuffers.PostProcessPassFB.GetImage()[0].GetDescImageInfo();
+          m_CompositeDescriptorSet.WriteDescriptorSets[0].pImageInfo = &m_Framebuffers.CompositePassImage.GetDescImageInfo();
+          m_CompositeDescriptorSet.WriteDescriptorSets[1].pImageInfo = &m_Framebuffers.DepthOfFieldImage.GetDescImageInfo();
+          m_CompositeDescriptorSet.WriteDescriptorSets[2].pImageInfo = &m_Framebuffers.SSAOBlurPassImage.GetDescImageInfo();
+          m_CompositeDescriptorSet.WriteDescriptorSets[3].pImageInfo = &m_Framebuffers.BloomUpsampleImage.GetDescImageInfo();
+          m_CompositeDescriptorSet.WriteDescriptorSets[4].pImageInfo = &m_Framebuffers.SSRPassImage.GetDescImageInfo();
+          m_CompositeDescriptorSet.WriteDescriptorSets[5].pImageInfo = &m_Framebuffers.PostProcessPassFB.GetImage()[0].GetDescImageInfo();
           m_CompositeDescriptorSet.Update();
-          m_FrameBuffers.PostProcessPassFB.GetDescription().OnResize();
+          m_Framebuffers.PostProcessPassFB.GetDescription().OnResize();
         });
     }
     {
@@ -1504,10 +1518,10 @@ namespace Oxylus {
       colorImageDesc.Format = VulkanRenderer::s_SwapChain.m_ImageFormat;
       postProcess.ImageDescription = {colorImageDesc};
       postProcess.OnResize = [this] {
-        m_PostProcessDescriptorSet.WriteDescriptorSets[0].pImageInfo = &m_FrameBuffers.CompositePassImage.GetDescImageInfo();
+        m_PostProcessDescriptorSet.WriteDescriptorSets[0].pImageInfo = &m_Framebuffers.CompositePassImage.GetDescImageInfo();
         m_PostProcessDescriptorSet.Update();
       };
-      m_FrameBuffers.PostProcessPassFB.CreateFramebuffer(postProcess);
+      m_Framebuffers.PostProcessPassFB.CreateFramebuffer(postProcess);
     }
   }
 

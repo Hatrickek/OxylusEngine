@@ -178,7 +178,7 @@ namespace Oxylus {
       VulkanImage AtmosphereImage;
       VulkanImage DepthOfFieldImage;
       std::vector<VulkanFramebuffer> DirectionalCascadesFB;
-    } m_FrameBuffers = {};
+    } m_Framebuffers = {};
 
     // Descriptor Sets
     VulkanDescriptorSet m_PostProcessDescriptorSet;

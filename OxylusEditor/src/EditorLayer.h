@@ -1,10 +1,6 @@
 #pragma once
 
-#include <Assets/Assets.h>
-
 #include "EditorContext.h"
-#include "OxylusEngine.h"
-#include "imgui.h"
 
 #include "Panels/AssetInspectorPanel.h"
 #include "Panels/ContentPanel.h"
@@ -57,6 +53,9 @@ namespace Oxylus {
 
     // Cursors
     GLFWcursor* m_CrosshairCursor = nullptr;
+
+    // Logo
+    Ref<VulkanImage> m_EngineBanner = nullptr;
 
   private:
     // Project

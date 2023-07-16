@@ -63,6 +63,14 @@ namespace Oxylus {
     void Create(const VulkanImageDescription& imageDescription);
     void CreateWithImage(const VulkanImageDescription& imageDescription, vk::Image image);
 
+    /// Loads the given file using stb. Returned data must be freed manually.
+    static uint8_t* LoadStbRawImage(const std::string& filename,
+                                    uint32_t* width = nullptr,
+                                    uint32_t* height = nullptr,
+                                    uint32_t* bits = nullptr,
+                                    bool flipY = false,
+                                    bool srgb = true);
+
     void SetImageLayout(vk::ImageLayout oldImageLayout,
                         vk::ImageLayout newImageLayout,
                         const vk::ImageSubresourceRange& subresourceRange,
@@ -71,8 +79,7 @@ namespace Oxylus {
     uint32_t GetWidth() const { return m_ImageDescription.Width; }
     uint32_t GetHeight() const { return m_ImageDescription.Height; }
     vk::Image GetImage() const { return m_Image; }
-    const vk::ImageView& GetImageView() const { return m_Views[0]; }
-    const std::vector<vk::ImageView>& GetImageViews() const { return m_Views; }
+    const vk::ImageView& GetImageView(const uint32_t index = 0) const { return m_Views[index]; }
     const vk::Sampler& GetImageSampler() const { return m_Sampler; }
     const VulkanImageDescription& GetDesc() const { return m_ImageDescription; }
     const vk::DescriptorSet& GetDescriptorSet() const { return m_DescSet; }
@@ -93,11 +100,12 @@ namespace Oxylus {
     void LoadCubeMapFromFile(int version);
     void LoadKtxFile(int version = 1);
     void LoadStbFile();
-    void CreateImage(bool hasPath);
+    void CreateImage();
     void LoadAndCreateResources(bool hasPath);
     std::vector<vk::ImageView> CreateImageView(uint32_t mipmapIndex = 0) const;
     void CreateSampler();
     void GenerateMips();
+    void TransitionLayout();
     vk::DescriptorSet CreateDescriptorSet() const;
 
     vk::ImageLayout m_ImageLayout = vk::ImageLayout::eUndefined;

@@ -35,15 +35,15 @@ namespace Oxylus {
     for (auto& id : m_FramebufferDescription.ImageDescription) {
       id.Width = framebufferCreateInfo.width;
       id.Height = framebufferCreateInfo.height;
-      if (!imageView) {
-        VulkanImage image(id);
-        m_Images.emplace_back(image);
-        fbAttachments.emplace_back(image.GetImageView());
-      }
-      else {
-        fbAttachments.emplace_back(imageView);
-      }
+      VulkanImage image(id);
+      m_Images.emplace_back(image);
+      fbAttachments.emplace_back(image.GetImageView());
     }
+
+    if (imageView)
+      fbAttachments.emplace_back(imageView);
+
+    OX_CORE_ASSERT(m_FramebufferDescription.RenderPass)
 
     framebufferCreateInfo.layers = 1;
     framebufferCreateInfo.renderPass = m_FramebufferDescription.RenderPass;

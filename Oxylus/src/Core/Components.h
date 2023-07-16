@@ -107,6 +107,7 @@ namespace Oxylus {
     bool UseColorTemperatureMode = false;
     uint32_t Temperature = 6570;
     Vec3 Color = Vec3(1.0f);
+    Vec4 Direction = {};
     float Intensity = 1.0f;
 
     float Range = 1.0f;

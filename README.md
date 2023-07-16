@@ -43,7 +43,7 @@ Currently supported and tested compilers are only: MSVC and Clang
 Or with `cmake -B ./build -DCMAKE_BUILD_TYPE=Release -DCMAKE_CXX_COMPILER=clang++` to generate for clang.    
 - Then run this command to build it with CMake:   
 `cmake --build ./build --config Release`   
-- NOTE: If you don't have shaderc installed with VulkanSDK then you can pass `-DSHADERC_FROM_SOURCE` and build shaderc from source instead of getting it from the SDK.
+- NOTE: If you don't have shaderc installed with VulkanSDK then you can pass `-DSHADERC_FROM_SOURCE=1` while configuring and build shaderc from source instead of getting it from the SDK.
 
 ## Dependencies
 - [Vulkan SDK](https://www.lunarg.com/vulkan-sdk/)

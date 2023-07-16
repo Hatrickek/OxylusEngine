@@ -561,6 +561,8 @@ namespace Oxylus {
           const char* shadowQualityTypeStrings[] = {"Hard", "Soft", "Ultra Soft"};
           int shadowQualityType = static_cast<int>(component.ShadowQuality);
 
+          IGUI::PropertyVector("Direction", component.Direction);
+
           if (IGUI::Property("Shadow Quality Type",
             shadowQualityType,
             shadowQualityTypeStrings,

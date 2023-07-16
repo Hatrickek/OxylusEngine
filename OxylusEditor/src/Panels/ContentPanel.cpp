@@ -7,6 +7,7 @@
 #include "Assets/AssetManager.h"
 #include "Assets/MaterialSerializer.h"
 #include "Core/Project.h"
+#include "Core/Resources.h"
 #include "UI/IGUI.h"
 #include "Utils/FileWatch.h"
 #include "Utils/StringUtils.h"

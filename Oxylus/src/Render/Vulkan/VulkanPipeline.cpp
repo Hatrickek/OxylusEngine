@@ -39,7 +39,7 @@ namespace Oxylus {
     if (pipelineSpecification.DepthDesc.DepthEnable)
       subpassDescription.pDepthStencilAttachment = &depthAttachmentReference;
 
-    // Input from a shader
+    // Attachment References
     subpassDescription.inputAttachmentCount = 0;
     subpassDescription.pInputAttachments = nullptr;
 
@@ -264,10 +264,15 @@ namespace Oxylus {
                                               std::vector<vk::AttachmentDescription>& AttachmentDescriptions) const {
     for (int i = 0; i < pipelineSpecification.ColorAttachmentCount; i++) {
       vk::AttachmentDescription ColorAttachment = {
-        vk::AttachmentDescriptionFlags(), pipelineSpecification.RenderTargets[i].Format, pipelineSpecification.Samples,
-        pipelineSpecification.RenderTargets[i].LoadOp, pipelineSpecification.RenderTargets[i].StoreOp,
-        vk::AttachmentLoadOp::eDontCare, vk::AttachmentStoreOp::eDontCare,
-        pipelineSpecification.RenderTargets[i].InitialLayout, pipelineSpecification.RenderTargets[i].FinalLayout
+        vk::AttachmentDescriptionFlags(),
+        pipelineSpecification.RenderTargets[i].Format,
+        pipelineSpecification.Samples,
+        pipelineSpecification.RenderTargets[i].LoadOp,
+        pipelineSpecification.RenderTargets[i].StoreOp,
+        vk::AttachmentLoadOp::eDontCare,
+        vk::AttachmentStoreOp::eDontCare,
+        pipelineSpecification.RenderTargets[i].InitialLayout,
+        pipelineSpecification.RenderTargets[i].FinalLayout
       };
       AttachmentDescriptions.emplace_back(ColorAttachment);
     }

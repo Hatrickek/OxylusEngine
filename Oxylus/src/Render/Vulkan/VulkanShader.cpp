@@ -254,8 +254,12 @@ namespace Oxylus {
     for (const auto& set : descriptorSets) {
       auto& binding = data.Bindings.emplace_back(DescriptorSetData{set->set, set->binding_count});
       for (uint32_t i = 0; i < set->binding_count; i++) {
+        std::string name = {};
+        if (set->bindings[i]->name)
+          name = std::string(set->bindings[i]->name);
+
         binding.bindings.emplace_back(DescriptorBindingData{
-            "",
+            name,
             set->bindings[i]->binding,
             set->bindings[i]->set,
             (vk::DescriptorType)set->bindings[i]->descriptor_type,

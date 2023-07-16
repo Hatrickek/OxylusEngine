@@ -26,7 +26,9 @@
 #include "Utils/UIUtils.h"
 #include <Panels/EditorDebugPanel.h>
 
+#include "Scene/SceneSerializer.h"
 #include "Utils/StringUtils.h"
+#include "Utils/EmbeddedBanner.h"
 
 namespace Oxylus {
   EditorLayer* EditorLayer::s_Instance = nullptr;
@@ -41,6 +43,15 @@ namespace Oxylus {
 
     m_CrosshairCursor = Input::LoadCursorIconStandard(GLFW_CROSSHAIR_CURSOR);
 
+    VulkanImageDescription imageDescription;
+    imageDescription.Format = vk::Format::eR8G8B8A8Unorm;
+    imageDescription.Width = EngineBanner_Width;
+    imageDescription.Height = EngineBanner_Height;
+    imageDescription.CreateDescriptorSet = true;
+    imageDescription.EmbeddedStbData = EngineBanner;
+    imageDescription.EmbeddedDataLength = OX_ARRAYSIZE(EngineBanner);
+    m_EngineBanner = CreateRef<VulkanImage>(imageDescription);
+
     Input::SetCursorState(Input::CursorState::NORMAL, Window::GetGLFWWindow());
 
     m_EditorScene = CreateRef<Scene>();
@@ -53,7 +64,7 @@ namespace Oxylus {
     m_EditorPanels.emplace("ProjectPanel", CreateScope<ProjectPanel>());
     m_EditorPanels.emplace("StatisticsPanel", CreateScope<StatisticsPanel>());
     m_EditorPanels.emplace("EditorDebugPanel", CreateScope<EditorDebugPanel>());
-    m_ViewportPanels.emplace_back(CreateScope<ViewportPanel>())->Camera.SetPosition({-2, 2, 0});
+    m_ViewportPanels.emplace_back(CreateScope<ViewportPanel>())->m_Camera.SetPosition({-2, 2, 0});
 
     // Register panel events
     m_ConsolePanel.m_RuntimeConsole.RegisterCommand("show_style_editor",
@@ -96,7 +107,7 @@ namespace Oxylus {
 
     switch (m_SceneState) {
       case SceneState::Edit: {
-        m_ActiveScene->OnEditorUpdate(deltaTime, m_ViewportPanels[0]->Camera);
+        m_ActiveScene->OnEditorUpdate(deltaTime, m_ViewportPanels[0]->m_Camera);
         break;
       }
       case SceneState::Play: {
@@ -104,7 +115,7 @@ namespace Oxylus {
         break;
       }
       case SceneState::Simulate: {
-        m_ActiveScene->OnEditorUpdate(deltaTime, m_ViewportPanels[0]->Camera);
+        m_ActiveScene->OnEditorUpdate(deltaTime, m_ViewportPanels[0]->m_Camera);
         break;
       }
     }
