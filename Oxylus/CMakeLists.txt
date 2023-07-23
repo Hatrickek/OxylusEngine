@@ -12,8 +12,20 @@ file(GLOB_RECURSE Event "src/Event/*.h" "src/Event/*.cpp" )
 source_group("src/Event" FILES ${Event})
 file(GLOB_RECURSE Physics "src/Physics/*.h" "src/Physics/*.cpp" )
 source_group("src/Physics" FILES ${Physics})
-file(GLOB_RECURSE Render "src/Render/*.h" "src/Render/*.cpp" )
+
+file(GLOB Render "src/Render/*.h" "src/Render/*.cpp" )
 source_group("src/Render" FILES ${Render})
+file(GLOB PBR "src/Render/PBR/*.h" "src/Render/PBR/*.cpp" )
+source_group("src/Render/PBR" FILES ${PBR})
+file(GLOB CACAO "src/Render/PBR/CACAO/*.h" "src/Render/PBR/CACAO/*.cpp" )
+source_group("src/Render/PBR/CACAO" FILES ${CACAO})
+file(GLOB Vulkan "src/Render/Vulkan/*.h" "src/Render/Vulkan/*.cpp" )
+source_group("src/Render/Vulkan" FILES ${Vulkan})
+file(GLOB VulkanUtils "src/Render/Vulkan/Utils/*.h" "src/Render/Vulkan/Utils/*.cpp" )
+source_group("src/Render/Vulkan/Utils" FILES ${VulkanUtils})
+
+set(RENDERER_FILES ${Render} ${PBR} ${CACAO} ${Vulkan} ${VulkanUtils})
+
 file(GLOB_RECURSE Scene "src/Scene/*.h" "src/Scene/*.cpp" )
 source_group("src/Scene" FILES ${Scene})
 file(GLOB_RECURSE Thread "src/Thread/*.h" "src/Thread/*.cpp" )
@@ -23,7 +35,8 @@ source_group("src/UI" FILES ${UI})
 file(GLOB_RECURSE Utils "src/Utils/*.h" "src/Utils/*.cpp" )
 source_group("src/Utils" FILES ${Utils})
 
-set(SOURCE_FILES ${src} ${Core} ${Assets} ${Audio} ${Event} ${Physics} ${Render} ${Scene} ${Thread} ${UI} ${Utils})
+set(SOURCE_FILES ${src} ${Core} ${Assets} ${Audio} ${Event} ${Physics} 
+                  ${RENDERER_FILES} ${Scene} ${Thread} ${UI} ${Utils})
 
 set(vendor__ImGuizmo "vendor/ImGuizmo/ImGuizmo.cpp" "vendor/ImGuizmo/ImGuizmo.h")
 source_group("vendor/ImGuizmo" FILES ${vendor__ImGuizmo})
@@ -90,9 +103,6 @@ target_compile_definitions(${PROJECT_NAME} PRIVATE
   "OX_DISTRIBUTION;"
   "NDEBUG"
   ">"
-  "VULKAN_HPP_NO_EXCEPTIONS"
-  "VULKAN_HPP_NO_SPACESHIP_OPERATOR"
-  "VULKAN_HPP_NO_TO_STRING"
   "_CRT_SECURE_NO_WARNINGS"
   "GLFW_INCLUDE_NONE"
   "_SILENCE_ALL_CXX20_DEPRECATION_WARNINGS"
@@ -199,7 +209,7 @@ target_link_libraries(${PROJECT_NAME} PUBLIC Vulkan::Vulkan)
 target_include_directories(${PROJECT_NAME} PUBLIC ${Vulkan_INCLUDE_DIRS})
 
 # shaderc from sdk
-if(NOT SHADERC_FROM_SOURCE)
+if(SHADERC_FROM_SDK)
     add_library(shaderc UNKNOWN IMPORTED)
     if(WIN32)
         # use the version in the SDK
@@ -250,6 +260,32 @@ FetchContent_MakeAvailable(EnTT)
 target_link_libraries(${PROJECT_NAME} PUBLIC EnTT)
 set_targets_static_and_folder(EnTT)
 
+# FMT
+FetchContent_Declare(
+    fmt
+    GIT_REPOSITORY https://github.com/fmtlib/fmt.git
+    GIT_TAG master
+    GIT_SHALLOW    TRUE
+    GIT_PROGRESS   TRUE
+)
+FetchContent_MakeAvailable(fmt)
+target_link_libraries(${PROJECT_NAME} PUBLIC fmt)
+set_targets_static_and_folder(fmt)
+
+# spdlog
+set(SPDLOG_NO_EXCEPTIONS TRUE)
+set(SPDLOG_FMT_EXTERNAL TRUE)
+FetchContent_Declare(
+    spdlog
+    GIT_REPOSITORY "https://github.com/gabime/spdlog.git"
+    GIT_TAG "v1.x"
+    GIT_SHALLOW    TRUE
+    GIT_PROGRESS   TRUE
+)
+FetchContent_MakeAvailable(spdlog)
+target_link_libraries(${PROJECT_NAME} PUBLIC spdlog)
+set_targets_static_and_folder(spdlog)
+
 # VMA
 target_include_directories(${PROJECT_NAME} PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}/vendor/VulkanMemoryAllocator/include")
 
@@ -271,7 +307,7 @@ target_sources(${PROJECT_NAME} PUBLIC "${SPIRV_REFLECT_DIR}/spirv_reflect.cpp")
 set_targets_static_and_folder(spirv-reflect-static)
 
 # Build shaderc from source
-if(SHADERC_FROM_SOURCE)
+if(NOT SHADERC_FROM_SDK)
     # spirv-headers
     set(BUILD_TESTS OFF)
     set(SPIRV_HEADERS_SKIP_EXAMPLES ON)
@@ -405,18 +441,6 @@ FetchContent_MakeAvailable(ktx)
 target_link_libraries(${PROJECT_NAME} PUBLIC ktx)
 set_targets_static_and_folder(ktx)
 disable_ipo_target(ktx)
-
-# FMT
-FetchContent_Declare(
-    fmt
-    GIT_REPOSITORY https://github.com/fmtlib/fmt.git
-    GIT_TAG master
-    GIT_SHALLOW    TRUE
-    GIT_PROGRESS   TRUE
-)
-FetchContent_MakeAvailable(fmt)
-target_link_libraries(${PROJECT_NAME} PUBLIC fmt)
-set_targets_static_and_folder(fmt)
 
 # Jolt
 set(COMPILE_AS_SHARED_LIBRARY OFF)
