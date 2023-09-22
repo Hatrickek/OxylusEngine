@@ -8,51 +8,51 @@
 
 
 namespace Oxylus {
-  ProjectSerializer::ProjectSerializer(Ref<Project> project) : m_Project(std::move(project)) { }
+ProjectSerializer::ProjectSerializer(Ref<Project> project) : m_Project(std::move(project)) { }
 
-  bool ProjectSerializer::Serialize(const std::filesystem::path& filePath) const {
-    const auto& config = m_Project->GetConfig();
+bool ProjectSerializer::Serialize(const std::filesystem::path& filePath) const {
+  const auto& config = m_Project->GetConfig();
 
-    ryml::Tree tree;
+  ryml::Tree tree;
 
-    ryml::NodeRef root = tree.rootref();
-    root |= ryml::MAP;
-    auto node = root["Project"];
+  ryml::NodeRef root = tree.rootref();
+  root |= ryml::MAP;
+  auto node = root["Project"];
 
-    node["Name"] << config.Name;
-    node["StartScene"] << config.StartScene;
-    node["AssetDirectory"] << config.AssetDirectory;
+  node["Name"] << config.Name;
+  node["StartScene"] << config.StartScene;
+  node["AssetDirectory"] << config.AssetDirectory;
 
-    std::stringstream ss;
-    ss << tree;
-    std::ofstream filestream(filePath);
-    filestream << ss.str();
+  std::stringstream ss;
+  ss << tree;
+  std::ofstream filestream(filePath);
+  filestream << ss.str();
 
-    return true;
+  return true;
+}
+
+bool ProjectSerializer::Deserialize(const std::filesystem::path& filePath) const {
+  auto& [Name, StartScene, AssetDirectory] = m_Project->GetConfig();
+
+  const auto& content = FileUtils::ReadFile(filePath.string());
+  if (!content) {
+    OX_CORE_ASSERT(content, fmt::format("Couldn't load project file: {0}", filePath.string()).c_str());
+    return false;
   }
 
-  bool ProjectSerializer::Deserialize(const std::filesystem::path& filePath) const {
-    auto& [Name, StartScene, AssetDirectory] = m_Project->GetConfig();
+  ryml::Tree tree = ryml::parse_in_arena(c4::to_csubstr(content.value()));
 
-    const auto& content = FileUtils::ReadFile(filePath.string());
-    if (!content) {
-      OX_CORE_ASSERT(content, fmt::format("Couldn't load project file: {0}", filePath.string()).c_str());
-      return false;
-    }
+  const ryml::ConstNodeRef root = tree.rootref();
 
-    ryml::Tree tree = ryml::parse_in_arena(c4::to_csubstr(content.value()));
+  if (!root.has_child("Project"))
+    return false;
 
-    const ryml::ConstNodeRef root = tree.rootref();
+  const ryml::ConstNodeRef nodeRoot = root["Project"];
 
-    if (!root.has_child("Project"))
-      return false;
+  nodeRoot["Name"] >> Name;
+  nodeRoot["StartScene"] >> StartScene;
+  nodeRoot["AssetDirectory"] >> AssetDirectory;
 
-    const ryml::ConstNodeRef nodeRoot = root["Project"];
-
-    nodeRoot["Name"] >> Name;
-    nodeRoot["StartScene"] >> StartScene;
-    nodeRoot["AssetDirectory"] >> AssetDirectory;
-
-    return true;
-  }
+  return true;
+}
 }

@@ -2,7 +2,6 @@
 
 #include "EditorPanel.h"
 #include "imgui_internal.h"
-#include "Assets/Assets.h"
 #include "Scene/Scene.h"
 #include "Core/Entity.h"
 

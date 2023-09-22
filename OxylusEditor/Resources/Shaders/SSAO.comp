@@ -1,4 +1,5 @@
 #version 450
+#pragma shader_stage(compute)
 #define PI 3.14159265
 #define EPSILON 0.001
 

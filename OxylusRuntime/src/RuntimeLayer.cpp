@@ -6,8 +6,11 @@
 #include <Scene/SceneSerializer.h>
 #include <Utils/ImGuiScoped.h>
 
+#include "Core/Application.h"
+#include "Render/Window.h"
 #include "Systems/CharacterSystem.h"
 #include "Systems/FreeCamera.h"
+#include "UI/IGUI.h"
 
 namespace OxylusRuntime {
   using namespace Oxylus;
@@ -82,7 +85,7 @@ namespace OxylusRuntime {
     ImGui::SetNextWindowSize(viewport->WorkSize);
     ImGuiScoped::StyleVar style(ImGuiStyleVar_WindowPadding, ImVec2{});
     if (ImGui::Begin("FinalImage", nullptr, flags)) {
-      ImGui::Image(m_Scene->GetRenderer().GetRenderPipeline()->GetFinalImage().GetDescriptorSet(),
+      IGUI::Image(*m_Scene->GetRenderer().GetRenderPipeline()->GetFinalImage(),
         ImVec2{(float)Window::GetWidth(), (float)Window::GetHeight()});
       ImGui::End();
     }

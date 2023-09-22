@@ -5,10 +5,13 @@
 
 #include "EditorPanel.h"
 #include <imgui.h>
-#include "Render/Vulkan/VulkanImage.h"
+
+#include "Core/Base.h"
 
 namespace Oxylus {
-  enum class FileType {
+class TextureAsset;
+
+enum class FileType {
     Unknown = 0,
     Scene,
     Prefab,
@@ -53,7 +56,7 @@ namespace Oxylus {
       std::string Filepath;
       std::string Extension;
       std::filesystem::directory_entry DirectoryEntry;
-      Ref<VulkanImage> Thumbnail = nullptr;
+      Ref<TextureAsset> Thumbnail = nullptr;
       bool IsDirectory = false;
 
       FileType Type;
@@ -71,10 +74,10 @@ namespace Oxylus {
     float m_ElapsedTime = 0.0f;
     bool m_TexturePreviews = false;
 
-    Ref<VulkanImage> m_WhiteTexture;
-    Ref<VulkanImage> m_DirectoryIcon;
-    Ref<VulkanImage> m_MeshIcon;
-    Ref<VulkanImage> m_FileIcon;
+    Ref<TextureAsset> m_WhiteTexture;
+    Ref<TextureAsset> m_DirectoryIcon;
+    Ref<TextureAsset> m_MeshIcon;
+    Ref<TextureAsset> m_FileIcon;
     std::filesystem::path m_DirectoryToDelete;
   };
 }

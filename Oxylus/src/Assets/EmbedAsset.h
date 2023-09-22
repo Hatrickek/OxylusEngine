@@ -1,10 +1,9 @@
 ﻿#pragma once
-#include <cstdint>
 #include <string>
 
 namespace Oxylus {
-  class EmbedAsset {
-  public:
-    static void EmbedTexture(const std::string& texFilePath, const std::string& outPath, const std::string& arrayName);
-  };
+class EmbedAsset {
+public:
+  static void EmbedTexture(const std::string& texFilePath, const std::string& outPath, const std::string& arrayName);
+};
 }

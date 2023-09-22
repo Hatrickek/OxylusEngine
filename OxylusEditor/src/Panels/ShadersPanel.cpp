@@ -2,7 +2,6 @@
 #include <icons/IconsMaterialDesignIcons.h>
 
 #include "imgui.h"
-#include "Render/ShaderLibrary.h"
 #include "Render/Vulkan/VulkanRenderer.h"
 #include "UI/IGUI.h"
 #include "Utils/StringUtils.h"
@@ -12,6 +11,7 @@ namespace Oxylus {
 
   void ShadersPanel::OnImGuiRender() {
     if (OnBegin()) {
+#if 0
       constexpr ImGuiTableFlags tableFlags = ImGuiTableFlags_RowBg | ImGuiTableFlags_ContextMenuInBody |
                                              ImGuiTableFlags_ScrollY;
 
@@ -58,7 +58,7 @@ namespace Oxylus {
         }
         ImGui::EndTable();
       }
-
+#endif
       OnEnd();
     }
   }

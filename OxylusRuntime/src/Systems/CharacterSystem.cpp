@@ -1,6 +1,8 @@
 ﻿#include "CharacterSystem.h"
 
+#include "Core/Application.h"
 #include "Core/Components.h"
+#include "Core/Input.h"
 #include "Scene/Scene.h"
 #include "UI/IGUI.h"
 

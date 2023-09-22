@@ -1,70 +1,42 @@
 #include "Material.h"
 
-#include "Core/Resources.h"
-#include "Render/ShaderLibrary.h"
+#include <vuk/CommandBuffer.hpp>
+
 #include "Render/Vulkan/VulkanRenderer.h"
 
 namespace Oxylus {
-  VulkanDescriptorSet Material::s_DescriptorSet;
+Material::~Material() { }
 
-  Material::~Material() { }
+void Material::Create(const std::string& name) {
+  OX_SCOPED_ZONE;
+  Name = name;
+  Reset();
+}
 
-  void Material::Create(const std::string& name) {
-    OX_SCOPED_ZONE;
-    Name = name;
+void Material::BindTextures(vuk::CommandBuffer& commandBuffer) const {
+  commandBuffer.bind_sampler(1, 0, {})
+               .bind_sampler(1, 1, {})
+               .bind_sampler(1, 2, {})
+               .bind_sampler(1, 3, {});
 
-    m_Shader = ShaderLibrary::GetShader("PBRTiled");
+  commandBuffer.bind_image(1, 0, *AlbedoTexture->GetTexture().view)
+               .bind_image(1, 1, *NormalTexture->GetTexture().view)
+               .bind_image(1, 2, *AOTexture->GetTexture().view)
+               .bind_image(1, 3, *MetallicRoughnessTexture->GetTexture().view);
+}
 
-    ClearTextures();
+bool Material::IsOpaque() const {
+  return AlphaMode == AlphaMode::Opaque;
+}
 
-    MaterialDescriptorSet.CreateFromShader(m_Shader, 1);
-    DepthDescriptorSet.CreateFromShader(ShaderLibrary::GetShader("DepthPass"), 1);
+void Material::Reset() {
+  AlbedoTexture = TextureAsset::GetBlankTexture();
+  NormalTexture = TextureAsset::GetBlankTexture();
+  AOTexture = TextureAsset::GetBlankTexture();
+  MetallicRoughnessTexture = TextureAsset::GetBlankTexture();
+}
 
-    MaterialDescriptorSet.WriteDescriptorSets[0].pImageInfo = &AlbedoTexture->GetDescImageInfo();
-    MaterialDescriptorSet.WriteDescriptorSets[1].pImageInfo = &NormalTexture->GetDescImageInfo();
-    MaterialDescriptorSet.WriteDescriptorSets[2].pImageInfo = &AOTexture->GetDescImageInfo();
-    MaterialDescriptorSet.WriteDescriptorSets[3].pImageInfo = &MetallicTexture->GetDescImageInfo();
-    MaterialDescriptorSet.WriteDescriptorSets[4].pImageInfo = &RoughnessTexture->GetDescImageInfo();
-    MaterialDescriptorSet.Update(true);
-
-    DepthDescriptorSet.WriteDescriptorSets[0].pImageInfo = &NormalTexture->GetDescImageInfo();
-    DepthDescriptorSet.WriteDescriptorSets[1].pImageInfo = &RoughnessTexture->GetDescImageInfo();
-    DepthDescriptorSet.Update(true);
-  }
-
-  bool Material::IsOpaque() const {
-    return AlphaMode == AlphaMode::Opaque;
-  }
-
-  void Material::Update() {
-    OX_SCOPED_ZONE;
-    MaterialDescriptorSet.WriteDescriptorSets[0].pImageInfo = &AlbedoTexture->GetDescImageInfo();
-    MaterialDescriptorSet.WriteDescriptorSets[1].pImageInfo = &NormalTexture->GetDescImageInfo();
-    MaterialDescriptorSet.WriteDescriptorSets[2].pImageInfo = &AOTexture->GetDescImageInfo();
-    MaterialDescriptorSet.WriteDescriptorSets[3].pImageInfo = &MetallicTexture->GetDescImageInfo();
-    MaterialDescriptorSet.WriteDescriptorSets[4].pImageInfo = &RoughnessTexture->GetDescImageInfo();
-    MaterialDescriptorSet.Update(true);
-
-    DepthDescriptorSet.WriteDescriptorSets[0].pImageInfo = &NormalTexture->GetDescImageInfo();
-    DepthDescriptorSet.WriteDescriptorSets[1].pImageInfo = &RoughnessTexture->GetDescImageInfo();
-    DepthDescriptorSet.Update(true);
-  }
-
-  void Material::Destroy() {
-    ClearTextures();
-    Parameters = {};
-  }
-
-  void Material::ClearTextures() {
-    const auto& EmptyTexture = Resources::s_EngineResources.EmptyTexture;
-
-    AlbedoTexture = EmptyTexture;
-    NormalTexture = EmptyTexture;
-    RoughnessTexture = EmptyTexture;
-    MetallicTexture = EmptyTexture;
-    AOTexture = EmptyTexture;
-    EmissiveTexture = EmptyTexture;
-    SpecularTexture = EmptyTexture;
-    DiffuseTexture = EmptyTexture;
-  }
+void Material::Destroy() {
+  m_Parameters = {};
+}
 }

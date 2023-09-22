@@ -2,8 +2,6 @@
 
 #include <icons/IconsMaterialDesignIcons.h>
 
-#include <UI/IGUI.h>
-
 #include "EditorLayer.h"
 #include "Assets/AssetManager.h"
 
@@ -24,7 +22,8 @@ namespace Oxylus {
   }
 
   void AssetInspectorPanel::DrawMaterialAsset(const std::string* path) {
-    m_SelectedMaterial = AssetManager::GetMaterialAsset(*path).Data;
-    InspectorPanel::DrawMaterialProperties(m_SelectedMaterial, true);
+    //TODO:
+    //m_SelectedMaterial = AssetManager::GetMaterialAsset(*path).Data;
+    //InspectorPanel::DrawMaterialProperties(m_SelectedMaterial, true);
   }
 }

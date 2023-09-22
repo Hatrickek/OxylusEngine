@@ -6,173 +6,195 @@
 #include <imgui.h>
 #include <imgui_internal.h>
 #include <glm/gtc/type_ptr.hpp>
-#include "Render/Vulkan/VulkanImage.h"
+
+#include "Core/Base.h"
+
+namespace vuk {
+struct SampledImage;
+struct Texture;
+}
 
 namespace Oxylus {
-  class IGUI {
-  public:
-    static void BeginProperties(
-      ImGuiTableFlags flags = ImGuiTableFlags_Resizable | ImGuiTableFlags_SizingStretchSame |
-                              ImGuiTableFlags_BordersInner | ImGuiTableFlags_BordersOuterH);
+class TextureAsset;
 
-    static void EndProperties();
+class IGUI {
+public:
+  static void BeginProperties(
+    ImGuiTableFlags flags = ImGuiTableFlags_Resizable | ImGuiTableFlags_SizingStretchSame |
+                            ImGuiTableFlags_BordersInner | ImGuiTableFlags_BordersOuterH);
 
-    // Text
-    static void Text(const char* text1, const char* text2, const char* tooltip = nullptr);
+  static void EndProperties();
 
-    // Bool
-    static bool Property(const char* label, bool& flag, const char* tooltip = nullptr);
+  // Text
+  static void Text(const char* text1, const char* text2, const char* tooltip = nullptr);
 
-    // InputField
-    static bool Property(const char* label, std::string* text, ImGuiInputFlags flags, const char* tooltip = nullptr);
+  // Bool
+  static bool Property(const char* label, bool& flag, const char* tooltip = nullptr);
 
-    // Dropdown
-    static bool Property(const char* label,
-                         int& value,
-                         const char** dropdownStrings,
-                         int count,
-                         const char* tooltip = nullptr);
+  // InputField
+  static bool Property(const char* label, std::string* text, ImGuiInputFlags flags, const char* tooltip = nullptr);
 
-    template <std::integral T>
-    static bool Property(const char* label,
-                         T& value,
-                         T min = 0,
-                         T max = 0,
-                         const char* tooltip = nullptr) {
-      BeginPropertyGrid(label, tooltip);
-      bool modified;
+  // Dropdown
+  static bool Property(const char* label,
+                       int& value,
+                       const char** dropdownStrings,
+                       int count,
+                       const char* tooltip = nullptr);
 
-      int dataType = ImGuiDataType_S32;
-      if constexpr (std::is_signed_v<T>) {
-        if constexpr (sizeof(T) == 1)
-          dataType = ImGuiDataType_S8;
-        else if constexpr (sizeof(T) == 2)
-          dataType = ImGuiDataType_S16;
-        else if constexpr (sizeof(T) == 4)
-          dataType = ImGuiDataType_S32;
-        else if constexpr (sizeof(T) == 8)
-          dataType = ImGuiDataType_S64;
-      }
-      else {
-        if constexpr (sizeof(T) == 1)
-          dataType = ImGuiDataType_U8;
-        else if constexpr (sizeof(T) == 2)
-          dataType = ImGuiDataType_U16;
-        else if constexpr (sizeof(T) == 4)
-          dataType = ImGuiDataType_U32;
-        else if constexpr (sizeof(T) == 8)
-          dataType = ImGuiDataType_U64;
-      }
+  template <std::integral T>
+  static bool Property(const char* label,
+                       T& value,
+                       T min = 0,
+                       T max = 0,
+                       const char* tooltip = nullptr) {
+    BeginPropertyGrid(label, tooltip);
+    bool modified;
 
-      if (max > min)
-        modified = ImGui::SliderScalar(s_IDBuffer, dataType, &value, &min, &max);
+    int dataType = ImGuiDataType_S32;
+    if constexpr (std::is_signed_v<T>) {
+      if constexpr (sizeof(T) == 1)
+        dataType = ImGuiDataType_S8;
+      else if constexpr (sizeof(T) == 2)
+        dataType = ImGuiDataType_S16;
+      else if constexpr (sizeof(T) == 4)
+        dataType = ImGuiDataType_S32;
+      else if constexpr (sizeof(T) == 8)
+        dataType = ImGuiDataType_S64;
+    }
+    else {
+      if constexpr (sizeof(T) == 1)
+        dataType = ImGuiDataType_U8;
+      else if constexpr (sizeof(T) == 2)
+        dataType = ImGuiDataType_U16;
+      else if constexpr (sizeof(T) == 4)
+        dataType = ImGuiDataType_U32;
+      else if constexpr (sizeof(T) == 8)
+        dataType = ImGuiDataType_U64;
+    }
+
+    if (max > min)
+      modified = ImGui::SliderScalar(s_IDBuffer, dataType, &value, &min, &max);
+    else
+      modified = ImGui::DragScalar(s_IDBuffer, dataType, &value);
+
+    EndPropertyGrid();
+    return modified;
+  }
+
+  template <std::floating_point T>
+  static bool Property(const char* label,
+                       T& value,
+                       T min = 0,
+                       T max = 0,
+                       const char* tooltip = nullptr,
+                       float delta = 0.1f,
+                       const char* fmt = "%.3f") {
+    BeginPropertyGrid(label, tooltip);
+    bool modified;
+
+    int dataType = ImGuiDataType_Float;
+    if constexpr (sizeof(T) == 8)
+      dataType = ImGuiDataType_Double;
+
+    if (max > min)
+      modified = ImGui::SliderScalar(s_IDBuffer, dataType, &value, &min, &max, fmt);
+    else
+      modified = ImGui::DragScalar(s_IDBuffer, dataType, &value, delta, nullptr, nullptr, fmt);
+
+    EndPropertyGrid();
+    return modified;
+  }
+
+  // Vec2/3/4
+  template <typename T>
+  static bool PropertyVector(const char* label,
+                             T& value,
+                             bool color = false,
+                             bool showAlpha = true,
+                             const char* tooltip = nullptr,
+                             float delta = 0.1f) {
+    BeginPropertyGrid(label, tooltip);
+    bool modified;
+    int componentCount = value.length();
+    if (componentCount >= 3 && color) {
+      if (showAlpha)
+        modified = ImGui::ColorEdit4(s_IDBuffer, glm::value_ptr(value));
       else
-        modified = ImGui::DragScalar(s_IDBuffer, dataType, &value);
-
-      EndPropertyGrid();
-      return modified;
+        modified = ImGui::ColorEdit3(s_IDBuffer, glm::value_ptr(value));
     }
-
-    template <std::floating_point T>
-    static bool Property(const char* label,
-                         T& value,
-                         T min = 0,
-                         T max = 0,
-                         const char* tooltip = nullptr,
-                         float delta = 0.1f,
-                         const char* fmt = "%.3f") {
-      BeginPropertyGrid(label, tooltip);
-      bool modified;
-
-      int dataType = ImGuiDataType_Float;
-      if constexpr (sizeof(T) == 8)
-        dataType = ImGuiDataType_Double;
-
-      if (max > min)
-        modified = ImGui::SliderScalar(s_IDBuffer, dataType, &value, &min, &max, fmt);
-      else
-        modified = ImGui::DragScalar(s_IDBuffer, dataType, &value, delta, nullptr, nullptr, fmt);
-        
-      EndPropertyGrid();
-      return modified;
+    else {
+      modified = ImGui::DragScalarN(s_IDBuffer, ImGuiDataType_Float, glm::value_ptr(value), componentCount, delta);
     }
+    EndPropertyGrid();
+    return modified;
+  }
 
-    // Vec2/3/4
-    template <typename T>
-    static bool PropertyVector(const char* label,
-                               T& value,
-                               bool color = false,
-                               bool showAlpha = true,
-                               const char* tooltip = nullptr,
-                               float delta = 0.1f) {
-      BeginPropertyGrid(label, tooltip);
-      bool modified;
-      int componentCount = value.length();
-      if (componentCount >= 3 && color) {
-        if (showAlpha)
-          modified = ImGui::ColorEdit4(s_IDBuffer, glm::value_ptr(value));
-        else
-          modified = ImGui::ColorEdit3(s_IDBuffer, glm::value_ptr(value));
-      }
-      else {
-        modified = ImGui::DragScalarN(s_IDBuffer, ImGuiDataType_Float, glm::value_ptr(value), componentCount, delta);
-      }
-      EndPropertyGrid();
-      return modified;
-    }
+  // Texture
+  static bool Property(const char* label,
+                       Ref<TextureAsset>& texture,
+                       uint64_t overrideTextureID = 0,
+                       const char* tooltip = nullptr);
+  // Draw vuk::Texture
+  static void Image(const vuk::Texture& texture,
+                    ImVec2 size,
+                    const ImVec2& uv0 = ImVec2(0, 0),
+                    const ImVec2& uv1 = ImVec2(1, 1),
+                    const ImVec4& tintCol = ImVec4(1, 1, 1, 1),
+                    const ImVec4& borderCol = ImVec4(0, 0, 0, 0));
 
-    // Texture
-    static bool Property(const char* label,
-                         Ref<VulkanImage>& texture,
-                         uint64_t overrideTextureID = 0,
-                         const char* tooltip = nullptr);
+  static void Image(vuk::SampledImage& texture,
+                    ImVec2 size,
+                    const ImVec2& uv0 = ImVec2(0, 0),
+                    const ImVec2& uv1 = ImVec2(1, 1),
+                    const ImVec4& tintCol = ImVec4(1, 1, 1, 1),
+                    const ImVec4& borderCol = ImVec4(0, 0, 0, 0));
 
-    // Vec3 with reset button
-    static bool DrawVec3Control(const char* label,
-                                glm::vec3& values,
-                                const char* tooltip = nullptr,
-                                float resetValue = 0.0f);
+  // Vec3 with reset button
+  static bool DrawVec3Control(const char* label,
+                              glm::vec3& values,
+                              const char* tooltip = nullptr,
+                              float resetValue = 0.0f);
 
-    static bool ToggleButton(const char* label,
-                             bool state,
-                             ImVec4 defaultColor = ImVec4(),
-                             ImVec2 size = {0, 0},
-                             float pressedAlpha = 1.0f,
-                             ImGuiButtonFlags buttonFlags = ImGuiButtonFlags_None);
+  static bool ToggleButton(const char* label,
+                           bool state,
+                           ImVec4 defaultColor = ImVec4(),
+                           ImVec2 size = {0, 0},
+                           float pressedAlpha = 1.0f,
+                           ImGuiButtonFlags buttonFlags = ImGuiButtonFlags_None);
 
-    static bool ToggleButton(const char* label, bool state, ImVec2 size = { 0, 0 }, float alpha = 1.0f, float pressedAlpha = 1.0f, ImGuiButtonFlags buttonFlags = ImGuiButtonFlags_None);
+  static bool ToggleButton(const char* label, bool state, ImVec2 size = {0, 0}, float alpha = 1.0f, float pressedAlpha = 1.0f, ImGuiButtonFlags buttonFlags = ImGuiButtonFlags_None);
 
-    static ImVec2 GetIconButtonSize(const char8_t* icon, const char* label);
+  static ImVec2 GetIconButtonSize(const char8_t* icon, const char* label);
 
-    static bool IconButton(const char8_t* icon, const char* label, ImVec4 iconColor = {0.537f, 0.753f, 0.286f, 1.0f});
-    static void ClippedText(const ImVec2& pos_min,
-                            const ImVec2& pos_max,
-                            const char* text,
-                            const char* text_end,
-                            const ImVec2* text_size_if_known,
-                            const ImVec2& align,
-                            const ImRect* clip_rect,
-                            float wrap_width);
+  static bool IconButton(const char8_t* icon, const char* label, ImVec4 iconColor = {0.537f, 0.753f, 0.286f, 1.0f});
+  static void ClippedText(const ImVec2& pos_min,
+                          const ImVec2& pos_max,
+                          const char* text,
+                          const char* text_end,
+                          const ImVec2* text_size_if_known,
+                          const ImVec2& align,
+                          const ImRect* clip_rect,
+                          float wrap_width);
 
-    static void ClippedText(ImDrawList* draw_list,
-                            const ImVec2& pos_min,
-                            const ImVec2& pos_max,
-                            const char* text,
-                            const char* text_display_end,
-                            const ImVec2* text_size_if_known,
-                            const ImVec2& align,
-                            const ImRect* clip_rect,
-                            float wrap_width);
-    static std::filesystem::path GetPathFromImGuiPayload(const ImGuiPayload* payload);
+  static void ClippedText(ImDrawList* draw_list,
+                          const ImVec2& pos_min,
+                          const ImVec2& pos_max,
+                          const char* text,
+                          const char* text_display_end,
+                          const ImVec2* text_size_if_known,
+                          const ImVec2& align,
+                          const ImRect* clip_rect,
+                          float wrap_width);
+  static std::filesystem::path GetPathFromImGuiPayload(const ImGuiPayload* payload);
 
-    static void BeginPropertyGrid(const char* label, const char* tooltip, bool rightAlignNextColumn = true);
+  static void BeginPropertyGrid(const char* label, const char* tooltip, bool rightAlignNextColumn = true);
 
-    static void EndPropertyGrid();
+  static void EndPropertyGrid();
 
-    static void PushID();
+  static void PushID();
 
-    static void PopID();
+  static void PopID();
 
-    static char s_IDBuffer[16];
-  };
+  static char s_IDBuffer[16];
+};
 }

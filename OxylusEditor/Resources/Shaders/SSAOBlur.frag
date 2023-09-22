@@ -1,4 +1,5 @@
 #version 450
+#pragma shader_stage(fragment)
 const int BLUR_RADIUS = 2;
 
 layout (binding = 0) uniform sampler2D in_SSAO;

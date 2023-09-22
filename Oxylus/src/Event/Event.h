@@ -2,5 +2,5 @@
 #include <entt/signal/dispatcher.hpp>
 
 namespace Oxylus {
-  using EventDispatcher = entt::dispatcher;
+using EventDispatcher = entt::dispatcher;
 }

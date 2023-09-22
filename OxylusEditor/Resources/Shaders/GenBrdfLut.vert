@@ -1,4 +1,5 @@
 #version 450
+#pragma shader_stage(vertex)
 
 layout(location = 0) out vec2 outUV;
 

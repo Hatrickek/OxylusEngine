@@ -14,6 +14,6 @@ namespace Oxylus {
     void OnImGuiRender() override;
 
   private:
-    void DrawViewer(vk::DescriptorSet imageDescriptorSet) const;
+    void DrawViewer(void* imageDescriptorSet) const;
   };
 }

@@ -1,8 +1,7 @@
 ﻿#pragma once
 
-#include <Assets/Assets.h>
-
 #include "EditorPanel.h"
+#include "Core/Base.h"
 
 namespace Oxylus {
   class Material;

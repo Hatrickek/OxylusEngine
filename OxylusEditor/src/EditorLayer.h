@@ -1,6 +1,7 @@
 #pragma once
 
 #include "EditorContext.h"
+#include "Core/Layer.h"
 
 #include "Panels/AssetInspectorPanel.h"
 #include "Panels/ContentPanel.h"
@@ -9,6 +10,7 @@
 #include "Panels/SceneHierarchyPanel.h"
 #include "Panels/ViewportPanel.h"
 #include "Utils/EditorConfig.h"
+#include "Render/Window.h"
 
 namespace Oxylus {
   class EditorLayer : public Layer {
@@ -55,7 +57,7 @@ namespace Oxylus {
     GLFWcursor* m_CrosshairCursor = nullptr;
 
     // Logo
-    Ref<VulkanImage> m_EngineBanner = nullptr;
+    Ref<TextureAsset> m_EngineBanner = nullptr;
 
   private:
     // Project

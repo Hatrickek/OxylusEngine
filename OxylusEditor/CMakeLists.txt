@@ -85,55 +85,12 @@ target_compile_definitions(${PROJECT_NAME} PRIVATE
         "OX_DISTRIBUTION;"
         "NDEBUG"
     ">"
-    "_HAS_EXCEPTIONS=0;"
-    "UNICODE;"
-    "_UNICODE"
 )
 
 # Compile and link options
 if(MSVC)
-    target_compile_options(${PROJECT_NAME} PRIVATE
-        $<$<CONFIG:Debug>:
-            /Od;
-            /Zi
-        >
-        $<$<CONFIG:Release>:
-            /Ox;
-            /Oi;
-            /GF;
-            /Gy;
-            /Zi;
-            ${DEFAULT_CXX_DEBUG_INFORMATION_FORMAT}
-        >
-        $<$<CONFIG:Distribution>:
-            /Ox;
-            /Oi;
-            /GF;
-            /Gy;
-            ${DEFAULT_CXX_DEBUG_INFORMATION_FORMAT}
-        >
-        /MP;
-        /std:c++latest;
-        /Gm-;
-        /W3;
-        /Y-
-    )
-    target_link_options(${PROJECT_NAME} PRIVATE
-        $<$<CONFIG:Debug>:
-            /DEBUG;
-        >
-        $<$<CONFIG:Release>:
-            /DEBUG;
-            /OPT:REF;
-            /OPT:ICF;
-        >
-        $<$<CONFIG:Distribution>:
-            /OPT:REF;
-            /OPT:ICF;
-        >
-        /SUBSYSTEM:CONSOLE
-    )
-    set(CMAKE_SHARED_LINKER_FLAGS_DISTRIBUTION ${CMAKE_SHARED_LINKER_FLAGS})
+    target_compile_options(${PROJECT_NAME} PRIVATE PRIVATE /std:c++20 /permissive-)
+	set(CMAKE_SHARED_LINKER_FLAGS_DISTRIBUTION ${CMAKE_SHARED_LINKER_FLAGS})
     set(CMAKE_EXE_LINKER_FLAGS_DISTRIBUTION ${CMAKE_EXE_LINKER_FLAGS})
 endif()
 

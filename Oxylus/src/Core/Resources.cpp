@@ -1,38 +1,25 @@
 #include "Resources.h"
 
+#include <filesystem>
+
 #include "Application.h"
-#include "EmbeddedResources.h"
+#include "EmbeddedLogo.h"
+#include "Assets/TextureAsset.h"
 
 namespace Oxylus {
-  Resources::EditorRes Resources::s_EditorResources;
-  Resources::EngineRes Resources::s_EngineResources;
+Resources::EditorRes Resources::s_EditorResources;
 
-  void Resources::InitEditorResources() {
-    VulkanImageDescription imageDescription;
-    imageDescription.Format = vk::Format::eR8G8B8A8Unorm;
-    imageDescription.Width = 40;
-    imageDescription.Height = 40;
-    imageDescription.CreateDescriptorSet = true;
-    imageDescription.EmbeddedData = EngineLogo;
-    imageDescription.EmbeddedDataLength = EngineLogoLen;
-    s_EditorResources.EngineIcon.Create(imageDescription);
-  }
+void Resources::InitEditorResources() {
+  s_EditorResources.EngineIcon = CreateRef<TextureAsset>();
+  s_EditorResources.EngineIcon->LoadFromMemory(EngineLogo, EngineLogoLen);
+}
 
-  std::string Resources::GetResourcesPath(const std::filesystem::path& path) {
-    const auto& spec = Application::Get()->Spec;
-    return (spec.WorkingDirectory / spec.ResourcesPath / path).string();
-  }
+std::string Resources::GetResourcesPath(const std::string& path) {
+  const auto& spec = Application::Get()->GetSpecification();
+  return (std::filesystem::path(spec.WorkingDirectory) / spec.ResourcesPath / path).string();
+}
 
-  bool Resources::ResourcesPathExists() {
-    return std::filesystem::exists(Application::Get()->Spec.ResourcesPath);
-  }
-
-  void Resources::InitEngineResources() {
-    s_EngineResources.EmptyTexture = CreateRef<VulkanImage>();
-    VulkanImageDescription emptyDescription{};
-    emptyDescription.Width = 1;
-    emptyDescription.Height = 1;
-    emptyDescription.CreateDescriptorSet = true;
-    s_EngineResources.EmptyTexture->Create(emptyDescription);
-  }
+bool Resources::ResourcesPathExists() {
+  return std::filesystem::exists(Application::Get()->GetSpecification().ResourcesPath);
+}
 }

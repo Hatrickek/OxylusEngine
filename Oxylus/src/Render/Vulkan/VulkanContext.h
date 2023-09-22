@@ -1,44 +1,55 @@
 #pragma once
-#include <vulkan/vulkan.hpp>
+#include <optional>
 
-#include "Core/Application.h"
-#include <vk_mem_alloc.h>
+#include <vuk/Types.hpp>
+#include <vuk/Context.hpp>
+#include <vuk/resources/DeviceFrameResource.hpp>
+#include <vuk/Allocator.hpp>
+#include <vuk/AllocatorHelpers.hpp>
+#include <VkBootstrap.h>
+#include <vuk/Future.hpp>
+
+namespace vkb {
+struct Device;
+struct Instance;
+}
 
 namespace Oxylus {
-  class VulkanContext {
-  public:
-    struct VkContext {
-      vk::Instance Instance;
-      vk::SurfaceKHR Surface;
-      std::vector<vk::PhysicalDevice> PhysicalDevices;
-      vk::PhysicalDevice PhysicalDevice;
-      vk::PhysicalDeviceFeatures DeviceFeatures;
-      vk::PhysicalDeviceProperties DeviceProperties;
-      vk::PhysicalDeviceMemoryProperties DeviceMemoryProperties;
-      vk::Device Device;
-      VmaAllocator Allocator;
-      vk::DynamicLoader DynamicLoader;
-    };
+struct AppSpec;
 
-    struct VkQueue {
-      vk::Queue GraphicsQueue;
-      vk::Queue PresentQueue;
-      vk::Queue ComputeQueue;
-      std::vector<vk::QueueFamilyProperties> queueFamilyProperties;
-      uint32_t graphicsQueueFamilyIndex;
-      uint32_t presentQueueFamilyIndex;
-      uint32_t computeQueueFamilyIndex; //TODO:
-    };
+class VulkanContext {
+public:
+  VkDevice device = nullptr;
+  VkPhysicalDevice physical_device = nullptr;
+  VkQueue graphics_queue = nullptr;
+  VkQueue transfer_queue = nullptr;
+  std::optional<vuk::Context> context;
+  std::optional<vuk::DeviceSuperFrameResource> superframe_resource;
+  std::optional<vuk::Allocator> superframe_allocator;
+  bool hasRT = false;
+  bool suspend = false;
+  vuk::SwapchainRef swapchain = nullptr;
+  vkb::Instance vkbinstance;
+  vkb::Device vkbdevice;
+  double old_time = 0;
+  uint32_t num_frames = 0;
+  vuk::Unique<std::array<VkSemaphore, 3>> present_ready;
+  vuk::Unique<std::array<VkSemaphore, 3>> render_complete;
 
-    static void CreateContext(const AppSpec& spec);
+  VulkanContext() = default;
 
-    static vk::Instance& GetInstance() { return Context.Instance; }
-    static VmaAllocator& GetAllocator() { return Context.Allocator; }
-    static vk::Device& GetDevice() { return Context.Device; }
-    static vk::PhysicalDevice& GetPhysicalDevice() { return Context.PhysicalDevice; }
-    static vk::DynamicLoader& GetDynamicLoader() { return Context.DynamicLoader; }
+  static void Init();
 
-    static VkContext Context;
-    static VkQueue VulkanQueue;
-  };
+  void CreateContext(const AppSpec& spec);
+  
+  vuk::Allocator Begin();
+  void End(const vuk::Future& src, vuk::Allocator frameAllocator);
+
+  static VulkanContext* Get() { return s_Instance; }
+
+private:
+  vuk::SingleSwapchainRenderBundle m_Bundle = {};
+
+  static VulkanContext* s_Instance;
+};
 }

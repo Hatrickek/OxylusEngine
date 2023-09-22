@@ -107,9 +107,6 @@ target_compile_definitions(${PROJECT_NAME} PRIVATE
   "GLFW_INCLUDE_NONE"
   "_SILENCE_ALL_CXX20_DEPRECATION_WARNINGS"
   "SPDLOG_NO_EXCEPTIONS"
-  "_HAS_EXCEPTIONS=0;"
-  "UNICODE"
-  "_UNICODE"
   )
 
 #-------------
@@ -118,50 +115,9 @@ target_compile_definitions(${PROJECT_NAME} PRIVATE
 
 # Compile and link options
 if (MSVC)
-  target_compile_options(${PROJECT_NAME} PRIVATE
-    $<$<CONFIG:Debug>:
-    /Od;
-    /Zi
-    >
-    $<$<CONFIG:Release>:
-    /Ox;
-    /Oi;
-    /GF;
-    /Gy;
-    /O2;
-    /Zi;
-    ${DEFAULT_CXX_DEBUG_INFORMATION_FORMAT}
-    >
-    $<$<CONFIG:Distribution>:
-    /Oi;
-    /GF;
-    /Gy;
-    /O2;
-    ${DEFAULT_CXX_DEBUG_INFORMATION_FORMAT}
-    >
-    /MP;
-    /std:c++latest;
-    /Gm-;
-    /W3
-    /external:anglebrackets
-    )
-    target_link_options(${PROJECT_NAME} PRIVATE
-    $<$<CONFIG:Debug>:
-        /DEBUG;
-    >
-    $<$<CONFIG:Release>:
-        /DEBUG;
-        /OPT:REF;
-        /OPT:ICF;
-    >
-    $<$<CONFIG:Distribution>:
-        /OPT:REF;
-        /OPT:ICF;
-    >
-    /SUBSYSTEM:CONSOLE
-    )
-    set(CMAKE_SHARED_LINKER_FLAGS_DISTRIBUTION ${CMAKE_SHARED_LINKER_FLAGS})
-    set(CMAKE_EXE_LINKER_FLAGS_DISTRIBUTION ${CMAKE_EXE_LINKER_FLAGS})
+  target_compile_options(${PROJECT_NAME} PRIVATE /std:c++20 /permissive-) 
+  set(CMAKE_SHARED_LINKER_FLAGS_DISTRIBUTION ${CMAKE_SHARED_LINKER_FLAGS})
+  set(CMAKE_EXE_LINKER_FLAGS_DISTRIBUTION ${CMAKE_EXE_LINKER_FLAGS})
 endif ()
 
 # MSVC runtime library
@@ -208,20 +164,6 @@ find_package(Vulkan REQUIRED)
 target_link_libraries(${PROJECT_NAME} PUBLIC Vulkan::Vulkan)
 target_include_directories(${PROJECT_NAME} PUBLIC ${Vulkan_INCLUDE_DIRS})
 
-# shaderc from sdk
-if(SHADERC_FROM_SDK)
-    add_library(shaderc UNKNOWN IMPORTED)
-    if(WIN32)
-        # use the version in the SDK
-        set_target_properties(shaderc PROPERTIES IMPORTED_LOCATION $ENV{VULKAN_SDK}/Lib/shaderc_shared.lib)
-        set_property(TARGET shaderc PROPERTY INTERFACE_INCLUDE_DIRECTORIES $ENV{VULKAN_SDK}/Include)
-        target_link_libraries(${PROJECT_NAME} PRIVATE shaderc)
-    else()
-        target_link_directories(${PROJECT_NAME} PUBLIC $ENV{VULKAN_SDK}/lib)
-        target_link_libraries(${PROJECT_NAME} PRIVATE shaderc_combined)
-    endif()
-endif()
-
 # dear imgui
 FetchContent_Declare(
     ImGui
@@ -264,7 +206,7 @@ set_targets_static_and_folder(EnTT)
 FetchContent_Declare(
     fmt
     GIT_REPOSITORY https://github.com/fmtlib/fmt.git
-    GIT_TAG master
+    GIT_TAG "10.0.0"
     GIT_SHALLOW    TRUE
     GIT_PROGRESS   TRUE
 )
@@ -286,105 +228,29 @@ FetchContent_MakeAvailable(spdlog)
 target_link_libraries(${PROJECT_NAME} PUBLIC spdlog)
 set_targets_static_and_folder(spdlog)
 
-# VMA
-target_include_directories(${PROJECT_NAME} PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}/vendor/VulkanMemoryAllocator/include")
-
-# spirv-reflect
-set(SPIRV_REFLECT_EXECUTABLE OFF CACHE BOOL "" FORCE)
-set(SPIRV_REFLECT_EXAMPLES OFF CACHE BOOL "" FORCE)
-set(SPIRV_REFLECT_STATIC_LIB ON CACHE BOOL "" FORCE)
+# vk-bootstrap
 FetchContent_Declare(
-    spirv-reflect
-    GIT_REPOSITORY "https://github.com/KhronosGroup/SPIRV-Reflect.git"
-    GIT_TAG "main"
+    vk-bootstrap 
+    GIT_REPOSITORY https://github.com/charles-lunarg/vk-bootstrap
+    GIT_TAG        "master"
+)
+FetchContent_MakeAvailable(vk-bootstrap)
+target_link_libraries(${PROJECT_NAME} PUBLIC vk-bootstrap)
+set_targets_static_and_folder(vk-bootstrap)
+
+# vuk
+set(VUK_LINK_TO_LOADER OFF)
+set(VUK_FAIL_FAST ON)
+FetchContent_Declare(
+    vuk
+    GIT_REPOSITORY "https://github.com/martty/vuk.git"
+    GIT_TAG "master"
     GIT_SHALLOW    TRUE
     GIT_PROGRESS   TRUE
 )
-FetchContent_MakeAvailable(spirv-reflect)
-get_target_property(SPIRV_REFLECT_DIR spirv-reflect-static SOURCE_DIR)
-target_include_directories(${PROJECT_NAME} PUBLIC ${SPIRV_REFLECT_DIR})
-target_sources(${PROJECT_NAME} PUBLIC "${SPIRV_REFLECT_DIR}/spirv_reflect.cpp")
-set_targets_static_and_folder(spirv-reflect-static)
-
-# Build shaderc from source
-if(NOT SHADERC_FROM_SDK)
-    # spirv-headers
-    set(BUILD_TESTS OFF)
-    set(SPIRV_HEADERS_SKIP_EXAMPLES ON)
-    FetchContent_Declare(
-        SPIRV-Headers
-        GIT_REPOSITORY "https://github.com/KhronosGroup/SPIRV-Headers.git"
-        GIT_TAG "sdk-1.3.243.0"
-        GIT_SHALLOW    TRUE
-        GIT_PROGRESS   TRUE
-    )
-    FetchContent_MakeAvailable(SPIRV-Headers)
-    get_target_property(SPIRV_HEADER_DIR SPIRV-Headers SOURCE_DIR)
-    set(SPIRV_HEADERS_DIR ${SPIRV-Headers_SOURCE_DIR})
-    set_targets_static_and_folder(SPIRV-Headers)
-
-    # spirv-tools
-    set(SPIRV_SKIP_TESTS ON)
-    set(SPIRV_SKIP_EXECUTABLES ON)
-    FetchContent_Declare(
-        SPIRV-Tools
-        GIT_REPOSITORY "https://github.com/KhronosGroup/SPIRV-Tools.git"
-        GIT_TAG "v2023.2"
-        GIT_SHALLOW    TRUE
-        GIT_PROGRESS   TRUE
-    )
-    FetchContent_MakeAvailable(SPIRV-Tools)
-    get_target_property(SPIRV_TOOLS_DIR SPIRV-Tools SOURCE_DIR)
-    set_targets_static_and_folder(SPIRV-Tools)
-    FOLDER_DIR_TARGETS(spirv-tools-pkg-config)
-    FOLDER_DIR_TARGETS(spirv-tools-shared-pkg-config)
-
-    # glslang
-    set(ENABLE_CTEST OFF)
-    set(ENABLE_GLSLANG_BINARIES OFF)
-    set(SKIP_GLSLANG_INSTALL ON)
-    set(BUILD_EXTERNAL OFF)
-    FetchContent_Declare(
-        glslang
-        GIT_REPOSITORY "https://github.com/KhronosGroup/glslang.git"
-        GIT_TAG "12.1.0"
-        GIT_SHALLOW    TRUE
-        GIT_PROGRESS   TRUE
-    )
-    FetchContent_MakeAvailable(glslang)
-    get_target_property(GLSL_SOURCE_DIR glslang SOURCE_DIR)
-    set_targets_static_and_folder(glslang)
-    set_targets_static_and_folder(SPIRV)
-    set_targets_static_and_folder(OGLCompiler)
-    set_targets_static_and_folder(SPVRemapper)
-    set_targets_static_and_folder(HLSL)
-
-    # shaderc
-    set(SHADERC_SKIP_INSTALL ON)
-    set(SHADERC_ENABLE_SHARED_CRT OFF)
-    set(SHADERC_SKIP_TESTS ON)
-    set(SHADERC_SKIP_EXAMPLES ON)
-    set(SHADERC_SKIP_COPYRIGHT_CHECK ON)    
-    set(SHADERC_GLSLANG_DIR ${GLSL_SOURCE_DIR})
-    FetchContent_Declare(
-        shaderc
-        GIT_REPOSITORY "https://github.com/google/shaderc.git"
-        GIT_TAG "v2023.3"
-        GIT_SHALLOW    TRUE
-        GIT_PROGRESS   TRUE
-    )
-    FetchContent_MakeAvailable(shaderc)
-    target_link_libraries(${PROJECT_NAME} PUBLIC shaderc)
-    get_target_property(SHADERC_SOURCE_DIR shaderc SOURCE_DIR)
-    set_targets_static_and_folder(shaderc)
-    set_targets_static_and_folder(shaderc_util)
-    FOLDER_DIR_TARGETS(add-copyright)
-    FOLDER_DIR_TARGETS(build-version)
-    FOLDER_DIR_TARGETS(glslc)
-    set_targets_static_and_folder(glslc_exe)
-    FOLDER_DIR_TARGETS(shaderc_static-pkg-config)
-    FOLDER_DIR_TARGETS(shaderc-pkg-config)
-endif()
+FetchContent_MakeAvailable(vuk)
+target_link_libraries(${PROJECT_NAME} PUBLIC vuk)
+set_targets_static_and_folder(vuk)
 
 # NFD
 FetchContent_Declare(
@@ -422,25 +288,6 @@ FetchContent_MakeAvailable(ryml)
 target_link_libraries(${PROJECT_NAME} PUBLIC ryml::ryml)
 target_link_libraries(${PROJECT_NAME} PUBLIC c4core)
 set_targets_static_and_folder(ryml)
-
-# KTX
-set(CLI OFF)
-set(KTX_FEATURE_TOOLS OFF)
-set(KTX_FEATURE_TESTS OFF)
-set(KTX_FEATURE_GL_UPLOAD OFF)
-set(KTX_FEATURE_STATIC_LIBRARY ON)
-set(BASISU_SUPPORT_OPENCL OFF)
-FetchContent_Declare(
-    ktx
-    GIT_REPOSITORY "https://github.com/KhronosGroup/KTX-Software"
-    GIT_TAG "v4.1.0"
-    GIT_SHALLOW    TRUE
-    GIT_PROGRESS   TRUE
-)
-FetchContent_MakeAvailable(ktx)
-target_link_libraries(${PROJECT_NAME} PUBLIC ktx)
-set_targets_static_and_folder(ktx)
-disable_ipo_target(ktx)
 
 # Jolt
 set(COMPILE_AS_SHARED_LIBRARY OFF)

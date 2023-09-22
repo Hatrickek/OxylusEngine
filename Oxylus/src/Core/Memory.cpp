@@ -2,11 +2,11 @@
 #include "Utils/Profiler.h"
 
 namespace Oxylus {
-  uint64_t Memory::TotalAllocated = 0;
-  uint64_t Memory::TotalFreed = 0;
+uint64_t Memory::TotalAllocated = 0;
+uint64_t Memory::TotalFreed = 0;
 
-  uint64_t GPUMemory::TotalAllocated = 0;
-  uint64_t GPUMemory::TotalFreed = 0;
+uint64_t GPUMemory::TotalAllocated = 0;
+uint64_t GPUMemory::TotalFreed = 0;
 }
 
 void Delete(void* block, std::size_t size) {

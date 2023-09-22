@@ -1,5 +1,3 @@
 ﻿#include "Event.h"
 
-namespace Oxylus {
-
-}
+namespace Oxylus {}

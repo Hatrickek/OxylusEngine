@@ -1,82 +1,85 @@
 #pragma once
+#include <string>
 
-#include "Core/Core.h"
+#include "Core.h"
+#include "Layer.h"
 #include "LayerStack.h"
-#include "UI/ImGuiLayer.h"
-#include <filesystem>
-
-#include "Systems/System.h"
-#include "Systems/SystemManager.h"
 #include "Thread/ThreadManager.h"
+#include "UI/ImGuiLayer.h"
 #include "Utils/Log.h"
-#include "Utils/Timestep.h"
 
 int main(int argc,
          char** argv);
 
 namespace Oxylus {
-  struct ApplicationCommandLineArgs {
-    int Count = 0;
-    char** Args = nullptr;
+class SystemManager;
 
-    const char* operator[](int index) const {
-      OX_CORE_ASSERT(index < Count);
-      return Args[index];
-    }
-  };
+struct ApplicationCommandLineArgs {
+  int Count = 0;
+  char** Args = nullptr;
 
-  struct AppSpec {
-    std::string Name = "Oxylus App";
-    Core::RenderBackend Backend = Core::RenderBackend::Vulkan;
-    std::filesystem::path WorkingDirectory = std::filesystem::current_path();
-    std::string ResourcesPath = "Resources";
-    bool UseImGui = true;
-    bool CustomWindowTitle = false;
-    ApplicationCommandLineArgs CommandLineArgs;
-  };
+  const char* operator[](int index) const {
+    OX_CORE_ASSERT(index < Count)
+    return Args[index];
+  }
+};
 
-  class Application {
-  public:
-    AppSpec Spec;
+struct AppSpec {
+  std::string Name = "Oxylus App";
+  std::string WorkingDirectory = {};
+  std::string ResourcesPath = "Resources";
+  bool UseImGui = true;
+  bool CustomWindowTitle = false;
+  uint32_t DeviceIndex = 0;
+  ApplicationCommandLineArgs CommandLineArgs;
+};
 
-    Application(const AppSpec& spec);
-    virtual ~Application();
+class Application {
+public:
+  Application(const AppSpec& spec);
+  virtual ~Application();
 
-    void InitSystems();
+  void InitSystems();
 
-    Application& PushLayer(Layer* layer);
-    Application& PushOverlay(Layer* layer);
+  Application& PushLayer(Layer* layer);
+  Application& PushOverlay(Layer* layer);
 
-    SystemManager& GetSystemManager() { return m_SystemManager; }
+  Ref<SystemManager> GetSystemManager() { return m_SystemManager; }
 
-    void Close();
+  void Close();
 
-    ImGuiLayer* GetImGuiLayer() const { return m_ImGuiLayer; }
-    const LayerStack& GetLayerStack() const { return m_LayerStack; }
-    static Application* Get() { return s_Instance; }
-    static Timestep GetTimestep() { return s_Instance->m_Timestep; }
+  const AppSpec& GetSpecification() const { return m_Spec; }
+  const std::vector<std::string>& GetCommandLineArgs() const { return m_CommandLineArgs; }
+  ImGuiLayer* GetImGuiLayer() const { return m_ImGuiLayer; }
+  const LayerStack& GetLayerStack() const { return m_LayerStack; }
+  static Application* Get() { return s_Instance; }
+  static Timestep GetTimestep() { return s_Instance->m_Timestep; }
 
-  private:
-    void Run();
-    void UpdateLayers(Timestep ts);
-    void UpdateRenderer();
-    void UpdateImGui();
+private:
+  AppSpec m_Spec;
+  std::vector<std::string> m_CommandLineArgs;
+  Core m_Core;
+  ImGuiLayer* m_ImGuiLayer;
+  LayerStack m_LayerStack;
 
-    ImGuiLayer* m_ImGuiLayer;
-    LayerStack m_LayerStack;
+  Ref<SystemManager> m_SystemManager = nullptr;
+  EventDispatcher m_Dispatcher;
 
-    SystemManager m_SystemManager;
-    EventDispatcher m_Dispatcher;
+  ThreadManager m_ThreadManager;
+  Timestep m_Timestep;
 
-    ThreadManager m_ThreadManager;
-    Timestep m_Timestep;
+  bool m_IsRunning = true;
+  float m_LastFrameTime = 0.0f;
+  static Application* s_Instance;
 
-    bool m_IsRunning = true;
-    float m_LastFrameTime = 0.0f;
-    static Application* s_Instance;
+  void Run();
+  void UpdateLayers(Timestep ts);
+  void UpdateRenderer();
+  void UpdateImGui();
 
-    friend int ::main(int argc, char** argv);
-  };
 
-  Application* CreateApplication(ApplicationCommandLineArgs args);
+  friend int ::main(int argc, char** argv);
+};
+
+Application* CreateApplication(ApplicationCommandLineArgs args);
 }

@@ -1,25 +1,30 @@
 #include "FileUtils.h"
 
+#include <filesystem>
 #include <fstream>
 
+#include "Profiler.h"
+#include "Core/Resources.h"
 #include "Utils/Log.h"
 
 namespace Oxylus {
+std::optional<std::string> FileUtils::ReadFile(const std::string& filePath) {
+  std::ostringstream buf;
+  const std::ifstream input(filePath.c_str());
+  OX_CORE_ASSERT(input)
+  buf << input.rdbuf();
+  return buf.str();
+}
 
-  std::optional<std::string> FileUtils::ReadFile(const std::string& filePath) {
-    const std::ifstream file(filePath);
+std::optional<std::string> FileUtils::ReadShaderFile(const std::string& shaderFileName) {
+  const auto pathStr = Resources::GetResourcesPath("Shaders");
+  const auto path = std::filesystem::path(pathStr) / shaderFileName;
+  return ReadFile(path.string());
+}
 
-    std::stringstream buffer;
-    buffer << file.rdbuf();
-
-    if (buffer.str().empty()) {
-      return {};
-    }
-
-    return buffer.str();
-  }
-
-  std::string FileUtils::GetPreferredPath(const std::string& path) {
-    return std::filesystem::path(path).make_preferred().string();
-  }
+std::string FileUtils::GetShaderPath(const std::string& shaderFileName) {
+  const auto pathStr = Resources::GetResourcesPath("Shaders");
+  const auto path = std::filesystem::path(pathStr) / shaderFileName;
+  return path.string();
+}
 }

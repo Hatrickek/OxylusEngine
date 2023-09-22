@@ -3,21 +3,21 @@
 #include "Thread.h"
 
 namespace Oxylus {
-  class ThreadManager {
-  public:
-    Thread AssetThread;
-    Thread AudioThread;
-    Thread RenderThread;
-    
-    ThreadManager();
+class ThreadManager {
+public:
+  Thread AssetThread;
+  Thread AudioThread;
+  Thread RenderThread;
 
-    ~ThreadManager() = default;
+  ThreadManager();
 
-    void WaitAllThreads();
+  ~ThreadManager() = default;
 
-    static ThreadManager* Get() { return s_Instance; }
+  void WaitAllThreads();
 
-  private:
-    static ThreadManager* s_Instance;
-  };
+  static ThreadManager* Get() { return s_Instance; }
+
+private:
+  static ThreadManager* s_Instance;
+};
 }

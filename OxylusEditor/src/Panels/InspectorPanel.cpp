@@ -124,37 +124,26 @@ namespace Oxylus {
     }
 
     IGUI::BeginProperties();
-    IGUI::Property("UV Scale", material->Parameters.UVScale);
-    IGUI::Property("Use Albedo", (bool&)material->Parameters.UseAlbedo);
-    if (IGUI::Property("Albedo", material->AlbedoTexture)) {
-      material->Update();
-    }
-    IGUI::PropertyVector("Color", material->Parameters.Color, true, true);
+    IGUI::Property("UV Scale", material->m_Parameters.UVScale);
+    IGUI::Property("Use Albedo", (bool&)material->m_Parameters.UseAlbedo);
+    IGUI::Property("Albedo", material->AlbedoTexture);
+    IGUI::PropertyVector("Color", material->m_Parameters.Color, true, true);
 
-    IGUI::Property("Specular", material->Parameters.Specular);
-    IGUI::PropertyVector("Emmisive", material->Parameters.Emmisive, true, true);
+    IGUI::Property("Specular", material->m_Parameters.Specular);
+    IGUI::PropertyVector("Emmisive", material->m_Parameters.Emmisive, true, true);
 
-    IGUI::Property("Use Normal", (bool&)material->Parameters.UseNormal);
-    if (IGUI::Property("Normal", material->NormalTexture)) {
-      material->Update();
-    }
+    IGUI::Property("Use Normal", (bool&)material->m_Parameters.UseNormal);
+    IGUI::Property("Normal", material->NormalTexture);
 
-    IGUI::Property("Use Roughness", (bool&)material->Parameters.UseRoughness);
-    if (IGUI::Property("Roughness", material->RoughnessTexture)) {
-      material->Update();
-    }
-    IGUI::Property("Roughness", material->Parameters.Roughness);
+    IGUI::Property("Use PhysicalMap(Roughness/Metallic)", (bool&)material->m_Parameters.UsePhysicalMap);
+    IGUI::Property("PhysicalMap", material->MetallicRoughnessTexture);
 
-    IGUI::Property("Use Metallic", (bool&)material->Parameters.UseMetallic);
-    if (IGUI::Property("Metallic", material->MetallicTexture)) {
-      material->Update();
-    }
-    IGUI::Property("Metallic", material->Parameters.Metallic);
+    IGUI::Property("Roughness", material->m_Parameters.Roughness);
 
-    IGUI::Property("Use AO", (bool&)material->Parameters.UseAO);
-    if (IGUI::Property("AO", material->AOTexture)) {
-      material->Update();
-    }
+    IGUI::Property("Metallic", material->m_Parameters.Metallic);
+
+    IGUI::Property("Use AO", (bool&)material->m_Parameters.UseAO);
+    IGUI::Property("AO", material->AOTexture);
 
     IGUI::EndProperties();
 
@@ -293,21 +282,14 @@ namespace Oxylus {
 
     DrawComponent<MeshRendererComponent>(ICON_MDI_VECTOR_SQUARE " Mesh Renderer Component",
       entity,
-      [](MeshRendererComponent& component) {
-        const float x = ImGui::GetContentRegionAvail().x;
-        const float y = ImGui::GetFrameHeight();
-        if (ImGui::Button(StringUtils::FromChar8T(ICON_MDI_FILE_UPLOAD), {x, y})) {
-          const auto& path = FileDialogs::OpenFile({{"Mesh File", "gltf"}});
-          if (!path.empty()) {
-            component.MeshGeometry = AssetManager::GetMeshAsset(path).Data;
-          }
-        }
+      [](const MeshRendererComponent& component) {
         if (!component.MeshGeometry)
           return;
         const char* fileName = component.MeshGeometry->Name.empty()
                                  ? "Empty"
                                  : component.MeshGeometry->Name.c_str();
         ImGui::Text("Loaded Mesh: %s", fileName);
+        ImGui::Text("Material Count: %d", (uint32_t)component.MeshGeometry->GetMaterialsAsRef().size());
       });
 
     DrawComponent<MaterialComponent>(ICON_MDI_SPRAY " Material Component",
@@ -338,24 +320,21 @@ namespace Oxylus {
       entity,
       [this](SkyLightComponent& component) {
         const char* name = component.Cubemap
-                             ? component.Cubemap->GetDesc().Path.c_str()
-                             : "Drop a cubemap file";
+                             ? component.Cubemap->GetPath().c_str()
+                             : "Drop a hdr file";
         const float x = ImGui::GetContentRegionAvail().x;
         const float y = ImGui::GetFrameHeight();
         auto loadCubeMap = [](const Ref<Scene>& scene, const std::string& path, SkyLightComponent& comp) {
           if (path.empty())
             return;
           const auto ext = std::filesystem::path(path).extension().string();
-          if (ext == ".ktx" || ext == ".ktx2") {
-            VulkanImageDescription CubeMapDesc;
-            CubeMapDesc.Path = path;
-            CubeMapDesc.Type = ImageType::TYPE_CUBE;
-            comp.Cubemap = AssetManager::GetImageAsset(CubeMapDesc).Data;
-            scene->GetRenderer().Dispatcher.trigger(SceneRenderer::SkyboxLoadEvent{comp.Cubemap});
+          if (ext == ".hdr") {
+            comp.Cubemap = AssetManager::GetTextureAsset(path);
+            scene->GetRenderer()->Dispatcher.trigger(SceneRenderer::SkyboxLoadEvent{comp.Cubemap});
           }
         };
         if (ImGui::Button(name, {x, y})) {
-          const std::string filePath = FileDialogs::OpenFile({{"CubeMap File", "ktx,ktx2"}});
+          const std::string filePath = FileDialogs::OpenFile({{"HDR File", "hdr"}});
           loadCubeMap(m_Scene, filePath, component);
         }
         if (ImGui::BeginDragDropTarget()) {
@@ -367,7 +346,7 @@ namespace Oxylus {
         }
         ImGui::Spacing();
         IGUI::BeginProperties();
-        IGUI::Property("Cubemap Lod Bias", component.CubemapLodBias);
+        IGUI::Property("Lod Bias", component.LoadBias);
         IGUI::EndProperties();
       });
 
@@ -376,29 +355,29 @@ namespace Oxylus {
       [this](PostProcessProbe& component) {
         ImGui::Text("Vignette");
         IGUI::BeginProperties();
-        PP_ProbeProperty(IGUI::Property("Enable", component.VignetteEnabled));
-        PP_ProbeProperty(IGUI::Property("Intensity", component.VignetteIntensity));
+        PP_ProbeProperty(IGUI::Property("Enable", component.VignetteEnabled), component);
+        PP_ProbeProperty(IGUI::Property("Intensity", component.VignetteIntensity), component);
         IGUI::EndProperties();
         ImGui::Separator();
 
         ImGui::Text("FilmGrain");
         IGUI::BeginProperties();
-        PP_ProbeProperty(IGUI::Property("Enable", component.FilmGrainEnabled));
-        PP_ProbeProperty(IGUI::Property("Intensity", component.FilmGrainIntensity));
+        PP_ProbeProperty(IGUI::Property("Enable", component.FilmGrainEnabled), component);
+        PP_ProbeProperty(IGUI::Property("Intensity", component.FilmGrainIntensity), component);
         IGUI::EndProperties();
         ImGui::Separator();
 
         ImGui::Text("ChromaticAberration");
         IGUI::BeginProperties();
-        PP_ProbeProperty(IGUI::Property("Enable", component.ChromaticAberrationEnabled));
-        PP_ProbeProperty(IGUI::Property("Intensity", component.ChromaticAberrationIntensity));
+        PP_ProbeProperty(IGUI::Property("Enable", component.ChromaticAberrationEnabled), component);
+        PP_ProbeProperty(IGUI::Property("Intensity", component.ChromaticAberrationIntensity), component);
         IGUI::EndProperties();
         ImGui::Separator();
 
         ImGui::Text("Sharpen");
         IGUI::BeginProperties();
-        PP_ProbeProperty(IGUI::Property("Enable", component.SharpenEnabled));
-        PP_ProbeProperty(IGUI::Property("Intensity", component.SharpenIntensity));
+        PP_ProbeProperty(IGUI::Property("Enable", component.SharpenEnabled), component);
+        PP_ProbeProperty(IGUI::Property("Intensity", component.SharpenIntensity), component);
         IGUI::EndProperties();
         ImGui::Separator();
       });
@@ -756,7 +735,7 @@ namespace Oxylus {
         IGUI::Property("Burst Time", props.BurstTime);
         IGUI::PropertyVector("Position Start", props.PositionStart);
         IGUI::PropertyVector("Position End", props.PositionEnd);
-        IGUI::Property("Texture", props.Texture);
+        //IGUI::Property("Texture", props.Texture); //TODO:
         IGUI::EndProperties();
 
         DrawParticleOverLifetimeModule("Velocity Over Lifetime", props.VelocityOverLifetime);
@@ -837,9 +816,9 @@ namespace Oxylus {
 
   }
 
-  void InspectorPanel::PP_ProbeProperty(const bool value) const {
+  void InspectorPanel::PP_ProbeProperty(const bool value, const PostProcessProbe& component) const {
     if (value) {
-      m_SelectedEntity.GetScene()->GetRenderer().Dispatcher.trigger(SceneRenderer::ProbeChangeEvent{});
+      m_SelectedEntity.GetScene()->GetRenderer()->Dispatcher.trigger(SceneRenderer::ProbeChangeEvent{component});
     }
   }
 }

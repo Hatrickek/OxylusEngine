@@ -1,6 +1,5 @@
 ﻿#pragma once
 #include "Core/Components.h"
-#include "Core/Types.h"
 #include "Core/Systems/System.h"
 
 namespace OxylusRuntime {

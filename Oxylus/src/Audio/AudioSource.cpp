@@ -6,145 +6,145 @@
 #include "Utils/Log.h"
 
 namespace Oxylus {
-  AudioSource::AudioSource(const char* filepath) : m_Path(filepath) {
-    m_Sound = CreateScope<ma_sound>();
+AudioSource::AudioSource(const char* filepath) : m_Path(filepath) {
+  m_Sound = CreateScope<ma_sound>();
 
-    const ma_result result = ma_sound_init_from_file(static_cast<ma_engine*>(AudioEngine::GetEngine()),
-                                                     filepath,
-                                                     MA_SOUND_FLAG_NO_SPATIALIZATION,
-                                                     nullptr,
-                                                     nullptr,
-                                                     m_Sound.get());
-    if (result != MA_SUCCESS)
-      OX_CORE_ERROR("Failed to load sound: {}", filepath);
+  const ma_result result = ma_sound_init_from_file(static_cast<ma_engine*>(AudioEngine::GetEngine()),
+    filepath,
+    MA_SOUND_FLAG_NO_SPATIALIZATION,
+    nullptr,
+    nullptr,
+    m_Sound.get());
+  if (result != MA_SUCCESS)
+    OX_CORE_ERROR("Failed to load sound: {}", filepath);
+}
+
+AudioSource::~AudioSource() {
+  ma_sound_uninit(m_Sound.get());
+  m_Sound = nullptr;
+}
+
+void AudioSource::Play() const {
+  ma_sound_seek_to_pcm_frame(m_Sound.get(), 0);
+  ma_sound_start(m_Sound.get());
+}
+
+void AudioSource::Pause() const {
+  ma_sound_stop(m_Sound.get());
+}
+
+void AudioSource::UnPause() const {
+  ma_sound_start(m_Sound.get());
+}
+
+void AudioSource::Stop() const {
+  ma_sound_stop(m_Sound.get());
+  ma_sound_seek_to_pcm_frame(m_Sound.get(), 0);
+}
+
+bool AudioSource::IsPlaying() const {
+  return ma_sound_is_playing(m_Sound.get());
+}
+
+static ma_attenuation_model GetAttenuationModel(const AttenuationModelType model) {
+  switch (model) {
+    case AttenuationModelType::None: return ma_attenuation_model_none;
+    case AttenuationModelType::Inverse: return ma_attenuation_model_inverse;
+    case AttenuationModelType::Linear: return ma_attenuation_model_linear;
+    case AttenuationModelType::Exponential: return ma_attenuation_model_exponential;
   }
 
-  AudioSource::~AudioSource() {
-    ma_sound_uninit(m_Sound.get());
-    m_Sound = nullptr;
+  return ma_attenuation_model_none;
+}
+
+void AudioSource::SetConfig(const AudioSourceConfig& config) {
+  ma_sound* sound = m_Sound.get();
+  ma_sound_set_volume(sound, config.VolumeMultiplier);
+  ma_sound_set_pitch(sound, config.PitchMultiplier);
+  ma_sound_set_looping(sound, config.Looping);
+
+  if (m_Spatialization != config.Spatialization) {
+    m_Spatialization = config.Spatialization;
+    ma_sound_set_spatialization_enabled(sound, config.Spatialization);
   }
 
-  void AudioSource::Play() const {
-    ma_sound_seek_to_pcm_frame(m_Sound.get(), 0);
-    ma_sound_start(m_Sound.get());
+  if (config.Spatialization) {
+    ma_sound_set_attenuation_model(sound, GetAttenuationModel(config.AttenuationModel));
+    ma_sound_set_rolloff(sound, config.RollOff);
+    ma_sound_set_min_gain(sound, config.MinGain);
+    ma_sound_set_max_gain(sound, config.MaxGain);
+    ma_sound_set_min_distance(sound, config.MinDistance);
+    ma_sound_set_max_distance(sound, config.MaxDistance);
+
+    ma_sound_set_cone(sound, config.ConeInnerAngle, config.ConeOuterAngle, config.ConeOuterGain);
+    ma_sound_set_doppler_factor(sound, glm::max(config.DopplerFactor, 0.0f));
   }
-
-  void AudioSource::Pause() const {
-    ma_sound_stop(m_Sound.get());
+  else {
+    ma_sound_set_attenuation_model(sound, ma_attenuation_model_none);
   }
+}
 
-  void AudioSource::UnPause() const {
-    ma_sound_start(m_Sound.get());
-  }
+void AudioSource::SetVolume(float volume) const {
+  ma_sound_set_volume(m_Sound.get(), volume);
+}
 
-  void AudioSource::Stop() const {
-    ma_sound_stop(m_Sound.get());
-    ma_sound_seek_to_pcm_frame(m_Sound.get(), 0);
-  }
+void AudioSource::SetPitch(float pitch) const {
+  ma_sound_set_pitch(m_Sound.get(), pitch);
+}
 
-  bool AudioSource::IsPlaying() const {
-    return ma_sound_is_playing(m_Sound.get());
-  }
+void AudioSource::SetLooping(const bool state) const {
+  ma_sound_set_looping(m_Sound.get(), state);
+}
 
-  static ma_attenuation_model GetAttenuationModel(const AttenuationModelType model) {
-    switch (model) {
-      case AttenuationModelType::None: return ma_attenuation_model_none;
-      case AttenuationModelType::Inverse: return ma_attenuation_model_inverse;
-      case AttenuationModelType::Linear: return ma_attenuation_model_linear;
-      case AttenuationModelType::Exponential: return ma_attenuation_model_exponential;
-    }
+void AudioSource::SetSpatialization(const bool state) {
+  m_Spatialization = state;
+  ma_sound_set_spatialization_enabled(m_Sound.get(), state);
+}
 
-    return ma_attenuation_model_none;
-  }
+void AudioSource::SetAttenuationModel(const AttenuationModelType type) const {
+  if (m_Spatialization)
+    ma_sound_set_attenuation_model(m_Sound.get(), GetAttenuationModel(type));
+  else
+    ma_sound_set_attenuation_model(m_Sound.get(), GetAttenuationModel(AttenuationModelType::None));
+}
 
-  void AudioSource::SetConfig(const AudioSourceConfig& config) {
-    ma_sound* sound = m_Sound.get();
-    ma_sound_set_volume(sound, config.VolumeMultiplier);
-    ma_sound_set_pitch(sound, config.PitchMultiplier);
-    ma_sound_set_looping(sound, config.Looping);
+void AudioSource::SetRollOff(const float rollOff) const {
+  ma_sound_set_rolloff(m_Sound.get(), rollOff);
+}
 
-    if (m_Spatialization != config.Spatialization) {
-      m_Spatialization = config.Spatialization;
-      ma_sound_set_spatialization_enabled(sound, config.Spatialization);
-    }
+void AudioSource::SetMinGain(const float minGain) const {
+  ma_sound_set_min_gain(m_Sound.get(), minGain);
+}
 
-    if (config.Spatialization) {
-      ma_sound_set_attenuation_model(sound, GetAttenuationModel(config.AttenuationModel));
-      ma_sound_set_rolloff(sound, config.RollOff);
-      ma_sound_set_min_gain(sound, config.MinGain);
-      ma_sound_set_max_gain(sound, config.MaxGain);
-      ma_sound_set_min_distance(sound, config.MinDistance);
-      ma_sound_set_max_distance(sound, config.MaxDistance);
+void AudioSource::SetMaxGain(const float maxGain) const {
+  ma_sound_set_max_gain(m_Sound.get(), maxGain);
+}
 
-      ma_sound_set_cone(sound, config.ConeInnerAngle, config.ConeOuterAngle, config.ConeOuterGain);
-      ma_sound_set_doppler_factor(sound, glm::max(config.DopplerFactor, 0.0f));
-    }
-    else {
-      ma_sound_set_attenuation_model(sound, ma_attenuation_model_none);
-    }
-  }
+void AudioSource::SetMinDistance(const float minDistance) const {
+  ma_sound_set_min_distance(m_Sound.get(), minDistance);
+}
 
-  void AudioSource::SetVolume(float volume) const {
-    ma_sound_set_volume(m_Sound.get(), volume);
-  }
+void AudioSource::SetMaxDistance(const float maxDistance) const {
+  ma_sound_set_max_distance(m_Sound.get(), maxDistance);
+}
 
-  void AudioSource::SetPitch(float pitch) const {
-    ma_sound_set_pitch(m_Sound.get(), pitch);
-  }
+void AudioSource::SetCone(const float innerAngle, const float outerAngle, const float outerGain) const {
+  ma_sound_set_cone(m_Sound.get(), innerAngle, outerAngle, outerGain);
+}
 
-  void AudioSource::SetLooping(const bool state) const {
-    ma_sound_set_looping(m_Sound.get(), state);
-  }
+void AudioSource::SetDopplerFactor(const float factor) const {
+  ma_sound_set_doppler_factor(m_Sound.get(), glm::max(factor, 0.0f));
+}
 
-  void AudioSource::SetSpatialization(const bool state) {
-    m_Spatialization = state;
-    ma_sound_set_spatialization_enabled(m_Sound.get(), state);
-  }
+void AudioSource::SetPosition(const glm::vec3& position) const {
+  ma_sound_set_position(m_Sound.get(), position.x, position.y, position.z);
+}
 
-  void AudioSource::SetAttenuationModel(const AttenuationModelType type) const {
-    if (m_Spatialization)
-      ma_sound_set_attenuation_model(m_Sound.get(), GetAttenuationModel(type));
-    else
-      ma_sound_set_attenuation_model(m_Sound.get(), GetAttenuationModel(AttenuationModelType::None));
-  }
+void AudioSource::SetDirection(const glm::vec3& forward) const {
+  ma_sound_set_direction(m_Sound.get(), forward.x, forward.y, forward.z);
+}
 
-  void AudioSource::SetRollOff(const float rollOff) const {
-    ma_sound_set_rolloff(m_Sound.get(), rollOff);
-  }
-
-  void AudioSource::SetMinGain(const float minGain) const {
-    ma_sound_set_min_gain(m_Sound.get(), minGain);
-  }
-
-  void AudioSource::SetMaxGain(const float maxGain) const {
-    ma_sound_set_max_gain(m_Sound.get(), maxGain);
-  }
-
-  void AudioSource::SetMinDistance(const float minDistance) const {
-    ma_sound_set_min_distance(m_Sound.get(), minDistance);
-  }
-
-  void AudioSource::SetMaxDistance(const float maxDistance) const {
-    ma_sound_set_max_distance(m_Sound.get(), maxDistance);
-  }
-
-  void AudioSource::SetCone(const float innerAngle, const float outerAngle, const float outerGain) const {
-    ma_sound_set_cone(m_Sound.get(), innerAngle, outerAngle, outerGain);
-  }
-
-  void AudioSource::SetDopplerFactor(const float factor) const {
-    ma_sound_set_doppler_factor(m_Sound.get(), glm::max(factor, 0.0f));
-  }
-
-  void AudioSource::SetPosition(const glm::vec3& position) const {
-    ma_sound_set_position(m_Sound.get(), position.x, position.y, position.z);
-  }
-
-  void AudioSource::SetDirection(const glm::vec3& forward) const {
-    ma_sound_set_direction(m_Sound.get(), forward.x, forward.y, forward.z);
-  }
-
-  void AudioSource::SetVelocity(const glm::vec3& velocity) const {
-    ma_sound_set_velocity(m_Sound.get(), velocity.x, velocity.y, velocity.z);
-  }
+void AudioSource::SetVelocity(const glm::vec3& velocity) const {
+  ma_sound_set_velocity(m_Sound.get(), velocity.x, velocity.y, velocity.z);
+}
 }

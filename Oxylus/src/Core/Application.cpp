@@ -1,111 +1,112 @@
 #include "Application.h"
+
+#include <filesystem>
+
 #include "Core.h"
 #include "Layer.h"
 #include "Render/Window.h"
+#include "Render/Vulkan/VulkanContext.h"
 #include "Render/Vulkan/VulkanRenderer.h"
+#include "Systems/SystemManager.h"
 #include "Utils/Profiler.h"
 
 namespace Oxylus {
-  Application* Application::s_Instance = nullptr;
+Application* Application::s_Instance = nullptr;
 
-  Application::Application(const AppSpec& spec) : Spec(spec) {
-    if (s_Instance) {
-      OX_CORE_ERROR("Application already exists!");
-      return;
-    }
-
-    s_Instance = this;
-
-    if (!Core::Init(spec))
-      return;
-
-    if (spec.UseImGui) {
-      m_ImGuiLayer = new ImGuiLayer();
-      PushOverlay(m_ImGuiLayer);
-    }
+Application::Application(const AppSpec& spec) : m_Spec(spec), m_SystemManager(CreateRef<SystemManager>()) {
+  if (s_Instance) {
+    OX_CORE_ERROR("Application already exists!");
+    return;
   }
 
-  Application::~Application() {
-    Close();
-  }
+  s_Instance = this;
 
-  void Application::InitSystems() {
-    for (const auto& system : m_SystemManager.GetSystems()) {
-      system.second->SetDispatcher(&m_Dispatcher);
-      system.second->OnInit();
+  if (m_Spec.WorkingDirectory.empty())
+    m_Spec.WorkingDirectory = std::filesystem::current_path().string();
+  else
+    std::filesystem::current_path(m_Spec.WorkingDirectory);
+
+  for (int i = 0; i < m_Spec.CommandLineArgs.Count; i++) {
+    auto c = m_Spec.CommandLineArgs.Args[i];
+    if (!std::string(c).empty()) {
+      m_CommandLineArgs.emplace_back(c);
     }
   }
 
-  Application& Application::PushLayer(Layer* layer) {
-    m_LayerStack.PushLayer(layer);
-    layer->OnAttach(m_Dispatcher);
+  if (!m_Core.Init(m_Spec))
+    return;
 
-    return *this;
+  m_ImGuiLayer = new ImGuiLayer();
+  PushOverlay(m_ImGuiLayer);
+}
+
+Application::~Application() {
+  Close();
+}
+
+void Application::InitSystems() {
+  for (const auto& system : m_SystemManager->GetSystems()) {
+    system.second->SetDispatcher(&m_Dispatcher);
+    system.second->OnInit();
   }
+}
 
-  Application& Application::PushOverlay(Layer* layer) {
-    m_LayerStack.PushOverlay(layer);
-    layer->OnAttach(m_Dispatcher);
+Application& Application::PushLayer(Layer* layer) {
+  m_LayerStack.PushLayer(layer);
+  layer->OnAttach(m_Dispatcher);
 
-    return *this;
-  }
+  return *this;
+}
 
-  void Application::Run() {
-    while (m_IsRunning) {
-      const auto time = static_cast<float>(glfwGetTime());
-      m_Timestep = time - m_LastFrameTime;
-      m_LastFrameTime = time;
+Application& Application::PushOverlay(Layer* layer) {
+  m_LayerStack.PushOverlay(layer);
+  layer->OnAttach(m_Dispatcher);
 
-      //Layers
-      UpdateLayers(m_Timestep);
+  return *this;
+}
 
-      //Render Loop
-      UpdateRenderer();
+void Application::Run() {
+  while (m_IsRunning) {
+    Window::UpdateWindow();
 
-      //ImGui Loop
-      UpdateImGui();
-
-      //Systems
-      m_SystemManager.OnUpdate();
-
-      Window::UpdateWindow();
-
-      FrameMark;
+    while (VulkanContext::Get()->suspend) {
+      Window::WaitForEvents();
     }
 
-    m_SystemManager.Shutdown();
-    Core::Shutdown();
+    const auto time = static_cast<float>(glfwGetTime());
+    m_Timestep = time - m_LastFrameTime;
+    m_LastFrameTime = time;
+
+    // Layers
+    UpdateLayers(m_Timestep);
+
+    // Systems
+    m_SystemManager->OnUpdate();
+
+    if (!m_IsRunning)
+      break;
+
+    UpdateRenderer();
+
+    FrameMark;
   }
 
-  void Application::UpdateLayers(Timestep ts) {
-    OX_SCOPED_ZONE_N("LayersLoop");
-    for (Layer* layer : m_LayerStack)
-      layer->OnUpdate(ts);
-  }
+  m_SystemManager->Shutdown();
+  m_Core.Shutdown();
+}
 
-  void Application::UpdateRenderer() {
-    OX_SCOPED_ZONE_N("RenderLoop");
-    VulkanRenderer::Draw();
-  }
+void Application::UpdateLayers(Timestep ts) {
+  OX_SCOPED_ZONE_N("LayersLoop");
+  for (Layer* layer : m_LayerStack)
+    layer->OnUpdate(ts);
+}
 
-  void Application::UpdateImGui() {
-    OX_SCOPED_ZONE_N("ImGuiLoop");
-    if (this->Spec.UseImGui) {
-      m_ImGuiLayer->Begin();
-      {
-        OX_SCOPED_ZONE_N("LayerImGuiRender");
-        for (Layer* layer : m_LayerStack)
-          layer->OnImGuiRender();
-      }
-      {
-        OX_SCOPED_ZONE_N("SystemImGuiRender");
-        m_SystemManager.OnImGuiRender();
-      }
-      m_ImGuiLayer->End();
-    }
-  }
+void Application::UpdateRenderer() {
+  OX_SCOPED_ZONE_N("SwapchainLoop");
+  VulkanRenderer::Draw(VulkanContext::Get(), m_ImGuiLayer, m_LayerStack, m_SystemManager);
+}
 
-  void Application::Close() {
-    m_IsRunning = false;
-  }
+void Application::Close() {
+  m_IsRunning = false;
+}
 }

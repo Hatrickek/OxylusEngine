@@ -18,7 +18,7 @@ namespace Oxylus {
     template <typename Component>
     void DrawAddComponent(Entity entity, const char* name) const;
 
-    void PP_ProbeProperty(bool value) const;
+    void PP_ProbeProperty(bool value, const PostProcessProbe& component) const;
 
     Entity m_SelectedEntity;
     Ref<Scene> m_Scene;

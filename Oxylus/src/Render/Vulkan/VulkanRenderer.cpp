@@ -1,181 +1,39 @@
 #include "VulkanRenderer.h"
 
 #include <future>
+#include <vuk/Partials.hpp>
 
-#include "VulkanCommandBuffer.h"
 #include "VulkanContext.h"
-#include "VulkanPipeline.h"
-#include "VulkanSwapchain.h"
-#include "Utils/VulkanUtils.h"
+#include "Assets/AssetManager.h"
 #include "Core/Resources.h"
+#include "Core/Systems/SystemManager.h"
 #include "Render/Mesh.h"
 #include "Render/Window.h"
-#include "Render/Vulkan/VulkanBuffer.h"
-#include "Render/ResourcePool.h"
-#include "Render/ShaderLibrary.h"
 #include "Utils/Profiler.h"
-
-#include <backends/imgui_impl_vulkan.h>
-
 #include "Render/DebugRenderer.h"
+#include "Render/DefaultRenderPipeline.h"
+#include "Utils/FileUtils.h"
 
 namespace Oxylus {
-  VulkanSwapchain VulkanRenderer::s_SwapChain;
-  VulkanRenderer::RendererContext VulkanRenderer::s_RendererContext;
-  VulkanRenderer::RendererData VulkanRenderer::s_RendererData;
-  VulkanRenderer::Pipelines VulkanRenderer::s_Pipelines;
-  Ref<DescriptorPoolManager> VulkanRenderer::s_DescriptorPoolManager = nullptr;
-  Ref<CommandPoolManager> VulkanRenderer::s_CommandPoolManager = nullptr;
-  RendererConfig VulkanRenderer::s_RendererConfig;
+VulkanRenderer::RendererContext VulkanRenderer::s_RendererContext;
+VulkanRenderer::RendererData VulkanRenderer::s_RendererData;
+RendererConfig VulkanRenderer::s_RendererConfig;
 
-  Ref<DefaultRenderPipeline> VulkanRenderer::s_DefaultPipeline = nullptr;
+void VulkanRenderer::Init() {
+  s_RendererContext.m_DefaultRenderPipeline = CreateRef<DefaultRenderPipeline>("DefaultRenderPipeline");
 
-  static VulkanBuffer s_TriangleVertexBuffer;
-  static VulkanDescriptorSet s_QuadDescriptorSet;
-
-  void VulkanRenderer::ResizeBuffers() {
-    WaitDeviceIdle();
-    WaitGraphicsQueueIdle();
-    s_SwapChain.RecreateSwapChain();
-    FrameBufferPool::ResizeBuffers();
-    ImagePool::ResizeImages();
-    s_SwapChain.Resizing = false;
+  // Save/Load renderer config
+  if (!RendererConfig::Get()->LoadConfig("renderer.oxconfig")) {
+    RendererConfig::Get()->SaveConfig("renderer.oxconfig");
   }
+  RendererConfig::Get()->ConfigChangeDispatcher.trigger(RendererConfig::ConfigChangeEvent{});
 
-  void VulkanRenderer::Init() {
-    //TODO: Move
-    {
-      // Save/Load renderer config
-      if (!RendererConfig::Get()->LoadConfig("renderer.oxconfig")) {
-        RendererConfig::Get()->SaveConfig("renderer.oxconfig");
-      }
-      RendererConfig::Get()->ConfigChangeDispatcher.trigger(RendererConfig::ConfigChangeEvent{});
-    }
+  TextureAsset::CreateBlankTexture();
 
-    const auto& LogicalDevice = VulkanContext::GetDevice();
+  // Debug renderer
+  DebugRenderer::Init();
 
-    // Pool managers
-    s_DescriptorPoolManager = CreateRef<DescriptorPoolManager>();
-    s_DescriptorPoolManager->Init();
-
-    s_CommandPoolManager = CreateRef<CommandPoolManager>();
-    s_CommandPoolManager->Init();
-
-    s_SwapChain.SetVsync(RendererConfig::Get()->DisplayConfig.VSync, false);
-    s_SwapChain.CreateSwapChain();
-
-    s_RendererContext.m_TimelineCommandBuffer.CreateBuffer();
-
-    vk::DescriptorSetLayoutBinding binding[1];
-    binding[0].descriptorType = vk::DescriptorType::eCombinedImageSampler;
-    binding[0].descriptorCount = 1;
-    binding[0].stageFlags = vk::ShaderStageFlagBits::eFragment;
-
-    vk::DescriptorSetLayoutCreateInfo info = {};
-    info.bindingCount = 1;
-    info.pBindings = binding;
-    VulkanUtils::CheckResult(LogicalDevice.createDescriptorSetLayout(&info, nullptr, &s_RendererData.ImageDescriptorSetLayout));
-
-    Resources::InitEngineResources();
-
-    // Quad pipeline
-    {
-      auto quadShader = ShaderLibrary::CreateShaderAsync(ShaderCI{
-        .VertexPath = Resources::GetResourcesPath("Shaders/Quad.vert"),
-        .FragmentPath = Resources::GetResourcesPath("Shaders/Quad.frag"),
-        .EntryPoint = "main",
-        .Name = "Quad",
-      });
-      PipelineDescription quadDescription;
-      quadDescription.RenderPass = s_SwapChain.m_RenderPass;
-      quadDescription.VertexInputState.attributeDescriptions.clear();
-      quadDescription.VertexInputState.bindingDescriptions.clear();
-      quadDescription.Shader = quadShader.get();
-      quadDescription.RasterizerDesc.CullMode = vk::CullModeFlagBits::eNone;
-      s_Pipelines.QuadPipeline.CreateGraphicsPipelineAsync(quadDescription).wait();
-
-      s_QuadDescriptorSet.CreateFromShader(s_Pipelines.QuadPipeline.GetShader());
-    }
-
-    // UI pipeline
-    {
-      auto uiShader = ShaderLibrary::CreateShaderAsync(ShaderCI{
-        .VertexPath = Resources::GetResourcesPath("Shaders/UI.vert"),
-        .FragmentPath = Resources::GetResourcesPath("Shaders/UI.frag"),
-        .EntryPoint = "main",
-        .Name = "UI",
-      });
-      const std::vector vertexInputBindings = {
-        vk::VertexInputBindingDescription{0, sizeof(ImDrawVert), vk::VertexInputRate::eVertex},
-      };
-      const std::vector vertexInputAttributes = {
-        vk::VertexInputAttributeDescription{0, 0, vk::Format::eR32G32Sfloat, (uint32_t)offsetof(ImDrawVert, pos)},
-        vk::VertexInputAttributeDescription{1, 0, vk::Format::eR32G32Sfloat, (uint32_t)offsetof(ImDrawVert, uv)},
-        vk::VertexInputAttributeDescription{2, 0, vk::Format::eR8G8B8A8Unorm, (uint32_t)offsetof(ImDrawVert, col)},
-      };
-      PipelineDescription uiPipelineDecs;
-      uiPipelineDecs.Name = "UI Pipeline";
-      uiPipelineDecs.Shader = uiShader.get();
-      uiPipelineDecs.RenderPass = s_SwapChain.m_RenderPass;
-      uiPipelineDecs.VertexInputState.attributeDescriptions = vertexInputAttributes;
-      uiPipelineDecs.VertexInputState.bindingDescriptions = vertexInputBindings;
-      uiPipelineDecs.RasterizerDesc.CullMode = vk::CullModeFlagBits::eNone;
-      uiPipelineDecs.BlendStateDesc.RenderTargets[0].BlendEnable = true;
-      uiPipelineDecs.BlendStateDesc.RenderTargets[0].SrcBlend = vk::BlendFactor::eSrcAlpha;
-      uiPipelineDecs.BlendStateDesc.RenderTargets[0].DestBlend = vk::BlendFactor::eOneMinusSrcAlpha;
-      uiPipelineDecs.BlendStateDesc.RenderTargets[0].DestBlendAlpha = vk::BlendFactor::eOneMinusSrcAlpha;
-      uiPipelineDecs.DepthDesc.DepthEnable = false;
-      uiPipelineDecs.DepthDesc.DepthWriteEnable = false;
-      uiPipelineDecs.DepthDesc.CompareOp = vk::CompareOp::eNever;
-      uiPipelineDecs.DepthDesc.FrontFace.StencilFunc = vk::CompareOp::eNever;
-      uiPipelineDecs.DepthDesc.BackFace.StencilFunc = vk::CompareOp::eNever;
-      uiPipelineDecs.DepthDesc.MinDepthBound = 0;
-      uiPipelineDecs.DepthDesc.MaxDepthBound = 0;
-      s_Pipelines.UIPipeline.CreateGraphicsPipelineAsync(uiPipelineDecs).wait();
-    }
-
-    // Initalize default render pipeline
-    if (!s_DefaultPipeline) {
-      s_DefaultPipeline = CreateRef<DefaultRenderPipeline>();
-      s_DefaultPipeline->OnInit();
-    }
-
-    //Create Triangle Buffers for rendering a single triangle.
-    {
-      std::vector<RendererData::Vertex> vertexBuffer = {
-        {{-1.0f, -1.0f, 0.0f}, {}, {0.0f, 1.0f}}, {{-1.0f, 3.0f, 0.0f}, {}, {0.0f, -1.0f}},
-        {{3.0f, -1.0f, 0.0f}, {}, {2.0f, 1.0f}},
-      };
-
-      VulkanBuffer vertexStaging;
-
-      uint64_t vBufferSize = (uint32_t)vertexBuffer.size() * sizeof(RendererData::Vertex);
-
-      vertexStaging.CreateBuffer(vk::BufferUsageFlagBits::eTransferSrc,
-        vk::MemoryPropertyFlagBits::eHostVisible | vk::MemoryPropertyFlagBits::eHostCoherent,
-        vBufferSize,
-        vertexBuffer.data());
-
-      s_TriangleVertexBuffer.CreateBuffer(
-        vk::BufferUsageFlagBits::eVertexBuffer | vk::BufferUsageFlagBits::eTransferDst,
-        vk::MemoryPropertyFlagBits::eDeviceLocal,
-        vBufferSize);
-
-      SubmitOnce(CommandPoolManager::Get()->GetFreePool(),
-        [&vBufferSize, &vertexStaging](const VulkanCommandBuffer copyCmd) {
-          vk::BufferCopy copyRegion{};
-
-          copyRegion.size = vBufferSize;
-          vertexStaging.CopyTo(s_TriangleVertexBuffer.Get(), copyCmd.Get(), copyRegion);
-        });
-
-      vertexStaging.Destroy();
-    }
-
-    // Debug renderer
-    DebugRenderer::Init();
-
-    s_RendererConfig.ConfigChangeDispatcher.trigger(RendererConfig::ConfigChangeEvent{});
+  s_RendererConfig.ConfigChangeDispatcher.trigger(RendererConfig::ConfigChangeEvent{});
 
 #if GPU_PROFILER_ENABLED
     //Initalize tracy profiling
@@ -185,88 +43,190 @@ namespace Oxylus {
       VulkanContext::VulkanQueue.GraphicsQueue,
       s_RendererContext.m_TimelineCommandBuffer.Get());
 #endif
-  }
+}
 
-  void VulkanRenderer::Shutdown() {
-    RendererConfig::Get()->SaveConfig("renderer.oxconfig");
-    DebugRenderer::Release();
-    s_DescriptorPoolManager->Release();
-    s_CommandPoolManager->Release();
+void VulkanRenderer::Shutdown() {
+  RendererConfig::Get()->SaveConfig("renderer.oxconfig");
+  DebugRenderer::Release();
 #if GPU_PROFILER_ENABLED
     TracyProfiler::DestroyContext();
 #endif
+}
+
+void VulkanRenderer::SetCamera(Camera& camera) {
+  s_RendererContext.m_CurrentCamera = &camera;
+}
+
+void VulkanRenderer::Draw(VulkanContext* context, ImGuiLayer* imguiLayer, LayerStack& layerStack, Ref<SystemManager>& systemManager) {
+  OX_SCOPED_ZONE;
+  imguiLayer->Begin();
+
+  auto frameAllocator = context->Begin();
+  const Ref rg = CreateRef<vuk::RenderGraph>("runner");
+  rg->attach_swapchain("_swp", context->swapchain);
+  rg->clear_image("_swp", "final_image", vuk::ClearColor{0.0f, 0.0f, 0.0f, 1.0f});
+
+  const auto rp = s_RendererContext.m_RenderPipeline;
+
+  vuk::Future fut = {};
+
+  // Render it directly to swapchain
+  if (rp->IsSwapchainAttached()) {
+    for (const auto& layer : layerStack)
+      layer->OnImGuiRender();
+    systemManager->OnImGuiRender();
+    imguiLayer->End();
+
+    fut = *rp->OnRender(frameAllocator, vuk::Future{rg, "final_image"});
+
+    fut = imguiLayer->RenderDrawData(frameAllocator, fut, ImGui::GetDrawData());
+  }
+  // Render it into a separate image with given dimension
+  else {
+    const auto rgx = CreateRef<vuk::RenderGraph>(rp->GetName().c_str());
+
+    const auto& dim = rp->GetDimension();
+
+    OX_CORE_ASSERT(dim.extent.height > 0)
+    OX_CORE_ASSERT(dim.extent.width > 0)
+
+    rgx->attach_and_clear_image("_img",
+      vuk::ImageAttachment{
+        .extent = dim,
+        .format = context->swapchain->format,
+        .sample_count = vuk::Samples::e1,
+        .level_count = 1,
+        .layer_count = 1
+      },
+      vuk::ClearColor(0.0f, 0.0f, 0.0f, 1.f)
+    );
+
+    auto rpFut = *rp->OnRender(frameAllocator, vuk::Future{rgx, "_img"});
+    const auto attachmentNameOut = rpFut.get_bound_name().name;
+
+    auto rpRg = rpFut.get_render_graph();
+
+    vuk::Compiler compiler;
+    compiler.compile({&rpRg, 1}, {});
+
+    rg->attach_in(attachmentNameOut, std::move(rpFut));
+
+    auto si = CreateRef<vuk::SampledImage>(make_sampled_image(vuk::NameReference{rg.get(), vuk::QualifiedName({}, attachmentNameOut)}, {}));
+    rp->SetFinalImage(si);
+
+    for (const auto& layer : layerStack)
+      layer->OnImGuiRender();
+
+    systemManager->OnImGuiRender();
+
+    imguiLayer->End();
+
+    fut = imguiLayer->RenderDrawData(frameAllocator, vuk::Future{rg, "final_image"}, ImGui::GetDrawData());
   }
 
-  void VulkanRenderer::SubmitOnce(vk::CommandPool commandPool, const std::function<void(VulkanCommandBuffer& cmdBuffer)>& submitFunc) {
-    VulkanCommandBuffer cmdBuffer;
-    cmdBuffer.CreateBuffer(commandPool);
-    cmdBuffer.Begin(vk::CommandBufferBeginInfo{vk::CommandBufferUsageFlagBits::eOneTimeSubmit});
-    submitFunc(cmdBuffer);
-    cmdBuffer.End();
-    cmdBuffer.FlushBuffer();
-    cmdBuffer.FreeBuffer();
-    CommandPoolManager::Get()->FreePool(commandPool);
-  }
+  context->End(fut, frameAllocator);
+}
 
-  void VulkanRenderer::SetCamera(Camera& camera) {
-    s_RendererContext.m_CurrentCamera = &camera;
-  }
+void VulkanRenderer::RenderNode(const Mesh::Node* node, vuk::CommandBuffer& commandBuffer, const std::function<bool(Mesh::Primitive* prim)>& perMeshFunc) {
+  for (const auto& part : node->Primitives) {
+    if (!perMeshFunc(part))
+      continue;
 
-  void VulkanRenderer::Draw() {
-    OX_SCOPED_ZONE;
-    if (!s_RendererContext.m_CurrentCamera) {
-      OX_CORE_ERROR("Renderer couldn't find a camera!");
-      return;
+    commandBuffer.draw_indexed(part->indexCount, 1, part->firstIndex, 0, 0);
+  }
+  for (const auto& child : node->Children) {
+    RenderNode(child, commandBuffer, perMeshFunc);
+  }
+}
+
+void VulkanRenderer::RenderMesh(const MeshData& mesh, vuk::CommandBuffer& commandBuffer, const std::function<bool(Mesh::Primitive* prim)>& perMeshFunc) {
+  mesh.MeshGeometry->BindVertexBuffer(commandBuffer);
+  mesh.MeshGeometry->BindIndexBuffer(commandBuffer);
+  RenderNode(mesh.MeshGeometry->LinearNodes[mesh.SubmeshIndex], commandBuffer, perMeshFunc);
+}
+
+std::pair<vuk::Unique<vuk::Image>, vuk::Future> VulkanRenderer::GenerateCubemapFromEquirectangular(const vuk::Texture& cubemap) {
+  auto& allocator = *VulkanContext::Get()->superframe_allocator;
+
+  vuk::Unique<vuk::Image> output;
+
+  constexpr auto size = 2048;
+  auto mipCount = (uint32_t)log2f((float)std::max(size, size)) + 1;
+
+  auto env_cubemap_ia = vuk::ImageAttachment{
+    .image = *output,
+    .image_flags = vuk::ImageCreateFlagBits::eCubeCompatible,
+    .image_type = vuk::ImageType::e2D,
+    .usage = vuk::ImageUsageFlagBits::eSampled | vuk::ImageUsageFlagBits::eColorAttachment | vuk::ImageUsageFlagBits::eTransferSrc | vuk::ImageUsageFlagBits::eTransferDst,
+    .extent = vuk::Dimension3D::absolute(size, size, 1),
+    .format = vuk::Format::eR32G32B32A32Sfloat,
+    .sample_count = vuk::Samples::e1,
+    .view_type = vuk::ImageViewType::eCube,
+    .base_level = 0,
+    .level_count = mipCount,
+    .base_layer = 0,
+    .layer_count = 6
+  };
+  output = *vuk::allocate_image(allocator, env_cubemap_ia);
+  env_cubemap_ia.image = *output;
+
+  vuk::PipelineBaseCreateInfo equirectangular_to_cubemap;
+  equirectangular_to_cubemap.add_glsl(*FileUtils::ReadShaderFile("Cubemap.vert"), "Cubemap.vert");
+  equirectangular_to_cubemap.add_glsl(*FileUtils::ReadShaderFile("EquirectangularToCubemap.frag"), "EquirectangularToCubemap.frag");
+  allocator.get_context().create_named_pipeline("equirectangular_to_cubemap", equirectangular_to_cubemap);
+
+  auto cube = AssetManager::GetMeshAsset(Resources::GetResourcesPath("Objects/cube.glb"));
+
+  const auto capture_projection = glm::perspective(glm::radians(90.0f), 1.0f, 0.1f, 10.0f);
+  const Mat4 capture_views[] = {
+    lookAt(Vec3(0.0f, 0.0f, 0.0f), Vec3(1.0f, 0.0f, 0.0f), Vec3(0.0f, -1.0f, 0.0f)),
+    lookAt(Vec3(0.0f, 0.0f, 0.0f), Vec3(-1.0f, 0.0f, 0.0f), Vec3(0.0f, -1.0f, 0.0f)),
+    lookAt(Vec3(0.0f, 0.0f, 0.0f), Vec3(0.0f, 1.0f, 0.0f), Vec3(0.0f, 0.0f, 1.0f)),
+    lookAt(Vec3(0.0f, 0.0f, 0.0f), Vec3(0.0f, -1.0f, 0.0f), Vec3(0.0f, 0.0f, -1.0f)),
+    lookAt(Vec3(0.0f, 0.0f, 0.0f), Vec3(0.0f, 0.0f, 1.0f), Vec3(0.0f, -1.0f, 0.0f)),
+    lookAt(Vec3(0.0f, 0.0f, 0.0f), Vec3(0.0f, 0.0f, -1.0f), Vec3(0.0f, -1.0f, 0.0f))
+  };
+
+  vuk::RenderGraph rg("cubegen");
+  rg.attach_image("hdr_texture", vuk::ImageAttachment::from_texture(cubemap), vuk::Access::eFragmentSampled);
+  rg.attach_image("env_cubemap", env_cubemap_ia, vuk::Access::eNone);
+  rg.add_pass({
+    .resources = {
+      "env_cubemap"_image >> vuk::eColorWrite,
+      "hdr_texture"_image >> vuk::eFragmentSampled
+    },
+    .execute = [=](vuk::CommandBuffer& cbuf) {
+      cbuf.set_viewport(0, vuk::Rect2D::framebuffer())
+          .set_scissor(0, vuk::Rect2D::framebuffer())
+          .broadcast_color_blend(vuk::BlendPreset::eOff)
+          .set_rasterization({})
+          .bind_image(0, 2, "hdr_texture")
+          .bind_sampler(0,
+             2,
+             vuk::SamplerCreateInfo{
+               .magFilter = vuk::Filter::eLinear,
+               .minFilter = vuk::Filter::eLinear,
+               .mipmapMode = vuk::SamplerMipmapMode::eLinear,
+               .addressModeU = vuk::SamplerAddressMode::eClampToEdge,
+               .addressModeV = vuk::SamplerAddressMode::eClampToEdge,
+               .addressModeW = vuk::SamplerAddressMode::eClampToEdge
+             })
+          .bind_graphics_pipeline("equirectangular_to_cubemap");
+
+      auto* projection = cbuf.map_scratch_buffer<glm::mat4>(0, 0);
+      *projection = capture_projection;
+      const auto view = cbuf.map_scratch_buffer<glm::mat4[6]>(0, 1);
+      memcpy(view, capture_views, sizeof(capture_views));
+
+      cube->BindVertexBuffer(cbuf);
+      cube->BindIndexBuffer(cbuf);
+      for (const auto& node : cube->Nodes) {
+        for (const auto& primitive : node->Primitives)
+          cbuf.draw_indexed(primitive->indexCount, 6, 0, 0, 0);
+      }
     }
+  });
 
-    if (!s_RendererContext.m_RenderGraph->Update(s_SwapChain, &s_SwapChain.CurrentFrame)) {
-      return;
-    }
-
-    s_SwapChain.SubmitPass([](const VulkanCommandBuffer& commandBuffer) {
-      OX_SCOPED_ZONE_N("Swapchain pass");
-      OX_TRACE_GPU(commandBuffer.Get(), "Swapchain Pass")
-      s_Pipelines.QuadPipeline.BindPipeline(commandBuffer.Get());
-      s_Pipelines.QuadPipeline.BindDescriptorSets(commandBuffer.Get(), {s_QuadDescriptorSet.Get()});
-      DrawFullscreenQuad(commandBuffer.Get());
-      //UI pass
-      Application::Get()->GetImGuiLayer()->RenderDrawData(commandBuffer.Get(), s_Pipelines.UIPipeline.Get());
-    })->Submit()->Present();
-  }
-
-  void VulkanRenderer::DrawFullscreenQuad(const vk::CommandBuffer& commandBuffer, const bool bindVertex) {
-    OX_SCOPED_ZONE;
-    if (bindVertex) {
-      constexpr vk::DeviceSize offsets[1] = {0};
-      commandBuffer.bindVertexBuffers(0, s_TriangleVertexBuffer.Get(), offsets);
-      commandBuffer.draw(3, 1, 0, 0);
-    }
-    else {
-      commandBuffer.draw(3, 1, 0, 0);
-    }
-  }
-
-  void VulkanRenderer::DrawIndexed(const vk::CommandBuffer& cmdBuffer,
-                                   const vk::Buffer& verticiesBuffer,
-                                   const vk::Buffer& indexBuffer,
-                                   uint32_t indexCount) {
-    OX_SCOPED_ZONE;
-    constexpr vk::DeviceSize offsets[1] = {0};
-    cmdBuffer.bindVertexBuffers(0, verticiesBuffer, offsets);
-    cmdBuffer.bindIndexBuffer(indexBuffer, 0, vk::IndexType::eUint32);
-    cmdBuffer.drawIndexed(indexCount, 1, 0, 0, 0);
-  }
-
-  void VulkanRenderer::OnResize() {
-    s_SwapChain.Resizing = true;
-  }
-
-  void VulkanRenderer::WaitDeviceIdle() {
-    const auto& LogicalDevice = VulkanContext::Context.Device;
-    VulkanUtils::CheckResult(LogicalDevice.waitIdle());
-  }
-
-  void VulkanRenderer::WaitGraphicsQueueIdle() {
-    VulkanUtils::CheckResult(VulkanContext::VulkanQueue.GraphicsQueue.waitIdle());
-  }
+  return {std::move(output), transition(vuk::Future{std::make_unique<vuk::RenderGraph>(std::move(rg)), "env_cubemap+"}, vuk::eFragmentSampled)};
+}
 }

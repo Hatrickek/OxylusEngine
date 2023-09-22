@@ -1,50 +1,39 @@
 #pragma once
 
-#include "Assets/Assets.h"
-
 #include <filesystem>
-#include <vector>
+#include <unordered_map>
+
+#include "Core/Base.h"
 
 namespace Oxylus {
-  struct VulkanImageDescription;
-  class VulkanImage;
-  class Material;
-  class Mesh;
+class TextureAsset;
+struct ImageCreateInfo;
+class Material;
+class Mesh;
 
-  class AssetManager {
-  public:
-    struct AssetsLibrary {
-      std::unordered_map<AssetHandle, Asset<Material>> MaterialAssets{};
-      std::unordered_map<AssetHandle, Asset<Mesh>>      MeshAssets{};
-      std::unordered_map<AssetHandle, Asset<VulkanImage>> ImageAssets{};
-    };
+class AssetManager {
+public:
+  using AssetID = std::string;
 
-    static std::filesystem::path GetAssetFileSystemPath(const std::filesystem::path& path);
+  static std::filesystem::path GetAssetFileSystemPath(const std::filesystem::path& path);
 
-    // Assumes the path already points to an existing asset file.
-    static Asset<VulkanImage> GetImageAsset(const std::string& path);
-    // Assumes the path already points to an existing asset file.
-    static Asset<VulkanImage> GetImageAsset(const VulkanImageDescription& description);
-    static Asset<VulkanImage> GetImageAsset(const AssetHandle handle) { return s_AssetsLibrary.ImageAssets[handle]; }
-    // Assumes the path already points to an existing asset file.
-    static Asset<Mesh> GetMeshAsset(const std::string& path, int32_t loadingFlags = 0);
-    static Asset<Mesh> GetMeshAsset(const AssetHandle handle) { return s_AssetsLibrary.MeshAssets[handle]; }
-    // Assumes the path already points to an existing asset file.
-    static Asset<Material> GetMaterialAsset(const std::string& path);
-    static Asset<Material> GetMaterialAsset(AssetHandle handle) { return s_AssetsLibrary.MaterialAssets[handle]; }
+  static Ref<TextureAsset> GetTextureAsset(const std::string& path);
+  static Ref<TextureAsset> GetTextureAsset(const std::string& name, void* initialData, size_t size);
+  static Ref<Mesh> GetMeshAsset(const std::string& path, int32_t loadingFlags = 0);
 
-    static const AssetsLibrary& GetAssetLibrary() { return s_AssetsLibrary; }
+  static void PackageAssets();
+  static void FreeUnusedAssets();
 
-    static void PackageAssets();
-    static void FreeUnusedAssets();
+private:
+  static struct AssetLibrary {
+    std::unordered_map<AssetID, Ref<TextureAsset>> m_TextureAssets = {};
+    std::unordered_map<AssetID, Ref<Mesh>> m_MeshAssets = {};
+  } s_Library;
 
-  private:
-    static Asset<VulkanImage> LoadImageAsset(const VulkanImageDescription& description);
-    static Asset<Mesh> LoadMeshAsset(const std::string& path, int32_t loadingFlags);
-    static Asset<Material> LoadMaterialAsset(const std::string& path);
+  static Ref<TextureAsset> LoadTextureAsset(const std::string& path);
+  static Ref<TextureAsset> LoadTextureAsset(const std::string& name, void* initialData, size_t size);
+  static Ref<Mesh> LoadMeshAsset(const std::string& path, int32_t loadingFlags);
 
-    static AssetsLibrary s_AssetsLibrary;
-
-    static std::mutex s_AssetMutex;
-  };
+  static std::mutex s_AssetMutex;
+};
 }
