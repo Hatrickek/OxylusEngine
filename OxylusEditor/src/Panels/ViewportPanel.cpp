@@ -25,6 +25,8 @@ void ViewportPanel::OnImGuiRender() {
   ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2{0, 0});
 
   if (OnBegin(flags)) {
+    ImVec2 startCursorPos = ImGui::GetCursorPos();
+
     const auto popupItemSpacing = ImGuiLayer::PopupItemSpacing;
     ImGui::PushStyleVar(ImGuiStyleVar_ItemSpacing, popupItemSpacing);
     if (ImGui::BeginPopupContextItem("RightClick")) {
@@ -75,9 +77,10 @@ void ViewportPanel::OnImGuiRender() {
     if (m_ViewportSize.x != m_ViewportPanelSize.x || m_ViewportSize.y != m_ViewportPanelSize.y) {
       m_ViewportSize = {m_ViewportPanelSize.x, m_ViewportPanelSize.y};
     }
+
     constexpr auto sixteenNineAR = 1.7777777f;
-    m_ViewportSize.x = m_ViewportSize.y * sixteenNineAR;
-    ImGui::SetCursorPosX((m_ViewportPanelSize.x - m_ViewportSize.x) * 0.5f);
+    const auto fixedWidth = m_ViewportSize.y * sixteenNineAR;
+    ImGui::SetCursorPosX((m_ViewportPanelSize.x - fixedWidth) * 0.5f);
 
     const auto dim = vuk::Dimension3D::absolute((uint32_t)m_ViewportPanelSize.x, (uint32_t)m_ViewportPanelSize.y);
     m_Scene->GetRenderer()->GetRenderPipeline()->DetachSwapchain(dim);
@@ -85,7 +88,7 @@ void ViewportPanel::OnImGuiRender() {
     const auto finalImage = m_Scene->GetRenderer()->GetRenderPipeline()->GetFinalImage();
 
     if (finalImage) {
-      IGUI::Image(*finalImage, ImVec2{m_ViewportSize.x, m_ViewportSize.y});
+      IGUI::Image(*finalImage, ImVec2{fixedWidth, m_ViewportSize.y});
     }
     else {
       const auto textWidth = ImGui::CalcTextSize("No render target!").x;
@@ -98,6 +101,102 @@ void ViewportPanel::OnImGuiRender() {
       m_SceneHierarchyPanel->DragDropTarget();
 
     DrawGizmos();
+
+    {
+      // Transform Gizmos Button Group
+      const float frameHeight = 1.3f * ImGui::GetFrameHeight();
+      const ImVec2 framePadding = ImGui::GetStyle().FramePadding;
+      const ImVec2 buttonSize = {frameHeight, frameHeight};
+      constexpr float buttonCount = 6.0f;
+      const ImVec2 gizmoPosition = {m_ViewportBounds[0].x + m_GizmoPosition.x, m_ViewportBounds[0].y + m_GizmoPosition.y};
+      const ImRect bb(gizmoPosition.x, gizmoPosition.y, gizmoPosition.x + buttonSize.x + 8, gizmoPosition.y + (buttonSize.y + 2) * (buttonCount + 0.5f));
+      ImVec4 frameColor = ImGui::GetStyleColorVec4(ImGuiCol_Tab);
+      frameColor.w = 0.5f;
+      ImGui::RenderFrame(bb.Min, bb.Max, ImGui::GetColorU32(frameColor), false, ImGui::GetStyle().FrameRounding);
+      const ImVec2 tempGizmoPosition = m_GizmoPosition;
+
+      ImGui::SetCursorPos({startCursorPos.x + tempGizmoPosition.x + framePadding.x, startCursorPos.y + tempGizmoPosition.y});
+      ImGui::BeginGroup();
+      {
+        ImGui::PushStyleVar(ImGuiStyleVar_FrameBorderSize, 0.0f);
+        ImGui::PushStyleVar(ImGuiStyleVar_ItemSpacing, {1, 1});
+
+        const ImVec2 draggerCursorPos = ImGui::GetCursorPos();
+        ImGui::SetCursorPosX(draggerCursorPos.x + framePadding.x);
+        ImGui::TextUnformatted(StringUtils::FromChar8T(ICON_MDI_DOTS_HORIZONTAL));
+        ImVec2 draggerSize = ImGui::CalcTextSize(StringUtils::FromChar8T(ICON_MDI_DOTS_HORIZONTAL));
+        draggerSize.x *= 2.0f;
+        ImGui::SetCursorPos(draggerCursorPos);
+        ImGui::InvisibleButton("GizmoDragger", draggerSize);
+        static ImVec2 lastMousePosition = ImGui::GetMousePos();
+        const ImVec2 mousePos = ImGui::GetMousePos();
+        if (ImGui::IsItemActive()) {
+          m_GizmoPosition.x += mousePos.x - lastMousePosition.x;
+          m_GizmoPosition.y += mousePos.y - lastMousePosition.y;
+        }
+        lastMousePosition = mousePos;
+
+        constexpr float alpha = 0.6f;
+        if (IGUI::ToggleButton(StringUtils::FromChar8T(ICON_MDI_AXIS_ARROW), m_GizmoType == ImGuizmo::TRANSLATE, buttonSize, alpha, alpha))
+          m_GizmoType = ImGuizmo::TRANSLATE;
+        if (IGUI::ToggleButton(StringUtils::FromChar8T(ICON_MDI_ROTATE_3D), m_GizmoType == ImGuizmo::ROTATE, buttonSize, alpha, alpha))
+          m_GizmoType = ImGuizmo::ROTATE;
+        if (IGUI::ToggleButton(StringUtils::FromChar8T(ICON_MDI_ARROW_EXPAND), m_GizmoType == ImGuizmo::SCALE, buttonSize, alpha, alpha))
+          m_GizmoType = ImGuizmo::SCALE;
+        if (IGUI::ToggleButton(StringUtils::FromChar8T(ICON_MDI_VECTOR_SQUARE), m_GizmoType == ImGuizmo::BOUNDS, buttonSize, alpha, alpha))
+          m_GizmoType = ImGuizmo::BOUNDS;
+        if (IGUI::ToggleButton(StringUtils::FromChar8T(ICON_MDI_ARROW_EXPAND_ALL), m_GizmoType == ImGuizmo::UNIVERSAL, buttonSize, alpha, alpha))
+          m_GizmoType = ImGuizmo::UNIVERSAL;
+        if (IGUI::ToggleButton(m_GizmoMode == ImGuizmo::WORLD ? StringUtils::FromChar8T(ICON_MDI_EARTH) : StringUtils::FromChar8T(ICON_MDI_EARTH_OFF), m_GizmoMode == ImGuizmo::WORLD, buttonSize, alpha, alpha))
+          m_GizmoMode = m_GizmoMode == ImGuizmo::LOCAL ? ImGuizmo::WORLD : ImGuizmo::LOCAL;
+
+        ImGui::PopStyleVar(2);
+      }
+      ImGui::EndGroup();
+    }
+
+    {
+      // Scene Button Group
+      const float frameHeight = 1.0f * ImGui::GetFrameHeight();
+      const ImVec2 buttonSize = {frameHeight, frameHeight};
+      constexpr float buttonCount = 3.0f;
+      const ImVec2 gizmoPosition = {m_ViewportBounds[0].x + startCursorPos.x + m_ViewportSize.x * 0.5f - 8.0f, m_ViewportBounds[0].y + 8.0f};
+      const auto width = gizmoPosition.x + (buttonSize.x + 12) * (buttonCount + 0.5f);
+      const ImRect bb(gizmoPosition.x, gizmoPosition.y, width, gizmoPosition.y + buttonSize.y + 8);
+      ImVec4 frameColor = ImGui::GetStyleColorVec4(ImGuiCol_Tab);
+      frameColor.w = 0.5f;
+      ImGui::RenderFrame(bb.Min, bb.Max, ImGui::GetColorU32(frameColor), false, 3.0f);
+
+      ImGui::SetCursorPos({startCursorPos.x + m_ViewportSize.x * 0.5f, startCursorPos.y + ImGui::GetStyle().FramePadding.y + 8.0f});
+      ImGui::BeginGroup();
+      {
+        ImGui::PushStyleVar(ImGuiStyleVar_FrameBorderSize, 0.0f);
+        ImGui::PushStyleVar(ImGuiStyleVar_ItemSpacing, {1, 1});
+
+        const ImVec2 buttonSize = {frameHeight * 1.5f, frameHeight};
+        const bool highlight = EditorLayer::Get()->m_SceneState == EditorLayer::SceneState::Play;
+        const char8_t* icon = EditorLayer::Get()->m_SceneState == EditorLayer::SceneState::Edit ? ICON_MDI_PLAY : ICON_MDI_STOP;
+        if (IGUI::ToggleButton(StringUtils::FromChar8T(icon), highlight, buttonSize)) {
+          if (EditorLayer::Get()->m_SceneState == EditorLayer::SceneState::Edit)
+            EditorLayer::Get()->OnScenePlay();
+          else if (EditorLayer::Get()->m_SceneState == EditorLayer::SceneState::Play)
+            EditorLayer::Get()->OnSceneStop();
+        }
+        ImGui::SameLine();
+        ImGui::PushStyleColor(ImGuiCol_Button, ImVec4(0.2f, 0.2f, 0.2f, 0.4f));
+        if (ImGui::Button(StringUtils::FromChar8T(ICON_MDI_PAUSE), buttonSize)) {
+          EditorLayer::Get()->OnSceneStop();
+        }
+        ImGui::SameLine();
+        if (ImGui::Button(StringUtils::FromChar8T(ICON_MDI_STEP_FORWARD), buttonSize)) {
+          EditorLayer::Get()->OnSceneSimulate();
+        }
+        ImGui::PopStyleColor();
+
+        ImGui::PopStyleVar(2);
+      }
+      ImGui::EndGroup();
+    }
 
     ImGui::PopStyleVar();
     OnEnd();
@@ -264,7 +363,7 @@ void ViewportPanel::DrawGizmos() {
     ImGuizmo::Manipulate(glm::value_ptr(cameraView),
       glm::value_ptr(cameraProjection),
       static_cast<ImGuizmo::OPERATION>(m_GizmoType),
-      ImGuizmo::WORLD,
+      static_cast<ImGuizmo::MODE>(m_GizmoMode),
       glm::value_ptr(transform),
       nullptr,
       snap ? snapValues : nullptr);

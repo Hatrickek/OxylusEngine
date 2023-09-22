@@ -497,7 +497,7 @@ void ContentPanel::RenderSideView() {
 void ContentPanel::RenderBody(bool grid) {
   std::filesystem::path directoryToOpen;
 
-  constexpr float padding = 4.0f;
+  constexpr float padding = 2.0f;
   const float scaledThumbnailSize = m_ThumbnailSize * ImGui::GetIO().FontGlobalScale;
   const float scaledThumbnailSizeX = scaledThumbnailSize * 0.55f;
   const float cellSize = scaledThumbnailSizeX + 2 * padding + scaledThumbnailSizeX * 0.1f;
@@ -506,7 +506,7 @@ void ContentPanel::RenderBody(bool grid) {
   constexpr float thumbnailPadding = overlayPaddingY * 0.5f;
   const float thumbnailSize = scaledThumbnailSizeX - thumbnailPadding;
 
-  const ImVec2 backgroundThumbnailSize = {scaledThumbnailSizeX + padding * 2, scaledThumbnailSize + padding * 2};
+  const ImVec2 backgroundThumbnailSize = {scaledThumbnailSizeX + padding * 2, scaledThumbnailSize};
 
   const float panelWidth = ImGui::GetContentRegionAvail().x - ImGui::GetStyle().ScrollbarSize;
   int columnCount = static_cast<int>(panelWidth / cellSize);
@@ -555,10 +555,8 @@ void ContentPanel::RenderBody(bool grid) {
           }
           else if (!textureCreated) {
             textureCreated = true;
-            file.Thumbnail = TextureAsset::GetPurpleTexture();
-            ThreadManager::Get()->AssetThread.QueueJob([&file] {
-              file.Thumbnail = AssetManager::GetTextureAsset(file.Filepath);
-            });
+            file.Thumbnail = TextureAsset::GetWhiteTexture();
+            file.Thumbnail = AssetManager::GetTextureAsset(file.Filepath);
             texture = file.Thumbnail;
           }
           else {
@@ -645,7 +643,7 @@ void ContentPanel::RenderBody(bool grid) {
         const ImVec2 rectMin = ImGui::GetItemRectMin();
         const ImVec2 rectSize = ImGui::GetItemRectSize();
         const ImRect clipRect = ImRect({rectMin.x + padding * 1.0f, rectMin.y + padding * 2.0f},
-          {rectMin.x + rectSize.x, rectMin.y + scaledThumbnailSizeX - ImGuiLayer::SmallFont->FontSize - padding * 4.0f});
+          {rectMin.x + rectSize.x, rectMin.y + scaledThumbnailSizeX - ImGuiLayer::SmallFont->FontSize - padding * 2.0f});
         IGUI::ClippedText(clipRect.Min, clipRect.Max, filename, nullptr, nullptr, {0, 0}, nullptr, clipRect.GetSize().x);
 
         if (!isDir) {

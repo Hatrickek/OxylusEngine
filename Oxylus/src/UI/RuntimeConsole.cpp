@@ -80,8 +80,8 @@ void RuntimeConsole::ClearLog() {
 void RuntimeConsole::OnImGuiRender(ImGuiWindowFlags windowFlags) {
   if (!Visible)
     return;
-  const auto name = fmt::format(" {} {}", StringUtils::FromChar8T(ICON_MDI_CONSOLE), PanelName);
-  if (ImGui::Begin(name.c_str(), nullptr, windowFlags)) {
+  const auto name = fmt::format(" {} {}\t\t###", StringUtils::FromChar8T(ICON_MDI_CONSOLE), PanelName);
+  if (ImGui::Begin(name.c_str(), &Visible, windowFlags)) {
     if (RenderMenuBar) {
       if (ImGui::BeginMenuBar()) {
         if (ImGui::MenuItem(StringUtils::FromChar8T(ICON_MDI_TRASH_CAN))) {

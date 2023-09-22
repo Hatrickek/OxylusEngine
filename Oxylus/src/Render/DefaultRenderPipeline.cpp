@@ -146,46 +146,14 @@ void DefaultRenderPipeline::InitRenderGraph() {
   }
 
   WaitForFutures(vkContext);
+}
 
-#if 0
-  /*const auto cacaoPass = m_RenderGraph->AddRenderPass<CACAOPass>("CACAOPass");
-  ctx.Output = &cacaoPass->AddStorageTextureOutput("CACAO-Output", info);
-  ctx.Depth = &cacaoPass->AddTextureInput("Depth-Output");
-  ctx.Normal = &cacaoPass->AddTextureInput("Normal-Output");*/
-
-  const auto ssrPass = m_RenderGraph->AddRenderPass<SSRPass>("SSRPass");
-  ssrPass->AddResource("SSR-Image"_image >> vuk::eComputeRW >> "SSR-Output");
-  ssrPass->AddResource("PBR-Output"_image >> vuk::eFragmentSampled);
-  ssrPass->AddResource("Depth-Output"_image >> vuk::eFragmentSampled);
-  ssrPass->AddResource("Normal-Ouput"_image >> vuk::eFragmentSampled);
-
-  /*const auto bloomPass = m_RenderGraph->AddRenderPass<BloomPass>("BloomPass", vuk::DomainFlagBits::eComputeOnGraphics);
-  bloomPass->AddResource("Bloom-Output"_image >> vuk::eColorRW);
-  bloomPass->SetInput(0,
-    RenderPassInput({
-      geometryPass->m_PBRPassFB->GetImage()[0],
-      bloomPass->m_BloomDownsampleImage,
-      bloomPass->m_BloomUpsampleImage
-    })
-  );
-  bloomPass->SetInput(1, {{bloomPass->m_BloomDownsampleImage}});
-  bloomPass->SetInput(2, {{bloomPass->m_BloomUpsampleImage}});
-  bloomPass->SetRunCondition(&RendererConfig::Get()->BloomConfig.Enabled);*/
-
-  /*const auto debugNDTPass = m_RenderGraph->AddRenderPass<DebugNDTPass>("DebugNDTPass");
-  debugNDTPass->AddResource("PBR-Output"_image >> vuk::eColorRW >> "PBR-Output+");*/
-
-  const auto compositePass = m_RenderGraph->AddRenderPass<CompositePass>("CompositePass");
-  compositePass->AddResource("Composite-Image"_image >> vuk::eComputeRW >> "Composite-Output");
-  compositePass->AddResource("PBR-Output"_image >> vuk::eFragmentSampled);
-  compositePass->AddResource("SSAO-Output"_image >> vuk::eFragmentSampled);
-  compositePass->AddResource("SSR-Output"_image >> vuk::eFragmentSampled);
-
-  const auto ppPass = m_RenderGraph->AddRenderPass<PPPass>("PPPass");
-  ppPass->AddResource("PP-Image"_image >> vuk::eColorRW >> "PP-Output");
-  ppPass->AddResource("Composite-Output"_image >> vuk::eFragmentSampled);
-
-#endif
+static uint32_t GetMaterialIndex(const std::unordered_map<uint32_t, uint32_t>& materialMap, uint32_t meshIndex, uint32_t materialIndex) {
+  uint32_t size = 0;
+  for (uint32_t i = 0; i < meshIndex; i++) {
+    size += materialMap.at(i);
+  }
+  return size + materialIndex;
 }
 
 Scope<vuk::Future> DefaultRenderPipeline::OnRender(vuk::Allocator& frameAllocator, const vuk::Future& target) {
@@ -205,9 +173,13 @@ Scope<vuk::Future> DefaultRenderPipeline::OnRender(vuk::Allocator& frameAllocato
 
   std::vector<Material::Parameters> materials = {};
 
-  for (auto& mesh : m_MeshDrawList) {
-    for (auto& mat : mesh.Materials)
+  std::unordered_map<uint32_t, uint32_t> materialMap; //mesh, material
+
+  for (uint32_t i = 0; i < (uint32_t)m_MeshDrawList.size(); i++) {
+    for (auto& mat : m_MeshDrawList[i].Materials) {
       materials.emplace_back(mat->m_Parameters);
+    }
+    materialMap.emplace(i, (uint32_t)m_MeshDrawList[i].Materials.size());
   }
 
   auto [matBuff, matBufferFut] = create_buffer(frameAllocator, vuk::MemoryUsage::eCPUtoGPU, vuk::DomainFlagBits::eTransferOnGraphics, std::span(materials));
@@ -219,7 +191,7 @@ Scope<vuk::Future> DefaultRenderPipeline::OnRender(vuk::Allocator& frameAllocato
       "Normal_Image"_image >> vuk::eColorRW >> "Normal_Output",
       "Depth_Image"_image >> vuk::eDepthStencilRW >> "Depth_Output"
     },
-    .execute = [this, vsBuffer, matBuffer](vuk::CommandBuffer& commandBuffer) {
+    .execute = [this, vsBuffer, matBuffer, materialMap](vuk::CommandBuffer& commandBuffer) {
       commandBuffer.set_viewport(0, vuk::Rect2D::framebuffer())
                    .set_scissor(0, vuk::Rect2D::framebuffer())
                    .broadcast_color_blend(vuk::BlendPreset::eOff)
@@ -233,14 +205,16 @@ Scope<vuk::Future> DefaultRenderPipeline::OnRender(vuk::Allocator& frameAllocato
                    .bind_buffer(0, 0, vsBuffer)
                    .bind_buffer(2, 0, matBuffer);
 
-      for (const auto& mesh : m_MeshDrawList) {
+      for (uint32_t i = 0; i < m_MeshDrawList.size(); i++) {
+        auto& mesh = m_MeshDrawList[i];
+
         VulkanRenderer::RenderMesh(mesh,
           commandBuffer,
-          [&mesh, &commandBuffer](const Mesh::Primitive* part) {
+          [&mesh, &commandBuffer, i, materialMap](const Mesh::Primitive* part) {
             const auto& material = mesh.Materials[part->materialIndex];
 
             commandBuffer.push_constants(vuk::ShaderStageFlagBits::eVertex | vuk::ShaderStageFlagBits::eFragment, 0, mesh.Transform)
-                         .push_constants(vuk::ShaderStageFlagBits::eFragment, sizeof(glm::mat4), part->materialIndex)
+                         .push_constants(vuk::ShaderStageFlagBits::eFragment, sizeof(glm::mat4), GetMaterialIndex(materialMap, i, part->materialIndex))
                          .bind_sampler(1, 0, vuk::LinearSamplerRepeated)
                          .bind_image(1, 0, *material->NormalTexture->GetTexture().view)
                          .bind_sampler(1, 1, vuk::LinearSamplerRepeated)
@@ -328,7 +302,7 @@ Scope<vuk::Future> DefaultRenderPipeline::OnRender(vuk::Allocator& frameAllocato
   rg->add_pass({
     .name = "GeomertyPass",
     .resources = {"PBR_Image"_image >> vuk::eColorRW >> "PBR_Output", "PBR_Depth"_image >> vuk::eDepthStencilRW, "ShadowArray_Output"_image >> vuk::eFragmentSampled},
-    .execute = [this, vsBuffer, pointLightsBuffer, shadowBuffer, pbrBuffer, matBuffer](vuk::CommandBuffer& commandBuffer) {
+    .execute = [this, vsBuffer, pointLightsBuffer, shadowBuffer, pbrBuffer, matBuffer, materialMap](vuk::CommandBuffer& commandBuffer) {
       // Skybox pass
       struct SkyboxPushConstant {
         Mat4 View;
@@ -423,7 +397,8 @@ Scope<vuk::Future> DefaultRenderPipeline::OnRender(vuk::Allocator& frameAllocato
                    .bind_buffer(2, 0, matBuffer);
 
       // PBR pipeline
-      for (const auto& mesh : m_MeshDrawList) {
+      for (uint32_t i = 0; i < m_MeshDrawList.size(); i++) {
+        auto& mesh = m_MeshDrawList[i];
         VulkanRenderer::RenderMesh(mesh,
           commandBuffer,
           [&](const Mesh::Primitive* part) {
@@ -434,7 +409,7 @@ Scope<vuk::Future> DefaultRenderPipeline::OnRender(vuk::Allocator& frameAllocato
             }
 
             commandBuffer.push_constants(vuk::ShaderStageFlagBits::eVertex | vuk::ShaderStageFlagBits::eFragment, 0, mesh.Transform)
-                         .push_constants(vuk::ShaderStageFlagBits::eFragment, sizeof(glm::mat4), part->materialIndex);
+                         .push_constants(vuk::ShaderStageFlagBits::eFragment, sizeof(glm::mat4), GetMaterialIndex(materialMap, i, part->materialIndex));
 
             material->BindTextures(commandBuffer);
             return true;
