@@ -291,7 +291,7 @@ void EditorLayer::OnImGuiRender() {
         const bool highlight = m_SceneState == SceneState::Play;
         ImGui::SetCursorPos(ImVec2((float)Window::GetWidth() * 0.5f, 0));
         const char8_t* icon = m_SceneState == SceneState::Edit ? ICON_MDI_PLAY : ICON_MDI_STOP;
-        if (IGUI::ToggleButton(StringUtils::FromChar8T(icon), highlight, ImVec4(0.2f, 0.2f, 0.2f, 0.4f), buttonSize)) {
+        if (IGUI::ToggleButton(StringUtils::FromChar8T(icon), highlight, buttonSize)) {
           if (m_SceneState == SceneState::Edit)
             OnScenePlay();
           else if (m_SceneState == SceneState::Play)

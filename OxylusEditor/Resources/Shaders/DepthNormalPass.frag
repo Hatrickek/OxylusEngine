@@ -26,7 +26,7 @@ void main() {
     roughness = 1.0 - texture(in_PhysicalMap, in_UV * mat.UVScale).g;
     roughness *= mat.Roughness;
   } else {
-    // roughness = 1.0 - mat.Roughness;
+    roughness = 1.0 - mat.Roughness;
   }
   
   out_Normal = vec4(normalize(normal * 0.5 + 0.5), roughness);

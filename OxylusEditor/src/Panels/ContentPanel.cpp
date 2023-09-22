@@ -257,7 +257,7 @@ std::pair<bool, uint32_t> ContentPanel::DirectoryTreeViewRecursive(const std::fi
 }
 
 ContentPanel::ContentPanel() : EditorPanel("Contents", ICON_MDI_FOLDER_STAR, true) {
-  m_WhiteTexture = TextureAsset::GetBlankTexture();
+  m_WhiteTexture = TextureAsset::GetWhiteTexture();
 
   m_FileIcon = CreateRef<TextureAsset>();
   m_FileIcon->Load(Resources::GetResourcesPath("Icons/FileIcon.png"));
@@ -555,7 +555,7 @@ void ContentPanel::RenderBody(bool grid) {
           }
           else if (!textureCreated) {
             textureCreated = true;
-            file.Thumbnail = TextureAsset::GetBlankTexture();
+            file.Thumbnail = TextureAsset::GetPurpleTexture();
             ThreadManager::Get()->AssetThread.QueueJob([&file] {
               file.Thumbnail = AssetManager::GetTextureAsset(file.Filepath);
             });
@@ -590,7 +590,7 @@ void ContentPanel::RenderBody(bool grid) {
         // Background button
         static std::string id = "###";
         id[2] = static_cast<char>(i);
-        bool const clicked = IGUI::ToggleButton(id.c_str(), highlight, ImVec4(0.1f, 0.1f, 0.1f, 0.7f), backgroundThumbnailSize, 0.1f);
+        bool const clicked = IGUI::ToggleButton(id.c_str(), highlight, backgroundThumbnailSize, 0.1f);
         if (m_ElapsedTime > 0.25f && clicked) {
           EditorLayer::Get()->SetContextAsFileWithPath(strPath);
         }

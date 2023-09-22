@@ -20,7 +20,7 @@ std::pair<vuk::Unique<vuk::Image>, vuk::Future> Prefilter::GenerateBRDFLUT() {
   vuk::PipelineBaseCreateInfo pci;
   pci.add_glsl(FileUtils::ReadShaderFile("GenBrdfLut.vert")->c_str(), "GenBrdfLut.vert");
   pci.add_glsl(FileUtils::ReadShaderFile("GenBrdfLut.frag")->c_str(), "GenBrdfLut.frag");
-  vkContext->context->create_named_pipeline("BRDFLUTPipeline", pci);
+  vkContext->Context->create_named_pipeline("BRDFLUTPipeline", pci);
 
   vuk::Unique<vuk::Image> brdfImage;
 
@@ -38,7 +38,7 @@ std::pair<vuk::Unique<vuk::Image>, vuk::Future> Prefilter::GenerateBRDFLUT() {
     .layer_count = 1
   };
 
-  brdfImage = *allocate_image(*vkContext->superframe_allocator, attachment);
+  brdfImage = *allocate_image(*vkContext->SuperframeAllocator, attachment);
   attachment.image = *brdfImage;
 
   vuk::RenderGraph rg("BRDFLUT");
@@ -91,7 +91,7 @@ std::pair<vuk::Unique<vuk::Image>, vuk::Future> Prefilter::GenerateIrradianceCub
   vuk::PipelineBaseCreateInfo pci;
   pci.add_glsl(FileUtils::ReadShaderFile("Cubemap.vert")->c_str(), "Cubemap.vert");
   pci.add_glsl(FileUtils::ReadShaderFile("IrradianceCube.frag")->c_str(), "IrradianceCube.frag");
-  vkContext->context->create_named_pipeline(pipelineName, pci);
+  vkContext->Context->create_named_pipeline(pipelineName, pci);
   //}
 
   vuk::Unique<vuk::Image> irradianceImage;
@@ -110,7 +110,7 @@ std::pair<vuk::Unique<vuk::Image>, vuk::Future> Prefilter::GenerateIrradianceCub
     .base_layer = 0,
     .layer_count = 6
   };
-  irradianceImage = *allocate_image(*vkContext->superframe_allocator, irradianceIA);
+  irradianceImage = *allocate_image(*vkContext->SuperframeAllocator, irradianceIA);
   irradianceIA.image = *irradianceImage;
 
   vuk::RenderGraph rg("Irradiance");
@@ -158,7 +158,7 @@ std::pair<vuk::Unique<vuk::Image>, vuk::Future> Prefilter::GeneratePrefilteredCu
   vuk::PipelineBaseCreateInfo pci;
   pci.add_glsl(FileUtils::ReadShaderFile("Cubemap.vert")->c_str(), "Cubemap.vert");
   pci.add_glsl(FileUtils::ReadShaderFile("PrefilterEnvMap.frag")->c_str(), "PrefilterEnvMap.frag");
-  vkContext->context->create_named_pipeline(pipelineName, pci);
+  vkContext->Context->create_named_pipeline(pipelineName, pci);
   //}
 
   struct PushBlock {
@@ -192,7 +192,7 @@ std::pair<vuk::Unique<vuk::Image>, vuk::Future> Prefilter::GeneratePrefilteredCu
     .base_layer = 0,
     .layer_count = 6
   };
-  prefilterImage = *allocate_image(*vkContext->superframe_allocator, prefilterIA);
+  prefilterImage = *allocate_image(*vkContext->SuperframeAllocator, prefilterIA);
   prefilterIA.image = *prefilterImage;
 
   vuk::RenderGraph rg("Prefilter");

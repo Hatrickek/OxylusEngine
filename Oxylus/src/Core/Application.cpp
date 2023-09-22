@@ -69,7 +69,7 @@ void Application::Run() {
   while (m_IsRunning) {
     Window::UpdateWindow();
 
-    while (VulkanContext::Get()->suspend) {
+    while (VulkanContext::Get()->Suspend) {
       Window::WaitForEvents();
     }
 

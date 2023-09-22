@@ -34,8 +34,6 @@ if (ENABLE_ASAN)
     add_link_options(-fsanitize=address)
 endif()
 
-option(SHADERC_FROM_SDK "Get shaderc from Vulkan SDK instead of building it from source" OFF)
-
 # Sub-projects
 add_subdirectory(Oxylus)
 add_subdirectory(OxylusEditor)

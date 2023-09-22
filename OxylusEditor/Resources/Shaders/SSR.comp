@@ -32,7 +32,7 @@ vec3 ViewToNDC(vec3 viewPos);
 vec3 NDCToView(vec3 ndc);
 
 vec3 prefilteredReflection(vec3 R, float roughness) {
-  const float MAX_REFLECTION_LOD = 9.0; // todo: param/const
+  const float MAX_REFLECTION_LOD = 9.0;
   float lod = roughness * MAX_REFLECTION_LOD;
   float lodf = floor(lod);
   float lodc = ceil(lod);

@@ -157,12 +157,10 @@ public:
 
   static bool ToggleButton(const char* label,
                            bool state,
-                           ImVec4 defaultColor = ImVec4(),
                            ImVec2 size = {0, 0},
+                           float alpha = 1.0f,
                            float pressedAlpha = 1.0f,
                            ImGuiButtonFlags buttonFlags = ImGuiButtonFlags_None);
-
-  static bool ToggleButton(const char* label, bool state, ImVec2 size = {0, 0}, float alpha = 1.0f, float pressedAlpha = 1.0f, ImGuiButtonFlags buttonFlags = ImGuiButtonFlags_None);
 
   static ImVec2 GetIconButtonSize(const char8_t* icon, const char* label);
 

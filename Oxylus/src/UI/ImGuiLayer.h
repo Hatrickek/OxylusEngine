@@ -20,7 +20,6 @@ public:
     std::unique_ptr<vuk::SampledImage> font_si;
   };
 
-  int SelectedTheme = 0;
   static ImFont* BoldFont;
   static ImFont* RegularFont;
   static ImFont* SmallFont;
@@ -50,18 +49,17 @@ public:
   vuk::SampledImage* AddSampledImage(const vuk::SampledImage& sampledImage);
 
   ImGuiIO* GetImGuiIO() const { return m_ImGuiIO; }
-  void SetTheme(int index);
+  static void ApplyTheme(bool dark = true);
+  static void SetStyle();
 
   plf::colony<vuk::SampledImage> m_SampledImages;
 private:
   ImGuiData m_ImGuiData;
-
   ImGuiIO* m_ImGuiIO = nullptr;
 
   void InitForVulkan();
   void AddIconFont(float fontSize);
   ImGuiData ImGui_ImplVuk_Init(vuk::Allocator& allocator) const;
 
-  void ImGuiDarkTheme();
 };
 }

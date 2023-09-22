@@ -118,28 +118,28 @@ void VulkanContext::CreateContext(const AppSpec& spec) {
     OX_CORE_ERROR("Couldn't initialise instance");
   }
 
-  vkbinstance = inst_ret.value();
-  auto instance = vkbinstance.instance;
-  vkb::PhysicalDeviceSelector selector{vkbinstance};
+  VkbInstance = inst_ret.value();
+  auto instance = VkbInstance.instance;
+  vkb::PhysicalDeviceSelector selector{VkbInstance};
   VkSurfaceKHR surface;
   glfwSetWindowUserPointer(Window::GetGLFWWindow(), this);
   glfwSetWindowSizeCallback(Window::GetGLFWWindow(),
     [](GLFWwindow* window, int width, int height) {
       VulkanContext& runner = *reinterpret_cast<VulkanContext*>(glfwGetWindowUserPointer(window));
       if (width == 0 && height == 0) {
-        runner.suspend = true;
+        runner.Suspend = true;
       }
       else {
         Window::GetWindowExtent().height = height;
         Window::GetWindowExtent().width = width;
-        runner.superframe_allocator->deallocate(std::span{&runner.swapchain->swapchain, 1});
-        runner.superframe_allocator->deallocate(runner.swapchain->image_views);
-        runner.context->remove_swapchain(runner.swapchain);
-        runner.swapchain = runner.context->add_swapchain(MakeSwapchain(runner.vkbdevice, runner.swapchain->swapchain));
-        for (auto& iv : runner.swapchain->image_views) {
-          runner.context->set_name(iv.payload, "Swapchain ImageView");
+        runner.SuperframeAllocator->deallocate(std::span{&runner.Swapchain->swapchain, 1});
+        runner.SuperframeAllocator->deallocate(runner.Swapchain->image_views);
+        runner.Context->remove_swapchain(runner.Swapchain);
+        runner.Swapchain = runner.Context->add_swapchain(MakeSwapchain(runner.VkbDevice, runner.Swapchain->swapchain));
+        for (auto& iv : runner.Swapchain->image_views) {
+          runner.Context->set_name(iv.payload, "Swapchain ImageView");
         }
-        runner.suspend = false;
+        runner.Suspend = false;
       }
     });
   glfwCreateWindowSurface(instance, Window::GetGLFWWindow(), nullptr, &surface);
@@ -152,8 +152,8 @@ void VulkanContext::CreateContext(const AppSpec& spec) {
   auto phys_ret = selector.select();
   vkb::PhysicalDevice vkbphysical_device;
   if (!phys_ret) {
-    hasRT = false;
-    vkb::PhysicalDeviceSelector selector2{vkbinstance};
+    HasRt = false;
+    vkb::PhysicalDeviceSelector selector2{VkbInstance};
     selector2.set_surface(surface).set_minimum_version(1, 0).add_required_extension(VK_KHR_SYNCHRONIZATION_2_EXTENSION_NAME);
     auto phys_ret2 = selector2.select();
     if (!phys_ret2) {
@@ -167,7 +167,7 @@ void VulkanContext::CreateContext(const AppSpec& spec) {
     vkbphysical_device = phys_ret.value();
   }
 
-  physical_device = vkbphysical_device.physical_device;
+  PhysicalDevice = vkbphysical_device.physical_device;
   vkb::DeviceBuilder device_builder{vkbphysical_device};
   VkPhysicalDeviceVulkan12Features vk12features{.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_VULKAN_1_2_FEATURES};
   vk12features.timelineSemaphore = true;
@@ -200,53 +200,56 @@ void VulkanContext::CreateContext(const AppSpec& spec) {
     .rayTracingPipeline = true
   };
   device_builder = device_builder.add_pNext(&vk12features).add_pNext(&vk11features).add_pNext(&sync_feat).add_pNext(&accelFeature).add_pNext(&vk10features);
-  if (hasRT) {
+  if (HasRt) {
     device_builder = device_builder.add_pNext(&rtPipelineFeature);
   }
   auto dev_ret = device_builder.build();
   if (!dev_ret) {
     OX_CORE_ERROR("Couldn't create device");
   }
-  vkbdevice = dev_ret.value();
-  graphics_queue = vkbdevice.get_queue(vkb::QueueType::graphics).value();
-  auto graphics_queue_family_index = vkbdevice.get_queue_index(vkb::QueueType::graphics).value();
-  transfer_queue = vkbdevice.get_queue(vkb::QueueType::transfer).value();
-  auto transfer_queue_family_index = vkbdevice.get_queue_index(vkb::QueueType::transfer).value();
-  device = vkbdevice.device;
+  VkbDevice = dev_ret.value();
+  GraphicsQueue = VkbDevice.get_queue(vkb::QueueType::graphics).value();
+  auto graphics_queue_family_index = VkbDevice.get_queue_index(vkb::QueueType::graphics).value();
+  TransferQueue = VkbDevice.get_queue(vkb::QueueType::transfer).value();
+  auto transfer_queue_family_index = VkbDevice.get_queue_index(vkb::QueueType::transfer).value();
+  Device = VkbDevice.device;
   vuk::ContextCreateParameters::FunctionPointers fps;
-  fps.vkGetInstanceProcAddr = vkbinstance.fp_vkGetInstanceProcAddr;
-  fps.vkGetDeviceProcAddr = vkbinstance.fp_vkGetDeviceProcAddr;
-  context.emplace(vuk::ContextCreateParameters{
+  fps.vkGetInstanceProcAddr = VkbInstance.fp_vkGetInstanceProcAddr;
+  fps.vkGetDeviceProcAddr = VkbInstance.fp_vkGetDeviceProcAddr;
+  Context.emplace(vuk::ContextCreateParameters{
     instance,
-    device,
-    physical_device,
-    graphics_queue,
+    Device,
+    PhysicalDevice,
+    GraphicsQueue,
     graphics_queue_family_index,
     VK_NULL_HANDLE,
     VK_QUEUE_FAMILY_IGNORED,
-    transfer_queue,
+    TransferQueue,
     transfer_queue_family_index,
     fps
   });
   constexpr unsigned num_inflight_frames = 3;
-  superframe_resource.emplace(*context, num_inflight_frames);
-  superframe_allocator.emplace(*superframe_resource);
-  swapchain = context->add_swapchain(MakeSwapchain(vkbdevice, {}));
-  present_ready = vuk::Unique<std::array<VkSemaphore, 3>>(*superframe_allocator);
-  render_complete = vuk::Unique<std::array<VkSemaphore, 3>>(*superframe_allocator);
+  SuperframeResource.emplace(*Context, num_inflight_frames);
+  SuperframeAllocator.emplace(*SuperframeResource);
+  Swapchain = Context->add_swapchain(MakeSwapchain(VkbDevice, {}));
+  PresentReady = vuk::Unique<std::array<VkSemaphore, 3>>(*SuperframeAllocator);
+  RenderComplete = vuk::Unique<std::array<VkSemaphore, 3>>(*SuperframeAllocator);
 
-  superframe_allocator->allocate_semaphores(*present_ready);
-  superframe_allocator->allocate_semaphores(*render_complete);
+  SuperframeAllocator->allocate_semaphores(*PresentReady);
+  SuperframeAllocator->allocate_semaphores(*RenderComplete);
 
   VkPhysicalDeviceProperties properties;
-  vkGetPhysicalDeviceProperties(physical_device, &properties);
+  vkGetPhysicalDeviceProperties(PhysicalDevice, &properties);
+
+  DeviceName = properties.deviceName;
+  DriverVersion = properties.driverVersion;
 
   OX_CORE_TRACE("Vulkan context initialized using device: {}", properties.deviceName);
 }
 
 vuk::Allocator VulkanContext::Begin() {
-  auto& frame_resource = superframe_resource->get_next_frame();
-  context->next_frame();
+  auto& frame_resource = SuperframeResource->get_next_frame();
+  Context->next_frame();
   const vuk::Allocator frameAllocator(frame_resource);
 
   return frameAllocator;
@@ -258,8 +261,8 @@ void VulkanContext::End(const vuk::Future& src, vuk::Allocator frameAllocator) {
   rg_p->release_for_present("_src");
   vuk::Compiler compiler;
   auto erg = *compiler.link(std::span{&rg_p, 1}, {});
-  m_Bundle = *acquire_one(*context, swapchain, (*present_ready)[context->get_frame_count() % 3], (*render_complete)[context->get_frame_count() % 3]);
+  m_Bundle = *acquire_one(*Context, Swapchain, (*PresentReady)[Context->get_frame_count() % 3], (*RenderComplete)[Context->get_frame_count() % 3]);
   auto result = *execute_submit(frameAllocator, std::move(erg), std::move(m_Bundle));
-  vuk::present_to_one(*context, std::move(result));
+  vuk::present_to_one(*Context, std::move(result));
 }
 }

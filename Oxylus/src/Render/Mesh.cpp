@@ -116,14 +116,14 @@ void Mesh::LoadFromFile(const std::string& path, int fileLoadingFlags, const flo
   auto context = VulkanContext::Get();
   auto compiler = vuk::Compiler{};
 
-  auto [vBuffer, vBufferFut] = create_buffer(*context->superframe_allocator, vuk::MemoryUsage::eGPUonly, vuk::DomainFlagBits::eTransferOnGraphics, std::span(m_Vertices));
+  auto [vBuffer, vBufferFut] = create_buffer(*context->SuperframeAllocator, vuk::MemoryUsage::eGPUonly, vuk::DomainFlagBits::eTransferOnGraphics, std::span(m_Vertices));
 
-  vBufferFut.wait(*context->superframe_allocator, compiler);
+  vBufferFut.wait(*context->SuperframeAllocator, compiler);
   m_VerticiesBuffer = std::move(vBuffer);
 
-  auto [iBuffer, iBufferFut] = create_buffer(*context->superframe_allocator, vuk::MemoryUsage::eGPUonly, vuk::DomainFlagBits::eTransferOnGraphics, std::span(m_Indices));
+  auto [iBuffer, iBufferFut] = create_buffer(*context->SuperframeAllocator, vuk::MemoryUsage::eGPUonly, vuk::DomainFlagBits::eTransferOnGraphics, std::span(m_Indices));
 
-  iBufferFut.wait(*context->superframe_allocator, compiler);
+  iBufferFut.wait(*context->SuperframeAllocator, compiler);
   m_IndiciesBuffer = std::move(iBuffer);
 
   m_Vertices.clear();

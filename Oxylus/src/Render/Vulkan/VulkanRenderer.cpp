@@ -29,6 +29,7 @@ void VulkanRenderer::Init() {
   RendererConfig::Get()->ConfigChangeDispatcher.trigger(RendererConfig::ConfigChangeEvent{});
 
   TextureAsset::CreateBlankTexture();
+  TextureAsset::CreateWhiteTexture();
 
   // Debug renderer
   DebugRenderer::Init();
@@ -63,7 +64,7 @@ void VulkanRenderer::Draw(VulkanContext* context, ImGuiLayer* imguiLayer, LayerS
 
   auto frameAllocator = context->Begin();
   const Ref rg = CreateRef<vuk::RenderGraph>("runner");
-  rg->attach_swapchain("_swp", context->swapchain);
+  rg->attach_swapchain("_swp", context->Swapchain);
   rg->clear_image("_swp", "final_image", vuk::ClearColor{0.0f, 0.0f, 0.0f, 1.0f});
 
   const auto rp = s_RendererContext.m_RenderPipeline;
@@ -93,7 +94,7 @@ void VulkanRenderer::Draw(VulkanContext* context, ImGuiLayer* imguiLayer, LayerS
     rgx->attach_and_clear_image("_img",
       vuk::ImageAttachment{
         .extent = dim,
-        .format = context->swapchain->format,
+        .format = context->Swapchain->format,
         .sample_count = vuk::Samples::e1,
         .level_count = 1,
         .layer_count = 1
@@ -146,7 +147,7 @@ void VulkanRenderer::RenderMesh(const MeshData& mesh, vuk::CommandBuffer& comman
 }
 
 std::pair<vuk::Unique<vuk::Image>, vuk::Future> VulkanRenderer::GenerateCubemapFromEquirectangular(const vuk::Texture& cubemap) {
-  auto& allocator = *VulkanContext::Get()->superframe_allocator;
+  auto& allocator = *VulkanContext::Get()->SuperframeAllocator;
 
   vuk::Unique<vuk::Image> output;
 

@@ -4,6 +4,7 @@
 
 #include "imgui.h"
 #include "Core/Application.h"
+#include "Render/Vulkan/VulkanContext.h"
 #include "Render/Vulkan/VulkanRenderer.h"
 #include "UI/IGUI.h"
 
@@ -25,9 +26,9 @@ namespace Oxylus {
         avg += frameTime;
       }
       avg /= (float)size;
-      ImGui::Text("FPS: %lf", static_cast<double>(avg));
       const double fps = (1.0 / static_cast<double>(avg)) * 1000.0;
-      ImGui::Text("Frame time (ms): %lf", fps);
+      ImGui::Text("FPS: %lf / (ms): %lf", static_cast<double>(avg), fps);
+      ImGui::Text("GPU: %s", VulkanContext::Get()->DeviceName.c_str());
 
       ImGui::Text("Environment");
       IGUI::BeginProperties();

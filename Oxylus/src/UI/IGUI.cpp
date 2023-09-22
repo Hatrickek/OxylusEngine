@@ -136,7 +136,7 @@ bool IGUI::Property(const char* label, Ref<TextureAsset>& texture, uint64_t over
   ImGui::PushStyleColor(ImGuiCol_ButtonHovered, ImVec4{0.3f, 0.3f, 0.3f, 1.0f});
   ImGui::PushStyleColor(ImGuiCol_ButtonActive, ImVec4{0.2f, 0.2f, 0.2f, 1.0f});
   if (ImGui::Button("x", xButtonSize)) {
-    texture = TextureAsset::GetBlankTexture();
+    texture = TextureAsset::GetPurpleTexture();
     changed = true;
   }
   ImGui::PopStyleColor(3);
@@ -251,37 +251,6 @@ bool IGUI::DrawVec3Control(const char* label, glm::vec3& values, const char* too
   EndPropertyGrid();
 
   return changed;
-}
-
-bool IGUI::ToggleButton(const char* label,
-                        bool state,
-                        ImVec4 defaultColor,
-                        ImVec2 size,
-                        float pressedAlpha,
-                        ImGuiButtonFlags buttonFlags) {
-  if (state) {
-    ImVec4 color = ImGui::GetStyle().Colors[ImGuiCol_ButtonActive];
-
-    color.w = pressedAlpha;
-    ImGui::PushStyleColor(ImGuiCol_Button, color);
-    ImGui::PushStyleColor(ImGuiCol_ButtonHovered, color);
-    ImGui::PushStyleColor(ImGuiCol_ButtonActive, color);
-  }
-  else {
-    ImVec4 color = defaultColor;
-    ImVec4 hoveredColor = ImGui::GetStyle().Colors[ImGuiCol_ButtonHovered];
-    hoveredColor.w = pressedAlpha;
-    ImGui::PushStyleColor(ImGuiCol_Button, color);
-    ImGui::PushStyleColor(ImGuiCol_ButtonHovered, hoveredColor);
-    color.w = pressedAlpha;
-    ImGui::PushStyleColor(ImGuiCol_ButtonActive, color);
-  }
-
-  const bool clicked = ImGui::ButtonEx(label, size, buttonFlags);
-
-  ImGui::PopStyleColor(3);
-
-  return clicked;
 }
 
 bool IGUI::ToggleButton(const char* label, bool state, ImVec2 size, float alpha, float pressedAlpha, ImGuiButtonFlags buttonFlags) {

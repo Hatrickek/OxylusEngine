@@ -9,7 +9,8 @@
 #include "Utils/FileSystem.h"
 
 namespace Oxylus {
-Ref<TextureAsset> TextureAsset::s_BlankTexture = nullptr;
+Ref<TextureAsset> TextureAsset::s_PurpleTexture = nullptr;
+Ref<TextureAsset> TextureAsset::s_WhiteTexture = nullptr;
 
 TextureAsset::TextureAsset(const std::string& path) {
   Load(path);
@@ -21,15 +22,12 @@ TextureAsset::TextureAsset(void* initialData, const size_t size) {
 
 TextureAsset::~TextureAsset() = default;
 
-void TextureAsset::CreateImage(uint32_t x, uint32_t y, uint8_t* data) {
-  auto [tex, tex_fut] = create_texture(*VulkanContext::Get()->superframe_allocator, vuk::Format::eR8G8B8A8Srgb, vuk::Extent3D{x, y, 1u}, data, true);
+void TextureAsset::CreateImage(uint32_t x, uint32_t y, void* data) {
+  auto [tex, tex_fut] = create_texture(*VulkanContext::Get()->SuperframeAllocator, vuk::Format::eR8G8B8A8Srgb, vuk::Extent3D{x, y, 1u}, data, true);
   m_Texture = std::move(tex);
 
-  // TODO(hatrickek): Maybe give the future back for multithreaded loading
-  // But the most time consuming part of this function is reading the data anyways.
-
   vuk::Compiler compiler;
-  tex_fut.wait(*VulkanContext::Get()->superframe_allocator, compiler);
+  tex_fut.wait(*VulkanContext::Get()->SuperframeAllocator, compiler);
 }
 
 void TextureAsset::Load(const std::string& path) {
@@ -43,8 +41,8 @@ void TextureAsset::Load(const std::string& path) {
   if (FileSystem::GetFileExtension(path) == "hdr") {
     auto [image, future] = VulkanRenderer::GenerateCubemapFromEquirectangular(m_Texture);
     vuk::Compiler compiler;
-    future.wait(*VulkanContext::Get()->superframe_allocator, compiler);
-    
+    future.wait(*VulkanContext::Get()->SuperframeAllocator, compiler);
+
     vuk::ImageViewCreateInfo ivci;
     ivci.format = vuk::Format::eR32G32B32A32Sfloat;
     ivci.image = image->image;
@@ -54,7 +52,7 @@ void TextureAsset::Load(const std::string& path) {
     ivci.subresourceRange.layerCount = 6;
     ivci.subresourceRange.levelCount = 1;
     ivci.viewType = vuk::ImageViewType::eCube;
-    m_Texture.view = *vuk::allocate_image_view(*VulkanContext::Get()->superframe_allocator, ivci);
+    m_Texture.view = *vuk::allocate_image_view(*VulkanContext::Get()->SuperframeAllocator, ivci);
 
     m_Texture.format = vuk::Format::eR32G32B32A32Sfloat;
     m_Texture.extent = vuk::Dimension3D::absolute(2048, 2048, 1).extent;
@@ -78,7 +76,13 @@ vuk::ImageAttachment TextureAsset::AsAttachment() const {
 }
 
 void TextureAsset::CreateBlankTexture() {
-  s_BlankTexture = CreateRef<TextureAsset>();
-  s_BlankTexture->CreateImage(MissingTextureWidth, MissingTextureHeight, MissingTexture);
+  s_PurpleTexture = CreateRef<TextureAsset>();
+  s_PurpleTexture->CreateImage(MissingTextureWidth, MissingTextureHeight, MissingTexture);
+}
+
+void TextureAsset::CreateWhiteTexture() {
+  s_WhiteTexture = CreateRef<TextureAsset>();
+  uint32_t whiteTextureData = 0xffffffff;
+  s_WhiteTexture->CreateImage(16, 16, &whiteTextureData);
 }
 }

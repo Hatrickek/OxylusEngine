@@ -19,22 +19,25 @@ struct AppSpec;
 
 class VulkanContext {
 public:
-  VkDevice device = nullptr;
-  VkPhysicalDevice physical_device = nullptr;
-  VkQueue graphics_queue = nullptr;
-  VkQueue transfer_queue = nullptr;
-  std::optional<vuk::Context> context;
-  std::optional<vuk::DeviceSuperFrameResource> superframe_resource;
-  std::optional<vuk::Allocator> superframe_allocator;
-  bool hasRT = false;
-  bool suspend = false;
-  vuk::SwapchainRef swapchain = nullptr;
-  vkb::Instance vkbinstance;
-  vkb::Device vkbdevice;
-  double old_time = 0;
-  uint32_t num_frames = 0;
-  vuk::Unique<std::array<VkSemaphore, 3>> present_ready;
-  vuk::Unique<std::array<VkSemaphore, 3>> render_complete;
+  VkDevice Device = nullptr;
+  VkPhysicalDevice PhysicalDevice = nullptr;
+  VkQueue GraphicsQueue = nullptr;
+  VkQueue TransferQueue = nullptr;
+  std::optional<vuk::Context> Context;
+  std::optional<vuk::DeviceSuperFrameResource> SuperframeResource;
+  std::optional<vuk::Allocator> SuperframeAllocator;
+  bool HasRt = false;
+  bool Suspend = false;
+  vuk::SwapchainRef Swapchain = nullptr;
+  vkb::Instance VkbInstance;
+  vkb::Device VkbDevice;
+  double OldTime = 0;
+  uint32_t NumFrames = 0;
+  vuk::Unique<std::array<VkSemaphore, 3>> PresentReady;
+  vuk::Unique<std::array<VkSemaphore, 3>> RenderComplete;
+
+  std::string DeviceName = {};
+  uint32_t DriverVersion = {};
 
   VulkanContext() = default;
 

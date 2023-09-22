@@ -2,12 +2,21 @@
 #include <vuk/Image.hpp>
 
 namespace vuk {
-inline vuk::SamplerCreateInfo linear_sampler = {
-  .magFilter = vuk::Filter::eLinear,
-  .minFilter = vuk::Filter::eLinear,
-  .mipmapMode = vuk::SamplerMipmapMode::eLinear,
-  .addressModeU = vuk::SamplerAddressMode::eClampToEdge,
-  .addressModeV = vuk::SamplerAddressMode::eClampToEdge,
-  .addressModeW = vuk::SamplerAddressMode::eClampToEdge
+inline SamplerCreateInfo LinearSamplerRepeated = {
+  .magFilter = Filter::eLinear,
+  .minFilter = Filter::eLinear,
+  .mipmapMode = SamplerMipmapMode::eLinear,
+  .addressModeU = SamplerAddressMode::eRepeat,
+  .addressModeV = SamplerAddressMode::eRepeat,
+  .addressModeW = SamplerAddressMode::eRepeat
+};
+
+inline SamplerCreateInfo LinearSamplerClamped = {
+  .magFilter = Filter::eLinear,
+  .minFilter = Filter::eLinear,
+  .mipmapMode = SamplerMipmapMode::eLinear,
+  .addressModeU = SamplerAddressMode::eClampToEdge,
+  .addressModeV = SamplerAddressMode::eClampToEdge,
+  .addressModeW = SamplerAddressMode::eClampToEdge
 };
 }

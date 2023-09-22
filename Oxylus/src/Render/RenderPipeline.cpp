@@ -12,7 +12,7 @@ void RenderPipeline::EnqueueFuture(vuk::Future&& fut) {
 
 void RenderPipeline::WaitForFutures(VulkanContext* vkContext) {
   vuk::Compiler compiler;
-  wait_for_futures_explicit(*vkContext->superframe_allocator, compiler, m_Futures);
+  wait_for_futures_explicit(*vkContext->SuperframeAllocator, compiler, m_Futures);
   m_Futures.clear();
 }
 
