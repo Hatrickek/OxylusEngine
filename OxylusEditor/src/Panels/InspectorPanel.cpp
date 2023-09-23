@@ -329,7 +329,7 @@ namespace Oxylus {
             return;
           const auto ext = std::filesystem::path(path).extension().string();
           if (ext == ".hdr") {
-            comp.Cubemap = AssetManager::GetTextureAsset(path);
+            comp.Cubemap = AssetManager::GetTextureAsset({.Path = path, .Format = vuk::Format::eR8G8B8A8Srgb});
             scene->GetRenderer()->Dispatcher.trigger(SceneRenderer::SkyboxLoadEvent{comp.Cubemap});
           }
         };

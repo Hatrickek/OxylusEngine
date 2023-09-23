@@ -75,8 +75,6 @@ private:
 
   Scene* m_Scene = nullptr;
 
-  bool m_ForceUpdateMaterials = false;
-
   // PBR Resources
   vuk::Unique<vuk::Image> m_BRDFImage;
   vuk::Unique<vuk::Image> m_IrradianceImage;
@@ -98,6 +96,7 @@ private:
   void UpdateSkybox(const SceneRenderer::SkyboxLoadEvent& e);
   void GeneratePrefilter();
   void UpdateParameters(SceneRenderer::ProbeChangeEvent& e);
+  void UpdateFinalPassData(RendererConfig::ConfigChangeEvent& e);
   void UpdateLightingData();
 };
 }

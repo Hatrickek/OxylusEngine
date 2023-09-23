@@ -6,6 +6,7 @@
 #include "Core/Base.h"
 
 namespace Oxylus {
+struct TextureLoadInfo;
 class TextureAsset;
 struct ImageCreateInfo;
 class Material;
@@ -17,8 +18,8 @@ public:
 
   static std::filesystem::path GetAssetFileSystemPath(const std::filesystem::path& path);
 
-  static Ref<TextureAsset> GetTextureAsset(const std::string& path);
-  static Ref<TextureAsset> GetTextureAsset(const std::string& name, void* initialData, size_t size);
+  static Ref<TextureAsset> GetTextureAsset(const TextureLoadInfo& info);
+  static Ref<TextureAsset> GetTextureAsset(const std::string& name, const TextureLoadInfo& info);
   static Ref<Mesh> GetMeshAsset(const std::string& path, int32_t loadingFlags = 0);
 
   static void PackageAssets();
@@ -31,7 +32,7 @@ private:
   } s_Library;
 
   static Ref<TextureAsset> LoadTextureAsset(const std::string& path);
-  static Ref<TextureAsset> LoadTextureAsset(const std::string& name, void* initialData, size_t size);
+  static Ref<TextureAsset> LoadTextureAsset(const std::string& path, const TextureLoadInfo& info);
   static Ref<Mesh> LoadMeshAsset(const std::string& path, int32_t loadingFlags);
 
   static std::mutex s_AssetMutex;

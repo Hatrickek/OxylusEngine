@@ -124,7 +124,7 @@ private:
   Vec3 m_Scale{1.0f};
   Vec3 m_Center{0.0f};
   Vec2 m_UVScale{1.0f};
-  void LoadTextures(const tinygltf::Model& model);
+  void LoadTextures(tinygltf::Model& model);
   void LoadMaterials(tinygltf::Model& model);
   void LoadNode(Node* parent,
                 const tinygltf::Node& node,

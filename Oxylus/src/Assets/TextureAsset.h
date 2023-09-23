@@ -6,15 +6,23 @@
 #include "Core/Base.h"
 
 namespace Oxylus {
+struct TextureLoadInfo {
+  std::string Path = {};
+  uint32_t Width = 0;
+  uint32_t Height = 0;
+  void* Data = nullptr;
+  vuk::Format Format = vuk::Format::eR8G8B8A8Unorm;
+};
+
 class TextureAsset {
 public:
   TextureAsset() = default;
   TextureAsset(const std::string& path);
-  TextureAsset(void* initialData, size_t size);
+  TextureAsset(const TextureLoadInfo& info);
   ~TextureAsset();
 
-  void CreateImage(uint32_t x, uint32_t y, void* data);
-  void Load(const std::string& path);
+  void CreateTexture(uint32_t x, uint32_t y, void* data, vuk::Format format = vuk::Format::eR8G8B8A8Unorm);
+  void Load(const std::string& path, vuk::Format format = vuk::Format::eR8G8B8A8Unorm);
   void LoadFromMemory(void* initialData, size_t size);
   vuk::ImageAttachment AsAttachment() const;
 

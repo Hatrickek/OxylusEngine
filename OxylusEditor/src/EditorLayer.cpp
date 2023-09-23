@@ -43,7 +43,7 @@ void EditorLayer::OnAttach(EventDispatcher& dispatcher) {
   m_CrosshairCursor = Input::LoadCursorIconStandard(GLFW_CROSSHAIR_CURSOR);
 
   m_EngineBanner = CreateRef<TextureAsset>();
-  m_EngineBanner->CreateImage(EngineBannerWidth, EngineBannerHeight, EngineBanner);
+  m_EngineBanner->CreateTexture(EngineBannerWidth, EngineBannerHeight, EngineBanner);
 
   Input::SetCursorState(Input::CursorState::NORMAL, Window::GetGLFWWindow());
 

@@ -16,27 +16,30 @@ TextureAsset::TextureAsset(const std::string& path) {
   Load(path);
 }
 
-TextureAsset::TextureAsset(void* initialData, const size_t size) {
-  LoadFromMemory(initialData, size);
+TextureAsset::TextureAsset(const TextureLoadInfo& info) {
+  if (!info.Path.empty())
+    Load(info.Path, info.Format);
+  else
+    CreateTexture(info.Width, info.Height, info.Data, info.Format);
 }
 
 TextureAsset::~TextureAsset() = default;
 
-void TextureAsset::CreateImage(uint32_t x, uint32_t y, void* data) {
-  auto [tex, tex_fut] = create_texture(*VulkanContext::Get()->SuperframeAllocator, vuk::Format::eR8G8B8A8Srgb, vuk::Extent3D{x, y, 1u}, data, true);
+void TextureAsset::CreateTexture(uint32_t x, uint32_t y, void* data, vuk::Format format) {
+  auto [tex, tex_fut] = create_texture(*VulkanContext::Get()->SuperframeAllocator, format, vuk::Extent3D{x, y, 1u}, data, true);
   m_Texture = std::move(tex);
 
   vuk::Compiler compiler;
   tex_fut.wait(*VulkanContext::Get()->SuperframeAllocator, compiler);
 }
 
-void TextureAsset::Load(const std::string& path) {
+void TextureAsset::Load(const std::string& path, vuk::Format format) {
   m_Path = path;
 
   uint32_t x, y, chans;
   uint8_t* data = Texture::LoadStbImage(path, &x, &y, &chans);
 
-  CreateImage(x, y, data);
+  CreateTexture(x, y, data, format);
 
   if (FileSystem::GetFileExtension(path) == "hdr") {
     auto [image, future] = VulkanRenderer::GenerateCubemapFromEquirectangular(m_Texture);
@@ -66,7 +69,7 @@ void TextureAsset::LoadFromMemory(void* initialData, size_t size) {
   uint32_t x, y, chans;
   const auto data = Texture::LoadStbImageFromMemory(initialData, size, &x, &y, &chans);
 
-  CreateImage(x, y, data);
+  CreateTexture(x, y, data);
 
   delete[] data;
 }
@@ -77,12 +80,12 @@ vuk::ImageAttachment TextureAsset::AsAttachment() const {
 
 void TextureAsset::CreateBlankTexture() {
   s_PurpleTexture = CreateRef<TextureAsset>();
-  s_PurpleTexture->CreateImage(MissingTextureWidth, MissingTextureHeight, MissingTexture);
+  s_PurpleTexture->CreateTexture(MissingTextureWidth, MissingTextureHeight, MissingTexture);
 }
 
 void TextureAsset::CreateWhiteTexture() {
   s_WhiteTexture = CreateRef<TextureAsset>();
   uint32_t whiteTextureData = 0xffffffff;
-  s_WhiteTexture->CreateImage(16, 16, &whiteTextureData);
+  s_WhiteTexture->CreateTexture(16, 16, &whiteTextureData);
 }
 }

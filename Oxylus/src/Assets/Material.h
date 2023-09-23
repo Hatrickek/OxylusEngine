@@ -38,6 +38,7 @@ public:
     float AlphaCutoff = 1;
     GLSL_BOOL DoubleSided = false;
     uint32_t UVScale = 1;
+    Vec2 _pad;
   } m_Parameters;
 
   std::string Name = "Material";

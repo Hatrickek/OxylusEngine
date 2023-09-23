@@ -30,9 +30,10 @@ void DefaultRenderPipeline::Init(Scene* scene) {
   m_SkyboxCube = AssetManager::GetMeshAsset(Resources::GetResourcesPath("Objects/cube.glb"));
 
   m_Resources.CubeMap = CreateRef<TextureAsset>();
-  m_Resources.CubeMap = AssetManager::GetTextureAsset(Resources::GetResourcesPath("HDRs/sunflowers_puresky_4k.hdr"));
-
+  m_Resources.CubeMap = AssetManager::GetTextureAsset({.Path = Resources::GetResourcesPath("HDRs/sunflowers_puresky_4k.hdr"), .Format = vuk::Format::eR8G8B8A8Srgb});
   GeneratePrefilter();
+
+  RendererConfig::Get()->ConfigChangeDispatcher.sink<RendererConfig::ConfigChangeEvent>().connect<&DefaultRenderPipeline::UpdateFinalPassData>(*this);
 
   InitRenderGraph();
 }
@@ -534,7 +535,6 @@ Scope<vuk::Future> DefaultRenderPipeline::OnRender(vuk::Allocator& frameAllocato
 
 
 void DefaultRenderPipeline::UpdateSkybox(const SceneRenderer::SkyboxLoadEvent& e) {
-  m_ForceUpdateMaterials = true;
   m_Resources.CubeMap = e.CubeMap;
 
   GeneratePrefilter();
@@ -585,5 +585,12 @@ void DefaultRenderPipeline::UpdateParameters(SceneRenderer::ProbeChangeEvent& e)
   ubo.FilmGrain = {component.FilmGrainEnabled, component.FilmGrainIntensity};
   ubo.VignetteOffset.w = component.VignetteEnabled;
   ubo.VignetteColor.a = component.VignetteIntensity;
+}
+
+void DefaultRenderPipeline::UpdateFinalPassData(RendererConfig::ConfigChangeEvent& e) {
+  auto& ubo = m_RendererData.m_FinalPassData;
+  ubo.EnableBloom = RendererConfig::Get()->BloomConfig.Enabled;
+  ubo.EnableSSR = RendererConfig::Get()->SSRConfig.Enabled;
+  ubo.EnableSSAO = RendererConfig::Get()->SSAOConfig.Enabled;
 }
 }

@@ -117,7 +117,7 @@ void MaterialSerializer::LoadIfPathExists(ryml::ConstNodeRef parentNode,
   std::string path{};
   if (parentNode.has_child(ryml::to_csubstr(nodeName))) {
     parentNode[ryml::to_csubstr(nodeName)] >> path;
-    texture = AssetManager::GetTextureAsset(path);
+    texture = AssetManager::GetTextureAsset({path});
   }
 }
 }

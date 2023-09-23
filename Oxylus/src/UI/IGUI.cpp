@@ -110,7 +110,7 @@ bool IGUI::Property(const char* label, Ref<TextureAsset>& texture, uint64_t over
   if (ImGui::ImageButton(Application::Get()->GetImGuiLayer()->AddSampledImage(sampledImage), {buttonSize, buttonSize}, {1, 1}, {0, 0}, 0)) {
     const auto& path = FileDialogs::OpenFile({{"Texture file", "png,jpg"}});
     if (!path.empty()) {
-      texture = AssetManager::GetTextureAsset(path);
+      texture = AssetManager::GetTextureAsset({path});
       changed = true;
     }
   }
@@ -124,7 +124,7 @@ bool IGUI::Property(const char* label, Ref<TextureAsset>& texture, uint64_t over
   if (ImGui::BeginDragDropTarget()) {
     if (const ImGuiPayload* payload = ImGui::AcceptDragDropPayload("CONTENT_BROWSER_ITEM")) {
       const auto path = GetPathFromImGuiPayload(payload);
-      texture = AssetManager::GetTextureAsset(path.string());
+      texture = AssetManager::GetTextureAsset({path.string()});
       changed = true;
     }
     ImGui::EndDragDropTarget();

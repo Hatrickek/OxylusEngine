@@ -555,8 +555,7 @@ void ContentPanel::RenderBody(bool grid) {
           }
           else if (!textureCreated) {
             textureCreated = true;
-            file.Thumbnail = TextureAsset::GetWhiteTexture();
-            file.Thumbnail = AssetManager::GetTextureAsset(file.Filepath);
+            file.Thumbnail = AssetManager::GetTextureAsset({file.Filepath});
             texture = file.Thumbnail;
           }
           else {

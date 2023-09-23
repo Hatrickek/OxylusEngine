@@ -15,20 +15,20 @@ std::filesystem::path AssetManager::GetAssetFileSystemPath(const std::filesystem
   return Project::GetAssetDirectory() / path;
 }
 
-Ref<TextureAsset> AssetManager::GetTextureAsset(const std::string& path) {
-  if (s_Library.m_TextureAssets.contains(path)) {
-    return s_Library.m_TextureAssets[path];
+Ref<TextureAsset> AssetManager::GetTextureAsset(const TextureLoadInfo& info) {
+  if (s_Library.m_TextureAssets.contains(info.Path)) {
+    return s_Library.m_TextureAssets[info.Path];
   }
 
-  return LoadTextureAsset(path);
+  return LoadTextureAsset(info.Path, info);
 }
 
-Ref<TextureAsset> AssetManager::GetTextureAsset(const std::string& name, void* initialData, const size_t size) {
+Ref<TextureAsset> AssetManager::GetTextureAsset(const std::string& name, const TextureLoadInfo& info) {
   if (s_Library.m_TextureAssets.contains(name)) {
     return s_Library.m_TextureAssets[name];
   }
 
-  return LoadTextureAsset(name, initialData, size);
+  return LoadTextureAsset(name, info);
 }
 
 Ref<Mesh> AssetManager::GetMeshAsset(const std::string& path, const int32_t loadingFlags) {
@@ -49,13 +49,13 @@ Ref<TextureAsset> AssetManager::LoadTextureAsset(const std::string& path) {
   return s_Library.m_TextureAssets.emplace(path, texture).first->second;
 }
 
-Ref<TextureAsset> AssetManager::LoadTextureAsset(const std::string& name, void* initialData, size_t size) {
+Ref<TextureAsset> AssetManager::LoadTextureAsset(const std::string& path, const TextureLoadInfo& info) {
   OX_SCOPED_ZONE;
 
   std::lock_guard lock(s_AssetMutex);
 
-  Ref<TextureAsset> texture = CreateRef<TextureAsset>(initialData, size);
-  return s_Library.m_TextureAssets.emplace(name, texture).first->second;
+  Ref<TextureAsset> texture = CreateRef<TextureAsset>(info);
+  return s_Library.m_TextureAssets.emplace(path, texture).first->second;
 }
 
 Ref<Mesh> AssetManager::LoadMeshAsset(const std::string& path, int32_t loadingFlags) {

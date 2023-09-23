@@ -60,6 +60,7 @@ void Mesh::LoadFromFile(const std::string& path, int fileLoadingFlags, const flo
   ProfilerTimer timer;
 
   Path = path;
+  Name = std::filesystem::path(path).stem().string();
   LoadingFlags = fileLoadingFlags;
   ShouldUpdate = true;
 
@@ -132,7 +133,6 @@ void Mesh::LoadFromFile(const std::string& path, int fileLoadingFlags, const flo
   m_Textures.clear();
 
   timer.Stop();
-  Name = std::filesystem::path(path).filename().string();
   OX_CORE_TRACE("Mesh file loaded: {}, {} materials, {} ms",
     Name.c_str(),
     gltfModel.materials.size(),
@@ -174,18 +174,15 @@ void Mesh::Draw(vuk::CommandBuffer& commandBuffer) const {
   }
 }
 
-void Mesh::LoadTextures(const tinygltf::Model& model) {
+void Mesh::LoadTextures(tinygltf::Model& model) {
   m_Textures.resize(model.images.size());
   for (size_t i = 0; i < model.images.size(); i++) {
     auto& img = model.images[i];
-    if (!img.uri.empty()) {
-      auto p = std::filesystem::path(Path);
-      auto directory = p.root_directory().string();
-      m_Textures[i] = AssetManager::GetTextureAsset(directory + img.uri);
-    }
-    else {
-      m_Textures[i] = AssetManager::GetTextureAsset(img.name, (void*)img.image.data(), img.image.size());
-    }
+
+    if (img.name.empty())
+      img.name = Name + std::to_string(i);
+
+    m_Textures[i] = AssetManager::GetTextureAsset(TextureLoadInfo{img.name, (uint32_t)img.width, (uint32_t)img.height, img.image.data()});
   }
 }
 
