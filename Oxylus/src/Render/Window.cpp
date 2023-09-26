@@ -47,6 +47,10 @@ void Window::CloseWindow(GLFWwindow*) {
   glfwTerminate();
 }
 
+void Window::SetWindowUserData(void* data) {
+  glfwSetWindowUserPointer(Window::GetGLFWWindow(), data);
+}
+
 GLFWwindow* Window::GetGLFWWindow() {
   if (s_WindowHandle == nullptr) {
     OX_CORE_FATAL("Glfw WindowHandle is nullptr. Did you call InitWindow() ?");

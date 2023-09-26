@@ -170,15 +170,13 @@ void main() {
 	} else {
 		baseColor = mat.Color;
 	}
-	if (baseColor.a < mat.AlphaCutoff) {
-		discard;
-	}
+	//if (baseColor.a < mat.AlphaCutoff) {
+	//	discard;
+	//}
 
 	vec3 f0 = vec3(0.04);
 
 	// Metallic and Roughness material properties are packed together
-	// In glTF, these factors can be specified by fixed scalar values
-	// or from a metallic-roughness map
 	const float c_MinRoughness = 0.04;
 	perceptualRoughness = mat.Roughness;
 	metallic = mat.Metallic;
@@ -216,7 +214,6 @@ void main() {
 	vec3 l = normalize(lightDir.xyz);					// Vector from surface point to light
 	vec3 h = normalize(l+v);							// Half vector between both l and v
 	vec3 reflection = -normalize(reflect(v, n));
-	reflection.y *= -1.0f;
 
 	float NdotL = clamp(dot(n, l), 0.001, 1.0);
 	float NdotV = clamp(abs(dot(n, v)), 0.001, 1.0);

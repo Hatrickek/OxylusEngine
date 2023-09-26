@@ -176,13 +176,37 @@ void Mesh::Draw(vuk::CommandBuffer& commandBuffer) const {
 
 void Mesh::LoadTextures(tinygltf::Model& model) {
   m_Textures.resize(model.images.size());
-  for (size_t i = 0; i < model.images.size(); i++) {
-    auto& img = model.images[i];
+  for (size_t imageIndex = 0; imageIndex < model.images.size(); imageIndex++) {
+    auto& img = model.images[imageIndex];
 
     if (img.name.empty())
-      img.name = Name + std::to_string(i);
+      img.name = Name + std::to_string(imageIndex);
 
-    m_Textures[i] = AssetManager::GetTextureAsset(TextureLoadInfo{img.name, (uint32_t)img.width, (uint32_t)img.height, img.image.data()});
+    unsigned char* buffer;
+    bool deleteBuffer = false;
+    // Most devices don't support RGB only on Vulkan so convert if necessary
+    if (img.component == 3) {
+      const auto bufferSize = img.width * img.height * 4;
+      buffer = new unsigned char[bufferSize];
+      unsigned char* rgba = buffer;
+      unsigned char* rgb = &img.image[0];
+      for (int32_t i = 0; i < img.width * img.height; ++i) {
+        for (int32_t j = 0; j < 3; ++j) {
+          rgba[j] = rgb[j];
+        }
+        rgba += 4;
+        rgb += 3;
+      }
+      deleteBuffer = true;
+    }
+    else {
+      buffer = &img.image[0];
+    }
+
+    m_Textures[imageIndex] = AssetManager::GetTextureAsset(img.name, TextureLoadInfo{{}, (uint32_t)img.width, (uint32_t)img.height, buffer});
+
+    if (deleteBuffer)
+      delete[] buffer;
   }
 }
 

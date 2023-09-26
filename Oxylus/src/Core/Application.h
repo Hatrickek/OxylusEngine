@@ -75,8 +75,6 @@ private:
   void Run();
   void UpdateLayers(Timestep ts);
   void UpdateRenderer();
-  void UpdateImGui();
-
 
   friend int ::main(int argc, char** argv);
 };

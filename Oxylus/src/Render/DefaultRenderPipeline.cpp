@@ -250,7 +250,7 @@ Scope<vuk::Future> DefaultRenderPipeline::OnRender(vuk::Allocator& frameAllocato
                       .depthCompareOp = vuk::CompareOp::eLessOrEqual,
                     })
                    .set_viewport(0, vuk::Viewport{0, 0, shadowSize, shadowSize, 0, 1})
-                   .set_scissor(0, vuk::Rect2D{vuk::Sizing::eAbsolute, {}, {(unsigned)shadowSize, (unsigned)shadowSize}})
+                   .set_scissor(0, vuk::Rect2D{vuk::Sizing::eAbsolute, {}, {(unsigned)shadowSize, (unsigned)shadowSize}, {}})
                    .bind_buffer(0, 0, shadowBuffer);
 
       for (const auto& e : m_SceneLights) {

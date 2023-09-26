@@ -8,8 +8,10 @@ public:
   static void InitWindow(const AppSpec& spec);
   static void UpdateWindow();
   static void CloseWindow(GLFWwindow* window);
-  static GLFWwindow* GetGLFWWindow();
 
+  static void SetWindowUserData(void* data);
+
+  static GLFWwindow* GetGLFWWindow();
   static uint32_t GetWidth() { return s_WindowData.ScreenExtent.width; }
   static uint32_t GetHeight() { return s_WindowData.ScreenExtent.height; }
   static VkExtent2D& GetWindowExtent() { return s_WindowData.ScreenExtent; }

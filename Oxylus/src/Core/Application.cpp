@@ -36,6 +36,22 @@ Application::Application(const AppSpec& spec) : m_Spec(spec), m_SystemManager(Cr
   if (!m_Core.Init(m_Spec))
     return;
 
+  Window::SetWindowUserData(this);
+
+  glfwSetKeyCallback(Window::GetGLFWWindow(),
+    [](GLFWwindow* window, int key, int scancode, int action, int mods) {
+      const auto app = (Application*)glfwGetWindowUserPointer(window);
+
+      if (action == GLFW_PRESS) {
+        for (const auto& layer : app->m_LayerStack)
+          layer->OnKeyPressed((KeyCode)key);
+      }
+      else if (action == GLFW_RELEASE) {
+        for (const auto& layer : app->m_LayerStack)
+          layer->OnKeyReleased((KeyCode)key);
+      }
+    });
+
   m_ImGuiLayer = new ImGuiLayer();
   PushOverlay(m_ImGuiLayer);
 }

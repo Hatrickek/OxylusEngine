@@ -63,6 +63,8 @@ void TextureAsset::Load(const std::string& path, vuk::Format format) {
     m_Texture.layer_count = 6;
     m_Texture.level_count = 1;
   }
+
+  delete[] data;
 }
 
 void TextureAsset::LoadFromMemory(void* initialData, size_t size) {

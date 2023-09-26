@@ -5,7 +5,6 @@
 namespace Oxylus {
 void ScrollCallback(GLFWwindow* window, double xoffset, double yoffset);
 
-Input::Events Input::s_Events;
 static float s_MouseOffsetX;
 static float s_MouseOffsetY;
 static float s_MouseScrollOffsetY;
@@ -26,14 +25,7 @@ bool Input::GetKey(const KeyCode key) {
 }
 
 bool Input::GetKeyDown(const KeyCode key) {
-  static bool s_Pressed = false;
-  static bool s_CurrentlyPressed = false;
-  s_CurrentlyPressed = glfwGetKey(Window::GetGLFWWindow(), key) == GLFW_PRESS;
-  if (s_CurrentlyPressed && !s_Pressed) {
-    return true;
-  }
-  s_Pressed = s_CurrentlyPressed;
-  return false;
+  return glfwGetKey(Window::GetGLFWWindow(), key) == GLFW_PRESS;
 }
 
 bool Input::GetKeyUp(const KeyCode key) {
@@ -97,22 +89,6 @@ void Input::SetCursorIconDefault() {
   glfwSetCursor(Window::GetGLFWWindow(), nullptr);
 }
 
-void Input::RegisterMouseEvent(const std::function<void()>& event) {
-  s_Events.RegisteredMouseEvents.emplace_back(event);
-}
-
-void Input::RegisterKeyboardEvent(const std::function<void()>& event) {
-  s_Events.RegisteredKeyboardEvents.emplace_back(event);
-}
-
-void Input::RegisterMouseEventOnce(const std::function<void()>& event) {
-  s_Events.RegisteredMouseEventsOnce.emplace_back(event);
-}
-
-void Input::RegisterKeyboardEventOnce(const std::function<void()>& event) {
-  s_Events.RegisteredKeyboardEventsOnce.emplace_back(event);
-}
-
 void Input::SetCursorState(const CursorState state, GLFWwindow* window) {
   switch (state) {
     case CursorState::DISABLED: cursorState = CursorState::DISABLED;
@@ -131,30 +107,17 @@ void Input::DestroyCursor(GLFWcursor* cursor) {
   glfwDestroyCursor(cursor);
 }
 
-void Input::MouseCallback([[maybe_unused]] GLFWwindow* window, const double xposIn, const double yposIn) {
+void Input::MouseCallback(GLFWwindow* window, const double xposIn, const double yposIn) {
   s_MouseOffsetX = s_MousePos.x - static_cast<float>(xposIn);
   s_MouseOffsetY = s_MousePos.y - static_cast<float>(yposIn);
   s_MousePos = glm::vec2{static_cast<float>(xposIn), static_cast<float>(yposIn)};
-  for (auto& event : s_Events.RegisteredMouseEvents) {
-    event();
-  }
-  for (auto& event : s_Events.RegisteredMouseEventsOnce) {
-    event();
-  }
-  s_Events.RegisteredMouseEventsOnce.clear();
 }
 
-void ScrollCallback([[maybe_unused]] GLFWwindow* window, [[maybe_unused]] double xoffset, double yoffset) {
+void ScrollCallback(GLFWwindow* window, double xoffset, double yoffset) {
   s_MouseScrollOffsetY = (float)yoffset;
 }
 
-void Input::KeyCallback([[maybe_unused]] GLFWwindow* window, [[maybe_unused]] int key, [[maybe_unused]] int scancode, [[maybe_unused]] int action, [[maybe_unused]] int mods) {
-  for (auto& event : s_Events.RegisteredKeyboardEvents) {
-    event();
-  }
-  for (auto& event : s_Events.RegisteredKeyboardEventsOnce) {
-    event();
-  }
-  s_Events.RegisteredKeyboardEventsOnce.clear();
+void Input::KeyCallback(GLFWwindow* window, int key, int scancode, int action, int mods) {
+  
 }
 }
