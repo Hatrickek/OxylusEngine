@@ -44,12 +44,12 @@ void SceneSerializer::Serialize(const std::string& filePath) const {
 bool SceneSerializer::Deserialize(const std::string& filePath) const {
   ProfilerTimer timer("Scene serializer");
 
-  auto content = FileUtils::ReadFile(filePath);
+  auto content = FileUtils::read_file(filePath);
   if (!content) {
     OX_CORE_ASSERT(content, fmt::format("Couldn't read scene file: {0}", filePath).c_str());
 
     // Try to read it again from assets path
-    content = FileUtils::ReadFile(AssetManager::GetAssetFileSystemPath(filePath).string());
+    content = FileUtils::read_file(AssetManager::get_asset_file_system_path(filePath).string());
     if (content)
       OX_CORE_INFO("Could load the file from assets path: {0}", filePath);
     else {

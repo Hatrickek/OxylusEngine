@@ -109,7 +109,7 @@ static bool DragDropTarget(const std::filesystem::path& dropPath) {
   if (ImGui::BeginDragDropTarget()) {
     if (const ImGuiPayload* payload = ImGui::AcceptDragDropPayload("Entity")) {
       const Entity entity = *static_cast<Entity*>(payload->Data);
-      const std::filesystem::path path = dropPath / std::string(entity.GetComponent<TagComponent>().Tag + ".oxprefab");
+      const std::filesystem::path path = dropPath / std::string(entity.GetComponent<TagComponent>().tag + ".oxprefab");
       EntitySerializer::SerializeEntityAsPrefab(path.string().c_str(), entity);
       return true;
     }
@@ -227,7 +227,7 @@ std::pair<bool, uint32_t> ContentPanel::DirectoryTreeViewRecursive(const std::fi
 
     ImGui::SameLine();
     ImGui::PushStyleColor(ImGuiCol_Text, ImGuiLayer::AssetIconColor);
-    ImGui::TextUnformatted(StringUtils::FromChar8T(folderIcon));
+    ImGui::TextUnformatted(StringUtils::from_char8_t(folderIcon));
     ImGui::PopStyleColor();
     ImGui::SameLine();
     ImGui::TextUnformatted(name.data());
@@ -257,16 +257,16 @@ std::pair<bool, uint32_t> ContentPanel::DirectoryTreeViewRecursive(const std::fi
 }
 
 ContentPanel::ContentPanel() : EditorPanel("Contents", ICON_MDI_FOLDER_STAR, true) {
-  m_WhiteTexture = TextureAsset::GetWhiteTexture();
+  m_WhiteTexture = TextureAsset::get_white_texture();
 
-  m_FileIcon = CreateRef<TextureAsset>();
-  m_FileIcon->Load(Resources::GetResourcesPath("Icons/FileIcon.png"));
+  m_FileIcon = create_ref<TextureAsset>();
+  m_FileIcon->load(Resources::get_resources_path("Icons/FileIcon.png"));
 
-  m_DirectoryIcon = CreateRef<TextureAsset>();
-  m_DirectoryIcon->Load(Resources::GetResourcesPath("Icons/FolderIcon.png"));
+  m_DirectoryIcon = create_ref<TextureAsset>();
+  m_DirectoryIcon->load(Resources::get_resources_path("Icons/FolderIcon.png"));
 
-  m_MeshIcon = CreateRef<TextureAsset>();
-  m_MeshIcon->Load(Resources::GetResourcesPath("Icons/MeshFileIcon.png"));
+  m_MeshIcon = create_ref<TextureAsset>();
+  m_MeshIcon->load(Resources::get_resources_path("Icons/MeshFileIcon.png"));
 }
 
 void ContentPanel::Init() {
@@ -284,7 +284,7 @@ void ContentPanel::Init() {
 }
 
 void ContentPanel::OnUpdate() {
-  m_ElapsedTime += Application::GetTimestep();
+  m_ElapsedTime += Application::get_timestep();
 }
 
 void ContentPanel::OnImGuiRender() {
@@ -324,13 +324,13 @@ void ContentPanel::Invalidate() {
 }
 
 void ContentPanel::RenderHeader() {
-  if (ImGui::Button(StringUtils::FromChar8T(ICON_MDI_COGS)))
+  if (ImGui::Button(StringUtils::from_char8_t(ICON_MDI_COGS)))
     ImGui::OpenPopup("SettingsPopup");
   if (ImGui::BeginPopup("SettingsPopup")) {
-    IGUI::BeginProperties(ImGuiTableFlags_SizingStretchSame);
-    IGUI::Property("Thumbnail Size", m_ThumbnailSize, 95.9f, 256.0f, nullptr, 0.1f, "");
-    IGUI::Property("Texture Previews", m_TexturePreviews, "Show texture previews (experimental)");
-    IGUI::EndProperties();
+    IGUI::begin_properties(ImGuiTableFlags_SizingStretchSame);
+    IGUI::property("Thumbnail Size", m_ThumbnailSize, 95.9f, 256.0f, nullptr, 0.1f, "");
+    IGUI::property("Texture Previews", m_TexturePreviews, "Show texture previews (experimental)");
+    IGUI::end_properties();
     ImGui::EndPopup();
   }
 
@@ -340,7 +340,7 @@ void ContentPanel::RenderHeader() {
   if (!m_Filter.IsActive()) {
     ImGui::SameLine();
     ImGui::SetCursorPosX(cursorPosX + ImGui::GetFontSize() * 0.5f);
-    ImGui::TextUnformatted(StringUtils::FromChar8T(ICON_MDI_MAGNIFY " Search..."));
+    ImGui::TextUnformatted(StringUtils::from_char8_t(ICON_MDI_MAGNIFY " Search..."));
   }
 
   ImGui::Spacing();
@@ -357,7 +357,7 @@ void ContentPanel::RenderHeader() {
       ImGui::PushStyleVar(ImGuiStyleVar_Alpha, ImGui::GetStyle().Alpha * 0.5f);
     }
 
-    if (ImGui::Button(StringUtils::FromChar8T(ICON_MDI_ARROW_LEFT_CIRCLE_OUTLINE))) {
+    if (ImGui::Button(StringUtils::from_char8_t(ICON_MDI_ARROW_LEFT_CIRCLE_OUTLINE))) {
       m_BackStack.push(m_CurrentDirectory);
       UpdateDirectoryEntries(m_CurrentDirectory.parent_path());
     }
@@ -381,7 +381,7 @@ void ContentPanel::RenderHeader() {
       ImGui::PushStyleVar(ImGuiStyleVar_Alpha, ImGui::GetStyle().Alpha * 0.5f);
     }
 
-    if (ImGui::Button(StringUtils::FromChar8T(ICON_MDI_ARROW_RIGHT_CIRCLE_OUTLINE))) {
+    if (ImGui::Button(StringUtils::from_char8_t(ICON_MDI_ARROW_RIGHT_CIRCLE_OUTLINE))) {
       const auto& top = m_BackStack.top();
       UpdateDirectoryEntries(top);
       m_BackStack.pop();
@@ -395,7 +395,7 @@ void ContentPanel::RenderHeader() {
 
   ImGui::SameLine();
 
-  ImGui::TextUnformatted(StringUtils::FromChar8T(ICON_MDI_FOLDER));
+  ImGui::TextUnformatted(StringUtils::from_char8_t(ICON_MDI_FOLDER));
 
   ImGui::PushStyleVar(ImGuiStyleVar_FrameBorderSize, 0.0f);
   ImGui::PushStyleColor(ImGuiCol_Button, {0.0f, 0.0f, 0.0f, 0.0f});
@@ -464,7 +464,7 @@ void ContentPanel::RenderSideView() {
     const char8_t* folderIcon = opened ? ICON_MDI_FOLDER_OPEN : ICON_MDI_FOLDER;
     ImGui::SameLine();
     ImGui::PushStyleColor(ImGuiCol_Text, ImGuiLayer::AssetIconColor);
-    ImGui::TextUnformatted(StringUtils::FromChar8T(folderIcon));
+    ImGui::TextUnformatted(StringUtils::from_char8_t(folderIcon));
     ImGui::PopStyleColor();
     ImGui::SameLine();
     ImGui::TextUnformatted("Assets");
@@ -555,7 +555,7 @@ void ContentPanel::RenderBody(bool grid) {
           }
           else if (!textureCreated) {
             textureCreated = true;
-            file.Thumbnail = AssetManager::GetTextureAsset({file.Filepath});
+            file.Thumbnail = AssetManager::get_texture_asset({file.Filepath});
             texture = file.Thumbnail;
           }
           else {
@@ -587,7 +587,7 @@ void ContentPanel::RenderBody(bool grid) {
         // Background button
         static std::string id = "###";
         id[2] = static_cast<char>(i);
-        bool const clicked = IGUI::ToggleButton(id.c_str(), highlight, backgroundThumbnailSize, 0.1f);
+        bool const clicked = IGUI::toggle_button(id.c_str(), highlight, backgroundThumbnailSize, 0.1f);
         if (m_ElapsedTime > 0.25f && clicked) {
           EditorLayer::Get()->SetContextAsFileWithPath(strPath);
         }
@@ -627,23 +627,23 @@ void ContentPanel::RenderBody(bool grid) {
         // Foreground Image
         ImGui::SetCursorPos({cursorPos.x + padding, cursorPos.y + padding});
         ImGui::SetItemAllowOverlap();
-        IGUI::Image(m_WhiteTexture->GetTexture(), {backgroundThumbnailSize.x - padding * 2.0f, backgroundThumbnailSize.y - padding * 2.0f}, {}, {}, ImGuiLayer::WindowBgAlternativeColor);
+        IGUI::image(m_WhiteTexture->get_texture(), {backgroundThumbnailSize.x - padding * 2.0f, backgroundThumbnailSize.y - padding * 2.0f}, {}, {}, ImGuiLayer::WindowBgAlternativeColor);
 
         // Thumbnail Image
         ImGui::SetCursorPos({cursorPos.x + thumbnailPadding * 0.75f, cursorPos.y + thumbnailPadding});
         ImGui::SetItemAllowOverlap();
-        IGUI::Image(texture->GetTexture(), {thumbnailSize, thumbnailSize});
+        IGUI::image(texture->get_texture(), {thumbnailSize, thumbnailSize});
 
         // Type Color frame
         const ImVec2 typeColorFrameSize = {scaledThumbnailSizeX, scaledThumbnailSizeX * 0.03f};
         ImGui::SetCursorPosX(cursorPos.x + padding);
-        IGUI::Image(m_WhiteTexture->GetTexture(), typeColorFrameSize, {0, 0}, {1, 1}, isDir ? ImVec4(0.0f, 0.0f, 0.0f, 0.0f) : file.FileTypeIndicatorColor);
+        IGUI::image(m_WhiteTexture->get_texture(), typeColorFrameSize, {0, 0}, {1, 1}, isDir ? ImVec4(0.0f, 0.0f, 0.0f, 0.0f) : file.FileTypeIndicatorColor);
 
         const ImVec2 rectMin = ImGui::GetItemRectMin();
         const ImVec2 rectSize = ImGui::GetItemRectSize();
         const ImRect clipRect = ImRect({rectMin.x + padding * 1.0f, rectMin.y + padding * 2.0f},
           {rectMin.x + rectSize.x, rectMin.y + scaledThumbnailSizeX - ImGuiLayer::SmallFont->FontSize - padding * 2.0f});
-        IGUI::ClippedText(clipRect.Min, clipRect.Max, filename, nullptr, nullptr, {0, 0}, nullptr, clipRect.GetSize().x);
+        IGUI::clipped_text(clipRect.Min, clipRect.Max, filename, nullptr, nullptr, {0, 0}, nullptr, clipRect.GetSize().x);
 
         if (!isDir) {
           ImGui::SetCursorPos({cursorPos.x + padding * 2.0f, cursorPos.y + backgroundThumbnailSize.y - ImGuiLayer::SmallFont->FontSize - padding * 2.0f});
@@ -671,7 +671,7 @@ void ContentPanel::RenderBody(bool grid) {
 
         ImGui::SameLine();
         ImGui::SetCursorPosX(ImGui::GetCursorPosX() - lineHeight);
-        IGUI::Image(texture->GetTexture(), {lineHeight, lineHeight});
+        IGUI::image(texture->get_texture(), {lineHeight, lineHeight});
         ImGui::SameLine();
         ImGui::TextUnformatted(filename);
 
@@ -782,8 +782,8 @@ void ContentPanel::DrawContextMenuItems(const std::filesystem::path& context, bo
       }
       if (ImGui::BeginMenu("Asset")) {
         if (ImGui::MenuItem("Material")) {
-          const auto mat = CreateRef<Material>();
-          mat->Create();
+          const auto mat = create_ref<Material>();
+          mat->create();
           const MaterialSerializer serializer(mat);
           auto path = (context / "NewMaterial.oxmat").string();
           serializer.Serialize(path);

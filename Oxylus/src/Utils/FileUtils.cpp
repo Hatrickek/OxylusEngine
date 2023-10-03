@@ -8,7 +8,7 @@
 #include "Utils/Log.h"
 
 namespace Oxylus {
-std::optional<std::string> FileUtils::ReadFile(const std::string& filePath) {
+std::optional<std::string> FileUtils::read_file(const std::string& filePath) {
   std::ostringstream buf;
   const std::ifstream input(filePath.c_str());
   OX_CORE_ASSERT(input)
@@ -16,14 +16,14 @@ std::optional<std::string> FileUtils::ReadFile(const std::string& filePath) {
   return buf.str();
 }
 
-std::optional<std::string> FileUtils::ReadShaderFile(const std::string& shaderFileName) {
-  const auto pathStr = Resources::GetResourcesPath("Shaders");
+std::optional<std::string> FileUtils::read_shader_file(const std::string& shaderFileName) {
+  const auto pathStr = Resources::get_resources_path("Shaders");
   const auto path = std::filesystem::path(pathStr) / shaderFileName;
-  return ReadFile(path.string());
+  return read_file(path.string());
 }
 
-std::string FileUtils::GetShaderPath(const std::string& shaderFileName) {
-  const auto pathStr = Resources::GetResourcesPath("Shaders");
+std::string FileUtils::get_shader_path(const std::string& shaderFileName) {
+  const auto pathStr = Resources::get_resources_path("Shaders");
   const auto path = std::filesystem::path(pathStr) / shaderFileName;
   return path.string();
 }

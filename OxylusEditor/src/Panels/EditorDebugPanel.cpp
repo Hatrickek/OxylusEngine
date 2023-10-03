@@ -10,7 +10,7 @@ namespace Oxylus {
   void EditorDebugPanel::OnImGuiRender() {
     if (OnBegin()) {
       if (ImGui::Button("Free unused assets")) {
-        AssetManager::FreeUnusedAssets();
+        AssetManager::free_unused_assets();
       }
       OnEnd();
     }

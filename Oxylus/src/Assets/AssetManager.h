@@ -16,25 +16,25 @@ class AssetManager {
 public:
   using AssetID = std::string;
 
-  static std::filesystem::path GetAssetFileSystemPath(const std::filesystem::path& path);
+  static std::filesystem::path get_asset_file_system_path(const std::filesystem::path& path);
 
-  static Ref<TextureAsset> GetTextureAsset(const TextureLoadInfo& info);
-  static Ref<TextureAsset> GetTextureAsset(const std::string& name, const TextureLoadInfo& info);
-  static Ref<Mesh> GetMeshAsset(const std::string& path, int32_t loadingFlags = 0);
+  static Ref<TextureAsset> get_texture_asset(const TextureLoadInfo& info);
+  static Ref<TextureAsset> get_texture_asset(const std::string& name, const TextureLoadInfo& info);
+  static Ref<Mesh> get_mesh_asset(const std::string& path, int32_t loadingFlags = 0);
 
-  static void PackageAssets();
-  static void FreeUnusedAssets();
+  static void package_assets();
+  static void free_unused_assets();
 
 private:
   static struct AssetLibrary {
-    std::unordered_map<AssetID, Ref<TextureAsset>> m_TextureAssets = {};
-    std::unordered_map<AssetID, Ref<Mesh>> m_MeshAssets = {};
-  } s_Library;
+    std::unordered_map<AssetID, Ref<TextureAsset>> texture_assets = {};
+    std::unordered_map<AssetID, Ref<Mesh>> mesh_assets = {};
+  } s_library;
 
-  static Ref<TextureAsset> LoadTextureAsset(const std::string& path);
-  static Ref<TextureAsset> LoadTextureAsset(const std::string& path, const TextureLoadInfo& info);
-  static Ref<Mesh> LoadMeshAsset(const std::string& path, int32_t loadingFlags);
+  static Ref<TextureAsset> load_texture_asset(const std::string& path);
+  static Ref<TextureAsset> load_texture_asset(const std::string& path, const TextureLoadInfo& info);
+  static Ref<Mesh> load_mesh_asset(const std::string& path, int32_t loadingFlags);
 
-  static std::mutex s_AssetMutex;
+  static std::mutex s_asset_mutex;
 };
 }

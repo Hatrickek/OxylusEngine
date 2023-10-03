@@ -54,7 +54,7 @@ protected:
 
     spdlog::memory_buf_t formatted;
     base_sink<std::mutex>::formatter_->format(msg, formatted);
-    *(m_MessageBuffer.begin() + m_MessagesBuffered) = CreateRef<Message>(
+    *(m_MessageBuffer.begin() + m_MessagesBuffered) = create_ref<Message>(
       std::string_view(formatted.data(), formatted.size()),
       msg.source.filename,
       msg.source.funcname,

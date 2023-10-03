@@ -36,28 +36,28 @@ EditorLayer::EditorLayer() : Layer("Editor Layer") {
   s_Instance = this;
 }
 
-void EditorLayer::OnAttach(EventDispatcher& dispatcher) {
+void EditorLayer::on_attach(EventDispatcher& dispatcher) {
   m_EditorConfig.LoadConfig();
-  Resources::InitEditorResources();
+  Resources::init_editor_resources();
 
   m_CrosshairCursor = Input::LoadCursorIconStandard(GLFW_CROSSHAIR_CURSOR);
 
-  m_EngineBanner = CreateRef<TextureAsset>();
-  m_EngineBanner->CreateTexture(EngineBannerWidth, EngineBannerHeight, EngineBanner);
+  m_EngineBanner = create_ref<TextureAsset>();
+  m_EngineBanner->create_texture(EngineBannerWidth, EngineBannerHeight, EngineBanner);
 
-  Input::SetCursorState(Input::CursorState::NORMAL, Window::GetGLFWWindow());
+  Input::SetCursorState(Input::CursorState::NORMAL, Window::get_glfw_window());
 
-  m_EditorScene = CreateRef<Scene>();
+  m_EditorScene = create_ref<Scene>();
 
   // Initialize panels
-  m_EditorPanels.emplace("EditorSettings", CreateScope<EditorSettingsPanel>());
-  m_EditorPanels.emplace("RenderSettings", CreateScope<RendererSettingsPanel>());
-  m_EditorPanels.emplace("Shaders", CreateScope<ShadersPanel>());
-  m_EditorPanels.emplace("FramebufferViewer", CreateScope<FramebufferViewerPanel>());
-  m_EditorPanels.emplace("ProjectPanel", CreateScope<ProjectPanel>());
-  m_EditorPanels.emplace("StatisticsPanel", CreateScope<StatisticsPanel>());
-  m_EditorPanels.emplace("EditorDebugPanel", CreateScope<EditorDebugPanel>());
-  m_ViewportPanels.emplace_back(CreateScope<ViewportPanel>())->m_Camera.SetPosition({-2, 2, 0});
+  m_EditorPanels.emplace("EditorSettings", create_scope<EditorSettingsPanel>());
+  m_EditorPanels.emplace("RenderSettings", create_scope<RendererSettingsPanel>());
+  m_EditorPanels.emplace("Shaders", create_scope<ShadersPanel>());
+  m_EditorPanels.emplace("FramebufferViewer", create_scope<FramebufferViewerPanel>());
+  m_EditorPanels.emplace("ProjectPanel", create_scope<ProjectPanel>());
+  m_EditorPanels.emplace("StatisticsPanel", create_scope<StatisticsPanel>());
+  m_EditorPanels.emplace("EditorDebugPanel", create_scope<EditorDebugPanel>());
+  m_ViewportPanels.emplace_back(create_scope<ViewportPanel>())->m_Camera.SetPosition({-2, 2, 0});
 
   // Register panel events
   m_ConsolePanel.m_RuntimeConsole.RegisterCommand("show_style_editor",
@@ -73,12 +73,12 @@ void EditorLayer::OnAttach(EventDispatcher& dispatcher) {
   SetEditorScene(m_EditorScene);
 }
 
-void EditorLayer::OnDetach() {
+void EditorLayer::on_detach() {
   Input::DestroyCursor(m_CrosshairCursor);
   m_EditorConfig.SaveConfig();
 }
 
-void EditorLayer::OnUpdate(Timestep deltaTime) {
+void EditorLayer::on_update(Timestep deltaTime) {
   for (const auto& [name, panel] : m_EditorPanels) {
     if (!panel->Visible)
       continue;
@@ -114,7 +114,7 @@ void EditorLayer::OnUpdate(Timestep deltaTime) {
   }
 }
 
-void EditorLayer::OnImGuiRender() {
+void EditorLayer::on_imgui_render() {
   if (m_ShowStyleEditor)
     ImGui::ShowStyleEditor();
   if (m_ShowDemoWindow)
@@ -187,7 +187,7 @@ void EditorLayer::OnImGuiRender() {
 
           ImGui::Separator();
           if (ImGui::MenuItem("Exit")) {
-            Application::Get()->Close();
+            Application::get()->close();
           }
           ImGui::EndMenu();
         }
@@ -199,7 +199,7 @@ void EditorLayer::OnImGuiRender() {
         }
         if (ImGui::BeginMenu("Window")) {
           if (ImGui::MenuItem("Add viewport", nullptr)) {
-            m_ViewportPanels.emplace_back(CreateScope<ViewportPanel>())->SetContext(m_ActiveScene,
+            m_ViewportPanels.emplace_back(create_scope<ViewportPanel>())->SetContext(m_ActiveScene,
               m_SceneHierarchyPanel);
           }
           if (ImGui::MenuItem("Shaders", nullptr)) {
@@ -271,7 +271,7 @@ void EditorLayer::OnImGuiRender() {
         {
           //Project name text
           ImGui::SetCursorPos(ImVec2(
-            (float)Window::GetWidth() - 10 -
+            (float)Window::get_width() - 10 -
             ImGui::CalcTextSize(Project::GetActive()->GetConfig().Name.c_str()).x,
             0));
           ImGuiScoped::StyleColor bColor1(ImGuiCol_Button, ImVec4(0.2f, 0.2f, 0.2f, 0.7f));
@@ -309,7 +309,7 @@ void EditorLayer::EditorShortcuts() {
 }
 
 void EditorLayer::NewScene() {
-  const Ref<Scene> newScene = CreateRef<Scene>();
+  const Ref<Scene> newScene = create_ref<Scene>();
   SetEditorScene(newScene);
   m_LastSaveScenePath.clear();
 }
@@ -329,7 +329,7 @@ bool EditorLayer::OpenScene(const std::filesystem::path& path) {
     OX_CORE_WARN("Could not load {0} - not a scene file", path.filename().string());
     return false;
   }
-  const Ref<Scene> newScene = CreateRef<Scene>();
+  const Ref<Scene> newScene = create_ref<Scene>();
   const SceneSerializer serializer(newScene);
   if (serializer.Deserialize(path.string())) {
     SetEditorScene(newScene);
@@ -391,7 +391,7 @@ void EditorLayer::OnSceneSimulate() {
 }
 
 void EditorLayer::DrawWindowTitle() {
-  if (!Application::Get()->GetSpecification().CustomWindowTitle)
+  if (!Application::get()->get_specification().custom_window_title)
     return;
 
   ImGuiScoped::StyleColor col(ImGuiCol_MenuBarBg, {0, 0, 0, 1});
@@ -405,8 +405,8 @@ void EditorLayer::DrawWindowTitle() {
 
   {
     ImGuiScoped::StyleVar st(ImGuiStyleVar_FramePadding, {0, 8});
-    IGUI::Image(Resources::s_EditorResources.EngineIcon->GetTexture(), {30, 30});
-    auto& name = Application::Get()->GetSpecification().Name;
+    IGUI::image(Resources::editor_resources.engine_icon->get_texture(), {30, 30});
+    auto& name = Application::get()->get_specification().name;
     ImGui::Text("%s", name.c_str());
   }
 
@@ -427,24 +427,24 @@ void EditorLayer::DrawWindowTitle() {
   const bool isNormalCursor = ImGui::GetMouseCursor() == ImGuiMouseCursor_Arrow;
 
   // Minimize Button
-  if (ImGui::Button(StringUtils::FromChar8T(ICON_MDI_MINUS), buttonSize) && isNormalCursor)
-    Window::Minimize();
+  if (ImGui::Button(StringUtils::from_char8_t(ICON_MDI_MINUS), buttonSize) && isNormalCursor)
+    Window::minimize();
   ImGui::SameLine();
 
   // Maximize Button
-  if (ImGui::Button(StringUtils::FromChar8T(ICON_MDI_WINDOW_MAXIMIZE), buttonSize) && isNormalCursor) {
-    if (Window::IsMaximized())
-      Window::Restore();
+  if (ImGui::Button(StringUtils::from_char8_t(ICON_MDI_WINDOW_MAXIMIZE), buttonSize) && isNormalCursor) {
+    if (Window::is_maximized())
+      Window::restore();
     else
-      Window::Maximize();
+      Window::maximize();
   }
   ImGui::SameLine();
 
   ImGui::PushStyleColor(ImGuiCol_ButtonHovered, {0.909f, 0.066f, 0.137f, 1.0f});
   ImGui::PushStyleColor(ImGuiCol_ButtonActive, {0.920f, 0.066f, 0.120f, 1.0f});
   // Close Button
-  if (ImGui::Button(StringUtils::FromChar8T(ICON_MDI_WINDOW_CLOSE), buttonSize) && isNormalCursor)
-    Application::Get()->Close();
+  if (ImGui::Button(StringUtils::from_char8_t(ICON_MDI_WINDOW_CLOSE), buttonSize) && isNormalCursor)
+    Application::get()->close();
   ImGui::PopStyleColor(2);
 
   ImGui::PopStyleColor();
@@ -521,7 +521,7 @@ void EditorLayer::OpenProject(const std::filesystem::path& path) {
   if (path.empty())
     return;
   if (Project::Load(path)) {
-    const auto& startScene = AssetManager::GetAssetFileSystemPath(Project::GetActive()->GetConfig().StartScene);
+    const auto& startScene = AssetManager::get_asset_file_system_path(Project::GetActive()->GetConfig().StartScene);
     OpenScene(startScene);
   }
 }

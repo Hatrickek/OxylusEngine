@@ -22,7 +22,7 @@ namespace OxylusRuntime {
 
   RuntimeLayer::~RuntimeLayer() = default;
 
-  void RuntimeLayer::OnAttach(EventDispatcher& dispatcher) {
+  void RuntimeLayer::on_attach(EventDispatcher& dispatcher) {
     auto& style = ImGui::GetStyle();
     style.WindowMenuButtonPosition = ImGuiDir_Left;
 
@@ -30,15 +30,15 @@ namespace OxylusRuntime {
     LoadScene();
   }
 
-  void RuntimeLayer::OnDetach() { }
+  void RuntimeLayer::on_detach() { }
 
-  void RuntimeLayer::OnUpdate(Timestep deltaTime) {
+  void RuntimeLayer::on_update(Timestep deltaTime) {
     m_Scene->OnRuntimeUpdate(deltaTime);
   }
 
-  void RuntimeLayer::OnImGuiRender() {
+  void RuntimeLayer::on_imgui_render() {
     RenderFinalImage();
-    m_Scene->OnImGuiRender(Application::GetTimestep());
+    m_Scene->OnImGuiRender(Application::get_timestep());
 
     constexpr ImGuiWindowFlags window_flags = ImGuiWindowFlags_NoDecoration | ImGuiWindowFlags_NoDocking |
                                               ImGuiWindowFlags_AlwaysAutoResize | ImGuiWindowFlags_NoSavedSettings |
@@ -58,7 +58,7 @@ namespace OxylusRuntime {
   }
 
   void RuntimeLayer::LoadScene() {
-    m_Scene = CreateRef<Scene>();
+    m_Scene = create_ref<Scene>();
     const SceneSerializer serializer(m_Scene);
     serializer.Deserialize(GetAssetsPath("Scenes/Main.oxscene"));
 
@@ -85,8 +85,8 @@ namespace OxylusRuntime {
     ImGui::SetNextWindowSize(viewport->WorkSize);
     ImGuiScoped::StyleVar style(ImGuiStyleVar_WindowPadding, ImVec2{});
     if (ImGui::Begin("FinalImage", nullptr, flags)) {
-      IGUI::Image(*m_Scene->GetRenderer().GetRenderPipeline()->GetFinalImage(),
-        ImVec2{(float)Window::GetWidth(), (float)Window::GetHeight()});
+      IGUI::image(*m_Scene->GetRenderer().GetRenderPipeline()->GetFinalImage(),
+        ImVec2{(float)Window::get_width(), (float)Window::get_height()});
       ImGui::End();
     }
   }

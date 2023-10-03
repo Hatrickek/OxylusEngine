@@ -23,7 +23,7 @@ public:
 
 #define UM_StringTransparentEquality StringUtils::StringHash, std::equal_to<>
 
-  static void ReplaceString(std::string& subject, std::string_view search, std::string_view replace) {
+  static void replace_string(std::string& subject, std::string_view search, std::string_view replace) {
     size_t pos = 0;
     while ((pos = subject.find(search, pos)) != std::string::npos) {
       subject.replace(pos, search.length(), replace);
@@ -31,7 +31,7 @@ public:
     }
   }
 
-  static const char* FromChar8T(const char8_t* c) {
+  static const char* from_char8_t(const char8_t* c) {
     return reinterpret_cast<const char*>(c);
   }
 };

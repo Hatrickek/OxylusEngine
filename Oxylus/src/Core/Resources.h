@@ -14,12 +14,12 @@ class TextureAsset;
 class Resources {
 public:
   static struct EditorRes {
-    Ref<TextureAsset> EngineIcon;
-  } s_EditorResources;
+    Ref<TextureAsset> engine_icon;
+  } editor_resources;
 
-  static void InitEditorResources();
+  static void init_editor_resources();
 
-  static std::string GetResourcesPath(const std::string& path);
-  static bool ResourcesPathExists();
+  static std::string get_resources_path(const std::string& path);
+  static bool resources_path_exists();
 };
 }

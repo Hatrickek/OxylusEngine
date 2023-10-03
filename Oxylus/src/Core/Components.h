@@ -27,75 +27,75 @@ struct IDComponent {
 };
 
 struct TagComponent {
-  std::string Tag;
-  uint16_t Layer = BIT(1);
-  bool Enabled = true;
+  std::string tag;
+  uint16_t layer = BIT(1);
+  bool enabled = true;
 
   bool handled = true;
 
   TagComponent() = default;
 
-  explicit TagComponent(std::string tag) : Tag(std::move(tag)) { }
+  explicit TagComponent(std::string tag) : tag(std::move(tag)) { }
 };
 
 struct RelationshipComponent {
-  UUID Parent = 0;
-  std::vector<UUID> Children{};
+  UUID parent = 0;
+  std::vector<UUID> children{};
 };
 
 struct PrefabComponent {
-  UUID ID;
+  UUID id;
 };
 
 struct TransformComponent {
-  Vec3 Translation = Vec3(0);
-  Vec3 Rotation = Vec3(0); // Stored in radians
-  Vec3 Scale = Vec3(1);
+  Vec3 translation = Vec3(0);
+  Vec3 rotation = Vec3(0); // Stored in radians
+  Vec3 scale = Vec3(1);
 
   TransformComponent() = default;
 
   TransformComponent(const TransformComponent&) = default;
 
-  TransformComponent(const Vec3& translation) : Translation(translation) { }
+  TransformComponent(const Vec3& translation) : translation(translation) { }
 };
 
 // Rendering
 struct MaterialComponent {
-  std::vector<Ref<Material>> Materials{};
-  bool UsingMaterialAsset = false;
+  std::vector<Ref<Material>> materials{};
+  bool using_material_asset = false;
 };
 
 struct CameraComponent {
-  Ref<Camera> System;
+  Ref<Camera> system;
 
-  CameraComponent() : System(CreateRef<Camera>()) { }
+  CameraComponent() : system(create_ref<Camera>()) { }
 };
 
 struct MeshRendererComponent {
-  Ref<Mesh> MeshGeometry = nullptr;
-  uint32_t SubmesIndex = 0;
+  Ref<Mesh> mesh_geometry = nullptr;
+  uint32_t submesh_index = 0;
 
   MeshRendererComponent() = default;
 
-  MeshRendererComponent(const Ref<Mesh>& model) : MeshGeometry(model) { }
+  MeshRendererComponent(const Ref<Mesh>& model) : mesh_geometry(model) { }
 
   ~MeshRendererComponent() {
-    MeshGeometry.reset();
+    mesh_geometry.reset();
   }
 };
 
 struct ParticleSystemComponent {
-  Ref<ParticleSystem> System = nullptr;
+  Ref<ParticleSystem> system = nullptr;
 
-  ParticleSystemComponent() : System(CreateRef<ParticleSystem>()) { }
+  ParticleSystemComponent() : system(create_ref<ParticleSystem>()) { }
 };
 
 struct SkyLightComponent {
-  Ref<TextureAsset> Cubemap = nullptr;
-  float Intensity = 0.7f;
-  float Rotation = 0.0f;
-  bool FlipImage = false;
-  float LoadBias = 1.0f;
+  Ref<TextureAsset> cubemap = nullptr;
+  float intensity = 0.7f;
+  float rotation = 0.0f;
+  bool flip_image = false;
+  float lod_bias = 1.0f;
 };
 
 struct LightComponent {
@@ -103,147 +103,147 @@ struct LightComponent {
 
   enum class ShadowQualityType { Hard = 0, Soft, UltraSoft };
 
-  LightType Type = LightType::Point;
-  bool UseColorTemperatureMode = false;
-  uint32_t Temperature = 6570;
-  Vec3 Color = Vec3(1.0f);
-  Vec4 Direction = {};
-  float Intensity = 1.0f;
+  LightType type = LightType::Point;
+  bool use_color_temperature_mode = false;
+  uint32_t temperature = 6570;
+  Vec3 color = Vec3(1.0f);
+  Vec4 direction = {};
+  float intensity = 1.0f;
 
-  float Range = 1.0f;
-  float CutOffAngle = glm::radians(12.5f);
-  float OuterCutOffAngle = glm::radians(17.5f);
+  float range = 1.0f;
+  float cut_off_angle = glm::radians(12.5f);
+  float outer_cut_off_angle = glm::radians(17.5f);
 
-  ShadowQualityType ShadowQuality = ShadowQualityType::UltraSoft;
+  ShadowQualityType shadow_quality = ShadowQualityType::UltraSoft;
 };
 
 struct PostProcessProbe {
-  bool VignetteEnabled = false;
-  float VignetteIntensity = 0.25f;
+  bool vignette_enabled = false;
+  float vignette_intensity = 0.25f;
 
-  bool FilmGrainEnabled = false;
-  float FilmGrainIntensity = 0.2f;
+  bool film_grain_enabled = false;
+  float film_grain_intensity = 0.2f;
 
-  bool ChromaticAberrationEnabled = false;
-  float ChromaticAberrationIntensity = 0.5f;
+  bool chromatic_aberration_enabled = false;
+  float chromatic_aberration_intensity = 0.5f;
 
-  bool SharpenEnabled = false;
-  float SharpenIntensity = 0.5f;
+  bool sharpen_enabled = false;
+  float sharpen_intensity = 0.5f;
 };
 
 // Physics
 struct RigidbodyComponent {
   enum class BodyType { Static = 0, Kinematic, Dynamic };
 
-  BodyType Type = BodyType::Dynamic;
-  float Mass = 1.0f;
-  float LinearDrag = 0.0f;
-  float AngularDrag = 0.05f;
-  float GravityScale = 1.0f;
-  bool AllowSleep = true;
-  bool Awake = true;
-  bool Continuous = false;
-  bool Interpolation = false;
+  BodyType type = BodyType::Dynamic;
+  float mass = 1.0f;
+  float linear_drag = 0.0f;
+  float angular_drag = 0.05f;
+  float gravity_scale = 1.0f;
+  bool allow_sleep = true;
+  bool awake = true;
+  bool continuous = false;
+  bool interpolation = false;
 
-  bool IsSensor = false;
+  bool is_sensor = false;
 
   // Stored as JPH::Body
-  void* RuntimeBody = nullptr;
+  void* runtime_body = nullptr;
 
   // For interpolation/extrapolation
-  Vec3 PreviousTranslation = Vec3(0.0f);
-  glm::quat PreviousRotation = Vec3(0.0f);
-  Vec3 Translation = Vec3(0.0f);
-  glm::quat Rotation = Vec3(0.0f);
+  Vec3 previous_translation = Vec3(0.0f);
+  glm::quat previous_rotation = Vec3(0.0f);
+  Vec3 translation = Vec3(0.0f);
+  glm::quat rotation = Vec3(0.0f);
 };
 
 struct BoxColliderComponent {
-  Vec3 Size = {0.5f, 0.5f, 0.5f};
-  Vec3 Offset = {0.0f, 0.0f, 0.0f};
-  float Density = 1.0f;
+  Vec3 size = {0.5f, 0.5f, 0.5f};
+  Vec3 offset = {0.0f, 0.0f, 0.0f};
+  float density = 1.0f;
 
-  float Friction = 0.5f;
-  float Restitution = 0.0f;
+  float friction = 0.5f;
+  float restitution = 0.0f;
 };
 
 struct SphereColliderComponent {
-  float Radius = 0.5f;
-  Vec3 Offset = {0.0f, 0.0f, 0.0f};
-  float Density = 1.0f;
+  float radius = 0.5f;
+  Vec3 offset = {0.0f, 0.0f, 0.0f};
+  float density = 1.0f;
 
-  float Friction = 0.5f;
-  float Restitution = 0.0f;
+  float friction = 0.5f;
+  float restitution = 0.0f;
 };
 
 struct CapsuleColliderComponent {
-  float Height = 1.0f;
-  float Radius = 0.5f;
-  Vec3 Offset = {0.0f, 0.0f, 0.0f};
-  float Density = 1.0f;
+  float height = 1.0f;
+  float radius = 0.5f;
+  Vec3 offset = {0.0f, 0.0f, 0.0f};
+  float density = 1.0f;
 
-  float Friction = 0.5f;
-  float Restitution = 0.0f;
+  float friction = 0.5f;
+  float restitution = 0.0f;
 };
 
 struct TaperedCapsuleColliderComponent {
-  float Height = 1.0f;
-  float TopRadius = 0.5f;
-  float BottomRadius = 0.5f;
-  Vec3 Offset = {0.0f, 0.0f, 0.0f};
-  float Density = 1.0f;
+  float height = 1.0f;
+  float top_radius = 0.5f;
+  float bottom_radius = 0.5f;
+  Vec3 offset = {0.0f, 0.0f, 0.0f};
+  float density = 1.0f;
 
-  float Friction = 0.5f;
-  float Restitution = 0.0f;
+  float friction = 0.5f;
+  float restitution = 0.0f;
 };
 
 struct CylinderColliderComponent {
-  float Height = 1.0f;
-  float Radius = 0.5f;
-  Vec3 Offset = {0.0f, 0.0f, 0.0f};
-  float Density = 1.0f;
+  float height = 1.0f;
+  float radius = 0.5f;
+  Vec3 offset = {0.0f, 0.0f, 0.0f};
+  float density = 1.0f;
 
-  float Friction = 0.5f;
-  float Restitution = 0.0f;
+  float friction = 0.5f;
+  float restitution = 0.0f;
 };
 
 struct CharacterControllerComponent {
-  JPH::Ref<JPH::Character> Character = nullptr;
+  JPH::Ref<JPH::Character> character = nullptr;
 
   // Size
-  float CharacterHeightStanding = 1.35f;
-  float CharacterRadiusStanding = 0.3f;
-  float CharacterHeightCrouching = 0.8f;
-  float CharacterRadiusCrouching = 0.3f;
+  float character_height_standing = 1.35f;
+  float character_radius_standing = 0.3f;
+  float character_height_crouching = 0.8f;
+  float character_radius_crouching = 0.3f;
 
   // Movement
   struct MovementSettings {
-    float MaxSpeed;
-    float Acceleration;
-    float Deceleration;
+    float max_speed;
+    float acceleration;
+    float deceleration;
 
     MovementSettings(float maxSpeed, float accel, float decel)
-      : MaxSpeed(maxSpeed), Acceleration(accel), Deceleration(decel) { }
+      : max_speed(maxSpeed), acceleration(accel), deceleration(decel) { }
   };
 
-  bool Interpolation = true;
+  bool interpolation = true;
 
-  JPH::Vec3 CurrentVelocity = {};
-  bool ControlMovementDuringJump = true;
-  float JumpForce = 8.0f;
-  bool AutoBunnyHop = true;
-  float AirControl = 0.3f;
-  MovementSettings GroundSettings = MovementSettings(7, 14, 10);
-  MovementSettings AirSettings = MovementSettings(7, 2, 2);
-  MovementSettings StrafeSettings = MovementSettings(0.0f, 50, 50);
+  JPH::Vec3 current_velocity = {};
+  bool control_movement_during_jump = true;
+  float jump_force = 8.0f;
+  bool auto_bunny_hop = true;
+  float air_control = 0.3f;
+  MovementSettings ground_settings = MovementSettings(7, 14, 10);
+  MovementSettings air_settings = MovementSettings(7, 2, 2);
+  MovementSettings strafe_settings = MovementSettings(0.0f, 50, 50);
 
-  float Friction = 6.0f;
-  float Gravity = 20;
-  float CollisionTolerance = 0.05f;
+  float friction = 6.0f;
+  float gravity = 20;
+  float collision_tolerance = 0.05f;
 
   // For interpolation/extrapolation
-  Vec3 PreviousTranslation = Vec3(0.0f);
-  Quat PreviousRotation = Vec3(0.0f);
-  Vec3 Translation = Vec3(0.0f);
+  Vec3 previous_translation = Vec3(0.0f);
+  Quat previous_rotation = Vec3(0.0f);
+  Vec3 translation = Vec3(0.0f);
   Quat Rotation = Vec3(0.0f);
 
   CharacterControllerComponent() = default;
@@ -251,16 +251,16 @@ struct CharacterControllerComponent {
 
 //Audio
 struct AudioSourceComponent {
-  AudioSourceConfig Config;
+  AudioSourceConfig config;
 
-  Ref<AudioSource> Source = nullptr;
+  Ref<AudioSource> source = nullptr;
 };
 
 struct AudioListenerComponent {
-  bool Active = true;
-  AudioListenerConfig Config;
+  bool active = true;
+  AudioListenerConfig config;
 
-  Ref<AudioListener> Listener;
+  Ref<AudioListener> listener;
 };
 
 // Custom
@@ -273,13 +273,13 @@ struct CustomComponent {
   };
 
   struct ComponentField {
-    std::string Name = "NewField";
-    FieldType Type = INT;
-    std::string Value = {};
+    std::string name = "NewField";
+    FieldType type = INT;
+    std::string value = {};
   };
 
-  std::string Name = "NewComponent";
-  std::vector<ComponentField> Fields;
+  std::string name = "NewComponent";
+  std::vector<ComponentField> fields;
 };
 
 template <typename... Component>

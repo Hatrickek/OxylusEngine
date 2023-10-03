@@ -6,7 +6,7 @@
 
 
 namespace Oxylus::Math {
-bool DecomposeTransform(const glm::mat4& transform, glm::vec3& translation, glm::vec3& rotation, glm::vec3& scale) {
+bool decompose_transform(const glm::mat4& transform, glm::vec3& translation, glm::vec3& rotation, glm::vec3& scale) {
   OX_SCOPED_ZONE;
   using namespace glm;
   using T = float;

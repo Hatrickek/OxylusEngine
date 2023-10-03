@@ -98,3 +98,7 @@ endif()
 target_link_libraries(${PROJECT_NAME} PRIVATE
     Oxylus
 )
+
+# Copy resource folder
+add_custom_command(TARGET OxylusEditor POST_BUILD COMMAND ${CMAKE_COMMAND} -E copy_directory ${CMAKE_SOURCE_DIR}/OxylusEditor/Resources $<TARGET_FILE_DIR:OxylusEditor>/Resources)
+

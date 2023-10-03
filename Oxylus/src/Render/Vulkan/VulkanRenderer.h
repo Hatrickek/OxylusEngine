@@ -2,6 +2,7 @@
 
 #define GLM_FORCE_DEPTH_ZERO_TO_ONE
 #define GLM_ENABLE_EXPERIMENTAL
+
 #include <glm/glm.hpp>
 
 #include "Core/Components.h"
@@ -22,58 +23,51 @@ class VulkanContext;
 class VulkanRenderer {
 public:
   static struct RendererContext {
-    Ref<RenderPipeline> m_RenderPipeline = nullptr;
-    Ref<DefaultRenderPipeline> m_DefaultRenderPipeline = nullptr;
-    Camera* m_CurrentCamera = nullptr;
-  } s_RendererContext;
-
-  static struct RendererData {
-    struct Vertex {
-      Vec3 Position{};
-      Vec3 Normal{};
-      Vec2 UV{};
-      Vec4 Color{};
-      Vec4 Joint0{};
-      Vec4 Weight0{};
-      Vec4 Tangent{};
-    };
-  } s_RendererData;
+    Ref<RenderPipeline> render_pipeline = nullptr;
+    Ref<DefaultRenderPipeline> default_render_pipeline = nullptr;
+    Camera* current_camera = nullptr;
+    UVec2 viewport_size = {};
+  } renderer_context;
 
   struct LightingData {
-    Vec4 PositionAndIntensity;
-    Vec4 ColorAndRadius;
-    Vec4 Rotation;
+    Vec4 position_and_intensity;
+    Vec4 color_and_radius;
+    Vec4 rotation;
   };
 
   struct MeshData {
-    Mesh* MeshGeometry;
-    std::vector<Ref<Material>> Materials;
-    Mat4 Transform;
-    uint32_t SubmeshIndex = 0;
+    Mesh* mesh_geometry;
+    std::vector<Ref<Material>> materials;
+    Mat4 transform;
+    uint32_t submesh_index = 0;
 
     MeshData(Mesh* mesh,
              const Mat4& transform,
              const std::vector<Ref<Material>>& materials,
-             const uint32_t submeshIndex) : MeshGeometry(mesh), Materials(materials), Transform(transform),
-                                            SubmeshIndex(submeshIndex) {}
+             const uint32_t submeshIndex) : mesh_geometry(mesh), materials(materials), transform(transform),
+                                            submesh_index(submeshIndex) { }
   };
 
-  static void Init();
-  static void Shutdown();
+  static void init();
+  static void shutdown();
 
   // Drawing
-  static void Draw(VulkanContext* context, ImGuiLayer* imguiLayer, LayerStack& layerStack, Ref<SystemManager>& systemManager);
-  static void RenderNode(const Mesh::Node* node, vuk::CommandBuffer& commandBuffer, const std::function<bool(Mesh::Primitive* prim)>& perMeshFunc);
-  static void RenderMesh(const MeshData& mesh, vuk::CommandBuffer& commandBuffer, const std::function<bool(Mesh::Primitive* prim)>& perMeshFunc);
+  static void draw(VulkanContext* context, ImGuiLayer* imgui_layer, LayerStack& layer_stack, const Ref<SystemManager>& system_manager);
+  static void render_node(const Mesh::Node* node, vuk::CommandBuffer& command_buffer, const std::function<bool(Mesh::Primitive* prim)>& per_mesh_func);
+  static void render_mesh(const MeshData& mesh, vuk::CommandBuffer& command_buffer, const std::function<bool(Mesh::Primitive* prim)>& per_mesh_func);
+
+  static UVec2 get_viewport_size() { return renderer_context.viewport_size; }
+  static unsigned get_viewport_width() { return renderer_context.viewport_size.x; }
+  static unsigned get_viewport_height() { return renderer_context.viewport_size.y; }
 
   // Utils
-  static std::pair<vuk::Unique<vuk::Image>, vuk::Future> GenerateCubemapFromEquirectangular(const vuk::Texture& cubemap);
-    
+  static std::pair<vuk::Unique<vuk::Image>, vuk::Future> generate_cubemap_from_equirectangular(const vuk::Texture& cubemap);
+
   // TODO(hatrickek): Temporary
-  static void SetCamera(Camera& camera);
+  static void set_camera(Camera& camera);
 
 private:
   // Config
-  static RendererConfig s_RendererConfig;
+  static RendererConfig renderer_config;
 };
 }

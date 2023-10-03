@@ -29,7 +29,7 @@ ImFont* ImGuiLayer::BoldFont = nullptr;
 
 ImGuiLayer::ImGuiLayer() : Layer("ImGuiLayer") { }
 
-void ImGuiLayer::OnAttach(EventDispatcher&) {
+void ImGuiLayer::on_attach(EventDispatcher&) {
   IMGUI_CHECKVERSION();
   ImGui::CreateContext();
   ImGuiIO& io = ImGui::GetIO();
@@ -120,11 +120,11 @@ ImGuiLayer::ImGuiData ImGuiLayer::ImGui_ImplVuk_Init(vuk::Allocator& allocator) 
 
 
 void ImGuiLayer::InitForVulkan() {
-  ImGui_ImplGlfw_InitForVulkan(Window::GetGLFWWindow(), true);
+  ImGui_ImplGlfw_InitForVulkan(Window::get_glfw_window(), true);
 
   // Upload Fonts
-  const auto regularFontPath = Resources::GetResourcesPath("Fonts/jetbrains-mono/JetBrainsMono-Regular.ttf");
-  const auto boldFontPath = Resources::GetResourcesPath("Fonts/jetbrains-mono/JetBrainsMono-Bold.ttf");
+  const auto regularFontPath = Resources::get_resources_path("Fonts/jetbrains-mono/JetBrainsMono-Regular.ttf");
+  const auto boldFontPath = Resources::get_resources_path("Fonts/jetbrains-mono/JetBrainsMono-Bold.ttf");
 
   const ImGuiIO& io = ImGui::GetIO();
   constexpr float fontSize = 16.0f;
@@ -158,10 +158,10 @@ void ImGuiLayer::InitForVulkan() {
   int32_t width, height;
   io.Fonts->GetTexDataAsRGBA32(&pixels, &width, &height);
 
-  m_ImGuiData = ImGui_ImplVuk_Init(*VulkanContext::Get()->SuperframeAllocator);
+  m_ImGuiData = ImGui_ImplVuk_Init(*VulkanContext::get()->superframe_allocator);
 }
 
-void ImGuiLayer::OnDetach() {
+void ImGuiLayer::on_detach() {
   ImGui_ImplGlfw_Shutdown();
   ImGui::DestroyContext();
 }

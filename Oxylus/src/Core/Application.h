@@ -8,30 +8,28 @@
 #include "UI/ImGuiLayer.h"
 #include "Utils/Log.h"
 
-int main(int argc,
-         char** argv);
+int main(int argc, char** argv);
 
 namespace Oxylus {
 class SystemManager;
 
 struct ApplicationCommandLineArgs {
-  int Count = 0;
-  char** Args = nullptr;
+  int count = 0;
+  char** args = nullptr;
 
   const char* operator[](int index) const {
-    OX_CORE_ASSERT(index < Count)
-    return Args[index];
+    OX_CORE_ASSERT(index < count)
+    return args[index];
   }
 };
 
 struct AppSpec {
-  std::string Name = "Oxylus App";
-  std::string WorkingDirectory = {};
-  std::string ResourcesPath = "Resources";
-  bool UseImGui = true;
-  bool CustomWindowTitle = false;
-  uint32_t DeviceIndex = 0;
-  ApplicationCommandLineArgs CommandLineArgs;
+  std::string name = "Oxylus App";
+  std::string working_directory = {};
+  std::string resources_path = "Resources";
+  bool custom_window_title = false;
+  uint32_t device_index = 0;
+  ApplicationCommandLineArgs command_line_args;
 };
 
 class Application {
@@ -39,45 +37,45 @@ public:
   Application(const AppSpec& spec);
   virtual ~Application();
 
-  void InitSystems();
+  void init_systems();
 
-  Application& PushLayer(Layer* layer);
-  Application& PushOverlay(Layer* layer);
+  Application& push_layer(Layer* layer);
+  Application& push_overlay(Layer* layer);
 
-  Ref<SystemManager> GetSystemManager() { return m_SystemManager; }
+  Ref<SystemManager> get_system_manager() { return system_manager; }
 
-  void Close();
+  void close();
 
-  const AppSpec& GetSpecification() const { return m_Spec; }
-  const std::vector<std::string>& GetCommandLineArgs() const { return m_CommandLineArgs; }
-  ImGuiLayer* GetImGuiLayer() const { return m_ImGuiLayer; }
-  const LayerStack& GetLayerStack() const { return m_LayerStack; }
-  static Application* Get() { return s_Instance; }
-  static Timestep GetTimestep() { return s_Instance->m_Timestep; }
+  const AppSpec& get_specification() const { return m_spec; }
+  const std::vector<std::string>& get_command_line_args() const { return command_line_args; }
+  ImGuiLayer* get_imgui_layer() const { return imgui_layer; }
+  const LayerStack& get_layer_stack() const { return layer_stack; }
+  static Application* get() { return instance; }
+  static Timestep get_timestep() { return instance->timestep; }
 
 private:
-  AppSpec m_Spec;
-  std::vector<std::string> m_CommandLineArgs;
-  Core m_Core;
-  ImGuiLayer* m_ImGuiLayer;
-  LayerStack m_LayerStack;
+  AppSpec m_spec;
+  std::vector<std::string> command_line_args;
+  Core core;
+  ImGuiLayer* imgui_layer;
+  LayerStack layer_stack;
 
-  Ref<SystemManager> m_SystemManager = nullptr;
-  EventDispatcher m_Dispatcher;
+  Ref<SystemManager> system_manager = nullptr;
+  EventDispatcher dispatcher;
 
-  ThreadManager m_ThreadManager;
-  Timestep m_Timestep;
+  ThreadManager thread_manager;
+  Timestep timestep;
 
-  bool m_IsRunning = true;
-  float m_LastFrameTime = 0.0f;
-  static Application* s_Instance;
+  bool is_running = true;
+  float last_frame_time = 0.0f;
+  static Application* instance;
 
-  void Run();
-  void UpdateLayers(Timestep ts);
-  void UpdateRenderer();
+  void run();
+  void update_layers(Timestep ts);
+  void update_renderer();
 
   friend int ::main(int argc, char** argv);
 };
 
-Application* CreateApplication(ApplicationCommandLineArgs args);
+Application* create_application(ApplicationCommandLineArgs args);
 }

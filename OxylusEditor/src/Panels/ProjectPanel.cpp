@@ -19,7 +19,7 @@ void ProjectPanel::OnUpdate() { }
 
 void ProjectPanel::LoadProjectForEditor(const std::string& filepath) {
   if (Project::Load(filepath)) {
-    const auto startScene = AssetManager::GetAssetFileSystemPath(Project::GetActive()->GetConfig().StartScene);
+    const auto startScene = AssetManager::get_asset_file_system_path(Project::GetActive()->GetConfig().StartScene);
     EditorLayer::Get()->OpenScene(startScene);
     EditorConfig::Get()->AddRecentProject(filepath);
     Visible = false;
@@ -37,7 +37,7 @@ void ProjectPanel::OnImGuiRender() {
     const float x = ImGui::GetContentRegionAvail().x;
     const float y = ImGui::GetFrameHeight();
 
-    IGUI::Image(EditorLayer::Get()->m_EngineBanner->GetTexture(), {x, 111});
+    IGUI::image(EditorLayer::Get()->m_EngineBanner->get_texture(), {x, 111});
 
     ImGui::Text("Recent Projects");
     for (auto& project : EditorConfig::Get()->GetRecentProjects()) {
@@ -47,12 +47,12 @@ void ProjectPanel::OnImGuiRender() {
     }
 
     ImGui::Separator();
-    if (ImGui::Button(StringUtils::FromChar8T(ICON_MDI_FILE_DOCUMENT " New Project"), {x, y})) {
+    if (ImGui::Button(StringUtils::from_char8_t(ICON_MDI_FILE_DOCUMENT " New Project"), {x, y})) {
       Project::New();
       Visible = false;
     }
     ImGui::SetNextItemWidth(x);
-    if (ImGui::Button(StringUtils::FromChar8T(ICON_MDI_UPLOAD " Load Project"), {x, y})) {
+    if (ImGui::Button(StringUtils::from_char8_t(ICON_MDI_UPLOAD " Load Project"), {x, y})) {
       const std::string filepath = FileDialogs::OpenFile({{"Oxylus Project", "oxproj"}});
       if (!filepath.empty()) {
         LoadProjectForEditor(filepath);

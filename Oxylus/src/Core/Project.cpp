@@ -6,12 +6,12 @@
 
 namespace Oxylus {
 Ref<Project> Project::New() {
-  s_ActiveProject = CreateRef<Project>();
+  s_ActiveProject = create_ref<Project>();
   return s_ActiveProject;
 }
 
 Ref<Project> Project::Load(const std::filesystem::path& path) {
-  const Ref<Project> project = CreateRef<Project>();
+  const Ref<Project> project = create_ref<Project>();
 
   const ProjectSerializer serializer(project);
   if (serializer.Deserialize(path)) {

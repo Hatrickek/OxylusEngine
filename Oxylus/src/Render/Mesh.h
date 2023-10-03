@@ -37,10 +37,10 @@ public:
   };
 
   struct Primitive {
-    uint32_t firstIndex;
-    uint32_t indexCount;
-    uint32_t firstVertex;
-    uint32_t vertexCount;
+    uint32_t first_index;
+    uint32_t index_count;
+    uint32_t first_vertex;
+    uint32_t vertex_count;
 
     struct Dimensions {
       Vec3 min = glm::vec3(FLT_MAX);
@@ -50,83 +50,81 @@ public:
       float radius;
     } dimensions;
 
-    int32_t materialIndex = 0;
+    int32_t material_index = 0;
 
-    void SetDimensions(glm::vec3 min, glm::vec3 max);
-    //Primitive(uint32_t firstIndex, uint32_t indexCount, Material& material) : firstIndex(firstIndex), indexCount(indexCount), material(material) {}
-    Primitive(uint32_t firstIndex, uint32_t indexCount) : firstIndex(firstIndex), indexCount(indexCount) { }
+    void set_dimensions(glm::vec3 min, glm::vec3 max);
+    Primitive(uint32_t firstIndex, uint32_t indexCount) : first_index(firstIndex), index_count(indexCount) { }
   };
 
   struct Node {
-    Node* Parent;
-    uint32_t Index;
-    uint32_t MeshIndex;
-    std::vector<Node*> Children;
-    std::vector<Primitive*> Primitives;
-    Mat4 Matrix;
-    std::string Name;
-    int32_t SkinIndex = -1;
-    Vec3 Translation{};
-    Vec3 Scale{1.0f};
-    Quat Rotation{};
-    bool ContainsMesh = false;
-    Mat4 LocalMatrix() const;
-    Mat4 GetMatrix() const;
+    Node* parent;
+    uint32_t index;
+    uint32_t mesh_index;
+    std::vector<Node*> children;
+    std::vector<Primitive*> primitives;
+    Mat4 matrix;
+    std::string name;
+    int32_t skin_index = -1;
+    Vec3 translation{};
+    Vec3 scale{1.0f};
+    Quat rotation{};
+    bool contains_mesh = false;
+    Mat4 local_matrix() const;
+    Mat4 get_matrix() const;
   };
 
   struct Vertex {
-    Vec3 Pos;
-    Vec3 Normal;
-    Vec2 UV;
-    Vec4 Tangent;
-    Vec4 Color;
-    Vec4 Joint0;
-    Vec4 Weight0;
+    Vec3 position;
+    Vec3 normal;
+    Vec2 uv;
+    Vec4 tangent;
+    Vec4 color;
+    Vec4 joint0;
+    Vec4 weight0;
   };
 
-  std::vector<Ref<TextureAsset>> m_Textures;
-  std::vector<Node*> Nodes;
-  std::vector<Node*> LinearNodes;
-  vuk::Unique<vuk::Buffer> m_VerticiesBuffer;
-  vuk::Unique<vuk::Buffer> m_IndiciesBuffer;
-  std::string Name;
-  std::string Path;
-  uint32_t LoadingFlags = 0;
-  bool ShouldUpdate = false;
+  std::vector<Ref<TextureAsset>> m_textures;
+  std::vector<Node*> nodes;
+  std::vector<Node*> linear_nodes;
+  vuk::Unique<vuk::Buffer> verticies_buffer;
+  vuk::Unique<vuk::Buffer> indicies_buffer;
+  std::string name;
+  std::string path;
+  uint32_t loading_flags = 0;
 
   Mesh() = default;
-  Mesh(std::string_view path, int fileLoadingFlags = None, float scale = 1);
+  Mesh(std::string_view path, int file_loading_flags = None, float scale = 1);
   ~Mesh();
 
-  void LoadFromFile(const std::string& path, int fileLoadingFlags = None, float scale = 1);
+  void load_from_file(const std::string& file_path, int file_loading_flags = None, float scale = 1);
 
-  void BindVertexBuffer(vuk::CommandBuffer& commandBuffer) const;
-  void BindIndexBuffer(vuk::CommandBuffer& commandBuffer) const;
-  void Draw(vuk::CommandBuffer& commandBuffer) const;
-  void Destroy();
+  void bind_vertex_buffer(vuk::CommandBuffer& commandBuffer) const;
+  void bind_index_buffer(vuk::CommandBuffer& commandBuffer) const;
+  void draw(vuk::CommandBuffer& commandBuffer) const;
+  void destroy();
 
   /// Export a mesh file as glb file.
-  static bool ExportAsBinary(const std::string& inPath, const std::string& outPath);
+  static bool export_as_binary(const std::string& inPath, const std::string& outPath);
 
-  Ref<Material> GetMaterial(uint32_t index) const;
-  std::vector<Ref<Material>> GetMaterialsAsRef() const;
-  size_t GetNodeCount() const { return Nodes.size(); }
-  void SetScale(const glm::vec3& scale);
+  Ref<Material> get_material(uint32_t index) const;
+  std::vector<Ref<Material>> get_materials_as_ref() const;
+  size_t get_node_count() const { return nodes.size(); }
+  void set_scale(const glm::vec3& mesh_scale);
 
   operator bool() const {
-    return !Nodes.empty();
+    return !nodes.empty();
   }
 
 private:
-  std::vector<Ref<Material>> m_Materials;
-  std::vector<uint32_t> m_Indices;
-  std::vector<Vertex> m_Vertices;
-  Vec3 m_Scale{1.0f};
-  Vec3 m_Center{0.0f};
-  Vec2 m_UVScale{1.0f};
-  void LoadTextures(tinygltf::Model& model);
-  void LoadMaterials(tinygltf::Model& model);
-  void LoadNode(Node* parent,
+  std::vector<Ref<Material>> materials;
+  std::vector<uint32_t> indices;
+  std::vector<Vertex> vertices;
+  Vec3 scale{1.0f};
+  Vec3 center{0.0f};
+  Vec2 uv_scale{1.0f};
+  void load_textures(tinygltf::Model& model);
+  void load_materials(tinygltf::Model& model);
+  void load_node(Node* parent,
                 const tinygltf::Node& node,
                 uint32_t nodeIndex,
                 tinygltf::Model& model,

@@ -17,27 +17,27 @@ struct TextureLoadInfo {
 class TextureAsset {
 public:
   TextureAsset() = default;
-  TextureAsset(const std::string& path);
+  TextureAsset(const std::string& file_path);
   TextureAsset(const TextureLoadInfo& info);
   ~TextureAsset();
 
-  void CreateTexture(uint32_t x, uint32_t y, void* data, vuk::Format format = vuk::Format::eR8G8B8A8Unorm);
-  void Load(const std::string& path, vuk::Format format = vuk::Format::eR8G8B8A8Unorm);
-  void LoadFromMemory(void* initialData, size_t size);
-  vuk::ImageAttachment AsAttachment() const;
+  void create_texture(uint32_t x, uint32_t y, void* data, vuk::Format format = vuk::Format::eR8G8B8A8Unorm);
+  void load(const std::string& file_path, vuk::Format format = vuk::Format::eR8G8B8A8Unorm);
+  void load_from_memory(void* initial_data, size_t size);
+  vuk::ImageAttachment as_attachment() const;
 
-  const std::string& GetPath() const { return m_Path; }
-  const vuk::Texture& GetTexture() const { return m_Texture; }
+  const std::string& get_path() const { return path; }
+  const vuk::Texture& get_texture() const { return texture; }
 
-  static void CreateBlankTexture();
-  static void CreateWhiteTexture();
-  static Ref<TextureAsset> GetPurpleTexture() { return s_PurpleTexture; }
-  static Ref<TextureAsset> GetWhiteTexture() { return s_WhiteTexture; }
+  static void create_blank_texture();
+  static void create_white_texture();
+  static Ref<TextureAsset> get_purple_texture() { return s_purple_texture; }
+  static Ref<TextureAsset> get_white_texture() { return s_white_texture; }
 
 private:
-  vuk::Texture m_Texture;
-  std::string m_Path = {};
-  static Ref<TextureAsset> s_PurpleTexture;
-  static Ref<TextureAsset> s_WhiteTexture;
+  vuk::Texture texture;
+  std::string path = {};
+  static Ref<TextureAsset> s_purple_texture;
+  static Ref<TextureAsset> s_white_texture;
 };
 }

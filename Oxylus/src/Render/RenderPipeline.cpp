@@ -5,19 +5,19 @@
 #include "Vulkan/VulkanContext.h"
 
 namespace Oxylus {
-void RenderPipeline::EnqueueFuture(vuk::Future&& fut) {
-  std::scoped_lock _(m_SetupLock);
-  m_Futures.emplace_back(std::move(fut));
+void RenderPipeline::enqueue_future(vuk::Future&& fut) {
+  std::scoped_lock _(setup_lock);
+  futures.emplace_back(std::move(fut));
 }
 
-void RenderPipeline::WaitForFutures(VulkanContext* vkContext) {
+void RenderPipeline::wait_for_futures(VulkanContext* vkContext) {
   vuk::Compiler compiler;
-  wait_for_futures_explicit(*vkContext->SuperframeAllocator, compiler, m_Futures);
-  m_Futures.clear();
+  wait_for_futures_explicit(*vkContext->superframe_allocator, compiler, futures);
+  futures.clear();
 }
 
-void RenderPipeline::DetachSwapchain(vuk::Dimension3D dimension) {
-  m_AttachSwapchain = false;
-  m_Dimension = dimension;
+void RenderPipeline::detach_swapchain(vuk::Dimension3D dimension) {
+  attach_swapchain = false;
+  dimension = dimension;
 }
 }

@@ -9,42 +9,42 @@
 #include "Utils/FileSystem.h"
 
 namespace Oxylus {
-Ref<TextureAsset> TextureAsset::s_PurpleTexture = nullptr;
-Ref<TextureAsset> TextureAsset::s_WhiteTexture = nullptr;
+Ref<TextureAsset> TextureAsset::s_purple_texture = nullptr;
+Ref<TextureAsset> TextureAsset::s_white_texture = nullptr;
 
-TextureAsset::TextureAsset(const std::string& path) {
-  Load(path);
+TextureAsset::TextureAsset(const std::string& file_path) {
+  load(file_path);
 }
 
 TextureAsset::TextureAsset(const TextureLoadInfo& info) {
   if (!info.Path.empty())
-    Load(info.Path, info.Format);
+    load(info.Path, info.Format);
   else
-    CreateTexture(info.Width, info.Height, info.Data, info.Format);
+    create_texture(info.Width, info.Height, info.Data, info.Format);
 }
 
 TextureAsset::~TextureAsset() = default;
 
-void TextureAsset::CreateTexture(uint32_t x, uint32_t y, void* data, vuk::Format format) {
-  auto [tex, tex_fut] = create_texture(*VulkanContext::Get()->SuperframeAllocator, format, vuk::Extent3D{x, y, 1u}, data, true);
-  m_Texture = std::move(tex);
+void TextureAsset::create_texture(uint32_t x, uint32_t y, void* data, vuk::Format format) {
+  auto [tex, tex_fut] = vuk::create_texture(*VulkanContext::get()->superframe_allocator, format, vuk::Extent3D{x, y, 1u}, data, true);
+  texture = std::move(tex);
 
   vuk::Compiler compiler;
-  tex_fut.wait(*VulkanContext::Get()->SuperframeAllocator, compiler);
+  tex_fut.wait(*VulkanContext::get()->superframe_allocator, compiler);
 }
 
-void TextureAsset::Load(const std::string& path, vuk::Format format) {
-  m_Path = path;
+void TextureAsset::load(const std::string& file_path, vuk::Format format) {
+  path = file_path;
 
   uint32_t x, y, chans;
-  uint8_t* data = Texture::LoadStbImage(path, &x, &y, &chans);
+  uint8_t* data = Texture::load_stb_image(path, &x, &y, &chans);
 
-  CreateTexture(x, y, data, format);
+  create_texture(x, y, data, format);
 
   if (FileSystem::GetFileExtension(path) == "hdr") {
-    auto [image, future] = VulkanRenderer::GenerateCubemapFromEquirectangular(m_Texture);
+    auto [image, future] = VulkanRenderer::generate_cubemap_from_equirectangular(texture);
     vuk::Compiler compiler;
-    future.wait(*VulkanContext::Get()->SuperframeAllocator, compiler);
+    future.wait(*VulkanContext::get()->superframe_allocator, compiler);
 
     vuk::ImageViewCreateInfo ivci;
     ivci.format = vuk::Format::eR32G32B32A32Sfloat;
@@ -55,39 +55,39 @@ void TextureAsset::Load(const std::string& path, vuk::Format format) {
     ivci.subresourceRange.layerCount = 6;
     ivci.subresourceRange.levelCount = 1;
     ivci.viewType = vuk::ImageViewType::eCube;
-    m_Texture.view = *vuk::allocate_image_view(*VulkanContext::Get()->SuperframeAllocator, ivci);
+    texture.view = *vuk::allocate_image_view(*VulkanContext::get()->superframe_allocator, ivci);
 
-    m_Texture.format = vuk::Format::eR32G32B32A32Sfloat;
-    m_Texture.extent = vuk::Dimension3D::absolute(2048, 2048, 1).extent;
-    m_Texture.image = std::move(image);
-    m_Texture.layer_count = 6;
-    m_Texture.level_count = 1;
+    texture.format = vuk::Format::eR32G32B32A32Sfloat;
+    texture.extent = vuk::Dimension3D::absolute(2048, 2048, 1).extent;
+    texture.image = std::move(image);
+    texture.layer_count = 6;
+    texture.level_count = 1;
   }
 
   delete[] data;
 }
 
-void TextureAsset::LoadFromMemory(void* initialData, size_t size) {
+void TextureAsset::load_from_memory(void* initial_data, size_t size) {
   uint32_t x, y, chans;
-  const auto data = Texture::LoadStbImageFromMemory(initialData, size, &x, &y, &chans);
+  const auto data = Texture::load_stb_image_from_memory(initial_data, size, &x, &y, &chans);
 
-  CreateTexture(x, y, data);
+  create_texture(x, y, data);
 
   delete[] data;
 }
 
-vuk::ImageAttachment TextureAsset::AsAttachment() const {
-  return vuk::ImageAttachment::from_texture(m_Texture);
+vuk::ImageAttachment TextureAsset::as_attachment() const {
+  return vuk::ImageAttachment::from_texture(texture);
 }
 
-void TextureAsset::CreateBlankTexture() {
-  s_PurpleTexture = CreateRef<TextureAsset>();
-  s_PurpleTexture->CreateTexture(MissingTextureWidth, MissingTextureHeight, MissingTexture);
+void TextureAsset::create_blank_texture() {
+  s_purple_texture = create_ref<TextureAsset>();
+  s_purple_texture->create_texture(MissingTextureWidth, MissingTextureHeight, MissingTexture);
 }
 
-void TextureAsset::CreateWhiteTexture() {
-  s_WhiteTexture = CreateRef<TextureAsset>();
-  uint32_t whiteTextureData = 0xffffffff;
-  s_WhiteTexture->CreateTexture(16, 16, &whiteTextureData);
+void TextureAsset::create_white_texture() {
+  s_white_texture = create_ref<TextureAsset>();
+  uint32_t white_texture_data = 0xffffffff;
+  s_white_texture->create_texture(16, 16, &white_texture_data);
 }
 }

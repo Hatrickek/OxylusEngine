@@ -8,36 +8,36 @@
 namespace Oxylus {
 Material::~Material() { }
 
-void Material::Create(const std::string& name) {
+void Material::create(const std::string& materialName) {
   OX_SCOPED_ZONE;
-  Name = name;
-  Reset();
+  name = materialName;
+  reset();
 }
 
-void Material::BindTextures(vuk::CommandBuffer& commandBuffer) const {
+void Material::bind_textures(vuk::CommandBuffer& commandBuffer) const {
   commandBuffer.bind_sampler(1, 0, vuk::LinearSamplerRepeated)
                .bind_sampler(1, 1, vuk::LinearSamplerRepeated)
                .bind_sampler(1, 2, vuk::LinearSamplerRepeated)
                .bind_sampler(1, 3, vuk::LinearSamplerRepeated);
 
-  commandBuffer.bind_image(1, 0, *AlbedoTexture->GetTexture().view)
-               .bind_image(1, 1, *NormalTexture->GetTexture().view)
-               .bind_image(1, 2, *AOTexture->GetTexture().view)
-               .bind_image(1, 3, *MetallicRoughnessTexture->GetTexture().view);
+  commandBuffer.bind_image(1, 0, *albedo_texture->get_texture().view)
+               .bind_image(1, 1, *normal_texture->get_texture().view)
+               .bind_image(1, 2, *ao_texture->get_texture().view)
+               .bind_image(1, 3, *metallic_roughness_texture->get_texture().view);
 }
 
-bool Material::IsOpaque() const {
-  return AlphaMode == AlphaMode::Opaque;
+bool Material::is_opaque() const {
+  return alpha_mode == AlphaMode::Opaque;
 }
 
-void Material::Reset() {
-  AlbedoTexture = TextureAsset::GetPurpleTexture();
-  NormalTexture = TextureAsset::GetPurpleTexture();
-  AOTexture = TextureAsset::GetPurpleTexture();
-  MetallicRoughnessTexture = TextureAsset::GetPurpleTexture();
+void Material::reset() {
+  albedo_texture = TextureAsset::get_purple_texture();
+  normal_texture = TextureAsset::get_purple_texture();
+  ao_texture = TextureAsset::get_purple_texture();
+  metallic_roughness_texture = TextureAsset::get_purple_texture();
 }
 
-void Material::Destroy() {
-  m_Parameters = {};
+void Material::destroy() {
+  parameters = {};
 }
 }

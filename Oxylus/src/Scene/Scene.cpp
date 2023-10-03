@@ -41,9 +41,9 @@ Scene::Scene(const Scene& scene) {
 
 void Scene::Init() {
   // Renderer
-  m_SceneRenderer = CreateRef<SceneRenderer>();
+  m_SceneRenderer = create_ref<SceneRenderer>();
 
-  m_SceneRenderer->Init(this);
+  m_SceneRenderer->init(this);
 
   // Systems
   for (const auto& system : m_Systems) {
@@ -61,7 +61,7 @@ Entity Scene::CreateEntityWithUUID(UUID uuid, const std::string& name) {
   entity.AddComponentI<IDComponent>(uuid);
   entity.AddComponentI<RelationshipComponent>();
   entity.AddComponentI<TransformComponent>();
-  entity.AddComponentI<TagComponent>().Tag = name.empty() ? "Entity" : name;
+  entity.AddComponentI<TagComponent>().tag = name.empty() ? "Entity" : name;
   return entity;
 }
 
@@ -86,40 +86,40 @@ void Scene::UpdatePhysics(Timestep deltaTime) {
   const auto& bodyInterface = Physics::GetPhysicsSystem()->GetBodyInterface();
   const auto view = m_Registry.group<RigidbodyComponent>(entt::get<TransformComponent>);
   for (auto&& [e, rb, tc] : view.each()) {
-    if (!rb.RuntimeBody)
+    if (!rb.runtime_body)
       continue;
 
     PhysicsUtils::DebugDraw(this, e);
 
-    const auto* body = static_cast<const JPH::Body*>(rb.RuntimeBody);
+    const auto* body = static_cast<const JPH::Body*>(rb.runtime_body);
 
     if (!bodyInterface.IsActive(body->GetID()))
       continue;
 
-    if (rb.Interpolation) {
+    if (rb.interpolation) {
       if (stepped) {
         JPH::Vec3 position = body->GetPosition();
         JPH::Vec3 rotation = body->GetRotation().GetEulerAngles();
 
-        rb.PreviousTranslation = rb.Translation;
-        rb.PreviousRotation = rb.Rotation;
-        rb.Translation = {position.GetX(), position.GetY(), position.GetZ()};
-        rb.Rotation = glm::vec3(rotation.GetX(), rotation.GetY(), rotation.GetZ());
+        rb.previous_translation = rb.translation;
+        rb.previous_rotation = rb.rotation;
+        rb.translation = {position.GetX(), position.GetY(), position.GetZ()};
+        rb.rotation = glm::vec3(rotation.GetX(), rotation.GetY(), rotation.GetZ());
       }
 
-      tc.Translation = glm::lerp(rb.PreviousTranslation, rb.Translation, interpolationFactor);
-      tc.Rotation = glm::eulerAngles(glm::slerp(rb.PreviousRotation, rb.Rotation, interpolationFactor));
+      tc.translation = glm::lerp(rb.previous_translation, rb.translation, interpolationFactor);
+      tc.rotation = glm::eulerAngles(glm::slerp(rb.previous_rotation, rb.rotation, interpolationFactor));
     }
     else {
       const JPH::Vec3 position = body->GetPosition();
       JPH::Vec3 rotation = body->GetRotation().GetEulerAngles();
 
-      rb.PreviousTranslation = rb.Translation;
-      rb.PreviousRotation = rb.Rotation;
-      rb.Translation = {position.GetX(), position.GetY(), position.GetZ()};
-      rb.Rotation = glm::vec3(rotation.GetX(), rotation.GetY(), rotation.GetZ());
-      tc.Translation = rb.Translation;
-      tc.Rotation = glm::eulerAngles(rb.Rotation);
+      rb.previous_translation = rb.translation;
+      rb.previous_rotation = rb.rotation;
+      rb.translation = {position.GetX(), position.GetY(), position.GetZ()};
+      rb.rotation = glm::vec3(rotation.GetX(), rotation.GetY(), rotation.GetZ());
+      tc.translation = rb.translation;
+      tc.rotation = glm::eulerAngles(rb.rotation);
     }
   }
 
@@ -127,31 +127,31 @@ void Scene::UpdatePhysics(Timestep deltaTime) {
   {
     const auto chView = m_Registry.view<TransformComponent, CharacterControllerComponent>();
     for (auto&& [e, tc, ch] : chView.each()) {
-      ch.Character->PostSimulation(ch.CollisionTolerance);
-      if (ch.Interpolation) {
+      ch.character->PostSimulation(ch.collision_tolerance);
+      if (ch.interpolation) {
         if (stepped) {
-          JPH::Vec3 position = ch.Character->GetPosition();
-          JPH::Vec3 rotation = ch.Character->GetRotation().GetEulerAngles();
+          JPH::Vec3 position = ch.character->GetPosition();
+          JPH::Vec3 rotation = ch.character->GetRotation().GetEulerAngles();
 
-          ch.PreviousTranslation = ch.Translation;
-          ch.PreviousRotation = ch.Rotation;
-          ch.Translation = {position.GetX(), position.GetY(), position.GetZ()};
+          ch.previous_translation = ch.translation;
+          ch.previous_rotation = ch.Rotation;
+          ch.translation = {position.GetX(), position.GetY(), position.GetZ()};
           ch.Rotation = glm::vec3(rotation.GetX(), rotation.GetY(), rotation.GetZ());
         }
 
-        tc.Translation = glm::lerp(ch.PreviousTranslation, ch.Translation, interpolationFactor);
-        tc.Rotation = glm::eulerAngles(glm::slerp(ch.PreviousRotation, ch.Rotation, interpolationFactor));
+        tc.translation = glm::lerp(ch.previous_translation, ch.translation, interpolationFactor);
+        tc.rotation = glm::eulerAngles(glm::slerp(ch.previous_rotation, ch.Rotation, interpolationFactor));
       }
       else {
-        const JPH::Vec3 position = ch.Character->GetPosition();
-        JPH::Vec3 rotation = ch.Character->GetRotation().GetEulerAngles();
+        const JPH::Vec3 position = ch.character->GetPosition();
+        JPH::Vec3 rotation = ch.character->GetRotation().GetEulerAngles();
 
-        ch.PreviousTranslation = ch.Translation;
-        ch.PreviousRotation = ch.Rotation;
-        ch.Translation = {position.GetX(), position.GetY(), position.GetZ()};
+        ch.previous_translation = ch.translation;
+        ch.previous_rotation = ch.Rotation;
+        ch.translation = {position.GetX(), position.GetY(), position.GetZ()};
         ch.Rotation = glm::vec3(rotation.GetX(), rotation.GetY(), rotation.GetZ());
-        tc.Translation = ch.Translation;
-        tc.Rotation = glm::eulerAngles(ch.Rotation);
+        tc.translation = ch.translation;
+        tc.rotation = glm::eulerAngles(ch.Rotation);
       }
       PhysicsUtils::DebugDraw(this, e);
     }
@@ -160,29 +160,29 @@ void Scene::UpdatePhysics(Timestep deltaTime) {
 
 void Scene::IterateOverMeshNode(const Ref<Mesh>& mesh, const std::vector<Mesh::Node*>& node, Entity parent) {
   for (const auto child : node) {
-    Entity entity = CreateEntity(child->Name).SetParent(parent);
-    if (child->ContainsMesh) {
-      entity.AddComponentI<MeshRendererComponent>(mesh).SubmesIndex = child->Index;
-      entity.GetComponent<MaterialComponent>().Materials = mesh->GetMaterialsAsRef();
+    Entity entity = CreateEntity(child->name).SetParent(parent);
+    if (child->contains_mesh) {
+      entity.AddComponentI<MeshRendererComponent>(mesh).submesh_index = child->index;
+      entity.GetComponent<MaterialComponent>().materials = mesh->get_materials_as_ref();
     }
-    IterateOverMeshNode(mesh, child->Children, entity);
+    IterateOverMeshNode(mesh, child->children, entity);
   }
 }
 
 void Scene::CreateEntityWithMesh(const Ref<Mesh>& meshAsset) {
-  for (const auto& node : meshAsset->Nodes) {
-    Entity entity = CreateEntity(node->Name);
-    if (node->ContainsMesh) {
-      entity.AddComponentI<MeshRendererComponent>(meshAsset).SubmesIndex = node->Index;
-      entity.GetComponent<MaterialComponent>().Materials = meshAsset->GetMaterialsAsRef();
+  for (const auto& node : meshAsset->nodes) {
+    Entity entity = CreateEntity(node->name);
+    if (node->contains_mesh) {
+      entity.AddComponentI<MeshRendererComponent>(meshAsset).submesh_index = node->index;
+      entity.GetComponent<MaterialComponent>().materials = meshAsset->get_materials_as_ref();
     }
-    IterateOverMeshNode(meshAsset, node->Children, entity);
+    IterateOverMeshNode(meshAsset, node->children, entity);
   }
 }
 
 void Scene::DestroyEntity(const Entity entity) {
   entity.Deparent();
-  const auto children = entity.GetComponent<RelationshipComponent>().Children;
+  const auto children = entity.GetComponent<RelationshipComponent>().children;
 
   for (size_t i = 0; i < children.size(); i++) {
     if (const Entity childEntity = GetEntityByUUID(children[i]))
@@ -258,8 +258,8 @@ void Scene::OnRuntimeStart() {
     {
       const auto group = m_Registry.group<RigidbodyComponent>(entt::get<TransformComponent>);
       for (auto&& [e, rb, tc] : group.each()) {
-        rb.PreviousTranslation = rb.Translation = tc.Translation;
-        rb.PreviousRotation = rb.Rotation = tc.Rotation;
+        rb.previous_translation = rb.translation = tc.translation;
+        rb.previous_rotation = rb.rotation = tc.rotation;
         CreateRigidbody({e, this}, tc, rb);
       }
     }
@@ -286,17 +286,17 @@ void Scene::OnRuntimeStop() {
     JPH::BodyInterface& bodyInterface = Physics::GetPhysicsSystem()->GetBodyInterface();
     const auto rbView = m_Registry.view<RigidbodyComponent>();
     for (auto&& [e, rb] : rbView.each()) {
-      if (rb.RuntimeBody) {
-        const auto* body = static_cast<const JPH::Body*>(rb.RuntimeBody);
+      if (rb.runtime_body) {
+        const auto* body = static_cast<const JPH::Body*>(rb.runtime_body);
         bodyInterface.RemoveBody(body->GetID());
         bodyInterface.DestroyBody(body->GetID());
       }
     }
     const auto chView = m_Registry.view<CharacterControllerComponent>();
     for (auto&& [e, ch] : chView.each()) {
-      if (ch.Character) {
-        bodyInterface.RemoveBody(ch.Character->GetBodyID());
-        ch.Character = nullptr;
+      if (ch.character) {
+        bodyInterface.RemoveBody(ch.character->GetBodyID());
+        ch.character = nullptr;
       }
     }
 
@@ -313,7 +313,7 @@ Entity Scene::FindEntity(const std::string_view& name) {
   const auto group = m_Registry.view<TagComponent>();
   for (const auto& entity : group) {
     auto& tag = group.get<TagComponent>(entity);
-    if (tag.Tag == name) {
+    if (tag.tag == name) {
       return Entity{entity, this};
     }
   }
@@ -336,7 +336,7 @@ Entity Scene::GetEntityByUUID(UUID uuid) {
 
 Ref<Scene> Scene::Copy(const Ref<Scene>& other) {
   OX_SCOPED_ZONE;
-  Ref<Scene> newScene = CreateRef<Scene>();
+  Ref<Scene> newScene = create_ref<Scene>();
 
   auto& srcSceneRegistry = other->m_Registry;
   auto& dstSceneRegistry = newScene->m_Registry;
@@ -345,9 +345,9 @@ Ref<Scene> Scene::Copy(const Ref<Scene>& other) {
   const auto view = srcSceneRegistry.view<IDComponent, TagComponent>();
   for (const auto e : view) {
     auto [id, tag] = view.get<IDComponent, TagComponent>(e);
-    const auto& name = tag.Tag;
+    const auto& name = tag.tag;
     Entity newEntity = newScene->CreateEntityWithUUID(id.ID, name);
-    newEntity.GetComponent<TagComponent>().Enabled = tag.Enabled;
+    newEntity.GetComponent<TagComponent>().enabled = tag.enabled;
   }
 
   for (const auto e : view) {
@@ -379,121 +379,121 @@ void Scene::CreateRigidbody(Entity entity, const TransformComponent& transform, 
     return;
 
   auto& bodyInterface = Physics::GetBodyInterface();
-  if (component.RuntimeBody) {
-    bodyInterface.DestroyBody(static_cast<JPH::Body*>(component.RuntimeBody)->GetID());
-    component.RuntimeBody = nullptr;
+  if (component.runtime_body) {
+    bodyInterface.DestroyBody(static_cast<JPH::Body*>(component.runtime_body)->GetID());
+    component.runtime_body = nullptr;
   }
 
   JPH::MutableCompoundShapeSettings compoundShapeSettings;
-  float maxScaleComponent = glm::max(glm::max(transform.Scale.x, transform.Scale.y), transform.Scale.z);
+  float maxScaleComponent = glm::max(glm::max(transform.scale.x, transform.scale.y), transform.scale.z);
 
-  const auto& entityName = entity.GetComponent<TagComponent>().Tag;
+  const auto& entityName = entity.GetComponent<TagComponent>().tag;
 
   if (entity.HasComponent<BoxColliderComponent>()) {
     const auto& bc = entity.GetComponent<BoxColliderComponent>();
-    const auto* mat = new PhysicsMaterial3D(entityName, JPH::ColorArg(255, 0, 0), bc.Friction, bc.Restitution);
+    const auto* mat = new PhysicsMaterial3D(entityName, JPH::ColorArg(255, 0, 0), bc.friction, bc.restitution);
 
-    Vec3 scale = bc.Size;
+    Vec3 scale = bc.size;
     JPH::BoxShapeSettings shapeSettings({glm::abs(scale.x), glm::abs(scale.y), glm::abs(scale.z)}, 0.05f, mat);
-    shapeSettings.SetDensity(glm::max(0.001f, bc.Density));
+    shapeSettings.SetDensity(glm::max(0.001f, bc.density));
 
-    compoundShapeSettings.AddShape({bc.Offset.x, bc.Offset.y, bc.Offset.z}, JPH::Quat::sIdentity(), shapeSettings.Create().Get());
+    compoundShapeSettings.AddShape({bc.offset.x, bc.offset.y, bc.offset.z}, JPH::Quat::sIdentity(), shapeSettings.Create().Get());
   }
 
   if (entity.HasComponent<SphereColliderComponent>()) {
     const auto& sc = entity.GetComponent<SphereColliderComponent>();
-    const auto* mat = new PhysicsMaterial3D(entityName, JPH::ColorArg(255, 0, 0), sc.Friction, sc.Restitution);
+    const auto* mat = new PhysicsMaterial3D(entityName, JPH::ColorArg(255, 0, 0), sc.friction, sc.restitution);
 
-    float radius = 2.0f * sc.Radius * maxScaleComponent;
+    float radius = 2.0f * sc.radius * maxScaleComponent;
     JPH::SphereShapeSettings shapeSettings(glm::max(0.01f, radius), mat);
-    shapeSettings.SetDensity(glm::max(0.001f, sc.Density));
+    shapeSettings.SetDensity(glm::max(0.001f, sc.density));
 
-    compoundShapeSettings.AddShape({sc.Offset.x, sc.Offset.y, sc.Offset.z}, JPH::Quat::sIdentity(), shapeSettings.Create().Get());
+    compoundShapeSettings.AddShape({sc.offset.x, sc.offset.y, sc.offset.z}, JPH::Quat::sIdentity(), shapeSettings.Create().Get());
   }
 
   if (entity.HasComponent<CapsuleColliderComponent>()) {
     const auto& cc = entity.GetComponent<CapsuleColliderComponent>();
-    const auto* mat = new PhysicsMaterial3D(entityName, JPH::ColorArg(255, 0, 0), cc.Friction, cc.Restitution);
+    const auto* mat = new PhysicsMaterial3D(entityName, JPH::ColorArg(255, 0, 0), cc.friction, cc.restitution);
 
-    float radius = 2.0f * cc.Radius * maxScaleComponent;
-    JPH::CapsuleShapeSettings shapeSettings(glm::max(0.01f, cc.Height) * 0.5f, glm::max(0.01f, radius), mat);
-    shapeSettings.SetDensity(glm::max(0.001f, cc.Density));
+    float radius = 2.0f * cc.radius * maxScaleComponent;
+    JPH::CapsuleShapeSettings shapeSettings(glm::max(0.01f, cc.height) * 0.5f, glm::max(0.01f, radius), mat);
+    shapeSettings.SetDensity(glm::max(0.001f, cc.density));
 
-    compoundShapeSettings.AddShape({cc.Offset.x, cc.Offset.y, cc.Offset.z}, JPH::Quat::sIdentity(), shapeSettings.Create().Get());
+    compoundShapeSettings.AddShape({cc.offset.x, cc.offset.y, cc.offset.z}, JPH::Quat::sIdentity(), shapeSettings.Create().Get());
   }
 
   if (entity.HasComponent<TaperedCapsuleColliderComponent>()) {
     const auto& tcc = entity.GetComponent<TaperedCapsuleColliderComponent>();
-    const auto* mat = new PhysicsMaterial3D(entityName, JPH::ColorArg(255, 0, 0), tcc.Friction, tcc.Restitution);
+    const auto* mat = new PhysicsMaterial3D(entityName, JPH::ColorArg(255, 0, 0), tcc.friction, tcc.restitution);
 
-    float topRadius = 2.0f * tcc.TopRadius * maxScaleComponent;
-    float bottomRadius = 2.0f * tcc.BottomRadius * maxScaleComponent;
-    JPH::TaperedCapsuleShapeSettings shapeSettings(glm::max(0.01f, tcc.Height) * 0.5f, glm::max(0.01f, topRadius), glm::max(0.01f, bottomRadius), mat);
-    shapeSettings.SetDensity(glm::max(0.001f, tcc.Density));
+    float topRadius = 2.0f * tcc.top_radius * maxScaleComponent;
+    float bottomRadius = 2.0f * tcc.bottom_radius * maxScaleComponent;
+    JPH::TaperedCapsuleShapeSettings shapeSettings(glm::max(0.01f, tcc.height) * 0.5f, glm::max(0.01f, topRadius), glm::max(0.01f, bottomRadius), mat);
+    shapeSettings.SetDensity(glm::max(0.001f, tcc.density));
 
-    compoundShapeSettings.AddShape({tcc.Offset.x, tcc.Offset.y, tcc.Offset.z}, JPH::Quat::sIdentity(), shapeSettings.Create().Get());
+    compoundShapeSettings.AddShape({tcc.offset.x, tcc.offset.y, tcc.offset.z}, JPH::Quat::sIdentity(), shapeSettings.Create().Get());
   }
 
   if (entity.HasComponent<CylinderColliderComponent>()) {
     const auto& cc = entity.GetComponent<CylinderColliderComponent>();
-    const auto* mat = new PhysicsMaterial3D(entityName, JPH::ColorArg(255, 0, 0), cc.Friction, cc.Restitution);
+    const auto* mat = new PhysicsMaterial3D(entityName, JPH::ColorArg(255, 0, 0), cc.friction, cc.restitution);
 
-    float radius = 2.0f * cc.Radius * maxScaleComponent;
-    JPH::CylinderShapeSettings shapeSettings(glm::max(0.01f, cc.Height) * 0.5f, glm::max(0.01f, radius), 0.05f, mat);
-    shapeSettings.SetDensity(glm::max(0.001f, cc.Density));
+    float radius = 2.0f * cc.radius * maxScaleComponent;
+    JPH::CylinderShapeSettings shapeSettings(glm::max(0.01f, cc.height) * 0.5f, glm::max(0.01f, radius), 0.05f, mat);
+    shapeSettings.SetDensity(glm::max(0.001f, cc.density));
 
-    compoundShapeSettings.AddShape({cc.Offset.x, cc.Offset.y, cc.Offset.z}, JPH::Quat::sIdentity(), shapeSettings.Create().Get());
+    compoundShapeSettings.AddShape({cc.offset.x, cc.offset.y, cc.offset.z}, JPH::Quat::sIdentity(), shapeSettings.Create().Get());
   }
 
   // Body
-  auto rotation = glm::quat(transform.Rotation);
+  auto rotation = glm::quat(transform.rotation);
 
-  auto layer = entity.GetComponent<TagComponent>().Layer;
+  auto layer = entity.GetComponent<TagComponent>().layer;
   uint8_t layerIndex = 1;	// Default Layer
   auto collisionMaskIt = Physics::LayerCollisionMask.find(layer);
   if (collisionMaskIt != Physics::LayerCollisionMask.end())
     layerIndex = collisionMaskIt->second.Index;
 
-  JPH::BodyCreationSettings bodySettings(compoundShapeSettings.Create().Get(), {transform.Translation.x, transform.Translation.y, transform.Translation.z}, {rotation.x, rotation.y, rotation.z, rotation.w}, static_cast<JPH::EMotionType>(component.Type), layerIndex);
+  JPH::BodyCreationSettings bodySettings(compoundShapeSettings.Create().Get(), {transform.translation.x, transform.translation.y, transform.translation.z}, {rotation.x, rotation.y, rotation.z, rotation.w}, static_cast<JPH::EMotionType>(component.type), layerIndex);
 
   JPH::MassProperties massProperties;
-  massProperties.mMass = glm::max(0.01f, component.Mass);
+  massProperties.mMass = glm::max(0.01f, component.mass);
   bodySettings.mMassPropertiesOverride = massProperties;
   bodySettings.mOverrideMassProperties = JPH::EOverrideMassProperties::CalculateInertia;
-  bodySettings.mAllowSleeping = component.AllowSleep;
-  bodySettings.mLinearDamping = glm::max(0.0f, component.LinearDrag);
-  bodySettings.mAngularDamping = glm::max(0.0f, component.AngularDrag);
-  bodySettings.mMotionQuality = component.Continuous ? JPH::EMotionQuality::LinearCast : JPH::EMotionQuality::Discrete;
-  bodySettings.mGravityFactor = component.GravityScale;
+  bodySettings.mAllowSleeping = component.allow_sleep;
+  bodySettings.mLinearDamping = glm::max(0.0f, component.linear_drag);
+  bodySettings.mAngularDamping = glm::max(0.0f, component.angular_drag);
+  bodySettings.mMotionQuality = component.continuous ? JPH::EMotionQuality::LinearCast : JPH::EMotionQuality::Discrete;
+  bodySettings.mGravityFactor = component.gravity_scale;
 
-  bodySettings.mIsSensor = component.IsSensor;
+  bodySettings.mIsSensor = component.is_sensor;
 
   JPH::Body* body = bodyInterface.CreateBody(bodySettings);
 
-  JPH::EActivation activation = component.Awake && component.Type != RigidbodyComponent::BodyType::Static ? JPH::EActivation::Activate : JPH::EActivation::DontActivate;
+  JPH::EActivation activation = component.awake && component.type != RigidbodyComponent::BodyType::Static ? JPH::EActivation::Activate : JPH::EActivation::DontActivate;
   bodyInterface.AddBody(body->GetID(), activation);
 
-  component.RuntimeBody = body;
+  component.runtime_body = body;
 }
 
 void Scene::CreateCharacterController(const TransformComponent& transform, CharacterControllerComponent& component) const {
   if (!m_IsRunning)
     return;
-  auto position = JPH::Vec3(transform.Translation.x, transform.Translation.y, transform.Translation.z);
+  auto position = JPH::Vec3(transform.translation.x, transform.translation.y, transform.translation.z);
   const auto capsuleShape = JPH::RotatedTranslatedShapeSettings(
-    JPH::Vec3(0, 0.5f * component.CharacterHeightStanding + component.CharacterRadiusStanding, 0),
+    JPH::Vec3(0, 0.5f * component.character_height_standing + component.character_radius_standing, 0),
     JPH::Quat::sIdentity(),
-    new JPH::CapsuleShape(0.5f * component.CharacterHeightStanding, component.CharacterRadiusStanding)).Create().Get();
+    new JPH::CapsuleShape(0.5f * component.character_height_standing, component.character_radius_standing)).Create().Get();
 
   // Create character
-  const Ref<JPH::CharacterSettings> settings = CreateRef<JPH::CharacterSettings>();
+  const Ref<JPH::CharacterSettings> settings = create_ref<JPH::CharacterSettings>();
   settings->mMaxSlopeAngle = JPH::DegreesToRadians(45.0f);
   settings->mLayer = PhysicsLayers::MOVING;
   settings->mShape = capsuleShape;
   settings->mFriction = 0.0f; // For now this is not set. 
-  settings->mSupportingVolume = JPH::Plane(JPH::Vec3::sAxisY(), -component.CharacterRadiusStanding); // Accept contacts that touch the lower sphere of the capsule
-  component.Character = new JPH::Character(settings.get(), position, JPH::Quat::sIdentity(), 0, Physics::GetPhysicsSystem());
-  component.Character->AddToPhysicsSystem(JPH::EActivation::Activate);
+  settings->mSupportingVolume = JPH::Plane(JPH::Vec3::sAxisY(), -component.character_radius_standing); // Accept contacts that touch the lower sphere of the capsule
+  component.character = new JPH::Character(settings.get(), position, JPH::Quat::sIdentity(), 0, Physics::GetPhysicsSystem());
+  component.character->AddToPhysicsSystem(JPH::EActivation::Activate);
 }
 
 void Scene::OnRuntimeUpdate(float deltaTime) {
@@ -505,8 +505,8 @@ void Scene::OnRuntimeUpdate(float deltaTime) {
     const auto group = m_Registry.view<TransformComponent, CameraComponent>();
     for (const auto entity : group) {
       auto [transform, camera] = group.get<TransformComponent, CameraComponent>(entity);
-      camera.System->Update(transform.Translation, transform.Rotation);
-      VulkanRenderer::SetCamera(*camera.System);
+      camera.system->Update(transform.translation, transform.rotation);
+      VulkanRenderer::set_camera(*camera.system);
     }
   }
 
@@ -528,27 +528,27 @@ void Scene::OnRuntimeUpdate(float deltaTime) {
   {
     const auto listenerView = m_Registry.group<AudioListenerComponent>(entt::get<TransformComponent>);
     for (auto&& [e, ac, tc] : listenerView.each()) {
-      ac.Listener = CreateRef<AudioListener>();
-      if (ac.Active) {
+      ac.listener = create_ref<AudioListener>();
+      if (ac.active) {
         const glm::mat4 inverted = glm::inverse(Entity(e, this).GetWorldTransform());
         const glm::vec3 forward = normalize(glm::vec3(inverted[2]));
-        ac.Listener->SetConfig(ac.Config);
-        ac.Listener->SetPosition(tc.Translation);
-        ac.Listener->SetDirection(-forward);
+        ac.listener->SetConfig(ac.config);
+        ac.listener->SetPosition(tc.translation);
+        ac.listener->SetDirection(-forward);
         break;
       }
     }
 
     const auto sourceView = m_Registry.group<AudioSourceComponent>(entt::get<TransformComponent>);
     for (auto&& [e, ac, tc] : sourceView.each()) {
-      if (ac.Source) {
+      if (ac.source) {
         const glm::mat4 inverted = glm::inverse(Entity(e, this).GetWorldTransform());
         const glm::vec3 forward = normalize(glm::vec3(inverted[2]));
-        ac.Source->SetConfig(ac.Config);
-        ac.Source->SetPosition(tc.Translation);
-        ac.Source->SetDirection(forward);
-        if (ac.Config.PlayOnAwake)
-          ac.Source->Play();
+        ac.source->SetConfig(ac.config);
+        ac.source->SetPosition(tc.translation);
+        ac.source->SetDirection(forward);
+        if (ac.config.PlayOnAwake)
+          ac.source->Play();
       }
     }
   }
@@ -569,7 +569,7 @@ void Scene::OnEditorUpdate(float deltaTime, Camera& camera) {
     PhysicsUtils::DebugDraw(this, e);
   }
 
-  VulkanRenderer::SetCamera(camera);
+  VulkanRenderer::set_camera(camera);
 }
 
 template <typename T>
@@ -611,9 +611,9 @@ void Scene::OnComponentAdded<SkyLightComponent>(Entity entity, SkyLightComponent
 
 template <>
 void Scene::OnComponentAdded<MaterialComponent>(Entity entity, MaterialComponent& component) {
-  if (component.Materials.empty()) {
+  if (component.materials.empty()) {
     if (entity.HasComponent<MeshRendererComponent>())
-      component.Materials = entity.GetComponent<MeshRendererComponent>().MeshGeometry->GetMaterialsAsRef();
+      component.materials = entity.GetComponent<MeshRendererComponent>().mesh_geometry->get_materials_as_ref();
   }
 }
 

@@ -30,7 +30,7 @@ public:
 
   template <typename T, typename... Args>
   Scene* AddSystem(Args&&... args) {
-    m_Systems.emplace_back(CreateScope<T>(std::forward<Args>(args)...));
+    m_Systems.emplace_back(create_scope<T>(std::forward<Args>(args)...));
     return this;
   }
 

@@ -19,40 +19,40 @@ struct AppSpec;
 
 class VulkanContext {
 public:
-  VkDevice Device = nullptr;
-  VkPhysicalDevice PhysicalDevice = nullptr;
-  VkQueue GraphicsQueue = nullptr;
-  VkQueue TransferQueue = nullptr;
-  std::optional<vuk::Context> Context;
-  std::optional<vuk::DeviceSuperFrameResource> SuperframeResource;
-  std::optional<vuk::Allocator> SuperframeAllocator;
-  bool HasRt = false;
-  bool Suspend = false;
-  vuk::SwapchainRef Swapchain = nullptr;
-  vkb::Instance VkbInstance;
-  vkb::Device VkbDevice;
-  double OldTime = 0;
-  uint32_t NumFrames = 0;
-  vuk::Unique<std::array<VkSemaphore, 3>> PresentReady;
-  vuk::Unique<std::array<VkSemaphore, 3>> RenderComplete;
+  VkDevice device = nullptr;
+  VkPhysicalDevice physical_device = nullptr;
+  VkQueue graphics_queue = nullptr;
+  VkQueue transfer_queue = nullptr;
+  std::optional<vuk::Context> context;
+  std::optional<vuk::DeviceSuperFrameResource> superframe_resource;
+  std::optional<vuk::Allocator> superframe_allocator;
+  bool has_rt = false;
+  bool suspend = false;
+  vuk::SwapchainRef swapchain = nullptr;
+  vkb::Instance vkb_instance;
+  vkb::Device vkb_device;
+  double old_time = 0;
+  uint32_t num_frames = 0;
+  vuk::Unique<std::array<VkSemaphore, 3>> present_ready;
+  vuk::Unique<std::array<VkSemaphore, 3>> render_complete;
 
-  std::string DeviceName = {};
-  uint32_t DriverVersion = {};
+  std::string device_name = {};
+  uint32_t driver_version = {};
 
   VulkanContext() = default;
 
-  static void Init();
+  static void init();
 
-  void CreateContext(const AppSpec& spec);
+  void create_context(const AppSpec& spec);
   
-  vuk::Allocator Begin();
-  void End(const vuk::Future& src, vuk::Allocator frameAllocator);
+  vuk::Allocator begin();
+  void end(const vuk::Future& src, vuk::Allocator frame_allocator);
 
-  static VulkanContext* Get() { return s_Instance; }
+  static VulkanContext* get() { return s_instance; }
 
 private:
-  vuk::SingleSwapchainRenderBundle m_Bundle = {};
+  vuk::SingleSwapchainRenderBundle m_bundle = {};
 
-  static VulkanContext* s_Instance;
+  static VulkanContext* s_instance;
 };
 }

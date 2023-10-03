@@ -58,7 +58,7 @@ void Camera::SetPerspective(float fov, float aspect, float znear, float zfar) {
 void Camera::SetFov(const float fov) {
   this->Fov = fov;
   m_Perspective = glm::perspective(glm::radians(fov),
-    static_cast<float>(Window::GetWidth()) / static_cast<float>(Window::GetHeight()),
+    static_cast<float>(Window::get_width()) / static_cast<float>(Window::get_height()),
     NearClip,
     FarClip);
 }
@@ -125,7 +125,7 @@ void Camera::UpdateViewMatrix() {
   SkyboxView = m_ViewMatrix;
   SkyboxView[3] = glm::vec4(0, 0, 0, 1);
 
-  Aspect = (float)Window::GetWidth() / (float)Window::GetHeight();
+  Aspect = (float)Window::get_width() / (float)Window::get_height();
 }
 
 Mat4 Camera::GenerateViewMatrix(const Vec3& position, const Vec3& viewDir, const Vec3& up) {

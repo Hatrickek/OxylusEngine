@@ -67,7 +67,7 @@ public:
 
   RelationshipComponent& GetRelationship() const { return GetComponent<RelationshipComponent>(); }
   UUID GetUUID() const { return GetComponent<IDComponent>().ID; }
-  const std::string& GetName() const { return GetComponent<TagComponent>().Tag; }
+  const std::string& GetName() const { return GetComponent<TagComponent>().tag; }
   TransformComponent& GetTransform() const { return GetComponent<TransformComponent>(); }
 
   Entity GetParent() const {
@@ -75,18 +75,18 @@ public:
       return {};
 
     const auto& rc = GetComponent<RelationshipComponent>();
-    return rc.Parent != 0 ? m_Scene->GetEntityByUUID(rc.Parent) : Entity{};
+    return rc.parent != 0 ? m_Scene->GetEntityByUUID(rc.parent) : Entity{};
   }
 
   Entity GetChild(uint32_t index = 0) const {
     const auto& rc = GetComponent<RelationshipComponent>();
-    return GetScene()->GetEntityByUUID(rc.Children[index]);
+    return GetScene()->GetEntityByUUID(rc.children[index]);
   }
 
   std::vector<Entity> GetAllChildren() const {
     std::vector<Entity> entities;
 
-    const std::vector<UUID> children = GetComponent<RelationshipComponent>().Children;
+    const std::vector<UUID> children = GetComponent<RelationshipComponent>().children;
     for (const auto& child : children) {
       Entity entity = GetScene()->GetEntityByUUID(child);
       entities.push_back(entity);
@@ -97,7 +97,7 @@ public:
   }
 
   static void GetAllChildren(Entity parent, std::vector<Entity>& outEntities) {
-    const std::vector<UUID> children = parent.GetComponent<RelationshipComponent>().Children;
+    const std::vector<UUID> children = parent.GetComponent<RelationshipComponent>().children;
     for (const auto& child : children) {
       Entity entity = parent.GetScene()->GetEntityByUUID(child);
       outEntities.push_back(entity);
@@ -111,7 +111,7 @@ public:
 
     auto& [Parent, Children] = GetComponent<RelationshipComponent>();
     Parent = parent.GetUUID();
-    parent.GetRelationship().Children.emplace_back(GetUUID());
+    parent.GetRelationship().children.emplace_back(GetUUID());
 
     return *this;
   }
@@ -125,29 +125,29 @@ public:
       return;
 
     auto& parent = parentEntity.GetRelationship();
-    for (auto it = parent.Children.begin(); it != parent.Children.end(); ++it) {
+    for (auto it = parent.children.begin(); it != parent.children.end(); ++it) {
       if (*it == uuid) {
-        parent.Children.erase(it);
+        parent.children.erase(it);
         break;
       }
     }
-    transform.Parent = 0;
+    transform.parent = 0;
   }
 
 
   glm::mat4 GetWorldTransform() const {
     const auto& transform = GetTransform();
     const auto& rc = GetRelationship();
-    const Entity parent = m_Scene->GetEntityByUUID(rc.Parent);
+    const Entity parent = m_Scene->GetEntityByUUID(rc.parent);
     const glm::mat4 parentTransform = parent ? parent.GetWorldTransform() : glm::mat4(1.0f);
-    return parentTransform * glm::translate(glm::mat4(1.0f), transform.Translation) *
-           glm::toMat4(glm::quat(transform.Rotation)) * glm::scale(glm::mat4(1.0f), transform.Scale);
+    return parentTransform * glm::translate(glm::mat4(1.0f), transform.translation) *
+           glm::toMat4(glm::quat(transform.rotation)) * glm::scale(glm::mat4(1.0f), transform.scale);
   }
 
   glm::mat4 GetLocalTransform() const {
     const auto& transform = GetTransform();
-    return glm::translate(glm::mat4(1.0f), transform.Translation) * glm::toMat4(glm::quat(transform.Rotation)) *
-           glm::scale(glm::mat4(1.0f), transform.Scale);
+    return glm::translate(glm::mat4(1.0f), transform.translation) * glm::toMat4(glm::quat(transform.rotation)) *
+           glm::scale(glm::mat4(1.0f), transform.scale);
   }
 
   Scene* GetScene() const { return m_Scene; }

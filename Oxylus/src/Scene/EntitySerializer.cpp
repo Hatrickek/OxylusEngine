@@ -27,7 +27,7 @@ void EntitySerializer::SerializeEntity(Scene* scene, ryml::NodeRef& entities, En
     entityNode["Entity"] << entity.GetUUID();
     auto node = entityNode["TagComponent"];
     node |= ryml::MAP;
-    node["Tag"] << tag.Tag;
+    node["Tag"] << tag.tag;
   }
 
   if (entity.HasComponent<RelationshipComponent>()) {
@@ -51,25 +51,25 @@ void EntitySerializer::SerializeEntity(Scene* scene, ryml::NodeRef& entities, En
     auto translation = node["Translation"];
     auto rotation = node["Rotation"];
     auto scale = node["Scale"];
-    glm::write(&translation, tc.Translation);
-    glm::write(&rotation, tc.Rotation);
-    glm::write(&scale, tc.Scale);
+    glm::write(&translation, tc.translation);
+    glm::write(&rotation, tc.rotation);
+    glm::write(&scale, tc.scale);
   }
 
   if (entity.HasComponent<MeshRendererComponent>()) {
     const auto& mrc = entity.GetComponent<MeshRendererComponent>();
     auto node = entityNode["MeshRendererComponent"];
     node |= ryml::MAP;
-    node["Mesh"] << mrc.MeshGeometry->Path;
-    node["SubmeshIndex"] << mrc.SubmesIndex;
+    node["Mesh"] << mrc.mesh_geometry->path;
+    node["SubmeshIndex"] << mrc.submesh_index;
   }
 
   if (entity.HasComponent<MaterialComponent>()) {
     const auto& mc = entity.GetComponent<MaterialComponent>();
     auto node = entityNode["MaterialComponent"];
     node |= ryml::MAP;
-    if (mc.UsingMaterialAsset)
-      node["Path"] << mc.Materials[0]->Path;
+    if (mc.using_material_asset)
+      node["Path"] << mc.materials[0]->path;
   }
 
   if (entity.HasComponent<LightComponent>()) {
@@ -77,22 +77,22 @@ void EntitySerializer::SerializeEntity(Scene* scene, ryml::NodeRef& entities, En
     auto node = entityNode["LightComponent"];
     node |= ryml::MAP;
     auto colorNode = node["Color"];
-    node["Type"] << (int)light.Type;
-    node["UseColorTemperatureMode"] << light.UseColorTemperatureMode;
-    node["Temperature"] << light.Temperature;
-    glm::write(&colorNode, light.Color);
-    node["Intensity"] << light.Intensity;
-    node["Range"] << light.Range;
-    node["CutOffAngle"] << light.CutOffAngle;
-    node["OuterCutOffAngle"] << light.OuterCutOffAngle;
-    node["ShadowQuality"] << (int)light.ShadowQuality;
+    node["Type"] << (int)light.type;
+    node["UseColorTemperatureMode"] << light.use_color_temperature_mode;
+    node["Temperature"] << light.temperature;
+    glm::write(&colorNode, light.color);
+    node["Intensity"] << light.intensity;
+    node["Range"] << light.range;
+    node["CutOffAngle"] << light.cut_off_angle;
+    node["OuterCutOffAngle"] << light.outer_cut_off_angle;
+    node["ShadowQuality"] << (int)light.shadow_quality;
   }
 
   if (entity.HasComponent<SkyLightComponent>()) {
     const auto& light = entity.GetComponent<SkyLightComponent>();
     auto node = entityNode["SkyLightComponent"];
     node |= ryml::MAP;
-    std::string path = light.Cubemap ? light.Cubemap->GetPath() : "";
+    std::string path = light.cubemap ? light.cubemap->get_path() : "";
     node["ImagePath"] << path;
   }
 
@@ -100,26 +100,26 @@ void EntitySerializer::SerializeEntity(Scene* scene, ryml::NodeRef& entities, En
     const auto& probe = entity.GetComponent<PostProcessProbe>();
     auto node = entityNode["PostProcessProbe"];
     node |= ryml::MAP;
-    node["VignetteEnabled"] << probe.VignetteEnabled;
-    node["VignetteIntensity"] << probe.VignetteIntensity;
+    node["VignetteEnabled"] << probe.vignette_enabled;
+    node["VignetteIntensity"] << probe.vignette_intensity;
 
-    node["FilmGrainEnabled"] << probe.FilmGrainEnabled;
-    node["FilmGrainIntensity"] << probe.FilmGrainIntensity;
+    node["FilmGrainEnabled"] << probe.film_grain_enabled;
+    node["FilmGrainIntensity"] << probe.film_grain_intensity;
 
-    node["ChromaticAberrationEnabled"] << probe.ChromaticAberrationEnabled;
-    node["ChromaticAberrationIntensity"] << probe.ChromaticAberrationIntensity;
+    node["ChromaticAberrationEnabled"] << probe.chromatic_aberration_enabled;
+    node["ChromaticAberrationIntensity"] << probe.chromatic_aberration_intensity;
 
-    node["SharpenEnabled"] << probe.SharpenEnabled;
-    node["SharpenIntensity"] << probe.SharpenIntensity;
+    node["SharpenEnabled"] << probe.sharpen_enabled;
+    node["SharpenIntensity"] << probe.sharpen_intensity;
   }
 
   if (entity.HasComponent<CameraComponent>()) {
     const auto& camera = entity.GetComponent<CameraComponent>();
     auto node = entityNode["CameraComponent"];
     node |= ryml::MAP;
-    node["FOV"] << camera.System->Fov;
-    node["NearClip"] << camera.System->NearClip;
-    node["FarClip"] << camera.System->FarClip;
+    node["FOV"] << camera.system->Fov;
+    node["NearClip"] << camera.system->NearClip;
+    node["FarClip"] << camera.system->FarClip;
   }
 
   // Physics
@@ -128,16 +128,16 @@ void EntitySerializer::SerializeEntity(Scene* scene, ryml::NodeRef& entities, En
     node |= ryml::MAP;
 
     const auto& rb = entity.GetComponent<RigidbodyComponent>();
-    node["Type"] << static_cast<int>(rb.Type);
-    node["Mass"] << rb.Mass;
-    node["LinearDrag"] << rb.LinearDrag;
-    node["AngularDrag"] << rb.AngularDrag;
-    node["GravityScale"] << rb.GravityScale;
-    node["AllowSleep"] << rb.AllowSleep;
-    node["Awake"] << rb.Awake;
-    node["Continuous"] << rb.Continuous;
-    node["Interpolation"] << rb.Interpolation;
-    node["IsSensor"] << rb.IsSensor;
+    node["Type"] << static_cast<int>(rb.type);
+    node["Mass"] << rb.mass;
+    node["LinearDrag"] << rb.linear_drag;
+    node["AngularDrag"] << rb.angular_drag;
+    node["GravityScale"] << rb.gravity_scale;
+    node["AllowSleep"] << rb.allow_sleep;
+    node["Awake"] << rb.awake;
+    node["Continuous"] << rb.continuous;
+    node["Interpolation"] << rb.interpolation;
+    node["IsSensor"] << rb.is_sensor;
   }
 
   if (entity.HasComponent<BoxColliderComponent>()) {
@@ -145,11 +145,11 @@ void EntitySerializer::SerializeEntity(Scene* scene, ryml::NodeRef& entities, En
     node |= ryml::MAP;
 
     const auto& bc = entity.GetComponent<BoxColliderComponent>();
-    node["Size"] << bc.Size;
-    node["Offset"] << bc.Offset;
-    node["Density"] << bc.Density;
-    node["Friction"] << bc.Friction;
-    node["Restitution"] << bc.Restitution;
+    node["Size"] << bc.size;
+    node["Offset"] << bc.offset;
+    node["Density"] << bc.density;
+    node["Friction"] << bc.friction;
+    node["Restitution"] << bc.restitution;
   }
 
   if (entity.HasComponent<SphereColliderComponent>()) {
@@ -157,11 +157,11 @@ void EntitySerializer::SerializeEntity(Scene* scene, ryml::NodeRef& entities, En
     node |= ryml::MAP;
 
     const auto& sc = entity.GetComponent<SphereColliderComponent>();
-    node["Radius"] << sc.Radius;
-    node["Offset"] << sc.Offset;
-    node["Density"] << sc.Density;
-    node["Friction"] << sc.Friction;
-    node["Restitution"] << sc.Restitution;
+    node["Radius"] << sc.radius;
+    node["Offset"] << sc.offset;
+    node["Density"] << sc.density;
+    node["Friction"] << sc.friction;
+    node["Restitution"] << sc.restitution;
   }
 
   if (entity.HasComponent<CapsuleColliderComponent>()) {
@@ -169,12 +169,12 @@ void EntitySerializer::SerializeEntity(Scene* scene, ryml::NodeRef& entities, En
     node |= ryml::MAP;
 
     const auto& cc = entity.GetComponent<CapsuleColliderComponent>();
-    node["Height"] << cc.Height;
-    node["Radius"] << cc.Radius;
-    node["Offset"] << cc.Offset;
-    node["Density"] << cc.Density;
-    node["Friction"] << cc.Friction;
-    node["Restitution"] << cc.Restitution;
+    node["Height"] << cc.height;
+    node["Radius"] << cc.radius;
+    node["Offset"] << cc.offset;
+    node["Density"] << cc.density;
+    node["Friction"] << cc.friction;
+    node["Restitution"] << cc.restitution;
   }
 
   if (entity.HasComponent<TaperedCapsuleColliderComponent>()) {
@@ -182,13 +182,13 @@ void EntitySerializer::SerializeEntity(Scene* scene, ryml::NodeRef& entities, En
     node |= ryml::MAP;
 
     const auto& tcc = entity.GetComponent<TaperedCapsuleColliderComponent>();
-    node["Height"] << tcc.Height;
-    node["TopRadius"] << tcc.TopRadius;
-    node["BottomRadius"] << tcc.BottomRadius;
-    node["Offset"] << tcc.Offset;
-    node["Density"] << tcc.Density;
-    node["Friction"] << tcc.Friction;
-    node["Restitution"] << tcc.Restitution;
+    node["Height"] << tcc.height;
+    node["TopRadius"] << tcc.top_radius;
+    node["BottomRadius"] << tcc.bottom_radius;
+    node["Offset"] << tcc.offset;
+    node["Density"] << tcc.density;
+    node["Friction"] << tcc.friction;
+    node["Restitution"] << tcc.restitution;
   }
 
   if (entity.HasComponent<CylinderColliderComponent>()) {
@@ -196,12 +196,12 @@ void EntitySerializer::SerializeEntity(Scene* scene, ryml::NodeRef& entities, En
     node |= ryml::MAP;
 
     const auto& cc = entity.GetComponent<CapsuleColliderComponent>();
-    node["Height"] << cc.Height;
-    node["Radius"] << cc.Radius;
-    node["Offset"] << cc.Offset;
-    node["Density"] << cc.Density;
-    node["Friction"] << cc.Friction;
-    node["Restitution"] << cc.Restitution;
+    node["Height"] << cc.height;
+    node["Radius"] << cc.radius;
+    node["Offset"] << cc.offset;
+    node["Density"] << cc.density;
+    node["Friction"] << cc.friction;
+    node["Restitution"] << cc.restitution;
   }
 
   if (entity.HasComponent<CharacterControllerComponent>()) {
@@ -211,17 +211,17 @@ void EntitySerializer::SerializeEntity(Scene* scene, ryml::NodeRef& entities, En
     const auto& component = entity.GetComponent<CharacterControllerComponent>();
 
     // Size
-    node["CharacterHeightStanding"] << component.CharacterHeightStanding;
-    node["CharacterRadiusStanding"] << component.CharacterRadiusStanding;
-    node["CharacterRadiusCrouching"] << component.CharacterRadiusCrouching;
-    node["CharacterHeightCrouching"] << component.CharacterHeightCrouching;
+    node["CharacterHeightStanding"] << component.character_height_standing;
+    node["CharacterRadiusStanding"] << component.character_radius_standing;
+    node["CharacterRadiusCrouching"] << component.character_radius_crouching;
+    node["CharacterHeightCrouching"] << component.character_height_crouching;
 
     // Movement
-    node["ControlMovementDuringJump"] << component.ControlMovementDuringJump;
-    node["JumpForce"] << component.JumpForce;
+    node["ControlMovementDuringJump"] << component.control_movement_during_jump;
+    node["JumpForce"] << component.jump_force;
 
-    node["Friction"] << component.Friction;
-    node["CollisionTolerance"] << component.CollisionTolerance;
+    node["Friction"] << component.friction;
+    node["CollisionTolerance"] << component.collision_tolerance;
   }
 
   if (entity.HasComponent<CustomComponent>()) {
@@ -230,14 +230,14 @@ void EntitySerializer::SerializeEntity(Scene* scene, ryml::NodeRef& entities, En
 
     const auto& component = entity.GetComponent<CustomComponent>();
 
-    node["Name"] << component.Name;
+    node["Name"] << component.name;
     auto fieldsNode = node["Fields"];
     fieldsNode |= ryml::MAP;
-    for (const auto& field : component.Fields) {
-      auto fieldNode = fieldsNode[field.Name.c_str()];
+    for (const auto& field : component.fields) {
+      auto fieldNode = fieldsNode[field.name.c_str()];
       fieldNode |= ryml::MAP;
-      fieldNode["Type"] << (int)field.Type;
-      fieldNode["Value"] << field.Value;
+      fieldNode["Type"] << (int)field.type;
+      fieldNode["Value"] << field.value;
     }
   }
 }
@@ -260,9 +260,9 @@ UUID EntitySerializer::DeserializeEntity(ryml::ConstNodeRef entityNode, Scene* s
     auto& tc = deserializedEntity.GetComponent<TransformComponent>();
     const auto& node = entityNode["TransformComponent"];
 
-    glm::read(node["Translation"], &tc.Translation);
-    glm::read(node["Rotation"], &tc.Rotation);
-    glm::read(node["Scale"], &tc.Scale);
+    glm::read(node["Translation"], &tc.translation);
+    glm::read(node["Rotation"], &tc.rotation);
+    glm::read(node["Scale"], &tc.scale);
   }
 
   if (entityNode.has_child("RelationshipComponent")) {
@@ -270,12 +270,12 @@ UUID EntitySerializer::DeserializeEntity(ryml::ConstNodeRef entityNode, Scene* s
     const auto node = entityNode["RelationshipComponent"];
     uint64_t parentID = 0;
     node["Parent"] >> parentID;
-    rc.Parent = parentID;
+    rc.parent = parentID;
 
     size_t childCount = 0;
     node["ChildCount"] >> childCount;
-    rc.Children.clear();
-    rc.Children.reserve(childCount);
+    rc.children.clear();
+    rc.children.reserve(childCount);
     const auto children = node["Children"];
 
     if (children.num_children() == childCount) {
@@ -284,7 +284,7 @@ UUID EntitySerializer::DeserializeEntity(ryml::ConstNodeRef entityNode, Scene* s
         children[i] >> childID;
         UUID child = childID;
         if (child)
-          rc.Children.push_back(child);
+          rc.children.push_back(child);
       }
     }
   }
@@ -297,7 +297,7 @@ UUID EntitySerializer::DeserializeEntity(ryml::ConstNodeRef entityNode, Scene* s
     node["Mesh"] >> meshPath;
     node["SubmeshIndex"] >> submeshIndex;
 
-    deserializedEntity.AddComponent<MeshRendererComponent>(AssetManager::GetMeshAsset(meshPath)).SubmesIndex =
+    deserializedEntity.AddComponent<MeshRendererComponent>(AssetManager::get_mesh_asset(meshPath)).submesh_index =
       submeshIndex;
   }
 
@@ -311,11 +311,11 @@ UUID EntitySerializer::DeserializeEntity(ryml::ConstNodeRef entityNode, Scene* s
       node["Path"] >> assetPath;
 
     if (!assetPath.empty()) {
-      mc.Materials.clear();
-      auto mat = mc.Materials.emplace_back(CreateRef<Material>());
+      mc.materials.clear();
+      auto mat = mc.materials.emplace_back(create_ref<Material>());
       MaterialSerializer serializer(mat);
       serializer.Deserialize(assetPath);
-      mc.UsingMaterialAsset = true;
+      mc.using_material_asset = true;
     }
   }
 
@@ -323,15 +323,15 @@ UUID EntitySerializer::DeserializeEntity(ryml::ConstNodeRef entityNode, Scene* s
     auto& light = deserializedEntity.AddComponentI<LightComponent>();
     const auto& node = entityNode["LightComponent"];
 
-    SetEnum(node["Type"], light.Type);
-    node["UseColorTemperatureMode"] >> light.UseColorTemperatureMode;
-    node["Temperature"] >> light.Temperature;
-    node["Intensity"] >> light.Intensity;
-    glm::read(node["Color"], &light.Color);
-    node["Range"] >> light.Range;
-    node["CutOffAngle"] >> light.CutOffAngle;
-    node["OuterCutOffAngle"] >> light.OuterCutOffAngle;
-    SetEnum(node["ShadowQuality"], light.ShadowQuality);
+    SetEnum(node["Type"], light.type);
+    node["UseColorTemperatureMode"] >> light.use_color_temperature_mode;
+    node["Temperature"] >> light.temperature;
+    node["Intensity"] >> light.intensity;
+    glm::read(node["Color"], &light.color);
+    node["Range"] >> light.range;
+    node["CutOffAngle"] >> light.cut_off_angle;
+    node["OuterCutOffAngle"] >> light.outer_cut_off_angle;
+    SetEnum(node["ShadowQuality"], light.shadow_quality);
   }
 
   if (entityNode.has_child("SkyLightComponent")) {
@@ -355,17 +355,17 @@ UUID EntitySerializer::DeserializeEntity(ryml::ConstNodeRef entityNode, Scene* s
     auto& probe = deserializedEntity.AddComponentI<PostProcessProbe>();
     const auto& node = entityNode["PostProcessProbe"];
 
-    node["VignetteEnabled"] >> probe.VignetteEnabled;
-    node["VignetteIntensity"] >> probe.VignetteIntensity;
+    node["VignetteEnabled"] >> probe.vignette_enabled;
+    node["VignetteIntensity"] >> probe.vignette_intensity;
 
-    node["FilmGrainEnabled"] >> probe.FilmGrainEnabled;
-    node["FilmGrainIntensity"] >> probe.FilmGrainIntensity;
+    node["FilmGrainEnabled"] >> probe.film_grain_enabled;
+    node["FilmGrainIntensity"] >> probe.film_grain_intensity;
 
-    node["ChromaticAberrationEnabled"] >> probe.ChromaticAberrationEnabled;
-    node["ChromaticAberrationIntensity"] >> probe.ChromaticAberrationIntensity;
+    node["ChromaticAberrationEnabled"] >> probe.chromatic_aberration_enabled;
+    node["ChromaticAberrationIntensity"] >> probe.chromatic_aberration_intensity;
 
-    node["SharpenEnabled"] >> probe.SharpenEnabled;
-    node["SharpenIntensity"] >> probe.SharpenIntensity;
+    node["SharpenEnabled"] >> probe.sharpen_enabled;
+    node["SharpenIntensity"] >> probe.sharpen_intensity;
   }
 
   if (entityNode.has_child("CameraComponent")) {
@@ -379,85 +379,85 @@ UUID EntitySerializer::DeserializeEntity(ryml::ConstNodeRef entityNode, Scene* s
     node["NearClip"] >> nearclip;
     node["FarClip"] >> farclip;
 
-    camera.System->SetFov(fov);
-    camera.System->SetNear(nearclip);
-    camera.System->SetFar(farclip);
+    camera.system->SetFov(fov);
+    camera.system->SetNear(nearclip);
+    camera.system->SetFar(farclip);
   }
 
   if (entityNode.has_child("RigidbodyComponent")) {
     auto& rb = deserializedEntity.AddComponentI<RigidbodyComponent>();
     const auto node = entityNode["RigidbodyComponent"];
 
-    SetEnum(node["Type"], rb.Type);
-    node["Mass"] >> rb.Mass;
-    node["LinearDrag"] >> rb.LinearDrag;
-    node["AngularDrag"] >> rb.AngularDrag;
-    node["GravityScale"] >> rb.GravityScale;
-    node["AllowSleep"] >> rb.AllowSleep;
-    node["Awake"] >> rb.Awake;
-    node["Continuous"] >> rb.Continuous;
-    node["Interpolation"] >> rb.Interpolation;
-    node["IsSensor"] >> rb.IsSensor;
+    SetEnum(node["Type"], rb.type);
+    node["Mass"] >> rb.mass;
+    node["LinearDrag"] >> rb.linear_drag;
+    node["AngularDrag"] >> rb.angular_drag;
+    node["GravityScale"] >> rb.gravity_scale;
+    node["AllowSleep"] >> rb.allow_sleep;
+    node["Awake"] >> rb.awake;
+    node["Continuous"] >> rb.continuous;
+    node["Interpolation"] >> rb.interpolation;
+    node["IsSensor"] >> rb.is_sensor;
   }
 
   if (entityNode.has_child("BoxColliderComponent")) {
     const auto node = entityNode["BoxColliderComponent"];
     auto& bc = deserializedEntity.AddComponentI<BoxColliderComponent>();
 
-    node["Size"] >> bc.Size;
-    glm::read(node["Offset"], &bc.Offset);
-    node["Density"] >> bc.Density;
-    node["Friction"] >> bc.Friction;
-    node["Restitution"] >> bc.Restitution;
+    node["Size"] >> bc.size;
+    glm::read(node["Offset"], &bc.offset);
+    node["Density"] >> bc.density;
+    node["Friction"] >> bc.friction;
+    node["Restitution"] >> bc.restitution;
   }
 
   if (entityNode.has_child("SphereColliderComponent")) {
     auto node = entityNode["SphereColliderComponent"];
 
     auto& sc = deserializedEntity.AddComponentI<SphereColliderComponent>();
-    node["Radius"] >> sc.Radius;
-    glm::read(node["Offset"], &sc.Offset);
-    node["Offset"] >> sc.Offset;
-    node["Density"] >> sc.Density;
-    node["Friction"] >> sc.Friction;
-    node["Restitution"] >> sc.Restitution;
+    node["Radius"] >> sc.radius;
+    glm::read(node["Offset"], &sc.offset);
+    node["Offset"] >> sc.offset;
+    node["Density"] >> sc.density;
+    node["Friction"] >> sc.friction;
+    node["Restitution"] >> sc.restitution;
   }
 
   if (entityNode.has_child("CapsuleColliderComponent")) {
     auto node = entityNode["CapsuleColliderComponent"];
 
     auto& cc = deserializedEntity.AddComponentI<CapsuleColliderComponent>();
-    node["Height"] >> cc.Height;
-    node["Radius"] >> cc.Radius;
-    glm::read(node["Offset"], &cc.Offset);
-    node["Density"] >> cc.Density;
-    node["Friction"] >> cc.Friction;
-    node["Restitution"] >> cc.Restitution;
+    node["Height"] >> cc.height;
+    node["Radius"] >> cc.radius;
+    glm::read(node["Offset"], &cc.offset);
+    node["Density"] >> cc.density;
+    node["Friction"] >> cc.friction;
+    node["Restitution"] >> cc.restitution;
   }
 
   if (entityNode.has_child("TaperedCapsuleColliderComponent")) {
     const auto node = entityNode["TaperedCapsuleColliderComponent"];
 
     auto& tcc = deserializedEntity.AddComponentI<TaperedCapsuleColliderComponent>();
-    node["Height"] >> tcc.Height;
-    node["TopRadius"] >> tcc.TopRadius;
-    node["BottomRadius"] >> tcc.BottomRadius;
-    glm::read(node["Offset"], &tcc.Offset);
-    node["Density"] >> tcc.Density;
-    node["Friction"] >> tcc.Friction;
-    node["Restitution"] >> tcc.Restitution;
+    node["Height"] >> tcc.height;
+    node["TopRadius"] >> tcc.top_radius;
+    node["BottomRadius"] >> tcc.bottom_radius;
+    glm::read(node["Offset"], &tcc.offset);
+    node["Density"] >> tcc.density;
+    node["Friction"] >> tcc.friction;
+    node["Restitution"] >> tcc.restitution;
   }
 
   if (entityNode.has_child("CylinderColliderComponent")) {
     auto node = entityNode["CylinderColliderComponent"];
 
     auto& cc = deserializedEntity.AddComponentI<CapsuleColliderComponent>();
-    node["Height"] >> cc.Height;
-    node["Radius"] >> cc.Radius;
-    glm::read(node["Offset"], &cc.Offset);
-    node["Density"] >> cc.Density;
-    node["Friction"] >> cc.Friction;
-    node["Restitution"] >> cc.Restitution;
+    node["Height"] >> cc.height;
+    node["Radius"] >> cc.radius;
+    glm::read(node["Offset"], &cc.offset);
+    node["Density"] >> cc.density;
+    node["Friction"] >> cc.friction;
+    node["Restitution"] >> cc.restitution;
   }
 
   if (entityNode.has_child("CharacterControllerComponent")) {
@@ -465,32 +465,32 @@ UUID EntitySerializer::DeserializeEntity(ryml::ConstNodeRef entityNode, Scene* s
     const auto& node = entityNode["CharacterControllerComponent"];
 
     // Size
-    node["CharacterHeightStanding"] >> component.CharacterHeightStanding;
-    node["CharacterRadiusStanding"] >> component.CharacterRadiusStanding;
-    node["CharacterRadiusCrouching"] >> component.CharacterRadiusCrouching;
-    node["CharacterHeightCrouching"] >> component.CharacterHeightCrouching;
+    node["CharacterHeightStanding"] >> component.character_height_standing;
+    node["CharacterRadiusStanding"] >> component.character_radius_standing;
+    node["CharacterRadiusCrouching"] >> component.character_radius_crouching;
+    node["CharacterHeightCrouching"] >> component.character_height_crouching;
 
     // Movement
-    node["ControlMovementDuringJump"] >> component.ControlMovementDuringJump;
-    node["JumpForce"] >> component.JumpForce;
+    node["ControlMovementDuringJump"] >> component.control_movement_during_jump;
+    node["JumpForce"] >> component.jump_force;
 
-    node["Friction"] >> component.Friction;
-    node["CollisionTolerance"] >> component.CollisionTolerance;
+    node["Friction"] >> component.friction;
+    node["CollisionTolerance"] >> component.collision_tolerance;
   }
 
   if (entityNode.has_child("CustomComponent")) {
     auto& component = deserializedEntity.AddComponentI<CustomComponent>();
     const auto& node = entityNode["CustomComponent"];
 
-    node["Name"] >> component.Name;
+    node["Name"] >> component.name;
     auto fieldsNode = node["Fields"];
     for (size_t i = 0; i < fieldsNode.num_children(); i++) {
       CustomComponent::ComponentField field;
       auto key = std::string(fieldsNode[i].get()->m_key.scalar.data());
-      field.Name = key.substr(0, key.find(':'));
-      SetEnum(fieldsNode[i]["Type"], field.Type);
-      fieldsNode[i]["Value"] >> field.Value;
-      component.Fields.emplace_back(field);
+      field.name = key.substr(0, key.find(':'));
+      SetEnum(fieldsNode[i]["Type"], field.type);
+      fieldsNode[i]["Value"] >> field.value;
+      component.fields.emplace_back(field);
     }
   }
 
@@ -508,7 +508,7 @@ void EntitySerializer::SerializeEntityAsPrefab(const char* filepath, Entity enti
   ryml::NodeRef nodeRoot = tree.rootref();
   nodeRoot |= ryml::MAP;
 
-  nodeRoot["Prefab"] << entity.AddComponentI<PrefabComponent>().ID;
+  nodeRoot["Prefab"] << entity.AddComponentI<PrefabComponent>().id;
 
   ryml::NodeRef entitiesNode = nodeRoot["Entities"];
   entitiesNode |= ryml::SEQ;
@@ -529,12 +529,12 @@ void EntitySerializer::SerializeEntityAsPrefab(const char* filepath, Entity enti
 }
 
 Entity EntitySerializer::DeserializeEntityAsPrefab(const char* filepath, Scene* scene) {
-  auto content = FileUtils::ReadFile(filepath);
+  auto content = FileUtils::read_file(filepath);
   if (!content) {
     OX_CORE_ASSERT(content, fmt::format("Couldn't read prefab file: {0}", filepath).c_str())
 
     // Try to read it again from assets path
-    content = FileUtils::ReadFile(AssetManager::GetAssetFileSystemPath(filepath).string());
+    content = FileUtils::read_file(AssetManager::get_asset_file_system_path(filepath).string());
     if (content)
       OX_CORE_INFO("Could load the prefab file from assets path: {0}", filepath);
     else {
@@ -577,16 +577,16 @@ Entity EntitySerializer::DeserializeEntityAsPrefab(const char* filepath, Scene* 
         rootEntity = scene->GetEntityByUUID(newUUID);
     }
 
-    rootEntity.AddComponentI<PrefabComponent>().ID = prefabID;
+    rootEntity.AddComponentI<PrefabComponent>().id = prefabID;
 
     // Fix parent/children UUIDs
     for (const auto& [_, newId] : oldNewIdMap) {
       auto& relationshipComponent = scene->GetEntityByUUID(newId).GetRelationship();
-      UUID parent = relationshipComponent.Parent;
+      UUID parent = relationshipComponent.parent;
       if (parent)
-        relationshipComponent.Parent = oldNewIdMap.at(parent);
+        relationshipComponent.parent = oldNewIdMap.at(parent);
 
-      auto& children = relationshipComponent.Children;
+      auto& children = relationshipComponent.children;
       for (auto& id : children)
         id = oldNewIdMap.at(id);
     }

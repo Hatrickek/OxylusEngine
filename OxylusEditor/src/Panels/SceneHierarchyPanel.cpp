@@ -35,13 +35,13 @@ ImRect SceneHierarchyPanel::DrawEntityNode(Entity entity, uint32_t depth, bool f
   ImGui::TableNextColumn();
 
   const auto& rc = entity.GetRelationship();
-  const size_t childrenSize = rc.Children.size();
+  const size_t childrenSize = rc.children.size();
 
   auto& tagComponent = entity.GetComponent<TagComponent>();
-  auto& tag = tagComponent.Tag;
+  auto& tag = tagComponent.tag;
 
   if (m_Filter.IsActive() && !m_Filter.PassFilter(tag.c_str())) {
-    for (const auto& childId : rc.Children) {
+    for (const auto& childId : rc.children) {
       DrawEntityNode(m_Context->GetEntityByUUID(childId));
     }
     return {0, 0, 0, 0};
@@ -77,7 +77,7 @@ ImRect SceneHierarchyPanel::DrawEntityNode(Entity entity, uint32_t depth, bool f
   const bool opened = ImGui::TreeNodeEx(reinterpret_cast<void*>(static_cast<uint64_t>(entity.GetUUID())),
     flags,
     "%s %s",
-    StringUtils::FromChar8T(ICON_MDI_CUBE_OUTLINE),
+    StringUtils::from_char8_t(ICON_MDI_CUBE_OUTLINE),
     tag.c_str());
 
   if (highlight)
@@ -129,7 +129,7 @@ ImRect SceneHierarchyPanel::DrawEntityNode(Entity entity, uint32_t depth, bool f
       }
       else if (const ImGuiPayload* payload = ImGui::AcceptDragDropPayload("CONTENT_BROWSER_ITEM")) {
         std::filesystem::path path = std::filesystem::path((const char*)payload->Data);
-        path = AssetManager::GetAssetFileSystemPath(path);
+        path = AssetManager::get_asset_file_system_path(path);
         if (path.extension() == ".oxprefab") {
           m_DraggedEntity = EntitySerializer::DeserializeEntityAsPrefab(path.string().c_str(), m_Context.get());
           m_DraggedEntity = entity;
@@ -178,7 +178,7 @@ ImRect SceneHierarchyPanel::DrawEntityNode(Entity entity, uint32_t depth, bool f
   // Visibility Toggle
   {
     ImGui::Text("  %s",
-      reinterpret_cast<const char*>(tagComponent.Enabled
+      reinterpret_cast<const char*>(tagComponent.enabled
                                       ? ICON_MDI_EYE_OUTLINE
                                       : ICON_MDI_EYE_OFF_OUTLINE));
 
@@ -187,7 +187,7 @@ ImRect SceneHierarchyPanel::DrawEntityNode(Entity entity, uint32_t depth, bool f
 
     if (ImGui::IsItemHovered() && ((!tagComponent.handled && ImGui::IsMouseDragging(0)) || ImGui::IsItemClicked())) {
       tagComponent.handled = true;
-      tagComponent.Enabled = !tagComponent.Enabled;
+      tagComponent.enabled = !tagComponent.enabled;
     }
   }
 
@@ -220,9 +220,9 @@ ImRect SceneHierarchyPanel::DrawEntityNode(Entity entity, uint32_t depth, bool f
       ImVec2 verticalLineEnd = verticalLineStart;
       constexpr float lineThickness = 1.5f;
 
-      for (const auto& childId : rc.Children) {
+      for (const auto& childId : rc.children) {
         Entity child = m_Context->GetEntityByUUID(childId);
-        const float HorizontalTreeLineSize = child.GetRelationship().Children.empty() ? 18.0f : 9.0f;
+        const float HorizontalTreeLineSize = child.GetRelationship().children.empty() ? 18.0f : 9.0f;
         // chosen arbitrarily
         const ImRect childRect = DrawEntityNode(child, depth + 1, forceExpandTree, isPartOfPrefab);
 
@@ -251,12 +251,12 @@ ImRect SceneHierarchyPanel::DrawEntityNode(Entity entity, uint32_t depth, bool f
 void SceneHierarchyPanel::DragDropTarget() const {
   if (ImGui::BeginDragDropTarget()) {
     if (const ImGuiPayload* payload = ImGui::AcceptDragDropPayload("CONTENT_BROWSER_ITEM")) {
-      const std::filesystem::path path = IGUI::GetPathFromImGuiPayload(payload);
+      const std::filesystem::path path = IGUI::get_path_from_im_gui_payload(payload);
       if (path.extension() == ".oxscene") {
         EditorLayer::Get()->OpenScene(path);
       }
       if (path.extension() == ".gltf" || path.extension() == ".glb") {
-        m_Context->CreateEntityWithMesh(AssetManager::GetMeshAsset(path.string()));
+        m_Context->CreateEntityWithMesh(AssetManager::get_mesh_asset(path.string()));
       }
       if (path.extension() == ".oxprefab") {
         EntitySerializer::DeserializeEntityAsPrefab(path.string().c_str(), m_Context.get());
@@ -284,15 +284,15 @@ void SceneHierarchyPanel::DrawContextMenu() {
     if (ImGui::BeginMenu("Primitives")) {
       if (ImGui::MenuItem("Cube")) {
         toSelect = m_Context->CreateEntity("Cube");
-        toSelect.AddComponentI<MeshRendererComponent>(AssetManager::GetMeshAsset("Resources/Objects/cube.glb"));
+        toSelect.AddComponentI<MeshRendererComponent>(AssetManager::get_mesh_asset("Resources/Objects/cube.glb"));
       }
       if (ImGui::MenuItem("Plane")) {
         toSelect = m_Context->CreateEntity("Plane");
-        toSelect.AddComponentI<MeshRendererComponent>(AssetManager::GetMeshAsset("Resources/Objects/plane.gltf"));
+        toSelect.AddComponentI<MeshRendererComponent>(AssetManager::get_mesh_asset("Resources/Objects/plane.gltf"));
       }
       if (ImGui::MenuItem("Sphere")) {
         toSelect = m_Context->CreateEntity("Sphere");
-        toSelect.AddComponentI<MeshRendererComponent>(AssetManager::GetMeshAsset("Resources/Objects/sphere.gltf"));
+        toSelect.AddComponentI<MeshRendererComponent>(AssetManager::get_mesh_asset("Resources/Objects/sphere.gltf"));
       }
       ImGui::EndMenu();
     }
@@ -322,20 +322,20 @@ void SceneHierarchyPanel::DrawContextMenu() {
         toSelect = m_Context->CreateEntity("Sphere");
         toSelect.AddComponentI<RigidbodyComponent>();
         toSelect.AddComponentI<SphereColliderComponent>();
-        toSelect.AddComponentI<MeshRendererComponent>(AssetManager::GetMeshAsset("Resources/Objects/sphere.gltf"));
+        toSelect.AddComponentI<MeshRendererComponent>(AssetManager::get_mesh_asset("Resources/Objects/sphere.gltf"));
       }
 
       if (ImGui::MenuItem("Cube")) {
         toSelect = m_Context->CreateEntity("Cube");
         toSelect.AddComponentI<RigidbodyComponent>();
         toSelect.AddComponentI<BoxColliderComponent>();
-        toSelect.AddComponentI<MeshRendererComponent>(AssetManager::GetMeshAsset("Resources/Objects/cube.glb"));
+        toSelect.AddComponentI<MeshRendererComponent>(AssetManager::get_mesh_asset("Resources/Objects/cube.glb"));
       }
 
       if (ImGui::MenuItem("Character Controller")) {
         toSelect = m_Context->CreateEntity("Character Controller");
         toSelect.AddComponentI<CharacterControllerComponent>();
-        toSelect.AddComponentI<MeshRendererComponent>(AssetManager::GetMeshAsset("Resources/Objects/capsule.glb"));
+        toSelect.AddComponentI<MeshRendererComponent>(AssetManager::get_mesh_asset("Resources/Objects/capsule.glb"));
       }
 
       ImGui::EndMenu();
@@ -414,10 +414,10 @@ void SceneHierarchyPanel::OnImGuiRender() {
     const float filterCursorPosX = ImGui::GetCursorPosX();
     m_Filter.Draw("###HierarchyFilter",
       ImGui::GetContentRegionAvail().x -
-      (IGUI::GetIconButtonSize(ICON_MDI_PLUS, "").x + 2.0f * padding.x));
+      (IGUI::get_icon_button_size(ICON_MDI_PLUS, "").x + 2.0f * padding.x));
     ImGui::SameLine();
 
-    if (ImGui::Button(StringUtils::FromChar8T(ICON_MDI_PLUS)))
+    if (ImGui::Button(StringUtils::from_char8_t(ICON_MDI_PLUS)))
       ImGui::OpenPopup("SceneHierarchyContextWindow");
 
     ImGui::PushStyleVar(ImGuiStyleVar_ItemSpacing, ImVec2(6.0f, 8.0f));
@@ -431,7 +431,7 @@ void SceneHierarchyPanel::OnImGuiRender() {
     if (!m_Filter.IsActive()) {
       ImGui::SameLine();
       ImGui::SetCursorPosX(filterCursorPosX + ImGui::GetFontSize() * 0.5f);
-      ImGui::TextUnformatted(StringUtils::FromChar8T(ICON_MDI_MAGNIFY " Search..."));
+      ImGui::TextUnformatted(StringUtils::from_char8_t(ICON_MDI_MAGNIFY " Search..."));
     }
 
     const ImVec2 cursorPos = ImGui::GetCursorPos();
@@ -443,7 +443,7 @@ void SceneHierarchyPanel::OnImGuiRender() {
     if (ImGui::BeginTable("HierarchyTable", 3, tableFlags)) {
       ImGui::TableSetupColumn("  Label", ImGuiTableColumnFlags_NoHide | ImGuiTableColumnFlags_NoClip);
       ImGui::TableSetupColumn("  Type", ImGuiTableColumnFlags_WidthFixed, lineHeight * 3.0f);
-      ImGui::TableSetupColumn(StringUtils::FromChar8T("  " ICON_MDI_EYE_OUTLINE),
+      ImGui::TableSetupColumn(StringUtils::from_char8_t("  " ICON_MDI_EYE_OUTLINE),
         ImGuiTableColumnFlags_WidthFixed,
         lineHeight * 2.0f);
 

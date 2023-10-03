@@ -17,11 +17,11 @@ class EditorLayer : public Layer {
 public:
   EditorLayer();
   ~EditorLayer() override = default;
-  void OnAttach(EventDispatcher& dispatcher) override;
-  void OnDetach() override;
+  void on_attach(EventDispatcher& dispatcher) override;
+  void on_detach() override;
 
-  void OnUpdate(Timestep deltaTime) override;
-  void OnImGuiRender() override;
+  void on_update(Timestep deltaTime) override;
+  void on_imgui_render() override;
 
   void OnScenePlay();
   void OnSceneStop();

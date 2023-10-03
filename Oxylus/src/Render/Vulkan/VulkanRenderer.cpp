@@ -15,26 +15,24 @@
 #include "Utils/FileUtils.h"
 
 namespace Oxylus {
-VulkanRenderer::RendererContext VulkanRenderer::s_RendererContext;
-VulkanRenderer::RendererData VulkanRenderer::s_RendererData;
-RendererConfig VulkanRenderer::s_RendererConfig;
+VulkanRenderer::RendererContext VulkanRenderer::renderer_context;
+RendererConfig VulkanRenderer::renderer_config;
 
-void VulkanRenderer::Init() {
-  s_RendererContext.m_DefaultRenderPipeline = CreateRef<DefaultRenderPipeline>("DefaultRenderPipeline");
+void VulkanRenderer::init() {
+  renderer_context.default_render_pipeline = create_ref<DefaultRenderPipeline>("DefaultRenderPipeline");
 
   // Save/Load renderer config
-  if (!RendererConfig::Get()->LoadConfig("renderer.oxconfig")) {
-    RendererConfig::Get()->SaveConfig("renderer.oxconfig");
-  }
-  RendererConfig::Get()->ConfigChangeDispatcher.trigger(RendererConfig::ConfigChangeEvent{});
+  if (!RendererConfig::get()->load_config("renderer.oxconfig"))
+    RendererConfig::get()->save_config("renderer.oxconfig");
+  RendererConfig::get()->config_change_dispatcher.trigger(RendererConfig::ConfigChangeEvent{});
 
-  TextureAsset::CreateBlankTexture();
-  TextureAsset::CreateWhiteTexture();
+  TextureAsset::create_blank_texture();
+  TextureAsset::create_white_texture();
 
   // Debug renderer
-  DebugRenderer::Init();
+  DebugRenderer::init();
 
-  s_RendererConfig.ConfigChangeDispatcher.trigger(RendererConfig::ConfigChangeEvent{});
+  renderer_config.config_change_dispatcher.trigger(RendererConfig::ConfigChangeEvent{});
 
 #if GPU_PROFILER_ENABLED
     //Initalize tracy profiling
@@ -46,55 +44,61 @@ void VulkanRenderer::Init() {
 #endif
 }
 
-void VulkanRenderer::Shutdown() {
-  RendererConfig::Get()->SaveConfig("renderer.oxconfig");
-  DebugRenderer::Release();
+void VulkanRenderer::shutdown() {
+  RendererConfig::get()->save_config("renderer.oxconfig");
+  DebugRenderer::release();
 #if GPU_PROFILER_ENABLED
     TracyProfiler::DestroyContext();
 #endif
 }
 
-void VulkanRenderer::SetCamera(Camera& camera) {
-  s_RendererContext.m_CurrentCamera = &camera;
+void VulkanRenderer::set_camera(Camera& camera) {
+  renderer_context.current_camera = &camera;
 }
 
-void VulkanRenderer::Draw(VulkanContext* context, ImGuiLayer* imguiLayer, LayerStack& layerStack, Ref<SystemManager>& systemManager) {
+void VulkanRenderer::draw(VulkanContext* context, ImGuiLayer* imgui_layer, LayerStack& layer_stack, const Ref<SystemManager>& system_manager) {
   OX_SCOPED_ZONE;
-  imguiLayer->Begin();
+  imgui_layer->Begin();
 
-  auto frameAllocator = context->Begin();
-  const Ref rg = CreateRef<vuk::RenderGraph>("runner");
-  rg->attach_swapchain("_swp", context->Swapchain);
+  auto frameAllocator = context->begin();
+  const Ref rg = create_ref<vuk::RenderGraph>("runner");
+  rg->attach_swapchain("_swp", context->swapchain);
   rg->clear_image("_swp", "final_image", vuk::ClearColor{0.0f, 0.0f, 0.0f, 1.0f});
 
-  const auto rp = s_RendererContext.m_RenderPipeline;
+  const auto rp = renderer_context.render_pipeline;
 
   vuk::Future fut = {};
 
   // Render it directly to swapchain
-  if (rp->IsSwapchainAttached()) {
-    for (const auto& layer : layerStack)
-      layer->OnImGuiRender();
-    systemManager->OnImGuiRender();
-    imguiLayer->End();
+  if (rp->is_swapchain_attached()) {
+    for (const auto& layer : layer_stack)
+      layer->on_imgui_render();
+    system_manager->OnImGuiRender();
+    imgui_layer->End();
 
-    fut = *rp->OnRender(frameAllocator, vuk::Future{rg, "final_image"});
+    renderer_context.viewport_size.x = Window::get_width();
+    renderer_context.viewport_size.y = Window::get_height();
 
-    fut = imguiLayer->RenderDrawData(frameAllocator, fut, ImGui::GetDrawData());
+    fut = *rp->on_render(frameAllocator, vuk::Future{rg, "final_image"});
+
+    fut = imgui_layer->RenderDrawData(frameAllocator, fut, ImGui::GetDrawData());
   }
   // Render it into a separate image with given dimension
   else {
-    const auto rgx = CreateRef<vuk::RenderGraph>(rp->GetName().c_str());
+    const auto rgx = create_ref<vuk::RenderGraph>(rp->get_name().c_str());
 
-    const auto& dim = rp->GetDimension();
+    const auto& dim = rp->get_dimension();
 
-    OX_CORE_ASSERT(dim.extent.height > 0)
     OX_CORE_ASSERT(dim.extent.width > 0)
+    OX_CORE_ASSERT(dim.extent.height > 0)
+
+    renderer_context.viewport_size.x = dim.extent.width;
+    renderer_context.viewport_size.y = dim.extent.height;
 
     rgx->attach_and_clear_image("_img",
       vuk::ImageAttachment{
         .extent = dim,
-        .format = context->Swapchain->format,
+        .format = context->swapchain->format,
         .sample_count = vuk::Samples::e1,
         .level_count = 1,
         .layer_count = 1
@@ -102,7 +106,7 @@ void VulkanRenderer::Draw(VulkanContext* context, ImGuiLayer* imguiLayer, LayerS
       vuk::ClearColor(0.0f, 0.0f, 0.0f, 1.f)
     );
 
-    auto rpFut = *rp->OnRender(frameAllocator, vuk::Future{rgx, "_img"});
+    auto rpFut = *rp->on_render(frameAllocator, vuk::Future{rgx, "_img"});
     const auto attachmentNameOut = rpFut.get_bound_name().name;
 
     auto rpRg = rpFut.get_render_graph();
@@ -112,71 +116,74 @@ void VulkanRenderer::Draw(VulkanContext* context, ImGuiLayer* imguiLayer, LayerS
 
     rg->attach_in(attachmentNameOut, std::move(rpFut));
 
-    auto si = CreateRef<vuk::SampledImage>(make_sampled_image(vuk::NameReference{rg.get(), vuk::QualifiedName({}, attachmentNameOut)}, {}));
-    rp->SetFinalImage(si);
+    auto si = create_ref<vuk::SampledImage>(
+      make_sampled_image(vuk::NameReference{rg.get(), vuk::QualifiedName({}, attachmentNameOut)}, {}));
+    rp->set_final_image(si);
 
-    for (const auto& layer : layerStack)
-      layer->OnImGuiRender();
+    for (const auto& layer : layer_stack)
+      layer->on_imgui_render();
 
-    systemManager->OnImGuiRender();
+    system_manager->OnImGuiRender();
 
-    imguiLayer->End();
+    imgui_layer->End();
 
-    fut = imguiLayer->RenderDrawData(frameAllocator, vuk::Future{rg, "final_image"}, ImGui::GetDrawData());
+    fut = imgui_layer->RenderDrawData(frameAllocator, vuk::Future{rg, "final_image"}, ImGui::GetDrawData());
   }
 
-  context->End(fut, frameAllocator);
+  context->end(fut, frameAllocator);
 }
 
-void VulkanRenderer::RenderNode(const Mesh::Node* node, vuk::CommandBuffer& commandBuffer, const std::function<bool(Mesh::Primitive* prim)>& perMeshFunc) {
-  for (const auto& part : node->Primitives) {
-    if (!perMeshFunc(part))
+void VulkanRenderer::render_node(const Mesh::Node* node, vuk::CommandBuffer& command_buffer, const std::function<bool(Mesh::Primitive* prim)>& per_mesh_func) {
+  for (const auto& part : node->primitives) {
+    if (!per_mesh_func(part))
       continue;
 
-    commandBuffer.draw_indexed(part->indexCount, 1, part->firstIndex, 0, 0);
+    command_buffer.draw_indexed(part->index_count, 1, part->first_index, 0, 0);
   }
-  for (const auto& child : node->Children) {
-    RenderNode(child, commandBuffer, perMeshFunc);
-  }
+  for (const auto& child : node->children)
+    render_node(child, command_buffer, per_mesh_func);
 }
 
-void VulkanRenderer::RenderMesh(const MeshData& mesh, vuk::CommandBuffer& commandBuffer, const std::function<bool(Mesh::Primitive* prim)>& perMeshFunc) {
-  mesh.MeshGeometry->BindVertexBuffer(commandBuffer);
-  mesh.MeshGeometry->BindIndexBuffer(commandBuffer);
-  RenderNode(mesh.MeshGeometry->LinearNodes[mesh.SubmeshIndex], commandBuffer, perMeshFunc);
+void VulkanRenderer::render_mesh(const MeshData& mesh,
+                                 vuk::CommandBuffer& command_buffer,
+                                 const std::function<bool(Mesh::Primitive* prim)>& per_mesh_func) {
+  mesh.mesh_geometry->bind_vertex_buffer(command_buffer);
+  mesh.mesh_geometry->bind_index_buffer(command_buffer);
+  render_node(mesh.mesh_geometry->linear_nodes[mesh.submesh_index], command_buffer, per_mesh_func);
 }
 
-std::pair<vuk::Unique<vuk::Image>, vuk::Future> VulkanRenderer::GenerateCubemapFromEquirectangular(const vuk::Texture& cubemap) {
-  auto& allocator = *VulkanContext::Get()->SuperframeAllocator;
+std::pair<vuk::Unique<vuk::Image>, vuk::Future> VulkanRenderer::generate_cubemap_from_equirectangular(const vuk::Texture& cubemap) {
+  auto& allocator = *VulkanContext::get()->superframe_allocator;
 
   vuk::Unique<vuk::Image> output;
 
   constexpr auto size = 2048;
-  auto mipCount = (uint32_t)log2f((float)std::max(size, size)) + 1;
+  auto mip_count = static_cast<uint32_t>(log2f((float)std::max(size, size))) + 1;
 
   auto env_cubemap_ia = vuk::ImageAttachment{
     .image = *output,
     .image_flags = vuk::ImageCreateFlagBits::eCubeCompatible,
     .image_type = vuk::ImageType::e2D,
-    .usage = vuk::ImageUsageFlagBits::eSampled | vuk::ImageUsageFlagBits::eColorAttachment | vuk::ImageUsageFlagBits::eTransferSrc | vuk::ImageUsageFlagBits::eTransferDst,
+    .usage = vuk::ImageUsageFlagBits::eSampled | vuk::ImageUsageFlagBits::eColorAttachment |
+             vuk::ImageUsageFlagBits::eTransferSrc | vuk::ImageUsageFlagBits::eTransferDst,
     .extent = vuk::Dimension3D::absolute(size, size, 1),
     .format = vuk::Format::eR32G32B32A32Sfloat,
     .sample_count = vuk::Samples::e1,
     .view_type = vuk::ImageViewType::eCube,
     .base_level = 0,
-    .level_count = mipCount,
+    .level_count = mip_count,
     .base_layer = 0,
     .layer_count = 6
   };
-  output = *vuk::allocate_image(allocator, env_cubemap_ia);
+  output = *allocate_image(allocator, env_cubemap_ia);
   env_cubemap_ia.image = *output;
 
   vuk::PipelineBaseCreateInfo equirectangular_to_cubemap;
-  equirectangular_to_cubemap.add_glsl(*FileUtils::ReadShaderFile("Cubemap.vert"), "Cubemap.vert");
-  equirectangular_to_cubemap.add_glsl(*FileUtils::ReadShaderFile("EquirectangularToCubemap.frag"), "EquirectangularToCubemap.frag");
+  equirectangular_to_cubemap.add_glsl(*FileUtils::read_shader_file("Cubemap.vert"), "Cubemap.vert");
+  equirectangular_to_cubemap.add_glsl(*FileUtils::read_shader_file("EquirectangularToCubemap.frag"), "EquirectangularToCubemap.frag");
   allocator.get_context().create_named_pipeline("equirectangular_to_cubemap", equirectangular_to_cubemap);
 
-  auto cube = AssetManager::GetMeshAsset(Resources::GetResourcesPath("Objects/cube.glb"));
+  auto cube = AssetManager::get_mesh_asset(Resources::get_resources_path("Objects/cube.glb"));
 
   const auto capture_projection = glm::perspective(glm::radians(90.0f), 1.0f, 0.1f, 10.0f);
   const Mat4 capture_views[] = {
@@ -219,15 +226,16 @@ std::pair<vuk::Unique<vuk::Image>, vuk::Future> VulkanRenderer::GenerateCubemapF
       const auto view = cbuf.map_scratch_buffer<glm::mat4[6]>(0, 1);
       memcpy(view, capture_views, sizeof(capture_views));
 
-      cube->BindVertexBuffer(cbuf);
-      cube->BindIndexBuffer(cbuf);
-      for (const auto& node : cube->Nodes) {
-        for (const auto& primitive : node->Primitives)
-          cbuf.draw_indexed(primitive->indexCount, 6, 0, 0, 0);
-      }
+      cube->bind_vertex_buffer(cbuf);
+      cube->bind_index_buffer(cbuf);
+      for (const auto& node : cube->nodes)
+        for (const auto& primitive : node->primitives)
+          cbuf.draw_indexed(primitive->index_count, 6, 0, 0, 0);
     }
   });
 
-  return {std::move(output), transition(vuk::Future{std::make_unique<vuk::RenderGraph>(std::move(rg)), "env_cubemap+"}, vuk::eFragmentSampled)};
+  return {
+    std::move(output), transition(vuk::Future{std::make_unique<vuk::RenderGraph>(std::move(rg)), "env_cubemap+"}, vuk::eFragmentSampled)
+  };
 }
 }

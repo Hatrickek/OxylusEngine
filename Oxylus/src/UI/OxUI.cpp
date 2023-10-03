@@ -3,26 +3,26 @@
 
 namespace Oxylus {
 void OxUI::BeginUI(ImGuiTableFlags flags) {
-  IGUI::BeginProperties(flags);
+  IGUI::begin_properties(flags);
 }
 
 void OxUI::EndUI() {
-  IGUI::EndProperties();
+  IGUI::end_properties();
 }
 
 void OxUI::ProgressBar(const char* label, const float& value) {
-  IGUI::BeginPropertyGrid(label, nullptr);
+  IGUI::begin_property_grid(label, nullptr);
   ImGui::ProgressBar(value, ImVec2(0.0f, 0.0f));
-  IGUI::EndPropertyGrid();
+  IGUI::end_property_grid();
 }
 
 void OxUI::Property(const char* label, const char* fmt, ...) {
-  IGUI::BeginPropertyGrid(label, nullptr);
+  IGUI::begin_property_grid(label, nullptr);
   va_list args;
   va_start(args, fmt);
   ImGui::TextV(fmt, args);
   va_end(args);
-  IGUI::EndPropertyGrid();
+  IGUI::end_property_grid();
 }
 
 bool OxUI::Button(const char* label, const ImVec2 size) {

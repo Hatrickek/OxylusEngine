@@ -13,10 +13,10 @@ namespace OxylusRuntime {
   public:
     RuntimeLayer();
     ~RuntimeLayer() override;
-    void OnAttach(Oxylus::EventDispatcher& dispatcher) override;
-    void OnDetach() override;
-    void OnUpdate(Oxylus::Timestep deltaTime) override;
-    void OnImGuiRender() override;
+    void on_attach(Oxylus::EventDispatcher& dispatcher) override;
+    void on_detach() override;
+    void on_update(Oxylus::Timestep deltaTime) override;
+    void on_imgui_render() override;
 
     static RuntimeLayer* Get() { return s_Instance; }
 

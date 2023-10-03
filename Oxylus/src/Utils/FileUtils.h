@@ -6,8 +6,8 @@
 namespace Oxylus {
 class FileUtils {
 public:
-  static std::optional<std::string> ReadFile(const std::string& filePath);
-  static std::optional<std::string> ReadShaderFile(const std::string& shaderFileName);
-  static std::string GetShaderPath(const std::string& shaderFileName);
+  static std::optional<std::string> read_file(const std::string& filePath);
+  static std::optional<std::string> read_shader_file(const std::string& shaderFileName);
+  static std::string get_shader_path(const std::string& shaderFileName);
 };
 }

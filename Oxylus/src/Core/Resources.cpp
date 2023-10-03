@@ -7,19 +7,19 @@
 #include "Assets/TextureAsset.h"
 
 namespace Oxylus {
-Resources::EditorRes Resources::s_EditorResources;
+Resources::EditorRes Resources::editor_resources;
 
-void Resources::InitEditorResources() {
-  s_EditorResources.EngineIcon = CreateRef<TextureAsset>();
-  s_EditorResources.EngineIcon->LoadFromMemory(EngineLogo, EngineLogoLen);
+void Resources::init_editor_resources() {
+  editor_resources.engine_icon = create_ref<TextureAsset>();
+  editor_resources.engine_icon->load_from_memory(EngineLogo, EngineLogoLen);
 }
 
-std::string Resources::GetResourcesPath(const std::string& path) {
-  const auto& spec = Application::Get()->GetSpecification();
-  return (std::filesystem::path(spec.WorkingDirectory) / spec.ResourcesPath / path).string();
+std::string Resources::get_resources_path(const std::string& path) {
+  const auto& spec = Application::get()->get_specification();
+  return (std::filesystem::path(spec.working_directory) / spec.resources_path / path).string();
 }
 
-bool Resources::ResourcesPathExists() {
-  return std::filesystem::exists(Application::Get()->GetSpecification().ResourcesPath);
+bool Resources::resources_path_exists() {
+  return std::filesystem::exists(Application::get()->get_specification().resources_path);
 }
 }

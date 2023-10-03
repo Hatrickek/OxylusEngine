@@ -9,7 +9,7 @@ namespace Oxylus {
 
   EditorPanel::EditorPanel(const char* name, const char8_t* icon, bool defaultShow)
     : Visible(defaultShow), m_Name(name), m_Icon(icon) {
-    m_ID = fmt::format(" {} {}\t\t###{}{}", StringUtils::FromChar8T(icon), name, s_Count, name);
+    m_ID = fmt::format(" {} {}\t\t###{}{}", StringUtils::from_char8_t(icon), name, s_Count, name);
     s_Count++;
   }
 

@@ -34,7 +34,7 @@ bool ProjectSerializer::Serialize(const std::filesystem::path& filePath) const {
 bool ProjectSerializer::Deserialize(const std::filesystem::path& filePath) const {
   auto& [Name, StartScene, AssetDirectory] = m_Project->GetConfig();
 
-  const auto& content = FileUtils::ReadFile(filePath.string());
+  const auto& content = FileUtils::read_file(filePath.string());
   if (!content) {
     OX_CORE_ASSERT(content, fmt::format("Couldn't load project file: {0}", filePath.string()).c_str());
     return false;

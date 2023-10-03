@@ -19,7 +19,7 @@ namespace Oxylus {
   }
 
   void EditorConfig::LoadConfig() {
-    const auto& content = FileUtils::ReadFile(EditorConfigFileName);
+    const auto& content = FileUtils::read_file(EditorConfigFileName);
     if (!content)
       return;
 

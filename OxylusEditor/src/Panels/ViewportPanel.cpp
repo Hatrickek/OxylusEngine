@@ -14,7 +14,7 @@
 
 namespace Oxylus {
 ViewportPanel::ViewportPanel() : EditorPanel("Viewport", ICON_MDI_TERRAIN, true) {
-  VulkanRenderer::SetCamera(m_Camera);
+  VulkanRenderer::set_camera(m_Camera);
 }
 
 void ViewportPanel::OnImGuiRender() {
@@ -37,7 +37,7 @@ void ViewportPanel::OnImGuiRender() {
     ImGui::PopStyleVar();
 
     if (ImGui::BeginMenuBar()) {
-      if (ImGui::MenuItem(StringUtils::FromChar8T(ICON_MDI_COGS))) {
+      if (ImGui::MenuItem(StringUtils::from_char8_t(ICON_MDI_COGS))) {
         viewportSettingsPopup = true;
       }
       ImGui::EndMenuBar();
@@ -49,7 +49,7 @@ void ViewportPanel::OnImGuiRender() {
 
     ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2(10, 10));
     if (ImGui::BeginPopup("ViewportSettings")) {
-      IGUI::BeginProperties();
+      IGUI::begin_properties();
 #if 0 // TODO:
         static bool vsync = VulkanRenderer::s_SwapChain.m_PresentMode == VK_PRESENT_MODE_FIFO_KHR ? true : false;
         if (IGUI::Property("VSync", vsync)) {
@@ -57,10 +57,10 @@ void ViewportPanel::OnImGuiRender() {
           RendererConfig::Get()->DisplayConfig.VSync = vsync;
         }
 #endif
-      IGUI::Property<float>("Camera sensitivity", m_MouseSensitivity, 0.1f, 20.0f);
-      IGUI::Property<float>("Movement speed", m_MovementSpeed, 5, 100.0f);
-      IGUI::Property("Smooth camera", m_SmoothCamera);
-      IGUI::EndProperties();
+      IGUI::property<float>("Camera sensitivity", m_MouseSensitivity, 0.1f, 20.0f);
+      IGUI::property<float>("Movement speed", m_MovementSpeed, 5, 100.0f);
+      IGUI::property("Smooth camera", m_SmoothCamera);
+      IGUI::end_properties();
       ImGui::EndPopup();
     }
 
@@ -83,12 +83,12 @@ void ViewportPanel::OnImGuiRender() {
     ImGui::SetCursorPosX((m_ViewportPanelSize.x - fixedWidth) * 0.5f);
 
     const auto dim = vuk::Dimension3D::absolute((uint32_t)m_ViewportPanelSize.x, (uint32_t)m_ViewportPanelSize.y);
-    m_Scene->GetRenderer()->GetRenderPipeline()->DetachSwapchain(dim);
+    m_Scene->GetRenderer()->get_render_pipeline()->detach_swapchain(dim);
 
-    const auto finalImage = m_Scene->GetRenderer()->GetRenderPipeline()->GetFinalImage();
+    const auto finalImage = m_Scene->GetRenderer()->get_render_pipeline()->get_final_image();
 
     if (finalImage) {
-      IGUI::Image(*finalImage, ImVec2{fixedWidth, m_ViewportSize.y});
+      IGUI::image(*finalImage, ImVec2{fixedWidth, m_ViewportSize.y});
     }
     else {
       const auto textWidth = ImGui::CalcTextSize("No render target!").x;
@@ -123,8 +123,8 @@ void ViewportPanel::OnImGuiRender() {
 
         const ImVec2 draggerCursorPos = ImGui::GetCursorPos();
         ImGui::SetCursorPosX(draggerCursorPos.x + framePadding.x);
-        ImGui::TextUnformatted(StringUtils::FromChar8T(ICON_MDI_DOTS_HORIZONTAL));
-        ImVec2 draggerSize = ImGui::CalcTextSize(StringUtils::FromChar8T(ICON_MDI_DOTS_HORIZONTAL));
+        ImGui::TextUnformatted(StringUtils::from_char8_t(ICON_MDI_DOTS_HORIZONTAL));
+        ImVec2 draggerSize = ImGui::CalcTextSize(StringUtils::from_char8_t(ICON_MDI_DOTS_HORIZONTAL));
         draggerSize.x *= 2.0f;
         ImGui::SetCursorPos(draggerCursorPos);
         ImGui::InvisibleButton("GizmoDragger", draggerSize);
@@ -137,17 +137,17 @@ void ViewportPanel::OnImGuiRender() {
         lastMousePosition = mousePos;
 
         constexpr float alpha = 0.6f;
-        if (IGUI::ToggleButton(StringUtils::FromChar8T(ICON_MDI_AXIS_ARROW), m_GizmoType == ImGuizmo::TRANSLATE, buttonSize, alpha, alpha))
+        if (IGUI::toggle_button(StringUtils::from_char8_t(ICON_MDI_AXIS_ARROW), m_GizmoType == ImGuizmo::TRANSLATE, buttonSize, alpha, alpha))
           m_GizmoType = ImGuizmo::TRANSLATE;
-        if (IGUI::ToggleButton(StringUtils::FromChar8T(ICON_MDI_ROTATE_3D), m_GizmoType == ImGuizmo::ROTATE, buttonSize, alpha, alpha))
+        if (IGUI::toggle_button(StringUtils::from_char8_t(ICON_MDI_ROTATE_3D), m_GizmoType == ImGuizmo::ROTATE, buttonSize, alpha, alpha))
           m_GizmoType = ImGuizmo::ROTATE;
-        if (IGUI::ToggleButton(StringUtils::FromChar8T(ICON_MDI_ARROW_EXPAND), m_GizmoType == ImGuizmo::SCALE, buttonSize, alpha, alpha))
+        if (IGUI::toggle_button(StringUtils::from_char8_t(ICON_MDI_ARROW_EXPAND), m_GizmoType == ImGuizmo::SCALE, buttonSize, alpha, alpha))
           m_GizmoType = ImGuizmo::SCALE;
-        if (IGUI::ToggleButton(StringUtils::FromChar8T(ICON_MDI_VECTOR_SQUARE), m_GizmoType == ImGuizmo::BOUNDS, buttonSize, alpha, alpha))
+        if (IGUI::toggle_button(StringUtils::from_char8_t(ICON_MDI_VECTOR_SQUARE), m_GizmoType == ImGuizmo::BOUNDS, buttonSize, alpha, alpha))
           m_GizmoType = ImGuizmo::BOUNDS;
-        if (IGUI::ToggleButton(StringUtils::FromChar8T(ICON_MDI_ARROW_EXPAND_ALL), m_GizmoType == ImGuizmo::UNIVERSAL, buttonSize, alpha, alpha))
+        if (IGUI::toggle_button(StringUtils::from_char8_t(ICON_MDI_ARROW_EXPAND_ALL), m_GizmoType == ImGuizmo::UNIVERSAL, buttonSize, alpha, alpha))
           m_GizmoType = ImGuizmo::UNIVERSAL;
-        if (IGUI::ToggleButton(m_GizmoMode == ImGuizmo::WORLD ? StringUtils::FromChar8T(ICON_MDI_EARTH) : StringUtils::FromChar8T(ICON_MDI_EARTH_OFF), m_GizmoMode == ImGuizmo::WORLD, buttonSize, alpha, alpha))
+        if (IGUI::toggle_button(m_GizmoMode == ImGuizmo::WORLD ? StringUtils::from_char8_t(ICON_MDI_EARTH) : StringUtils::from_char8_t(ICON_MDI_EARTH_OFF), m_GizmoMode == ImGuizmo::WORLD, buttonSize, alpha, alpha))
           m_GizmoMode = m_GizmoMode == ImGuizmo::LOCAL ? ImGuizmo::WORLD : ImGuizmo::LOCAL;
 
         ImGui::PopStyleVar(2);
@@ -176,7 +176,7 @@ void ViewportPanel::OnImGuiRender() {
         const ImVec2 buttonSize = {frameHeight * 1.5f, frameHeight};
         const bool highlight = EditorLayer::Get()->m_SceneState == EditorLayer::SceneState::Play;
         const char8_t* icon = EditorLayer::Get()->m_SceneState == EditorLayer::SceneState::Edit ? ICON_MDI_PLAY : ICON_MDI_STOP;
-        if (IGUI::ToggleButton(StringUtils::FromChar8T(icon), highlight, buttonSize)) {
+        if (IGUI::toggle_button(StringUtils::from_char8_t(icon), highlight, buttonSize)) {
           if (EditorLayer::Get()->m_SceneState == EditorLayer::SceneState::Edit)
             EditorLayer::Get()->OnScenePlay();
           else if (EditorLayer::Get()->m_SceneState == EditorLayer::SceneState::Play)
@@ -184,11 +184,11 @@ void ViewportPanel::OnImGuiRender() {
         }
         ImGui::SameLine();
         ImGui::PushStyleColor(ImGuiCol_Button, ImVec4(0.2f, 0.2f, 0.2f, 0.4f));
-        if (ImGui::Button(StringUtils::FromChar8T(ICON_MDI_PAUSE), buttonSize)) {
+        if (ImGui::Button(StringUtils::from_char8_t(ICON_MDI_PAUSE), buttonSize)) {
           EditorLayer::Get()->OnSceneStop();
         }
         ImGui::SameLine();
-        if (ImGui::Button(StringUtils::FromChar8T(ICON_MDI_STEP_FORWARD), buttonSize)) {
+        if (ImGui::Button(StringUtils::from_char8_t(ICON_MDI_STEP_FORWARD), buttonSize)) {
           EditorLayer::Get()->OnSceneSimulate();
         }
         ImGui::PopStyleColor();
@@ -270,18 +270,18 @@ void ViewportPanel::OnUpdate() {
       m_UsingEditorCamera = false;
     }
 
-    const Vec3 dampedPosition = Math::SmoothDamp(position,
+    const Vec3 dampedPosition = Math::smooth_damp(position,
       finalPosition,
       m_TranslationVelocity,
       m_TranslationDampening,
       10000.0f,
-      Application::GetTimestep());
-    const glm::vec2 dampedYawPitch = Math::SmoothDamp(yawPitch,
+      Application::get_timestep());
+    const glm::vec2 dampedYawPitch = Math::smooth_damp(yawPitch,
       finalYawPitch,
       m_RotationVelocity,
       m_RotationDampening,
       1000.0f,
-      Application::GetTimestep());
+      Application::get_timestep());
 
     m_Camera.SetPosition(m_SmoothCamera ? dampedPosition : finalPosition);
     m_Camera.SetYaw(m_SmoothCamera ? dampedYawPitch.x : finalYawPitch.x);
@@ -372,11 +372,11 @@ void ViewportPanel::DrawGizmos() {
       const Entity parent = selectedEntity.GetParent();
       const glm::mat4& parentWorldTransform = parent ? parent.GetWorldTransform() : glm::mat4(1.0f);
       Vec3 translation, rotation, scale;
-      if (Math::DecomposeTransform(glm::inverse(parentWorldTransform) * transform, translation, rotation, scale)) {
-        tc.Translation = translation;
-        const Vec3 deltaRotation = rotation - tc.Rotation;
-        tc.Rotation += deltaRotation;
-        tc.Scale = scale;
+      if (Math::decompose_transform(glm::inverse(parentWorldTransform) * transform, translation, rotation, scale)) {
+        tc.translation = translation;
+        const Vec3 deltaRotation = rotation - tc.rotation;
+        tc.rotation += deltaRotation;
+        tc.scale = scale;
       }
     }
   }

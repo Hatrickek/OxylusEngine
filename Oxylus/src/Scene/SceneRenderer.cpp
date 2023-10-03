@@ -3,10 +3,10 @@
 #include "Render/DefaultRenderPipeline.h"
 
 namespace Oxylus {
-void SceneRenderer::Init(Scene* scene) {
-  m_RenderPipeline = VulkanRenderer::s_RendererContext.m_DefaultRenderPipeline;
-  VulkanRenderer::s_RendererContext.m_RenderPipeline = m_RenderPipeline;
-  m_RenderPipeline->Init(scene);
-  m_RenderPipeline->OnDispatcherEvents(Dispatcher);
+void SceneRenderer::init(Scene* scene) {
+  m_RenderPipeline = VulkanRenderer::renderer_context.default_render_pipeline;
+  VulkanRenderer::renderer_context.render_pipeline = m_RenderPipeline;
+  m_RenderPipeline->init(scene);
+  m_RenderPipeline->on_dispatcher_events(dispatcher);
 }
 }

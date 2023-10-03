@@ -41,7 +41,7 @@ RuntimeConsole::RuntimeConsole() {
   });
 
   // Default commands
-  RegisterCommand("quit", "", [] { Application::Get()->Close(); });
+  RegisterCommand("quit", "", [] { Application::get()->close(); });
   RegisterCommand("clear", "", [this] { ClearLog(); });
   RegisterCommand("help", "", [this] { HelpCommand(); });
 
@@ -80,11 +80,11 @@ void RuntimeConsole::ClearLog() {
 void RuntimeConsole::OnImGuiRender(ImGuiWindowFlags windowFlags) {
   if (!Visible)
     return;
-  const auto name = fmt::format(" {} {}\t\t###", StringUtils::FromChar8T(ICON_MDI_CONSOLE), PanelName);
+  const auto name = fmt::format(" {} {}\t\t###", StringUtils::from_char8_t(ICON_MDI_CONSOLE), PanelName);
   if (ImGui::Begin(name.c_str(), &Visible, windowFlags)) {
     if (RenderMenuBar) {
       if (ImGui::BeginMenuBar()) {
-        if (ImGui::MenuItem(StringUtils::FromChar8T(ICON_MDI_TRASH_CAN))) {
+        if (ImGui::MenuItem(StringUtils::from_char8_t(ICON_MDI_TRASH_CAN))) {
           ClearLog();
         }
         ImGui::EndMenuBar();
@@ -100,7 +100,7 @@ void RuntimeConsole::OnImGuiRender(ImGuiWindowFlags windowFlags) {
       ImGui::PushStyleVar(ImGuiStyleVar_CellPadding, {1, 1});
       if (ImGui::BeginTable("ScrollRegionTable", 1, tableFlags)) {
         width = ImGui::GetWindowSize().x;
-        ImGui::PushFont(Application::Get()->GetImGuiLayer()->BoldFont);
+        ImGui::PushFont(Application::get()->get_imgui_layer()->BoldFont);
         for (auto& text : m_TextBuffer) {
           text.Render();
         }
@@ -121,7 +121,7 @@ void RuntimeConsole::OnImGuiRender(ImGuiWindowFlags windowFlags) {
                                                ImGuiInputTextFlags_CallbackHistory |
                                                ImGuiInputTextFlags_EscapeClearsAll;
     static char s_InputBuf[256];
-    ImGui::PushFont(Application::Get()->GetImGuiLayer()->BoldFont);
+    ImGui::PushFont(Application::get()->get_imgui_layer()->BoldFont);
     if (SetFocusToKeyboardAlways)
       ImGui::SetKeyboardFocusHere();
     if (ImGui::InputText(
@@ -157,7 +157,7 @@ void RuntimeConsole::ConsoleText::Render() const {
   ImGui::PushID(Text.c_str());
   ImGui::PushStyleColor(ImGuiCol_Text, GetColor(Level));
   const auto levelIcon = GetLevelIcon(Level);
-  ImGui::TreeNodeEx(Text.c_str(), flags, "%s  %s", StringUtils::FromChar8T(levelIcon), Text.c_str());
+  ImGui::TreeNodeEx(Text.c_str(), flags, "%s  %s", StringUtils::from_char8_t(levelIcon), Text.c_str());
   ImGui::PopStyleColor();
 
   if (ImGui::BeginPopupContextItem("Popup")) {

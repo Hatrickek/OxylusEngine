@@ -12,7 +12,7 @@ public:
 
     OX_CORE_ASSERT(!m_Systems.contains(typeName), "Registering system more than once.");
 
-    Ref<T> system = CreateRef<T>(std::forward<Args>(args)...);
+    Ref<T> system = create_ref<T>(std::forward<Args>(args)...);
     m_Systems.insert({typeName, std::move(system)});
     return system;
   }
@@ -23,7 +23,7 @@ public:
 
     OX_CORE_ASSERT(!m_Systems.contains(typeName), "Registering system more than once.");
 
-    Ref<T> system = CreateRef<T>(t);
+    Ref<T> system = create_ref<T>(t);
     m_Systems.insert({typeName, std::move(system)});
     return system;
   }

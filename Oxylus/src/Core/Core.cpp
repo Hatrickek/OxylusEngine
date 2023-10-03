@@ -13,19 +13,19 @@
 namespace Oxylus {
 bool Core::Init(const AppSpec& spec) {
   OX_SCOPED_ZONE;
-  if (!Resources::ResourcesPathExists()) {
+  if (!Resources::resources_path_exists()) {
     OX_CORE_FATAL("Resources path doesn't exists. Make sure the working directory is correct!");
-    Application::Get()->Close();
+    Application::get()->close();
     return false;
   }
 
   FileDialogs::InitNFD();
   Project::New();
-  Window::InitWindow(spec);
+  Window::init_window(spec);
 
-  VulkanContext::Init();
-  VulkanContext::Get()->CreateContext(spec);
-  VulkanRenderer::Init();
+  VulkanContext::init();
+  VulkanContext::get()->create_context(spec);
+  VulkanRenderer::init();
 
   Input::Init();
   AudioEngine::Init();
@@ -36,12 +36,12 @@ bool Core::Init(const AppSpec& spec) {
 void Core::Shutdown() {
   FileDialogs::CloseNFD();
 
-  VulkanRenderer::Shutdown();
+  VulkanRenderer::shutdown();
 
   AudioEngine::Shutdown();
 
   ThreadManager::Get()->WaitAllThreads();
 
-  Window::CloseWindow(Window::GetGLFWWindow());
+  Window::close_window(Window::get_glfw_window());
 }
 }

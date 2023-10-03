@@ -8,22 +8,21 @@ class Scene;
 
 class SceneRenderer {
 public:
-  struct SkyboxLoadEvent {
-    Ref<TextureAsset> CubeMap = nullptr;
-  };
-
-  struct ProbeChangeEvent {
-    PostProcessProbe Probe;
-  };
-
-  EventDispatcher Dispatcher;
-
   SceneRenderer() = default;
   ~SceneRenderer() = default;
 
-  void Init(Scene* scene);
+  struct SkyboxLoadEvent {
+    Ref<TextureAsset> cube_map = nullptr;
+  };
 
-  Ref<RenderPipeline> GetRenderPipeline() const { return m_RenderPipeline; }
+  struct ProbeChangeEvent {
+    PostProcessProbe probe;
+  };
+
+  EventDispatcher dispatcher;
+  void init(Scene* scene);
+
+  Ref<RenderPipeline> get_render_pipeline() const { return m_RenderPipeline; }
 
 private:
   Ref<RenderPipeline> m_RenderPipeline = nullptr;

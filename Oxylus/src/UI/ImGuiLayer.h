@@ -38,8 +38,8 @@ public:
   ImGuiLayer();
   ~ImGuiLayer() override = default;
 
-  void OnAttach(EventDispatcher& dispatcher) override;
-  void OnDetach() override;
+  void on_attach(EventDispatcher& dispatcher) override;
+  void on_detach() override;
 
   void Begin();
   void End();

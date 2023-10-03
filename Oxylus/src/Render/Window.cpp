@@ -7,82 +7,82 @@
 #include "Vulkan/VulkanRenderer.h"
 
 namespace Oxylus {
-Window::WindowData Window::s_WindowData;
-GLFWwindow* Window::s_WindowHandle;
+Window::WindowData Window::s_window_data;
+GLFWwindow* Window::s_window_handle;
 
-void Window::InitWindow(const AppSpec& spec) {
-  InitVulkanWindow(spec);
+void Window::init_window(const AppSpec& spec) {
+  init_vulkan_window(spec);
 }
 
-void Window::InitVulkanWindow(const AppSpec& spec) {
+void Window::init_vulkan_window(const AppSpec& spec) {
   glfwInit();
 
   glfwWindowHint(GLFW_CLIENT_API, GLFW_NO_API);
-  if (spec.CustomWindowTitle)
+  if (spec.custom_window_title)
     glfwWindowHint(GLFW_DECORATED, GLFW_FALSE);
-  s_WindowHandle = glfwCreateWindow((int)GetWidth(), (int)GetHeight(), spec.Name.c_str(), nullptr, nullptr);
-  glfwSetWindowUserPointer(s_WindowHandle, &s_WindowData);
+  s_window_handle = glfwCreateWindow((int)get_width(), (int)get_height(), spec.name.c_str(), nullptr, nullptr);
+  glfwSetWindowUserPointer(s_window_handle, &s_window_data);
 
   //Load file icon
   {
     int width, height, channels;
     const auto imageData = stbi_load_from_memory(EngineLogo, (int)EngineLogoLen, &width, &height, &channels, 4);
     const GLFWimage windowIcon{.width = 40, .height = 40, .pixels = imageData,};
-    glfwSetWindowIcon(s_WindowHandle, 1, &windowIcon);
+    glfwSetWindowIcon(s_window_handle, 1, &windowIcon);
     stbi_image_free(imageData);
   }
-  if (s_WindowHandle == nullptr) {
+  if (s_window_handle == nullptr) {
     OX_CORE_FATAL("Failed to create GLFW WindowHandle");
     glfwTerminate();
   }
-  glfwSetWindowCloseCallback(s_WindowHandle, CloseWindow);
+  glfwSetWindowCloseCallback(s_window_handle, close_window);
 }
 
-void Window::UpdateWindow() {
+void Window::update_window() {
   glfwPollEvents();
 }
 
-void Window::CloseWindow(GLFWwindow*) {
-  Application::Get()->Close();
+void Window::close_window(GLFWwindow*) {
+  Application::get()->close();
   glfwTerminate();
 }
 
-void Window::SetWindowUserData(void* data) {
-  glfwSetWindowUserPointer(Window::GetGLFWWindow(), data);
+void Window::set_window_user_data(void* data) {
+  glfwSetWindowUserPointer(Window::get_glfw_window(), data);
 }
 
-GLFWwindow* Window::GetGLFWWindow() {
-  if (s_WindowHandle == nullptr) {
+GLFWwindow* Window::get_glfw_window() {
+  if (s_window_handle == nullptr) {
     OX_CORE_FATAL("Glfw WindowHandle is nullptr. Did you call InitWindow() ?");
   }
-  return s_WindowHandle;
+  return s_window_handle;
 }
 
-bool Window::IsFocused() {
-  return glfwGetWindowAttrib(GetGLFWWindow(), GLFW_FOCUSED);
+bool Window::is_focused() {
+  return glfwGetWindowAttrib(get_glfw_window(), GLFW_FOCUSED);
 }
 
-bool Window::IsMinimized() {
-  return glfwGetWindowAttrib(GetGLFWWindow(), GLFW_ICONIFIED);
+bool Window::is_minimized() {
+  return glfwGetWindowAttrib(get_glfw_window(), GLFW_ICONIFIED);
 }
 
-void Window::Minimize() {
-  glfwIconifyWindow(s_WindowHandle);
+void Window::minimize() {
+  glfwIconifyWindow(s_window_handle);
 }
 
-void Window::Maximize() {
-  glfwMaximizeWindow(s_WindowHandle);
+void Window::maximize() {
+  glfwMaximizeWindow(s_window_handle);
 }
 
-bool Window::IsMaximized() {
-  return glfwGetWindowAttrib(s_WindowHandle, GLFW_MAXIMIZED);
+bool Window::is_maximized() {
+  return glfwGetWindowAttrib(s_window_handle, GLFW_MAXIMIZED);
 }
 
-void Window::Restore() {
-  glfwRestoreWindow(s_WindowHandle);
+void Window::restore() {
+  glfwRestoreWindow(s_window_handle);
 }
 
-void Window::WaitForEvents() {
+void Window::wait_for_events() {
   glfwWaitEvents();
 }
 }

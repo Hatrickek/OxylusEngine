@@ -14,56 +14,56 @@
 #include "Core/Application.h"
 
 namespace Oxylus {
-inline static int s_UIContextID = 0;
+inline static int ui_context_id = 0;
 inline static int s_Counter = 0;
-char IGUI::s_IDBuffer[16];
+char IGUI::id_buffer[16];
 
-void IGUI::BeginProperties(ImGuiTableFlags flags) {
-  s_IDBuffer[0] = '#';
-  s_IDBuffer[1] = '#';
-  memset(s_IDBuffer + 2, 0, 14);
+void IGUI::begin_properties(ImGuiTableFlags flags) {
+  id_buffer[0] = '#';
+  id_buffer[1] = '#';
+  memset(id_buffer + 2, 0, 14);
   ++s_Counter;
   const std::string buffer = fmt::format("##{}", s_Counter);
-  std::memcpy(&s_IDBuffer, buffer.data(), 16);
+  std::memcpy(&id_buffer, buffer.data(), 16);
 
   constexpr ImGuiTableFlags tableFlags = ImGuiTableFlags_PadOuterX;
-  ImGui::BeginTable(s_IDBuffer, 2, tableFlags | flags);
+  ImGui::BeginTable(id_buffer, 2, tableFlags | flags);
   ImGui::TableSetupColumn("PropertyName", 0, 0.5f);
   ImGui::TableSetupColumn("Property", ImGuiTableColumnFlags_WidthStretch);
 }
 
-void IGUI::EndProperties() {
+void IGUI::end_properties() {
   ImGui::EndTable();
 }
 
-void IGUI::Text(const char* text1, const char* text2, const char* tooltip) {
-  BeginPropertyGrid(text1, tooltip);
+void IGUI::text(const char* text1, const char* text2, const char* tooltip) {
+  begin_property_grid(text1, tooltip);
   ImGui::SetCursorPosY(ImGui::GetCursorPosY() + ImGui::GetStyle().FramePadding.y * 0.5f);
   ImGui::Text("%s", text2);
-  EndPropertyGrid();
+  end_property_grid();
 }
 
-bool IGUI::Property(const char* label, bool& flag, const char* tooltip) {
-  BeginPropertyGrid(label, tooltip);
-  const bool modified = ImGui::Checkbox(s_IDBuffer, &flag);
-  EndPropertyGrid();
+bool IGUI::property(const char* label, bool& flag, const char* tooltip) {
+  begin_property_grid(label, tooltip);
+  const bool modified = ImGui::Checkbox(id_buffer, &flag);
+  end_property_grid();
   return modified;
 }
 
-bool IGUI::Property(const char* label, std::string* text, ImGuiInputFlags flags, const char* tooltip) {
-  BeginPropertyGrid(label, tooltip);
-  const bool modified = ImGui::InputText(s_IDBuffer, text, flags);
-  EndPropertyGrid();
+bool IGUI::property(const char* label, std::string* text, ImGuiInputFlags flags, const char* tooltip) {
+  begin_property_grid(label, tooltip);
+  const bool modified = ImGui::InputText(id_buffer, text, flags);
+  end_property_grid();
   return modified;
 }
 
-bool IGUI::Property(const char* label, int& value, const char** dropdownStrings, int count, const char* tooltip) {
-  BeginPropertyGrid(label, tooltip);
+bool IGUI::property(const char* label, int& value, const char** dropdownStrings, int count, const char* tooltip) {
+  begin_property_grid(label, tooltip);
 
   bool modified = false;
   const char* current = dropdownStrings[value];
 
-  if (ImGui::BeginCombo(s_IDBuffer, current)) {
+  if (ImGui::BeginCombo(id_buffer, current)) {
     for (int i = 0; i < count; i++) {
       const bool isSelected = current == dropdownStrings[i];
       if (ImGui::Selectable(dropdownStrings[i], isSelected)) {
@@ -78,13 +78,13 @@ bool IGUI::Property(const char* label, int& value, const char** dropdownStrings,
     ImGui::EndCombo();
   }
 
-  EndPropertyGrid();
+  end_property_grid();
 
   return modified;
 }
 
-bool IGUI::Property(const char* label, Ref<TextureAsset>& texture, uint64_t overrideTextureID, const char* tooltip) {
-  BeginPropertyGrid(label, tooltip);
+bool IGUI::property(const char* label, Ref<TextureAsset>& texture, uint64_t overrideTextureID, const char* tooltip) {
+  begin_property_grid(label, tooltip);
   bool changed = false;
 
   const float frameHeight = ImGui::GetFrameHeight();
@@ -105,26 +105,26 @@ bool IGUI::Property(const char* label, Ref<TextureAsset>& texture, uint64_t over
   sci.minFilter = sci.magFilter = vuk::Filter::eLinear;
   sci.mipmapMode = vuk::SamplerMipmapMode::eLinear;
   sci.addressModeU = sci.addressModeV = sci.addressModeW = vuk::SamplerAddressMode::eRepeat;
-  const vuk::SampledImage sampledImage(vuk::SampledImage::Global{.iv = *texture->GetTexture().view, .sci = sci, .image_layout = vuk::ImageLayout::eShaderReadOnlyOptimal});
+  const vuk::SampledImage sampledImage(vuk::SampledImage::Global{.iv = *texture->get_texture().view, .sci = sci, .image_layout = vuk::ImageLayout::eShaderReadOnlyOptimal});
 
-  if (ImGui::ImageButton(Application::Get()->GetImGuiLayer()->AddSampledImage(sampledImage), {buttonSize, buttonSize}, {1, 1}, {0, 0}, 0)) {
+  if (ImGui::ImageButton(Application::get()->get_imgui_layer()->AddSampledImage(sampledImage), {buttonSize, buttonSize}, {1, 1}, {0, 0}, 0)) {
     const auto& path = FileDialogs::OpenFile({{"Texture file", "png,jpg"}});
     if (!path.empty()) {
-      texture = AssetManager::GetTextureAsset({path});
+      texture = AssetManager::get_texture_asset({path});
       changed = true;
     }
   }
   if (texture && ImGui::IsItemHovered(ImGuiHoveredFlags_DelayNormal | ImGuiHoveredFlags_NoSharedDelay)) {
     ImGui::BeginTooltip();
-    ImGui::TextUnformatted(texture->GetPath().c_str());
+    ImGui::TextUnformatted(texture->get_path().c_str());
     ImGui::Spacing();
-    ImGui::Image(Application::Get()->GetImGuiLayer()->AddSampledImage(sampledImage), {tooltipSize, tooltipSize}, {1, 1}, {0, 0});
+    ImGui::Image(Application::get()->get_imgui_layer()->AddSampledImage(sampledImage), {tooltipSize, tooltipSize}, {1, 1}, {0, 0});
     ImGui::EndTooltip();
   }
   if (ImGui::BeginDragDropTarget()) {
     if (const ImGuiPayload* payload = ImGui::AcceptDragDropPayload("CONTENT_BROWSER_ITEM")) {
-      const auto path = GetPathFromImGuiPayload(payload);
-      texture = AssetManager::GetTextureAsset({path.string()});
+      const auto path = get_path_from_im_gui_payload(payload);
+      texture = AssetManager::get_texture_asset({path.string()});
       changed = true;
     }
     ImGui::EndDragDropTarget();
@@ -136,34 +136,34 @@ bool IGUI::Property(const char* label, Ref<TextureAsset>& texture, uint64_t over
   ImGui::PushStyleColor(ImGuiCol_ButtonHovered, ImVec4{0.3f, 0.3f, 0.3f, 1.0f});
   ImGui::PushStyleColor(ImGuiCol_ButtonActive, ImVec4{0.2f, 0.2f, 0.2f, 1.0f});
   if (ImGui::Button("x", xButtonSize)) {
-    texture = TextureAsset::GetPurpleTexture();
+    texture = TextureAsset::get_purple_texture();
     changed = true;
   }
   ImGui::PopStyleColor(3);
   ImGui::PopStyleVar();
 
-  EndPropertyGrid();
+  end_property_grid();
   return changed;
 }
 
-void IGUI::Image(const vuk::Texture& texture, ImVec2 size, const ImVec2& uv0, const ImVec2& uv1, const ImVec4& tintCol, const ImVec4& borderCol) {
+void IGUI::image(const vuk::Texture& texture, ImVec2 size, const ImVec2& uv0, const ImVec2& uv1, const ImVec4& tintCol, const ImVec4& borderCol) {
   vuk::SamplerCreateInfo sci;
   sci.minFilter = sci.magFilter = vuk::Filter::eLinear;
   sci.mipmapMode = vuk::SamplerMipmapMode::eLinear;
   sci.addressModeU = sci.addressModeV = sci.addressModeW = vuk::SamplerAddressMode::eRepeat;
   vuk::SampledImage sampledImage(vuk::SampledImage::Global{.iv = *texture.view, .sci = sci, .image_layout = vuk::ImageLayout::eShaderReadOnlyOptimal});
   
-  ImGui::Image(Application::Get()->GetImGuiLayer()->AddSampledImage(sampledImage), size, uv0, uv1, tintCol, borderCol);
+  ImGui::Image(Application::get()->get_imgui_layer()->AddSampledImage(sampledImage), size, uv0, uv1, tintCol, borderCol);
 }
 
-void IGUI::Image(vuk::SampledImage& texture, ImVec2 size, const ImVec2& uv0, const ImVec2& uv1, const ImVec4& tintCol, const ImVec4& borderCol) {
-  ImGui::Image(Application::Get()->GetImGuiLayer()->AddSampledImage(texture), size, uv0, uv1, tintCol, borderCol);
+void IGUI::image(vuk::SampledImage& texture, ImVec2 size, const ImVec2& uv0, const ImVec2& uv1, const ImVec4& tintCol, const ImVec4& borderCol) {
+  ImGui::Image(Application::get()->get_imgui_layer()->AddSampledImage(texture), size, uv0, uv1, tintCol, borderCol);
 }
 
-bool IGUI::DrawVec3Control(const char* label, glm::vec3& values, const char* tooltip, float resetValue) {
+bool IGUI::draw_vec3_control(const char* label, glm::vec3& values, const char* tooltip, float resetValue) {
   bool changed = false;
 
-  BeginPropertyGrid(label, tooltip, false);
+  begin_property_grid(label, tooltip, false);
 
   const ImGuiIO& io = ImGui::GetIO();
   const auto boldFont = io.Fonts->Fonts[1];
@@ -248,12 +248,12 @@ bool IGUI::DrawVec3Control(const char* label, glm::vec3& values, const char* too
 
   ImGui::PopStyleVar();
 
-  EndPropertyGrid();
+  end_property_grid();
 
   return changed;
 }
 
-bool IGUI::ToggleButton(const char* label, bool state, ImVec2 size, float alpha, float pressedAlpha, ImGuiButtonFlags buttonFlags) {
+bool IGUI::toggle_button(const char* label, bool state, ImVec2 size, float alpha, float pressedAlpha, ImGuiButtonFlags buttonFlags) {
   if (state) {
     ImVec4 color = ImGui::GetStyle().Colors[ImGuiCol_ButtonActive];
 
@@ -280,24 +280,24 @@ bool IGUI::ToggleButton(const char* label, bool state, ImVec2 size, float alpha,
   return clicked;
 }
 
-ImVec2 IGUI::GetIconButtonSize(const char8_t* icon, const char* label) {
+ImVec2 IGUI::get_icon_button_size(const char8_t* icon, const char* label) {
   const float lineHeight = ImGui::GetTextLineHeight();
   const ImVec2 padding = ImGui::GetStyle().FramePadding;
 
-  float width = ImGui::CalcTextSize(StringUtils::FromChar8T(icon)).x;
+  float width = ImGui::CalcTextSize(StringUtils::from_char8_t(icon)).x;
   width += ImGui::CalcTextSize(label).x;
   width += padding.x * 2.0f;
 
   return {width, lineHeight + padding.y * 2.0f};
 }
 
-bool IGUI::IconButton(const char8_t* icon, const char* label, ImVec4 iconColor) {
+bool IGUI::icon_button(const char8_t* icon, const char* label, ImVec4 iconColor) {
   ImGui::PushID(label);
 
   const float lineHeight = ImGui::GetTextLineHeight();
   const ImVec2 padding = ImGui::GetStyle().FramePadding;
 
-  float width = ImGui::CalcTextSize(StringUtils::FromChar8T(icon)).x;
+  float width = ImGui::CalcTextSize(StringUtils::from_char8_t(icon)).x;
   width += ImGui::CalcTextSize(label).x;
   width += padding.x * 2.0f;
   float height = lineHeight + padding.y * 2.0f;
@@ -307,7 +307,7 @@ bool IGUI::IconButton(const char8_t* icon, const char* label, ImVec4 iconColor) 
   ImGui::PushStyleVar(ImGuiStyleVar_ItemSpacing, {0, 0});
   ImGui::SameLine();
   ImGui::SetCursorPosX(cursorPosX);
-  ImGui::TextColored(iconColor, "%s", StringUtils::FromChar8T(icon));
+  ImGui::TextColored(iconColor, "%s", StringUtils::from_char8_t(icon));
   ImGui::SameLine();
   ImGui::TextUnformatted(label);
   ImGui::PopStyleVar();
@@ -316,7 +316,7 @@ bool IGUI::IconButton(const char8_t* icon, const char* label, ImVec4 iconColor) 
   return clicked;
 }
 
-void IGUI::ClippedText(const ImVec2& pos_min, const ImVec2& pos_max, const char* text, const char* text_end, const ImVec2* text_size_if_known, const ImVec2& align, const ImRect* clip_rect, float wrap_width) {
+void IGUI::clipped_text(const ImVec2& pos_min, const ImVec2& pos_max, const char* text, const char* text_end, const ImVec2* text_size_if_known, const ImVec2& align, const ImRect* clip_rect, float wrap_width) {
   // Hide anything after a '##' string
   const char* text_display_end = ImGui::FindRenderedTextEnd(text, text_end);
   const int text_len = static_cast<int>(text_display_end - text);
@@ -325,12 +325,12 @@ void IGUI::ClippedText(const ImVec2& pos_min, const ImVec2& pos_max, const char*
 
   ImGuiContext& g = *GImGui;
   ImGuiWindow* window = g.CurrentWindow;
-  IGUI::ClippedText(window->DrawList, pos_min, pos_max, text, text_display_end, text_size_if_known, align, clip_rect, wrap_width);
+  IGUI::clipped_text(window->DrawList, pos_min, pos_max, text, text_display_end, text_size_if_known, align, clip_rect, wrap_width);
   if (g.LogEnabled)
     ImGui::LogRenderedText(&pos_min, text, text_display_end);
 }
 
-void IGUI::ClippedText(ImDrawList* draw_list, const ImVec2& pos_min, const ImVec2& pos_max, const char* text, const char* text_display_end, const ImVec2* text_size_if_known, const ImVec2& align, const ImRect* clip_rect, float wrap_width) {
+void IGUI::clipped_text(ImDrawList* draw_list, const ImVec2& pos_min, const ImVec2& pos_max, const char* text, const char* text_display_end, const ImVec2* text_size_if_known, const ImVec2& align, const ImRect* clip_rect, float wrap_width) {
   // Perform CPU side clipping for single clipped element to avoid using scissor state
   ImVec2 pos = pos_min;
   const ImVec2 text_size = text_size_if_known ? *text_size_if_known : ImGui::CalcTextSize(text, text_display_end, false, wrap_width);
@@ -350,23 +350,23 @@ void IGUI::ClippedText(ImDrawList* draw_list, const ImVec2& pos_min, const ImVec
   draw_list->AddText(nullptr, 0.0f, pos, ImGui::GetColorU32(ImGuiCol_Text), text, text_display_end, wrap_width, &fine_clip_rect);
 }
 
-std::filesystem::path IGUI::GetPathFromImGuiPayload(const ImGuiPayload* payload) {
+std::filesystem::path IGUI::get_path_from_im_gui_payload(const ImGuiPayload* payload) {
   return std::string(static_cast<const char*>(payload->Data));
 }
 
-void IGUI::PushID() {
-  ++s_UIContextID;
-  ImGui::PushID(s_UIContextID);
+void IGUI::push_id() {
+  ++ui_context_id;
+  ImGui::PushID(ui_context_id);
   s_Counter = 0;
 }
 
-void IGUI::PopID() {
+void IGUI::pop_id() {
   ImGui::PopID();
-  --s_UIContextID;
+  --ui_context_id;
 }
 
-void IGUI::BeginPropertyGrid(const char* label, const char* tooltip, bool rightAlignNextColumn) {
-  PushID();
+void IGUI::begin_property_grid(const char* label, const char* tooltip, bool rightAlignNextColumn) {
+  push_id();
 
   ImGui::TableNextRow();
   ImGui::TableNextColumn();
@@ -385,16 +385,16 @@ void IGUI::BeginPropertyGrid(const char* label, const char* tooltip, bool rightA
   if (rightAlignNextColumn)
     ImGui::SetNextItemWidth(-1);
 
-  s_IDBuffer[0] = '#';
-  s_IDBuffer[1] = '#';
-  memset(s_IDBuffer + 2, 0, 14);
+  id_buffer[0] = '#';
+  id_buffer[1] = '#';
+  memset(id_buffer + 2, 0, 14);
   ++s_Counter;
   const std::string buffer = fmt::format("##{}", s_Counter);
-  std::memcpy(&s_IDBuffer, buffer.data(), 16);
+  std::memcpy(&id_buffer, buffer.data(), 16);
 }
 
-void IGUI::EndPropertyGrid() {
+void IGUI::end_property_grid() {
   ImGui::PopID();
-  PopID();
+  pop_id();
 }
 }

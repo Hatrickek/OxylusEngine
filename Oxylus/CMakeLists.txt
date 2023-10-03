@@ -17,14 +17,14 @@ file(GLOB Render "src/Render/*.h" "src/Render/*.cpp" )
 source_group("src/Render" FILES ${Render})
 file(GLOB PBR "src/Render/PBR/*.h" "src/Render/PBR/*.cpp" )
 source_group("src/Render/PBR" FILES ${PBR})
-file(GLOB CACAO "src/Render/PBR/CACAO/*.h" "src/Render/PBR/CACAO/*.cpp" )
-source_group("src/Render/PBR/CACAO" FILES ${CACAO})
+file(GLOB GTAO "src/Render/PBR/GTAO/*.h" "src/Render/PBR/GTAO/*.cpp" )
+source_group("src/Render/PBR/GTAO" FILES ${GTAO})
 file(GLOB Vulkan "src/Render/Vulkan/*.h" "src/Render/Vulkan/*.cpp" )
 source_group("src/Render/Vulkan" FILES ${Vulkan})
 file(GLOB VulkanUtils "src/Render/Vulkan/Utils/*.h" "src/Render/Vulkan/Utils/*.cpp" )
 source_group("src/Render/Vulkan/Utils" FILES ${VulkanUtils})
 
-set(RENDERER_FILES ${Render} ${PBR} ${CACAO} ${Vulkan} ${VulkanUtils})
+set(RENDERER_FILES ${Render} ${PBR} ${GTAO} ${Vulkan} ${VulkanUtils})
 
 file(GLOB_RECURSE Scene "src/Scene/*.h" "src/Scene/*.cpp" )
 source_group("src/Scene" FILES ${Scene})
@@ -232,7 +232,7 @@ set_targets_static_and_folder(spdlog)
 FetchContent_Declare(
     vk-bootstrap 
     GIT_REPOSITORY https://github.com/charles-lunarg/vk-bootstrap
-    GIT_TAG        "master"
+    GIT_TAG        "main"
 )
 FetchContent_MakeAvailable(vk-bootstrap)
 target_link_libraries(${PROJECT_NAME} PUBLIC vk-bootstrap)
@@ -241,6 +241,7 @@ set_targets_static_and_folder(vk-bootstrap)
 # vuk
 set(VUK_LINK_TO_LOADER OFF)
 set(VUK_FAIL_FAST ON)
+set(VUK_USE_DXC ON)
 FetchContent_Declare(
     vuk
     GIT_REPOSITORY "https://github.com/martty/vuk.git"

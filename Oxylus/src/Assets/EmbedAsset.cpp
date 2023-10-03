@@ -9,7 +9,7 @@
 namespace Oxylus {
 void EmbedAsset::EmbedTexture(const std::string& texFilePath, const std::string& outPath, const std::string& arrayName) {
   uint32_t width, height, bits;
-  const auto texture = Texture::LoadStbImage(texFilePath, &width, &height, &bits);
+  const auto texture = Texture::load_stb_image(texFilePath, &width, &height, &bits);
 
   const uint32_t psize = width * height * 4;
   std::ofstream file;

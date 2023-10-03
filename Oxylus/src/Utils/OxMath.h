@@ -6,10 +6,10 @@
 #include "Utils/Profiler.h"
 
 namespace Oxylus::Math {
-bool DecomposeTransform(const glm::mat4& transform, glm::vec3& translation, glm::vec3& rotation, glm::vec3& scale);
+bool decompose_transform(const glm::mat4& transform, glm::vec3& translation, glm::vec3& rotation, glm::vec3& scale);
 
 template <typename T>
-static T SmoothDamp(const T& current,
+static T smooth_damp(const T& current,
                     const T& target,
                     T& currentVelocity,
                     float smoothTime,
@@ -54,11 +54,11 @@ static T SmoothDamp(const T& current,
   return output;
 }
 
-static float Lerp(float a, float b, float t) {
+static float lerp(float a, float b, float t) {
   return a + t * (b - a);
 }
 
-static float InverseLerp(float a, float b, float value) {
+static float inverse_lerp(float a, float b, float value) {
   OX_SCOPED_ZONE;
   const float den = b - a;
   if (den == 0.0f)
@@ -66,7 +66,7 @@ static float InverseLerp(float a, float b, float value) {
   return (value - a) / den;
 }
 
-static float InverseLerpClamped(float a, float b, float value) {
+static float inverse_lerp_clamped(float a, float b, float value) {
   OX_SCOPED_ZONE;
   const float den = b - a;
   if (den == 0.0f)

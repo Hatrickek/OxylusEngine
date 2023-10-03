@@ -101,7 +101,7 @@ void DirectShadowPass::UpdateCascades(const Entity& dirLightEntity, Camera* came
 
     auto& lc = dirLightEntity.GetComponent<LightComponent>();
 
-    Vec3 lightDir = normalize(-lc.Direction);
+    Vec3 lightDir = normalize(-lc.direction);
     float cascadeFarPlaneOffset = 50.0f, cascadeNearPlaneOffset = -50.0f;
     Mat4 lightOrthoMatrix = glm::ortho(minExtents.x,
       maxExtents.x,
@@ -118,11 +118,11 @@ void DirectShadowPass::UpdateCascades(const Entity& dirLightEntity, Camera* came
       // the fractional offset in texel space
       glm::vec4 shadowOrigin = glm::vec4(0.0f, 0.0f, 0.0f, 1.0f);
       shadowOrigin = shadowProj * shadowOrigin;
-      shadowOrigin *= (float)RendererConfig::Get()->DirectShadowsConfig.Size * 0.5f;
+      shadowOrigin *= (float)RendererConfig::get()->direct_shadows_config.size * 0.5f;
 
       glm::vec4 roundedOrigin = round(shadowOrigin);
       glm::vec4 roundOffset = roundedOrigin - shadowOrigin;
-      roundOffset = roundOffset * (2.0f / (float)RendererConfig::Get()->DirectShadowsConfig.Size);
+      roundOffset = roundOffset * (2.0f / (float)RendererConfig::get()->direct_shadows_config.size);
       roundOffset.z = 0.0f;
       roundOffset.w = 0.0f;
 

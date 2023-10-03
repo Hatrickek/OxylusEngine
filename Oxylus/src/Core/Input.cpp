@@ -14,22 +14,22 @@ static glm::vec2 s_MousePos;
 Input::CursorState cursorState = Input::CursorState::DISABLED;
 
 void Input::Init() {
-  glfwSetCursorPosCallback(Window::GetGLFWWindow(), MouseCallback);
-  glfwSetScrollCallback(Window::GetGLFWWindow(), ScrollCallback);
-  glfwSetKeyCallback(Window::GetGLFWWindow(), KeyCallback);
+  glfwSetCursorPosCallback(Window::get_glfw_window(), MouseCallback);
+  glfwSetScrollCallback(Window::get_glfw_window(), ScrollCallback);
+  glfwSetKeyCallback(Window::get_glfw_window(), KeyCallback);
 }
 
 bool Input::GetKey(const KeyCode key) {
-  const auto state = glfwGetKey(Window::GetGLFWWindow(), key);
+  const auto state = glfwGetKey(Window::get_glfw_window(), key);
   return state == GLFW_PRESS || state == GLFW_REPEAT;
 }
 
 bool Input::GetKeyDown(const KeyCode key) {
-  return glfwGetKey(Window::GetGLFWWindow(), key) == GLFW_PRESS;
+  return glfwGetKey(Window::get_glfw_window(), key) == GLFW_PRESS;
 }
 
 bool Input::GetKeyUp(const KeyCode key) {
-  const auto state = glfwGetKey(Window::GetGLFWWindow(), key);
+  const auto state = glfwGetKey(Window::get_glfw_window(), key);
   return state == GLFW_RELEASE;
 }
 
@@ -38,7 +38,7 @@ bool Input::IsMouseDoubleClicked(const MouseCode button) {
 }
 
 bool Input::GetMouseButtonDown(const MouseCode button) {
-  const auto state = glfwGetMouseButton(Window::GetGLFWWindow(), button);
+  const auto state = glfwGetMouseButton(Window::get_glfw_window(), button);
   return state == GLFW_PRESS;
 }
 
@@ -59,7 +59,7 @@ float Input::GetMouseScrollOffsetY() {
 }
 
 void Input::SetCursorPosition(const float X, const float Y) {
-  GLFWwindow* window = Window::GetGLFWWindow();
+  GLFWwindow* window = Window::get_glfw_window();
   glfwSetCursorPos(window, X, Y);
 }
 
@@ -82,11 +82,11 @@ GLFWcursor* Input::LoadCursorIconStandard(const int cursor) {
 }
 
 void Input::SetCursorIcon(GLFWcursor* cursor) {
-  glfwSetCursor(Window::GetGLFWWindow(), cursor);
+  glfwSetCursor(Window::get_glfw_window(), cursor);
 }
 
 void Input::SetCursorIconDefault() {
-  glfwSetCursor(Window::GetGLFWWindow(), nullptr);
+  glfwSetCursor(Window::get_glfw_window(), nullptr);
 }
 
 void Input::SetCursorState(const CursorState state, GLFWwindow* window) {

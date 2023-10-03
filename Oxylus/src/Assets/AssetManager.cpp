@@ -8,78 +8,78 @@
 #include "Utils/Profiler.h"
 
 namespace Oxylus {
-AssetManager::AssetLibrary AssetManager::s_Library;
-std::mutex AssetManager::s_AssetMutex;
+AssetManager::AssetLibrary AssetManager::s_library;
+std::mutex AssetManager::s_asset_mutex;
 
-std::filesystem::path AssetManager::GetAssetFileSystemPath(const std::filesystem::path& path) {
+std::filesystem::path AssetManager::get_asset_file_system_path(const std::filesystem::path& path) {
   return Project::GetAssetDirectory() / path;
 }
 
-Ref<TextureAsset> AssetManager::GetTextureAsset(const TextureLoadInfo& info) {
-  if (s_Library.m_TextureAssets.contains(info.Path)) {
-    return s_Library.m_TextureAssets[info.Path];
+Ref<TextureAsset> AssetManager::get_texture_asset(const TextureLoadInfo& info) {
+  if (s_library.texture_assets.contains(info.Path)) {
+    return s_library.texture_assets[info.Path];
   }
 
-  return LoadTextureAsset(info.Path, info);
+  return load_texture_asset(info.Path, info);
 }
 
-Ref<TextureAsset> AssetManager::GetTextureAsset(const std::string& name, const TextureLoadInfo& info) {
-  if (s_Library.m_TextureAssets.contains(name)) {
-    return s_Library.m_TextureAssets[name];
+Ref<TextureAsset> AssetManager::get_texture_asset(const std::string& name, const TextureLoadInfo& info) {
+  if (s_library.texture_assets.contains(name)) {
+    return s_library.texture_assets[name];
   }
 
-  return LoadTextureAsset(name, info);
+  return load_texture_asset(name, info);
 }
 
-Ref<Mesh> AssetManager::GetMeshAsset(const std::string& path, const int32_t loadingFlags) {
+Ref<Mesh> AssetManager::get_mesh_asset(const std::string& path, const int32_t loadingFlags) {
   OX_SCOPED_ZONE;
-  if (s_Library.m_MeshAssets.contains(path)) {
-    return s_Library.m_MeshAssets[path];
+  if (s_library.mesh_assets.contains(path)) {
+    return s_library.mesh_assets[path];
   }
 
-  return LoadMeshAsset(path, loadingFlags);
+  return load_mesh_asset(path, loadingFlags);
 }
 
-Ref<TextureAsset> AssetManager::LoadTextureAsset(const std::string& path) {
+Ref<TextureAsset> AssetManager::load_texture_asset(const std::string& path) {
   OX_SCOPED_ZONE;
 
-  std::lock_guard lock(s_AssetMutex);
+  std::lock_guard lock(s_asset_mutex);
 
-  Ref<TextureAsset> texture = CreateRef<TextureAsset>(path);
-  return s_Library.m_TextureAssets.emplace(path, texture).first->second;
+  Ref<TextureAsset> texture = create_ref<TextureAsset>(path);
+  return s_library.texture_assets.emplace(path, texture).first->second;
 }
 
-Ref<TextureAsset> AssetManager::LoadTextureAsset(const std::string& path, const TextureLoadInfo& info) {
+Ref<TextureAsset> AssetManager::load_texture_asset(const std::string& path, const TextureLoadInfo& info) {
   OX_SCOPED_ZONE;
 
-  std::lock_guard lock(s_AssetMutex);
+  std::lock_guard lock(s_asset_mutex);
 
-  Ref<TextureAsset> texture = CreateRef<TextureAsset>(info);
-  return s_Library.m_TextureAssets.emplace(path, texture).first->second;
+  Ref<TextureAsset> texture = create_ref<TextureAsset>(info);
+  return s_library.texture_assets.emplace(path, texture).first->second;
 }
 
-Ref<Mesh> AssetManager::LoadMeshAsset(const std::string& path, int32_t loadingFlags) {
+Ref<Mesh> AssetManager::load_mesh_asset(const std::string& path, int32_t loadingFlags) {
   OX_SCOPED_ZONE;
-  Ref<Mesh> asset = CreateRef<Mesh>(path, loadingFlags);
-  return s_Library.m_MeshAssets.emplace(path, asset).first->second;
+  Ref<Mesh> asset = create_ref<Mesh>(path, loadingFlags);
+  return s_library.mesh_assets.emplace(path, asset).first->second;
 }
 
-void AssetManager::FreeUnusedAssets() {
+void AssetManager::free_unused_assets() {
   OX_SCOPED_ZONE;
-  for (auto& [handle, asset] : s_Library.m_MeshAssets) {
+  for (auto& [handle, asset] : s_library.mesh_assets) {
     if (asset.use_count())
       return;
-    s_Library.m_MeshAssets.erase(handle);
+    s_library.mesh_assets.erase(handle);
   }
-  for (auto& [handle, asset] : s_Library.m_TextureAssets) {
+  for (auto& [handle, asset] : s_library.texture_assets) {
     if (asset.use_count())
       return;
-    s_Library.m_TextureAssets.erase(handle);
+    s_library.texture_assets.erase(handle);
   }
 }
 
-void AssetManager::PackageAssets() {
-  FreeUnusedAssets();
+void AssetManager::package_assets() {
+  free_unused_assets();
 
   // TODO(hatrickek): Pack materials inside of meshes(glb).
   // TODO(hatrickek): Pack/compress audio files.
@@ -92,13 +92,13 @@ void AssetManager::PackageAssets() {
   std::filesystem::create_directory("Assets");
 
   // Package mesh files
-  for (auto& [path, asset] : s_Library.m_MeshAssets) {
+  for (auto& [path, asset] : s_library.mesh_assets) {
     const auto filePath = std::filesystem::path(path);
     auto outPath = std::filesystem::path(meshDirectory) / filePath.filename();
     outPath = outPath.generic_string();
     auto dir = meshDirectory;
     std::filesystem::create_directory(dir);
-    const auto exported = Mesh::ExportAsBinary(path, outPath.string());
+    const auto exported = Mesh::export_as_binary(path, outPath.string());
     if (!exported)
       OX_CORE_ERROR("Couldn't export mesh asset: {}", path);
     else
@@ -106,7 +106,7 @@ void AssetManager::PackageAssets() {
   }
 
   // Package texture files
-  for (auto& [path, asset] : s_Library.m_TextureAssets) {
+  for (auto& [path, asset] : s_library.texture_assets) {
     const auto filePath = std::filesystem::path(path);
     const auto outPath = std::filesystem::path(textureDirectory) / filePath.filename();
     std::filesystem::create_directory(textureDirectory);

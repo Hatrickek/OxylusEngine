@@ -6,114 +6,114 @@
 #include "Utils/Profiler.h"
 
 namespace Oxylus {
-ParticleSystem::ParticleSystem() : m_Particles(10000) {
-  if (m_Properties.PlayOnAwake)
-    Play();
+ParticleSystem::ParticleSystem() : particles(10000) {
+  if (properties.play_on_awake)
+    play();
 
   // TODO: m_Properties.Texture = Texture::GetBlankImage();
 }
 
-void ParticleSystem::Play() {
-  m_SystemTime = 0.0f;
-  m_Playing = true;
+void ParticleSystem::play() {
+  system_time = 0.0f;
+  playing = true;
 }
 
-void ParticleSystem::Stop(bool force) {
+void ParticleSystem::stop(bool force) {
   if (force) {
-    for (auto& particle : m_Particles)
-      particle.LifeRemaining = 0.0f;
+    for (auto& particle : particles)
+      particle.life_remaining = 0.0f;
   }
 
-  m_SystemTime = m_Properties.StartDelay + m_Properties.Duration;
-  m_Playing = false;
+  system_time = properties.start_delay + properties.duration;
+  playing = false;
 }
 
-void ParticleSystem::OnUpdate(float ts, const glm::vec3& position) {
+void ParticleSystem::on_update(float ts, const glm::vec3& position) {
   OX_SCOPED_ZONE;
-  const float simTs = ts * m_Properties.SimulationSpeed;
+  const float simTs = ts * properties.simulation_speed;
 
-  if (m_Playing && !m_Properties.Looping)
-    m_SystemTime += simTs;
-  const float delay = m_Properties.StartDelay;
-  if (m_Playing && (m_Properties.Looping || (m_SystemTime <= delay + m_Properties.Duration && m_SystemTime >
+  if (playing && !properties.looping)
+    system_time += simTs;
+  const float delay = properties.start_delay;
+  if (playing && (properties.looping || (system_time <= delay + properties.duration && system_time >
                                              delay))) {
     // Emit particles in unit time
-    m_SpawnTime += simTs;
-    if (m_SpawnTime >= 1.0f / static_cast<float>(m_Properties.RateOverTime)) {
-      m_SpawnTime = 0.0f;
-      Emit(position, 1);
+    spawn_time += simTs;
+    if (spawn_time >= 1.0f / static_cast<float>(properties.rate_over_time)) {
+      spawn_time = 0.0f;
+      emit(position, 1);
     }
 
     // Emit particles over unit distance
-    if (glm::distance2(m_LastSpawnedPosition, position) > 1.0f) {
-      m_LastSpawnedPosition = position;
-      Emit(position, m_Properties.RateOverDistance);
+    if (glm::distance2(last_spawned_position, position) > 1.0f) {
+      last_spawned_position = position;
+      emit(position, properties.rate_over_distance);
     }
 
     // Emit bursts of particles over time
-    m_BurstTime += simTs;
-    if (m_BurstTime >= m_Properties.BurstTime) {
-      m_BurstTime = 0.0f;
-      Emit(position, m_Properties.BurstCount);
+    burst_time += simTs;
+    if (burst_time >= properties.burst_time) {
+      burst_time = 0.0f;
+      emit(position, properties.burst_count);
     }
   }
 
   // Simulate
-  m_ActiveParticleCount = 0;
-  for (auto& particle : m_Particles) {
-    if (particle.LifeRemaining <= 0.0f)
+  active_particle_count = 0;
+  for (auto& particle : particles) {
+    if (particle.life_remaining <= 0.0f)
       continue;
 
-    particle.LifeRemaining -= simTs;
+    particle.life_remaining -= simTs;
 
-    const float t = glm::clamp(particle.LifeRemaining / m_Properties.StartLifetime, 0.0f, 1.0f);
+    const float t = glm::clamp(particle.life_remaining / properties.start_lifetime, 0.0f, 1.0f);
 
-    glm::vec3 velocity = m_Properties.StartVelocity;
-    if (m_Properties.VelocityOverLifetime.Enabled)
-      velocity *= m_Properties.VelocityOverLifetime.Evaluate(t);
+    glm::vec3 velocity = properties.start_velocity;
+    if (properties.velocity_over_lifetime.enabled)
+      velocity *= properties.velocity_over_lifetime.evaluate(t);
 
     glm::vec3 force(0.0f);
-    if (m_Properties.ForceOverLifetime.Enabled)
-      force = m_Properties.ForceOverLifetime.Evaluate(t);
+    if (properties.force_over_lifetime.enabled)
+      force = properties.force_over_lifetime.evaluate(t);
 
-    force.y += m_Properties.GravityModifier * -9.8f;
+    force.y += properties.gravity_modifier * -9.8f;
     velocity += force * simTs;
 
     const float velocityMagnitude = glm::length(velocity);
 
     // Color
-    particle.Color = m_Properties.StartColor;
-    if (m_Properties.ColorOverLifetime.Enabled)
-      particle.Color *= m_Properties.ColorOverLifetime.Evaluate(t);
-    if (m_Properties.ColorBySpeed.Enabled)
-      particle.Color *= m_Properties.ColorBySpeed.Evaluate(velocityMagnitude);
+    particle.color = properties.start_color;
+    if (properties.color_over_lifetime.enabled)
+      particle.color *= properties.color_over_lifetime.evaluate(t);
+    if (properties.color_by_speed.enabled)
+      particle.color *= properties.color_by_speed.evaluate(velocityMagnitude);
 
     // Size
-    particle.Size = m_Properties.StartSize;
-    if (m_Properties.SizeOverLifetime.Enabled)
-      particle.Size *= m_Properties.SizeOverLifetime.Evaluate(t);
-    if (m_Properties.SizeBySpeed.Enabled)
-      particle.Size *= m_Properties.SizeBySpeed.Evaluate(velocityMagnitude);
+    particle.size = properties.start_size;
+    if (properties.size_over_lifetime.enabled)
+      particle.size *= properties.size_over_lifetime.evaluate(t);
+    if (properties.size_by_speed.enabled)
+      particle.size *= properties.size_by_speed.evaluate(velocityMagnitude);
 
     // Rotation
-    particle.Rotation = m_Properties.StartRotation;
-    if (m_Properties.RotationOverLifetime.Enabled)
-      particle.Rotation += m_Properties.RotationOverLifetime.Evaluate(t);
-    if (m_Properties.RotationBySpeed.Enabled)
-      particle.Rotation += m_Properties.RotationBySpeed.Evaluate(velocityMagnitude);
+    particle.rotation = properties.start_rotation;
+    if (properties.rotation_over_lifetime.enabled)
+      particle.rotation += properties.rotation_over_lifetime.evaluate(t);
+    if (properties.rotation_by_speed.enabled)
+      particle.rotation += properties.rotation_by_speed.evaluate(velocityMagnitude);
 
-    particle.Position += velocity * simTs;
-    ++m_ActiveParticleCount;
+    particle.position += velocity * simTs;
+    ++active_particle_count;
   }
 }
 
-void ParticleSystem::OnRender() const {
-  for (const auto& particle : m_Particles) {
-    if (particle.LifeRemaining <= 0.0f)
+void ParticleSystem::on_render() const {
+  for (const auto& particle : particles) {
+    if (particle.life_remaining <= 0.0f)
       continue;
 
-    glm::mat4 transform = glm::translate(glm::mat4(1.0f), particle.Position) * glm::mat4(glm::quat(particle.Rotation))
-                          * glm::scale(glm::mat4(1.0f), particle.Size);
+    glm::mat4 transform = glm::translate(glm::mat4(1.0f), particle.position) * glm::mat4(glm::quat(particle.rotation))
+                          * glm::scale(glm::mat4(1.0f), particle.size);
 
     //VulkanRenderer::SubmitQuad(transform, m_Properties.Texture, particle.Color);
   }
@@ -124,22 +124,22 @@ static float RandomFloat(float min, float max) {
   return min + r * (max - min);
 }
 
-void ParticleSystem::Emit(const glm::vec3& position, uint32_t count) {
-  if (m_ActiveParticleCount >= m_Properties.MaxParticles)
+void ParticleSystem::emit(const glm::vec3& position, uint32_t count) {
+  if (active_particle_count >= properties.max_particles)
     return;
 
   for (uint32_t i = 0; i < count; ++i) {
-    if (++m_PoolIndex >= 10000)
-      m_PoolIndex = 0;
+    if (++pool_index >= 10000)
+      pool_index = 0;
 
-    auto& particle = m_Particles[m_PoolIndex];
+    auto& particle = particles[pool_index];
 
-    particle.Position = position;
-    particle.Position.x += RandomFloat(m_Properties.PositionStart.x, m_Properties.PositionEnd.x);
-    particle.Position.y += RandomFloat(m_Properties.PositionStart.y, m_Properties.PositionEnd.y);
-    particle.Position.z += RandomFloat(m_Properties.PositionStart.z, m_Properties.PositionEnd.z);
+    particle.position = position;
+    particle.position.x += RandomFloat(properties.position_start.x, properties.position_end.x);
+    particle.position.y += RandomFloat(properties.position_start.y, properties.position_end.y);
+    particle.position.z += RandomFloat(properties.position_start.z, properties.position_end.z);
 
-    particle.LifeRemaining = m_Properties.StartLifetime;
+    particle.life_remaining = properties.start_lifetime;
   }
 }
 }

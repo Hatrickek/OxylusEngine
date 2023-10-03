@@ -13,12 +13,12 @@
 #include "Utils/Log.h"
 
 namespace Oxylus {
-Mesh::Mesh(const std::string_view path, int fileLoadingFlags, float scale) {
-  LoadFromFile(path.data(), fileLoadingFlags, scale);
+Mesh::Mesh(const std::string_view path, int file_loading_flags, float scale) {
+  load_from_file(path.data(), file_loading_flags, scale);
 }
 
 Mesh::~Mesh() {
-  Destroy();
+  destroy();
 }
 
 bool LoadImageDataCallback(tinygltf::Image* image,
@@ -33,7 +33,7 @@ bool LoadImageDataCallback(tinygltf::Image* image,
   return tinygltf::LoadImageData(image, imageIndex, error, warning, req_width, req_height, bytes, size, userData);
 }
 
-bool Mesh::ExportAsBinary(const std::string& inPath, const std::string& outPath) {
+bool Mesh::export_as_binary(const std::string& inPath, const std::string& outPath) {
   tinygltf::TinyGLTF gltfContext;
   tinygltf::Model gltfModel;
   std::string error, warning;
@@ -55,25 +55,24 @@ bool Mesh::ExportAsBinary(const std::string& inPath, const std::string& outPath)
   return gltfContext.WriteGltfSceneToFile(&gltfModel, outPath, true, true, false, true);
 }
 
-void Mesh::LoadFromFile(const std::string& path, int fileLoadingFlags, const float scale) {
+void Mesh::load_from_file(const std::string& file_path, int file_loading_flags, const float scale) {
   OX_SCOPED_ZONE;
   ProfilerTimer timer;
 
-  Path = path;
-  Name = std::filesystem::path(path).stem().string();
-  LoadingFlags = fileLoadingFlags;
-  ShouldUpdate = true;
+  path = file_path;
+  name = std::filesystem::path(file_path).stem().string();
+  loading_flags = file_loading_flags;
 
-  tinygltf::Model gltfModel;
-  tinygltf::TinyGLTF gltfContext;
-  gltfContext.SetImageLoader(LoadImageDataCallback, this);
+  tinygltf::Model gltf_model;
+  tinygltf::TinyGLTF gltf_context;
+  gltf_context.SetImageLoader(LoadImageDataCallback, this);
 
   std::string error, warning;
   bool fileLoaded = false;
-  if (std::filesystem::path(path).extension() == ".gltf")
-    fileLoaded = gltfContext.LoadASCIIFromFile(&gltfModel, &error, &warning, path);
+  if (std::filesystem::path(file_path).extension() == ".gltf")
+    fileLoaded = gltf_context.LoadASCIIFromFile(&gltf_model, &error, &warning, file_path);
   else
-    fileLoaded = gltfContext.LoadBinaryFromFile(&gltfModel, &error, &warning, path);
+    fileLoaded = gltf_context.LoadBinaryFromFile(&gltf_model, &error, &warning, file_path);
   if (!fileLoaded) {
     OX_CORE_ERROR("Couldnt load gltf file: {}", error);
     return;
@@ -81,31 +80,31 @@ void Mesh::LoadFromFile(const std::string& path, int fileLoadingFlags, const flo
   if (!warning.empty())
     OX_CORE_WARN("GLTF loader warning: {}", warning);
 
-  LoadTextures(gltfModel);
-  LoadMaterials(gltfModel);
+  load_textures(gltf_model);
+  load_materials(gltf_model);
 
-  const tinygltf::Scene& scene = gltfModel.scenes[gltfModel.defaultScene > -1 ? gltfModel.defaultScene : 0];
+  const tinygltf::Scene& scene = gltf_model.scenes[gltf_model.defaultScene > -1 ? gltf_model.defaultScene : 0];
 
   for (int nodeIndex : scene.nodes) {
-    const tinygltf::Node node = gltfModel.nodes[nodeIndex];
-    LoadNode(nullptr, node, nodeIndex, gltfModel, m_Indices, m_Vertices, scale);
+    const tinygltf::Node node = gltf_model.nodes[nodeIndex];
+    load_node(nullptr, node, nodeIndex, gltf_model, indices, vertices, scale);
   }
   //TODO: Skins and animations.
 
-  const bool preMultiplyColor = fileLoadingFlags & FileLoadingFlags::PreMultiplyVertexColors;
-  const bool flipY = fileLoadingFlags & FileLoadingFlags::FlipY;
-  for (auto& node : LinearNodes) {
+  const bool preMultiplyColor = file_loading_flags & FileLoadingFlags::PreMultiplyVertexColors;
+  const bool flipY = file_loading_flags & FileLoadingFlags::FlipY;
+  for (auto& node : linear_nodes) {
     if (!node)
       continue;
-    const Mat4 localMatrix = node->GetMatrix();
-    for (const Primitive* primitive : node->Primitives) {
-      for (uint32_t i = 0; i < primitive->vertexCount; i++) {
-        Vertex& vertex = m_Vertices[primitive->firstVertex + i];
-        vertex.Pos = Vec3(localMatrix * glm::vec4(vertex.Pos, 1.0f));
-        vertex.Normal = glm::normalize(glm::mat3(localMatrix) * vertex.Normal);
+    const Mat4 localMatrix = node->get_matrix();
+    for (const Primitive* primitive : node->primitives) {
+      for (uint32_t i = 0; i < primitive->vertex_count; i++) {
+        Vertex& vertex = vertices[primitive->first_vertex + i];
+        vertex.position = Vec3(localMatrix * glm::vec4(vertex.position, 1.0f));
+        vertex.normal = glm::normalize(glm::mat3(localMatrix) * vertex.normal);
         if (flipY) {
-          vertex.Pos.y *= -1.0f;
-          vertex.Normal.y *= -1.0f;
+          vertex.position.y *= -1.0f;
+          vertex.normal.y *= -1.0f;
         }
         if (preMultiplyColor) {
           //vertex.color = primitive->material.baseColorFactor * vertex.color;
@@ -114,35 +113,32 @@ void Mesh::LoadFromFile(const std::string& path, int fileLoadingFlags, const flo
     }
   }
 
-  auto context = VulkanContext::Get();
+  auto context = VulkanContext::get();
   auto compiler = vuk::Compiler{};
 
-  auto [vBuffer, vBufferFut] = create_buffer(*context->SuperframeAllocator, vuk::MemoryUsage::eGPUonly, vuk::DomainFlagBits::eTransferOnGraphics, std::span(m_Vertices));
+  auto [vBuffer, vBufferFut] = create_buffer(*context->superframe_allocator, vuk::MemoryUsage::eGPUonly, vuk::DomainFlagBits::eTransferOnGraphics, std::span(vertices));
 
-  vBufferFut.wait(*context->SuperframeAllocator, compiler);
-  m_VerticiesBuffer = std::move(vBuffer);
+  vBufferFut.wait(*context->superframe_allocator, compiler);
+  verticies_buffer = std::move(vBuffer);
 
-  auto [iBuffer, iBufferFut] = create_buffer(*context->SuperframeAllocator, vuk::MemoryUsage::eGPUonly, vuk::DomainFlagBits::eTransferOnGraphics, std::span(m_Indices));
+  auto [iBuffer, iBufferFut] = create_buffer(*context->superframe_allocator, vuk::MemoryUsage::eGPUonly, vuk::DomainFlagBits::eTransferOnGraphics, std::span(indices));
 
-  iBufferFut.wait(*context->SuperframeAllocator, compiler);
-  m_IndiciesBuffer = std::move(iBuffer);
+  iBufferFut.wait(*context->superframe_allocator, compiler);
+  indicies_buffer = std::move(iBuffer);
 
-  m_Vertices.clear();
-  m_Indices.clear();
+  vertices.clear();
+  indices.clear();
 
-  m_Textures.clear();
+  m_textures.clear();
 
   timer.Stop();
-  OX_CORE_TRACE("Mesh file loaded: {}, {} materials, {} ms",
-    Name.c_str(),
-    gltfModel.materials.size(),
-    timer.ElapsedMilliSeconds());
+  OX_CORE_TRACE("Mesh file loaded: {}, {} materials, {} ms", name.c_str(), gltf_model.materials.size(), timer.ElapsedMilliSeconds());
 }
 
-void Mesh::BindVertexBuffer(vuk::CommandBuffer& commandBuffer) const {
-  OX_CORE_ASSERT(m_VerticiesBuffer)
+void Mesh::bind_vertex_buffer(vuk::CommandBuffer& commandBuffer) const {
+  OX_CORE_ASSERT(verticies_buffer)
   commandBuffer.bind_vertex_buffer(0,
-    *m_VerticiesBuffer,
+    *verticies_buffer,
     0,
     vuk::Packed{
       vuk::Format::eR32G32B32Sfloat,
@@ -153,34 +149,34 @@ void Mesh::BindVertexBuffer(vuk::CommandBuffer& commandBuffer) const {
     });
 }
 
-void Mesh::BindIndexBuffer(vuk::CommandBuffer& commandBuffer) const {
-  OX_CORE_ASSERT(m_IndiciesBuffer)
-  commandBuffer.bind_index_buffer(*m_IndiciesBuffer, vuk::IndexType::eUint32);
+void Mesh::bind_index_buffer(vuk::CommandBuffer& commandBuffer) const {
+  OX_CORE_ASSERT(indicies_buffer)
+  commandBuffer.bind_index_buffer(*indicies_buffer, vuk::IndexType::eUint32);
 }
 
-void Mesh::SetScale(const Vec3& scale) {
-  m_Scale = scale;
+void Mesh::set_scale(const Vec3& mesh_scale) {
+  scale = mesh_scale;
 
   //TODO:
 }
 
-void Mesh::Draw(vuk::CommandBuffer& commandBuffer) const {
+void Mesh::draw(vuk::CommandBuffer& commandBuffer) const {
   OX_SCOPED_ZONE;
-  BindVertexBuffer(commandBuffer);
-  BindIndexBuffer(commandBuffer);
-  for (const auto& node : Nodes) {
-    for (const auto& primitive : node->Primitives)
-      commandBuffer.draw_indexed(primitive->indexCount, 1, primitive->firstIndex, 0, 0);
+  bind_vertex_buffer(commandBuffer);
+  bind_index_buffer(commandBuffer);
+  for (const auto& node : nodes) {
+    for (const auto& primitive : node->primitives)
+      commandBuffer.draw_indexed(primitive->index_count, 1, primitive->first_index, 0, 0);
   }
 }
 
-void Mesh::LoadTextures(tinygltf::Model& model) {
-  m_Textures.resize(model.images.size());
+void Mesh::load_textures(tinygltf::Model& model) {
+  m_textures.resize(model.images.size());
   for (size_t imageIndex = 0; imageIndex < model.images.size(); imageIndex++) {
     auto& img = model.images[imageIndex];
 
     if (img.name.empty())
-      img.name = Name + std::to_string(imageIndex);
+      img.name = name + std::to_string(imageIndex);
 
     unsigned char* buffer;
     bool deleteBuffer = false;
@@ -203,111 +199,111 @@ void Mesh::LoadTextures(tinygltf::Model& model) {
       buffer = &img.image[0];
     }
 
-    m_Textures[imageIndex] = AssetManager::GetTextureAsset(img.name, TextureLoadInfo{{}, (uint32_t)img.width, (uint32_t)img.height, buffer});
+    m_textures[imageIndex] = AssetManager::get_texture_asset(img.name, TextureLoadInfo{{}, (uint32_t)img.width, (uint32_t)img.height, buffer});
 
     if (deleteBuffer)
       delete[] buffer;
   }
 }
 
-void Mesh::LoadMaterials(tinygltf::Model& model) {
+void Mesh::load_materials(tinygltf::Model& model) {
   OX_SCOPED_ZONE;
   // Create a empty material if the mesh file doesn't have any.
   if (model.materials.empty()) {
-    m_Materials.emplace_back(CreateRef<Material>());
-    const bool dontCreateMaterials = LoadingFlags & FileLoadingFlags::DontCreateMaterials;
+    materials.emplace_back(create_ref<Material>());
+    const bool dontCreateMaterials = loading_flags & FileLoadingFlags::DontCreateMaterials;
     if (!dontCreateMaterials)
-      m_Materials[0]->Create();
+      materials[0]->create();
     return;
   }
 
   for (tinygltf::Material& mat : model.materials) {
     Material material;
-    material.Create();
+    material.create();
     if (!mat.name.empty())
-      material.Name = mat.name;
-    material.m_Parameters.DoubleSided = mat.doubleSided;
+      material.name = mat.name;
+    material.parameters.double_sided = mat.doubleSided;
     if (mat.values.contains("baseColorTexture")) {
-      material.AlbedoTexture = m_Textures.at(model.textures[mat.values["baseColorTexture"].TextureIndex()].source);
-      material.m_Parameters.UseAlbedo = true;
+      material.albedo_texture = m_textures.at(model.textures[mat.values["baseColorTexture"].TextureIndex()].source);
+      material.parameters.use_albedo = true;
     }
     if (mat.values.contains("metallicRoughnessTexture")) {
-      material.MetallicRoughnessTexture = m_Textures.at(model.textures[mat.values["metallicRoughnessTexture"].TextureIndex()].source);
-      material.m_Parameters.UsePhysicalMap = true;
+      material.metallic_roughness_texture = m_textures.at(model.textures[mat.values["metallicRoughnessTexture"].TextureIndex()].source);
+      material.parameters.use_physical_map = true;
     }
     if (mat.values.contains("roughnessFactor")) {
-      material.m_Parameters.Roughness = static_cast<float>(mat.values["roughnessFactor"].Factor());
+      material.parameters.roughness = static_cast<float>(mat.values["roughnessFactor"].Factor());
     }
     if (mat.values.contains("metallicFactor")) {
-      material.m_Parameters.Metallic = static_cast<float>(mat.values["metallicFactor"].Factor());
+      material.parameters.metallic = static_cast<float>(mat.values["metallicFactor"].Factor());
     }
     if (mat.values.contains("specularFactor")) {
-      material.m_Parameters.Specular = static_cast<float>(mat.values["specularFactor"].Factor());
+      material.parameters.specular = static_cast<float>(mat.values["specularFactor"].Factor());
     }
     if (mat.values.contains("baseColorFactor")) {
-      material.m_Parameters.Color = glm::make_vec4(mat.values["baseColorFactor"].ColorFactor().data());
+      material.parameters.color = glm::make_vec4(mat.values["baseColorFactor"].ColorFactor().data());
     }
     if (mat.additionalValues.contains("emissiveFactor")) {
-      material.m_Parameters.Emmisive = glm::vec4(glm::make_vec3(mat.additionalValues["emissiveFactor"].ColorFactor().data()), 1.0);
+      material.parameters.emmisive = glm::vec4(glm::make_vec3(mat.additionalValues["emissiveFactor"].ColorFactor().data()), 1.0);
     }
     if (mat.additionalValues.contains("normalTexture")) {
-      material.NormalTexture = m_Textures.at(model.textures[mat.additionalValues["normalTexture"].TextureIndex()].source);
-      material.m_Parameters.UseNormal = true;
+      material.normal_texture = m_textures.at(model.textures[mat.additionalValues["normalTexture"].TextureIndex()].source);
+      material.parameters.use_normal = true;
     }
     if (mat.additionalValues.contains("emissiveTexture")) {
-      material.EmissiveTexture = m_Textures.at(model.textures[mat.additionalValues["emissiveTexture"].TextureIndex()].source);
-      material.m_Parameters.UseEmissive = true;
+      material.emissive_texture = m_textures.at(model.textures[mat.additionalValues["emissiveTexture"].TextureIndex()].source);
+      material.parameters.use_emissive = true;
     }
     if (mat.additionalValues.contains("occlusionTexture")) {
-      material.AOTexture = m_Textures.at(model.textures[mat.additionalValues["occlusionTexture"].TextureIndex()].source);
+      material.ao_texture = m_textures.at(model.textures[mat.additionalValues["occlusionTexture"].TextureIndex()].source);
     }
     if (mat.alphaMode == "BLEND") {
-      material.AlphaMode = Material::AlphaMode::Blend;
+      material.alpha_mode = Material::AlphaMode::Blend;
     }
     else if (mat.alphaMode == "MASK") {
-      material.m_Parameters.AlphaCutoff = 0.5f;
-      material.AlphaMode = Material::AlphaMode::Mask;
+      material.parameters.alpha_cutoff = 0.5f;
+      material.alpha_mode = Material::AlphaMode::Mask;
     }
     if (mat.additionalValues.contains("alphaCutoff")) {
-      material.m_Parameters.AlphaCutoff = static_cast<float>(mat.additionalValues["alphaCutoff"].Factor());
+      material.parameters.alpha_cutoff = static_cast<float>(mat.additionalValues["alphaCutoff"].Factor());
     }
     if (mat.extensions.contains("KHR_materials_ior")) {
       auto ext = mat.extensions.find("KHR_materials_ior");
       if (ext->second.Has("ior")) {
         auto factor = ext->second.Get("ior");
         const auto value = (float)factor.Get<double>();
-        material.m_Parameters.Specular = (float)std::pow((value - 1) / (value + 1), 2);
+        material.parameters.specular = (float)std::pow((value - 1) / (value + 1), 2);
       }
     }
 
-    m_Materials.push_back(CreateRef<Material>(material));
+    materials.push_back(create_ref<Material>(material));
   }
 }
 
-Ref<Material> Mesh::GetMaterial(uint32_t index) const {
-  OX_CORE_ASSERT(index < m_Materials.size())
-  return m_Materials.at(index);
+Ref<Material> Mesh::get_material(uint32_t index) const {
+  OX_CORE_ASSERT(index < materials.size())
+  return materials.at(index);
 }
 
-std::vector<Ref<Material>> Mesh::GetMaterialsAsRef() const {
+std::vector<Ref<Material>> Mesh::get_materials_as_ref() const {
   OX_SCOPED_ZONE;
-  return m_Materials;
+  return materials;
 }
 
-void Mesh::Destroy() {
+void Mesh::destroy() {
   OX_SCOPED_ZONE;
-  for (const auto& node : LinearNodes) {
-    for (const auto primitive : node->Primitives) {
+  for (const auto& node : linear_nodes) {
+    for (const auto primitive : node->primitives) {
       delete primitive;
     }
     delete node;
   }
-  LinearNodes.clear();
-  Nodes.clear();
-  m_Materials.clear();
+  linear_nodes.clear();
+  nodes.clear();
+  materials.clear();
 }
 
-void Mesh::Primitive::SetDimensions(Vec3 min, Vec3 max) {
+void Mesh::Primitive::set_dimensions(Vec3 min, Vec3 max) {
   OX_SCOPED_ZONE;
   dimensions.min = min;
   dimensions.max = max;
@@ -316,23 +312,23 @@ void Mesh::Primitive::SetDimensions(Vec3 min, Vec3 max) {
   dimensions.radius = glm::distance(min, max) / 2.0f;
 }
 
-Mat4 Mesh::Node::LocalMatrix() const {
+Mat4 Mesh::Node::local_matrix() const {
   OX_SCOPED_ZONE;
-  return glm::translate(Mat4(1.0f), Translation) * Mat4(Rotation) * glm::scale(Mat4(1.0f), Scale) * Matrix;
+  return glm::translate(Mat4(1.0f), translation) * Mat4(rotation) * glm::scale(Mat4(1.0f), scale) * matrix;
 }
 
-Mat4 Mesh::Node::GetMatrix() const {
+Mat4 Mesh::Node::get_matrix() const {
   OX_SCOPED_ZONE;
-  Mat4 m = LocalMatrix();
-  const Node* p = Parent;
+  Mat4 m = local_matrix();
+  const Node* p = parent;
   while (p) {
-    m = p->LocalMatrix() * m;
-    p = p->Parent;
+    m = p->local_matrix() * m;
+    p = p->parent;
   }
   return m;
 }
 
-void Mesh::LoadNode(Node* parent,
+void Mesh::load_node(Node* parent,
                     const tinygltf::Node& node,
                     uint32_t nodeIndex,
                     tinygltf::Model& model,
@@ -341,43 +337,43 @@ void Mesh::LoadNode(Node* parent,
                     float globalscale) {
   OX_SCOPED_ZONE;
   Node* newNode = new Node{};
-  newNode->Index = nodeIndex;
-  newNode->Parent = parent;
-  newNode->Name = node.name;
-  newNode->SkinIndex = node.skin;
-  newNode->Matrix = Mat4(1.0f);
-  newNode->Scale = Vec3(globalscale);
+  newNode->index = nodeIndex;
+  newNode->parent = parent;
+  newNode->name = node.name;
+  newNode->skin_index = node.skin;
+  newNode->matrix = Mat4(1.0f);
+  newNode->scale = Vec3(globalscale);
 
   // Generate local node matrix
   Vec3 translation = Vec3(0.0f);
   if (node.translation.size() == 3) {
     translation = glm::make_vec3(node.translation.data());
-    newNode->Translation = translation;
+    newNode->translation = translation;
   }
   if (node.rotation.size() == 4) {
     glm::quat q = glm::make_quat(node.rotation.data());
-    newNode->Rotation = Mat4(q);
+    newNode->rotation = Mat4(q);
   }
   Vec3 scale = Vec3(globalscale);
   if (node.scale.size() == 3) {
     scale = glm::make_vec3(node.scale.data());
-    newNode->Scale = scale;
+    newNode->scale = scale;
   }
   if (node.matrix.size() == 16) {
-    newNode->Matrix = glm::make_mat4x4(node.matrix.data());
-    if (globalscale != 1.0f) { newNode->Matrix = glm::scale(newNode->Matrix, Vec3(globalscale)); }
+    newNode->matrix = glm::make_mat4x4(node.matrix.data());
+    if (globalscale != 1.0f) { newNode->matrix = glm::scale(newNode->matrix, Vec3(globalscale)); }
   }
 
   // Node with children
   if (!node.children.empty()) {
     for (int children : node.children) {
-      LoadNode(newNode, model.nodes[children], children, model, indexBuffer, vertexBuffer, globalscale);
+      load_node(newNode, model.nodes[children], children, model, indexBuffer, vertexBuffer, globalscale);
     }
   }
 
   if (node.mesh > -1) {
-    newNode->ContainsMesh = true;
-    newNode->MeshIndex = node.mesh;
+    newNode->contains_mesh = true;
+    newNode->mesh_index = node.mesh;
     const tinygltf::Mesh mesh = model.meshes[node.mesh];
     for (const auto& primitive : mesh.primitives) {
       if (primitive.indices < 0) { continue; }
@@ -461,21 +457,21 @@ void Mesh::LoadNode(Node* parent,
 
         for (size_t v = 0; v < posAccessor.count; v++) {
           Vertex vert{};
-          vert.Pos = glm::vec4(glm::make_vec3(&bufferPos[v * posByteStride]), 1.0f);
-          vert.Normal = glm::normalize(Vec3(bufferNormals ? glm::make_vec3(&bufferNormals[v * normByteStride]) : Vec3(0.0f)));
-          vert.UV = bufferTexCoords ? glm::make_vec2(&bufferTexCoords[v * uv0ByteStride]) : Vec3(0.0f);
+          vert.position = glm::vec4(glm::make_vec3(&bufferPos[v * posByteStride]), 1.0f);
+          vert.normal = glm::normalize(Vec3(bufferNormals ? glm::make_vec3(&bufferNormals[v * normByteStride]) : Vec3(0.0f)));
+          vert.uv = bufferTexCoords ? glm::make_vec2(&bufferTexCoords[v * uv0ByteStride]) : Vec3(0.0f);
           if (bufferColors) {
             switch (numColorComponents) {
-              case 3: vert.Color = glm::vec4(glm::make_vec3(&bufferColors[v * 3]), 1.0f);
-              case 4: vert.Color = glm::make_vec4(&bufferColors[v * 4]);
+              case 3: vert.color = glm::vec4(glm::make_vec3(&bufferColors[v * 3]), 1.0f);
+              case 4: vert.color = glm::make_vec4(&bufferColors[v * 4]);
             }
           }
           else {
-            vert.Color = glm::vec4(1.0f);
+            vert.color = glm::vec4(1.0f);
           }
-          vert.Tangent = bufferTangents ? glm::vec4(glm::make_vec4(&bufferTangents[v * 4])) : glm::vec4(0.0f);
-          vert.Joint0 = hasSkin ? glm::vec4(glm::make_vec4(&bufferJoints[v * 4])) : glm::vec4(0.0f);
-          vert.Weight0 = hasSkin ? glm::make_vec4(&bufferWeights[v * 4]) : glm::vec4(0.0f);
+          vert.tangent = bufferTangents ? glm::vec4(glm::make_vec4(&bufferTangents[v * 4])) : glm::vec4(0.0f);
+          vert.joint0 = hasSkin ? glm::vec4(glm::make_vec4(&bufferJoints[v * 4])) : glm::vec4(0.0f);
+          vert.weight0 = hasSkin ? glm::make_vec4(&bufferWeights[v * 4]) : glm::vec4(0.0f);
           vertexBuffer.push_back(vert);
         }
       }
@@ -521,21 +517,21 @@ void Mesh::LoadNode(Node* parent,
       }
 
       auto newPrimitive = new Primitive(indexStart, indexCount);
-      newPrimitive->materialIndex = primitive.material;
-      if (newPrimitive->materialIndex < 0)
-        newPrimitive->materialIndex = 0;
-      newPrimitive->firstVertex = vertexStart;
-      newPrimitive->vertexCount = vertexCount;
-      newPrimitive->SetDimensions(posMin, posMax);
-      newNode->Primitives.push_back(newPrimitive);
+      newPrimitive->material_index = primitive.material;
+      if (newPrimitive->material_index < 0)
+        newPrimitive->material_index = 0;
+      newPrimitive->first_vertex = vertexStart;
+      newPrimitive->vertex_count = vertexCount;
+      newPrimitive->set_dimensions(posMin, posMax);
+      newNode->primitives.push_back(newPrimitive);
     }
   }
   if (parent) {
-    parent->Children.push_back(newNode);
+    parent->children.push_back(newNode);
   }
   else {
-    Nodes.push_back(newNode);
+    nodes.push_back(newNode);
   }
-  LinearNodes.push_back(newNode);
+  linear_nodes.push_back(newNode);
 }
 }

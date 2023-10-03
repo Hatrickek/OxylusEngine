@@ -7,72 +7,72 @@
 #include <sstream>
 
 namespace Oxylus {
-RendererConfig* RendererConfig::s_Instance = nullptr;
+RendererConfig* RendererConfig::s_instance = nullptr;
 
 RendererConfig::RendererConfig() {
-  s_Instance = this;
+  s_instance = this;
 }
 
-void RendererConfig::SaveConfig(const char* path) const {
+void RendererConfig::save_config(const char* path) const {
   ryml::Tree tree;
 
-  ryml::NodeRef nodeRoot = tree.rootref();
-  nodeRoot |= ryml::MAP;
+  ryml::NodeRef node_root = tree.rootref();
+  node_root |= ryml::MAP;
 
   //TODO: Add comment at the top of the file: "# Renderer settings" (Note: Couldn't find how to add comments in ryml docs)
 
   //Display
   {
-    auto node = nodeRoot["Display"];
+    auto node = node_root["Display"];
     node |= ryml::MAP;
 
-    node["VSync"] << DisplayConfig.VSync;
+    node["VSync"] << display_config.vsync;
   }
 
   //Color
   {
-    auto node = nodeRoot["Color"];
+    auto node = node_root["Color"];
     node |= ryml::MAP;
 
-    node["Tonemapper"] << ColorConfig.Tonemapper;
-    node["Exposure"] << ColorConfig.Exposure;
-    node["Gamma"] << ColorConfig.Gamma;
+    node["Tonemapper"] << color_config.tonemapper;
+    node["Exposure"] << color_config.exposure;
+    node["Gamma"] << color_config.gamma;
   }
 
   //SSAO
   {
-    auto node = nodeRoot["SSAO"];
+    auto node = node_root["SSAO"];
     node |= ryml::MAP;
 
-    node["Enabled"] << SSAOConfig.Enabled;
-    node["Radius"] << SSAOConfig.Radius;
+    node["Enabled"] << ssao_config.enabled;
+    node["Radius"] << ssao_config.radius;
   }
 
   //Bloom
   {
-    auto node = nodeRoot["Bloom"];
+    auto node = node_root["Bloom"];
     node |= ryml::MAP;
 
-    node["Enabled"] << BloomConfig.Enabled;
-    node["Threshold"] << BloomConfig.Threshold;
+    node["Enabled"] << bloom_config.enabled;
+    node["Threshold"] << bloom_config.threshold;
   }
 
   //SSR
   {
-    auto node = nodeRoot["SSR"];
+    auto node = node_root["SSR"];
     node |= ryml::MAP;
 
-    node["Enabled"] << SSRConfig.Enabled;
+    node["Enabled"] << ssr_config.enabled;
   }
 
   //DirectShadows
   {
-    auto node = nodeRoot["DirectShadows"];
+    auto node = node_root["DirectShadows"];
     node |= ryml::MAP;
 
-    node["Enabled"] << DirectShadowsConfig.Enabled;
-    node["Quality"] << DirectShadowsConfig.Quality;
-    node["UsePCF"] << DirectShadowsConfig.UsePCF;
+    node["Enabled"] << direct_shadows_config.enabled;
+    node["Quality"] << direct_shadows_config.quality;
+    node["UsePCF"] << direct_shadows_config.use_pcf;
   }
 
   std::stringstream ss;
@@ -81,8 +81,8 @@ void RendererConfig::SaveConfig(const char* path) const {
   filestream << ss.str();
 }
 
-bool RendererConfig::LoadConfig(const char* path) {
-  const auto& content = FileUtils::ReadFile(path);
+bool RendererConfig::load_config(const char* path) {
+  const auto& content = FileUtils::read_file(path);
   if (!content)
     return false;
 
@@ -95,47 +95,47 @@ bool RendererConfig::LoadConfig(const char* path) {
   //Display
   {
     const ryml::ConstNodeRef node = nodeRoot["Display"];
-    node["VSync"] >> DisplayConfig.VSync;
+    node["VSync"] >> display_config.vsync;
   }
 
   //Color
   {
     const ryml::ConstNodeRef node = nodeRoot["Color"];
-    node["Tonemapper"] >> ColorConfig.Tonemapper;
-    node["Exposure"] >> ColorConfig.Exposure;
-    node["Gamma"] >> ColorConfig.Gamma;
+    node["Tonemapper"] >> color_config.tonemapper;
+    node["Exposure"] >> color_config.exposure;
+    node["Gamma"] >> color_config.gamma;
   }
 
   //SSAO
   {
     const ryml::ConstNodeRef node = nodeRoot["SSAO"];
 
-    node["Enabled"] >> SSAOConfig.Enabled;
-    node["Radius"] >> SSAOConfig.Radius;
+    node["Enabled"] >> ssao_config.enabled;
+    node["Radius"] >> ssao_config.radius;
   }
 
   //Bloom
   {
     const ryml::ConstNodeRef node = nodeRoot["Bloom"];
 
-    node["Enabled"] >> BloomConfig.Enabled;
-    node["Threshold"] >> BloomConfig.Threshold;
+    node["Enabled"] >> bloom_config.enabled;
+    node["Threshold"] >> bloom_config.threshold;
   }
 
   //SSR
   {
     const ryml::ConstNodeRef node = nodeRoot["SSR"];
 
-    node["Enabled"] >> SSRConfig.Enabled;
+    node["Enabled"] >> ssr_config.enabled;
   }
 
   //DirectShadows
   {
     const ryml::ConstNodeRef node = nodeRoot["DirectShadows"];
 
-    node["Enabled"] >> DirectShadowsConfig.Enabled;
-    node["Quality"] >> DirectShadowsConfig.Quality;
-    node["UsePCF"] >> DirectShadowsConfig.UsePCF;
+    node["Enabled"] >> direct_shadows_config.enabled;
+    node["Quality"] >> direct_shadows_config.quality;
+    node["UsePCF"] >> direct_shadows_config.use_pcf;
   }
 
   return true;
