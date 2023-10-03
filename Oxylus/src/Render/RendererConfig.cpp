@@ -83,10 +83,10 @@ void RendererConfig::save_config(const char* path) const {
 
 bool RendererConfig::load_config(const char* path) {
   const auto& content = FileUtils::read_file(path);
-  if (!content)
+  if (content.empty())
     return false;
 
-  ryml::Tree tree = ryml::parse_in_arena(c4::to_csubstr(*content));
+  ryml::Tree tree = ryml::parse_in_arena(c4::to_csubstr(content));
 
   const ryml::ConstNodeRef root = tree.rootref();
 

@@ -34,7 +34,7 @@ struct AppSpec {
 
 class Application {
 public:
-  Application(const AppSpec& spec);
+  Application(AppSpec spec);
   virtual ~Application();
 
   void init_systems();

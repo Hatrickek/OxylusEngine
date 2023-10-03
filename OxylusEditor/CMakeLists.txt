@@ -102,3 +102,6 @@ target_link_libraries(${PROJECT_NAME} PRIVATE
 # Copy resource folder
 add_custom_command(TARGET OxylusEditor POST_BUILD COMMAND ${CMAKE_COMMAND} -E copy_directory ${CMAKE_SOURCE_DIR}/OxylusEditor/Resources $<TARGET_FILE_DIR:OxylusEditor>/Resources)
 
+# Set working directory
+set(VS_DEBUGGER_WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}/OxylusEditor)
+

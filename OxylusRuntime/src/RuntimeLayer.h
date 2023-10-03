@@ -27,7 +27,6 @@ namespace OxylusRuntime {
   private:
     void LoadScene();
     bool OnSceneReload(Oxylus::ReloadSceneEvent& e);
-    void RenderFinalImage() const;
 
   private:
     Oxylus::EventDispatcher m_Dispatcher;

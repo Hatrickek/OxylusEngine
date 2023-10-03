@@ -64,18 +64,18 @@ void MaterialSerializer::Deserialize(const std::string& path) const {
   m_Material->path = path;
 
   auto content = FileUtils::read_file(path);
-  if (!content) {
-    OX_CORE_ASSERT(content, fmt::format("Couldn't read material file: {0}", path).c_str())
+  if (content.empty()) {
+    OX_CORE_ERROR(fmt::format("Couldn't read material file: {0}", path).c_str());
 
     // Try to read it again from assets path
     content = FileUtils::read_file(AssetManager::get_asset_file_system_path(path).string());
-    if (content)
+    if (!content.empty())
       OX_CORE_INFO("Could load the material file from assets path: {0}", path);
     else
       return;
   }
 
-  ryml::Tree tree = ryml::parse_in_arena(c4::to_csubstr(content.value()));
+  ryml::Tree tree = ryml::parse_in_arena(c4::to_csubstr(content));
 
   const ryml::ConstNodeRef nodeRoot = tree.rootref();
 

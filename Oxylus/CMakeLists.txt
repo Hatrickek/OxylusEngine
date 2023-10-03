@@ -233,6 +233,8 @@ FetchContent_Declare(
     vk-bootstrap 
     GIT_REPOSITORY https://github.com/charles-lunarg/vk-bootstrap
     GIT_TAG        "main"
+    GIT_SHALLOW    TRUE
+    GIT_PROGRESS   TRUE
 )
 FetchContent_MakeAvailable(vk-bootstrap)
 target_link_libraries(${PROJECT_NAME} PUBLIC vk-bootstrap)

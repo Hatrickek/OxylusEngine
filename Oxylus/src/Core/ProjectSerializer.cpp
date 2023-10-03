@@ -35,12 +35,12 @@ bool ProjectSerializer::Deserialize(const std::filesystem::path& filePath) const
   auto& [Name, StartScene, AssetDirectory] = m_Project->GetConfig();
 
   const auto& content = FileUtils::read_file(filePath.string());
-  if (!content) {
-    OX_CORE_ASSERT(content, fmt::format("Couldn't load project file: {0}", filePath.string()).c_str());
+  if (content.empty()) {
+    OX_CORE_ASSERT(!content.empty(), fmt::format("Couldn't load project file: {0}", filePath.string()).c_str());
     return false;
   }
 
-  ryml::Tree tree = ryml::parse_in_arena(c4::to_csubstr(content.value()));
+  ryml::Tree tree = ryml::parse_in_arena(c4::to_csubstr(content));
 
   const ryml::ConstNodeRef root = tree.rootref();
 

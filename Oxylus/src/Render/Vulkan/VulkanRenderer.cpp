@@ -179,8 +179,8 @@ std::pair<vuk::Unique<vuk::Image>, vuk::Future> VulkanRenderer::generate_cubemap
   env_cubemap_ia.image = *output;
 
   vuk::PipelineBaseCreateInfo equirectangular_to_cubemap;
-  equirectangular_to_cubemap.add_glsl(*FileUtils::read_shader_file("Cubemap.vert"), "Cubemap.vert");
-  equirectangular_to_cubemap.add_glsl(*FileUtils::read_shader_file("EquirectangularToCubemap.frag"), "EquirectangularToCubemap.frag");
+  equirectangular_to_cubemap.add_glsl(FileUtils::read_shader_file("Cubemap.vert"), "Cubemap.vert");
+  equirectangular_to_cubemap.add_glsl(FileUtils::read_shader_file("EquirectangularToCubemap.frag"), "EquirectangularToCubemap.frag");
   allocator.get_context().create_named_pipeline("equirectangular_to_cubemap", equirectangular_to_cubemap);
 
   auto cube = AssetManager::get_mesh_asset(Resources::get_resources_path("Objects/cube.glb"));

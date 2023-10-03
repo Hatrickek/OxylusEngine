@@ -18,8 +18,8 @@ std::pair<vuk::Unique<vuk::Image>, vuk::Future> Prefilter::GenerateBRDFLUT() {
   const auto vkContext = VulkanContext::get();
 
   vuk::PipelineBaseCreateInfo pci;
-  pci.add_glsl(FileUtils::read_shader_file("GenBrdfLut.vert")->c_str(), "GenBrdfLut.vert");
-  pci.add_glsl(FileUtils::read_shader_file("GenBrdfLut.frag")->c_str(), "GenBrdfLut.frag");
+  pci.add_glsl(FileUtils::read_shader_file("GenBrdfLut.vert"), "GenBrdfLut.vert");
+  pci.add_glsl(FileUtils::read_shader_file("GenBrdfLut.frag"), "GenBrdfLut.frag");
   vkContext->context->create_named_pipeline("BRDFLUTPipeline", pci);
 
   vuk::Unique<vuk::Image> brdfImage;
@@ -89,8 +89,8 @@ std::pair<vuk::Unique<vuk::Image>, vuk::Future> Prefilter::GenerateIrradianceCub
 
   //if (!vkContext->context->get_named_pipeline(pipelineName)) {
   vuk::PipelineBaseCreateInfo pci;
-  pci.add_glsl(FileUtils::read_shader_file("Cubemap.vert")->c_str(), "Cubemap.vert");
-  pci.add_glsl(FileUtils::read_shader_file("IrradianceCube.frag")->c_str(), "IrradianceCube.frag");
+  pci.add_glsl(FileUtils::read_shader_file("Cubemap.vert"), "Cubemap.vert");
+  pci.add_glsl(FileUtils::read_shader_file("IrradianceCube.frag"), "IrradianceCube.frag");
   vkContext->context->create_named_pipeline(pipelineName, pci);
   //}
 
@@ -156,8 +156,8 @@ std::pair<vuk::Unique<vuk::Image>, vuk::Future> Prefilter::GeneratePrefilteredCu
 
   //if (!vkContext->context->get_named_pipeline(pipelineName)) {
   vuk::PipelineBaseCreateInfo pci;
-  pci.add_glsl(FileUtils::read_shader_file("Cubemap.vert")->c_str(), "Cubemap.vert");
-  pci.add_glsl(FileUtils::read_shader_file("PrefilterEnvMap.frag")->c_str(), "PrefilterEnvMap.frag");
+  pci.add_glsl(FileUtils::read_shader_file("Cubemap.vert"), "Cubemap.vert");
+  pci.add_glsl(FileUtils::read_shader_file("PrefilterEnvMap.frag"), "PrefilterEnvMap.frag");
   vkContext->context->create_named_pipeline(pipelineName, pci);
   //}
 

@@ -107,60 +107,60 @@ void DefaultRenderPipeline::init_render_graph() {
 
   {
     vuk::PipelineBaseCreateInfo pci;
-    pci.add_glsl(*FileUtils::read_shader_file("DepthNormalPass.vert"),
+    pci.add_glsl(FileUtils::read_shader_file("DepthNormalPass.vert"),
       FileUtils::get_shader_path("DepthNormalPass.vert"));
-    pci.add_glsl(*FileUtils::read_shader_file("DepthNormalPass.frag"),
+    pci.add_glsl(FileUtils::read_shader_file("DepthNormalPass.frag"),
       FileUtils::get_shader_path("DepthNormalPass.frag"));
     vk_context->context->create_named_pipeline("DepthPrePassPipeline", pci);
   }
   {
     vuk::PipelineBaseCreateInfo pci;
-    pci.add_glsl(*FileUtils::read_shader_file("DirectShadowDepthPass.vert"), "DirectShadowDepthPass.vert");
-    pci.add_glsl(*FileUtils::read_shader_file("DirectShadowDepthPass.frag"), "DirectShadowDepthPass.frag");
+    pci.add_glsl(FileUtils::read_shader_file("DirectShadowDepthPass.vert"), "DirectShadowDepthPass.vert");
+    pci.add_glsl(FileUtils::read_shader_file("DirectShadowDepthPass.frag"), "DirectShadowDepthPass.frag");
     vk_context->context->create_named_pipeline("ShadowPipeline", pci);
   }
   {
     vuk::PipelineBaseCreateInfo pci;
-    pci.add_glsl(*FileUtils::read_shader_file("Skybox.vert"), "Skybox.vert");
-    pci.add_glsl(*FileUtils::read_shader_file("Skybox.frag"), "Skybox.frag");
+    pci.add_glsl(FileUtils::read_shader_file("Skybox.vert"), "Skybox.vert");
+    pci.add_glsl(FileUtils::read_shader_file("Skybox.frag"), "Skybox.frag");
     vk_context->context->create_named_pipeline("SkyboxPipeline", pci);
   }
   {
     vuk::PipelineBaseCreateInfo pci;
-    pci.add_glsl(*FileUtils::read_shader_file("PBRTiled.vert"), FileUtils::get_shader_path("PBRTiled.vert"));
-    pci.add_glsl(*FileUtils::read_shader_file("PBRTiled.frag"), FileUtils::get_shader_path("PBRTiled.frag"));
+    pci.add_glsl(FileUtils::read_shader_file("PBRTiled.vert"), FileUtils::get_shader_path("PBRTiled.vert"));
+    pci.add_glsl(FileUtils::read_shader_file("PBRTiled.frag"), FileUtils::get_shader_path("PBRTiled.frag"));
     vk_context->context->create_named_pipeline("PBRPipeline", pci);
   }
   {
     vuk::PipelineBaseCreateInfo pci;
-    pci.add_glsl(*FileUtils::read_shader_file("Unlit.vert"), "Unlit.vert");
-    pci.add_glsl(*FileUtils::read_shader_file("Unlit.frag"), "Unlit.frag");
+    pci.add_glsl(FileUtils::read_shader_file("Unlit.vert"), "Unlit.vert");
+    pci.add_glsl(FileUtils::read_shader_file("Unlit.frag"), "Unlit.frag");
     vk_context->context->create_named_pipeline("debug_pipeline", pci);
   }
   {
     vuk::PipelineBaseCreateInfo pci;
-    pci.add_glsl(*FileUtils::read_shader_file("SSR.comp"), "SSR.comp");
+    pci.add_glsl(FileUtils::read_shader_file("SSR.comp"), "SSR.comp");
     vk_context->context->create_named_pipeline("SSRPipeline", pci);
   }
   {
     vuk::PipelineBaseCreateInfo pci;
-    pci.add_glsl(*FileUtils::read_shader_file("FinalPass.vert"), FileUtils::get_shader_path("FinalPass.vert"));
-    pci.add_glsl(*FileUtils::read_shader_file("FinalPass.frag"), FileUtils::get_shader_path("FinalPass.frag"));
+    pci.add_glsl(FileUtils::read_shader_file("FinalPass.vert"), FileUtils::get_shader_path("FinalPass.vert"));
+    pci.add_glsl(FileUtils::read_shader_file("FinalPass.frag"), FileUtils::get_shader_path("FinalPass.frag"));
     vk_context->context->create_named_pipeline("FinalPipeline", pci);
   }
   {
     vuk::PipelineBaseCreateInfo pci;
-    pci.add_hlsl(*FileUtils::read_shader_file("GTAO/GTAO_First.hlsl"), FileUtils::get_shader_path("GTAO/GTAO_First.hlsl"), vuk::HlslShaderStage::eCompute, "CSPrefilterDepths16x16");
+    pci.add_hlsl(FileUtils::read_shader_file("GTAO/GTAO_First.hlsl"), FileUtils::get_shader_path("GTAO/GTAO_First.hlsl"), vuk::HlslShaderStage::eCompute, "CSPrefilterDepths16x16");
     vk_context->context->create_named_pipeline("gtao_first_pipeline", pci);
   }
   {
     vuk::PipelineBaseCreateInfo pci;
-    pci.add_hlsl(*FileUtils::read_shader_file("GTAO/GTAO_Main.hlsl"), FileUtils::get_shader_path("GTAO/GTAO_Main.hlsl"), vuk::HlslShaderStage::eCompute, "CSGTAOHigh");
+    pci.add_hlsl(FileUtils::read_shader_file("GTAO/GTAO_Main.hlsl"), FileUtils::get_shader_path("GTAO/GTAO_Main.hlsl"), vuk::HlslShaderStage::eCompute, "CSGTAOHigh");
     vk_context->context->create_named_pipeline("gtao_main_pipeline", pci);
   }
   {
     vuk::PipelineBaseCreateInfo pci;
-    pci.add_hlsl(*FileUtils::read_shader_file("GTAO/GTAO_Final.hlsl"), FileUtils::get_shader_path("GTAO/GTAO_Final.hlsl"), vuk::HlslShaderStage::eCompute, "CSDenoisePass");
+    pci.add_hlsl(FileUtils::read_shader_file("GTAO/GTAO_Final.hlsl"), FileUtils::get_shader_path("GTAO/GTAO_Final.hlsl"), vuk::HlslShaderStage::eCompute, "CSDenoisePass");
     vk_context->context->create_named_pipeline("gtao_final_pipeline", pci);
   }
 

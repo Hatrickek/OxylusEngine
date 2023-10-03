@@ -13,7 +13,7 @@
 namespace Oxylus {
 Application* Application::instance = nullptr;
 
-Application::Application(const AppSpec& spec) : m_spec(spec), system_manager(create_ref<SystemManager>()) {
+Application::Application(AppSpec spec) : m_spec(std::move(spec)), system_manager(create_ref<SystemManager>()) {
   if (instance) {
     OX_CORE_ERROR("Application already exists!");
     return;

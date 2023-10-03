@@ -37,7 +37,6 @@ namespace OxylusRuntime {
   }
 
   void RuntimeLayer::on_imgui_render() {
-    RenderFinalImage();
     m_Scene->OnImGuiRender(Application::get_timestep());
 
     constexpr ImGuiWindowFlags window_flags = ImGuiWindowFlags_NoDecoration | ImGuiWindowFlags_NoDocking |
@@ -72,7 +71,7 @@ namespace OxylusRuntime {
     OX_CORE_INFO("Scene reloaded.");
     return true;
   }
-
+#if 0
   /*TODO(hatrickek): Proper way to render the final image internally as fullscreen without needing this.
   This a "hack" to render the final image as a fullscreen image.
   Currently the final image in engine renderer is rendered to an offscreen framebuffer image.*/
@@ -90,4 +89,5 @@ namespace OxylusRuntime {
       ImGui::End();
     }
   }
+#endif
 }

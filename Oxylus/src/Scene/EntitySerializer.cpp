@@ -530,19 +530,19 @@ void EntitySerializer::SerializeEntityAsPrefab(const char* filepath, Entity enti
 
 Entity EntitySerializer::DeserializeEntityAsPrefab(const char* filepath, Scene* scene) {
   auto content = FileUtils::read_file(filepath);
-  if (!content) {
-    OX_CORE_ASSERT(content, fmt::format("Couldn't read prefab file: {0}", filepath).c_str())
+  if (content.empty()) {
+    OX_CORE_ERROR(fmt::format("Couldn't read prefab file: {0}", filepath).c_str());
 
     // Try to read it again from assets path
     content = FileUtils::read_file(AssetManager::get_asset_file_system_path(filepath).string());
-    if (content)
+    if (!content.empty())
       OX_CORE_INFO("Could load the prefab file from assets path: {0}", filepath);
     else {
       return {};
     }
   }
 
-  const ryml::Tree tree = ryml::parse_in_arena(ryml::to_csubstr(content.value()));
+  const ryml::Tree tree = ryml::parse_in_arena(ryml::to_csubstr(content));
 
   if (tree.empty()) {
     OX_CORE_ERROR("Couldn't parse the prefab file {0}", FileSystem::GetFileName(filepath));
