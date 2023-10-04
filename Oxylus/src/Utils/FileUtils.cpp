@@ -3,6 +3,7 @@
 #include <filesystem>
 #include <fstream>
 
+#include "Log.h"
 #include "Profiler.h"
 #include "Core/Resources.h"
 
@@ -15,9 +16,9 @@ std::string FileUtils::read_file(const std::string& filePath) {
 }
 
 std::string FileUtils::read_shader_file(const std::string& shaderFileName) {
-  const auto pathStr = Resources::get_resources_path("Shaders");
-  const auto path = std::filesystem::path(pathStr) / shaderFileName;
-  return read_file(path.string());
+  auto value = read_file(get_shader_path(shaderFileName));
+  OX_CORE_ASSERT(!value.empty())
+  return value;
 }
 
 std::string FileUtils::get_shader_path(const std::string& shaderFileName) {

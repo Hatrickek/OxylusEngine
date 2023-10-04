@@ -15,11 +15,10 @@ void Resources::init_editor_resources() {
 }
 
 std::string Resources::get_resources_path(const std::string& path) {
-  const auto& spec = Application::get()->get_specification();
-  return (std::filesystem::path(spec.working_directory) / spec.resources_path / path).string();
+  return (std::filesystem::path(Application::get_resources_path()) / path).string();
 }
 
 bool Resources::resources_path_exists() {
-  return std::filesystem::exists(Application::get()->get_specification().resources_path);
+  return std::filesystem::exists(Application::get_resources_path());
 }
 }

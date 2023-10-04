@@ -111,25 +111,25 @@ void DefaultRenderPipeline::init_render_graph() {
       FileUtils::get_shader_path("DepthNormalPass.vert"));
     pci.add_glsl(FileUtils::read_shader_file("DepthNormalPass.frag"),
       FileUtils::get_shader_path("DepthNormalPass.frag"));
-    vk_context->context->create_named_pipeline("DepthPrePassPipeline", pci);
+    vk_context->context->create_named_pipeline("depth_pre_pass_pipeline", pci);
   }
   {
     vuk::PipelineBaseCreateInfo pci;
     pci.add_glsl(FileUtils::read_shader_file("DirectShadowDepthPass.vert"), "DirectShadowDepthPass.vert");
     pci.add_glsl(FileUtils::read_shader_file("DirectShadowDepthPass.frag"), "DirectShadowDepthPass.frag");
-    vk_context->context->create_named_pipeline("ShadowPipeline", pci);
+    vk_context->context->create_named_pipeline("shadow_pipeline", pci);
   }
   {
     vuk::PipelineBaseCreateInfo pci;
     pci.add_glsl(FileUtils::read_shader_file("Skybox.vert"), "Skybox.vert");
     pci.add_glsl(FileUtils::read_shader_file("Skybox.frag"), "Skybox.frag");
-    vk_context->context->create_named_pipeline("SkyboxPipeline", pci);
+    vk_context->context->create_named_pipeline("skybox_pipeline", pci);
   }
   {
     vuk::PipelineBaseCreateInfo pci;
     pci.add_glsl(FileUtils::read_shader_file("PBRTiled.vert"), FileUtils::get_shader_path("PBRTiled.vert"));
     pci.add_glsl(FileUtils::read_shader_file("PBRTiled.frag"), FileUtils::get_shader_path("PBRTiled.frag"));
-    vk_context->context->create_named_pipeline("PBRPipeline", pci);
+    vk_context->context->create_named_pipeline("pbr_pipeline", pci);
   }
   {
     vuk::PipelineBaseCreateInfo pci;
@@ -140,13 +140,13 @@ void DefaultRenderPipeline::init_render_graph() {
   {
     vuk::PipelineBaseCreateInfo pci;
     pci.add_glsl(FileUtils::read_shader_file("SSR.comp"), "SSR.comp");
-    vk_context->context->create_named_pipeline("SSRPipeline", pci);
+    vk_context->context->create_named_pipeline("ssr_pipeline", pci);
   }
   {
     vuk::PipelineBaseCreateInfo pci;
     pci.add_glsl(FileUtils::read_shader_file("FinalPass.vert"), FileUtils::get_shader_path("FinalPass.vert"));
     pci.add_glsl(FileUtils::read_shader_file("FinalPass.frag"), FileUtils::get_shader_path("FinalPass.frag"));
-    vk_context->context->create_named_pipeline("FinalPipeline", pci);
+    vk_context->context->create_named_pipeline("final_pipeline", pci);
   }
   {
     vuk::PipelineBaseCreateInfo pci;
@@ -167,9 +167,7 @@ void DefaultRenderPipeline::init_render_graph() {
   wait_for_futures(vk_context);
 }
 
-static uint32_t get_material_index(const std::unordered_map<uint32_t, uint32_t>& material_map,
-                                   uint32_t mesh_index,
-                                   uint32_t material_index) {
+static uint32_t get_material_index(const std::unordered_map<uint32_t, uint32_t>& material_map, uint32_t mesh_index, uint32_t material_index) {
   uint32_t size = 0;
   for (uint32_t i = 0; i < mesh_index; i++)
     size += material_map.at(i);
@@ -209,8 +207,8 @@ Scope<vuk::Future> DefaultRenderPipeline::on_render(vuk::Allocator& frame_alloca
   rg->add_pass({
     .name = "DepthPrePass",
     .resources = {
-      "Normal_Image"_image >> vuk::eColorRW >> "normal_output",
-      "Depth_Image"_image >> vuk::eDepthStencilRW >> "depth_output"
+      "normal_image"_image >> vuk::eColorRW >> "normal_output",
+      "depth_image"_image >> vuk::eDepthStencilRW >> "depth_output"
     },
     .execute = [this, vs_buffer, mat_buffer, materialMap](vuk::CommandBuffer& commandBuffer) {
       commandBuffer.set_viewport(0, vuk::Rect2D::framebuffer())
@@ -222,7 +220,7 @@ Scope<vuk::Future> DefaultRenderPipeline::on_render(vuk::Allocator& frame_alloca
                       .depthWriteEnable = true,
                       .depthCompareOp = vuk::CompareOp::eLessOrEqual,
                     })
-                   .bind_graphics_pipeline("DepthPrePassPipeline")
+                   .bind_graphics_pipeline("depth_pre_pass_pipeline")
                    .bind_buffer(0, 0, vs_buffer)
                    .bind_buffer(2, 0, mat_buffer);
 
@@ -246,10 +244,10 @@ Scope<vuk::Future> DefaultRenderPipeline::on_render(vuk::Allocator& frame_alloca
     }
   });
 
-  rg->attach_and_clear_image("Normal_Image", {.format = vuk::Format::eR16G16B16A16Sfloat, .sample_count = vuk::SampleCountFlagBits::e1}, vuk::Black<float>);
-  rg->attach_and_clear_image("Depth_Image", {.format = vuk::Format::eD32Sfloat, .sample_count = vuk::SampleCountFlagBits::e1}, vuk::DepthOne);
-  rg->inference_rule("Normal_Image", vuk::same_shape_as("final_image"));
-  rg->inference_rule("Depth_Image", vuk::same_shape_as("final_image"));
+  rg->attach_and_clear_image("normal_image", {.format = vuk::Format::eR16G16B16A16Sfloat, .sample_count = vuk::SampleCountFlagBits::e1}, vuk::Black<float>);
+  rg->attach_and_clear_image("depth_image", {.format = vuk::Format::eD32Sfloat, .sample_count = vuk::SampleCountFlagBits::e1}, vuk::DepthOne);
+  rg->inference_rule("normal_image", vuk::same_shape_as("final_image"));
+  rg->inference_rule("depth_image", vuk::same_shape_as("final_image"));
 
 #pragma region GTAO
 
@@ -258,7 +256,7 @@ Scope<vuk::Future> DefaultRenderPipeline::on_render(vuk::Allocator& frame_alloca
   auto [gtao_const_buff, gtao_const_buff_fut] = create_buffer(frame_allocator, vuk::MemoryUsage::eCPUtoGPU, vuk::DomainFlagBits::eTransferOnGraphics, std::span(&gtao_constants, 1));
   auto& gtao_const_buffer = *gtao_const_buff;
 
-  rg->attach_and_clear_image("gtao_depth_image", {.format = vuk::Format::eR16G16B16A16Sfloat, .sample_count = vuk::SampleCountFlagBits::e1}, vuk::Black<float>);
+  rg->attach_and_clear_image("gtao_depth_image", {.format = vuk::Format::eR32Sfloat, .sample_count = vuk::SampleCountFlagBits::e1}, vuk::Black<float>);
   rg->inference_rule("gtao_depth_image", vuk::same_shape_as("final_image"));
 
   auto diverged_names = diverge_image(rg, "gtao_depth_image", 5);
@@ -304,13 +302,13 @@ Scope<vuk::Future> DefaultRenderPipeline::on_render(vuk::Allocator& frame_alloca
                     .bind_image(0, 2, "normal_output")
                     .bind_image(0, 3, "gtao_main_image")
                     .bind_image(0, 4, "gtao_edge_image")
-                    .bind_sampler(0, 5, vuk::LinearSamplerClamped)
+                    .bind_sampler(0, 5, {})
                     .dispatch((VulkanRenderer::get_viewport_width() + 16 - 1) / 16, (VulkanRenderer::get_viewport_height() + 16 - 1) / 16);
     }
   });
 
-  rg->attach_and_clear_image("gtao_main_image", {.format = vuk::Format::eR16G16B16A16Sfloat, .sample_count = vuk::SampleCountFlagBits::e1, .view_type = vuk::ImageViewType::e2D, .level_count = 1, .layer_count = 1}, vuk::Black<float>);
-  rg->attach_and_clear_image("gtao_edge_image", {.format = vuk::Format::eR16G16B16A16Sfloat, .sample_count = vuk::SampleCountFlagBits::e1, .view_type = vuk::ImageViewType::e2D, .level_count = 1, .layer_count = 1}, vuk::Black<float>);
+  rg->attach_and_clear_image("gtao_main_image", {.format = vuk::Format::eR8Uint, .sample_count = vuk::SampleCountFlagBits::e1, .view_type = vuk::ImageViewType::e2D, .level_count = 1, .layer_count = 1}, vuk::Black<float>);
+  rg->attach_and_clear_image("gtao_edge_image", {.format = vuk::Format::eR8Unorm, .sample_count = vuk::SampleCountFlagBits::e1, .view_type = vuk::ImageViewType::e2D, .level_count = 1, .layer_count = 1}, vuk::Black<float>);
   rg->inference_rule("gtao_main_image", vuk::same_extent_as("final_image"));
   rg->inference_rule("gtao_edge_image", vuk::same_extent_as("final_image"));
 
@@ -327,12 +325,12 @@ Scope<vuk::Future> DefaultRenderPipeline::on_render(vuk::Allocator& frame_alloca
                    .bind_image(0, 1, "gtao_main_output")
                    .bind_image(0, 2, "gtao_edge_output")
                    .bind_image(0, 3, "gtao_final_image")
-                   .bind_sampler(0, 4, vuk::LinearSamplerClamped)
+                   .bind_sampler(0, 4, {})
                    .dispatch((VulkanRenderer::get_viewport_width() + 16 - 1) / 16, (VulkanRenderer::get_viewport_height() + 16 - 1) / 16);
     }
   });
 
-  rg->attach_and_clear_image("gtao_final_image", {.format = vuk::Format::eR16G16B16A16Sfloat, .sample_count = vuk::SampleCountFlagBits::e1, .view_type = vuk::ImageViewType::e2D, .level_count = 1, .layer_count = 1}, vuk::Black<float>);
+  rg->attach_and_clear_image("gtao_final_image", {.format = vuk::Format::eR8Uint, .sample_count = vuk::SampleCountFlagBits::e1, .view_type = vuk::ImageViewType::e2D, .level_count = 1, .layer_count = 1}, vuk::Black<float>);
   rg->inference_rule("gtao_final_image", vuk::same_extent_as("final_image"));
 
 #pragma endregion
@@ -343,11 +341,11 @@ Scope<vuk::Future> DefaultRenderPipeline::on_render(vuk::Allocator& frame_alloca
   auto& shadow_buffer = *buffer;
 
   rg->add_pass({
-    .name = "DirectShadowPass",
-    .resources = {"ShadowArray"_image >> vuk::eDepthStencilRW >> "ShadowArray_Output"},
+    .name = "direct_shadow_pass",
+    .resources = {"shadow_array"_image >> vuk::eDepthStencilRW >> "shadow_array_output"},
     .execute = [this, shadow_buffer, &direct_shadow_ub](vuk::CommandBuffer& command_buffer) {
       const auto shadow_size = static_cast<float>(RendererConfig::get()->direct_shadows_config.size);
-      command_buffer.bind_graphics_pipeline("ShadowPipeline")
+      command_buffer.bind_graphics_pipeline("shadow_pipeline")
                     .broadcast_color_blend({})
                     .set_rasterization({.cullMode = vuk::CullModeFlagBits::eNone})
                     .set_dynamic_state(vuk::DynamicStateFlagBits::eViewport | vuk::DynamicStateFlagBits::eScissor)
@@ -393,7 +391,7 @@ Scope<vuk::Future> DefaultRenderPipeline::on_render(vuk::Allocator& frame_alloca
     },
     .format = vuk::Format::eD16Unorm, .sample_count = vuk::SampleCountFlagBits::e1, .view_type = vuk::ImageViewType::e2DArray, .level_count = 4
   };
-  rg->attach_and_clear_image("ShadowArray", shadow_array_attachment, vuk::DepthOne);
+  rg->attach_and_clear_image("shadow_array", shadow_array_attachment, vuk::DepthOne);
 
   auto [point_lights_buf, point_lights_buffer_fut] = create_buffer(frame_allocator, vuk::MemoryUsage::eCPUtoGPU, vuk::DomainFlagBits::eTransferOnGraphics, std::span(point_lights_data.data(), 1));
   auto point_lights_buffer = *point_lights_buf;
@@ -416,9 +414,9 @@ Scope<vuk::Future> DefaultRenderPipeline::on_render(vuk::Allocator& frame_alloca
   rg->add_pass({
     .name = "GeomertyPass",
     .resources = {
-      "PBR_Image"_image >> vuk::eColorRW >> "PBR_Output",
-      "PBR_Depth"_image >> vuk::eDepthStencilRW,
-      "ShadowArray_Output"_image >> vuk::eFragmentSampled
+      "pbr_image"_image >> vuk::eColorRW >> "pbr_output",
+      "pbr_depth"_image >> vuk::eDepthStencilRW,
+      "shadow_array_output"_image >> vuk::eFragmentSampled
     },
     .execute = [this, vs_buffer, point_lights_buffer, shadow_buffer, pbr_buffer, mat_buffer, materialMap](
     vuk::CommandBuffer& commandBuffer) {
@@ -434,7 +432,7 @@ Scope<vuk::Future> DefaultRenderPipeline::on_render(vuk::Allocator& frame_alloca
       for (auto&& [e, sc] : sky_light_view.each())
         skybox_push_constant.lod_bias = sc.lod_bias;
 
-      commandBuffer.bind_graphics_pipeline("SkyboxPipeline")
+      commandBuffer.bind_graphics_pipeline("skybox_pipeline")
                    .set_viewport(0, vuk::Rect2D::framebuffer())
                    .set_scissor(0, vuk::Rect2D::framebuffer())
                    .broadcast_color_blend({})
@@ -492,7 +490,7 @@ Scope<vuk::Future> DefaultRenderPipeline::on_render(vuk::Allocator& frame_alloca
         .layer_count = 1
       };
 
-      commandBuffer.bind_graphics_pipeline("PBRPipeline")
+      commandBuffer.bind_graphics_pipeline("pbr_pipeline")
                    .set_viewport(0, vuk::Rect2D::framebuffer())
                    .set_scissor(0, vuk::Rect2D::framebuffer())
                    .broadcast_color_blend({})
@@ -511,7 +509,7 @@ Scope<vuk::Future> DefaultRenderPipeline::on_render(vuk::Allocator& frame_alloca
                    .bind_sampler(0, 6, vuk::LinearSamplerRepeated)
                    .bind_image(0, 6, prefilter_att)
                    .bind_sampler(0, 7, vuk::LinearSamplerRepeated)
-                   .bind_image(0, 7, "ShadowArray_Output")
+                   .bind_image(0, 7, "shadow_array_output")
                    .bind_buffer(0, 8, shadow_buffer)
                    .bind_buffer(2, 0, mat_buffer);
 
@@ -555,35 +553,35 @@ Scope<vuk::Future> DefaultRenderPipeline::on_render(vuk::Allocator& frame_alloca
 
       // Depth-tested debug renderer pass
 #if 0
-                     auto& shapes = DebugRenderer::GetInstance()->GetShapes();
-               
-                     struct DebugPassData {
-                       Mat4 ViewProjection = {};
-                       Mat4 Model = {};
-                       Vec4 Color = {};
-                     } pushConst;
-               
-                     commandBuffer.bind_graphics_pipeline("DebugPipeline")
-                                  .set_viewport(0, vuk::Rect2D::framebuffer())
-                                  .set_scissor(0, vuk::Rect2D::framebuffer());
-               
-                     pushConst.ViewProjection = m_RendererContext.CurrentCamera->GetProjectionMatrixFlipped() * m_RendererContext.CurrentCamera->GetViewMatrix();
-                     for (auto& shape : shapes) {
-                       pushConst.Model = shape.ModelMatrix;
-                       pushConst.Color = shape.Color;
-                       commandBuffer.push_constants(vuk::ShaderStageFlagBits::eVertex, 0, &pushConst);
-                       shape.ShapeMesh->Draw(commandBuffer);
-                     }
-               
-                     DebugRenderer::Reset(false);
+      auto& shapes = DebugRenderer::GetInstance()->GetShapes();
+      
+      struct DebugPassData {
+        Mat4 ViewProjection = {};
+        Mat4 Model = {};
+        Vec4 Color = {};
+      } pushConst;
+      
+      commandBuffer.bind_graphics_pipeline("DebugPipeline")
+                   .set_viewport(0, vuk::Rect2D::framebuffer())
+                   .set_scissor(0, vuk::Rect2D::framebuffer());
+      
+      pushConst.ViewProjection = m_RendererContext.CurrentCamera->GetProjectionMatrixFlipped() * m_RendererContext.CurrentCamera->GetViewMatrix();
+      for (auto& shape : shapes) {
+        pushConst.Model = shape.ModelMatrix;
+        pushConst.Color = shape.Color;
+        commandBuffer.push_constants(vuk::ShaderStageFlagBits::eVertex, 0, &pushConst);
+        shape.ShapeMesh->Draw(commandBuffer);
+      }
+      
+      DebugRenderer::Reset(false);
 #endif
     }
   });
 
-  rg->attach_and_clear_image("PBR_Image", {.format = vk_context->swapchain->format, .sample_count = vuk::SampleCountFlagBits::e1}, vuk::Black<float>);
-  rg->attach_and_clear_image("PBR_Depth", {.format = vuk::Format::eD32Sfloat, .sample_count = vuk::SampleCountFlagBits::e1}, vuk::DepthOne);
-  rg->inference_rule("PBR_Image", vuk::same_shape_as("final_image"));
-  rg->inference_rule("PBR_Depth", vuk::same_shape_as("final_image"));
+  rg->attach_and_clear_image("pbr_image", {.format = vk_context->swapchain->format, .sample_count = vuk::SampleCountFlagBits::e1}, vuk::Black<float>);
+  rg->attach_and_clear_image("pbr_depth", {.format = vuk::Format::eD32Sfloat, .sample_count = vuk::SampleCountFlagBits::e1}, vuk::DepthOne);
+  rg->inference_rule("pbr_image", vuk::same_shape_as("final_image"));
+  rg->inference_rule("pbr_depth", vuk::same_shape_as("final_image"));
 
   struct SSRData {
     int samples = 30;
@@ -597,17 +595,17 @@ Scope<vuk::Future> DefaultRenderPipeline::on_render(vuk::Allocator& frame_alloca
   rg->add_pass({
     .name = "SSRPass",
     .resources = {
-      "SSR_Image"_image >> vuk::eComputeRW >> "SSR_Output",
-      "PBR_Output"_image >> vuk::eComputeSampled,
+      "ssr_image"_image >> vuk::eComputeRW >> "ssr_output",
+      "pbr_output"_image >> vuk::eComputeSampled,
       "depth_output"_image >> vuk::eComputeSampled,
       "normal_output"_image >> vuk::eComputeSampled
     },
     .execute = [this, ssr_buffer, vs_buffer](vuk::CommandBuffer& command_buffer) {
-      command_buffer.bind_compute_pipeline("SSRPipeline")
+      command_buffer.bind_compute_pipeline("ssr_pipeline")
                     .bind_sampler(0, 0, vuk::LinearSamplerRepeated)
-                    .bind_image(0, 0, "SSR_Image")
+                    .bind_image(0, 0, "ssr_image")
                     .bind_sampler(0, 1, vuk::LinearSamplerRepeated)
-                    .bind_image(0, 1, "PBR_Output")
+                    .bind_image(0, 1, "pbr_output")
                     .bind_sampler(0, 2, vuk::LinearSamplerRepeated)
                     .bind_image(0, 2, "depth_output")
                     .bind_sampler(0, 3, vuk::LinearSamplerRepeated)
@@ -620,38 +618,39 @@ Scope<vuk::Future> DefaultRenderPipeline::on_render(vuk::Allocator& frame_alloca
     }
   });
 
-  rg->attach_and_clear_image("SSR_Image", {.sample_count = vuk::SampleCountFlagBits::e1}, vuk::Black<float>);
-  rg->inference_rule("SSR_Image", vuk::same_shape_as("final_image"));
-  rg->inference_rule("SSR_Image", vuk::same_format_as("final_image"));
+  rg->attach_and_clear_image("ssr_image", {.sample_count = vuk::SampleCountFlagBits::e1}, vuk::Black<float>);
+  rg->inference_rule("ssr_image", vuk::same_shape_as("final_image"));
+  rg->inference_rule("ssr_image", vuk::same_format_as("final_image"));
 
   auto [final_buff, final_buff_fut] = create_buffer(frame_allocator, vuk::MemoryUsage::eCPUtoGPU, vuk::DomainFlagBits::eTransferOnGraphics, std::span(&m_renderer_data.final_pass_data, 1));
   auto final_buffer = *final_buff;
 
   rg->add_pass({
-    .name = "FinalPass",
+    .name = "final_pass",
     .resources = {
-      "final_image"_image >> vuk::eColorRW >> "Final_Output",
-      "PBR_Output"_image >> vuk::eFragmentSampled,
+      "final_image"_image >> vuk::eColorRW >> "final_output",
+      "pbr_output"_image >> vuk::eFragmentSampled,
+      "ssr_output"_image >> vuk::eFragmentSampled,
       "gtao_final_output"_image >> vuk::eFragmentSampled,
     },
     .execute = [final_buffer](vuk::CommandBuffer& command_buffer) {
-      command_buffer.bind_graphics_pipeline("FinalPipeline")
+      command_buffer.bind_graphics_pipeline("final_pipeline")
                     .set_viewport(0, vuk::Rect2D::framebuffer())
                     .set_scissor(0, vuk::Rect2D::framebuffer())
                     .broadcast_color_blend(vuk::BlendPreset::eOff)
                     .set_rasterization({.cullMode = vuk::CullModeFlagBits::eNone})
                     .bind_sampler(0, 0, vuk::LinearSamplerRepeated)
-                    .bind_image(0, 0, "PBR_Output")
+                    .bind_image(0, 0, "pbr_output")
                     .bind_sampler(0, 3, vuk::LinearSamplerRepeated)
-                    .bind_image(0, 3, "SSR_Output")
-                    .bind_sampler(0, 4, vuk::LinearSamplerRepeated)
-                    .bind_image(0, 4, "gtao_final_output")
+                    .bind_image(0, 3, "ssr_output")
+                     .bind_sampler(0, 4, vuk::LinearSamplerRepeated)
+                     .bind_image(0, 4, "gtao_final_output")
                     .bind_buffer(0, 5, final_buffer)
                     .draw(3, 1, 0, 0);
     }
   });
 
-  return create_scope<vuk::Future>(vuk::Future{rg, vuk::Name("Final_Output")});
+  return create_scope<vuk::Future>(vuk::Future{rg, vuk::Name("final_output")});
 }
 
 void DefaultRenderPipeline::update_skybox(const SceneRenderer::SkyboxLoadEvent& e) {
