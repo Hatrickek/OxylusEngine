@@ -25,7 +25,7 @@ void SceneSerializer::Serialize(const std::string& filePath) const {
   ryml::NodeRef entities = root["Entities"];
   entities |= ryml::SEQ;
 
-  for (const auto [e] : m_Scene->m_Registry.storage<entt::entity>().each()) {
+  for (const auto [e] : m_Scene->m_registry.storage<entt::entity>().each()) {
     const Entity entity = {e, m_Scene.get()};
     if (!entity)
       return;
@@ -38,10 +38,10 @@ void SceneSerializer::Serialize(const std::string& filePath) const {
   std::ofstream filestream(filePath);
   filestream << ss.str();
 
-  OX_CORE_INFO("Saved scene {0}.", m_Scene->SceneName);
+  OX_CORE_INFO("Saved scene {0}.", m_Scene->scene_name);
 }
 
-bool SceneSerializer::Deserialize(const std::string& filePath) const {
+bool SceneSerializer::deserialize(const std::string& filePath) const {
   ProfilerTimer timer("Scene serializer");
 
   auto content = FileUtils::read_file(filePath);
@@ -69,7 +69,7 @@ bool SceneSerializer::Deserialize(const std::string& filePath) const {
   if (!root.has_child("Scene"))
     return false;
 
-  root["Scene"] >> m_Scene->SceneName;
+  root["Scene"] >> m_Scene->scene_name;
 
   if (root.has_child("Entities")) {
     const ryml::ConstNodeRef entities = root["Entities"];
@@ -79,11 +79,11 @@ bool SceneSerializer::Deserialize(const std::string& filePath) const {
     }
 
     timer.Stop();
-    OX_CORE_INFO("Scene loaded : {0}, {1} ms", FileSystem::GetFileName(m_Scene->SceneName), timer.ElapsedMilliSeconds());
+    OX_CORE_INFO("Scene loaded : {0}, {1} ms", FileSystem::GetFileName(m_Scene->scene_name), timer.ElapsedMilliSeconds());
     return true;
   }
 
-  OX_CORE_ERROR("Scene doesn't contain any entities! {0}", FileSystem::GetFileName(m_Scene->SceneName));
+  OX_CORE_ERROR("Scene doesn't contain any entities! {0}", FileSystem::GetFileName(m_Scene->scene_name));
   return false;
 }
 }

@@ -2,6 +2,7 @@
 
 #include "RenderPipeline.h"
 #include "Core/Entity.h"
+#include "PBR/DirectShadowPass.h"
 #include "PBR/GTAO/XeGTAO.h"
 #include "Scene/Scene.h"
 #include "Vulkan/VulkanRenderer.h"
@@ -22,7 +23,7 @@ public:
   void init(Scene* scene) override;
   void shutdown() override;
   void update(Scene* scene) override;
-  Scope<vuk::Future> on_render(vuk::Allocator& command_buffer, const vuk::Future& target) override;
+  Scope<vuk::Future> on_render(vuk::Allocator& command_buffer, const vuk::Future& target, vuk::Dimension3D dim) override;
   void on_dispatcher_events(EventDispatcher& dispatcher) override;
 
 private:
@@ -77,11 +78,10 @@ private:
 
   // Mesh
   std::vector<VulkanRenderer::MeshData> mesh_draw_list;
-  std::vector<VulkanRenderer::MeshData> transparent_mesh_draw_list;
-  vuk::Unique<vuk::Buffer> parameters_buffer;
+  std::vector<uint32_t> transparent_mesh_draw_list;
 
   struct LightChangeEvent { };
-
+  DirectShadowPass::DirectShadowUB direct_shadow_ub = {};
   std::vector<Entity> scene_lights = {};
   std::vector<VulkanRenderer::LightingData> point_lights_data = {};
   EventDispatcher light_buffer_dispatcher;
@@ -93,5 +93,8 @@ private:
   void update_parameters(SceneRenderer::ProbeChangeEvent& e);
   void update_final_pass_data(RendererConfig::ConfigChangeEvent& e);
   void update_lighting_data();
+
+  vuk::Future apply_fxaa(vuk::Future source, vuk::Future dst);
+  void cascaded_shadow_pass(Ref<vuk::RenderGraph> rg, vuk::Buffer& shadow_buffer);
 };
 }

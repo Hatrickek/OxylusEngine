@@ -83,9 +83,9 @@ void ViewportPanel::OnImGuiRender() {
     ImGui::SetCursorPosX((m_ViewportPanelSize.x - fixedWidth) * 0.5f);
 
     const auto dim = vuk::Dimension3D::absolute((uint32_t)m_ViewportPanelSize.x, (uint32_t)m_ViewportPanelSize.y);
-    m_Scene->GetRenderer()->get_render_pipeline()->detach_swapchain(dim);
+    m_Scene->get_renderer()->get_render_pipeline()->detach_swapchain(dim);
 
-    const auto finalImage = m_Scene->GetRenderer()->get_render_pipeline()->get_final_image();
+    const auto finalImage = m_Scene->get_renderer()->get_render_pipeline()->get_final_image();
 
     if (finalImage) {
       IGUI::image(*finalImage, ImVec2{fixedWidth, m_ViewportSize.y});
@@ -348,8 +348,8 @@ void ViewportPanel::DrawGizmos() {
     const glm::mat4& cameraProjection = m_Camera.GetProjectionMatrix();
     const glm::mat4& cameraView = m_Camera.GetViewMatrix();
 
-    auto& tc = selectedEntity.GetComponent<TransformComponent>();
-    glm::mat4 transform = selectedEntity.GetWorldTransform();
+    auto& tc = selectedEntity.get_component<TransformComponent>();
+    glm::mat4 transform = selectedEntity.get_world_transform();
 
     // Snapping
     const bool snap = Input::GetKey(Key::LeftControl);
@@ -369,8 +369,8 @@ void ViewportPanel::DrawGizmos() {
       snap ? snapValues : nullptr);
 
     if (ImGuizmo::IsUsing()) {
-      const Entity parent = selectedEntity.GetParent();
-      const glm::mat4& parentWorldTransform = parent ? parent.GetWorldTransform() : glm::mat4(1.0f);
+      const Entity parent = selectedEntity.get_parent();
+      const glm::mat4& parentWorldTransform = parent ? parent.get_world_transform() : glm::mat4(1.0f);
       Vec3 translation, rotation, scale;
       if (Math::decompose_transform(glm::inverse(parentWorldTransform) * transform, translation, rotation, scale)) {
         tc.translation = translation;

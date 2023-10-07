@@ -20,7 +20,7 @@ namespace OxylusRuntime {
 
     static RuntimeLayer* Get() { return s_Instance; }
 
-    static std::string GetAssetsPath(const std::string_view path) {
+    static std::string get_assets_path(const std::string_view path) {
       return (std::filesystem::path(ProjectPath) / "Assets" / path).string();
     }
 

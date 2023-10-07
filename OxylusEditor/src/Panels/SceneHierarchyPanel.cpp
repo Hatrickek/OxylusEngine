@@ -34,15 +34,15 @@ ImRect SceneHierarchyPanel::DrawEntityNode(Entity entity, uint32_t depth, bool f
   ImGui::TableNextRow();
   ImGui::TableNextColumn();
 
-  const auto& rc = entity.GetRelationship();
+  const auto& rc = entity.get_relationship();
   const size_t childrenSize = rc.children.size();
 
-  auto& tagComponent = entity.GetComponent<TagComponent>();
+  auto& tagComponent = entity.get_component<TagComponent>();
   auto& tag = tagComponent.tag;
 
   if (m_Filter.IsActive() && !m_Filter.PassFilter(tag.c_str())) {
     for (const auto& childId : rc.children) {
-      DrawEntityNode(m_Context->GetEntityByUUID(childId));
+      DrawEntityNode(m_Context->get_entity_by_uuid(childId));
     }
     return {0, 0, 0, 0};
   }
@@ -69,12 +69,12 @@ ImRect SceneHierarchyPanel::DrawEntityNode(Entity entity, uint32_t depth, bool f
     ImGui::SetNextItemOpen(true);
 
   if (!isPartOfPrefab)
-    isPartOfPrefab = entity.HasComponent<PrefabComponent>();
+    isPartOfPrefab = entity.has_component<PrefabComponent>();
   const bool prefabColorApplied = isPartOfPrefab && entity != m_SelectedEntity;
   if (prefabColorApplied)
     ImGui::PushStyleColor(ImGuiCol_Text, headerSelectedColor);
 
-  const bool opened = ImGui::TreeNodeEx(reinterpret_cast<void*>(static_cast<uint64_t>(entity.GetUUID())),
+  const bool opened = ImGui::TreeNodeEx(reinterpret_cast<void*>(static_cast<uint64_t>(entity.get_uuid())),
     flags,
     "%s %s",
     StringUtils::from_char8_t(ICON_MDI_CUBE_OUTLINE),
@@ -104,7 +104,7 @@ ImRect SceneHierarchyPanel::DrawEntityNode(Entity entity, uint32_t depth, bool f
     if (ImGui::MenuItem("Rename", "F2"))
       m_RenamingEntity = entity;
     if (ImGui::MenuItem("Duplicate", "Ctrl+D"))
-      m_Context->DuplicateEntity(entity);
+      m_Context->duplicate_entity(entity);
     if (ImGui::MenuItem("Delete", "Del"))
       entityDeleted = true;
 
@@ -221,8 +221,8 @@ ImRect SceneHierarchyPanel::DrawEntityNode(Entity entity, uint32_t depth, bool f
       constexpr float lineThickness = 1.5f;
 
       for (const auto& childId : rc.children) {
-        Entity child = m_Context->GetEntityByUUID(childId);
-        const float HorizontalTreeLineSize = child.GetRelationship().children.empty() ? 18.0f : 9.0f;
+        Entity child = m_Context->get_entity_by_uuid(childId);
+        const float HorizontalTreeLineSize = child.get_relationship().children.empty() ? 18.0f : 9.0f;
         // chosen arbitrarily
         const ImRect childRect = DrawEntityNode(child, depth + 1, forceExpandTree, isPartOfPrefab);
 
@@ -256,7 +256,7 @@ void SceneHierarchyPanel::DragDropTarget() const {
         EditorLayer::Get()->OpenScene(path);
       }
       if (path.extension() == ".gltf" || path.extension() == ".glb") {
-        m_Context->CreateEntityWithMesh(AssetManager::get_mesh_asset(path.string()));
+        m_Context->create_entity_with_mesh(AssetManager::get_mesh_asset(path.string()));
       }
       if (path.extension() == ".oxprefab") {
         EntitySerializer::DeserializeEntityAsPrefab(path.string().c_str(), m_Context.get());
@@ -278,38 +278,38 @@ void SceneHierarchyPanel::DrawContextMenu() {
   ImGuiScoped::StyleVar styleVar2(ImGuiStyleVar_ItemSpacing, {1, 5});
   if (ImGui::BeginMenu("Create")) {
     if (ImGui::MenuItem("Empty Entity")) {
-      toSelect = m_Context->CreateEntity("New Entity");
+      toSelect = m_Context->create_entity("New Entity");
     }
 
     if (ImGui::BeginMenu("Primitives")) {
       if (ImGui::MenuItem("Cube")) {
-        toSelect = m_Context->CreateEntity("Cube");
-        toSelect.AddComponentI<MeshRendererComponent>(AssetManager::get_mesh_asset("Resources/Objects/cube.glb"));
+        toSelect = m_Context->create_entity("Cube");
+        toSelect.add_component_internal<MeshRendererComponent>(AssetManager::get_mesh_asset("Resources/Objects/cube.glb"));
       }
       if (ImGui::MenuItem("Plane")) {
-        toSelect = m_Context->CreateEntity("Plane");
-        toSelect.AddComponentI<MeshRendererComponent>(AssetManager::get_mesh_asset("Resources/Objects/plane.gltf"));
+        toSelect = m_Context->create_entity("Plane");
+        toSelect.add_component_internal<MeshRendererComponent>(AssetManager::get_mesh_asset("Resources/Objects/plane.gltf"));
       }
       if (ImGui::MenuItem("Sphere")) {
-        toSelect = m_Context->CreateEntity("Sphere");
-        toSelect.AddComponentI<MeshRendererComponent>(AssetManager::get_mesh_asset("Resources/Objects/sphere.gltf"));
+        toSelect = m_Context->create_entity("Sphere");
+        toSelect.add_component_internal<MeshRendererComponent>(AssetManager::get_mesh_asset("Resources/Objects/sphere.gltf"));
       }
       ImGui::EndMenu();
     }
 
     if (ImGui::MenuItem("Camera")) {
-      toSelect = m_Context->CreateEntity("Camera");
-      toSelect.AddComponentI<CameraComponent>();
+      toSelect = m_Context->create_entity("Camera");
+      toSelect.add_component_internal<CameraComponent>();
     }
 
     if (ImGui::BeginMenu("Light")) {
       if (ImGui::MenuItem("Sky Light")) {
-        toSelect = m_Context->CreateEntity("Sky Light");
-        toSelect.AddComponentI<SkyLightComponent>();
+        toSelect = m_Context->create_entity("Sky Light");
+        toSelect.add_component_internal<SkyLightComponent>();
       }
       if (ImGui::MenuItem("Light")) {
-        toSelect = m_Context->CreateEntity("Light");
-        toSelect.AddComponentI<LightComponent>();
+        toSelect = m_Context->create_entity("Light");
+        toSelect.add_component_internal<LightComponent>();
       }
 
       ImGui::EndMenu();
@@ -319,23 +319,23 @@ void SceneHierarchyPanel::DrawContextMenu() {
       using namespace JPH;
 
       if (ImGui::MenuItem("Sphere")) {
-        toSelect = m_Context->CreateEntity("Sphere");
-        toSelect.AddComponentI<RigidbodyComponent>();
-        toSelect.AddComponentI<SphereColliderComponent>();
-        toSelect.AddComponentI<MeshRendererComponent>(AssetManager::get_mesh_asset("Resources/Objects/sphere.gltf"));
+        toSelect = m_Context->create_entity("Sphere");
+        toSelect.add_component_internal<RigidbodyComponent>();
+        toSelect.add_component_internal<SphereColliderComponent>();
+        toSelect.add_component_internal<MeshRendererComponent>(AssetManager::get_mesh_asset("Resources/Objects/sphere.gltf"));
       }
 
       if (ImGui::MenuItem("Cube")) {
-        toSelect = m_Context->CreateEntity("Cube");
-        toSelect.AddComponentI<RigidbodyComponent>();
-        toSelect.AddComponentI<BoxColliderComponent>();
-        toSelect.AddComponentI<MeshRendererComponent>(AssetManager::get_mesh_asset("Resources/Objects/cube.glb"));
+        toSelect = m_Context->create_entity("Cube");
+        toSelect.add_component_internal<RigidbodyComponent>();
+        toSelect.add_component_internal<BoxColliderComponent>();
+        toSelect.add_component_internal<MeshRendererComponent>(AssetManager::get_mesh_asset("Resources/Objects/cube.glb"));
       }
 
       if (ImGui::MenuItem("Character Controller")) {
-        toSelect = m_Context->CreateEntity("Character Controller");
-        toSelect.AddComponentI<CharacterControllerComponent>();
-        toSelect.AddComponentI<MeshRendererComponent>(AssetManager::get_mesh_asset("Resources/Objects/capsule.glb"));
+        toSelect = m_Context->create_entity("Character Controller");
+        toSelect.add_component_internal<CharacterControllerComponent>();
+        toSelect.add_component_internal<MeshRendererComponent>(AssetManager::get_mesh_asset("Resources/Objects/capsule.glb"));
       }
 
       ImGui::EndMenu();
@@ -343,13 +343,13 @@ void SceneHierarchyPanel::DrawContextMenu() {
 
     if (ImGui::BeginMenu("Audio")) {
       if (ImGui::MenuItem("Audio Source")) {
-        toSelect = m_Context->CreateEntity("AudioSource");
-        toSelect.AddComponentI<AudioSourceComponent>();
+        toSelect = m_Context->create_entity("AudioSource");
+        toSelect.add_component_internal<AudioSourceComponent>();
         ImGui::CloseCurrentPopup();
       }
       if (ImGui::MenuItem("Audio Listener")) {
-        toSelect = m_Context->CreateEntity("AudioListener");
-        toSelect.AddComponentI<AudioListenerComponent>();
+        toSelect = m_Context->create_entity("AudioListener");
+        toSelect.add_component_internal<AudioListenerComponent>();
         ImGui::CloseCurrentPopup();
       }
       ImGui::EndMenu();
@@ -357,12 +357,12 @@ void SceneHierarchyPanel::DrawContextMenu() {
 
     if (ImGui::BeginMenu("Effects")) {
       if (ImGui::MenuItem("PostProcess Probe")) {
-        toSelect = m_Context->CreateEntity("PostProcess Probe");
-        toSelect.AddComponentI<PostProcessProbe>();
+        toSelect = m_Context->create_entity("PostProcess Probe");
+        toSelect.add_component_internal<PostProcessProbe>();
       }
       if (ImGui::MenuItem("Particle System")) {
-        toSelect = m_Context->CreateEntity("Particle System");
-        toSelect.AddComponentI<ParticleSystemComponent>();
+        toSelect = m_Context->create_entity("Particle System");
+        toSelect.add_component_internal<ParticleSystemComponent>();
       }
       ImGui::EndMenu();
     }
@@ -371,7 +371,7 @@ void SceneHierarchyPanel::DrawContextMenu() {
   }
 
   if (hasContext && toSelect)
-    toSelect.SetParent(m_SelectedEntity);
+    toSelect.set_parent(m_SelectedEntity);
 
   if (toSelect)
     m_SelectedEntity = toSelect;
@@ -383,10 +383,10 @@ void SceneHierarchyPanel::OnUpdate() {
   //Handle shortcut inputs
   if (m_SelectedEntity) {
     if (ImGui::IsKeyDown(ImGuiKey_LeftCtrl) && ImGui::IsKeyPressed(ImGuiKey_D)) {
-      m_Context->DuplicateEntity(m_SelectedEntity);
+      m_Context->duplicate_entity(m_SelectedEntity);
     }
     if (ImGui::IsKeyPressed(ImGuiKey_Delete) && m_TableHovered) {
-      m_Context->DestroyEntity(m_SelectedEntity);
+      m_Context->destroy_entity(m_SelectedEntity);
       m_SelectedEntity = {};
     }
     if (ImGui::IsKeyPressed(ImGuiKey_F2)) {
@@ -397,7 +397,7 @@ void SceneHierarchyPanel::OnUpdate() {
     if (m_SelectedEntity == m_DeletedEntity)
       ClearSelectionContext();
 
-    m_Context->DestroyEntity(m_DeletedEntity);
+    m_Context->destroy_entity(m_DeletedEntity);
     m_DeletedEntity = {};
   }
 }
@@ -461,10 +461,10 @@ void SceneHierarchyPanel::OnImGuiRender() {
       }
 
       ImGui::PushStyleVar(ImGuiStyleVar_FrameBorderSize, 0.0f);
-      const auto view = m_Context->m_Registry.view<IDComponent>();
+      const auto view = m_Context->m_registry.view<IDComponent>();
       for (const auto e : view) {
         const Entity entity = {e, m_Context.get()};
-        if (entity && !entity.GetParent())
+        if (entity && !entity.get_parent())
           DrawEntityNode(entity);
       }
       ImGui::PopStyleVar();
@@ -493,7 +493,7 @@ void SceneHierarchyPanel::OnImGuiRender() {
       ClearSelectionContext();
 
     if (m_DraggedEntity && m_DraggedEntityTarget) {
-      m_DraggedEntity.SetParent(m_DraggedEntityTarget);
+      m_DraggedEntity.set_parent(m_DraggedEntityTarget);
       m_DraggedEntity = {};
       m_DraggedEntityTarget = {};
     }

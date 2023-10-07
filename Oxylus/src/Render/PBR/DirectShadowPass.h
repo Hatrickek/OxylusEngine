@@ -12,10 +12,10 @@ constexpr auto SHADOW_MAP_CASCADE_COUNT = 4;
 class DirectShadowPass {
 public:
   struct DirectShadowUB {
-    Mat4 cascadeViewProjMat[SHADOW_MAP_CASCADE_COUNT]{};
-    float cascadeSplits[4]{};
+    Mat4 cascade_view_proj_mat[SHADOW_MAP_CASCADE_COUNT]{};
+    float cascade_splits[4]{};
   };
 
-  static void UpdateCascades(const Entity& dirLightEntity, Camera* camera, DirectShadowUB& cascadesUbo);
+  static void update_cascades(const Entity& dir_light_entity, Camera* camera, DirectShadowUB* cascades_ubo);
 };
 }

@@ -140,4 +140,8 @@ bool RendererConfig::load_config(const char* path) {
 
   return true;
 }
+
+void RendererConfig::dispatch_config_change() {
+  config_change_dispatcher.trigger(ConfigChangeEvent{});
+}
 }

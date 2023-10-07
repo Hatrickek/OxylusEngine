@@ -22,69 +22,69 @@
 
 namespace Oxylus {
 Scene::Scene() {
-  Init();
+  init();
 }
 
-Scene::Scene(std::string name) : SceneName(std::move(name)) { }
+Scene::Scene(std::string name) : scene_name(std::move(name)) { }
 
 Scene::~Scene() {
-  if (m_IsRunning)
-    OnRuntimeStop();
+  if (is_running)
+    on_runtime_stop();
 }
 
 Scene::Scene(const Scene& scene) {
-  this->SceneName = scene.SceneName;
-  const auto pack = this->m_Registry.storage<entt::entity>().data();
-  const auto packSize = this->m_Registry.storage<entt::entity>().size();
-  this->m_Registry.storage<entt::entity>().push(pack, pack + packSize);
+  this->scene_name = scene.scene_name;
+  const auto pack = this->m_registry.storage<entt::entity>().data();
+  const auto packSize = this->m_registry.storage<entt::entity>().size();
+  this->m_registry.storage<entt::entity>().push(pack, pack + packSize);
 }
 
-void Scene::Init() {
+void Scene::init() {
   // Renderer
-  m_SceneRenderer = create_ref<SceneRenderer>();
+  scene_renderer = create_ref<SceneRenderer>();
 
-  m_SceneRenderer->init(this);
+  scene_renderer->init(this);
 
   // Systems
-  for (const auto& system : m_Systems) {
+  for (const auto& system : systems) {
     system->OnInit();
   }
 }
 
-Entity Scene::CreateEntity(const std::string& name) {
-  return CreateEntityWithUUID(UUID(), name);
+Entity Scene::create_entity(const std::string& name) {
+  return create_entity_with_uuid(UUID(), name);
 }
 
-Entity Scene::CreateEntityWithUUID(UUID uuid, const std::string& name) {
-  Entity entity = {m_Registry.create(), this};
-  m_EntityMap.emplace(uuid, entity);
-  entity.AddComponentI<IDComponent>(uuid);
-  entity.AddComponentI<RelationshipComponent>();
-  entity.AddComponentI<TransformComponent>();
-  entity.AddComponentI<TagComponent>().tag = name.empty() ? "Entity" : name;
+Entity Scene::create_entity_with_uuid(UUID uuid, const std::string& name) {
+  Entity entity = {m_registry.create(), this};
+  entity_map.emplace(uuid, entity);
+  entity.add_component_internal<IDComponent>(uuid);
+  entity.add_component_internal<RelationshipComponent>();
+  entity.add_component_internal<TransformComponent>();
+  entity.add_component_internal<TagComponent>().tag = name.empty() ? "Entity" : name;
   return entity;
 }
 
-void Scene::UpdatePhysics(Timestep deltaTime) {
+void Scene::update_physics(Timestep delta_time) {
   OX_SCOPED_ZONE;
   // Minimum stable value is 16.0
   constexpr float physicsStepRate = 64.0f;
   constexpr float physicsTs = 1.0f / physicsStepRate;
 
   bool stepped = false;
-  m_PhysicsFrameAccumulator += deltaTime;
+  physics_frame_accumulator += delta_time;
 
-  while (m_PhysicsFrameAccumulator >= physicsTs) {
+  while (physics_frame_accumulator >= physicsTs) {
     Physics::Step(physicsTs);
 
-    m_PhysicsFrameAccumulator -= physicsTs;
+    physics_frame_accumulator -= physicsTs;
     stepped = true;
   }
 
-  const float interpolationFactor = m_PhysicsFrameAccumulator / physicsTs;
+  const float interpolationFactor = physics_frame_accumulator / physicsTs;
 
   const auto& bodyInterface = Physics::GetPhysicsSystem()->GetBodyInterface();
-  const auto view = m_Registry.group<RigidbodyComponent>(entt::get<TransformComponent>);
+  const auto view = m_registry.group<RigidbodyComponent>(entt::get<TransformComponent>);
   for (auto&& [e, rb, tc] : view.each()) {
     if (!rb.runtime_body)
       continue;
@@ -125,7 +125,7 @@ void Scene::UpdatePhysics(Timestep deltaTime) {
 
   // Character
   {
-    const auto chView = m_Registry.view<TransformComponent, CharacterControllerComponent>();
+    const auto chView = m_registry.view<TransformComponent, CharacterControllerComponent>();
     for (auto&& [e, tc, ch] : chView.each()) {
       ch.character->PostSimulation(ch.collision_tolerance);
       if (ch.interpolation) {
@@ -158,39 +158,39 @@ void Scene::UpdatePhysics(Timestep deltaTime) {
   }
 }
 
-void Scene::IterateOverMeshNode(const Ref<Mesh>& mesh, const std::vector<Mesh::Node*>& node, Entity parent) {
+void Scene::iterate_over_mesh_node(const Ref<Mesh>& mesh, const std::vector<Mesh::Node*>& node, Entity parent) {
   for (const auto child : node) {
-    Entity entity = CreateEntity(child->name).SetParent(parent);
+    Entity entity = create_entity(child->name).set_parent(parent);
     if (child->contains_mesh) {
-      entity.AddComponentI<MeshRendererComponent>(mesh).submesh_index = child->index;
-      entity.GetComponent<MaterialComponent>().materials = mesh->get_materials_as_ref();
+      entity.add_component_internal<MeshRendererComponent>(mesh).submesh_index = child->index;
+      entity.get_component<MaterialComponent>().materials = mesh->get_materials_as_ref();
     }
-    IterateOverMeshNode(mesh, child->children, entity);
+    iterate_over_mesh_node(mesh, child->children, entity);
   }
 }
 
-void Scene::CreateEntityWithMesh(const Ref<Mesh>& meshAsset) {
-  for (const auto& node : meshAsset->nodes) {
-    Entity entity = CreateEntity(node->name);
+void Scene::create_entity_with_mesh(const Ref<Mesh>& mesh_asset) {
+  for (const auto& node : mesh_asset->nodes) {
+    Entity entity = create_entity(node->name);
     if (node->contains_mesh) {
-      entity.AddComponentI<MeshRendererComponent>(meshAsset).submesh_index = node->index;
-      entity.GetComponent<MaterialComponent>().materials = meshAsset->get_materials_as_ref();
+      entity.add_component_internal<MeshRendererComponent>(mesh_asset).submesh_index = node->index;
+      entity.get_component<MaterialComponent>().materials = mesh_asset->get_materials_as_ref();
     }
-    IterateOverMeshNode(meshAsset, node->children, entity);
+    iterate_over_mesh_node(mesh_asset, node->children, entity);
   }
 }
 
-void Scene::DestroyEntity(const Entity entity) {
-  entity.Deparent();
-  const auto children = entity.GetComponent<RelationshipComponent>().children;
+void Scene::destroy_entity(const Entity entity) {
+  entity.deparent();
+  const auto children = entity.get_component<RelationshipComponent>().children;
 
   for (size_t i = 0; i < children.size(); i++) {
-    if (const Entity childEntity = GetEntityByUUID(children[i]))
-      DestroyEntity(childEntity);
+    if (const Entity childEntity = get_entity_by_uuid(children[i]))
+      destroy_entity(childEntity);
   }
 
-  m_EntityMap.erase(entity.GetUUID());
-  m_Registry.destroy(entity);
+  entity_map.erase(entity.get_uuid());
+  m_registry.destroy(entity);
 }
 
 template <typename... Component>
@@ -219,8 +219,8 @@ static void CopyComponent(ComponentGroup<Component...>,
 template <typename... Component>
 static void CopyComponentIfExists(Entity dst, Entity src) {
   ([&] {
-    if (src.HasComponent<Component>())
-      dst.AddOrReplaceComponent<Component>(src.GetComponent<Component>());
+    if (src.has_component<Component>())
+      dst.add_or_replace_component<Component>(src.get_component<Component>());
   }(), ...);
 }
 
@@ -231,44 +231,44 @@ static void CopyComponentIfExists(ComponentGroup<Component...>,
   CopyComponentIfExists<Component...>(dst, src);
 }
 
-void Scene::DuplicateEntity(Entity entity) {
+void Scene::duplicate_entity(Entity entity) {
   OX_SCOPED_ZONE;
-  const Entity newEntity = CreateEntity(entity.GetName());
+  const Entity newEntity = create_entity(entity.get_name());
   CopyComponentIfExists(AllComponents{}, newEntity, entity);
 }
 
-void Scene::OnRuntimeStart() {
+void Scene::on_runtime_start() {
   OX_SCOPED_ZONE;
 
-  m_IsRunning = true;
+  is_running = true;
 
-  m_PhysicsFrameAccumulator = 0.0f;
+  physics_frame_accumulator = 0.0f;
 
   // Physics
   {
     OX_SCOPED_ZONE_N("Physics Start");
     Physics::Init();
-    m_BodyActivationListener3D = new Physics3DBodyActivationListener();
-    m_ContactListener3D = new Physics3DContactListener(this);
+    body_activation_listener_3d = new Physics3DBodyActivationListener();
+    contact_listener_3d = new Physics3DContactListener(this);
     const auto physicsSystem = Physics::GetPhysicsSystem();
-    physicsSystem->SetBodyActivationListener(m_BodyActivationListener3D);
-    physicsSystem->SetContactListener(m_ContactListener3D);
+    physicsSystem->SetBodyActivationListener(body_activation_listener_3d);
+    physicsSystem->SetContactListener(contact_listener_3d);
 
     // Rigidbodies
     {
-      const auto group = m_Registry.group<RigidbodyComponent>(entt::get<TransformComponent>);
+      const auto group = m_registry.group<RigidbodyComponent>(entt::get<TransformComponent>);
       for (auto&& [e, rb, tc] : group.each()) {
         rb.previous_translation = rb.translation = tc.translation;
         rb.previous_rotation = rb.rotation = tc.rotation;
-        CreateRigidbody({e, this}, tc, rb);
+        create_rigidbody({e, this}, tc, rb);
       }
     }
 
     // Characters
     {
-      const auto group = m_Registry.group<CharacterControllerComponent>(entt::get<TransformComponent>);
+      const auto group = m_registry.group<CharacterControllerComponent>(entt::get<TransformComponent>);
       for (auto&& [e, ch, tc] : group.each()) {
-        CreateCharacterController(tc, ch);
+        create_character_controller(tc, ch);
       }
     }
 
@@ -276,15 +276,15 @@ void Scene::OnRuntimeStart() {
   }
 }
 
-void Scene::OnRuntimeStop() {
+void Scene::on_runtime_stop() {
   OX_SCOPED_ZONE;
 
-  m_IsRunning = false;
+  is_running = false;
 
   // Physics
   {
     JPH::BodyInterface& bodyInterface = Physics::GetPhysicsSystem()->GetBodyInterface();
-    const auto rbView = m_Registry.view<RigidbodyComponent>();
+    const auto rbView = m_registry.view<RigidbodyComponent>();
     for (auto&& [e, rb] : rbView.each()) {
       if (rb.runtime_body) {
         const auto* body = static_cast<const JPH::Body*>(rb.runtime_body);
@@ -292,7 +292,7 @@ void Scene::OnRuntimeStop() {
         bodyInterface.DestroyBody(body->GetID());
       }
     }
-    const auto chView = m_Registry.view<CharacterControllerComponent>();
+    const auto chView = m_registry.view<CharacterControllerComponent>();
     for (auto&& [e, ch] : chView.each()) {
       if (ch.character) {
         bodyInterface.RemoveBody(ch.character->GetBodyID());
@@ -300,17 +300,17 @@ void Scene::OnRuntimeStop() {
       }
     }
 
-    delete m_BodyActivationListener3D;
-    delete m_ContactListener3D;
-    m_BodyActivationListener3D = nullptr;
-    m_ContactListener3D = nullptr;
+    delete body_activation_listener_3d;
+    delete contact_listener_3d;
+    body_activation_listener_3d = nullptr;
+    contact_listener_3d = nullptr;
     Physics::Shutdown();
   }
 }
 
-Entity Scene::FindEntity(const std::string_view& name) {
+Entity Scene::find_entity(const std::string_view& name) {
   OX_SCOPED_ZONE;
-  const auto group = m_Registry.view<TagComponent>();
+  const auto group = m_registry.view<TagComponent>();
   for (const auto& entity : group) {
     auto& tag = group.get<TagComponent>(entity);
     if (tag.tag == name) {
@@ -320,62 +320,62 @@ Entity Scene::FindEntity(const std::string_view& name) {
   return {};
 }
 
-bool Scene::HasEntity(UUID uuid) const {
+bool Scene::has_entity(UUID uuid) const {
   OX_SCOPED_ZONE;
-  return m_EntityMap.contains(uuid);
+  return entity_map.contains(uuid);
 }
 
-Entity Scene::GetEntityByUUID(UUID uuid) {
+Entity Scene::get_entity_by_uuid(UUID uuid) {
   OX_SCOPED_ZONE;
-  const auto& it = m_EntityMap.find(uuid);
-  if (it != m_EntityMap.end())
+  const auto& it = entity_map.find(uuid);
+  if (it != entity_map.end())
     return {it->second, this};
 
   return {};
 }
 
-Ref<Scene> Scene::Copy(const Ref<Scene>& other) {
+Ref<Scene> Scene::copy(const Ref<Scene>& other) {
   OX_SCOPED_ZONE;
   Ref<Scene> newScene = create_ref<Scene>();
 
-  auto& srcSceneRegistry = other->m_Registry;
-  auto& dstSceneRegistry = newScene->m_Registry;
+  auto& srcSceneRegistry = other->m_registry;
+  auto& dstSceneRegistry = newScene->m_registry;
 
   // Create entities in new scene
   const auto view = srcSceneRegistry.view<IDComponent, TagComponent>();
   for (const auto e : view) {
     auto [id, tag] = view.get<IDComponent, TagComponent>(e);
     const auto& name = tag.tag;
-    Entity newEntity = newScene->CreateEntityWithUUID(id.ID, name);
-    newEntity.GetComponent<TagComponent>().enabled = tag.enabled;
+    Entity newEntity = newScene->create_entity_with_uuid(id.ID, name);
+    newEntity.get_component<TagComponent>().enabled = tag.enabled;
   }
 
   for (const auto e : view) {
     Entity src = {e, other.get()};
-    Entity dst = newScene->GetEntityByUUID(view.get<IDComponent>(e).ID);
-    if (Entity srcParent = src.GetParent())
-      dst.SetParent(newScene->GetEntityByUUID(srcParent.GetUUID()));
+    Entity dst = newScene->get_entity_by_uuid(view.get<IDComponent>(e).ID);
+    if (Entity srcParent = src.get_parent())
+      dst.set_parent(newScene->get_entity_by_uuid(srcParent.get_uuid()));
   }
 
   // Copy components (except IDComponent and TagComponent)
-  CopyComponent(AllComponents{}, dstSceneRegistry, srcSceneRegistry, newScene->m_EntityMap);
+  CopyComponent(AllComponents{}, dstSceneRegistry, srcSceneRegistry, newScene->entity_map);
 
   return newScene;
 }
 
-void Scene::OnContactAdded(const JPH::Body& body1, const JPH::Body& body2, const JPH::ContactManifold& manifold, const JPH::ContactSettings& settings) {
-  for (const auto& system : m_Systems)
+void Scene::on_contact_added(const JPH::Body& body1, const JPH::Body& body2, const JPH::ContactManifold& manifold, const JPH::ContactSettings& settings) {
+  for (const auto& system : systems)
     system->OnContactAdded(this, body1, body2, manifold, settings);
 }
 
-void Scene::OnContactPersisted(const JPH::Body& body1, const JPH::Body& body2, const JPH::ContactManifold& manifold, JPH::ContactSettings& settings) {
-  for (const auto& system : m_Systems)
+void Scene::on_contact_persisted(const JPH::Body& body1, const JPH::Body& body2, const JPH::ContactManifold& manifold, JPH::ContactSettings& settings) {
+  for (const auto& system : systems)
     system->OnContactPersisted(this, body1, body2, manifold, settings);
 }
 
-void Scene::CreateRigidbody(Entity entity, const TransformComponent& transform, RigidbodyComponent& component) const {
+void Scene::create_rigidbody(Entity entity, const TransformComponent& transform, RigidbodyComponent& component) const {
   OX_SCOPED_ZONE;
-  if (!m_IsRunning)
+  if (!is_running)
     return;
 
   auto& bodyInterface = Physics::GetBodyInterface();
@@ -387,10 +387,10 @@ void Scene::CreateRigidbody(Entity entity, const TransformComponent& transform, 
   JPH::MutableCompoundShapeSettings compoundShapeSettings;
   float maxScaleComponent = glm::max(glm::max(transform.scale.x, transform.scale.y), transform.scale.z);
 
-  const auto& entityName = entity.GetComponent<TagComponent>().tag;
+  const auto& entityName = entity.get_component<TagComponent>().tag;
 
-  if (entity.HasComponent<BoxColliderComponent>()) {
-    const auto& bc = entity.GetComponent<BoxColliderComponent>();
+  if (entity.has_component<BoxColliderComponent>()) {
+    const auto& bc = entity.get_component<BoxColliderComponent>();
     const auto* mat = new PhysicsMaterial3D(entityName, JPH::ColorArg(255, 0, 0), bc.friction, bc.restitution);
 
     Vec3 scale = bc.size;
@@ -400,8 +400,8 @@ void Scene::CreateRigidbody(Entity entity, const TransformComponent& transform, 
     compoundShapeSettings.AddShape({bc.offset.x, bc.offset.y, bc.offset.z}, JPH::Quat::sIdentity(), shapeSettings.Create().Get());
   }
 
-  if (entity.HasComponent<SphereColliderComponent>()) {
-    const auto& sc = entity.GetComponent<SphereColliderComponent>();
+  if (entity.has_component<SphereColliderComponent>()) {
+    const auto& sc = entity.get_component<SphereColliderComponent>();
     const auto* mat = new PhysicsMaterial3D(entityName, JPH::ColorArg(255, 0, 0), sc.friction, sc.restitution);
 
     float radius = 2.0f * sc.radius * maxScaleComponent;
@@ -411,8 +411,8 @@ void Scene::CreateRigidbody(Entity entity, const TransformComponent& transform, 
     compoundShapeSettings.AddShape({sc.offset.x, sc.offset.y, sc.offset.z}, JPH::Quat::sIdentity(), shapeSettings.Create().Get());
   }
 
-  if (entity.HasComponent<CapsuleColliderComponent>()) {
-    const auto& cc = entity.GetComponent<CapsuleColliderComponent>();
+  if (entity.has_component<CapsuleColliderComponent>()) {
+    const auto& cc = entity.get_component<CapsuleColliderComponent>();
     const auto* mat = new PhysicsMaterial3D(entityName, JPH::ColorArg(255, 0, 0), cc.friction, cc.restitution);
 
     float radius = 2.0f * cc.radius * maxScaleComponent;
@@ -422,8 +422,8 @@ void Scene::CreateRigidbody(Entity entity, const TransformComponent& transform, 
     compoundShapeSettings.AddShape({cc.offset.x, cc.offset.y, cc.offset.z}, JPH::Quat::sIdentity(), shapeSettings.Create().Get());
   }
 
-  if (entity.HasComponent<TaperedCapsuleColliderComponent>()) {
-    const auto& tcc = entity.GetComponent<TaperedCapsuleColliderComponent>();
+  if (entity.has_component<TaperedCapsuleColliderComponent>()) {
+    const auto& tcc = entity.get_component<TaperedCapsuleColliderComponent>();
     const auto* mat = new PhysicsMaterial3D(entityName, JPH::ColorArg(255, 0, 0), tcc.friction, tcc.restitution);
 
     float topRadius = 2.0f * tcc.top_radius * maxScaleComponent;
@@ -434,8 +434,8 @@ void Scene::CreateRigidbody(Entity entity, const TransformComponent& transform, 
     compoundShapeSettings.AddShape({tcc.offset.x, tcc.offset.y, tcc.offset.z}, JPH::Quat::sIdentity(), shapeSettings.Create().Get());
   }
 
-  if (entity.HasComponent<CylinderColliderComponent>()) {
-    const auto& cc = entity.GetComponent<CylinderColliderComponent>();
+  if (entity.has_component<CylinderColliderComponent>()) {
+    const auto& cc = entity.get_component<CylinderColliderComponent>();
     const auto* mat = new PhysicsMaterial3D(entityName, JPH::ColorArg(255, 0, 0), cc.friction, cc.restitution);
 
     float radius = 2.0f * cc.radius * maxScaleComponent;
@@ -448,7 +448,7 @@ void Scene::CreateRigidbody(Entity entity, const TransformComponent& transform, 
   // Body
   auto rotation = glm::quat(transform.rotation);
 
-  auto layer = entity.GetComponent<TagComponent>().layer;
+  auto layer = entity.get_component<TagComponent>().layer;
   uint8_t layerIndex = 1;	// Default Layer
   auto collisionMaskIt = Physics::LayerCollisionMask.find(layer);
   if (collisionMaskIt != Physics::LayerCollisionMask.end())
@@ -476,8 +476,8 @@ void Scene::CreateRigidbody(Entity entity, const TransformComponent& transform, 
   component.runtime_body = body;
 }
 
-void Scene::CreateCharacterController(const TransformComponent& transform, CharacterControllerComponent& component) const {
-  if (!m_IsRunning)
+void Scene::create_character_controller(const TransformComponent& transform, CharacterControllerComponent& component) const {
+  if (!is_running)
     return;
   auto position = JPH::Vec3(transform.translation.x, transform.translation.y, transform.translation.z);
   const auto capsuleShape = JPH::RotatedTranslatedShapeSettings(
@@ -496,13 +496,13 @@ void Scene::CreateCharacterController(const TransformComponent& transform, Chara
   component.character->AddToPhysicsSystem(JPH::EActivation::Activate);
 }
 
-void Scene::OnRuntimeUpdate(float deltaTime) {
+void Scene::on_runtime_update(float delta_time) {
   OX_SCOPED_ZONE;
 
   // Camera
   {
     OX_SCOPED_ZONE_N("Camera System");
-    const auto group = m_Registry.view<TransformComponent, CameraComponent>();
+    const auto group = m_registry.view<TransformComponent, CameraComponent>();
     for (const auto entity : group) {
       auto [transform, camera] = group.get<TransformComponent, CameraComponent>(entity);
       camera.system->Update(transform.translation, transform.rotation);
@@ -512,25 +512,25 @@ void Scene::OnRuntimeUpdate(float deltaTime) {
 
   {
     OX_SCOPED_ZONE_N("OnUpdate Systems");
-    for (const auto& system : m_Systems) {
-      system->OnUpdate(this, deltaTime);
+    for (const auto& system : systems) {
+      system->OnUpdate(this, delta_time);
     }
   }
-  UpdatePhysics(deltaTime);
+  update_physics(delta_time);
   {
     OX_SCOPED_ZONE_N("PostOnUpdate Systems");
-    for (const auto& system : m_Systems) {
-      system->PostOnUpdate(this, deltaTime);
+    for (const auto& system : systems) {
+      system->PostOnUpdate(this, delta_time);
     }
   }
 
   // Audio
   {
-    const auto listenerView = m_Registry.group<AudioListenerComponent>(entt::get<TransformComponent>);
+    const auto listenerView = m_registry.group<AudioListenerComponent>(entt::get<TransformComponent>);
     for (auto&& [e, ac, tc] : listenerView.each()) {
       ac.listener = create_ref<AudioListener>();
       if (ac.active) {
-        const glm::mat4 inverted = glm::inverse(Entity(e, this).GetWorldTransform());
+        const glm::mat4 inverted = glm::inverse(Entity(e, this).get_world_transform());
         const glm::vec3 forward = normalize(glm::vec3(inverted[2]));
         ac.listener->SetConfig(ac.config);
         ac.listener->SetPosition(tc.translation);
@@ -539,10 +539,10 @@ void Scene::OnRuntimeUpdate(float deltaTime) {
       }
     }
 
-    const auto sourceView = m_Registry.group<AudioSourceComponent>(entt::get<TransformComponent>);
+    const auto sourceView = m_registry.group<AudioSourceComponent>(entt::get<TransformComponent>);
     for (auto&& [e, ac, tc] : sourceView.each()) {
       if (ac.source) {
-        const glm::mat4 inverted = glm::inverse(Entity(e, this).GetWorldTransform());
+        const glm::mat4 inverted = glm::inverse(Entity(e, this).get_world_transform());
         const glm::vec3 forward = normalize(glm::vec3(inverted[2]));
         ac.source->SetConfig(ac.config);
         ac.source->SetPosition(tc.translation);
@@ -554,17 +554,17 @@ void Scene::OnRuntimeUpdate(float deltaTime) {
   }
 }
 
-void Scene::OnImGuiRender(const float deltaTime) {
-  for (const auto& system : m_Systems)
-    system->OnImGuiRender(this, deltaTime);
+void Scene::on_imgui_render(const float delta_time) {
+  for (const auto& system : systems)
+    system->OnImGuiRender(this, delta_time);
 }
 
-void Scene::OnEditorUpdate(float deltaTime, Camera& camera) {
-  const auto rbView = m_Registry.view<RigidbodyComponent>();
+void Scene::on_editor_update(float delta_time, Camera& camera) {
+  const auto rbView = m_registry.view<RigidbodyComponent>();
   for (auto&& [e, rb] : rbView.each()) {
     PhysicsUtils::DebugDraw(this, e);
   }
-  const auto chView = m_Registry.view<CharacterControllerComponent>();
+  const auto chView = m_registry.view<CharacterControllerComponent>();
   for (auto&& [e, ch] : chView.each()) {
     PhysicsUtils::DebugDraw(this, e);
   }
@@ -573,100 +573,100 @@ void Scene::OnEditorUpdate(float deltaTime, Camera& camera) {
 }
 
 template <typename T>
-void Scene::OnComponentAdded(Entity entity, T& component) {
+void Scene::on_component_added(Entity entity, T& component) {
   static_assert(sizeof(T) == 0);
 }
 
 template <>
-void Scene::OnComponentAdded<TagComponent>(Entity entity, TagComponent& component) { }
+void Scene::on_component_added<TagComponent>(Entity entity, TagComponent& component) { }
 
 template <>
-void Scene::OnComponentAdded<IDComponent>(Entity entity, IDComponent& component) { }
+void Scene::on_component_added<IDComponent>(Entity entity, IDComponent& component) { }
 
 template <>
-void Scene::OnComponentAdded<RelationshipComponent>(Entity entity, RelationshipComponent& component) { }
+void Scene::on_component_added<RelationshipComponent>(Entity entity, RelationshipComponent& component) { }
 
 template <>
-void Scene::OnComponentAdded<PrefabComponent>(Entity entity, PrefabComponent& component) { }
+void Scene::on_component_added<PrefabComponent>(Entity entity, PrefabComponent& component) { }
 
 template <>
-void Scene::OnComponentAdded<TransformComponent>(Entity entity, TransformComponent& component) { }
+void Scene::on_component_added<TransformComponent>(Entity entity, TransformComponent& component) { }
 
 template <>
-void Scene::OnComponentAdded<CameraComponent>(Entity entity, CameraComponent& component) { }
+void Scene::on_component_added<CameraComponent>(Entity entity, CameraComponent& component) { }
 
 template <>
-void Scene::OnComponentAdded<AudioSourceComponent>(Entity entity, AudioSourceComponent& component) { }
+void Scene::on_component_added<AudioSourceComponent>(Entity entity, AudioSourceComponent& component) { }
 
 template <>
-void Scene::OnComponentAdded<AudioListenerComponent>(Entity entity, AudioListenerComponent& component) { }
+void Scene::on_component_added<AudioListenerComponent>(Entity entity, AudioListenerComponent& component) { }
 
 template <>
-void Scene::OnComponentAdded<MeshRendererComponent>(Entity entity, MeshRendererComponent& component) {
-  entity.AddComponentI<MaterialComponent>();
+void Scene::on_component_added<MeshRendererComponent>(Entity entity, MeshRendererComponent& component) {
+  entity.add_component_internal<MaterialComponent>();
 }
 
 template <>
-void Scene::OnComponentAdded<SkyLightComponent>(Entity entity, SkyLightComponent& component) { }
+void Scene::on_component_added<SkyLightComponent>(Entity entity, SkyLightComponent& component) { }
 
 template <>
-void Scene::OnComponentAdded<MaterialComponent>(Entity entity, MaterialComponent& component) {
+void Scene::on_component_added<MaterialComponent>(Entity entity, MaterialComponent& component) {
   if (component.materials.empty()) {
-    if (entity.HasComponent<MeshRendererComponent>())
-      component.materials = entity.GetComponent<MeshRendererComponent>().mesh_geometry->get_materials_as_ref();
+    if (entity.has_component<MeshRendererComponent>())
+      component.materials = entity.get_component<MeshRendererComponent>().mesh_geometry->get_materials_as_ref();
   }
 }
 
 template <>
-void Scene::OnComponentAdded<LightComponent>(Entity entity, LightComponent& component) { }
+void Scene::on_component_added<LightComponent>(Entity entity, LightComponent& component) { }
 
 template <>
-void Scene::OnComponentAdded<PostProcessProbe>(Entity entity, PostProcessProbe& component) { }
+void Scene::on_component_added<PostProcessProbe>(Entity entity, PostProcessProbe& component) { }
 
 template <>
-void Scene::OnComponentAdded<ParticleSystemComponent>(Entity entity,
+void Scene::on_component_added<ParticleSystemComponent>(Entity entity,
                                                       ParticleSystemComponent& component) { }
 
 template <>
-void Scene::OnComponentAdded<RigidbodyComponent>(Entity entity, RigidbodyComponent& component) {
-  CreateRigidbody(entity, entity.GetComponent<TransformComponent>(), component);
+void Scene::on_component_added<RigidbodyComponent>(Entity entity, RigidbodyComponent& component) {
+  create_rigidbody(entity, entity.get_component<TransformComponent>(), component);
 }
 
 template <>
-void Scene::OnComponentAdded<BoxColliderComponent>(Entity entity, BoxColliderComponent& component) {
-  if (entity.HasComponent<RigidbodyComponent>())
-    CreateRigidbody(entity, entity.GetComponent<TransformComponent>(), entity.GetComponent<RigidbodyComponent>());
+void Scene::on_component_added<BoxColliderComponent>(Entity entity, BoxColliderComponent& component) {
+  if (entity.has_component<RigidbodyComponent>())
+    create_rigidbody(entity, entity.get_component<TransformComponent>(), entity.get_component<RigidbodyComponent>());
 }
 
 template <>
-void Scene::OnComponentAdded<SphereColliderComponent>(Entity entity, SphereColliderComponent& component) {
-  if (entity.HasComponent<RigidbodyComponent>())
-    CreateRigidbody(entity, entity.GetComponent<TransformComponent>(), entity.GetComponent<RigidbodyComponent>());
+void Scene::on_component_added<SphereColliderComponent>(Entity entity, SphereColliderComponent& component) {
+  if (entity.has_component<RigidbodyComponent>())
+    create_rigidbody(entity, entity.get_component<TransformComponent>(), entity.get_component<RigidbodyComponent>());
 }
 
 template <>
-void Scene::OnComponentAdded<CapsuleColliderComponent>(Entity entity, CapsuleColliderComponent& component) {
-  if (entity.HasComponent<RigidbodyComponent>())
-    CreateRigidbody(entity, entity.GetComponent<TransformComponent>(), entity.GetComponent<RigidbodyComponent>());
+void Scene::on_component_added<CapsuleColliderComponent>(Entity entity, CapsuleColliderComponent& component) {
+  if (entity.has_component<RigidbodyComponent>())
+    create_rigidbody(entity, entity.get_component<TransformComponent>(), entity.get_component<RigidbodyComponent>());
 }
 
 template <>
-void Scene::OnComponentAdded<TaperedCapsuleColliderComponent>(Entity entity, TaperedCapsuleColliderComponent& component) {
-  if (entity.HasComponent<RigidbodyComponent>())
-    CreateRigidbody(entity, entity.GetComponent<TransformComponent>(), entity.GetComponent<RigidbodyComponent>());
+void Scene::on_component_added<TaperedCapsuleColliderComponent>(Entity entity, TaperedCapsuleColliderComponent& component) {
+  if (entity.has_component<RigidbodyComponent>())
+    create_rigidbody(entity, entity.get_component<TransformComponent>(), entity.get_component<RigidbodyComponent>());
 }
 
 template <>
-void Scene::OnComponentAdded<CylinderColliderComponent>(Entity entity, CylinderColliderComponent& component) {
-  if (entity.HasComponent<RigidbodyComponent>())
-    CreateRigidbody(entity, entity.GetComponent<TransformComponent>(), entity.GetComponent<RigidbodyComponent>());
+void Scene::on_component_added<CylinderColliderComponent>(Entity entity, CylinderColliderComponent& component) {
+  if (entity.has_component<RigidbodyComponent>())
+    create_rigidbody(entity, entity.get_component<TransformComponent>(), entity.get_component<RigidbodyComponent>());
 }
 
 template <>
-void Scene::OnComponentAdded<CharacterControllerComponent>(Entity entity, CharacterControllerComponent& component) {
-  CreateCharacterController(entity.GetComponent<TransformComponent>(), component);
+void Scene::on_component_added<CharacterControllerComponent>(Entity entity, CharacterControllerComponent& component) {
+  create_character_controller(entity.get_component<TransformComponent>(), component);
 }
 
 template <>
-void Scene::OnComponentAdded<CustomComponent>(Entity entity, CustomComponent& component) { }
+void Scene::on_component_added<CustomComponent>(Entity entity, CustomComponent& component) { }
 }

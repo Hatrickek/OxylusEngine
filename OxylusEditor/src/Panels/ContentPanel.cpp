@@ -109,7 +109,7 @@ static bool DragDropTarget(const std::filesystem::path& dropPath) {
   if (ImGui::BeginDragDropTarget()) {
     if (const ImGuiPayload* payload = ImGui::AcceptDragDropPayload("Entity")) {
       const Entity entity = *static_cast<Entity*>(payload->Data);
-      const std::filesystem::path path = dropPath / std::string(entity.GetComponent<TagComponent>().tag + ".oxprefab");
+      const std::filesystem::path path = dropPath / std::string(entity.get_component<TagComponent>().tag + ".oxprefab");
       EntitySerializer::SerializeEntityAsPrefab(path.string().c_str(), entity);
       return true;
     }

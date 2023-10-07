@@ -23,14 +23,14 @@ public:
   virtual void update(Scene* scene) { }
   virtual void shutdown() { }
 
-  virtual Scope<vuk::Future> on_render(vuk::Allocator& frameAllocator, const vuk::Future& target) = 0;
+  virtual Scope<vuk::Future> on_render(vuk::Allocator& frameAllocator, const vuk::Future& target, vuk::Dimension3D dim) = 0;
 
   virtual void on_dispatcher_events(EventDispatcher& dispatcher) { }
 
   virtual void enqueue_future(vuk::Future&& fut);
   virtual void wait_for_futures(VulkanContext* vkContext);
 
-  virtual void detach_swapchain(vuk::Dimension3D dimension);
+  virtual void detach_swapchain(vuk::Dimension3D dim);
   virtual bool is_swapchain_attached() { return attach_swapchain; }
 
   virtual Ref<vuk::SampledImage> get_final_image() { return final_image; }

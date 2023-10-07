@@ -10,7 +10,7 @@ public:
   void Serialize(const std::string& filePath) const;
   //void SerializeRuntime(const std::string& filePath);
 
-  bool Deserialize(const std::string& filePath) const;
+  bool deserialize(const std::string& filePath) const;
   //bool DeserializeRuntime(const std::string& filePath);
 private:
   Ref<Scene> m_Scene;

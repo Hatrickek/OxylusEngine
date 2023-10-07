@@ -66,6 +66,8 @@ layout(set = 1, binding = 3) uniform sampler2D physicalMap;
 layout(location = 0) out vec4 outColor;
 
 #include "Material.glsl"
+//#define MANUAL_SRGB 1 // we have to tonemap some inputs to make this viable
+#include "SRGBToLinear.glsl"
 
 struct PBRInfo {
   float NdotL;                  // cos angle between normal and light direction
@@ -124,20 +126,6 @@ vec3 GetNormal(vec2 uv) {
   return normalize(TBN * tangentNormal);
 }
 
-vec4 SRGBtoLINEAR(vec4 srgbIn) {
-	#ifdef MANUAL_SRGB
-	#ifdef SRGB_FAST_APPROXIMATION
-	vec3 linOut = pow(srgbIn.xyz,vec3(2.2));
-	#else //SRGB_FAST_APPROXIMATION
-	vec3 bLess = step(vec3(0.04045),srgbIn.xyz);
-	vec3 linOut = mix( srgbIn.xyz/vec3(12.92), pow((srgbIn.xyz+vec3(0.055))/vec3(1.055),vec3(2.4)), bLess );
-	#endif //SRGB_FAST_APPROXIMATION
-	return vec4(linOut,srgbIn.w);;
-	#else //MANUAL_SRGB
-	return srgbIn;
-	#endif //MANUAL_SRGB
-}
-
 vec3 GetIBLContribution(PBRInfo pbrInputs, vec3 n, vec3 reflection) {
 	float lod = (pbrInputs.perceptualRoughness /* * uboParams.prefilteredCubeMipLevels*/);
 	// retrieve a scale and bias to F0. See [1], Figure 3
@@ -173,6 +161,9 @@ void main() {
 	//if (baseColor.a < mat.AlphaCutoff) {
 	//	discard;
 	//}
+	if (baseColor.a < 0.5f) {
+		discard;
+	}
 
 	vec3 f0 = vec3(0.04);
 
@@ -266,10 +257,10 @@ void main() {
 	}
 
 	// Directional shadows
-	//uint cascadeIndex = GetCascadeIndex(u_ShadowUbo.cascadeSplits, in_ViewPos, SHADOW_MAP_CASCADE_COUNT);
-	//vec4 shadowCoord = GetShadowCoord(u_ShadowUbo.cascadeViewProjMat, inWorldPos, cascadeIndex);
-	//float shadow = FilterPCF(in_DirectShadows, shadowCoord / shadowCoord.w, cascadeIndex, color.r);
-	//color.rgb *= shadow;
+	uint cascadeIndex = GetCascadeIndex(u_ShadowUbo.cascadeSplits, in_ViewPos, SHADOW_MAP_CASCADE_COUNT);
+	vec4 shadowCoord = GetShadowCoord(u_ShadowUbo.cascadeViewProjMat, inWorldPos, cascadeIndex);
+	float shadow = FilterPCF(in_DirectShadows, shadowCoord / shadowCoord.w, cascadeIndex, color.r);
+	color.rgb *= shadow;
 
 	// Cascade debug
 	// color *= ColorCascades(cascadeIndex);

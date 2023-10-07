@@ -99,8 +99,8 @@ public:
   void load_from_file(const std::string& file_path, int file_loading_flags = None, float scale = 1);
 
   void bind_vertex_buffer(vuk::CommandBuffer& commandBuffer) const;
-  void bind_index_buffer(vuk::CommandBuffer& commandBuffer) const;
-  void draw(vuk::CommandBuffer& commandBuffer) const;
+  void bind_index_buffer(vuk::CommandBuffer& command_buffer) const;
+  void draw(vuk::CommandBuffer& command_buffer) const;
   void destroy();
 
   /// Export a mesh file as glb file.
@@ -126,10 +126,10 @@ private:
   void load_materials(tinygltf::Model& model);
   void load_node(Node* parent,
                 const tinygltf::Node& node,
-                uint32_t nodeIndex,
+                uint32_t node_index,
                 tinygltf::Model& model,
-                std::vector<uint32_t>& indexBuffer,
-                std::vector<Vertex>& vertexBuffer,
+                std::vector<uint32_t>& index_buffer,
+                std::vector<Vertex>& vertex_buffer,
                 float globalscale);
 };
 }

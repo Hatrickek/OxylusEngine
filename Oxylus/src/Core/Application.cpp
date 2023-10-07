@@ -36,11 +36,9 @@ Application::Application(AppSpec spec) : m_spec(std::move(spec)), system_manager
   if (!core.Init(m_spec))
     return;
 
-  Window::set_window_user_data(this);
-
   glfwSetKeyCallback(Window::get_glfw_window(),
     [](GLFWwindow* window, int key, int scancode, int action, int mods) {
-      const auto app = (Application*)glfwGetWindowUserPointer(window);
+      const auto app = get();
 
       if (action == GLFW_PRESS) {
         for (const auto& layer : app->layer_stack)
@@ -84,10 +82,10 @@ Application& Application::push_overlay(Layer* layer) {
 void Application::run() {
   while (is_running) {
     Window::update_window();
-
     while (VulkanContext::get()->suspend) {
       Window::wait_for_events();
     }
+
 
     const auto time = static_cast<float>(glfwGetTime());
     timestep = time - last_frame_time;

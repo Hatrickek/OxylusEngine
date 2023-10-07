@@ -51,11 +51,17 @@ public:
     uint32_t size = 4096;
   } direct_shadows_config;
 
+  struct FXAA {
+    bool enabled = true;
+  } fxaa_config;
+
   RendererConfig();
   ~RendererConfig() = default;
 
   void save_config(const char* path) const;
   bool load_config(const char* path);
+
+  void dispatch_config_change();
 
   static RendererConfig* get() { return s_instance; }
 

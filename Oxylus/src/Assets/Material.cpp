@@ -8,19 +8,19 @@
 namespace Oxylus {
 Material::~Material() { }
 
-void Material::create(const std::string& materialName) {
+void Material::create(const std::string& material_name) {
   OX_SCOPED_ZONE;
-  name = materialName;
+  name = material_name;
   reset();
 }
 
-void Material::bind_textures(vuk::CommandBuffer& commandBuffer) const {
-  commandBuffer.bind_sampler(1, 0, vuk::LinearSamplerRepeated)
+void Material::bind_textures(vuk::CommandBuffer& command_buffer) const {
+  command_buffer.bind_sampler(1, 0, vuk::LinearSamplerRepeated)
                .bind_sampler(1, 1, vuk::LinearSamplerRepeated)
                .bind_sampler(1, 2, vuk::LinearSamplerRepeated)
                .bind_sampler(1, 3, vuk::LinearSamplerRepeated);
 
-  commandBuffer.bind_image(1, 0, *albedo_texture->get_texture().view)
+  command_buffer.bind_image(1, 0, *albedo_texture->get_texture().view)
                .bind_image(1, 1, *normal_texture->get_texture().view)
                .bind_image(1, 2, *ao_texture->get_texture().view)
                .bind_image(1, 3, *metallic_roughness_texture->get_texture().view);

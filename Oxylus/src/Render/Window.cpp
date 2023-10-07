@@ -48,7 +48,7 @@ void Window::close_window(GLFWwindow*) {
 }
 
 void Window::set_window_user_data(void* data) {
-  glfwSetWindowUserPointer(Window::get_glfw_window(), data);
+  glfwSetWindowUserPointer(get_glfw_window(), data);
 }
 
 GLFWwindow* Window::get_glfw_window() {

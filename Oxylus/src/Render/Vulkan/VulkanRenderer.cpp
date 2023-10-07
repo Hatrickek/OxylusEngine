@@ -79,7 +79,7 @@ void VulkanRenderer::draw(VulkanContext* context, ImGuiLayer* imgui_layer, Layer
     renderer_context.viewport_size.x = Window::get_width();
     renderer_context.viewport_size.y = Window::get_height();
 
-    fut = *rp->on_render(frameAllocator, vuk::Future{rg, "final_image"});
+    fut = *rp->on_render(frameAllocator, vuk::Future{rg, "final_image"}, vuk::Dimension3D::absolute(Window::get_width(), Window::get_height()));
 
     fut = imgui_layer->RenderDrawData(frameAllocator, fut, ImGui::GetDrawData());
   }
@@ -106,7 +106,7 @@ void VulkanRenderer::draw(VulkanContext* context, ImGuiLayer* imgui_layer, Layer
       vuk::ClearColor(0.0f, 0.0f, 0.0f, 1.f)
     );
 
-    auto rpFut = *rp->on_render(frameAllocator, vuk::Future{rgx, "_img"});
+    auto rpFut = *rp->on_render(frameAllocator, vuk::Future{rgx, "_img"}, dim);
     const auto attachmentNameOut = rpFut.get_bound_name().name;
 
     auto rpRg = rpFut.get_render_graph();

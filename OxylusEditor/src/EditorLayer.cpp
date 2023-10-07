@@ -100,15 +100,15 @@ void EditorLayer::on_update(Timestep deltaTime) {
 
   switch (m_SceneState) {
     case SceneState::Edit: {
-      m_ActiveScene->OnEditorUpdate(deltaTime, m_ViewportPanels[0]->m_Camera);
+      m_ActiveScene->on_editor_update(deltaTime, m_ViewportPanels[0]->m_Camera);
       break;
     }
     case SceneState::Play: {
-      m_ActiveScene->OnRuntimeUpdate(deltaTime);
+      m_ActiveScene->on_runtime_update(deltaTime);
       break;
     }
     case SceneState::Simulate: {
-      m_ActiveScene->OnEditorUpdate(deltaTime, m_ViewportPanels[0]->m_Camera);
+      m_ActiveScene->on_editor_update(deltaTime, m_ViewportPanels[0]->m_Camera);
       break;
     }
   }
@@ -331,7 +331,7 @@ bool EditorLayer::OpenScene(const std::filesystem::path& path) {
   }
   const Ref<Scene> newScene = create_ref<Scene>();
   const SceneSerializer serializer(newScene);
-  if (serializer.Deserialize(path.string())) {
+  if (serializer.deserialize(path.string())) {
     SetEditorScene(newScene);
   }
   m_LastSaveScenePath = path.string();
@@ -369,10 +369,10 @@ void EditorLayer::SaveSceneAs() {
 
 void EditorLayer::OnScenePlay() {
   ResetContext();
-  m_ActiveScene = Scene::Copy(m_EditorScene);
+  m_ActiveScene = Scene::copy(m_EditorScene);
   SetRuntimeScene(m_ActiveScene);
 
-  m_ActiveScene->OnRuntimeStart();
+  m_ActiveScene->on_runtime_start();
   SetSceneState(SceneState::Play);
 }
 
@@ -380,13 +380,13 @@ void EditorLayer::OnSceneStop() {
   ResetContext();
   SetEditorScene(m_EditorScene);
 
-  m_ActiveScene->OnRuntimeStop();
+  m_ActiveScene->on_runtime_stop();
   SetSceneState(SceneState::Edit);
 }
 
 void EditorLayer::OnSceneSimulate() {
   SetSceneState(SceneState::Simulate);
-  m_ActiveScene = Scene::Copy(m_EditorScene);
+  m_ActiveScene = Scene::copy(m_EditorScene);
   SetRuntimeScene(m_ActiveScene);
 }
 

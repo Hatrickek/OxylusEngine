@@ -11,13 +11,13 @@ namespace Oxylus {
   Application* create_application(ApplicationCommandLineArgs args) {
     AppSpec spec;
 #ifdef OX_RELEASE
-    spec.Name = "Oxylus Engine - Editor (Vulkan) - Release";
+    spec.name = "Oxylus Engine - Editor (Vulkan) - Release";
 #endif
 #ifdef OX_DEBUG
     spec.name = "Oxylus Engine - Editor (Vulkan) - Debug";
 #endif
 #ifdef OX_DISTRIBUTION
-    spec.Name = "Oxylus Engine - Editor (Vulkan) - Dist";
+    spec.name = "Oxylus Engine - Editor (Vulkan) - Dist";
 #endif
     spec.working_directory = std::filesystem::current_path().string();
     spec.command_line_args = args;

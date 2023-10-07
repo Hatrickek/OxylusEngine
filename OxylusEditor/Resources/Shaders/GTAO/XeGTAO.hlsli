@@ -24,10 +24,8 @@ RWTexture2D<float4>         g_outputDbgImage    : register( u2 );
 #define XE_GTAO_PI_HALF             (1.5707963267948966192313216916398)
 
 #ifndef XE_GTAO_USE_HALF_FLOAT_PRECISION
-#define XE_GTAO_USE_HALF_FLOAT_PRECISION 0 // 1 for 16 bit
+#define XE_GTAO_USE_HALF_FLOAT_PRECISION 1
 #endif
-
-#define XE_GTAO_FP32_DEPTHS
 
 #if defined(XE_GTAO_FP32_DEPTHS) && XE_GTAO_USE_HALF_FLOAT_PRECISION
 #error Using XE_GTAO_USE_HALF_FLOAT_PRECISION with 32bit depths is not supported yet unfortunately (it is possible to apply fp16 on parts not related to depth but this has not been done yet)

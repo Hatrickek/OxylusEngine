@@ -54,8 +54,8 @@ public:
   Material() = default;
   ~Material();
 
-  void create(const std::string& materialName = "Material");
-  void bind_textures(vuk::CommandBuffer& commandBuffer) const;
+  void create(const std::string& material_name = "Material");
+  void bind_textures(vuk::CommandBuffer& command_buffer) const;
   void reset();
   void destroy();
 

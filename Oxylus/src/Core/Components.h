@@ -107,7 +107,6 @@ struct LightComponent {
   bool use_color_temperature_mode = false;
   uint32_t temperature = 6570;
   Vec3 color = Vec3(1.0f);
-  Vec4 direction = {};
   float intensity = 1.0f;
 
   float range = 1.0f;

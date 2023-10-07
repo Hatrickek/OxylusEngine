@@ -22,7 +22,7 @@ struct Parameters {
 layout(binding = 0) uniform sampler2D in_Color;
 //layout(binding = 2) uniform sampler2D in_Bloom;
 layout(binding = 3) uniform sampler2D in_SSR;
-layout(binding = 4) uniform sampler2D in_SSAO;
+layout(binding = 4) uniform usampler2D in_SSAO;
 
 layout(binding = 5) uniform UBO_Parameters { Parameters u_Parameters; };
 
@@ -31,51 +31,54 @@ layout(location = 0) out vec4 out_Color;
 layout(location = 0) in vec2 in_UV;
 
 void main() {
-  vec4 finalImage = texture(in_Color, in_UV).rgba;
+    vec4 finalImage = texture(in_Color, in_UV).rgba;
+    
+    float aoVisibility    = 1.0;
+    uint value = texture(in_SSAO, in_UV).r;
+    aoVisibility = value / 255.0;
 
-  float ssao = 1.0 - texture(in_SSAO, in_UV).r;
-  vec4 ssr = texture(in_SSR, in_UV).rgba;
-  //vec4 bloom = texture(in_Bloom, in_UV);
+    vec4 ssr = texture(in_SSR, in_UV).rgba;
+    //vec4 bloom = texture(in_Bloom, in_UV);
 
-  if (u_Parameters.EnableSSAO) {
-    finalImage *= ssao;
-  }
-  if (u_Parameters.EnableSSR) {
-    finalImage += ssr;
-  }
-  //if (u_Parameters.EnableBloom) {
-  //  finalImage += bloom;
-  //}
+    if (u_Parameters.EnableSSAO) {
+      finalImage *= aoVisibility;
+    }
+    if (u_Parameters.EnableSSR) {
+      finalImage += ssr;
+    }
+    //if (u_Parameters.EnableBloom) {
+    //  finalImage += bloom;
+    //}
 
-  vec3 finalColor = finalImage.rgb * u_Parameters.Exposure;
+    vec3 finalColor = finalImage.rgb * u_Parameters.Exposure;
 
-  // Tonemapping
-  finalColor = ApplyTonemap(finalColor, u_Parameters.Tonemapper);
+    // Tonemapping
+    finalColor = ApplyTonemap(finalColor, u_Parameters.Tonemapper);
 
-  // Vignette
-  if (u_Parameters.VignetteOffset.w > 0.0) {
-    finalColor *= PP_Vignette(u_Parameters.VignetteOffset, u_Parameters.VignetteColor, in_UV);
-  }
+    // Vignette
+    if (u_Parameters.VignetteOffset.w > 0.0) {
+      finalColor *= PP_Vignette(u_Parameters.VignetteOffset, u_Parameters.VignetteColor, in_UV);
+    }
 
-  // Film Grain
-  if (u_Parameters.FilmGrain.x > 0) {
-    finalColor += PP_FilmGrain(in_UV, u_Parameters.FilmGrain.y);
-  }
+    // Film Grain
+    if (u_Parameters.FilmGrain.x > 0) {
+      finalColor += PP_FilmGrain(in_UV, u_Parameters.FilmGrain.y);
+    }
 
-  // Chromatic Aberration
-  if (u_Parameters.ChromaticAberration.x > 0) {
-    vec3 ca = PP_ChromaticAberration(in_Color, in_UV, u_Parameters.ChromaticAberration.y);
-    finalColor += ca;
-  }
+    // Chromatic Aberration
+    if (u_Parameters.ChromaticAberration.x > 0) {
+      vec3 ca = PP_ChromaticAberration(in_Color, in_UV, u_Parameters.ChromaticAberration.y);
+      finalColor += ca;
+    }
 
-  // Sharpen
-  if (u_Parameters.Sharpen.x > 0) {
-    vec3 sharpen = PP_Sharpen(in_Color, u_Parameters.Sharpen.y);
-    finalColor += sharpen;
-  }
+    // Sharpen
+    if (u_Parameters.Sharpen.x > 0) {
+      vec3 sharpen = PP_Sharpen(in_Color, u_Parameters.Sharpen.y);
+      finalColor += sharpen;
+    }
 
-  // Gamma correction
-  finalColor = pow(finalColor, vec3(1.0f / u_Parameters.Gamma));
+    // Gamma correction
+    finalColor = pow(finalColor, vec3(1.0f / u_Parameters.Gamma));
 
-  out_Color = vec4(finalColor, 1.0);
+    out_Color = vec4(finalColor, 1.0);
 }

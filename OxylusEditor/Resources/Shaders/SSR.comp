@@ -53,8 +53,10 @@ void main() {
   }
 
   vec3 fragPos = NDCToView(vec3(uv, depth) * 2.0 - 1.0);
-  mat3 normalToView = mat3(transpose(inverse(u_Ubo.view)));
-  normalSpec.xyz = normalize(normalToView * normalSpec.xyz);
+
+  // world space to view space conversion for normals
+  // mat3 normalToView = mat3(transpose(inverse(u_Ubo.view)));
+  // normalSpec.xyz = normalize(normalToView * normalSpec.xyz);
 
   vec3 color = SSR(normalSpec.xyz, fragPos, normalSpec.a);
 

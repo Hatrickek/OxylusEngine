@@ -58,12 +58,17 @@ namespace Oxylus {
       ConfigProperty(IGUI::property("Max Distance", RendererConfig::get()->ssr_config.max_dist, 50.0f, 500.0f));
       IGUI::end_properties();
 
+      ImGui::Text("FXAA");
+      IGUI::begin_properties();
+      ConfigProperty(IGUI::property("Enabled", RendererConfig::get()->fxaa_config.enabled));
+      IGUI::end_properties();
+
       OnEnd();
     }
   }
 
   void RendererSettingsPanel::ConfigProperty(bool value) {
     if (value)
-      RendererConfig::get()->config_change_dispatcher.trigger(RendererConfig::ConfigChangeEvent{});
+      RendererConfig::get()->dispatch_config_change();
   }
 }

@@ -26,7 +26,7 @@ public:
     Ref<RenderPipeline> render_pipeline = nullptr;
     Ref<DefaultRenderPipeline> default_render_pipeline = nullptr;
     Camera* current_camera = nullptr;
-    UVec2 viewport_size = {};
+    UVec2 viewport_size = {1600, 900};
   } renderer_context;
 
   struct LightingData {

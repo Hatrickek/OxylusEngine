@@ -16,8 +16,8 @@ void RenderPipeline::wait_for_futures(VulkanContext* vkContext) {
   futures.clear();
 }
 
-void RenderPipeline::detach_swapchain(vuk::Dimension3D dimension) {
+void RenderPipeline::detach_swapchain(const vuk::Dimension3D dim) {
   attach_swapchain = false;
-  dimension = dimension;
+  dimension = dim;
 }
 }

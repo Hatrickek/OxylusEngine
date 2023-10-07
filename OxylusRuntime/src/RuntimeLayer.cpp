@@ -9,8 +9,6 @@
 #include "Core/Application.h"
 #include "Render/Window.h"
 #include "Systems/CharacterSystem.h"
-#include "Systems/FreeCamera.h"
-#include "UI/IGUI.h"
 
 namespace OxylusRuntime {
   using namespace Oxylus;
@@ -33,11 +31,11 @@ namespace OxylusRuntime {
   void RuntimeLayer::on_detach() { }
 
   void RuntimeLayer::on_update(Timestep deltaTime) {
-    m_Scene->OnRuntimeUpdate(deltaTime);
+    m_Scene->on_runtime_update(deltaTime);
   }
 
   void RuntimeLayer::on_imgui_render() {
-    m_Scene->OnImGuiRender(Application::get_timestep());
+    m_Scene->on_imgui_render(Application::get_timestep());
 
     constexpr ImGuiWindowFlags window_flags = ImGuiWindowFlags_NoDecoration | ImGuiWindowFlags_NoDocking |
                                               ImGuiWindowFlags_AlwaysAutoResize | ImGuiWindowFlags_NoSavedSettings |
@@ -59,11 +57,11 @@ namespace OxylusRuntime {
   void RuntimeLayer::LoadScene() {
     m_Scene = create_ref<Scene>();
     const SceneSerializer serializer(m_Scene);
-    serializer.Deserialize(GetAssetsPath("Scenes/Main.oxscene"));
+    serializer.deserialize(get_assets_path("Scenes/Main.oxscene"));
 
-    m_Scene->OnRuntimeStart();
+    m_Scene->on_runtime_start();
 
-    m_Scene->AddSystem<CharacterSystem>();
+    m_Scene->add_system<CharacterSystem>();
   }
 
   bool RuntimeLayer::OnSceneReload(ReloadSceneEvent&) {
@@ -71,23 +69,4 @@ namespace OxylusRuntime {
     OX_CORE_INFO("Scene reloaded.");
     return true;
   }
-#if 0
-  /*TODO(hatrickek): Proper way to render the final image internally as fullscreen without needing this.
-  This a "hack" to render the final image as a fullscreen image.
-  Currently the final image in engine renderer is rendered to an offscreen framebuffer image.*/
-  void RuntimeLayer::RenderFinalImage() const {
-    constexpr ImGuiWindowFlags flags = ImGuiWindowFlags_NoDecoration | ImGuiWindowFlags_NoMove |
-                                       ImGuiWindowFlags_NoSavedSettings | ImGuiWindowFlags_NoFocusOnAppearing
-                                       | ImGuiWindowFlags_NoBringToFrontOnFocus | ImGuiWindowFlags_NoNavFocus;
-    const ImGuiViewport* viewport = ImGui::GetMainViewport();
-    ImGui::SetNextWindowPos(viewport->WorkPos);
-    ImGui::SetNextWindowSize(viewport->WorkSize);
-    ImGuiScoped::StyleVar style(ImGuiStyleVar_WindowPadding, ImVec2{});
-    if (ImGui::Begin("FinalImage", nullptr, flags)) {
-      IGUI::image(*m_Scene->GetRenderer().GetRenderPipeline()->GetFinalImage(),
-        ImVec2{(float)Window::get_width(), (float)Window::get_height()});
-      ImGui::End();
-    }
-  }
-#endif
 }

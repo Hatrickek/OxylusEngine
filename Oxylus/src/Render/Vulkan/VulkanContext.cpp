@@ -122,7 +122,7 @@ void VulkanContext::create_context(const AppSpec& spec) {
   auto instance = vkb_instance.instance;
   vkb::PhysicalDeviceSelector selector{vkb_instance};
   VkSurfaceKHR surface;
-  glfwSetWindowUserPointer(Window::get_glfw_window(), this);
+  Window::set_window_user_data(this);
   glfwSetWindowSizeCallback(Window::get_glfw_window(),
     [](GLFWwindow* window, int width, int height) {
       VulkanContext& runner = *reinterpret_cast<VulkanContext*>(glfwGetWindowUserPointer(window));

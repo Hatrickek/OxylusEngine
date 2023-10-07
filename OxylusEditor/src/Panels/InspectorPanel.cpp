@@ -40,13 +40,13 @@ namespace Oxylus {
                             Entity entity,
                             UIFunction uiFunction,
                             const bool removable = true) {
-    if (entity.HasComponent<T>()) {
+    if (entity.has_component<T>()) {
       static constexpr ImGuiTreeNodeFlags treeFlags = ImGuiTreeNodeFlags_DefaultOpen
                                                       | ImGuiTreeNodeFlags_SpanAvailWidth |
                                                       ImGuiTreeNodeFlags_AllowItemOverlap | ImGuiTreeNodeFlags_Framed |
                                                       ImGuiTreeNodeFlags_FramePadding;
 
-      auto& component = entity.GetComponent<T>();
+      auto& component = entity.get_component<T>();
 
       const float lineHeight = GImGui->Font->FontSize + GImGui->Style.FramePadding.y * 2.0f;
 
@@ -80,7 +80,7 @@ namespace Oxylus {
       }
 
       if (removeComponent)
-        entity.RemoveComponent<T>();
+        entity.remove_component<T>();
     }
   }
 
@@ -222,8 +222,8 @@ namespace Oxylus {
   template <typename Component>
   void InspectorPanel::DrawAddComponent(Entity entity, const char* name) const {
     if (ImGui::MenuItem(name)) {
-      if (!entity.HasComponent<Component>())
-        entity.AddComponentI<Component>();
+      if (!entity.has_component<Component>())
+        entity.add_component_internal<Component>();
       else
         OX_CORE_ERROR("Entity already has the {}!", typeid(Component).name());
       ImGui::CloseCurrentPopup();
@@ -231,8 +231,8 @@ namespace Oxylus {
   }
 
   void InspectorPanel::DrawComponents(Entity entity) const {
-    if (entity.HasComponent<TagComponent>()) {
-      auto& tag = entity.GetComponent<TagComponent>().tag;
+    if (entity.has_component<TagComponent>()) {
+      auto& tag = entity.get_component<TagComponent>().tag;
       char buffer[256] = {};
       tag.copy(buffer, sizeof buffer);
       if (s_RenameEntity)
@@ -330,7 +330,7 @@ namespace Oxylus {
           const auto ext = std::filesystem::path(path).extension().string();
           if (ext == ".hdr") {
             comp.cubemap = AssetManager::get_texture_asset({.Path = path, .Format = vuk::Format::eR8G8B8A8Srgb});
-            scene->GetRenderer()->dispatcher.trigger(SceneRenderer::SkyboxLoadEvent{comp.cubemap});
+            scene->get_renderer()->dispatcher.trigger(SceneRenderer::SkyboxLoadEvent{comp.cubemap});
           }
         };
         if (ImGui::Button(name, {x, y})) {
@@ -460,10 +460,10 @@ namespace Oxylus {
         IGUI::end_properties();
 
         if (component.source) {
-          const glm::mat4 inverted = glm::inverse(entity.GetWorldTransform());
+          const glm::mat4 inverted = glm::inverse(entity.get_world_transform());
           const Vec3 forward = normalize(Vec3(inverted[2]));
           component.source->SetConfig(config);
-          component.source->SetPosition(entity.GetTransform().translation);
+          component.source->SetPosition(entity.get_transform().translation);
           component.source->SetDirection(-forward);
         }
       });
@@ -536,16 +536,11 @@ namespace Oxylus {
           if (component.cut_off_angle > component.outer_cut_off_angle)
             component.outer_cut_off_angle = component.cut_off_angle;
         }
-        else {
+        else if (component.type == LightComponent::LightType::Directional) {
           const char* shadowQualityTypeStrings[] = {"Hard", "Soft", "Ultra Soft"};
           int shadowQualityType = static_cast<int>(component.shadow_quality);
 
-          IGUI::PropertyVector("Direction", component.direction);
-
-          if (IGUI::property("Shadow Quality Type",
-            shadowQualityType,
-            shadowQualityTypeStrings,
-            3))
+          if (IGUI::property("Shadow Quality Type", shadowQualityType, shadowQualityTypeStrings, 3))
             component.shadow_quality = static_cast<LightComponent::ShadowQualityType>(shadowQualityType);
         }
 
@@ -748,8 +743,8 @@ namespace Oxylus {
         DrawParticleBySpeedModule("Rotation By Speed", props.rotation_by_speed, false, true);
       });
 
-    if (entity.HasComponent<CustomComponent>()) {
-      const auto n = entity.GetComponent<CustomComponent>().name;
+    if (entity.has_component<CustomComponent>()) {
+      const auto n = entity.get_component<CustomComponent>().name;
       const auto* n2 = (const char8_t*)n.c_str();
       DrawComponent<CustomComponent>(n2,
         entity,
@@ -818,7 +813,7 @@ namespace Oxylus {
 
   void InspectorPanel::PP_ProbeProperty(const bool value, const PostProcessProbe& component) const {
     if (value) {
-      m_SelectedEntity.GetScene()->GetRenderer()->dispatcher.trigger(SceneRenderer::ProbeChangeEvent{component});
+      m_SelectedEntity.get_scene()->get_renderer()->dispatcher.trigger(SceneRenderer::ProbeChangeEvent{component});
     }
   }
 }

@@ -108,7 +108,7 @@ void Physics3DContactListener::OnContactAdded(const JPH::Body& inBody1, const JP
 
   OverrideContactSettings(inBody1, inBody2, inManifold, ioSettings);
 
-  m_Scene->OnContactAdded(inBody1, inBody2, inManifold, ioSettings);
+  m_Scene->on_contact_added(inBody1, inBody2, inManifold, ioSettings);
 }
 
 void Physics3DContactListener::OnContactPersisted(const JPH::Body& inBody1, const JPH::Body& inBody2, const JPH::ContactManifold& inManifold, JPH::ContactSettings& ioSettings) {
@@ -116,7 +116,7 @@ void Physics3DContactListener::OnContactPersisted(const JPH::Body& inBody1, cons
 
   OverrideContactSettings(inBody1, inBody2, inManifold, ioSettings);
 
-  m_Scene->OnContactPersisted(inBody1, inBody2, inManifold, ioSettings);
+  m_Scene->on_contact_persisted(inBody1, inBody2, inManifold, ioSettings);
 }
 
 void Physics3DContactListener::OnContactRemoved(const JPH::SubShapeIDPair& inSubShapePair) {
