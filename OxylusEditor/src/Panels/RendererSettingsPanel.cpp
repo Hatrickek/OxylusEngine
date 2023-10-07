@@ -38,10 +38,17 @@ namespace Oxylus {
       ConfigProperty(IGUI::property<float>("Gamma", RendererConfig::get()->color_config.gamma, 0, 5, "%.2f"));
       IGUI::end_properties();
 
-      ImGui::Text("SSAO");
+      ImGui::Text("GTAO");
       IGUI::begin_properties();
-      ConfigProperty(IGUI::property("Enabled", RendererConfig::get()->ssao_config.enabled));
-      ConfigProperty(IGUI::property<float>("Radius", RendererConfig::get()->ssao_config.radius, 0, 1));
+      ConfigProperty(IGUI::property("Enabled", RendererConfig::get()->gtao_config.enabled));
+      ConfigProperty(IGUI::property<int>("Denoise Passes", RendererConfig::get()->gtao_config.settings.denoise_passes, 1, 5));
+      ConfigProperty(IGUI::property<float>("Radius", RendererConfig::get()->gtao_config.settings.radius, 0, 1));
+      ConfigProperty(IGUI::property<float>("Radius Multiplier", RendererConfig::get()->gtao_config.settings.radius_multiplier, 0, 5));
+      ConfigProperty(IGUI::property<float>("Falloff Range", RendererConfig::get()->gtao_config.settings.falloff_range, 0, 1));
+      ConfigProperty(IGUI::property<float>("Sample Distribution Power", RendererConfig::get()->gtao_config.settings.sample_distribution_power, 0, 5));
+      ConfigProperty(IGUI::property<float>("Thin Occluder Compensation", RendererConfig::get()->gtao_config.settings.thin_occluder_compensation, 0, 5));
+      ConfigProperty(IGUI::property<float>("Final Value Power", RendererConfig::get()->gtao_config.settings.final_value_power, 0, 5));
+      ConfigProperty(IGUI::property<float>("Depth Mip Sampling Offset", RendererConfig::get()->gtao_config.settings.depth_mip_sampling_offset, 0, 5));
       IGUI::end_properties();
 
       ImGui::Text("Bloom");

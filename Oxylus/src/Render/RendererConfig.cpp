@@ -44,8 +44,9 @@ void RendererConfig::save_config(const char* path) const {
     auto node = node_root["SSAO"];
     node |= ryml::MAP;
 
-    node["Enabled"] << ssao_config.enabled;
-    node["Radius"] << ssao_config.radius;
+    node["Enabled"] << gtao_config.enabled;
+    // TODO(hatrickek):
+    //node["Radius"] << ssao_config.radius;
   }
 
   //Bloom
@@ -110,8 +111,9 @@ bool RendererConfig::load_config(const char* path) {
   {
     const ryml::ConstNodeRef node = nodeRoot["SSAO"];
 
-    node["Enabled"] >> ssao_config.enabled;
-    node["Radius"] >> ssao_config.radius;
+    node["Enabled"] >> gtao_config.enabled;
+    //TODO(hatrickek):
+    //node["Radius"] >> ssao_config.radius;
   }
 
   //Bloom

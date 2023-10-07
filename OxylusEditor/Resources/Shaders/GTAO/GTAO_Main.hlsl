@@ -27,7 +27,7 @@ cbuffer GTAOConstantBuffer                      : register( b0 )
 
 // input output textures for the second pass (XeGTAO_MainPass)
 Texture2D<lpfloat>          g_srcWorkingDepth       : register( t1 );   // viewspace depth with MIPs, output by XeGTAO_PrefilterDepths16x16 and consumed by XeGTAO_MainPass
-Texture2D<float4>           g_srcNormalmap          : register(t2);     // source normal map (if used) / default: uint
+Texture2D<float4>           g_srcNormalmap          : register( t2 );   // source normal map (if used) / default: uint
 RWTexture2D<uint>           g_outWorkingAOTerm      : register( u3 );   // output AO term (includes bent normals if enabled - packed as R11G11B10 scaled by AO)
 RWTexture2D<unorm float>    g_outWorkingEdges       : register( u4 );   // output depth-based edges used by the denoiser
 

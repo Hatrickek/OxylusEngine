@@ -151,6 +151,7 @@ void DefaultRenderPipeline::init_render_graph() {
     pci.add_hlsl(FileUtils::read_shader_file("GTAO/GTAO_First.hlsl"), FileUtils::get_shader_path("GTAO/GTAO_First.hlsl"), vuk::HlslShaderStage::eCompute, "CSPrefilterDepths16x16");
     pci.define("XE_GTAO_FP32_DEPTHS", "");
     pci.define("XE_GTAO_USE_HALF_FLOAT_PRECISION", "0");
+    pci.define("XE_GTAO_USE_DEFAULT_CONSTANTS", "0");
     vk_context->context->create_named_pipeline("gtao_first_pipeline", pci);
   }
   {
@@ -158,6 +159,7 @@ void DefaultRenderPipeline::init_render_graph() {
     pci.add_hlsl(FileUtils::read_shader_file("GTAO/GTAO_Main.hlsl"), FileUtils::get_shader_path("GTAO/GTAO_Main.hlsl"), vuk::HlslShaderStage::eCompute, "CSGTAOHigh");
     pci.define("XE_GTAO_FP32_DEPTHS", "");
     pci.define("XE_GTAO_USE_HALF_FLOAT_PRECISION", "0");
+    pci.define("XE_GTAO_USE_DEFAULT_CONSTANTS", "0");
     vk_context->context->create_named_pipeline("gtao_main_pipeline", pci);
   }
   {
@@ -165,6 +167,15 @@ void DefaultRenderPipeline::init_render_graph() {
     pci.add_hlsl(FileUtils::read_shader_file("GTAO/GTAO_Final.hlsl"), FileUtils::get_shader_path("GTAO/GTAO_Final.hlsl"), vuk::HlslShaderStage::eCompute, "CSDenoisePass");
     pci.define("XE_GTAO_FP32_DEPTHS", "");
     pci.define("XE_GTAO_USE_HALF_FLOAT_PRECISION", "0");
+    pci.define("XE_GTAO_USE_DEFAULT_CONSTANTS", "0");
+    vk_context->context->create_named_pipeline("gtao_denoise_pipeline", pci);
+  }
+  {
+    vuk::PipelineBaseCreateInfo pci;
+    pci.add_hlsl(FileUtils::read_shader_file("GTAO/GTAO_Final.hlsl"), FileUtils::get_shader_path("GTAO/GTAO_Final.hlsl"), vuk::HlslShaderStage::eCompute, "CSDenoiseLastPass");
+    pci.define("XE_GTAO_FP32_DEPTHS", "");
+    pci.define("XE_GTAO_USE_HALF_FLOAT_PRECISION", "0");
+    pci.define("XE_GTAO_USE_DEFAULT_CONSTANTS", "0");
     vk_context->context->create_named_pipeline("gtao_final_pipeline", pci);
   }
   {
@@ -259,7 +270,7 @@ Scope<vuk::Future> DefaultRenderPipeline::on_render(vuk::Allocator& frame_alloca
 
 #pragma region GTAO
 
-  gtao_update_constants(gtao_constants, (int)VulkanRenderer::get_viewport_width(), (int)VulkanRenderer::get_viewport_height(), gtao_settings, value_ptr(m_renderer_data.ubo_vs.projection), false, vk_context->context->get_frame_count());
+  gtao_update_constants(gtao_constants, (int)VulkanRenderer::get_viewport_width(), (int)VulkanRenderer::get_viewport_height(), gtao_settings, value_ptr(m_renderer_data.ubo_vs.projection), true, 0);
 
   auto [gtao_const_buff, gtao_const_buff_fut] = create_buffer(frame_allocator, vuk::MemoryUsage::eCPUtoGPU, vuk::DomainFlagBits::eTransferOnGraphics, std::span(&gtao_constants, 1));
   auto& gtao_const_buffer = *gtao_const_buff;
@@ -324,7 +335,7 @@ Scope<vuk::Future> DefaultRenderPipeline::on_render(vuk::Allocator& frame_alloca
                     .dispatch((VulkanRenderer::get_viewport_width() + 8 - 1) / 8, (VulkanRenderer::get_viewport_height() + 8 - 1) / 8);
     }
   });
-  
+
   // if bent normals used -> R32Uint
   // else R8Uint
 
@@ -333,21 +344,46 @@ Scope<vuk::Future> DefaultRenderPipeline::on_render(vuk::Allocator& frame_alloca
   rg->inference_rule("gtao_main_image", vuk::same_extent_as("final_image"));
   rg->inference_rule("gtao_edge_image", vuk::same_extent_as("final_image"));
 
+  gtao_settings.DenoisePasses = 1;
+  int pass_count = std::max(1, gtao_settings.DenoisePasses); // should be at least one for now.
+  for (int i = 0; i < pass_count; i++) {
+    rg->add_pass({
+      .name = "gtao_denoise_pass",
+      .resources = {
+        "gtao_denoised_image"_image >> vuk::eComputeRW >> "gtao_denoised_output",
+        "gtao_main_output"_image >> vuk::eComputeSampled,
+        "gtao_edge_output"_image >> vuk::eComputeSampled
+      },
+      .execute = [gtao_const_buffer](vuk::CommandBuffer& commandBuffer) {
+        commandBuffer.bind_compute_pipeline("gtao_denoise_pipeline")
+                     .bind_buffer(0, 0, gtao_const_buffer)
+                     .bind_image(0, 1, "gtao_main_output")
+                     .bind_image(0, 2, "gtao_edge_output")
+                     .bind_image(0, 3, "gtao_denoised_image")
+                     .bind_sampler(0, 4, {})
+                     .dispatch((VulkanRenderer::get_viewport_width() + (XE_GTAO_NUMTHREADS_X * 2) - 1) / (XE_GTAO_NUMTHREADS_X * 2), (VulkanRenderer::get_viewport_height() + XE_GTAO_NUMTHREADS_Y - 1) / XE_GTAO_NUMTHREADS_Y, 1);
+      }
+    });
+  }
+
+  rg->attach_and_clear_image("gtao_denoised_image", {.format = vuk::Format::eR8Uint, .sample_count = vuk::SampleCountFlagBits::e1, .view_type = vuk::ImageViewType::e2D, .level_count = 1, .layer_count = 1}, vuk::Black<float>);
+  rg->inference_rule("gtao_denoised_image", vuk::same_extent_as("final_image"));
+
   rg->add_pass({
     .name = "gtao_final_pass",
     .resources = {
       "gtao_final_image"_image >> vuk::eComputeRW >> "gtao_final_output",
-      "gtao_main_output"_image >> vuk::eComputeSampled,
+      "gtao_denoised_output"_image >> vuk::eComputeSampled,
       "gtao_edge_output"_image >> vuk::eComputeSampled
     },
     .execute = [gtao_const_buffer](vuk::CommandBuffer& commandBuffer) {
       commandBuffer.bind_compute_pipeline("gtao_final_pipeline")
                    .bind_buffer(0, 0, gtao_const_buffer)
-                   .bind_image(0, 1, "gtao_main_output")
+                   .bind_image(0, 1, "gtao_denoised_output")
                    .bind_image(0, 2, "gtao_edge_output")
                    .bind_image(0, 3, "gtao_final_image")
                    .bind_sampler(0, 4, {})
-                   .dispatch((VulkanRenderer::get_viewport_width() + 8 - 1) / 8, (VulkanRenderer::get_viewport_height() + 8 - 1) / 8);
+                   .dispatch((VulkanRenderer::get_viewport_width() + (XE_GTAO_NUMTHREADS_X * 2) - 1) / (XE_GTAO_NUMTHREADS_X * 2), (VulkanRenderer::get_viewport_height() + XE_GTAO_NUMTHREADS_Y - 1) / XE_GTAO_NUMTHREADS_Y, 1);
     }
   });
 
@@ -795,6 +831,10 @@ void DefaultRenderPipeline::update_final_pass_data(RendererConfig::ConfigChangeE
   ubo.gamma = RendererConfig::get()->color_config.gamma;
   ubo.enable_bloom = RendererConfig::get()->bloom_config.enabled;
   ubo.enable_ssr = RendererConfig::get()->ssr_config.enabled;
-  ubo.enable_ssao = RendererConfig::get()->ssao_config.enabled;
+
+  // GTAO
+  ubo.enable_ssao = RendererConfig::get()->gtao_config.enabled;
+
+  memcpy(&gtao_settings, &RendererConfig::get()->gtao_config.settings, sizeof RendererConfig::GTAO::Settings);
 }
 }

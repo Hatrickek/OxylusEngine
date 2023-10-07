@@ -53,21 +53,11 @@ uint8_t* Texture::load_stb_image(const std::string& filename, uint32_t* width, u
 
 uint8_t* Texture::load_stb_image_from_memory(void* buffer, size_t len, uint32_t* width, uint32_t* height, uint32_t* bits, bool flipY, bool srgb) {
   int tex_width = 0, tex_height = 0, tex_channels = 0;
-  constexpr int size_of_channel = 8;
+  int size_of_channel = 8;
   const auto pixels = stbi_load_from_memory((stbi_uc*)buffer, (int)len, &tex_width, &tex_height, &tex_channels, STBI_rgb_alpha);
 
-  // Return magenta checkerboad image
-  if (!pixels) {
-    tex_channels = 4;
-
-    if (width)
-      *width = 2;
-    if (height)
-      *height = 2;
-    if (bits)
-      *bits = tex_channels * size_of_channel;
-
-    return get_magenta_texture(*width, *height, tex_channels);
+  if (stbi_is_16_bit_from_memory((stbi_uc*)buffer, (int)len)) {
+    size_of_channel = 16;
   }
 
   if (tex_channels != 4)
@@ -78,7 +68,7 @@ uint8_t* Texture::load_stb_image_from_memory(void* buffer, size_t len, uint32_t*
   if (height)
     *height = tex_height;
   if (bits)
-    *bits = tex_channels * size_of_channel; // texChannels;	  //32 bits for 4 bytes r g b a
+    *bits = tex_channels * size_of_channel;
 
   const int32_t size = tex_width * tex_height * tex_channels * size_of_channel / 8;
   auto* result = new uint8_t[size];
