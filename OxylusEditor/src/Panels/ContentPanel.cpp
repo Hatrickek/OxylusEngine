@@ -168,6 +168,9 @@ std::pair<bool, uint32_t> ContentPanel::DirectoryTreeViewRecursive(const std::fi
   bool anyNodeClicked = false;
   uint32_t nodeClicked = 0;
 
+  if (path.empty())
+    return {};
+
   for (const auto& entry : std::filesystem::directory_iterator(path)) {
     ImGuiTreeNodeFlags nodeFlags = flags;
 
@@ -276,7 +279,7 @@ void ContentPanel::Init() {
 
   static filewatch::FileWatch<std::string> watch(m_AssetsDirectory.string(),
     [this](const auto&, const filewatch::Event) {
-      ThreadManager::Get()->AssetThread.QueueJob([this] {
+      ThreadManager::get()->asset_thread.queue_job([this] {
         Refresh();
       });
     }
@@ -555,11 +558,10 @@ void ContentPanel::RenderBody(bool grid) {
           }
           else if (!textureCreated) {
             textureCreated = true;
-            file.Thumbnail = AssetManager::get_texture_asset({file.Filepath});
+            ThreadManager::get()->asset_thread.queue_job([&file] {
+              file.Thumbnail = AssetManager::get_texture_asset({file.Filepath});
+            });
             texture = file.Thumbnail;
-          }
-          else {
-            texture = nullptr;
           }
         }
         else if (file.Type == FileType::Model) {
@@ -632,7 +634,8 @@ void ContentPanel::RenderBody(bool grid) {
         // Thumbnail Image
         ImGui::SetCursorPos({cursorPos.x + thumbnailPadding * 0.75f, cursorPos.y + thumbnailPadding});
         ImGui::SetItemAllowOverlap();
-        IGUI::image(texture->get_texture(), {thumbnailSize, thumbnailSize});
+        if (texture)
+          IGUI::image(texture->get_texture(), {thumbnailSize, thumbnailSize});
 
         // Type Color frame
         const ImVec2 typeColorFrameSize = {scaledThumbnailSizeX, scaledThumbnailSizeX * 0.03f};
@@ -710,7 +713,7 @@ void ContentPanel::RenderBody(bool grid) {
     if (ImGui::Button("OK", ImVec2(120, 0))) {
       std::filesystem::remove_all(m_DirectoryToDelete);
       m_DirectoryToDelete.clear();
-      ThreadManager::Get()->AssetThread.QueueJob([this] {
+      ThreadManager::get()->asset_thread.queue_job([this] {
         Refresh();
       });
       ImGui::CloseCurrentPopup();
@@ -733,6 +736,10 @@ void ContentPanel::UpdateDirectoryEntries(const std::filesystem::path& directory
   OX_SCOPED_ZONE;
   m_CurrentDirectory = directory;
   m_DirectoryEntries.clear();
+
+  if (directory.empty())
+    return;
+    
   const auto directoryIt = std::filesystem::directory_iterator(directory);
   for (auto& directoryEntry : directoryIt) {
     const auto& path = directoryEntry.path();

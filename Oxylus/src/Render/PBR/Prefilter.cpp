@@ -12,7 +12,7 @@
 #define M_PI       3.14159265358979323846
 
 namespace Oxylus {
-std::pair<vuk::Unique<vuk::Image>, vuk::Future> Prefilter::GenerateBRDFLUT() {
+std::pair<vuk::Unique<vuk::Image>, vuk::Future> Prefilter::generate_brdflut() {
   constexpr uint32_t dim = 512;
 
   const auto vkContext = VulkanContext::get();
@@ -61,7 +61,7 @@ std::pair<vuk::Unique<vuk::Image>, vuk::Future> Prefilter::GenerateBRDFLUT() {
   return {std::move(brdfImage), transition(vuk::Future{std::make_unique<vuk::RenderGraph>(std::move(rg)), "BRDF-Output+"}, vuk::eFragmentSampled)};
 }
 
-std::pair<vuk::Unique<vuk::Image>, vuk::Future> Prefilter::GenerateIrradianceCube(const Ref<Mesh>& skybox,
+std::pair<vuk::Unique<vuk::Image>, vuk::Future> Prefilter::generate_irradiance_cube(const Ref<Mesh>& skybox,
                                                                                   const Ref<TextureAsset>& cubemap) {
   const auto vkContext = VulkanContext::get();
   constexpr int32_t dim = 64;
@@ -147,7 +147,7 @@ std::pair<vuk::Unique<vuk::Image>, vuk::Future> Prefilter::GenerateIrradianceCub
   return {std::move(irradianceImage), transition(vuk::Future{std::make_unique<vuk::RenderGraph>(std::move(rg)), "IrradianceCube+"}, vuk::eFragmentSampled)};
 }
 
-std::pair<vuk::Unique<vuk::Image>, vuk::Future> Prefilter::GeneratePrefilteredCube(const Ref<Mesh>& skybox,
+std::pair<vuk::Unique<vuk::Image>, vuk::Future> Prefilter::generate_prefiltered_cube(const Ref<Mesh>& skybox,
                                                                                    const Ref<TextureAsset>& cubemap) {
   const auto vkContext = VulkanContext::get();
   constexpr int32_t dim = 512;

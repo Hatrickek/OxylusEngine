@@ -16,7 +16,7 @@ float round_up_to_nearest_multiple_of5(float value) {
   return result;
 }
 
-void DirectShadowPass::update_cascades(const Entity& dir_light_entity, Camera* camera, DirectShadowUB* cascades_ubo) {
+void DirectShadowPass::update_cascades(const Vec3& dir_light_transform, Camera* camera, DirectShadowUB* cascades_ubo) {
   OX_SCOPED_ZONE;
   float cascadeSplits[SHADOW_MAP_CASCADE_COUNT];
 
@@ -88,7 +88,7 @@ void DirectShadowPass::update_cascades(const Entity& dir_light_entity, Camera* c
     glm::vec3 maxExtents = glm::vec3(radius);
     glm::vec3 minExtents = -maxExtents;
 
-    float angle = dir_light_entity.get_component<TransformComponent>().rotation.y;
+    float angle = dir_light_transform.y;
     float r = 20.0f;
     Vec3 lightPos = glm::vec3(cos(angle) * r, -r, sin(angle) * r);
 

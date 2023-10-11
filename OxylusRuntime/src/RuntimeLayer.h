@@ -31,7 +31,7 @@ namespace OxylusRuntime {
   private:
     Oxylus::EventDispatcher m_Dispatcher;
     static RuntimeLayer* s_Instance;
-    Oxylus::Ref<Oxylus::Scene> m_Scene;
+    Oxylus::Ref<Oxylus::Scene> scene;
     Oxylus::Entity m_CameraEntity;
   };
 }

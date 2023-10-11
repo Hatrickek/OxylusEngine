@@ -12,17 +12,17 @@ public:
   Thread();
   ~Thread();
 
-  void QueueJob(std::function<void()> function);
-  void Wait();
-  uint32_t GetQueueSize() const { return (uint32_t)m_JobQueue.size(); }
+  void queue_job(std::function<void()> function);
+  void wait();
+  uint32_t get_queue_size() const { return (uint32_t)job_queue.size(); }
 
 private:
-  void QueueLoop();
+  void queue_loop();
 
-  bool m_Destroying = false;
-  std::thread m_Worker;
-  std::queue<std::function<void()>> m_JobQueue;
-  std::mutex m_QueueMutex;
-  std::condition_variable m_Condition;
+  bool destroying = false;
+  std::thread worker;
+  std::queue<std::function<void()>> job_queue;
+  std::mutex queue_mutex;
+  std::condition_variable condition;
 };
 }

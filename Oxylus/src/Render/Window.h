@@ -13,8 +13,8 @@ public:
   static void set_window_user_data(void* data);
 
   static GLFWwindow* get_glfw_window();
-  static uint32_t get_width() { return s_window_data.screen_extent.x; }
-  static uint32_t get_height() { return s_window_data.screen_extent.y; }
+  static uint32_t get_width();
+  static uint32_t get_height();
   static UVec2& get_window_extent() { return s_window_data.screen_extent; }
 
   static bool is_focused();

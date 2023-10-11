@@ -4,7 +4,6 @@
 
 namespace Oxylus {
 class VulkanDescriptorSet;
-class Entity;
 class Camera;
 
 constexpr auto SHADOW_MAP_CASCADE_COUNT = 4;
@@ -16,6 +15,6 @@ public:
     float cascade_splits[4]{};
   };
 
-  static void update_cascades(const Entity& dir_light_entity, Camera* camera, DirectShadowUB* cascades_ubo);
+  static void update_cascades(const Vec3& dir_light_transform, Camera* camera, DirectShadowUB* cascades_ubo);
 };
 }

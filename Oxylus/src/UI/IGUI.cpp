@@ -107,7 +107,7 @@ bool IGUI::property(const char* label, Ref<TextureAsset>& texture, uint64_t over
   sci.addressModeU = sci.addressModeV = sci.addressModeW = vuk::SamplerAddressMode::eRepeat;
   const vuk::SampledImage sampledImage(vuk::SampledImage::Global{.iv = *texture->get_texture().view, .sci = sci, .image_layout = vuk::ImageLayout::eShaderReadOnlyOptimal});
 
-  if (ImGui::ImageButton(Application::get()->get_imgui_layer()->AddSampledImage(sampledImage), {buttonSize, buttonSize}, {1, 1}, {0, 0}, 0)) {
+  if (ImGui::ImageButton(Application::get()->get_imgui_layer()->add_sampled_image(sampledImage), {buttonSize, buttonSize}, {1, 1}, {0, 0}, 0)) {
     const auto& path = FileDialogs::OpenFile({{"Texture file", "png,jpg"}});
     if (!path.empty()) {
       texture = AssetManager::get_texture_asset({path});
@@ -118,7 +118,7 @@ bool IGUI::property(const char* label, Ref<TextureAsset>& texture, uint64_t over
     ImGui::BeginTooltip();
     ImGui::TextUnformatted(texture->get_path().c_str());
     ImGui::Spacing();
-    ImGui::Image(Application::get()->get_imgui_layer()->AddSampledImage(sampledImage), {tooltipSize, tooltipSize}, {1, 1}, {0, 0});
+    ImGui::Image(Application::get()->get_imgui_layer()->add_sampled_image(sampledImage), {tooltipSize, tooltipSize}, {1, 1}, {0, 0});
     ImGui::EndTooltip();
   }
   if (ImGui::BeginDragDropTarget()) {
@@ -153,11 +153,11 @@ void IGUI::image(const vuk::Texture& texture, ImVec2 size, const ImVec2& uv0, co
   sci.addressModeU = sci.addressModeV = sci.addressModeW = vuk::SamplerAddressMode::eRepeat;
   vuk::SampledImage sampledImage(vuk::SampledImage::Global{.iv = *texture.view, .sci = sci, .image_layout = vuk::ImageLayout::eShaderReadOnlyOptimal});
   
-  ImGui::Image(Application::get()->get_imgui_layer()->AddSampledImage(sampledImage), size, uv0, uv1, tintCol, borderCol);
+  ImGui::Image(Application::get()->get_imgui_layer()->add_sampled_image(sampledImage), size, uv0, uv1, tintCol, borderCol);
 }
 
 void IGUI::image(vuk::SampledImage& texture, ImVec2 size, const ImVec2& uv0, const ImVec2& uv1, const ImVec4& tintCol, const ImVec4& borderCol) {
-  ImGui::Image(Application::get()->get_imgui_layer()->AddSampledImage(texture), size, uv0, uv1, tintCol, borderCol);
+  ImGui::Image(Application::get()->get_imgui_layer()->add_sampled_image(texture), size, uv0, uv1, tintCol, borderCol);
 }
 
 bool IGUI::draw_vec3_control(const char* label, glm::vec3& values, const char* tooltip, float resetValue) {

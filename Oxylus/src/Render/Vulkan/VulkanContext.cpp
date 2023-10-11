@@ -130,8 +130,8 @@ void VulkanContext::create_context(const AppSpec& spec) {
         runner.suspend = true;
       }
       else {
-        Window::get_window_extent().x = height;
-        Window::get_window_extent().y = width;
+        Window::get_window_extent().x = width;
+        Window::get_window_extent().y = height;
         runner.superframe_allocator->deallocate(std::span{&runner.swapchain->swapchain, 1});
         runner.superframe_allocator->deallocate(runner.swapchain->image_views);
         runner.context->remove_swapchain(runner.swapchain);

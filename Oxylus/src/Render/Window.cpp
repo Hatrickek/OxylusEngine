@@ -20,7 +20,7 @@ void Window::init_vulkan_window(const AppSpec& spec) {
   glfwWindowHint(GLFW_CLIENT_API, GLFW_NO_API);
   if (spec.custom_window_title)
     glfwWindowHint(GLFW_DECORATED, GLFW_FALSE);
-  s_window_handle = glfwCreateWindow((int)get_width(), (int)get_height(), spec.name.c_str(), nullptr, nullptr);
+  s_window_handle = glfwCreateWindow(1600, 900, spec.name.c_str(), nullptr, nullptr);
   glfwSetWindowUserPointer(s_window_handle, &s_window_data);
 
   //Load file icon
@@ -56,6 +56,18 @@ GLFWwindow* Window::get_glfw_window() {
     OX_CORE_FATAL("Glfw WindowHandle is nullptr. Did you call InitWindow() ?");
   }
   return s_window_handle;
+}
+
+uint32_t Window::get_width() {
+  int width, height;
+  glfwGetWindowSize(s_window_handle, &width, &height);
+  return (uint32_t)width;
+}
+
+uint32_t Window::get_height() {
+  int width, height;
+  glfwGetWindowSize(s_window_handle, &width, &height);
+  return (uint32_t)height;
 }
 
 bool Window::is_focused() {

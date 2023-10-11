@@ -86,19 +86,18 @@ void Application::run() {
       Window::wait_for_events();
     }
 
-
     const auto time = static_cast<float>(glfwGetTime());
     timestep = time - last_frame_time;
     last_frame_time = time;
+
+    if (!is_running)
+      break;
 
     // Layers
     update_layers(timestep);
 
     // Systems
     system_manager->OnUpdate();
-
-    if (!is_running)
-      break;
 
     update_renderer();
 

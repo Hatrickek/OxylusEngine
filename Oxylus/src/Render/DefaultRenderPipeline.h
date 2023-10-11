@@ -52,7 +52,7 @@ private:
       int enable_ssr = 1;
       Vec2 _pad{};
       Vec4 vignette_color = Vec4(0.0f, 0.0f, 0.0f, 0.25f);     // rgb: color, a: intensity
-      Vec4 vignette_offset = Vec4(0.0f, 0.0f, 0.0f, 1.0f);     // xy: offset, z: useMask, w: enable effect
+      Vec4 vignette_offset = Vec4(0.0f, 0.0f, 0.0f, 0.0f);     // xy: offset, z: useMask, w: enable effect
       Vec2 film_grain = {};                                    // x: enable, y: amount
       Vec2 chromatic_aberration = {};                          // x: enable, y: amount
       Vec2 sharpen = {};                                      // x: enable, y: amount
@@ -82,8 +82,9 @@ private:
 
   struct LightChangeEvent { };
   DirectShadowPass::DirectShadowUB direct_shadow_ub = {};
-  std::vector<Entity> scene_lights = {};
   std::vector<VulkanRenderer::LightingData> point_lights_data = {};
+  std::vector<VulkanRenderer::LightingData> dir_lights_data = {};
+  std::vector<VulkanRenderer::LightingData> spot_lights_data = {};
   EventDispatcher light_buffer_dispatcher;
   Ref<Mesh> skybox_cube = nullptr;
 
@@ -92,7 +93,6 @@ private:
   void generate_prefilter();
   void update_parameters(SceneRenderer::ProbeChangeEvent& e);
   void update_final_pass_data(RendererConfig::ConfigChangeEvent& e);
-  void update_lighting_data();
 
   vuk::Future apply_fxaa(vuk::Future source, vuk::Future dst);
   void cascaded_shadow_pass(Ref<vuk::RenderGraph> rg, vuk::Buffer& shadow_buffer);

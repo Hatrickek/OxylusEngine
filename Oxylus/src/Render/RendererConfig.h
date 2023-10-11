@@ -35,11 +35,11 @@ public:
       int quality_level = 2;  // 0: low; 1: medium; 2: high; 3: ultra 
       int denoise_passes = 3; // 0: disabled; 1: sharp; 2: medium; 3: soft
       float radius = 0.5f;
-      float radius_multiplier = 1.457f;
+      float radius_multiplier = 1.0f;
       float falloff_range = 0.615f;
       float sample_distribution_power = 2.0f;
       float thin_occluder_compensation = 0.0f;
-      float final_value_power = 2.2f;
+      float final_value_power = 1.5f;
       float depth_mip_sampling_offset = 3.30f;
     } settings;
   } gtao_config;

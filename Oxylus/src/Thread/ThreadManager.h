@@ -5,19 +5,18 @@
 namespace Oxylus {
 class ThreadManager {
 public:
-  Thread AssetThread;
-  Thread AudioThread;
-  Thread RenderThread;
+  Thread asset_thread;
+  Thread render_thread;
 
   ThreadManager();
 
   ~ThreadManager() = default;
 
-  void WaitAllThreads();
+  void wait_all_threads();
 
-  static ThreadManager* Get() { return s_Instance; }
+  static ThreadManager* get() { return instance; }
 
 private:
-  static ThreadManager* s_Instance;
+  static ThreadManager* instance;
 };
 }

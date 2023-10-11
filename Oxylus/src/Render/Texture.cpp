@@ -14,24 +14,9 @@ uint8_t* Texture::load_stb_image(const std::string& filename, uint32_t* width, u
     OX_CORE_ERROR("Couldn't load image, file doesn't exists. {}", filePath.string());
 
   int tex_width = 0, tex_height = 0, tex_channels = 0;
-  int size_of_channel = 8;
+  constexpr int size_of_channel = 8;
 
   const auto pixels = stbi_load(filename.c_str(), &tex_width, &tex_height, &tex_channels, STBI_rgb_alpha);
-
-  if (stbi_is_16_bit(filename.c_str())) {
-    size_of_channel = 16;
-  }
-
-#if 0
-  const uint8_t* converted_pixels;
-  if (tex_channels == 3) {
-    converted_pixels = convert_to_four_channels(tex_width, tex_height, pixels);
-    stbi_image_free(pixels);
-  }
-  else {
-    converted_pixels = pixels;
-  }
-#endif
 
   if (tex_channels != 4)
     tex_channels = 4;
@@ -46,7 +31,7 @@ uint8_t* Texture::load_stb_image(const std::string& filename, uint32_t* width, u
   const int32_t size = tex_width * tex_height * tex_channels * size_of_channel / 8;
   auto* result = new uint8_t[size];
   memcpy(result, pixels, size);
-  delete[] pixels;
+  stbi_image_free(pixels);
 
   return result;
 }

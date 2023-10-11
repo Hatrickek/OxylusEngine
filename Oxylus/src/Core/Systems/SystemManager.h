@@ -62,7 +62,7 @@ public:
       system.second->OnUpdate();
   }
 
-  void OnImGuiRender() const {
+  void on_im_gui_render() const {
     for (const auto& system : m_Systems)
       system.second->OnImGuiRender();
   }

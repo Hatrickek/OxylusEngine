@@ -78,16 +78,38 @@ void DefaultRenderPipeline::update(Scene* scene) {
     OX_SCOPED_ZONE_N("Lighting System");
     // Scene lights
     {
-      std::vector<Entity> lights;
-      const auto view = scene->m_registry.view<LightComponent>();
-      lights.reserve(view.size());
-      for (auto&& [e, lc] : view.each()) {
+      const auto view = scene->m_registry.view<TransformComponent, LightComponent>();
+      for (auto&& [e,tc, lc] : view.each()) {
         Entity entity = {e, scene};
         if (!entity.get_component<TagComponent>().enabled)
           continue;
-        lights.emplace_back(entity);
+        switch (lc.type) {
+          case LightComponent::LightType::Directional: {
+            dir_lights_data.emplace_back(VulkanRenderer::LightingData{
+              Vec4{tc.translation, lc.intensity},
+              Vec4{lc.color, lc.range},
+              Vec4{tc.rotation, 1.0f}
+            });
+            break;
+          }
+          case LightComponent::LightType::Point: {
+            point_lights_data.emplace_back(VulkanRenderer::LightingData{
+              Vec4{tc.translation, lc.intensity},
+              Vec4{lc.color, lc.range},
+              Vec4{tc.rotation, 1.0f}
+            });
+            break;
+          }
+          case LightComponent::LightType::Spot: {
+            spot_lights_data.emplace_back(VulkanRenderer::LightingData{
+              Vec4{tc.translation, lc.intensity},
+              Vec4{lc.color, lc.range},
+              Vec4{tc.rotation, 1.0f}
+            });
+            break;
+          }
+        }
       }
-      scene_lights = std::move(lights);
       light_buffer_dispatcher.trigger(LightChangeEvent{});
     }
   }
@@ -184,6 +206,21 @@ void DefaultRenderPipeline::init_render_graph() {
     pci.add_glsl(FileUtils::read_shader_file("FXAA.frag"), FileUtils::get_shader_path("FXAA.frag"));
     vk_context->context->create_named_pipeline("fxaa_pipeline", pci);
   }
+  {
+    vuk::PipelineBaseCreateInfo pci;
+    pci.add_glsl(FileUtils::read_shader_file("Bloom.comp"), FileUtils::get_shader_path("Bloom.comp"));
+    vk_context->context->create_named_pipeline("bloom_pipeline", pci);
+  }
+  {
+    vuk::PipelineBaseCreateInfo pci;
+    pci.add_glsl(FileUtils::read_shader_file("BloomPrefilter.comp"), FileUtils::get_shader_path("BloomPrefilter.comp"));
+    vk_context->context->create_named_pipeline("bloom_prefilter_pipeline", pci);
+  }
+  {
+    vuk::PipelineBaseCreateInfo pci;
+    pci.add_glsl(FileUtils::read_shader_file("BloomDownsample.comp"), FileUtils::get_shader_path("BloomDownsample.comp"));
+    vk_context->context->create_named_pipeline("bloom_downsample_pipeline", pci);
+  }
 
   wait_for_futures(vk_context);
 }
@@ -278,43 +315,39 @@ Scope<vuk::Future> DefaultRenderPipeline::on_render(vuk::Allocator& frame_alloca
   rg->attach_and_clear_image("gtao_depth_image", {.format = vuk::Format::eR32Sfloat, .sample_count = vuk::SampleCountFlagBits::e1, .level_count = 5, .layer_count = 1}, vuk::Black<float>);
   rg->inference_rule("gtao_depth_image", vuk::same_extent_as("final_image"));
 
+  auto diverged_names = diverge_image_mips(rg, "gtao_depth_image", 5);
+  std::vector<vuk::Name> output_names = {};
+  output_names.reserve(diverged_names.size());
+  for (auto& n : diverged_names)
+    output_names.emplace_back(n.append("+"));
+
   rg->add_pass({
     .name = "gtao_first_pass",
     .resources = {
-      "gtao_depth_image"_image >> vuk::eComputeRW >> "gtao_depth_output",
+      vuk::Resource(diverged_names[0], vuk::Resource::Type::eImage, vuk::eComputeRW, output_names[0]),
+      vuk::Resource(diverged_names[1], vuk::Resource::Type::eImage, vuk::eComputeRW, output_names[1]),
+      vuk::Resource(diverged_names[2], vuk::Resource::Type::eImage, vuk::eComputeRW, output_names[2]),
+      vuk::Resource(diverged_names[3], vuk::Resource::Type::eImage, vuk::eComputeRW, output_names[3]),
+      vuk::Resource(diverged_names[4], vuk::Resource::Type::eImage, vuk::eComputeRW, output_names[4]),
       "depth_output"_image >> vuk::eComputeSampled
     },
-    .execute = [gtao_const_buffer, &frame_allocator](vuk::CommandBuffer& command_buffer) {
-      auto depth_image = command_buffer.get_resource_image("gtao_depth_image");
-
-      std::vector<vuk::ImageViewCreateInfo> viewCreateInfos;
-      std::vector<vuk::ImageView> views{5};
-
-      for (int i = 0; i < 5; i++) {
-        vuk::ImageViewCreateInfo view{};
-        view.image = depth_image->image;
-        view.viewType = vuk::ImageViewType::e2D;
-        view.format = vuk::Format::eR32Sfloat;
-        view.subresourceRange.levelCount = 1;
-        view.subresourceRange.baseMipLevel = i;
-        view.subresourceRange.aspectMask = vuk::ImageAspectFlagBits::eColor;
-        viewCreateInfos.emplace_back(view);
-      }
-
-      frame_allocator.allocate_image_views(std::span(views), std::span(viewCreateInfos));
-
+    .execute = [gtao_const_buffer, diverged_names](vuk::CommandBuffer& command_buffer) {
       command_buffer.bind_compute_pipeline("gtao_first_pipeline")
                     .bind_buffer(0, 0, gtao_const_buffer)
                     .bind_image(0, 1, "depth_output")
-                    .bind_image(0, 2, views[0], vuk::ImageLayout::eGeneral)
-                    .bind_image(0, 3, views[1], vuk::ImageLayout::eGeneral)
-                    .bind_image(0, 4, views[2], vuk::ImageLayout::eGeneral)
-                    .bind_image(0, 5, views[3], vuk::ImageLayout::eGeneral)
-                    .bind_image(0, 6, views[4], vuk::ImageLayout::eGeneral)
+                    .bind_image(0, 2, diverged_names[0])
+                    .bind_image(0, 3, diverged_names[1])
+                    .bind_image(0, 4, diverged_names[2])
+                    .bind_image(0, 5, diverged_names[3])
+                    .bind_image(0, 6, diverged_names[4])
                     .bind_sampler(0, 7, vuk::LinearSamplerClamped)
                     .dispatch((VulkanRenderer::get_viewport_width() + 16 - 1) / 16, (VulkanRenderer::get_viewport_height() + 16 - 1) / 16);
     }
   });
+
+  rg->converge_image_explicit(output_names, "gtao_depth_output");
+
+  //converge_image_mips(rg, diverged_names, "gtao_depth_output");
 
   rg->add_pass({
     .name = "gtao_main_pass",
@@ -400,8 +433,11 @@ Scope<vuk::Future> DefaultRenderPipeline::on_render(vuk::Allocator& frame_alloca
 
   cascaded_shadow_pass(rg, shadow_buffer);
 
-  auto [point_lights_buf, point_lights_buffer_fut] = create_buffer(frame_allocator, vuk::MemoryUsage::eCPUtoGPU, vuk::DomainFlagBits::eTransferOnGraphics, std::span(point_lights_data.data(), 1));
-  auto point_lights_buffer = *point_lights_buf;
+  if (point_lights_data.empty())
+    point_lights_data.emplace_back();
+
+  auto [point_lights_buf, point_lights_buffer_fut] = create_buffer(frame_allocator, vuk::MemoryUsage::eCPUtoGPU, vuk::DomainFlagBits::eTransferOnGraphics, std::span(point_lights_data));
+  auto& point_lights_buffer = *point_lights_buf;
 
   struct PBRPassParams {
     int num_lights = 0;
@@ -624,10 +660,61 @@ Scope<vuk::Future> DefaultRenderPipeline::on_render(vuk::Allocator& frame_alloca
     }
   });
 
-  rg->attach_and_clear_image("ssr_image", {.sample_count = vuk::SampleCountFlagBits::e1}, vuk::Black<float>);
+  rg->attach_and_clear_image("ssr_image", {.format = vk_context->swapchain->format, .sample_count = vuk::SampleCountFlagBits::e1}, vuk::Black<float>);
   rg->inference_rule("ssr_image", vuk::same_shape_as("final_image"));
-  rg->inference_rule("ssr_image", vuk::same_format_as("final_image"));
 
+  // bind an output image first and prefilter it
+  // write the prefiltered result to 0th mip of downsample_image
+  // start downsampling the mipped downsample_image
+  //    -> for (int i = 1; i < lodCount; i++)
+  //    ->    lod = i -1
+  //    ->    bind i'th mip of downsample_image
+  // start upsampling by writing to the last mip of upsample_image from downsample_image last mip
+  //    -> for (int i = lodCount - 3; i >= 0; i--)
+  //    ->    lod = i + 1
+  //    ->    bind i'th mip of upsample_image
+#ifdef BLOOM
+  struct BloomPushConst {
+    // x: threshold, y: clamp, z: radius, w: unused
+    Vec4 Params = {};
+    // x: Stage, y: Lod
+    int Lod = 0;
+  } bloom_push_const;
+
+  bloom_push_const.Params.x = RendererConfig::get()->bloom_config.threshold;
+  bloom_push_const.Params.y = RendererConfig::get()->bloom_config.clamp;
+
+  rg->add_pass({
+    .name = "bloom_prefilter",
+    .resources = {"bloom_downsampled_image"_image >> vuk::eComputeRW >> "bloom_prefiltered_output", "pbr_output"_image >> vuk::eComputeSampled},
+    .execute = [bloom_push_const](vuk::CommandBuffer& command_buffer) {
+      command_buffer.bind_compute_pipeline("bloom_prefilter_pipeline")
+                    .push_constants(vuk::ShaderStageFlagBits::eCompute, 0, bloom_push_const)
+                    .bind_image(0, 0, "bloom_prefiltered_image")
+                    .bind_sampler(0, 0, {})
+                    .bind_image(0, 1, "pbr_output")
+                    .bind_sampler(0, 1, {})
+                    .dispatch((VulkanRenderer::get_viewport_width() + 8 - 1) / 8, (VulkanRenderer::get_viewport_height() + 8 - 1) / 8, 1);
+    }
+  });
+
+  rg->attach_and_clear_image("bloom_downsampled_image", {.format = vk_context->swapchain->format, .sample_count = vuk::SampleCountFlagBits::e1, .level_count = 5, .layer_count = 1}, vuk::Black<float>);
+  rg->inference_rule("bloom_downsampled_image", vuk::same_2D_extent_as("final_image"));
+
+  rg->add_pass({
+    .name = "bloom_downsample",
+    .resources = {"bloom_prefiltered_output"_image >> vuk::eComputeRW >> "bloom_downsampled_output", "bloom_prefiltered_image"_image >> vuk::eComputeSampled},
+    .execute = [bloom_push_const](vuk::CommandBuffer& command_buffer) {
+      command_buffer.bind_compute_pipeline("bloom_downsample_pipeline")
+                    .push_constants(vuk::ShaderStageFlagBits::eCompute, 0, bloom_push_const)
+                    .bind_image(0, 0, "bloom_downsampled_image")
+                    .bind_sampler(0, 0, {})
+                    .bind_image(0, 1, "bloom_prefiltered_image")
+                    .bind_sampler(0, 1, {})
+                    .dispatch((VulkanRenderer::get_viewport_width() + 8 - 1) / 8, (VulkanRenderer::get_viewport_height() + 8 - 1) / 8, 1);
+    }
+  });
+#endif
   auto [final_buff, final_buff_fut] = create_buffer(frame_allocator, vuk::MemoryUsage::eCPUtoGPU, vuk::DomainFlagBits::eTransferOnGraphics, std::span(&m_renderer_data.final_pass_data, 1));
   auto final_buffer = *final_buff;
 
@@ -677,25 +764,6 @@ void DefaultRenderPipeline::update_skybox(const SceneRenderer::SkyboxLoadEvent& 
   m_resources.cube_map = e.cube_map;
 
   generate_prefilter();
-}
-
-void DefaultRenderPipeline::update_lighting_data() {
-  OX_SCOPED_ZONE;
-  for (auto& e : scene_lights) {
-    auto& light_component = e.get_component<LightComponent>();
-    auto& transform_component = e.get_component<TransformComponent>();
-    switch (light_component.type) {
-      case LightComponent::LightType::Directional: break;
-      case LightComponent::LightType::Point: {
-        point_lights_data.emplace_back(VulkanRenderer::LightingData{
-          Vec4{transform_component.translation, light_component.intensity},
-          Vec4{light_component.color, light_component.range}, Vec4{transform_component.rotation, 1.0f}
-        });
-      }
-      break;
-      case LightComponent::LightType::Spot: break;
-    }
-  }
 }
 
 vuk::Future DefaultRenderPipeline::apply_fxaa(vuk::Future source, vuk::Future dst) {
@@ -765,12 +833,8 @@ void DefaultRenderPipeline::cascaded_shadow_pass(const Ref<vuk::RenderGraph> rg,
                       .set_scissor(0, vuk::Rect2D::framebuffer())
                       .bind_buffer(0, 0, shadow_buffer);
 
-        for (const auto& e : scene_lights) {
-          const auto& light_component = e.get_component<LightComponent>();
-          if (light_component.type != LightComponent::LightType::Directional)
-            continue;
-
-          DirectShadowPass::update_cascades(e, m_renderer_context.current_camera, &direct_shadow_ub);
+        for (const auto& light : dir_lights_data) {
+          DirectShadowPass::update_cascades(Vec3(light.rotation), m_renderer_context.current_camera, &direct_shadow_ub);
 
           for (uint32_t i = 0; i < mesh_draw_list.size(); i++) {
             auto& mesh = mesh_draw_list[i];
@@ -801,15 +865,15 @@ void DefaultRenderPipeline::generate_prefilter() {
   vuk::Compiler compiler{};
   auto& allocator = *VulkanContext::get()->superframe_allocator;
 
-  auto [brdf_img, brdf_fut] = Prefilter::GenerateBRDFLUT();
+  auto [brdf_img, brdf_fut] = Prefilter::generate_brdflut();
   brdf_fut.wait(allocator, compiler);
   brdf_image = std::move(brdf_img);
 
-  auto [irradiance_img, irradiance_fut] = Prefilter::GenerateIrradianceCube(skybox_cube, m_resources.cube_map);
+  auto [irradiance_img, irradiance_fut] = Prefilter::generate_irradiance_cube(skybox_cube, m_resources.cube_map);
   irradiance_fut.wait(allocator, compiler);
   irradiance_image = std::move(irradiance_img);
 
-  auto [prefilter_img, prefilter_fut] = Prefilter::GeneratePrefilteredCube(skybox_cube, m_resources.cube_map);
+  auto [prefilter_img, prefilter_fut] = Prefilter::generate_prefiltered_cube(skybox_cube, m_resources.cube_map);
   prefilter_fut.wait(allocator, compiler);
   prefiltered_image = std::move(prefilter_img);
 }

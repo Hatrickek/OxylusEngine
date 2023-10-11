@@ -14,7 +14,7 @@ namespace Oxylus {
       const char* themes[] = {"Dark", "White"};
       int themeIndex = 0;
       if (ImGui::Combo("Theme", &themeIndex, themes, OX_ARRAYSIZE(themes))) {
-        ImGuiLayer::ApplyTheme(!(bool)themeIndex);
+        ImGuiLayer::apply_theme(!(bool)themeIndex);
       }
       OnEnd();
     }

@@ -39,8 +39,8 @@ void ImGuiLayer::on_attach(EventDispatcher&) {
   io.BackendFlags |= ImGuiBackendFlags_RendererHasVtxOffset;
   io.BackendFlags |= ImGuiBackendFlags_RendererHasViewports;
 
-  ApplyTheme();
-  SetStyle();
+  apply_theme();
+  set_style();
 
   //ImGuizmo style
   /*{
@@ -158,7 +158,7 @@ void ImGuiLayer::InitForVulkan() {
   int32_t width, height;
   io.Fonts->GetTexDataAsRGBA32(&pixels, &width, &height);
 
-  m_ImGuiData = ImGui_ImplVuk_Init(*VulkanContext::get()->superframe_allocator);
+  imgui_data = ImGui_ImplVuk_Init(*VulkanContext::get()->superframe_allocator);
 }
 
 void ImGuiLayer::on_detach() {
@@ -166,14 +166,14 @@ void ImGuiLayer::on_detach() {
   ImGui::DestroyContext();
 }
 
-void ImGuiLayer::Begin() {
+void ImGuiLayer::begin() {
   OX_SCOPED_ZONE;
   ImGui_ImplGlfw_NewFrame();
   ImGui::NewFrame();
-  m_SampledImages.clear();
+  sampled_images.clear();
 }
 
-vuk::Future ImGuiLayer::RenderDrawData(vuk::Allocator& allocator, vuk::Future target, ImDrawData* drawData) const {
+vuk::Future ImGuiLayer::render_draw_data(vuk::Allocator& allocator, vuk::Future target, ImDrawData* drawData) const {
   OX_SCOPED_ZONE;
   auto reset_render_state = [](const ImGuiData& data, vuk::CommandBuffer& command_buffer, ImDrawData* draw_data, vuk::Buffer vertex, vuk::Buffer index) {
     command_buffer.bind_image(0, 0, *data.font_texture.view).bind_sampler(0, 0, data.font_sci);
@@ -218,7 +218,7 @@ vuk::Future ImGuiLayer::RenderDrawData(vuk::Allocator& allocator, vuk::Future ta
   // make all rendergraph sampled images available
   std::vector<vuk::Resource> resources;
   resources.emplace_back("target", vuk::Resource::Type::eImage, vuk::eColorRW, "target+");
-  for (auto& si : m_SampledImages) {
+  for (auto& si : sampled_images) {
     if (!si.is_global) {
       resources.emplace_back(si.rg_attachment.reference.rg, si.rg_attachment.reference.name, vuk::Resource::Type::eImage, vuk::Access::eFragmentSampled);
     }
@@ -230,7 +230,7 @@ vuk::Future ImGuiLayer::RenderDrawData(vuk::Allocator& allocator, vuk::Future ta
       command_buffer.set_dynamic_state(vuk::DynamicStateFlagBits::eViewport | vuk::DynamicStateFlagBits::eScissor);
       command_buffer.set_rasterization(vuk::PipelineRasterizationStateCreateInfo{});
       command_buffer.set_color_blend("target", vuk::BlendPreset::eAlphaBlend);
-      reset_render_state(m_ImGuiData, command_buffer, drawData, verts, inds);
+      reset_render_state(imgui_data, command_buffer, drawData, verts, inds);
       // Will project scissor/clipping rectangles into framebuffer space
       ImVec2 clip_off = drawData->DisplayPos;         // (0,0) unless using multi-viewports
       ImVec2 clip_scale = drawData->FramebufferScale; // (1,1) unless using retina display which are often (2,2)
@@ -247,7 +247,7 @@ vuk::Future ImGuiLayer::RenderDrawData(vuk::Allocator& allocator, vuk::Future ta
             // User callback, registered via ImDrawList::AddCallback()
             // (ImDrawCallback_ResetRenderState is a special callback value used by the user to request the renderer to reset render state.)
             if (pcmd->UserCallback == ImDrawCallback_ResetRenderState)
-              reset_render_state(m_ImGuiData, command_buffer, drawData, verts, inds);
+              reset_render_state(imgui_data, command_buffer, drawData, verts, inds);
             else
               pcmd->UserCallback(cmd_list, pcmd);
           }
@@ -317,11 +317,11 @@ vuk::Future ImGuiLayer::RenderDrawData(vuk::Allocator& allocator, vuk::Future ta
   return {std::move(rg), "target+"};
 }
 
-vuk::SampledImage* ImGuiLayer::AddSampledImage(const vuk::SampledImage& sampledImage) {
-  return &*m_SampledImages.emplace(sampledImage);
+vuk::SampledImage* ImGuiLayer::add_sampled_image(const vuk::SampledImage& sampled_image) {
+  return &*sampled_images.emplace(sampled_image);
 }
 
-void ImGuiLayer::End() {
+void ImGuiLayer::end() {
   OX_SCOPED_ZONE;
   ImGui::Render();
 
@@ -334,7 +334,7 @@ void ImGuiLayer::End() {
   }
 }
 
-void ImGuiLayer::ApplyTheme(bool dark) {
+void ImGuiLayer::apply_theme(bool dark) {
   ImVec4* colors = ImGui::GetStyle().Colors;
 
   if (dark) {
@@ -469,7 +469,7 @@ void ImGuiLayer::ApplyTheme(bool dark) {
   }
 }
 
-void ImGuiLayer::SetStyle() {
+void ImGuiLayer::set_style() {
   ImGuiStyle* style = &ImGui::GetStyle();
 
   style->AntiAliasedFill = true;

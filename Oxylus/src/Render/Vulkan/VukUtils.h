@@ -22,7 +22,13 @@ inline SamplerCreateInfo LinearSamplerClamped = {
   .addressModeV = SamplerAddressMode::eClampToEdge,
   .addressModeW = SamplerAddressMode::eClampToEdge
 };
-std::vector<Name> diverge_image_mips(std::shared_ptr<RenderGraph> rg, std::string_view input_name, uint32_t mip_count);
-std::vector<Name> diverge_image_layers(std::shared_ptr<RenderGraph> rg, std::string_view input_name, uint32_t layer_count);
-void generate_mips(std::shared_ptr<RenderGraph> rg, std::string_view input_name, std::string_view output_name, uint32_t mip_count);
+
+std::vector<Name> diverge_image_mips(const std::shared_ptr<RenderGraph>& rg, std::string_view input_name, uint32_t mip_count);
+
+// input_names are going to be converted into input_names+
+void converge_image_mips(const std::shared_ptr<RenderGraph>& rg, const std::vector<Name>& input_names, std::string_view output_name);
+
+std::vector<Name> diverge_image_layers(const std::shared_ptr<RenderGraph>& rg, std::string_view input_name, uint32_t layer_count);
+
+void generate_mips(const std::shared_ptr<RenderGraph>& rg, std::string_view input_name, std::string_view output_name, uint32_t mip_count);
 }

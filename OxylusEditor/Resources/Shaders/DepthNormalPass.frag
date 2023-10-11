@@ -28,13 +28,13 @@ void main() {
     normal = normalize(mix(normalize(in_Normal), normal, normalMapStrenght));
     normal = normalize(mat3(view) * normal);
     
-    float roughness = 1.0;
+    float inv_roughness = 0.0;
     if (mat.UsePhysicalMap) {
-      roughness = 1.0 - texture(in_PhysicalMap, in_UV * mat.UVScale).g;
-      roughness *= mat.Roughness;
+      inv_roughness = 1.0 - texture(in_PhysicalMap, in_UV * mat.UVScale).g;
+      inv_roughness *= mat.Roughness;
     } else {
-      roughness = 1.0 - mat.Roughness;
+      inv_roughness = 1.0 - mat.Roughness;
     }
     
-    out_Normal = vec4(normalize(normal), roughness);
+    out_Normal = vec4(normalize(normal), inv_roughness);
 }

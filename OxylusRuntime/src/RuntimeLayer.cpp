@@ -9,6 +9,7 @@
 #include "Core/Application.h"
 #include "Render/Window.h"
 #include "Systems/CharacterSystem.h"
+#include "Systems/FreeCamera.h"
 
 namespace OxylusRuntime {
   using namespace Oxylus;
@@ -31,11 +32,11 @@ namespace OxylusRuntime {
   void RuntimeLayer::on_detach() { }
 
   void RuntimeLayer::on_update(Timestep deltaTime) {
-    m_Scene->on_runtime_update(deltaTime);
+    scene->on_runtime_update(deltaTime);
   }
 
   void RuntimeLayer::on_imgui_render() {
-    m_Scene->on_imgui_render(Application::get_timestep());
+    scene->on_imgui_render(Application::get_timestep());
 
     constexpr ImGuiWindowFlags window_flags = ImGuiWindowFlags_NoDecoration | ImGuiWindowFlags_NoDocking |
                                               ImGuiWindowFlags_AlwaysAutoResize | ImGuiWindowFlags_NoSavedSettings |
@@ -55,13 +56,14 @@ namespace OxylusRuntime {
   }
 
   void RuntimeLayer::LoadScene() {
-    m_Scene = create_ref<Scene>();
-    const SceneSerializer serializer(m_Scene);
+    scene = create_ref<Scene>();
+    const SceneSerializer serializer(scene);
     serializer.deserialize(get_assets_path("Scenes/Main.oxscene"));
 
-    m_Scene->on_runtime_start();
+    scene->on_runtime_start();
 
-    m_Scene->add_system<CharacterSystem>();
+    //m_Scene->add_system<CharacterSystem>();
+    scene->add_system<FreeCamera>();
   }
 
   bool RuntimeLayer::OnSceneReload(ReloadSceneEvent&) {

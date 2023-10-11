@@ -40,7 +40,7 @@ void Core::Shutdown() {
 
   AudioEngine::Shutdown();
 
-  ThreadManager::Get()->WaitAllThreads();
+  ThreadManager::get()->wait_all_threads();
 
   Window::close_window(Window::get_glfw_window());
 }

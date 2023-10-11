@@ -58,7 +58,7 @@ void VulkanRenderer::set_camera(Camera& camera) {
 
 void VulkanRenderer::draw(VulkanContext* context, ImGuiLayer* imgui_layer, LayerStack& layer_stack, const Ref<SystemManager>& system_manager) {
   OX_SCOPED_ZONE;
-  imgui_layer->Begin();
+  imgui_layer->begin();
 
   auto frameAllocator = context->begin();
   const Ref rg = create_ref<vuk::RenderGraph>("runner");
@@ -71,17 +71,19 @@ void VulkanRenderer::draw(VulkanContext* context, ImGuiLayer* imgui_layer, Layer
 
   // Render it directly to swapchain
   if (rp->is_swapchain_attached()) {
+    renderer_context.viewport_size.x = context->swapchain->extent.width;
+    renderer_context.viewport_size.y = context->swapchain->extent.height;
+
+    const auto dim = vuk::Dimension3D::absolute(context->swapchain->extent);
+
+    fut = *rp->on_render(frameAllocator, vuk::Future{rg, "final_image"}, dim);
+
     for (const auto& layer : layer_stack)
       layer->on_imgui_render();
-    system_manager->OnImGuiRender();
-    imgui_layer->End();
+    system_manager->on_im_gui_render();
+    imgui_layer->end();
 
-    renderer_context.viewport_size.x = Window::get_width();
-    renderer_context.viewport_size.y = Window::get_height();
-
-    fut = *rp->on_render(frameAllocator, vuk::Future{rg, "final_image"}, vuk::Dimension3D::absolute(Window::get_width(), Window::get_height()));
-
-    fut = imgui_layer->RenderDrawData(frameAllocator, fut, ImGui::GetDrawData());
+    fut = imgui_layer->render_draw_data(frameAllocator, fut, ImGui::GetDrawData());
   }
   // Render it into a separate image with given dimension
   else {
@@ -116,18 +118,17 @@ void VulkanRenderer::draw(VulkanContext* context, ImGuiLayer* imgui_layer, Layer
 
     rg->attach_in(attachmentNameOut, std::move(rpFut));
 
-    auto si = create_ref<vuk::SampledImage>(
-      make_sampled_image(vuk::NameReference{rg.get(), vuk::QualifiedName({}, attachmentNameOut)}, {}));
+    auto si = create_ref<vuk::SampledImage>(make_sampled_image(vuk::NameReference{rg.get(), vuk::QualifiedName({}, attachmentNameOut)}, {}));
     rp->set_final_image(si);
 
     for (const auto& layer : layer_stack)
       layer->on_imgui_render();
 
-    system_manager->OnImGuiRender();
+    system_manager->on_im_gui_render();
 
-    imgui_layer->End();
+    imgui_layer->end();
 
-    fut = imgui_layer->RenderDrawData(frameAllocator, vuk::Future{rg, "final_image"}, ImGui::GetDrawData());
+    fut = imgui_layer->render_draw_data(frameAllocator, vuk::Future{rg, "final_image"}, ImGui::GetDrawData());
   }
 
   context->end(fut, frameAllocator);

@@ -1,15 +1,14 @@
 #include "ThreadManager.h"
 
 namespace Oxylus {
-ThreadManager* ThreadManager::s_Instance = nullptr;
+ThreadManager* ThreadManager::instance = nullptr;
 
 ThreadManager::ThreadManager() {
-  s_Instance = this;
+  instance = this;
 }
 
-void ThreadManager::WaitAllThreads() {
-  AssetThread.Wait();
-  AudioThread.Wait();
-  RenderThread.Wait();
+void ThreadManager::wait_all_threads() {
+  asset_thread.wait();
+  render_thread.wait();
 }
 }

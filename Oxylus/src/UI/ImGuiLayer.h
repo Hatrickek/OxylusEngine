@@ -7,7 +7,6 @@
 #include "imgui.h"
 #include "Core/Base.h"
 #include "Core/Layer.h"
-#include <vulkan/vulkan.h>
 
 namespace Oxylus {
 class Texture;
@@ -41,20 +40,20 @@ public:
   void on_attach(EventDispatcher& dispatcher) override;
   void on_detach() override;
 
-  void Begin();
-  void End();
+  void begin();
+  void end();
 
-  vuk::Future RenderDrawData(vuk::Allocator& allocator, vuk::Future target, ImDrawData* drawData) const;
+  vuk::Future render_draw_data(vuk::Allocator& allocator, vuk::Future target, ImDrawData* drawData) const;
 
-  vuk::SampledImage* AddSampledImage(const vuk::SampledImage& sampledImage);
+  vuk::SampledImage* add_sampled_image(const vuk::SampledImage& sampled_image);
 
-  ImGuiIO* GetImGuiIO() const { return m_ImGuiIO; }
-  static void ApplyTheme(bool dark = true);
-  static void SetStyle();
+  ImGuiIO* get_imgui_io() const { return m_ImGuiIO; }
+  static void apply_theme(bool dark = true);
+  static void set_style();
 
-  plf::colony<vuk::SampledImage> m_SampledImages;
+  plf::colony<vuk::SampledImage> sampled_images;
 private:
-  ImGuiData m_ImGuiData;
+  ImGuiData imgui_data;
   ImGuiIO* m_ImGuiIO = nullptr;
 
   void InitForVulkan();
