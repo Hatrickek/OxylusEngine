@@ -27,7 +27,7 @@ public:
   void OnSceneStop();
   void OnSceneSimulate();
 
-  static EditorLayer* Get() { return s_Instance; }
+  static EditorLayer* get() { return s_Instance; }
 
   void SetContext(EditorContextType type, const char* data, size_t size) { m_SelectedContext.Set(type, data, size); }
   void SetContextAsAssetWithPath(const std::string& path) { m_SelectedContext.Set(EditorContextType::Asset, path.c_str(), sizeof(char) * (path.length() + 1)); }
@@ -43,7 +43,7 @@ public:
   bool OpenScene(const std::filesystem::path& path);
 
   void SetSelectedEntity(const Entity& entity);
-  Entity GetSelectedEntity() const { return m_SceneHierarchyPanel.GetSelectedEntity(); }
+  Entity get_selected_entity() const { return m_SceneHierarchyPanel.GetSelectedEntity(); }
   Ref<Scene> GetSelectedScene() const { return m_SceneHierarchyPanel.GetScene(); }
   void ClearSelectedEntity();
 

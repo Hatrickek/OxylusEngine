@@ -29,7 +29,7 @@
 
 #if CPU_PROFILER_ENABLED
 #define OX_SCOPED_ZONE ZoneScoped
-#define OX_SCOPED_ZONE_N(name) OX_SCOPED_ZONE_N(name)
+#define OX_SCOPED_ZONE_N(name) ZoneScopedN(name)
 #else
 #define OX_SCOPED_ZONE
 #define OX_SCOPED_ZONE_N(name) 
@@ -49,18 +49,20 @@
 #endif
 
 namespace Oxylus {
+class VulkanContext;
+
 class TracyProfiler {
 public:
-  static void InitTracyForVulkan(VkPhysicalDevice physdev, VkDevice device, VkQueue queue, VkCommandBuffer cmdbuf);
+  static void InitTracyForVulkan(const VulkanContext* context, VkCommandBuffer command_buffer);
 
   static void DestroyContext();
 
   static void Collect(const VkCommandBuffer& commandBuffer);
 
-  static TracyVkCtx& GetContext() { return s_VulkanContext; }
+  static TracyVkCtx& GetContext() { return vulkan_context; }
 
 private:
-  static TracyVkCtx s_VulkanContext;
+  static TracyVkCtx vulkan_context;
 };
 
 using FloatingPointMicroseconds = std::chrono::duration<double, std::micro>;

@@ -127,10 +127,8 @@ void DefaultRenderPipeline::init_render_graph() {
 
   {
     vuk::PipelineBaseCreateInfo pci;
-    pci.add_glsl(FileUtils::read_shader_file("DepthNormalPass.vert"),
-      FileUtils::get_shader_path("DepthNormalPass.vert"));
-    pci.add_glsl(FileUtils::read_shader_file("DepthNormalPass.frag"),
-      FileUtils::get_shader_path("DepthNormalPass.frag"));
+    pci.add_glsl(FileUtils::read_shader_file("DepthNormalPass.vert"), FileUtils::get_shader_path("DepthNormalPass.vert"));
+    pci.add_glsl(FileUtils::read_shader_file("DepthNormalPass.frag"), FileUtils::get_shader_path("DepthNormalPass.frag"));
     vk_context->context->create_named_pipeline("depth_pre_pass_pipeline", pci);
   }
   {
@@ -241,7 +239,7 @@ Scope<vuk::Future> DefaultRenderPipeline::on_render(vuk::Allocator& frame_alloca
 
   auto vk_context = VulkanContext::get();
 
-  m_renderer_data.ubo_vs.view = m_renderer_context.current_camera->GetViewMatrix();
+  m_renderer_data.ubo_vs.view = m_renderer_context.current_camera->get_view_matrix();
   m_renderer_data.ubo_vs.cam_pos = m_renderer_context.current_camera->GetPosition();
   m_renderer_data.ubo_vs.projection = m_renderer_context.current_camera->GetProjectionMatrixFlipped();
   auto [vs_buff, vs_buffer_fut] = create_buffer(frame_allocator, vuk::MemoryUsage::eCPUtoGPU, vuk::DomainFlagBits::eTransferOnGraphics, std::span(&m_renderer_data.ubo_vs, 1));
@@ -261,39 +259,40 @@ Scope<vuk::Future> DefaultRenderPipeline::on_render(vuk::Allocator& frame_alloca
   auto& mat_buffer = *matBuff;
 
   rg->add_pass({
-    .name = "DepthPrePass",
+    .name = "depth_pre_pass",
     .resources = {
       "normal_image"_image >> vuk::eColorRW >> "normal_output",
       "depth_image"_image >> vuk::eDepthStencilRW >> "depth_output"
     },
-    .execute = [this, vs_buffer, mat_buffer, material_map](vuk::CommandBuffer& commandBuffer) {
-      commandBuffer.set_viewport(0, vuk::Rect2D::framebuffer())
-                   .set_scissor(0, vuk::Rect2D::framebuffer())
-                   .broadcast_color_blend(vuk::BlendPreset::eOff)
-                   .set_rasterization({.cullMode = vuk::CullModeFlagBits::eBack})
-                   .set_depth_stencil(vuk::PipelineDepthStencilStateCreateInfo{
-                      .depthTestEnable = true,
-                      .depthWriteEnable = true,
-                      .depthCompareOp = vuk::CompareOp::eLessOrEqual,
-                    })
-                   .bind_graphics_pipeline("depth_pre_pass_pipeline")
-                   .bind_buffer(0, 0, vs_buffer)
-                   .bind_buffer(2, 0, mat_buffer);
+    .execute = [this, vs_buffer, mat_buffer, material_map](vuk::CommandBuffer& command_buffer) {
+      OX_TRACE_GPU(command_buffer.get_underlying(), "depth_pre_pass")
+      command_buffer.set_viewport(0, vuk::Rect2D::framebuffer())
+                    .set_scissor(0, vuk::Rect2D::framebuffer())
+                    .broadcast_color_blend(vuk::BlendPreset::eOff)
+                    .set_rasterization({.cullMode = vuk::CullModeFlagBits::eBack})
+                    .set_depth_stencil(vuk::PipelineDepthStencilStateCreateInfo{
+                       .depthTestEnable = true,
+                       .depthWriteEnable = true,
+                       .depthCompareOp = vuk::CompareOp::eLessOrEqual,
+                     })
+                    .bind_graphics_pipeline("depth_pre_pass_pipeline")
+                    .bind_buffer(0, 0, vs_buffer)
+                    .bind_buffer(2, 0, mat_buffer);
 
       for (uint32_t i = 0; i < mesh_draw_list.size(); i++) {
         auto& mesh = mesh_draw_list[i];
 
         VulkanRenderer::render_mesh(mesh,
-          commandBuffer,
-          [&mesh, &commandBuffer, i, material_map](const Mesh::Primitive* part) {
+          command_buffer,
+          [&mesh, &command_buffer, i, material_map](const Mesh::Primitive* part) {
             const auto& material = mesh.materials[part->material_index];
 
-            commandBuffer.push_constants(vuk::ShaderStageFlagBits::eVertex | vuk::ShaderStageFlagBits::eFragment, 0, mesh.transform)
-                         .push_constants(vuk::ShaderStageFlagBits::eFragment, sizeof(glm::mat4), get_material_index(material_map, i, part->material_index))
-                         .bind_sampler(1, 0, vuk::LinearSamplerRepeated)
-                         .bind_image(1, 0, *material->normal_texture->get_texture().view)
-                         .bind_sampler(1, 1, vuk::LinearSamplerRepeated)
-                         .bind_image(1, 1, *material->metallic_roughness_texture->get_texture().view);
+            command_buffer.push_constants(vuk::ShaderStageFlagBits::eVertex | vuk::ShaderStageFlagBits::eFragment, 0, mesh.transform)
+                          .push_constants(vuk::ShaderStageFlagBits::eFragment, sizeof(glm::mat4), get_material_index(material_map, i, part->material_index))
+                          .bind_sampler(1, 0, vuk::LinearSamplerRepeated)
+                          .bind_image(1, 0, *material->normal_texture->get_texture().view)
+                          .bind_sampler(1, 1, vuk::LinearSamplerRepeated)
+                          .bind_image(1, 1, *material->metallic_roughness_texture->get_texture().view);
             return true;
           });
       }

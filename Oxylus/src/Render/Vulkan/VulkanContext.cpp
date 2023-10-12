@@ -209,7 +209,7 @@ void VulkanContext::create_context(const AppSpec& spec) {
   }
   vkb_device = dev_ret.value();
   graphics_queue = vkb_device.get_queue(vkb::QueueType::graphics).value();
-  auto graphics_queue_family_index = vkb_device.get_queue_index(vkb::QueueType::graphics).value();
+  graphics_queue_family_index = vkb_device.get_queue_index(vkb::QueueType::graphics).value();
   transfer_queue = vkb_device.get_queue(vkb::QueueType::transfer).value();
   auto transfer_queue_family_index = vkb_device.get_queue_index(vkb::QueueType::transfer).value();
   device = vkb_device.device;

@@ -5,33 +5,27 @@
 #include "Core/PlatformDetection.h"
 
 namespace Oxylus {
-TracyVkCtx TracyProfiler::s_VulkanContext;
+TracyVkCtx TracyProfiler::vulkan_context;
 
-void TracyProfiler::InitTracyForVulkan(VkPhysicalDevice physdev,
-                                       VkDevice device,
-                                       VkQueue queue,
-                                       VkCommandBuffer cmdbuf) {
+void TracyProfiler::InitTracyForVulkan(const VulkanContext* context, VkCommandBuffer command_buffer) {
 #if GPU_PROFILER_ENABLED
-    const auto timedomains = (PFN_vkGetPhysicalDeviceCalibrateableTimeDomainsEXT)vkGetDeviceProcAddr(
-            VulkanContext::Context.Device,
-            "vkGetPhysicalDeviceCalibrateableTimeDomainsEXT");
+  const auto timedomains = (PFN_vkGetPhysicalDeviceCalibrateableTimeDomainsEXT)vkGetDeviceProcAddr(context->device, "vkGetPhysicalDeviceCalibrateableTimeDomainsEXT");
 
-    const auto timesteps = (PFN_vkGetCalibratedTimestampsEXT)vkGetDeviceProcAddr(VulkanContext::Context.Device,
-                                                                                 "vkGetCalibratedTimestampsEXT");
+  const auto timesteps = (PFN_vkGetCalibratedTimestampsEXT)vkGetDeviceProcAddr(context->device, "vkGetCalibratedTimestampsEXT");
 
-    s_VulkanContext = TracyVkContextCalibrated(physdev, device, queue, cmdbuf, timedomains, timesteps);
+  vulkan_context = TracyVkContextCalibrated(context->physical_device, context->device, context->graphics_queue, command_buffer, timedomains, timesteps)
 #endif
 }
 
 void TracyProfiler::DestroyContext() {
 #if GPU_PROFILER_ENABLED
-    TracyVkDestroy(s_VulkanContext);
+  DestroyVkContext(vulkan_context);
 #endif
 }
 
 void TracyProfiler::Collect(const VkCommandBuffer& commandBuffer) {
 #if GPU_PROFILER_ENABLED
-    s_VulkanContext->Collect(commandBuffer);
+  vulkan_context->Collect(commandBuffer);
 #endif
 }
 

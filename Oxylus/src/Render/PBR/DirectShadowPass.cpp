@@ -59,7 +59,7 @@ void DirectShadowPass::update_cascades(const Vec3& dir_light_transform, Camera* 
     };
 
     // Project frustum corners into world space
-    glm::mat4 invCam = glm::inverse(camera->GetProjectionMatrixFlipped() * camera->GetViewMatrix());
+    glm::mat4 invCam = glm::inverse(camera->GetProjectionMatrixFlipped() * camera->get_view_matrix());
     for (uint32_t j = 0; j < 8; j++) {
       glm::vec4 invCorner = invCam * glm::vec4(frustumCorners[j], 1.0f);
       frustumCorners[j] = invCorner / invCorner.w;

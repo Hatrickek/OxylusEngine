@@ -138,7 +138,7 @@ static void OpenFile(const std::filesystem::path& path) {
     const FileType fileType = fileTypeIt->second;
     switch (fileType) {
       case FileType::Scene: {
-        EditorLayer::Get()->OpenScene(filepath);
+        EditorLayer::get()->OpenScene(filepath);
         break;
       }
       case FileType::Unknown: break;
@@ -147,7 +147,7 @@ static void OpenFile(const std::filesystem::path& path) {
       case FileType::Cubemap: break;
       case FileType::Model: break;
       case FileType::Material: {
-        EditorLayer::Get()->SetContextAsAssetWithPath(path.string());
+        EditorLayer::get()->SetContextAsAssetWithPath(path.string());
         break;
       }
       case FileType::Audio: {
@@ -491,7 +491,7 @@ void ContentPanel::RenderSideView() {
     }
     ImGui::EndTable();
     if (ImGui::IsItemClicked())
-      EditorLayer::Get()->ResetContext();
+      EditorLayer::get()->ResetContext();
   }
 
   ImGui::PopStyleVar();
@@ -581,7 +581,7 @@ void ContentPanel::RenderBody(bool grid) {
         cursorPos = ImGui::GetCursorPos();
 
         bool highlight = false;
-        const EditorContext& context = EditorLayer::Get()->GetContext();
+        const EditorContext& context = EditorLayer::get()->GetContext();
         if (context.IsValid(EditorContextType::File)) {
           highlight = file.Filepath == context.As<char>();
         }
@@ -591,7 +591,7 @@ void ContentPanel::RenderBody(bool grid) {
         id[2] = static_cast<char>(i);
         bool const clicked = IGUI::toggle_button(id.c_str(), highlight, backgroundThumbnailSize, 0.1f);
         if (m_ElapsedTime > 0.25f && clicked) {
-          EditorLayer::Get()->SetContextAsFileWithPath(strPath);
+          EditorLayer::get()->SetContextAsFileWithPath(strPath);
         }
         ImGui::PushStyleVar(ImGuiStyleVar_ItemSpacing, ImGuiLayer::PopupItemSpacing);
         if (ImGui::BeginPopupContextItem()) {
@@ -623,7 +623,7 @@ void ContentPanel::RenderBody(bool grid) {
             directoryToOpen = path;
           else
             OpenFile(path);
-          EditorLayer::Get()->ResetContext();
+          EditorLayer::get()->ResetContext();
         }
 
         // Foreground Image
@@ -688,7 +688,7 @@ void ContentPanel::RenderBody(bool grid) {
 
     ImGui::PushStyleVar(ImGuiStyleVar_ItemSpacing, ImGuiLayer::PopupItemSpacing);
     if (ImGui::BeginPopupContextWindow("AssetPanelHierarchyContextWindow", ImGuiPopupFlags_MouseButtonRight | ImGuiPopupFlags_NoOpenOverItems)) {
-      EditorLayer::Get()->ResetContext();
+      EditorLayer::get()->ResetContext();
       DrawContextMenuItems(m_CurrentDirectory, true);
       ImGui::EndPopup();
     }
@@ -697,7 +697,7 @@ void ContentPanel::RenderBody(bool grid) {
     ImGui::EndTable();
 
     if (!anyItemHovered && ImGui::IsItemClicked())
-      EditorLayer::Get()->ResetContext();
+      EditorLayer::get()->ResetContext();
   }
 
   ImGui::PopStyleVar();
@@ -724,7 +724,7 @@ void ContentPanel::RenderBody(bool grid) {
       ImGui::CloseCurrentPopup();
       m_DirectoryToDelete.clear();
     }
-    EditorLayer::Get()->ResetContext();
+    EditorLayer::get()->ResetContext();
     ImGui::EndPopup();
   }
 
@@ -784,7 +784,7 @@ void ContentPanel::DrawContextMenuItems(const std::filesystem::path& context, bo
           created = std::filesystem::create_directory(newFolderPath);
           ++i;
         }
-        EditorLayer::Get()->SetContextAsFileWithPath(newFolderPath);
+        EditorLayer::get()->SetContextAsFileWithPath(newFolderPath);
         ImGui::CloseCurrentPopup();
       }
       if (ImGui::BeginMenu("Asset")) {

@@ -44,7 +44,7 @@ public:
 
   Mat4 GetProjectionMatrixFlipped() const;
   Mat4 GetProjectionMatrix() const;
-  Mat4 GetViewMatrix() const;
+  Mat4 get_view_matrix() const;
   Mat4 GetWorldMatrix() const;
 
   void SetYaw(const float value) { m_Yaw = value; }

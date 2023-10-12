@@ -20,7 +20,7 @@ void ProjectPanel::OnUpdate() { }
 void ProjectPanel::LoadProjectForEditor(const std::string& filepath) {
   if (Project::Load(filepath)) {
     const auto startScene = AssetManager::get_asset_file_system_path(Project::GetActive()->GetConfig().StartScene);
-    EditorLayer::Get()->OpenScene(startScene);
+    EditorLayer::get()->OpenScene(startScene);
     EditorConfig::Get()->AddRecentProject(filepath);
     Visible = false;
   }
@@ -37,7 +37,7 @@ void ProjectPanel::OnImGuiRender() {
     const float x = ImGui::GetContentRegionAvail().x;
     const float y = ImGui::GetFrameHeight();
 
-    IGUI::image(EditorLayer::Get()->m_EngineBanner->get_texture(), {x, 111});
+    IGUI::image(EditorLayer::get()->m_EngineBanner->get_texture(), {x, 111});
 
     ImGui::Text("Recent Projects");
     for (auto& project : EditorConfig::Get()->GetRecentProjects()) {

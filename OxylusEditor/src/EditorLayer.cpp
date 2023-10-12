@@ -57,7 +57,7 @@ void EditorLayer::on_attach(EventDispatcher& dispatcher) {
   m_EditorPanels.emplace("ProjectPanel", create_scope<ProjectPanel>());
   m_EditorPanels.emplace("StatisticsPanel", create_scope<StatisticsPanel>());
   m_EditorPanels.emplace("EditorDebugPanel", create_scope<EditorDebugPanel>());
-  m_ViewportPanels.emplace_back(create_scope<ViewportPanel>())->m_Camera.SetPosition({-2, 2, 0});
+  m_ViewportPanels.emplace_back(create_scope<ViewportPanel>())->m_camera.SetPosition({-2, 2, 0});
 
   // Register panel events
   m_ConsolePanel.m_RuntimeConsole.RegisterCommand("show_style_editor",
@@ -100,7 +100,7 @@ void EditorLayer::on_update(Timestep deltaTime) {
 
   switch (m_SceneState) {
     case SceneState::Edit: {
-      m_ActiveScene->on_editor_update(deltaTime, m_ViewportPanels[0]->m_Camera);
+      m_ActiveScene->on_editor_update(deltaTime, m_ViewportPanels[0]->m_camera);
       break;
     }
     case SceneState::Play: {
@@ -108,7 +108,7 @@ void EditorLayer::on_update(Timestep deltaTime) {
       break;
     }
     case SceneState::Simulate: {
-      m_ActiveScene->on_editor_update(deltaTime, m_ViewportPanels[0]->m_Camera);
+      m_ActiveScene->on_editor_update(deltaTime, m_ViewportPanels[0]->m_camera);
       break;
     }
   }

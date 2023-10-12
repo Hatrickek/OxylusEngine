@@ -35,7 +35,7 @@ void Camera::Dolly(float z) {
   Translate({0, 0, z});
 }
 
-glm::mat4 Camera::GetViewMatrix() const {
+glm::mat4 Camera::get_view_matrix() const {
   return m_ViewMatrix;
 }
 

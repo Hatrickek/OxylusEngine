@@ -22,6 +22,7 @@ public:
   VkDevice device = nullptr;
   VkPhysicalDevice physical_device = nullptr;
   VkQueue graphics_queue = nullptr;
+  uint32_t graphics_queue_family_index = 0;
   VkQueue transfer_queue = nullptr;
   std::optional<vuk::Context> context;
   std::optional<vuk::DeviceSuperFrameResource> superframe_resource;
