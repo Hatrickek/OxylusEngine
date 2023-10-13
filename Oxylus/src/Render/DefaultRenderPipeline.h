@@ -23,6 +23,8 @@ public:
   void init(Scene* scene) override;
   void shutdown() override;
   void update(Scene* scene) override;
+  void final_pass(Ref<vuk::RenderGraph> rg, vuk::Buffer final_buffer);
+  void ssr_pass(Ref<vuk::RenderGraph> rg, vuk::Buffer& vs_buffer, vuk::Buffer ssr_buffer);
   Scope<vuk::Future> on_render(vuk::Allocator& command_buffer, const vuk::Future& target, vuk::Dimension3D dim) override;
   void on_dispatcher_events(EventDispatcher& dispatcher) override;
 

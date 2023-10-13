@@ -14,7 +14,7 @@
 
 namespace Oxylus {
 ViewportPanel::ViewportPanel() : EditorPanel("Viewport", ICON_MDI_TERRAIN, true) {
-  VulkanRenderer::set_camera(m_Camera);
+  VulkanRenderer::set_camera(m_camera);
 }
 
 void ViewportPanel::OnImGuiRender() {
@@ -83,12 +83,14 @@ void ViewportPanel::OnImGuiRender() {
     ImGui::SetCursorPosX((m_ViewportPanelSize.x - fixedWidth) * 0.5f);
 
     const auto dim = vuk::Dimension3D::absolute((uint32_t)m_ViewportPanelSize.x, (uint32_t)m_ViewportPanelSize.y);
-    m_Scene->get_renderer()->get_render_pipeline()->detach_swapchain(dim);
+    auto rp = m_Scene->get_renderer()->get_render_pipeline();
+    rp->detach_swapchain(dim);
+    const auto final_image = rp->get_final_image();
 
     const auto finalImage = m_Scene->get_renderer()->get_render_pipeline()->get_final_image();
 
-    if (finalImage) {
-      IGUI::image(*finalImage, ImVec2{fixedWidth, m_ViewportSize.y});
+    if (final_image) {
+      IGUI::image(*final_image, ImVec2{fixedWidth, m_ViewportSize.y});
     }
     else {
       const auto textWidth = ImGui::CalcTextSize("No render target!").x;
@@ -174,22 +176,22 @@ void ViewportPanel::OnImGuiRender() {
         ImGui::PushStyleVar(ImGuiStyleVar_ItemSpacing, {1, 1});
 
         const ImVec2 buttonSize = {frameHeight * 1.5f, frameHeight};
-        const bool highlight = EditorLayer::Get()->m_SceneState == EditorLayer::SceneState::Play;
-        const char8_t* icon = EditorLayer::Get()->m_SceneState == EditorLayer::SceneState::Edit ? ICON_MDI_PLAY : ICON_MDI_STOP;
+        const bool highlight = EditorLayer::get()->m_SceneState == EditorLayer::SceneState::Play;
+        const char8_t* icon = EditorLayer::get()->m_SceneState == EditorLayer::SceneState::Edit ? ICON_MDI_PLAY : ICON_MDI_STOP;
         if (IGUI::toggle_button(StringUtils::from_char8_t(icon), highlight, buttonSize)) {
-          if (EditorLayer::Get()->m_SceneState == EditorLayer::SceneState::Edit)
-            EditorLayer::Get()->OnScenePlay();
-          else if (EditorLayer::Get()->m_SceneState == EditorLayer::SceneState::Play)
-            EditorLayer::Get()->OnSceneStop();
+          if (EditorLayer::get()->m_SceneState == EditorLayer::SceneState::Edit)
+            EditorLayer::get()->OnScenePlay();
+          else if (EditorLayer::get()->m_SceneState == EditorLayer::SceneState::Play)
+            EditorLayer::get()->OnSceneStop();
         }
         ImGui::SameLine();
         ImGui::PushStyleColor(ImGuiCol_Button, ImVec4(0.2f, 0.2f, 0.2f, 0.4f));
         if (ImGui::Button(StringUtils::from_char8_t(ICON_MDI_PAUSE), buttonSize)) {
-          EditorLayer::Get()->OnSceneStop();
+          EditorLayer::get()->OnSceneStop();
         }
         ImGui::SameLine();
         if (ImGui::Button(StringUtils::from_char8_t(ICON_MDI_STEP_FORWARD), buttonSize)) {
-          EditorLayer::Get()->OnSceneSimulate();
+          EditorLayer::get()->OnSceneSimulate();
         }
         ImGui::PopStyleColor();
 
@@ -210,8 +212,8 @@ void ViewportPanel::SetContext(const Ref<Scene>& scene, SceneHierarchyPanel& sce
 
 void ViewportPanel::OnUpdate() {
   if (m_ViewportFocused && !m_SimulationRunning && m_UseEditorCamera) {
-    const Vec3& position = m_Camera.GetPosition();
-    const glm::vec2 yawPitch = glm::vec2(m_Camera.GetYaw(), m_Camera.GetPitch());
+    const Vec3& position = m_camera.GetPosition();
+    const glm::vec2 yawPitch = glm::vec2(m_camera.GetYaw(), m_camera.GetPitch());
     Vec3 finalPosition = position;
     glm::vec2 finalYawPitch = yawPitch;
 
@@ -232,13 +234,13 @@ void ViewportPanel::OnUpdate() {
 
       const float maxMoveSpeed = m_MovementSpeed * (ImGui::IsKeyDown(ImGuiKey_LeftShift) ? 3.0f : 1.0f);
       if (ImGui::IsKeyDown(ImGuiKey_W))
-        finalPosition += m_Camera.GetFront() * maxMoveSpeed;
+        finalPosition += m_camera.GetFront() * maxMoveSpeed;
       else if (ImGui::IsKeyDown(ImGuiKey_S))
-        finalPosition -= m_Camera.GetFront() * maxMoveSpeed;
+        finalPosition -= m_camera.GetFront() * maxMoveSpeed;
       if (ImGui::IsKeyDown(ImGuiKey_D))
-        finalPosition += m_Camera.GetRight() * maxMoveSpeed;
+        finalPosition += m_camera.GetRight() * maxMoveSpeed;
       else if (ImGui::IsKeyDown(ImGuiKey_A))
-        finalPosition -= m_Camera.GetRight() * maxMoveSpeed;
+        finalPosition -= m_camera.GetRight() * maxMoveSpeed;
 
       if (ImGui::IsKeyDown(ImGuiKey_Q)) {
         finalPosition.y -= maxMoveSpeed;
@@ -262,8 +264,8 @@ void ViewportPanel::OnUpdate() {
       const glm::vec2 change = (newMousePosition - m_LockedMousePosition) * m_MouseSensitivity;
 
       const float maxMoveSpeed = m_MovementSpeed * (ImGui::IsKeyDown(ImGuiKey_LeftShift) ? 3.0f : 1.0f);
-      finalPosition += m_Camera.GetFront() * change.y * maxMoveSpeed;
-      finalPosition += m_Camera.GetRight() * change.x * maxMoveSpeed;
+      finalPosition += m_camera.GetFront() * change.y * maxMoveSpeed;
+      finalPosition += m_camera.GetRight() * change.x * maxMoveSpeed;
     }
     else {
       //Input::SetCursorIconDefault();
@@ -283,11 +285,11 @@ void ViewportPanel::OnUpdate() {
       1000.0f,
       Application::get_timestep());
 
-    m_Camera.SetPosition(m_SmoothCamera ? dampedPosition : finalPosition);
-    m_Camera.SetYaw(m_SmoothCamera ? dampedYawPitch.x : finalYawPitch.x);
-    m_Camera.SetPitch(m_SmoothCamera ? dampedYawPitch.y : finalYawPitch.y);
+    m_camera.SetPosition(m_SmoothCamera ? dampedPosition : finalPosition);
+    m_camera.SetYaw(m_SmoothCamera ? dampedYawPitch.x : finalYawPitch.x);
+    m_camera.SetPitch(m_SmoothCamera ? dampedYawPitch.y : finalYawPitch.y);
 
-    m_Camera.Update();
+    m_camera.Update();
   }
 }
 
@@ -345,8 +347,8 @@ void ViewportPanel::DrawGizmos() {
       m_ViewportBounds[1].x - m_ViewportBounds[0].x,
       m_ViewportBounds[1].y - m_ViewportBounds[0].y);
 
-    const glm::mat4& cameraProjection = m_Camera.GetProjectionMatrix();
-    const glm::mat4& cameraView = m_Camera.GetViewMatrix();
+    const glm::mat4& cameraProjection = m_camera.GetProjectionMatrix();
+    const glm::mat4& cameraView = m_camera.get_view_matrix();
 
     auto& tc = selectedEntity.get_component<TransformComponent>();
     glm::mat4 transform = selectedEntity.get_world_transform();

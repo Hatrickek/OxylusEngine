@@ -8,7 +8,7 @@
 namespace Oxylus {
 class ViewportPanel : public EditorPanel {
 public:
-  Camera m_Camera;
+  Camera m_camera;
   bool PerformanceOverlayVisible = true;
   bool FullscreenViewport = false;
 

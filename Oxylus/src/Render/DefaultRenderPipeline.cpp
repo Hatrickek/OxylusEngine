@@ -58,8 +58,9 @@ void DefaultRenderPipeline::update(Scene* scene) {
       bool parentEnabled = true;
       if (parent)
         parentEnabled = parent.get_component<TagComponent>().enabled;
-      if (tag.enabled && parentEnabled && !material.materials.empty())
+      if (tag.enabled && parentEnabled && !material.materials.empty()) {
         mesh_draw_list.emplace_back(meshrenderer.mesh_geometry.get(), e.get_world_transform(), material.materials, meshrenderer.submesh_index);
+      }
     }
   }
 
@@ -149,12 +150,14 @@ void DefaultRenderPipeline::init_render_graph() {
     pci.add_glsl(FileUtils::read_shader_file("PBRTiled.frag"), FileUtils::get_shader_path("PBRTiled.frag"));
     vk_context->context->create_named_pipeline("pbr_pipeline", pci);
   }
+#if 0 // TODO
   {
     vuk::PipelineBaseCreateInfo pci;
     pci.add_glsl(FileUtils::read_shader_file("Unlit.vert"), "Unlit.vert");
     pci.add_glsl(FileUtils::read_shader_file("Unlit.frag"), "Unlit.frag");
     vk_context->context->create_named_pipeline("debug_pipeline", pci);
   }
+#endif
   {
     vuk::PipelineBaseCreateInfo pci;
     pci.add_glsl(FileUtils::read_shader_file("SSR.comp"), "SSR.comp");
@@ -204,6 +207,7 @@ void DefaultRenderPipeline::init_render_graph() {
     pci.add_glsl(FileUtils::read_shader_file("FXAA.frag"), FileUtils::get_shader_path("FXAA.frag"));
     vk_context->context->create_named_pipeline("fxaa_pipeline", pci);
   }
+#if 0 // TODO
   {
     vuk::PipelineBaseCreateInfo pci;
     pci.add_glsl(FileUtils::read_shader_file("Bloom.comp"), FileUtils::get_shader_path("Bloom.comp"));
@@ -219,6 +223,7 @@ void DefaultRenderPipeline::init_render_graph() {
     pci.add_glsl(FileUtils::read_shader_file("BloomDownsample.comp"), FileUtils::get_shader_path("BloomDownsample.comp"));
     vk_context->context->create_named_pipeline("bloom_downsample_pipeline", pci);
   }
+#endif
 
   wait_for_futures(vk_context);
 }
@@ -313,12 +318,7 @@ Scope<vuk::Future> DefaultRenderPipeline::on_render(vuk::Allocator& frame_alloca
 
   rg->attach_and_clear_image("gtao_depth_image", {.format = vuk::Format::eR32Sfloat, .sample_count = vuk::SampleCountFlagBits::e1, .level_count = 5, .layer_count = 1}, vuk::Black<float>);
   rg->inference_rule("gtao_depth_image", vuk::same_extent_as("final_image"));
-
-  auto diverged_names = diverge_image_mips(rg, "gtao_depth_image", 5);
-  std::vector<vuk::Name> output_names = {};
-  output_names.reserve(diverged_names.size());
-  for (auto& n : diverged_names)
-    output_names.emplace_back(n.append("+"));
+  auto [diverged_names, output_names]= diverge_image_mips(rg, "gtao_depth_image", 5);
 
   rg->add_pass({
     .name = "gtao_first_pass",
@@ -346,8 +346,6 @@ Scope<vuk::Future> DefaultRenderPipeline::on_render(vuk::Allocator& frame_alloca
 
   rg->converge_image_explicit(output_names, "gtao_depth_output");
 
-  //converge_image_mips(rg, diverged_names, "gtao_depth_output");
-
   rg->add_pass({
     .name = "gtao_main_pass",
     .resources = {
@@ -357,6 +355,7 @@ Scope<vuk::Future> DefaultRenderPipeline::on_render(vuk::Allocator& frame_alloca
       "normal_output"_image >> vuk::eComputeSampled
     },
     .execute = [gtao_const_buffer](vuk::CommandBuffer& command_buffer) {
+      OX_TRACE_GPU(command_buffer.get_underlying(), "gtao_main_pass")
       command_buffer.bind_compute_pipeline("gtao_main_pipeline")
                     .bind_buffer(0, 0, gtao_const_buffer)
                     .bind_image(0, 1, "gtao_depth_output")
@@ -408,14 +407,15 @@ Scope<vuk::Future> DefaultRenderPipeline::on_render(vuk::Allocator& frame_alloca
       "gtao_denoised_output"_image >> vuk::eComputeSampled,
       "gtao_edge_output"_image >> vuk::eComputeSampled
     },
-    .execute = [gtao_const_buffer](vuk::CommandBuffer& commandBuffer) {
-      commandBuffer.bind_compute_pipeline("gtao_final_pipeline")
-                   .bind_buffer(0, 0, gtao_const_buffer)
-                   .bind_image(0, 1, "gtao_denoised_output")
-                   .bind_image(0, 2, "gtao_edge_output")
-                   .bind_image(0, 3, "gtao_final_image")
-                   .bind_sampler(0, 4, {})
-                   .dispatch((VulkanRenderer::get_viewport_width() + (XE_GTAO_NUMTHREADS_X * 2) - 1) / (XE_GTAO_NUMTHREADS_X * 2), (VulkanRenderer::get_viewport_height() + XE_GTAO_NUMTHREADS_Y - 1) / XE_GTAO_NUMTHREADS_Y, 1);
+    .execute = [gtao_const_buffer](vuk::CommandBuffer& command_buffer) {
+      OX_TRACE_GPU(command_buffer.get_underlying(), "gtao_final_pass")
+      command_buffer.bind_compute_pipeline("gtao_final_pipeline")
+                    .bind_buffer(0, 0, gtao_const_buffer)
+                    .bind_image(0, 1, "gtao_denoised_output")
+                    .bind_image(0, 2, "gtao_edge_output")
+                    .bind_image(0, 3, "gtao_final_image")
+                    .bind_sampler(0, 4, {})
+                    .dispatch((VulkanRenderer::get_viewport_width() + (XE_GTAO_NUMTHREADS_X * 2) - 1) / (XE_GTAO_NUMTHREADS_X * 2), (VulkanRenderer::get_viewport_height() + XE_GTAO_NUMTHREADS_Y - 1) / XE_GTAO_NUMTHREADS_Y, 1);
     }
   });
 
@@ -432,9 +432,6 @@ Scope<vuk::Future> DefaultRenderPipeline::on_render(vuk::Allocator& frame_alloca
 
   cascaded_shadow_pass(rg, shadow_buffer);
 
-  if (point_lights_data.empty())
-    point_lights_data.emplace_back();
-
   auto [point_lights_buf, point_lights_buffer_fut] = create_buffer(frame_allocator, vuk::MemoryUsage::eCPUtoGPU, vuk::DomainFlagBits::eTransferOnGraphics, std::span(point_lights_data));
   auto& point_lights_buffer = *point_lights_buf;
 
@@ -445,10 +442,12 @@ Scope<vuk::Future> DefaultRenderPipeline::on_render(vuk::Allocator& frame_alloca
     IVec2 num_thread_groups = {};
   } pbr_pass_params;
 
-  pbr_pass_params.num_lights = 1;
+  pbr_pass_params.num_lights = (int)point_lights_data.size();
   pbr_pass_params.num_threads = (glm::ivec2(VulkanRenderer::get_viewport_width(), VulkanRenderer::get_viewport_height()) + PIXELS_PER_TILE - 1) / PIXELS_PER_TILE;
   pbr_pass_params.num_thread_groups = (pbr_pass_params.num_threads + TILES_PER_THREADGROUP - 1) / TILES_PER_THREADGROUP;
   pbr_pass_params.screen_dimensions = glm::ivec2(VulkanRenderer::get_viewport_width(), VulkanRenderer::get_viewport_height());
+
+  point_lights_data.clear();
 
   auto [pbr_buf, pbr_buffer_fut] = create_buffer(frame_allocator, vuk::MemoryUsage::eCPUtoGPU, vuk::DomainFlagBits::eTransferOnGraphics, std::span(&pbr_pass_params, 1));
   auto pbr_buffer = *pbr_buf;
@@ -460,7 +459,8 @@ Scope<vuk::Future> DefaultRenderPipeline::on_render(vuk::Allocator& frame_alloca
       "pbr_depth"_image >> vuk::eDepthStencilRW,
       "shadow_array_output"_image >> vuk::eFragmentSampled
     },
-    .execute = [this, vs_buffer, point_lights_buffer, shadow_buffer, pbr_buffer, mat_buffer, material_map](vuk::CommandBuffer& commandBuffer) {
+    .execute = [this, vs_buffer, point_lights_buffer, shadow_buffer, pbr_buffer, mat_buffer, material_map](vuk::CommandBuffer& command_buffer) {
+      OX_TRACE_GPU(command_buffer.get_underlying(), "geomerty_pass")
       // Skybox pass
       struct SkyboxPushConstant {
         Mat4 view;
@@ -473,22 +473,22 @@ Scope<vuk::Future> DefaultRenderPipeline::on_render(vuk::Allocator& frame_alloca
       for (auto&& [e, sc] : sky_light_view.each())
         skybox_push_constant.lod_bias = sc.lod_bias;
 
-      commandBuffer.bind_graphics_pipeline("skybox_pipeline")
-                   .set_viewport(0, vuk::Rect2D::framebuffer())
-                   .set_scissor(0, vuk::Rect2D::framebuffer())
-                   .broadcast_color_blend({})
-                   .set_rasterization({.cullMode = vuk::CullModeFlagBits::eNone})
-                   .set_depth_stencil(vuk::PipelineDepthStencilStateCreateInfo{
-                      .depthTestEnable = false,
-                      .depthWriteEnable = false,
-                      .depthCompareOp = vuk::CompareOp::eLessOrEqual,
-                    })
-                   .bind_buffer(0, 0, vs_buffer)
-                   .bind_sampler(0, 1, vuk::LinearSamplerRepeated)
-                   .bind_image(0, 1, m_resources.cube_map->as_attachment())
-                   .push_constants(vuk::ShaderStageFlagBits::eVertex | vuk::ShaderStageFlagBits::eFragment, 0, skybox_push_constant);
+      command_buffer.bind_graphics_pipeline("skybox_pipeline")
+                    .set_viewport(0, vuk::Rect2D::framebuffer())
+                    .set_scissor(0, vuk::Rect2D::framebuffer())
+                    .broadcast_color_blend({})
+                    .set_rasterization({.cullMode = vuk::CullModeFlagBits::eNone})
+                    .set_depth_stencil(vuk::PipelineDepthStencilStateCreateInfo{
+                       .depthTestEnable = false,
+                       .depthWriteEnable = false,
+                       .depthCompareOp = vuk::CompareOp::eLessOrEqual,
+                     })
+                    .bind_buffer(0, 0, vs_buffer)
+                    .bind_sampler(0, 1, vuk::LinearSamplerRepeated)
+                    .bind_image(0, 1, m_resources.cube_map->as_attachment())
+                    .push_constants(vuk::ShaderStageFlagBits::eVertex | vuk::ShaderStageFlagBits::eFragment, 0, skybox_push_constant);
 
-      skybox_cube->draw(commandBuffer);
+      skybox_cube->draw(command_buffer);
 
       auto irradiance_att = vuk::ImageAttachment{
         .image = *irradiance_image,
@@ -531,34 +531,34 @@ Scope<vuk::Future> DefaultRenderPipeline::on_render(vuk::Allocator& frame_alloca
         .layer_count = 1
       };
 
-      commandBuffer.bind_graphics_pipeline("pbr_pipeline")
-                   .set_viewport(0, vuk::Rect2D::framebuffer())
-                   .set_scissor(0, vuk::Rect2D::framebuffer())
-                   .broadcast_color_blend({})
-                   .set_depth_stencil(vuk::PipelineDepthStencilStateCreateInfo{
-                      .depthTestEnable = true,
-                      .depthWriteEnable = true,
-                      .depthCompareOp = vuk::CompareOp::eLessOrEqual,
-                    })
-                   .bind_buffer(0, 0, vs_buffer)
-                   .bind_buffer(0, 1, pbr_buffer)
-                   .bind_buffer(0, 2, point_lights_buffer)
-                   .bind_sampler(0, 4, vuk::LinearSamplerRepeated)
-                   .bind_image(0, 4, irradiance_att)
-                   .bind_sampler(0, 5, vuk::LinearSamplerRepeated)
-                   .bind_image(0, 5, brdf_att)
-                   .bind_sampler(0, 6, vuk::LinearSamplerRepeated)
-                   .bind_image(0, 6, prefilter_att)
-                   .bind_sampler(0, 7, vuk::LinearSamplerRepeated)
-                   .bind_image(0, 7, "shadow_array_output")
-                   .bind_buffer(0, 8, shadow_buffer)
-                   .bind_buffer(2, 0, mat_buffer);
+      command_buffer.bind_graphics_pipeline("pbr_pipeline")
+                    .set_viewport(0, vuk::Rect2D::framebuffer())
+                    .set_scissor(0, vuk::Rect2D::framebuffer())
+                    .broadcast_color_blend({})
+                    .set_depth_stencil(vuk::PipelineDepthStencilStateCreateInfo{
+                       .depthTestEnable = true,
+                       .depthWriteEnable = true,
+                       .depthCompareOp = vuk::CompareOp::eLessOrEqual,
+                     })
+                    .bind_buffer(0, 0, vs_buffer)
+                    .bind_buffer(0, 1, pbr_buffer)
+                    .bind_buffer(0, 2, point_lights_buffer)
+                    .bind_sampler(0, 4, vuk::LinearSamplerRepeated)
+                    .bind_image(0, 4, irradiance_att)
+                    .bind_sampler(0, 5, vuk::LinearSamplerRepeated)
+                    .bind_image(0, 5, brdf_att)
+                    .bind_sampler(0, 6, vuk::LinearSamplerRepeated)
+                    .bind_image(0, 6, prefilter_att)
+                    .bind_sampler(0, 7, vuk::LinearSamplerRepeated)
+                    .bind_image(0, 7, "shadow_array_output")
+                    .bind_buffer(0, 8, shadow_buffer)
+                    .bind_buffer(2, 0, mat_buffer);
 
       // PBR pipeline
       for (uint32_t i = 0; i < mesh_draw_list.size(); i++) {
         auto& mesh = mesh_draw_list[i];
         VulkanRenderer::render_mesh(mesh,
-          commandBuffer,
+          command_buffer,
           [&](const Mesh::Primitive* part) {
             const auto& material = mesh.materials[part->material_index];
             if (material->alpha_mode == Material::AlphaMode::Blend) {
@@ -566,27 +566,27 @@ Scope<vuk::Future> DefaultRenderPipeline::on_render(vuk::Allocator& frame_alloca
               return false;
             }
 
-            commandBuffer.push_constants(vuk::ShaderStageFlagBits::eVertex | vuk::ShaderStageFlagBits::eFragment, 0, mesh.transform)
-                         .push_constants(vuk::ShaderStageFlagBits::eFragment, sizeof(glm::mat4), get_material_index(material_map, i, part->material_index));
+            command_buffer.push_constants(vuk::ShaderStageFlagBits::eVertex | vuk::ShaderStageFlagBits::eFragment, 0, mesh.transform)
+                          .push_constants(vuk::ShaderStageFlagBits::eFragment, sizeof(glm::mat4), get_material_index(material_map, i, part->material_index));
 
-            material->bind_textures(commandBuffer);
+            material->bind_textures(command_buffer);
             return true;
           });
       }
 
-      commandBuffer.broadcast_color_blend(vuk::BlendPreset::eAlphaBlend);
+      command_buffer.broadcast_color_blend(vuk::BlendPreset::eAlphaBlend);
 
       // Transparency pass
       for (auto i : transparent_mesh_draw_list) {
         auto& mesh = mesh_draw_list[i];
         VulkanRenderer::render_mesh(mesh,
-          commandBuffer,
+          command_buffer,
           [&](const Mesh::Primitive* part) {
             const auto& material = mesh.materials[part->material_index];
-            commandBuffer.push_constants(vuk::ShaderStageFlagBits::eVertex | vuk::ShaderStageFlagBits::eFragment, 0, mesh.transform)
-                         .push_constants(vuk::ShaderStageFlagBits::eFragment, sizeof(glm::mat4), get_material_index(material_map, i, part->material_index));
+            command_buffer.push_constants(vuk::ShaderStageFlagBits::eVertex | vuk::ShaderStageFlagBits::eFragment, 0, mesh.transform)
+                          .push_constants(vuk::ShaderStageFlagBits::eFragment, sizeof(glm::mat4), get_material_index(material_map, i, part->material_index));
 
-            material->bind_textures(commandBuffer);
+            material->bind_textures(command_buffer);
             return true;
           });
       }
@@ -642,6 +642,7 @@ Scope<vuk::Future> DefaultRenderPipeline::on_render(vuk::Allocator& frame_alloca
       "normal_output"_image >> vuk::eComputeSampled
     },
     .execute = [this, ssr_buffer, vs_buffer](vuk::CommandBuffer& command_buffer) {
+      OX_TRACE_GPU(command_buffer.get_underlying(), "ssr_pass")
       command_buffer.bind_compute_pipeline("ssr_pipeline")
                     .bind_sampler(0, 0, vuk::LinearSamplerClamped)
                     .bind_image(0, 0, "ssr_image")
@@ -726,6 +727,7 @@ Scope<vuk::Future> DefaultRenderPipeline::on_render(vuk::Allocator& frame_alloca
       "gtao_final_output"_image >> vuk::eFragmentSampled,
     },
     .execute = [final_buffer](vuk::CommandBuffer& command_buffer) {
+      OX_TRACE_GPU(command_buffer.get_underlying(), "final_pass")
       command_buffer.bind_graphics_pipeline("final_pipeline")
                     .set_viewport(0, vuk::Rect2D::framebuffer())
                     .set_scissor(0, vuk::Rect2D::framebuffer())

@@ -138,6 +138,7 @@ void VulkanRenderer::draw(VulkanContext* context, ImGuiLayer* imgui_layer, Layer
     auto si = create_ref<vuk::SampledImage>(make_sampled_image(vuk::NameReference{rg.get(), vuk::QualifiedName({}, attachmentNameOut)}, {}));
     rp->set_final_image(si);
     rp->set_frame_render_graph(rg);
+    rp->set_frame_allocator(&frameAllocator);
 
     for (const auto& layer : layer_stack)
       layer->on_imgui_render();
