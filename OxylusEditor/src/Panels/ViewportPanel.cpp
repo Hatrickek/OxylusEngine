@@ -212,7 +212,7 @@ void ViewportPanel::SetContext(const Ref<Scene>& scene, SceneHierarchyPanel& sce
 
 void ViewportPanel::OnUpdate() {
   if (m_ViewportFocused && !m_SimulationRunning && m_UseEditorCamera) {
-    const Vec3& position = m_camera.GetPosition();
+    const Vec3& position = m_camera.get_position();
     const glm::vec2 yawPitch = glm::vec2(m_camera.GetYaw(), m_camera.GetPitch());
     Vec3 finalPosition = position;
     glm::vec2 finalYawPitch = yawPitch;

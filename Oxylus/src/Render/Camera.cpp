@@ -11,7 +11,7 @@ Camera::Camera(glm::vec3 position) {
   UpdateViewMatrix();
 }
 
-glm::mat4 Camera::GetProjectionMatrixFlipped() const {
+glm::mat4 Camera::get_projection_matrix_flipped() const {
   OX_SCOPED_ZONE;
   auto projection = glm::perspective(glm::radians(Fov), Aspect, NearClip, FarClip);
   projection[1][1] *= -1.0f;
@@ -79,7 +79,7 @@ glm::vec3 Camera::GetRight() const {
   return m_Right;
 }
 
-const glm::vec3& Camera::GetPosition() const {
+const glm::vec3& Camera::get_position() const {
   return m_Position;
 }
 

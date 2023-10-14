@@ -24,7 +24,7 @@ Tonemapping, Chromatic Aberration, Film Grain, Vignette, Sharpen
 - Multithreaded physics with Jolt.   
 - Game scripting API with ECS events and ECS systems. Which has been used to
 build multiple games to test the API and engine in general.   
- More about that: [Oxrena](https://github.com/Hatrickek/OxArena) [(Creating a Game With Oxylus)](https://hatrickek.github.io/blog/oxylus-first-game)
+ More about that: [Oxrena](https://github.com/Hatrickek/OxArena), [(Creating a Game With Oxylus)](https://hatrickek.github.io/blog/oxylus-first-game)
 - 3D Audio with miniaudio
 
 ## Showcase

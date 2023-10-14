@@ -245,8 +245,8 @@ Scope<vuk::Future> DefaultRenderPipeline::on_render(vuk::Allocator& frame_alloca
   auto vk_context = VulkanContext::get();
 
   m_renderer_data.ubo_vs.view = m_renderer_context.current_camera->get_view_matrix();
-  m_renderer_data.ubo_vs.cam_pos = m_renderer_context.current_camera->GetPosition();
-  m_renderer_data.ubo_vs.projection = m_renderer_context.current_camera->GetProjectionMatrixFlipped();
+  m_renderer_data.ubo_vs.cam_pos = m_renderer_context.current_camera->get_position();
+  m_renderer_data.ubo_vs.projection = m_renderer_context.current_camera->get_projection_matrix_flipped();
   auto [vs_buff, vs_buffer_fut] = create_buffer(frame_allocator, vuk::MemoryUsage::eCPUtoGPU, vuk::DomainFlagBits::eTransferOnGraphics, std::span(&m_renderer_data.ubo_vs, 1));
   auto& vs_buffer = *vs_buff;
 
@@ -318,7 +318,7 @@ Scope<vuk::Future> DefaultRenderPipeline::on_render(vuk::Allocator& frame_alloca
 
   rg->attach_and_clear_image("gtao_depth_image", {.format = vuk::Format::eR32Sfloat, .sample_count = vuk::SampleCountFlagBits::e1, .level_count = 5, .layer_count = 1}, vuk::Black<float>);
   rg->inference_rule("gtao_depth_image", vuk::same_extent_as("final_image"));
-  auto [diverged_names, output_names]= diverge_image_mips(rg, "gtao_depth_image", 5);
+  auto [diverged_names, output_names] = diverge_image_mips(rg, "gtao_depth_image", 5);
 
   rg->add_pass({
     .name = "gtao_first_pass",
@@ -375,43 +375,45 @@ Scope<vuk::Future> DefaultRenderPipeline::on_render(vuk::Allocator& frame_alloca
   rg->inference_rule("gtao_main_image", vuk::same_extent_as("final_image"));
   rg->inference_rule("gtao_edge_image", vuk::same_extent_as("final_image"));
 
-  gtao_settings.DenoisePasses = 1;
   int pass_count = std::max(1, gtao_settings.DenoisePasses); // should be at least one for now.
+  auto gtao_denoise_output = vuk::Name(fmt::format("gtao_denoised_image_{}_output", pass_count - 1));
   for (int i = 0; i < pass_count; i++) {
+    auto attachment_name = vuk::Name(fmt::format("gtao_denoised_image_{}", i));
+    rg->attach_and_clear_image(attachment_name, {.format = vuk::Format::eR8Uint, .sample_count = vuk::SampleCountFlagBits::e1, .view_type = vuk::ImageViewType::e2D, .level_count = 1, .layer_count = 1}, vuk::Black<float>);
+    rg->inference_rule(attachment_name, vuk::same_extent_as("final_image"));
+
+    auto read_input = i == 0 ? vuk::Name("gtao_main_output") : vuk::Name(fmt::format("gtao_denoised_image_{}_output", i - 1));
     rg->add_pass({
       .name = "gtao_denoise_pass",
       .resources = {
-        "gtao_denoised_image"_image >> vuk::eComputeRW >> "gtao_denoised_output",
-        "gtao_main_output"_image >> vuk::eComputeSampled,
+        vuk::Resource(attachment_name, vuk::Resource::Type::eImage, vuk::eComputeRW, attachment_name.append("_output")),
+        vuk::Resource(read_input, vuk::Resource::Type::eImage, vuk::eComputeSampled),
         "gtao_edge_output"_image >> vuk::eComputeSampled
       },
-      .execute = [gtao_const_buffer](vuk::CommandBuffer& commandBuffer) {
+      .execute = [gtao_const_buffer, attachment_name, read_input](vuk::CommandBuffer& commandBuffer) {
         commandBuffer.bind_compute_pipeline("gtao_denoise_pipeline")
                      .bind_buffer(0, 0, gtao_const_buffer)
-                     .bind_image(0, 1, "gtao_main_output")
+                     .bind_image(0, 1, read_input)
                      .bind_image(0, 2, "gtao_edge_output")
-                     .bind_image(0, 3, "gtao_denoised_image")
+                     .bind_image(0, 3, attachment_name)
                      .bind_sampler(0, 4, {})
                      .dispatch((VulkanRenderer::get_viewport_width() + (XE_GTAO_NUMTHREADS_X * 2) - 1) / (XE_GTAO_NUMTHREADS_X * 2), (VulkanRenderer::get_viewport_height() + XE_GTAO_NUMTHREADS_Y - 1) / XE_GTAO_NUMTHREADS_Y, 1);
       }
     });
   }
 
-  rg->attach_and_clear_image("gtao_denoised_image", {.format = vuk::Format::eR8Uint, .sample_count = vuk::SampleCountFlagBits::e1, .view_type = vuk::ImageViewType::e2D, .level_count = 1, .layer_count = 1}, vuk::Black<float>);
-  rg->inference_rule("gtao_denoised_image", vuk::same_extent_as("final_image"));
-
   rg->add_pass({
     .name = "gtao_final_pass",
     .resources = {
       "gtao_final_image"_image >> vuk::eComputeRW >> "gtao_final_output",
-      "gtao_denoised_output"_image >> vuk::eComputeSampled,
+      vuk::Resource(gtao_denoise_output, vuk::Resource::Type::eImage, vuk::eComputeSampled),
       "gtao_edge_output"_image >> vuk::eComputeSampled
     },
-    .execute = [gtao_const_buffer](vuk::CommandBuffer& command_buffer) {
+    .execute = [gtao_const_buffer, gtao_denoise_output](vuk::CommandBuffer& command_buffer) {
       OX_TRACE_GPU(command_buffer.get_underlying(), "gtao_final_pass")
       command_buffer.bind_compute_pipeline("gtao_final_pipeline")
                     .bind_buffer(0, 0, gtao_const_buffer)
-                    .bind_image(0, 1, "gtao_denoised_output")
+                    .bind_image(0, 1, gtao_denoise_output)
                     .bind_image(0, 2, "gtao_edge_output")
                     .bind_image(0, 3, "gtao_final_image")
                     .bind_sampler(0, 4, {})

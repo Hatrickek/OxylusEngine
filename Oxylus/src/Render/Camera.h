@@ -42,7 +42,7 @@ public:
   void Update();
   void Update(const Vec3& pos, const Vec3& rotation);
 
-  Mat4 GetProjectionMatrixFlipped() const;
+  Mat4 get_projection_matrix_flipped() const;
   Mat4 GetProjectionMatrix() const;
   Mat4 get_view_matrix() const;
   Mat4 GetWorldMatrix() const;
@@ -65,7 +65,7 @@ public:
   void UpdateAspectRatio(const VkExtent2D& size);
   Vec3 GetFront() const;
   Vec3 GetRight() const;
-  const Vec3& GetPosition() const;
+  const Vec3& get_position() const;
 
   void UpdateViewMatrix();
   static Mat4 GenerateViewMatrix(const Vec3& position, const Vec3& viewDir, const Vec3& up);

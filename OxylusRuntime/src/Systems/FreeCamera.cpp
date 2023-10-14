@@ -18,7 +18,7 @@ namespace OxylusRuntime {
     for (const auto entity : group) {
       auto&& [transform, component] = group.get<TransformComponent, CameraComponent>(entity);
       auto& camera = component.system;
-      const glm::vec3& position = camera->GetPosition();
+      const glm::vec3& position = camera->get_position();
       const glm::vec2 yawPitch = glm::vec2(camera->GetYaw(), camera->GetPitch());
       glm::vec3 finalPosition = position;
       glm::vec2 finalYawPitch = yawPitch;
