@@ -35,6 +35,10 @@ if (ENABLE_ASAN)
 endif()
 
 # Sub-projects
+
+# fix for the new stupid 'set' issue
+cmake_policy(SET CMP0077 NEW)
+
 add_subdirectory(Oxylus)
 add_subdirectory(OxylusEditor)
 add_subdirectory(OxylusRuntime)
