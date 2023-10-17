@@ -198,50 +198,61 @@ void main() {
 	vec3 specularEnvironmentR0 = specularColor.rgb;
 	vec3 specularEnvironmentR90 = vec3(1.0, 1.0, 1.0) * reflectance90;
 
-	vec4 lightDir = vec4(90.0); // TODO: Harcoded for now.
+	uint lightIndexBegin = tileIndex * MAX_NUM_LIGHTS_PER_TILE;
+	// uint lightNum = lightGrid[tileIndex];
+	vec3 color = vec3(0);
 
-	vec3 n = mat.UseNormal ? GetNormal(scaledUV) : normalize(inNormal);
-	vec3 v = normalize(u_Ubo.camPos - inWorldPos);		// Vector from surface point to camera
-	vec3 l = normalize(lightDir.xyz);					// Vector from surface point to light
-	vec3 h = normalize(l+v);							// Half vector between both l and v
-	vec3 reflection = -normalize(reflect(v, n));
+	// Point lights
+	for (int i = 0; i < u_UboParams.numLights; i++) {
+		int lightIndex = i;//lightIndices[i + lightIndexBegin];
 
-	float NdotL = clamp(dot(n, l), 0.001, 1.0);
-	float NdotV = clamp(abs(dot(n, v)), 0.001, 1.0);
-	float NdotH = clamp(dot(n, h), 0.0, 1.0);
-	float LdotH = clamp(dot(l, h), 0.0, 1.0);
-	float VdotH = clamp(dot(v, h), 0.0, 1.0);
+		Light current_light = lights[lightIndex];
+		vec3 l = normalize(current_light.position.xyz - inWorldPos);
+		//Lo += specularContribution(L, V, normal, F0, metallic, roughness, albedo, current_light.color.xyz);
+		//Lo *= current_light.position.w;  // intensity
 
-	PBRInfo pbrInputs = PBRInfo(
-		NdotL,
-		NdotV,
-		NdotH,
-		LdotH,
-		VdotH,
-		perceptualRoughness,
-		metallic,
-		specularEnvironmentR0,
-		specularEnvironmentR90,
-		alphaRoughness,
-		diffuseColor,
-		specularColor
-	);
+		vec3 n = mat.UseNormal ? GetNormal(scaledUV) : normalize(inNormal);
+		vec3 v = normalize(u_Ubo.camPos - inWorldPos);		// Vector from surface point to camera
+		vec3 h = normalize(l+v);							// Half vector between both l and v
+		vec3 reflection = -normalize(reflect(v, n));
 
-	// Calculate the shading terms for the microfacet specular shading model
-	vec3 F = SpecularReflection(pbrInputs);
-	float G = GeometricOcclusion(pbrInputs);
-	float D = MicrofacetDistribution(pbrInputs);
+		float NdotL = clamp(dot(n, l), 0.001, 1.0);
+		float NdotV = clamp(abs(dot(n, v)), 0.001, 1.0);
+		float NdotH = clamp(dot(n, h), 0.0, 1.0);
+		float LdotH = clamp(dot(l, h), 0.0, 1.0);
+		float VdotH = clamp(dot(v, h), 0.0, 1.0);
 
-	const vec3 u_LightColor = vec3(1.0);
+		PBRInfo pbrInputs = PBRInfo(
+			NdotL,
+			NdotV,
+			NdotH,
+			LdotH,
+			VdotH,
+			perceptualRoughness,
+			metallic,
+			specularEnvironmentR0,
+			specularEnvironmentR90,
+			alphaRoughness,
+			diffuseColor,
+			specularColor
+		);
 
-	// Calculation of analytical lighting contribution
-	vec3 diffuseContrib = (1.0 - F) * diffuse(pbrInputs);
-	vec3 specContrib = F * G * D / (4.0 * NdotL * NdotV);
-	// Obtain final intensity as reflectance (BRDF) scaled by the energy of the light (cosine law)
-	vec3 color = NdotL * u_LightColor * (diffuseContrib + specContrib);
+		// Calculate the shading terms for the microfacet specular shading model
+		vec3 F = SpecularReflection(pbrInputs);
+		float G = GeometricOcclusion(pbrInputs);
+		float D = MicrofacetDistribution(pbrInputs);
 
-	// Calculate lighting contribution from image based lighting source (IBL)
-	color += GetIBLContribution(pbrInputs, n, reflection);
+		const vec3 u_LightColor = vec3(1.0);
+
+		// Calculation of analytical lighting contribution
+		vec3 diffuseContrib = (1.0 - F) * diffuse(pbrInputs);
+		vec3 specContrib = F * G * D / (4.0 * NdotL * NdotV);
+		specContrib *= current_light.position.w;
+		// Obtain final intensity as reflectance (BRDF) scaled by the energy of the light (cosine law)
+		color = NdotL * u_LightColor * (diffuseContrib + specContrib);
+		// Calculate lighting contribution from image based lighting source (IBL)
+		color += GetIBLContribution(pbrInputs, n, reflection);
+	}
 
 	const float u_OcclusionStrength = 1.0f;
 	// Apply optional PBR terms for additional (optional) shading
@@ -266,21 +277,4 @@ void main() {
 	// color *= ColorCascades(cascadeIndex);
 	
 	outColor = vec4(color, baseColor.a);
-
-#if 0
-	uint lightIndexBegin = tileIndex * MAX_NUM_LIGHTS_PER_TILE;
-	// uint lightNum = lightGrid[tileIndex];
-	vec3 viewDir = normalize(u_Ubo.camPos.xyz - inWorldPos);
-
-	// Point lights
-	for (int i = 0; i < 1; i++) {
-	  int lightIndex = 0;//lightIndices[i + lightIndexBegin];
-
-	  Light currentLight = lights[lightIndex];
-	  vec3 L = normalize(currentLight.position.xyz - inWorldPos);
-	  Lo += specularContribution(L, V, normal, F0, metallic, roughness, albedo,
-	                             currentLight.color.xyz);
-	  Lo *= currentLight.position.w;  // intensity
-	}
-#endif
 }

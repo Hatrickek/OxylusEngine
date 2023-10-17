@@ -1,27 +1,19 @@
 #version 460 core
 #pragma shader_stage(compute)
 #define EPSILON 0.0001
-#define PREFILTER_STAGE 0
-#define DOWNSAMPLE_STAGE 1
-#define UPSAMPLE_STAGE 2
-
-#extension GL_EXT_nonuniform_qualifier : require
 
 layout(local_size_x = 8, local_size_y = 8, local_size_z = 1) in;
 
 layout(binding = 0) restrict writeonly uniform image2D ImgResult;
-layout(binding = 1) uniform sampler2D SamplerDownsample;
-layout(binding = 2) uniform sampler2D SamplerUpsample;
+layout(binding = 1) uniform sampler2D Color;
 
 layout(push_constant, std140) uniform uPC {
   // x: threshold, y: clamp, z: radius, w: unused
   layout(offset = 0) vec4 Params;
-  // x: Stage, y: Lod
-  layout(offset = 16) ivec2 Stage;
+  layout(offset = 16) int Lod;
 };
 
-vec3 Downsample(sampler2D srcTexture, vec2 uv, float lod);
-vec3 Upsample(sampler2D srcTexture, vec2 uv, float lod);
+vec3 Downsample(sampler2D src, vec2 uv, float lod);
 vec3 Prefilter(vec3 color);
 
 void main()
@@ -31,23 +23,10 @@ void main()
     if (any(greaterThanEqual(imgCoord, imgSize)))
         return;
 
-    vec3 result = vec3(0.0);
     vec2 uv = (imgCoord + 0.5) / imgSize;
     
-    if (Stage.x == DOWNSAMPLE_STAGE)
-    {
-        result = Downsample(SamplerDownsample, uv, Stage.y);
-        if (Stage.y == 0)
-        {
-            result = Prefilter(result);
-        }
-    }
-    else if (Stage.x == UPSAMPLE_STAGE)
-    {
-        result = Upsample(SamplerUpsample, uv, Stage.y) + textureLod(SamplerDownsample, uv, Stage.y).rgb;
-    }
-    // writes to Lod + 1 mip level when downsampling
-    // writes to Lod - 1 mip level when upsampling
+    vec3 result = Downsample(Color, uv, 0);
+    result = Prefilter(result);
     imageStore(ImgResult, imgCoord, vec4(result, 1.0));
 }
 
@@ -85,23 +64,6 @@ vec3 Downsample(sampler2D src, vec2 uv, float lod)
     red     += textureLodOffset(src, uv, lod, ivec2(-1, -1)).rgb;
 
     return (red * 0.5 + (yellow + green + blue + lila) * 0.125) * 0.25;
-}
-
-vec3 Upsample(sampler2D src, vec2 uv, float lod)
-{
-    vec3 result = textureLodOffset(src, uv, lod, ivec2(-1.0, 1.0)).rgb * 1.0;
-    result     += textureLodOffset(src, uv, lod, ivec2( 0.0, 1.0)).rgb * 2.0;
-    result     += textureLodOffset(src, uv, lod, ivec2( 1.0, 1.0)).rgb * 1.0;
-
-    result     += textureLodOffset(src, uv, lod, ivec2(-1.0, 0.0)).rgb * 2.0;
-    result     += textureLod(src, uv, lod).rgb * 4.0;
-    result     += textureLodOffset(src, uv, lod, ivec2( 1.0, 0.0)).rgb * 2.0;
-    
-    result     += textureLodOffset(src, uv, lod, ivec2(-1.0, -1.0)).rgb * 1.0;
-    result     += textureLodOffset(src, uv, lod, ivec2( 0.0, -1.0)).rgb * 2.0;
-    result     += textureLodOffset(src, uv, lod, ivec2( 1.0, -1.0)).rgb * 1.0;
-
-    return result / 16.0;
 }
 
 vec3 Prefilter(vec3 color)

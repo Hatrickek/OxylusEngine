@@ -20,11 +20,11 @@ struct Parameters {
 #include "Tonemaps.glsl"
 
 layout(binding = 0) uniform sampler2D in_Color;
-//layout(binding = 2) uniform sampler2D in_Bloom;
 layout(binding = 3) uniform sampler2D in_SSR;
 layout(binding = 4) uniform usampler2D in_SSAO;
+layout(binding = 5) uniform sampler2D in_Bloom;
 
-layout(binding = 5) uniform UBO_Parameters { Parameters u_Parameters; };
+layout(binding = 6) uniform UBO_Parameters { Parameters u_Parameters; };
 
 layout(location = 0) out vec4 out_Color;
 
@@ -38,7 +38,7 @@ void main() {
     aoVisibility = value / 255.0;
 
     vec4 ssr = texture(in_SSR, in_UV).rgba;
-    //vec4 bloom = texture(in_Bloom, in_UV);
+    vec4 bloom = texture(in_Bloom, in_UV);
 
     if (u_Parameters.EnableSSAO) {
       finalImage *= aoVisibility;
@@ -46,9 +46,9 @@ void main() {
     if (u_Parameters.EnableSSR) {
       finalImage += ssr;
     }
-    //if (u_Parameters.EnableBloom) {
-    //  finalImage += bloom;
-    //}
+    if (u_Parameters.EnableBloom) {
+      finalImage += bloom;
+    }
 
     vec3 finalColor = finalImage.rgb * u_Parameters.Exposure;
 

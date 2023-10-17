@@ -1,6 +1,8 @@
 #include "ViewportPanel.h"
 
 #include <icons/IconsMaterialDesignIcons.h>
+#include <vuk/CommandBuffer.hpp>
+#include <vuk/RenderGraph.hpp>
 
 #include "EditorLayer.h"
 #include "ImGuizmo.h"
@@ -8,6 +10,7 @@
 #include "Render/Vulkan/VulkanContext.h"
 #include "Render/Vulkan/VulkanRenderer.h"
 #include "UI/IGUI.h"
+#include "Utils/FileUtils.h"
 #include "Utils/OxMath.h"
 #include "Utils/StringUtils.h"
 #include "Utils/Timestep.h"
@@ -87,7 +90,70 @@ void ViewportPanel::OnImGuiRender() {
     rp->detach_swapchain(dim);
     const auto final_image = rp->get_final_image();
 
-    const auto finalImage = m_Scene->get_renderer()->get_render_pipeline()->get_final_image();
+#if 0
+    vuk::ImageViewCreateInfo view_create_info;
+    auto image_view = vuk::allocate_image_view(*rp->get_frame_allocator(), *final_image->rg_attachment.ivci);
+
+      Ref<vuk::SampledImage> final_viewport_image = nullptr;
+
+    // entity highlighting
+    auto vk_context = VulkanContext::get();
+    if (!vk_context->context->is_pipeline_available("entity_highliting_pipeline")) {
+      vuk::PipelineBaseCreateInfo pci;
+      pci.add_glsl(FileUtils::read_shader_file("Unlit.vert"), "Unlit.vert");
+      pci.add_glsl(FileUtils::read_shader_file("Unlit.frag"), "Unlit.frag");
+      vk_context->context->create_named_pipeline("entity_highliting_pipeline", pci);
+    }
+
+    Ref<vuk::RenderGraph> rg = create_ref<vuk::RenderGraph>("viewport_render_graph");
+
+    rg->attach_and_clear_image("viewport_image", {.extent = dim, .format = vk_context->swapchain->format, .sample_count = vuk::SampleCountFlagBits::e1, .level_count = 1, .layer_count = 1}, vuk::Black<float>);
+    rg->attach_image("final_image_output", {})
+    rg->add_pass({
+      .name = "entity_highlighting_pass",
+      .resources = {
+        {final_image_reference.rg, final_image_reference.name, vuk::Resource::Type::eImage, vuk::Access::eFragmentSampled},
+        {"viewport_image"_image >> vuk::Access::eColorRW >> "viewport_final"}
+      },
+      .execute = [this](vuk::CommandBuffer& command_buffer) {
+        command_buffer.bind_graphics_pipeline("entity_highliting_pipeline")
+                      .set_viewport(0, vuk::Rect2D::framebuffer())
+                      .set_scissor(0, vuk::Rect2D::framebuffer())
+                      .broadcast_color_blend(vuk::BlendPreset::eOff)
+                      .set_rasterization({.cullMode = vuk::CullModeFlagBits::eNone})
+                      .set_depth_stencil(vuk::PipelineDepthStencilStateCreateInfo{
+                       });
+
+        const auto entity = EditorLayer::get()->get_selected_entity();
+
+        if (!entity || !entity.has_component<MeshRendererComponent>())
+          return;
+
+        struct PushConst {
+          Mat4 model_view_projection;
+          Vec4 color;
+        };
+
+        const PushConst push_const = {m_camera.GetProjectionMatrixFlipped() * m_camera.get_view_matrix() * entity.get_world_transform(), Vec4(0, 1, 0, 1)};
+
+        command_buffer.push_constants(vuk::ShaderStageFlagBits::eVertex, 0, push_const);
+
+        const auto mrc = entity.get_component<MeshRendererComponent>();
+        const auto mesh_geometry = mrc.mesh_geometry;
+
+        mesh_geometry->bind_vertex_buffer(command_buffer);
+        mesh_geometry->bind_index_buffer(command_buffer);
+        VulkanRenderer::render_node(mesh_geometry->linear_nodes[mrc.submesh_index], command_buffer, [](Mesh::Primitive*) { return true; });
+      }
+    });
+
+    vuk::Compiler compiler;
+    auto exec = compiler.link({&rg, 1}, {});
+    vuk::execute_submit_and_wait(*vk_context->superframe_allocator, std::move(*exec));
+
+    final_viewport_image = create_ref<vuk::SampledImage>(make_sampled_image(vuk::NameReference{rg.get(), vuk::QualifiedName({}, "viewport_final")}, {}));
+#endif
+
 
     if (final_image) {
       IGUI::image(*final_image, ImVec2{fixedWidth, m_ViewportSize.y});
