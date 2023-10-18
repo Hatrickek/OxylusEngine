@@ -85,7 +85,7 @@ void ViewportPanel::on_imgui_render() {
     const auto fixedWidth = m_ViewportSize.y * sixteenNineAR;
     ImGui::SetCursorPosX((m_ViewportPanelSize.x - fixedWidth) * 0.5f);
 
-    const auto dim = vuk::Dimension3D::absolute((uint32_t)m_ViewportPanelSize.x, (uint32_t)m_ViewportPanelSize.y);
+    const auto dim = vuk::Dimension3D::absolute((uint32_t)fixedWidth, (uint32_t)m_ViewportPanelSize.y);
     auto rp = m_Scene->get_renderer()->get_render_pipeline();
     rp->detach_swapchain(dim);
     const auto final_image = rp->get_final_image();
