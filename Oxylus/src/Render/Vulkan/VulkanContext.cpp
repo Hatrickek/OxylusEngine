@@ -2,6 +2,7 @@
 
 #include "Render/Window.h"
 #include "Utils/Log.h"
+#include "Utils/Profiler.h"
 
 #include <vuk/Context.hpp>
 #include <vuk/Future.hpp>
@@ -11,7 +12,7 @@
 namespace Oxylus {
 VulkanContext* VulkanContext::s_instance = nullptr;
 
-static VkBool32 DebugCallback(VkDebugUtilsMessageSeverityFlagBitsEXT messageSeverity,
+static VkBool32 DebugCallback(const VkDebugUtilsMessageSeverityFlagBitsEXT messageSeverity,
                               VkDebugUtilsMessageTypeFlagsEXT messageType,
                               const VkDebugUtilsMessengerCallbackDataEXT* pCallbackData,
                               void* pUserData) {
@@ -105,8 +106,8 @@ void VulkanContext::create_context(const AppSpec& spec) {
   if (enable_validation) {
     OX_CORE_TRACE("Vulkan validation layers enabled.");
     builder.request_validation_layers()
-           .set_debug_callback([](VkDebugUtilsMessageSeverityFlagBitsEXT messageSeverity,
-                                  VkDebugUtilsMessageTypeFlagsEXT messageType,
+           .set_debug_callback([](const VkDebugUtilsMessageSeverityFlagBitsEXT messageSeverity,
+                                  const VkDebugUtilsMessageTypeFlagsEXT messageType,
                                   const VkDebugUtilsMessengerCallbackDataEXT* pCallbackData,
                                   void* pUserData) -> VkBool32 {
               return DebugCallback(messageSeverity, messageType, pCallbackData, pUserData);
@@ -124,7 +125,7 @@ void VulkanContext::create_context(const AppSpec& spec) {
   VkSurfaceKHR surface;
   Window::set_window_user_data(this);
   glfwSetWindowSizeCallback(Window::get_glfw_window(),
-    [](GLFWwindow* window, int width, int height) {
+    [](GLFWwindow* window, const int width, const int height) {
       VulkanContext& runner = *reinterpret_cast<VulkanContext*>(glfwGetWindowUserPointer(window));
       if (width == 0 && height == 0) {
         runner.suspend = true;
@@ -244,6 +245,9 @@ void VulkanContext::create_context(const AppSpec& spec) {
   device_name = properties.deviceName;
   driver_version = properties.driverVersion;
 
+  tracy_profiler = create_ref<TracyProfiler>();
+  tracy_profiler->init_tracy_for_vulkan(this);
+
   OX_CORE_TRACE("Vulkan context initialized using device: {}", properties.deviceName);
 }
 
@@ -259,8 +263,33 @@ void VulkanContext::end(const vuk::Future& src, vuk::Allocator frame_allocator) 
   std::shared_ptr rg_p(std::make_shared<vuk::RenderGraph>("presenter"));
   rg_p->attach_in("_src", src);
   rg_p->release_for_present("_src");
+
+  vuk::ProfilingCallbacks cbs;
+  cbs.on_begin_command_buffer = [](void*, const VkCommandBuffer cbuf) {
+    get()->tracy_profiler->get_graphics_ctx()->Collect(cbuf);
+    get()->tracy_profiler->get_transfer_ctx()->Collect(cbuf);
+    return (void*)nullptr;
+  };
+
+  cbs.on_begin_pass = [](void*, const vuk::Name pass_name, const VkCommandBuffer cmdbuf, const vuk::DomainFlagBits domain) {
+    void* pass_data = new char[sizeof(tracy::VkCtxScope)];
+    if (domain & vuk::DomainFlagBits::eGraphicsQueue) {
+      new(pass_data) OX_TRACE_GPU_TRANSIENT(get()->tracy_profiler->get_graphics_ctx(), cmdbuf, pass_name.c_str())
+    }
+    else if (domain & vuk::DomainFlagBits::eTransferQueue) {
+      new(pass_data) OX_TRACE_GPU_TRANSIENT(get()->tracy_profiler->get_transfer_ctx(), cmdbuf, pass_name.c_str())
+    }
+
+    return pass_data;
+  };
+
+  cbs.on_end_pass = [](void*, void* pass_data) {
+    const auto tracy_scope = reinterpret_cast<tracy::VkCtxScope*>(pass_data);
+    tracy_scope->~VkCtxScope();
+  };
+
   vuk::Compiler compiler;
-  auto erg = *compiler.link(std::span{&rg_p, 1}, {});
+  auto erg = *compiler.link(std::span{&rg_p, 1}, {.callbacks = cbs});
   m_bundle = *acquire_one(*context, swapchain, (*present_ready)[context->get_frame_count() % 3], (*render_complete)[context->get_frame_count() % 3]);
   auto result = *execute_submit(frame_allocator, std::move(erg), std::move(m_bundle));
   present_to_one(*context, std::move(result));

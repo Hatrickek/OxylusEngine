@@ -249,11 +249,11 @@ void Mesh::load_materials(tinygltf::Model& model) {
       material.ao_texture = m_textures.at(model.textures[mat.additionalValues["occlusionTexture"].TextureIndex()].source);
     }
     if (mat.alphaMode == "BLEND") {
-      material.alpha_mode = Material::AlphaMode::Blend;
+      material.parameters.alpha_mode = (uint32_t)Material::AlphaMode::Blend;
     }
     else if (mat.alphaMode == "MASK") {
-      material.parameters.alpha_cutoff = 0.5f;
-      material.alpha_mode = Material::AlphaMode::Mask;
+      material.parameters.alpha_cutoff = (float)mat.alphaCutoff;
+      material.parameters.alpha_mode = (uint32_t)Material::AlphaMode::Mask;
     }
     if (mat.additionalValues.contains("alphaCutoff")) {
       material.parameters.alpha_cutoff = static_cast<float>(mat.additionalValues["alphaCutoff"].Factor());

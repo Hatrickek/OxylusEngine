@@ -5,27 +5,36 @@
 #include "Core/PlatformDetection.h"
 
 namespace Oxylus {
-TracyVkCtx TracyProfiler::vulkan_context;
-
-void TracyProfiler::InitTracyForVulkan(const VulkanContext* context, VkCommandBuffer command_buffer) {
+TracyProfiler::~TracyProfiler() {
 #if GPU_PROFILER_ENABLED
-  const auto timedomains = (PFN_vkGetPhysicalDeviceCalibrateableTimeDomainsEXT)vkGetDeviceProcAddr(context->device, "vkGetPhysicalDeviceCalibrateableTimeDomainsEXT");
-
-  const auto timesteps = (PFN_vkGetCalibratedTimestampsEXT)vkGetDeviceProcAddr(context->device, "vkGetCalibratedTimestampsEXT");
-
-  vulkan_context = TracyVkContextCalibrated(context->physical_device, context->device, context->graphics_queue, command_buffer, timedomains, timesteps)
+  destroy_context();
 #endif
 }
 
-void TracyProfiler::DestroyContext() {
+void TracyProfiler::init_tracy_for_vulkan(VulkanContext* context) {
 #if GPU_PROFILER_ENABLED
-  DestroyVkContext(vulkan_context);
+  VkCommandPoolCreateInfo cpci{ .sType = VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO, .flags = VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT };
+  cpci.queueFamilyIndex = context->graphics_queue_family_index;
+  context->superframe_allocator->allocate_command_pools(std::span{ &*tracy_cpool, 1 }, std::span{ &cpci, 1 });
+  vuk::CommandBufferAllocationCreateInfo ci{ .command_pool = *tracy_cpool };
+  context->superframe_allocator->allocate_command_buffers(std::span{ &*tracy_cbufai, 1 }, std::span{ &ci, 1 });
+  tracy_graphics_ctx = TracyVkContextCalibrated(
+      context->vkb_instance.instance, context->physical_device, context->device, context->graphics_queue, tracy_cbufai->command_buffer, context->vkb_instance.fp_vkGetInstanceProcAddr, context->vkb_instance.fp_vkGetDeviceProcAddr);
+  tracy_transfer_ctx = TracyVkContextCalibrated(
+      context->vkb_instance.instance, context->physical_device, context->device, context->graphics_queue, tracy_cbufai->command_buffer, context->vkb_instance.fp_vkGetInstanceProcAddr, context->vkb_instance.fp_vkGetDeviceProcAddr);
 #endif
 }
 
-void TracyProfiler::Collect(const VkCommandBuffer& commandBuffer) {
+void TracyProfiler::destroy_context() const {
 #if GPU_PROFILER_ENABLED
-  vulkan_context->Collect(commandBuffer);
+  TracyVkDestroy(tracy_graphics_ctx)
+  TracyVkDestroy(tracy_transfer_ctx)
+#endif
+}
+
+void TracyProfiler::collect(tracy::VkCtx* ctx, const VkCommandBuffer& command_buffer) {
+#if GPU_PROFILER_ENABLED
+  ctx->Collect(command_buffer);
 #endif
 }
 

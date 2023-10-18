@@ -20,8 +20,8 @@ ViewportPanel::ViewportPanel() : EditorPanel("Viewport", ICON_MDI_TERRAIN, true)
   VulkanRenderer::set_camera(m_camera);
 }
 
-void ViewportPanel::OnImGuiRender() {
-  DrawPerformanceOverlay();
+void ViewportPanel::on_imgui_render() {
+  draw_performance_overlay();
 
   bool viewportSettingsPopup = false;
   constexpr ImGuiWindowFlags flags = ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_MenuBar;
@@ -165,10 +165,10 @@ void ViewportPanel::OnImGuiRender() {
       ImGui::Text("No render target!");
     }
 
-    if (m_SceneHierarchyPanel)
-      m_SceneHierarchyPanel->DragDropTarget();
+    if (scene_hierarchy_panel)
+      scene_hierarchy_panel->DragDropTarget();
 
-    DrawGizmos();
+    draw_gizmos();
 
     {
       // Transform Gizmos Button Group
@@ -271,12 +271,12 @@ void ViewportPanel::OnImGuiRender() {
   }
 }
 
-void ViewportPanel::SetContext(const Ref<Scene>& scene, SceneHierarchyPanel& sceneHierarchyPanel) {
-  m_SceneHierarchyPanel = &sceneHierarchyPanel;
+void ViewportPanel::set_context(const Ref<Scene>& scene, SceneHierarchyPanel& sceneHierarchyPanel) {
+  scene_hierarchy_panel = &sceneHierarchyPanel;
   m_Scene = scene;
 }
 
-void ViewportPanel::OnUpdate() {
+void ViewportPanel::on_update() {
   if (m_ViewportFocused && !m_SimulationRunning && m_UseEditorCamera) {
     const Vec3& position = m_camera.get_position();
     const glm::vec2 yawPitch = glm::vec2(m_camera.GetYaw(), m_camera.GetPitch());
@@ -359,8 +359,8 @@ void ViewportPanel::OnUpdate() {
   }
 }
 
-void ViewportPanel::DrawPerformanceOverlay() {
-  if (!PerformanceOverlayVisible)
+void ViewportPanel::draw_performance_overlay() {
+  if (!performance_overlay_visible)
     return;
   static int corner = 1;
   ImGuiWindowFlags window_flags = ImGuiWindowFlags_NoDecoration | ImGuiWindowFlags_NoDocking |
@@ -396,15 +396,15 @@ void ViewportPanel::DrawPerformanceOverlay() {
       corner = 2;
     if (ImGui::MenuItem("Bottom-right", nullptr, corner == 3))
       corner = 3;
-    if (PerformanceOverlayVisible && ImGui::MenuItem("Close"))
-      PerformanceOverlayVisible = false;
+    if (performance_overlay_visible && ImGui::MenuItem("Close"))
+      performance_overlay_visible = false;
     ImGui::EndPopup();
   }
   ImGui::End();
 }
 
-void ViewportPanel::DrawGizmos() {
-  const Entity selectedEntity = m_SceneHierarchyPanel->GetSelectedEntity();
+void ViewportPanel::draw_gizmos() {
+  const Entity selectedEntity = scene_hierarchy_panel->GetSelectedEntity();
   if (selectedEntity && m_GizmoType != -1) {
     ImGuizmo::SetOrthographic(false);
     ImGuizmo::SetDrawlist();

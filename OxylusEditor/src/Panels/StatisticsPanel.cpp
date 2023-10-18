@@ -9,7 +9,7 @@
 namespace Oxylus {
   StatisticsPanel::StatisticsPanel() : EditorPanel("Statistics", ICON_MDI_CLIPBOARD_TEXT, false) {}
 
-  void StatisticsPanel::OnImGuiRender() {
+  void StatisticsPanel::on_imgui_render() {
     if (OnBegin()) {
       if (ImGui::BeginTabBar("TabBar")) {
         if (ImGui::BeginTabItem("Memory")) {

@@ -286,11 +286,11 @@ void ContentPanel::Init() {
   );
 }
 
-void ContentPanel::OnUpdate() {
+void ContentPanel::on_update() {
   m_ElapsedTime += Application::get_timestep();
 }
 
-void ContentPanel::OnImGuiRender() {
+void ContentPanel::on_imgui_render() {
   constexpr ImGuiWindowFlags windowFlags = ImGuiWindowFlags_NoScrollWithMouse
                                            | ImGuiWindowFlags_NoScrollbar;
 

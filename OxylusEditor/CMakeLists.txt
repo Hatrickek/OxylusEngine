@@ -66,7 +66,6 @@ target_include_directories(${PROJECT_NAME} PUBLIC
     "${CMAKE_CURRENT_SOURCE_DIR}/../Oxylus/vendor/tinygltf"
     "${CMAKE_CURRENT_SOURCE_DIR}/../Oxylus/vendor/ktx/include"
     "${CMAKE_CURRENT_SOURCE_DIR}/../Oxylus/vendor/miniaudio"
-    "${CMAKE_CURRENT_SOURCE_DIR}/../Oxylus/vendor/tracy/public"
 )
 
 # Compile definitions
@@ -74,12 +73,10 @@ target_compile_definitions(${PROJECT_NAME} PRIVATE
     "$<$<CONFIG:Debug>:"
         "OX_DEBUG;"
         "_DEBUG;"
-        "TRACY_ENABLE"
     ">"
     "$<$<CONFIG:Release>:"
         "OX_RELEASE;"
         "NDEBUG;"
-        "TRACY_ENABLE"
     ">"
     "$<$<CONFIG:Distribution>:"
         "OX_DISTRIBUTION;"

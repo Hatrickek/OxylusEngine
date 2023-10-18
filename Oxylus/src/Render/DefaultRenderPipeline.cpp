@@ -232,34 +232,7 @@ static uint32_t get_material_index(const std::unordered_map<uint32_t, uint32_t>&
   return size + material_index;
 }
 
-Scope<vuk::Future> DefaultRenderPipeline::on_render(vuk::Allocator& frame_allocator, const vuk::Future& target, vuk::Dimension3D dim) {
-  mesh_draw_list.clear();
-
-  update(m_scene);
-
-  const auto rg = create_ref<vuk::RenderGraph>("DefaultRenderPipelineRenderGraph");
-
-  auto vk_context = VulkanContext::get();
-
-  m_renderer_data.ubo_vs.view = m_renderer_context.current_camera->get_view_matrix();
-  m_renderer_data.ubo_vs.cam_pos = m_renderer_context.current_camera->get_position();
-  m_renderer_data.ubo_vs.projection = m_renderer_context.current_camera->get_projection_matrix_flipped();
-  auto [vs_buff, vs_buffer_fut] = create_buffer(frame_allocator, vuk::MemoryUsage::eCPUtoGPU, vuk::DomainFlagBits::eTransferOnGraphics, std::span(&m_renderer_data.ubo_vs, 1));
-  auto& vs_buffer = *vs_buff;
-
-  std::vector<Material::Parameters> materials = {};
-
-  std::unordered_map<uint32_t, uint32_t> material_map; //mesh, material
-
-  for (uint32_t i = 0; i < static_cast<uint32_t>(mesh_draw_list.size()); i++) {
-    for (auto& mat : mesh_draw_list[i].materials)
-      materials.emplace_back(mat->parameters);
-    material_map.emplace(i, static_cast<uint32_t>(mesh_draw_list[i].materials.size()));
-  }
-
-  auto [matBuff, matBufferFut] = create_buffer(frame_allocator, vuk::MemoryUsage::eCPUtoGPU, vuk::DomainFlagBits::eTransferOnGraphics, std::span(materials));
-  auto& mat_buffer = *matBuff;
-
+void DefaultRenderPipeline::depth_pre_pass(const Ref<vuk::RenderGraph>& rg, vuk::Buffer& vs_buffer, std::unordered_map<uint32_t, uint32_t> material_map, vuk::Buffer& mat_buffer) {
   rg->add_pass({
     .name = "depth_pre_pass",
     .resources = {
@@ -267,7 +240,6 @@ Scope<vuk::Future> DefaultRenderPipeline::on_render(vuk::Allocator& frame_alloca
       "depth_image"_image >> vuk::eDepthStencilRW >> "depth_output"
     },
     .execute = [this, vs_buffer, mat_buffer, material_map](vuk::CommandBuffer& command_buffer) {
-      OX_TRACE_GPU(command_buffer.get_underlying(), "depth_pre_pass")
       command_buffer.set_viewport(0, vuk::Rect2D::framebuffer())
                     .set_scissor(0, vuk::Rect2D::framebuffer())
                     .broadcast_color_blend(vuk::BlendPreset::eOff)
@@ -289,6 +261,10 @@ Scope<vuk::Future> DefaultRenderPipeline::on_render(vuk::Allocator& frame_alloca
           [&mesh, &command_buffer, i, material_map](const Mesh::Primitive* part) {
             const auto& material = mesh.materials[part->material_index];
 
+            if (material->parameters.alpha_mode != (uint32_t)Material::AlphaMode::Opaque) {
+              return false;
+            }
+
             command_buffer.push_constants(vuk::ShaderStageFlagBits::eVertex | vuk::ShaderStageFlagBits::eFragment, 0, mesh.transform)
                           .push_constants(vuk::ShaderStageFlagBits::eFragment, sizeof(glm::mat4), get_material_index(material_map, i, part->material_index))
                           .bind_sampler(1, 0, vuk::LinearSamplerRepeated)
@@ -300,39 +276,15 @@ Scope<vuk::Future> DefaultRenderPipeline::on_render(vuk::Allocator& frame_alloca
       }
     }
   });
+}
 
-  rg->attach_and_clear_image("normal_image", {.format = vuk::Format::eR16G16B16A16Sfloat, .sample_count = vuk::SampleCountFlagBits::e1}, vuk::Black<float>);
-  rg->attach_and_clear_image("depth_image", {.format = vuk::Format::eD32Sfloat, .sample_count = vuk::SampleCountFlagBits::e1}, vuk::DepthOne);
-  rg->inference_rule("normal_image", vuk::same_shape_as("final_image"));
-  rg->inference_rule("depth_image", vuk::same_shape_as("final_image"));
-
-  gtao_pass(frame_allocator, rg);
-
-  auto [buffer, buffer_fut] = create_buffer(frame_allocator, vuk::MemoryUsage::eCPUtoGPU, vuk::DomainFlagBits::eTransferOnGraphics, std::span(&direct_shadow_ub, 1));
-  auto& shadow_buffer = *buffer;
-
-  cascaded_shadow_pass(rg, shadow_buffer);
-
-  auto [point_lights_buf, point_lights_buffer_fut] = create_buffer(frame_allocator, vuk::MemoryUsage::eCPUtoGPU, vuk::DomainFlagBits::eTransferOnGraphics, std::span(point_lights_data));
-  auto& point_lights_buffer = *point_lights_buf;
-
-  struct PBRPassParams {
-    int num_lights = 0;
-    IVec2 num_threads = {};
-    IVec2 screen_dimensions = {};
-    IVec2 num_thread_groups = {};
-  } pbr_pass_params;
-
-  pbr_pass_params.num_lights = (int)point_lights_data.size();
-  pbr_pass_params.num_threads = (glm::ivec2(VulkanRenderer::get_viewport_width(), VulkanRenderer::get_viewport_height()) + PIXELS_PER_TILE - 1) / PIXELS_PER_TILE;
-  pbr_pass_params.num_thread_groups = (pbr_pass_params.num_threads + TILES_PER_THREADGROUP - 1) / TILES_PER_THREADGROUP;
-  pbr_pass_params.screen_dimensions = glm::ivec2(VulkanRenderer::get_viewport_width(), VulkanRenderer::get_viewport_height());
-
-  point_lights_data.clear();
-
-  auto [pbr_buf, pbr_buffer_fut] = create_buffer(frame_allocator, vuk::MemoryUsage::eCPUtoGPU, vuk::DomainFlagBits::eTransferOnGraphics, std::span(&pbr_pass_params, 1));
-  auto pbr_buffer = *pbr_buf;
-
+void DefaultRenderPipeline::geomerty_pass(const Ref<vuk::RenderGraph>& rg,
+                                          vuk::Buffer& vs_buffer,
+                                          std::unordered_map<uint32_t, uint32_t> material_map,
+                                          vuk::Buffer& mat_buffer,
+                                          vuk::Buffer& shadow_buffer,
+                                          vuk::Buffer& point_lights_buffer,
+                                          vuk::Buffer pbr_buffer) {
   rg->add_pass({
     .name = "geomerty_pass",
     .resources = {
@@ -341,7 +293,6 @@ Scope<vuk::Future> DefaultRenderPipeline::on_render(vuk::Allocator& frame_alloca
       "shadow_array_output"_image >> vuk::eFragmentSampled
     },
     .execute = [this, vs_buffer, point_lights_buffer, shadow_buffer, pbr_buffer, mat_buffer, material_map](vuk::CommandBuffer& command_buffer) {
-      OX_TRACE_GPU(command_buffer.get_underlying(), "geomerty_pass")
       // Skybox pass
       struct SkyboxPushConstant {
         Mat4 view;
@@ -412,10 +363,19 @@ Scope<vuk::Future> DefaultRenderPipeline::on_render(vuk::Allocator& frame_alloca
         .layer_count = 1
       };
 
+      vuk::PipelineColorBlendAttachmentState pcba;
+      pcba.blendEnable = true;
+      pcba.srcColorBlendFactor = vuk::BlendFactor::eSrcAlpha;
+      pcba.dstColorBlendFactor = vuk::BlendFactor::eOneMinusSrcAlpha;
+      pcba.colorBlendOp = vuk::BlendOp::eAdd;
+      pcba.srcAlphaBlendFactor = vuk::BlendFactor::eOne;
+      pcba.dstAlphaBlendFactor = vuk::BlendFactor::eZero;
+      pcba.alphaBlendOp = vuk::BlendOp::eAdd;
+
       command_buffer.bind_graphics_pipeline("pbr_pipeline")
                     .set_viewport(0, vuk::Rect2D::framebuffer())
                     .set_scissor(0, vuk::Rect2D::framebuffer())
-                    .broadcast_color_blend({})
+                    .broadcast_color_blend(vuk::BlendPreset::eAlphaBlend)
                     .set_depth_stencil(vuk::PipelineDepthStencilStateCreateInfo{
                        .depthTestEnable = true,
                        .depthWriteEnable = true,
@@ -442,7 +402,7 @@ Scope<vuk::Future> DefaultRenderPipeline::on_render(vuk::Allocator& frame_alloca
           command_buffer,
           [&](const Mesh::Primitive* part) {
             const auto& material = mesh.materials[part->material_index];
-            if (material->alpha_mode == Material::AlphaMode::Blend) {
+            if (material->parameters.alpha_mode == (uint32_t)Material::AlphaMode::Blend) {
               transparent_mesh_draw_list.emplace_back(i);
               return false;
             }
@@ -454,8 +414,6 @@ Scope<vuk::Future> DefaultRenderPipeline::on_render(vuk::Allocator& frame_alloca
             return true;
           });
       }
-
-      command_buffer.broadcast_color_blend(vuk::BlendPreset::eAlphaBlend);
 
       // Transparency pass
       for (auto i : transparent_mesh_draw_list) {
@@ -499,6 +457,74 @@ Scope<vuk::Future> DefaultRenderPipeline::on_render(vuk::Allocator& frame_alloca
 #endif
     }
   });
+}
+
+Scope<vuk::Future> DefaultRenderPipeline::on_render(vuk::Allocator& frame_allocator, const vuk::Future& target, vuk::Dimension3D dim) {
+  mesh_draw_list.clear();
+
+  update(m_scene);
+
+  const auto rg = create_ref<vuk::RenderGraph>("DefaultRenderPipelineRenderGraph");
+
+  auto vk_context = VulkanContext::get();
+
+  m_renderer_data.ubo_vs.view = m_renderer_context.current_camera->get_view_matrix();
+  m_renderer_data.ubo_vs.cam_pos = m_renderer_context.current_camera->get_position();
+  m_renderer_data.ubo_vs.projection = m_renderer_context.current_camera->get_projection_matrix_flipped();
+  auto [vs_buff, vs_buffer_fut] = create_buffer(frame_allocator, vuk::MemoryUsage::eCPUtoGPU, vuk::DomainFlagBits::eTransferOnGraphics, std::span(&m_renderer_data.ubo_vs, 1));
+  auto& vs_buffer = *vs_buff;
+
+  rg->attach_and_clear_image("black_image", {.format = vk_context->swapchain->format, .sample_count = vuk::SampleCountFlagBits::e1}, vuk::Black<float>);
+  rg->inference_rule("black_image", vuk::same_shape_as("final_image"));
+
+  std::vector<Material::Parameters> materials = {};
+
+  std::unordered_map<uint32_t, uint32_t> material_map; //mesh, material
+
+  for (uint32_t i = 0; i < static_cast<uint32_t>(mesh_draw_list.size()); i++) {
+    for (auto& mat : mesh_draw_list[i].materials)
+      materials.emplace_back(mat->parameters);
+    material_map.emplace(i, static_cast<uint32_t>(mesh_draw_list[i].materials.size()));
+  }
+
+  auto [matBuff, matBufferFut] = create_buffer(frame_allocator, vuk::MemoryUsage::eCPUtoGPU, vuk::DomainFlagBits::eTransferOnGraphics, std::span(materials));
+  auto& mat_buffer = *matBuff;
+
+  depth_pre_pass(rg, vs_buffer, material_map, mat_buffer);
+
+  rg->attach_and_clear_image("normal_image", {.format = vuk::Format::eR16G16B16A16Sfloat, .sample_count = vuk::SampleCountFlagBits::e1}, vuk::Black<float>);
+  rg->attach_and_clear_image("depth_image", {.format = vuk::Format::eD32Sfloat, .sample_count = vuk::SampleCountFlagBits::e1}, vuk::DepthOne);
+  rg->inference_rule("normal_image", vuk::same_shape_as("final_image"));
+  rg->inference_rule("depth_image", vuk::same_shape_as("final_image"));
+
+  gtao_pass(frame_allocator, rg);
+
+  auto [buffer, buffer_fut] = create_buffer(frame_allocator, vuk::MemoryUsage::eCPUtoGPU, vuk::DomainFlagBits::eTransferOnGraphics, std::span(&direct_shadow_ub, 1));
+  auto& shadow_buffer = *buffer;
+
+  cascaded_shadow_pass(rg, shadow_buffer);
+
+  auto [point_lights_buf, point_lights_buffer_fut] = create_buffer(frame_allocator, vuk::MemoryUsage::eCPUtoGPU, vuk::DomainFlagBits::eTransferOnGraphics, std::span(point_lights_data));
+  auto& point_lights_buffer = *point_lights_buf;
+
+  struct PBRPassParams {
+    int num_lights = 0;
+    IVec2 num_threads = {};
+    IVec2 screen_dimensions = {};
+    IVec2 num_thread_groups = {};
+  } pbr_pass_params;
+
+  pbr_pass_params.num_lights = (int)point_lights_data.size();
+  pbr_pass_params.num_threads = (glm::ivec2(VulkanRenderer::get_viewport_width(), VulkanRenderer::get_viewport_height()) + PIXELS_PER_TILE - 1) / PIXELS_PER_TILE;
+  pbr_pass_params.num_thread_groups = (pbr_pass_params.num_threads + TILES_PER_THREADGROUP - 1) / TILES_PER_THREADGROUP;
+  pbr_pass_params.screen_dimensions = glm::ivec2(VulkanRenderer::get_viewport_width(), VulkanRenderer::get_viewport_height());
+
+  point_lights_data.clear();
+
+  auto [pbr_buf, pbr_buffer_fut] = create_buffer(frame_allocator, vuk::MemoryUsage::eCPUtoGPU, vuk::DomainFlagBits::eTransferOnGraphics, std::span(&pbr_pass_params, 1));
+  auto pbr_buffer = *pbr_buf;
+
+  geomerty_pass(rg, vs_buffer, material_map, mat_buffer, shadow_buffer, point_lights_buffer, pbr_buffer);
 
   rg->attach_and_clear_image("pbr_image", {.format = vk_context->swapchain->format, .sample_count = vuk::SampleCountFlagBits::e1}, vuk::Black<float>);
   rg->attach_and_clear_image("pbr_depth", {.format = vuk::Format::eD32Sfloat, .sample_count = vuk::SampleCountFlagBits::e1}, vuk::DepthOne);
@@ -507,7 +533,7 @@ Scope<vuk::Future> DefaultRenderPipeline::on_render(vuk::Allocator& frame_alloca
 
   ssr_pass(frame_allocator, rg, vk_context, vs_buffer);
 
-#pragma region Bloom
+#if Bloom
   struct BloomPushConst {
     // x: threshold, y: clamp, z: radius, w: unused
     Vec4 params = {};
@@ -598,7 +624,7 @@ Scope<vuk::Future> DefaultRenderPipeline::on_render(vuk::Allocator& frame_alloca
   rg->converge_image_explicit(down_read_diverged_names, "bloom_downsampled_image_final");
   rg->converge_image_explicit(up_output_names, "bloom_upsampled_image");
 
-#pragma endregion
+#endif
 
   auto [final_buff, final_buff_fut] = create_buffer(frame_allocator, vuk::MemoryUsage::eCPUtoGPU, vuk::DomainFlagBits::eTransferOnGraphics, std::span(&m_renderer_data.final_pass_data, 1));
   auto final_buffer = *final_buff;
@@ -609,11 +635,10 @@ Scope<vuk::Future> DefaultRenderPipeline::on_render(vuk::Allocator& frame_alloca
       "final_image"_image >> vuk::eColorRW >> "final_output",
       "pbr_output"_image >> vuk::eFragmentSampled,
       "ssr_output"_image >> vuk::eFragmentSampled,
-      "bloom_upsampled_image"_image >> vuk::eFragmentSampled,
+      "black_image"_image >> vuk::eFragmentSampled,
       "gtao_final_output"_image >> vuk::eFragmentSampled,
     },
     .execute = [final_buffer](vuk::CommandBuffer& command_buffer) {
-      OX_TRACE_GPU(command_buffer.get_underlying(), "final_pass")
       command_buffer.bind_graphics_pipeline("final_pipeline")
                     .set_viewport(0, vuk::Rect2D::framebuffer())
                     .set_scissor(0, vuk::Rect2D::framebuffer())
@@ -626,7 +651,7 @@ Scope<vuk::Future> DefaultRenderPipeline::on_render(vuk::Allocator& frame_alloca
                     .bind_sampler(0, 4, {})
                     .bind_image(0, 4, "gtao_final_output")
                     .bind_sampler(0, 5, {})
-                    .bind_image(0, 5, "bloom_upsampled_image")
+                    .bind_image(0, 5, "black_image")
                     .bind_buffer(0, 6, final_buffer)
                     .draw(3, 1, 0, 0);
     }
@@ -656,7 +681,7 @@ void DefaultRenderPipeline::update_skybox(const SceneRenderer::SkyboxLoadEvent& 
 }
 
 
-void DefaultRenderPipeline::gtao_pass(vuk::Allocator& frame_allocator, const Ref<vuk::RenderGraph> rg) {
+void DefaultRenderPipeline::gtao_pass(vuk::Allocator& frame_allocator, const Ref<vuk::RenderGraph>& rg) {
   gtao_update_constants(gtao_constants, (int)VulkanRenderer::get_viewport_width(), (int)VulkanRenderer::get_viewport_height(), gtao_settings, value_ptr(m_renderer_data.ubo_vs.projection), true, 0);
 
   auto [gtao_const_buff, gtao_const_buff_fut] = create_buffer(frame_allocator, vuk::MemoryUsage::eCPUtoGPU, vuk::DomainFlagBits::eTransferOnGraphics, std::span(&gtao_constants, 1));
@@ -701,7 +726,6 @@ void DefaultRenderPipeline::gtao_pass(vuk::Allocator& frame_allocator, const Ref
       "normal_output"_image >> vuk::eComputeSampled
     },
     .execute = [gtao_const_buffer](vuk::CommandBuffer& command_buffer) {
-      OX_TRACE_GPU(command_buffer.get_underlying(), "gtao_main_pass")
       command_buffer.bind_compute_pipeline("gtao_main_pipeline")
                     .bind_buffer(0, 0, gtao_const_buffer)
                     .bind_image(0, 1, "gtao_depth_output")
@@ -756,7 +780,6 @@ void DefaultRenderPipeline::gtao_pass(vuk::Allocator& frame_allocator, const Ref
       "gtao_edge_output"_image >> vuk::eComputeSampled
     },
     .execute = [gtao_const_buffer, gtao_denoise_output](vuk::CommandBuffer& command_buffer) {
-      OX_TRACE_GPU(command_buffer.get_underlying(), "gtao_final_pass")
       command_buffer.bind_compute_pipeline("gtao_final_pipeline")
                     .bind_buffer(0, 0, gtao_const_buffer)
                     .bind_image(0, 1, gtao_denoise_output)
@@ -774,7 +797,7 @@ void DefaultRenderPipeline::gtao_pass(vuk::Allocator& frame_allocator, const Ref
   rg->inference_rule("gtao_final_image", vuk::same_extent_as("final_image"));
 }
 
-void DefaultRenderPipeline::ssr_pass(vuk::Allocator& frame_allocator, const Ref<vuk::RenderGraph> rg, VulkanContext* vk_context, vuk::Buffer& vs_buffer) const {
+void DefaultRenderPipeline::ssr_pass(vuk::Allocator& frame_allocator, const Ref<vuk::RenderGraph>& rg, VulkanContext* vk_context, vuk::Buffer& vs_buffer) const {
   struct SSRData {
     int samples = 30;
     int binary_search_samples = 8;
@@ -793,7 +816,6 @@ void DefaultRenderPipeline::ssr_pass(vuk::Allocator& frame_allocator, const Ref<
       "normal_output"_image >> vuk::eComputeSampled
     },
     .execute = [this, ssr_buffer, vs_buffer](vuk::CommandBuffer& command_buffer) {
-      OX_TRACE_GPU(command_buffer.get_underlying(), "ssr_pass")
       command_buffer.bind_compute_pipeline("ssr_pipeline")
                     .bind_sampler(0, 0, vuk::LinearSamplerClamped)
                     .bind_image(0, 0, "ssr_image")
@@ -843,7 +865,7 @@ vuk::Future DefaultRenderPipeline::apply_fxaa(vuk::Future source, vuk::Future ds
   return {std::move(rgp), "smooth+"};
 }
 
-void DefaultRenderPipeline::cascaded_shadow_pass(const Ref<vuk::RenderGraph> rg, vuk::Buffer& shadow_buffer) {
+void DefaultRenderPipeline::cascaded_shadow_pass(const Ref<vuk::RenderGraph>& rg, vuk::Buffer& shadow_buffer) {
   Ref<vuk::RenderGraph> shadow_map = create_ref<vuk::RenderGraph>("shadow_map");
   const auto shadow_size = RendererConfig::get()->direct_shadows_config.size;
   const vuk::ImageAttachment shadow_array_attachment = {

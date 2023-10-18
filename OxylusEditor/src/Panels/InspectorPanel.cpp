@@ -24,7 +24,7 @@ static bool s_RenameEntity = false;
 
 InspectorPanel::InspectorPanel() : EditorPanel("Inspector", ICON_MDI_INFORMATION, true) { }
 
-void InspectorPanel::OnImGuiRender() {
+void InspectorPanel::on_imgui_render() {
   m_SelectedEntity = EditorLayer::get()->get_selected_entity();
   m_Scene = EditorLayer::get()->GetSelectedScene();
 
@@ -124,6 +124,7 @@ bool InspectorPanel::DrawMaterialProperties(Ref<Material>& material, bool saveTo
   }
 
   IGUI::begin_properties();
+  IGUI::text("Alpha mode: ", material->alpha_mode_to_string());
   IGUI::property("UV Scale", material->parameters.uv_scale);
   IGUI::property("Use Albedo", (bool&)material->parameters.use_albedo);
   IGUI::property("Albedo", material->albedo_texture);

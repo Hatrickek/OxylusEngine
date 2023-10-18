@@ -15,11 +15,11 @@ struct Texture;
 namespace Oxylus {
 class Material {
 public:
-  enum class AlphaMode {
+  enum class AlphaMode : uint32_t {
     Opaque = 0,
+    Blend,
     Mask,
-    Blend
-  } alpha_mode = AlphaMode::Opaque;
+  };
 
   struct Parameters {
     Vec4 color = Vec4(1.0f);
@@ -35,10 +35,11 @@ public:
     GLSL_BOOL use_ao = false;
     GLSL_BOOL use_emissive = false;
     GLSL_BOOL use_specular = false;
-    float alpha_cutoff = 1;
+    float alpha_cutoff = 0.5f;
     GLSL_BOOL double_sided = false;
     uint32_t uv_scale = 1;
-    Vec2 _pad;
+    uint32_t alpha_mode = (uint32_t)AlphaMode::Opaque;
+    uint32_t _pad;
   } parameters;
 
   std::string name = "Material";
@@ -60,5 +61,6 @@ public:
   void destroy();
 
   bool is_opaque() const;
+  const char* alpha_mode_to_string() const;
 };
 }

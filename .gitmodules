@@ -13,9 +13,6 @@
 [submodule "Oxylus/vendor/ImGuizmo"]
 	path = Oxylus/vendor/ImGuizmo
 	url = https://github.com/CedricGuillemet/ImGuizmo.git
-[submodule "Oxylus/vendor/tracy"]
-	path = Oxylus/vendor/tracy
-	url = https://github.com/wolfpld/tracy
 [submodule "Oxylus/vendor/glfw"]
 	path = Oxylus/vendor/glfw
 	url = https://github.com/glfw/glfw

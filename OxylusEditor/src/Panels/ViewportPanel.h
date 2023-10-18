@@ -9,23 +9,23 @@ namespace Oxylus {
 class ViewportPanel : public EditorPanel {
 public:
   Camera m_camera;
-  bool PerformanceOverlayVisible = true;
+  bool performance_overlay_visible = true;
   bool FullscreenViewport = false;
 
   ViewportPanel();
 
-  void OnImGuiRender() override;
+  void on_imgui_render() override;
 
-  void SetContext(const Ref<Scene>& scene, SceneHierarchyPanel& sceneHierarchyPanel);
+  void set_context(const Ref<Scene>& scene, SceneHierarchyPanel& sceneHierarchyPanel);
 
-  void OnUpdate() override;
+  void on_update() override;
 
 private:
-  void DrawPerformanceOverlay();
-  void DrawGizmos();
+  void draw_performance_overlay();
+  void draw_gizmos();
 
   Ref<Scene> m_Scene;
-  SceneHierarchyPanel* m_SceneHierarchyPanel = nullptr;
+  SceneHierarchyPanel* scene_hierarchy_panel = nullptr;
 
   ImVec2 m_ViewportSize;
   ImVec2 m_ViewportBounds[2];

@@ -33,40 +33,11 @@ void VulkanRenderer::init() {
   DebugRenderer::init();
 
   renderer_config.config_change_dispatcher.trigger(RendererConfig::ConfigChangeEvent{});
-
-#if GPU_PROFILER_ENABLED
-  // Initalize tracy profiling
-  const auto vk_context = VulkanContext::get();
-
-  // TODO: These should be destroyed afterwards.
-
-  VkCommandPoolCreateInfo command_pool_create_info;
-  command_pool_create_info.sType = VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO;
-  command_pool_create_info.flags = VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT;
-  command_pool_create_info.pNext = nullptr;
-  command_pool_create_info.queueFamilyIndex = vk_context->graphics_queue_family_index;
-
-  VkCommandPool command_pool;
-  vk_context->context->vkCreateCommandPool(vk_context->device, &command_pool_create_info, nullptr, &command_pool);
-
-  VkCommandBufferAllocateInfo allocate_info;
-  allocate_info.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO;
-  allocate_info.commandBufferCount = 1;
-  allocate_info.level = VK_COMMAND_BUFFER_LEVEL_PRIMARY;
-  allocate_info.commandPool = command_pool;
-  allocate_info.pNext = nullptr;
-  vk_context->context->vkAllocateCommandBuffers(vk_context->device, &allocate_info, &renderer_context.timeline_command_buffer);
-
-  TracyProfiler::InitTracyForVulkan(vk_context, renderer_context.timeline_command_buffer);
-#endif
 }
 
 void VulkanRenderer::shutdown() {
   RendererConfig::get()->save_config("renderer.oxconfig");
   DebugRenderer::release();
-#if GPU_PROFILER_ENABLED
-  TracyProfiler::DestroyContext();
-#endif
 }
 
 void VulkanRenderer::set_camera(Camera& camera) {

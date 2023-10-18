@@ -8,7 +8,7 @@ namespace Oxylus {
   public:
     InspectorPanel();
 
-    void OnImGuiRender() override;
+    void on_imgui_render() override;
 
     static bool DrawMaterialProperties(Ref<Material>& material, bool saveToCurrentPath = false);
 

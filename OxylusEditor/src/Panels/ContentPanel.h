@@ -35,8 +35,8 @@ enum class FileType {
     ContentPanel& operator=(ContentPanel&& other) = delete;
 
     void Init();
-    void OnUpdate() override;
-    void OnImGuiRender() override;
+    void on_update() override;
+    void on_imgui_render() override;
 
     void Invalidate();
 

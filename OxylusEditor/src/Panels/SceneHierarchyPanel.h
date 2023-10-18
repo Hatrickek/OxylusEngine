@@ -9,8 +9,8 @@ namespace Oxylus {
   class SceneHierarchyPanel : public EditorPanel {
   public:
     SceneHierarchyPanel();
-    void OnUpdate() override;
-    void OnImGuiRender() override;
+    void on_update() override;
+    void on_imgui_render() override;
 
     ImRect DrawEntityNode(Entity entity, uint32_t depth = 0, bool forceExpandTree = false, bool isPartOfPrefab = false);
     void SetContext(const Ref<Scene>& scene);

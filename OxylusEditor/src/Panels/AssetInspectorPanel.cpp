@@ -8,9 +8,9 @@
 namespace Oxylus {
   AssetInspectorPanel::AssetInspectorPanel() : EditorPanel("AssetInspector", ICON_MDI_INFORMATION) { }
 
-  void AssetInspectorPanel::OnUpdate() { }
+  void AssetInspectorPanel::on_update() { }
 
-  void AssetInspectorPanel::OnImGuiRender() {
+  void AssetInspectorPanel::on_imgui_render() {
     if (OnBegin()) {
       if (EditorContextType::Asset == EditorLayer::get()->GetContext().GetType()) {
         if (EditorLayer::get()->GetContext().GetAssetExtension() == ".oxmat") {

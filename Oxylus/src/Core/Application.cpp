@@ -115,7 +115,6 @@ void Application::update_layers(Timestep ts) {
 }
 
 void Application::update_renderer() {
-  OX_SCOPED_ZONE_N("SwapchainLoop");
   VulkanRenderer::draw(VulkanContext::get(), imgui_layer, layer_stack, system_manager);
 }
 

@@ -82,21 +82,21 @@ void EditorLayer::on_update(Timestep deltaTime) {
   for (const auto& [name, panel] : m_EditorPanels) {
     if (!panel->Visible)
       continue;
-    panel->OnUpdate();
+    panel->on_update();
   }
   for (const auto& panel : m_ViewportPanels) {
     if (!panel->Visible)
       continue;
-    panel->OnUpdate();
+    panel->on_update();
   }
   if (m_SceneHierarchyPanel.Visible)
-    m_SceneHierarchyPanel.OnUpdate();
+    m_SceneHierarchyPanel.on_update();
   if (m_ContentPanel.Visible)
-    m_ContentPanel.OnUpdate();
+    m_ContentPanel.on_update();
   if (m_InspectorPanel.Visible)
-    m_InspectorPanel.OnUpdate();
+    m_InspectorPanel.on_update();
 
-  m_AssetInspectorPanel.OnUpdate();
+  m_AssetInspectorPanel.on_update();
 
   switch (m_SceneState) {
     case SceneState::Edit: {
@@ -199,7 +199,7 @@ void EditorLayer::on_imgui_render() {
         }
         if (ImGui::BeginMenu("Window")) {
           if (ImGui::MenuItem("Add viewport", nullptr)) {
-            m_ViewportPanels.emplace_back(create_scope<ViewportPanel>())->SetContext(m_ActiveScene,
+            m_ViewportPanels.emplace_back(create_scope<ViewportPanel>())->set_context(m_ActiveScene,
               m_SceneHierarchyPanel);
           }
           if (ImGui::MenuItem("Shaders", nullptr)) {
@@ -211,7 +211,7 @@ void EditorLayer::on_imgui_render() {
           ImGui::MenuItem("Inspector", nullptr, &m_InspectorPanel.Visible);
           ImGui::MenuItem("Scene hierarchy", nullptr, &m_SceneHierarchyPanel.Visible);
           ImGui::MenuItem("Console window", nullptr, &m_ConsolePanel.m_RuntimeConsole.Visible);
-          ImGui::MenuItem("Performance Overlay", nullptr, &m_ViewportPanels[0]->PerformanceOverlayVisible);
+          ImGui::MenuItem("Performance Overlay", nullptr, &m_ViewportPanels[0]->performance_overlay_visible);
           ImGui::MenuItem("Statistics", nullptr, &m_EditorPanels["StatisticsPanel"]->Visible);
           ImGui::MenuItem("Editor Debug", nullptr, &m_EditorPanels["EditorDebugPanel"]->Visible);
           ImGui::EndMenu();
@@ -456,7 +456,7 @@ void EditorLayer::DrawPanels() {
 
   for (const auto& panel : m_ViewportPanels) {
     if (panel->Visible && !panel->FullscreenViewport) {
-      panel->OnImGuiRender();
+      panel->on_imgui_render();
       if (panel->FullscreenViewport) {
         fullscreenViewportPanel = panel.get();
         break;
@@ -466,24 +466,24 @@ void EditorLayer::DrawPanels() {
   }
 
   if (fullscreenViewportPanel) {
-    fullscreenViewportPanel->OnImGuiRender();
+    fullscreenViewportPanel->on_imgui_render();
     return;
   }
 
   for (const auto& [name, panel] : m_EditorPanels) {
     if (panel->Visible)
-      panel->OnImGuiRender();
+      panel->on_imgui_render();
   }
 
   m_ConsolePanel.OnImGuiRender();
   if (m_SceneHierarchyPanel.Visible)
-    m_SceneHierarchyPanel.OnImGuiRender();
+    m_SceneHierarchyPanel.on_imgui_render();
   if (m_InspectorPanel.Visible)
-    m_InspectorPanel.OnImGuiRender();
+    m_InspectorPanel.on_imgui_render();
   if (m_ContentPanel.Visible)
-    m_ContentPanel.OnImGuiRender();
+    m_ContentPanel.on_imgui_render();
   if (m_AssetInspectorPanel.Visible)
-    m_AssetInspectorPanel.OnImGuiRender();
+    m_AssetInspectorPanel.on_imgui_render();
 }
 
 Ref<Scene> EditorLayer::GetActiveScene() {
@@ -496,7 +496,7 @@ void EditorLayer::SetEditorScene(const Ref<Scene>& scene) {
   m_SceneHierarchyPanel.ClearSelectionContext();
   m_SceneHierarchyPanel.SetContext(scene);
   for (const auto& panel : m_ViewportPanels) {
-    panel->SetContext(m_EditorScene, m_SceneHierarchyPanel);
+    panel->set_context(m_EditorScene, m_SceneHierarchyPanel);
   }
 }
 
@@ -505,7 +505,7 @@ void EditorLayer::SetRuntimeScene(const Ref<Scene>& scene) {
   m_SceneHierarchyPanel.ClearSelectionContext();
   m_SceneHierarchyPanel.SetContext(scene);
   for (const auto& panel : m_ViewportPanels) {
-    panel->SetContext(m_ActiveScene, m_SceneHierarchyPanel);
+    panel->set_context(m_ActiveScene, m_SceneHierarchyPanel);
   }
 }
 

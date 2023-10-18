@@ -1,15 +1,19 @@
 #pragma once
 
-#include <tracy/Tracy.hpp>
-#include "vulkan/vulkan.h"
-#include <tracy/TracyVulkan.hpp>
-
 #include <chrono>
 
+#include <vuk/Types.hpp>
+
 // Profilers 
-#define GPU_PROFILER_ENABLED 0
-#define CPU_PROFILER_ENABLED 0
+#define GPU_PROFILER_ENABLED 1
+#define CPU_PROFILER_ENABLED 1
 #define MEMORY_PROFILER_ENABLED 0
+
+#define TRACY_VK_USE_SYMBOL_TABLE
+
+#include <tracy/Tracy.hpp>
+#include <vulkan/vulkan.h>
+#include <tracy/TracyVulkan.hpp>
 
 #ifdef OX_DISTRIBUTION
 #undef GPU_PROFILER_ENABLED
@@ -17,9 +21,9 @@
 #endif
 
 #if GPU_PROFILER_ENABLED
-#define OX_TRACE_GPU(cmdbuf, name) TracyVkZone(Oxylus::TracyProfiler::GetContext(), cmdbuf, name)
+#define OX_TRACE_GPU_TRANSIENT(context, cmdbuf, name) TracyVkZoneTransient(context, , cmdbuf, name, true) 
 #else
-#define OX_TRACE_GPU(cmdbuf, name)
+#define OX_TRACE_GPU_TRANSIENT(cmdbuf, name)
 #endif
 
 #ifdef OX_DISTRIBUTION
@@ -53,16 +57,22 @@ class VulkanContext;
 
 class TracyProfiler {
 public:
-  static void InitTracyForVulkan(const VulkanContext* context, VkCommandBuffer command_buffer);
 
-  static void DestroyContext();
+  TracyProfiler() = default;
+  ~TracyProfiler();
 
-  static void Collect(const VkCommandBuffer& commandBuffer);
+  void init_tracy_for_vulkan(VulkanContext* context);
+  void destroy_context() const;
+  void collect(tracy::VkCtx* ctx, const VkCommandBuffer& command_buffer);
 
-  static TracyVkCtx& GetContext() { return vulkan_context; }
+  tracy::VkCtx* get_graphics_ctx() const { return tracy_graphics_ctx; }
+  tracy::VkCtx* get_transfer_ctx() const { return tracy_transfer_ctx; }
 
 private:
-  static TracyVkCtx vulkan_context;
+  tracy::VkCtx* tracy_graphics_ctx;
+  tracy::VkCtx* tracy_transfer_ctx;
+  vuk::Unique<vuk::CommandPool> tracy_cpool;
+  vuk::Unique<vuk::CommandBufferAllocation> tracy_cbufai;
 };
 
 using FloatingPointMicroseconds = std::chrono::duration<double, std::micro>;

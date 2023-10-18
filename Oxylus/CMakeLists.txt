@@ -47,9 +47,6 @@ source_group("vendor/glm" FILES ${vendor__glm})
 set(vendor__miniaudio "vendor/miniaudio/miniaudio.h")
 source_group("vendor/miniaudio" FILES ${vendor__miniaudio})
 
-set(vendor__tracy__public "vendor/tracy/public/TracyClient.cpp")
-source_group("vendor/tracy/public" FILES ${vendor__tracy__public})
-
 set(ALL_FILES
   ${SOURCE_FILES}
   ${vendor__ImGui__backends}
@@ -57,7 +54,6 @@ set(ALL_FILES
   ${vendor__ImGuizmo}
   ${vendor__glm}
   ${vendor__miniaudio}
-  ${vendor__tracy__public}
   )
 
 # Target
@@ -82,7 +78,6 @@ target_include_directories(${PROJECT_NAME} PUBLIC
   "${CMAKE_CURRENT_SOURCE_DIR}/vendor/ImGuizmo;"
   "${CMAKE_CURRENT_SOURCE_DIR}/vendor/tinygltf;"
   "${CMAKE_CURRENT_SOURCE_DIR}/vendor/miniaudio;"
-  "${CMAKE_CURRENT_SOURCE_DIR}/vendor/tracy/public"
   )
 
 # Compile definitions
@@ -90,14 +85,10 @@ target_compile_definitions(${PROJECT_NAME} PRIVATE
   "$<$<CONFIG:Debug>:"
   "OX_DEBUG;"
   "_DEBUG;"
-  "TRACY_ON_DEMAND"
-  "TRACY_ENABLE"
   ">"
   "$<$<CONFIG:Release>:"
   "OX_RELEASE;"
-  "TRACY_ON_DEMAND"
   "NDEBUG;"
-  "TRACY_ENABLE"
   ">"
   "$<$<CONFIG:Distribution>:"
   "OX_DISTRIBUTION;"
@@ -214,7 +205,6 @@ target_link_libraries(${PROJECT_NAME} PUBLIC fmt)
 set_targets_static_and_folder(fmt)
 
 # spdlog
-set(SPDLOG_NO_EXCEPTIONS TRUE)
 set(SPDLOG_FMT_EXTERNAL TRUE)
 FetchContent_Declare(
     spdlog
@@ -246,7 +236,7 @@ set(VUK_USE_DXC ON)
 FetchContent_Declare(
     vuk
     GIT_REPOSITORY "https://github.com/martty/vuk.git"
-    GIT_TAG "master"
+    GIT_TAG "dev"
     GIT_SHALLOW    TRUE
     GIT_PROGRESS   TRUE
 )
@@ -307,3 +297,17 @@ FetchContent_MakeAvailable(JoltPhysics)
 target_link_libraries(${PROJECT_NAME} PUBLIC Jolt)
 target_include_directories(${PROJECT_NAME} PUBLIC ${JoltPhysics_SOURCE_DIR}/..)
 FOLDER_DIR_TARGETS(Jolt)
+
+# tracy
+set(TRACY_STATIC ON)
+set(TRACY_VK_USE_SYMBOL_TABLE ON)
+FetchContent_Declare(
+    Tracy
+    GIT_REPOSITORY "https://github.com/wolfpld/tracy.git"
+    GIT_TAG v0.10
+    GIT_SHALLOW    TRUE
+    GIT_PROGRESS   TRUE
+)
+FetchContent_MakeAvailable(Tracy)
+target_link_libraries(${PROJECT_NAME} PUBLIC Tracy::TracyClient)
+set_targets_static_and_folder(Tracy::TracyClient)

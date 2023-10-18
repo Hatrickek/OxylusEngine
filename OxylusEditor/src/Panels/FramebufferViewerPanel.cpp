@@ -7,7 +7,7 @@
 namespace Oxylus {
   FramebufferViewerPanel::FramebufferViewerPanel() : EditorPanel("Framebuffer Viewer", ICON_MDI_IMAGE_FRAME) { }
 
-  void FramebufferViewerPanel::OnImGuiRender() {
+  void FramebufferViewerPanel::on_imgui_render() {
     if (OnBegin()) {
 #if 0
       constexpr ImGuiTableFlags tableFlags = ImGuiTableFlags_RowBg | ImGuiTableFlags_ContextMenuInBody |

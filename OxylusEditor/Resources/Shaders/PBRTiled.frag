@@ -126,16 +126,16 @@ vec3 GetNormal(vec2 uv) {
   return normalize(TBN * tangentNormal);
 }
 
-vec3 GetIBLContribution(PBRInfo pbrInputs, vec3 n, vec3 reflection) {
-	float lod = (pbrInputs.perceptualRoughness /* * uboParams.prefilteredCubeMipLevels*/);
+vec3 GetIBLContribution(float NdotV, float perceptualRoughness, vec3 diffuseColor, vec3 specularColor, vec3 n, vec3 reflection) {
+	float lod = (perceptualRoughness /* * uboParams.prefilteredCubeMipLevels*/);
 	// retrieve a scale and bias to F0. See [1], Figure 3
-	vec3 brdf = (texture(samplerBRDFLUT, vec2(pbrInputs.NdotV, 1.0 - pbrInputs.perceptualRoughness))).rgb;
+	vec3 brdf = (texture(samplerBRDFLUT, vec2(NdotV, 1.0 - perceptualRoughness))).rgb;
 	vec3 diffuseLight = SRGBtoLINEAR(texture(samplerIrradiance, n)).rgb;
 
 	vec3 specularLight = SRGBtoLINEAR(textureLod(prefilteredMap, reflection, lod)).rgb;
 
-	vec3 diffuse = diffuseLight * pbrInputs.diffuseColor;
-	vec3 specular = specularLight * (pbrInputs.specularColor * brdf.x + brdf.y);
+	vec3 diffuse = diffuseLight * diffuseColor;
+	vec3 specular = specularLight * (specularColor * brdf.x + brdf.y);
 
 	return diffuse + specular;
 }
@@ -158,10 +158,7 @@ void main() {
 	} else {
 		baseColor = mat.Color;
 	}
-	//if (baseColor.a < mat.AlphaCutoff) {
-	//	discard;
-	//}
-	if (baseColor.a < 0.5f) {
+	if (baseColor.a < mat.AlphaCutoff && mat.AlphaMode == ALPHA_MODE_MASK) {
 		discard;
 	}
 
@@ -203,21 +200,18 @@ void main() {
 	vec3 color = vec3(0);
 
 	// Point lights
+	vec3 n = mat.UseNormal ? GetNormal(scaledUV) : normalize(inNormal);
+	vec3 v = normalize(u_Ubo.camPos - inWorldPos);		// Vector from surface point to camera
+	float NdotV = clamp(abs(dot(n, v)), 0.001, 1.0);
+	vec3 reflection = -normalize(reflect(v, n));
 	for (int i = 0; i < u_UboParams.numLights; i++) {
 		int lightIndex = i;//lightIndices[i + lightIndexBegin];
 
 		Light current_light = lights[lightIndex];
 		vec3 l = normalize(current_light.position.xyz - inWorldPos);
-		//Lo += specularContribution(L, V, normal, F0, metallic, roughness, albedo, current_light.color.xyz);
-		//Lo *= current_light.position.w;  // intensity
-
-		vec3 n = mat.UseNormal ? GetNormal(scaledUV) : normalize(inNormal);
-		vec3 v = normalize(u_Ubo.camPos - inWorldPos);		// Vector from surface point to camera
 		vec3 h = normalize(l+v);							// Half vector between both l and v
-		vec3 reflection = -normalize(reflect(v, n));
 
 		float NdotL = clamp(dot(n, l), 0.001, 1.0);
-		float NdotV = clamp(abs(dot(n, v)), 0.001, 1.0);
 		float NdotH = clamp(dot(n, h), 0.0, 1.0);
 		float LdotH = clamp(dot(l, h), 0.0, 1.0);
 		float VdotH = clamp(dot(v, h), 0.0, 1.0);
@@ -250,9 +244,10 @@ void main() {
 		specContrib *= current_light.position.w;
 		// Obtain final intensity as reflectance (BRDF) scaled by the energy of the light (cosine law)
 		color = NdotL * u_LightColor * (diffuseContrib + specContrib);
-		// Calculate lighting contribution from image based lighting source (IBL)
-		color += GetIBLContribution(pbrInputs, n, reflection);
 	}
+
+	// Calculate lighting contribution from image based lighting source (IBL)
+	color += GetIBLContribution(NdotV, perceptualRoughness, diffuseColor, specularColor, n, reflection);
 
 	const float u_OcclusionStrength = 1.0f;
 	// Apply optional PBR terms for additional (optional) shading

@@ -7,6 +7,6 @@ namespace Oxylus {
   public:
     EditorSettingsPanel();
     ~EditorSettingsPanel() override = default;
-    void OnImGuiRender() override;
+    void on_imgui_render() override;
   };
 }

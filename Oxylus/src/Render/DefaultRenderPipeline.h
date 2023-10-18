@@ -81,6 +81,7 @@ private:
   std::vector<uint32_t> transparent_mesh_draw_list;
 
   struct LightChangeEvent { };
+
   DirectShadowPass::DirectShadowUB direct_shadow_ub = {};
   std::vector<VulkanRenderer::LightingData> point_lights_data = {};
   std::vector<VulkanRenderer::LightingData> dir_lights_data = {};
@@ -94,9 +95,11 @@ private:
   void update_parameters(SceneRenderer::ProbeChangeEvent& e);
   void update_final_pass_data(RendererConfig::ConfigChangeEvent& e);
 
+  void depth_pre_pass(const Ref<vuk::RenderGraph>& rg, vuk::Buffer& vs_buffer, std::unordered_map<uint32_t, uint32_t> material_map, vuk::Buffer& mat_buffer);
+  void geomerty_pass(const Ref<vuk::RenderGraph>& rg, vuk::Buffer& vs_buffer, std::unordered_map<uint32_t, uint32_t> material_map, vuk::Buffer& mat_buffer, vuk::Buffer& shadow_buffer, vuk::Buffer& point_lights_buffer, vuk::Buffer pbr_buffer);
   vuk::Future apply_fxaa(vuk::Future source, vuk::Future dst);
-  void cascaded_shadow_pass(Ref<vuk::RenderGraph> rg, vuk::Buffer& shadow_buffer);
-  void gtao_pass(vuk::Allocator& frame_allocator, Ref<vuk::RenderGraph> rg);
-  void ssr_pass(vuk::Allocator& frame_allocator, Ref<vuk::RenderGraph> rg, VulkanContext* vk_context, vuk::Buffer& vs_buffer) const;
+  void cascaded_shadow_pass(const Ref<vuk::RenderGraph>& rg, vuk::Buffer& shadow_buffer);
+  void gtao_pass(vuk::Allocator& frame_allocator, const Ref<vuk::RenderGraph>& rg);
+  void ssr_pass(vuk::Allocator& frame_allocator, const Ref<vuk::RenderGraph>& rg, VulkanContext* vk_context, vuk::Buffer& vs_buffer) const;
 };
 }

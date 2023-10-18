@@ -379,7 +379,7 @@ void SceneHierarchyPanel::DrawContextMenu() {
 
 SceneHierarchyPanel::SceneHierarchyPanel() : EditorPanel("Scene Hierarchy", ICON_MDI_VIEW_LIST, true) { }
 
-void SceneHierarchyPanel::OnUpdate() {
+void SceneHierarchyPanel::on_update() {
   //Handle shortcut inputs
   if (m_SelectedEntity) {
     if (ImGui::IsKeyDown(ImGuiKey_LeftCtrl) && ImGui::IsKeyPressed(ImGuiKey_D)) {
@@ -402,7 +402,7 @@ void SceneHierarchyPanel::OnUpdate() {
   }
 }
 
-void SceneHierarchyPanel::OnImGuiRender() {
+void SceneHierarchyPanel::on_imgui_render() {
   ImGuiScoped::StyleVar cellpad(ImGuiStyleVar_CellPadding, {0, 0});
 
   if (OnBegin(ImGuiWindowFlags_NoScrollWithMouse | ImGuiWindowFlags_NoScrollbar)) {

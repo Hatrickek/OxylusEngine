@@ -15,7 +15,7 @@
 namespace Oxylus {
 ProjectPanel::ProjectPanel() : EditorPanel("Projects", ICON_MDI_ACCOUNT_BADGE, true) { }
 
-void ProjectPanel::OnUpdate() { }
+void ProjectPanel::on_update() { }
 
 void ProjectPanel::LoadProjectForEditor(const std::string& filepath) {
   if (Project::Load(filepath)) {
@@ -26,7 +26,7 @@ void ProjectPanel::LoadProjectForEditor(const std::string& filepath) {
   }
 }
 
-void ProjectPanel::OnImGuiRender() {
+void ProjectPanel::on_imgui_render() {
   if (Visible && !ImGui::IsPopupOpen("ProjectSelector"))
     ImGui::OpenPopup("ProjectSelector");
   ImGui::SetNextWindowSize(ImVec2(480, 320), ImGuiCond_FirstUseEver);

@@ -1,13 +1,16 @@
 #pragma once
+
+#include "Core/Base.h"
+
 #include <optional>
 
-#include <vuk/Types.hpp>
-#include <vuk/Context.hpp>
-#include <vuk/resources/DeviceFrameResource.hpp>
+#include <VkBootstrap.h>
 #include <vuk/Allocator.hpp>
 #include <vuk/AllocatorHelpers.hpp>
-#include <VkBootstrap.h>
-#include <vuk/Future.hpp>
+#include <vuk/Context.hpp>
+#include <vuk/Types.hpp>
+#include <vuk/resources/DeviceFrameResource.hpp>
+
 
 namespace vkb {
 struct Device;
@@ -15,6 +18,7 @@ struct Instance;
 }
 
 namespace Oxylus {
+class TracyProfiler;
 struct AppSpec;
 
 class VulkanContext {
@@ -36,6 +40,7 @@ public:
   uint32_t num_frames = 0;
   vuk::Unique<std::array<VkSemaphore, 3>> present_ready;
   vuk::Unique<std::array<VkSemaphore, 3>> render_complete;
+  Ref<TracyProfiler> tracy_profiler = {};
 
   std::string device_name = {};
   uint32_t driver_version = {};
@@ -45,7 +50,7 @@ public:
   static void init();
 
   void create_context(const AppSpec& spec);
-  
+
   vuk::Allocator begin();
   void end(const vuk::Future& src, vuk::Allocator frame_allocator);
 

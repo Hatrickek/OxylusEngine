@@ -1,3 +1,7 @@
+#define ALPHA_MODE_OPAQUE 0
+#define ALPHA_MODE_BLEND 1
+#define ALPHA_MODE_MASK 2
+
 struct Material {
 	vec4 Color;	
 	vec4 Emmisive;
@@ -15,7 +19,8 @@ struct Material {
 	float AlphaCutoff;
 	bool DoubleSided;
 	uint UVScale;
-	vec2 _pad;
+	uint AlphaMode;
+	uint _pad;
 };
 
 layout(std140, set = 2, binding = 0) readonly buffer MaterialBuffer {

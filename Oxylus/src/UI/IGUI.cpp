@@ -39,7 +39,7 @@ void IGUI::end_properties() {
 void IGUI::text(const char* text1, const char* text2, const char* tooltip) {
   begin_property_grid(text1, tooltip);
   ImGui::SetCursorPosY(ImGui::GetCursorPosY() + ImGui::GetStyle().FramePadding.y * 0.5f);
-  ImGui::Text("%s", text2);
+  ImGui::Text(text2);
   end_property_grid();
 }
 
@@ -325,7 +325,7 @@ void IGUI::clipped_text(const ImVec2& pos_min, const ImVec2& pos_max, const char
 
   ImGuiContext& g = *GImGui;
   ImGuiWindow* window = g.CurrentWindow;
-  IGUI::clipped_text(window->DrawList, pos_min, pos_max, text, text_display_end, text_size_if_known, align, clip_rect, wrap_width);
+  clipped_text(window->DrawList, pos_min, pos_max, text, text_display_end, text_size_if_known, align, clip_rect, wrap_width);
   if (g.LogEnabled)
     ImGui::LogRenderedText(&pos_min, text, text_display_end);
 }

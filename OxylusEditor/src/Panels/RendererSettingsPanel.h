@@ -8,7 +8,7 @@ namespace Oxylus {
   class RendererSettingsPanel : public EditorPanel {
   public:
     RendererSettingsPanel();
-    void OnImGuiRender() override;
+    void on_imgui_render() override;
 
   private:
     void ConfigProperty(bool value);

@@ -11,7 +11,7 @@
 namespace Oxylus {
   RendererSettingsPanel::RendererSettingsPanel() : EditorPanel("Renderer Settings", ICON_MDI_GPU, true) { }
 
-  void RendererSettingsPanel::OnImGuiRender() {
+  void RendererSettingsPanel::on_imgui_render() {
     if (OnBegin()) {
       float avg = 0.0;
 
