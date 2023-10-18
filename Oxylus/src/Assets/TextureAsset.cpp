@@ -2,9 +2,10 @@
 
 #include <vuk/Partials.hpp>
 
+#include "Render/RendererCommon.h"
 #include "Render/Texture.h"
 #include "Render/Vulkan/VulkanContext.h"
-#include "Render/Vulkan/VulkanRenderer.h"
+
 #include "Utils/EmbeddedMissingTexture.h"
 #include "Utils/FileSystem.h"
 
@@ -42,7 +43,7 @@ void TextureAsset::load(const std::string& file_path, vuk::Format format) {
   create_texture(x, y, data, format);
 
   if (FileSystem::GetFileExtension(path) == "hdr") {
-    auto [image, future] = VulkanRenderer::generate_cubemap_from_equirectangular(texture);
+    auto [image, future] = RendererCommon::generate_cubemap_from_equirectangular(texture);
     vuk::Compiler compiler;
     future.wait(*VulkanContext::get()->superframe_allocator, compiler);
 

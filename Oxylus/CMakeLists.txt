@@ -310,4 +310,4 @@ FetchContent_Declare(
 )
 FetchContent_MakeAvailable(Tracy)
 target_link_libraries(${PROJECT_NAME} PUBLIC Tracy::TracyClient)
-set_targets_static_and_folder(Tracy::TracyClient)
+set_targets_static_and_folder(TracyClient)

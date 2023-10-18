@@ -61,9 +61,6 @@ public:
   static unsigned get_viewport_width() { return renderer_context.viewport_size.x; }
   static unsigned get_viewport_height() { return renderer_context.viewport_size.y; }
 
-  // Utils
-  static std::pair<vuk::Unique<vuk::Image>, vuk::Future> generate_cubemap_from_equirectangular(const vuk::Texture& cubemap);
-
   // TODO(hatrickek): Temporary
   static void set_camera(Camera& camera);
 

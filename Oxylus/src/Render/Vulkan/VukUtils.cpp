@@ -6,7 +6,7 @@
 #include <vuk/CommandBuffer.hpp>
 
 namespace vuk {
-std::pair<std::vector<Name>, std::vector<Name>>  diverge_image_mips(const std::shared_ptr<RenderGraph>& rg, const std::string_view input_name, const uint32_t mip_count) {
+std::pair<std::vector<Name>, std::vector<Name>> diverge_image_mips(const std::shared_ptr<RenderGraph>& rg, const std::string_view input_name, const uint32_t mip_count) {
   std::vector<Name> diverged_names;
   std::vector<Name> output_names = {};
   for (uint32_t mip_level = 0; mip_level < mip_count; mip_level++) {
@@ -29,14 +29,17 @@ void converge_image_mips(const std::shared_ptr<RenderGraph>& rg, const std::vect
   rg->converge_image_explicit(converged_names, output_name);
 }
 
-std::vector<Name> diverge_image_layers(const std::shared_ptr<RenderGraph>& rg, const std::string_view input_name, uint32_t layer_count) {
+std::pair<std::vector<Name>, std::vector<Name>> diverge_image_layers(const std::shared_ptr<RenderGraph>& rg, const std::string_view input_name, uint32_t layer_count) {
   std::vector<Name> diverged_names;
+  std::vector<Name> output_names = {};
   for (uint32_t layer_level = 0; layer_level < layer_count; layer_level++) {
     Name div_name = Name(input_name).append("_layer").append(std::to_string(layer_level));
     diverged_names.push_back(div_name);
     rg->diverge_image(input_name, {.base_layer = layer_level, .layer_count = 1}, div_name);
+
+    output_names.emplace_back(div_name.append("+"));
   }
-  return diverged_names;
+  return {diverged_names, output_names};
 }
 
 void generate_mips(const std::shared_ptr<RenderGraph>& rg, std::string_view input_name, const std::string_view output_name, uint32_t mip_count) {

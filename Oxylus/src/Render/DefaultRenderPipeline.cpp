@@ -3,6 +3,8 @@
 #include <glm/gtc/type_ptr.inl>
 #include <vuk/Partials.hpp>
 
+#include "RendererCommon.h"
+
 #include "Core/Application.h"
 #include "Assets/AssetManager.h"
 #include "Core/Entity.h"
@@ -261,7 +263,7 @@ void DefaultRenderPipeline::depth_pre_pass(const Ref<vuk::RenderGraph>& rg, vuk:
           [&mesh, &command_buffer, i, material_map](const Mesh::Primitive* part) {
             const auto& material = mesh.materials[part->material_index];
 
-            if (material->parameters.alpha_mode != (uint32_t)Material::AlphaMode::Opaque) {
+            if (material->parameters.alpha_mode == (uint32_t)Material::AlphaMode::Mask) {
               return false;
             }
 
@@ -363,19 +365,10 @@ void DefaultRenderPipeline::geomerty_pass(const Ref<vuk::RenderGraph>& rg,
         .layer_count = 1
       };
 
-      vuk::PipelineColorBlendAttachmentState pcba;
-      pcba.blendEnable = true;
-      pcba.srcColorBlendFactor = vuk::BlendFactor::eSrcAlpha;
-      pcba.dstColorBlendFactor = vuk::BlendFactor::eOneMinusSrcAlpha;
-      pcba.colorBlendOp = vuk::BlendOp::eAdd;
-      pcba.srcAlphaBlendFactor = vuk::BlendFactor::eOne;
-      pcba.dstAlphaBlendFactor = vuk::BlendFactor::eZero;
-      pcba.alphaBlendOp = vuk::BlendOp::eAdd;
-
       command_buffer.bind_graphics_pipeline("pbr_pipeline")
                     .set_viewport(0, vuk::Rect2D::framebuffer())
                     .set_scissor(0, vuk::Rect2D::framebuffer())
-                    .broadcast_color_blend(vuk::BlendPreset::eAlphaBlend)
+                    .broadcast_color_blend({})
                     .set_depth_stencil(vuk::PipelineDepthStencilStateCreateInfo{
                        .depthTestEnable = true,
                        .depthWriteEnable = true,
@@ -416,6 +409,8 @@ void DefaultRenderPipeline::geomerty_pass(const Ref<vuk::RenderGraph>& rg,
       }
 
       // Transparency pass
+      command_buffer.bind_graphics_pipeline("pbr_pipeline");
+      command_buffer.broadcast_color_blend(vuk::BlendPreset::eAlphaBlend);
       for (auto i : transparent_mesh_draw_list) {
         auto& mesh = mesh_draw_list[i];
         VulkanRenderer::render_mesh(mesh,
@@ -846,7 +841,7 @@ vuk::Future DefaultRenderPipeline::apply_fxaa(vuk::Future source, vuk::Future ds
     .resources = {"jagged"_image >> vuk::eFragmentSampled, "smooth"_image >> vuk::eColorWrite},
     .execute = [](vuk::CommandBuffer& command_buffer) {
       // TODO(hatrickek): make settings
-      constexpr auto current_threshold = 0.0833f;
+      constexpr auto current_threshold = 0.0625;
       constexpr auto relative_threshold = 0.125f;
 
       command_buffer.bind_graphics_pipeline("fxaa_pipeline")
@@ -878,7 +873,7 @@ void DefaultRenderPipeline::cascaded_shadow_pass(const Ref<vuk::RenderGraph>& rg
   };
   shadow_map->attach_and_clear_image("shadow_map_array", shadow_array_attachment, vuk::DepthOne);
 
-  auto diverged_cascade_names = diverge_image_layers(shadow_map, "shadow_map_array", 4);
+  auto [diverged_cascade_names, _] = diverge_image_layers(shadow_map, "shadow_map_array", 4);
 
   std::vector<vuk::Name> final_diverged_cascade_names = {};
 
@@ -935,6 +930,16 @@ void DefaultRenderPipeline::generate_prefilter() {
   OX_SCOPED_ZONE;
   vuk::Compiler compiler{};
   auto& allocator = *VulkanContext::get()->superframe_allocator;
+
+  // blur cubemap layers
+  Ref<vuk::RenderGraph> rg = create_ref<vuk::RenderGraph>("cubemap_blurring");
+
+  rg->attach_image("cubemap", vuk::ImageAttachment::from_texture(m_resources.cube_map->get_texture()));
+  auto [diverged_image, diverged_image_output] = vuk::diverge_image_layers(rg, "cubemap_image", 6);
+
+  for (uint32_t i = 0; i < 6; i++) {
+    RendererCommon::apply_blur(rg, "", diverged_image[i], diverged_image_output[i]);
+  }
 
   auto [brdf_img, brdf_fut] = Prefilter::generate_brdflut();
   brdf_fut.wait(allocator, compiler);
