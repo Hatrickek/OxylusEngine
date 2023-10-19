@@ -303,10 +303,6 @@ void DefaultRenderPipeline::geomerty_pass(const Ref<vuk::RenderGraph>& rg,
 
       skybox_push_constant.view = m_renderer_context.current_camera->SkyboxView;
 
-      const auto sky_light_view = m_scene->m_registry.view<SkyLightComponent>();
-      for (auto&& [e, sc] : sky_light_view.each())
-        skybox_push_constant.lod_bias = sc.lod_bias;
-
       command_buffer.bind_graphics_pipeline("skybox_pipeline")
                     .set_viewport(0, vuk::Rect2D::framebuffer())
                     .set_scissor(0, vuk::Rect2D::framebuffer())

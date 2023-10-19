@@ -15,10 +15,6 @@ add_executable(${PROJECT_NAME} ${ALL_FILES})
 
 set(ROOT_NAMESPACE OxylusEditor)
 
-set_target_properties(${PROJECT_NAME} PROPERTIES
-    VS_GLOBAL_KEYWORD "Win32Proj"
-)
-
 # Target name
 set_target_properties(${PROJECT_NAME} PROPERTIES
     TARGET_NAME_DEBUG   "OxylusEditor"
@@ -26,15 +22,7 @@ set_target_properties(${PROJECT_NAME} PROPERTIES
     TARGET_NAME_Distribution    "OxylusEditor"
 )
 
-# Output directory
-set_target_properties(${PROJECT_NAME} PROPERTIES
-    OUTPUT_DIRECTORY_DEBUG   "${CMAKE_CURRENT_SOURCE_DIR}/../bin/Debug-windows-x86_64/OxylusEditor/"
-    OUTPUT_DIRECTORY_RELEASE "${CMAKE_CURRENT_SOURCE_DIR}/../bin/Release-windows-x86_64/OxylusEditor/"
-    OUTPUT_DIRECTORY_Distribution    "${CMAKE_CURRENT_SOURCE_DIR}/../bin/Distribution-windows-x86_64/OxylusEditor/"
-)
-
 # MSVC runtime library
-
 get_property(MSVC_RUNTIME_LIBRARY_DEFAULT TARGET ${PROJECT_NAME} PROPERTY MSVC_RUNTIME_LIBRARY)
 string(CONCAT "MSVC_RUNTIME_LIBRARY_STR"
   $<$<CONFIG:Debug>:

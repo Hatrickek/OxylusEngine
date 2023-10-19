@@ -26,12 +26,13 @@ InspectorPanel::InspectorPanel() : EditorPanel("Inspector", ICON_MDI_INFORMATION
 
 void InspectorPanel::on_imgui_render() {
   m_SelectedEntity = EditorLayer::get()->get_selected_entity();
-  m_Scene = EditorLayer::get()->GetSelectedScene();
+  m_Scene = EditorLayer::get()->GetSelectedScene().get();
 
   ImGui::Begin(fmt::format("{} {}", StringUtils::from_char8_t(ICON_MDI_INFORMATION), "Inspector").c_str());
   if (m_SelectedEntity) {
-    DrawComponents(m_SelectedEntity);
+    draw_components(m_SelectedEntity);
   }
+
   ImGui::End();
 }
 
@@ -84,7 +85,7 @@ static void DrawComponent(const char8_t* name,
   }
 }
 
-bool InspectorPanel::DrawMaterialProperties(Ref<Material>& material, bool saveToCurrentPath) {
+bool InspectorPanel::draw_material_properties(Ref<Material>& material, bool saveToCurrentPath) {
   bool loadAsset = false;
 
   if (ImGui::Button("Save")) {
@@ -113,7 +114,7 @@ bool InspectorPanel::DrawMaterialProperties(Ref<Material>& material, bool saveTo
   ImGui::Button("Drop a material file", {x, y});
   if (ImGui::BeginDragDropTarget()) {
     if (const ImGuiPayload* payload = ImGui::AcceptDragDropPayload("CONTENT_BROWSER_ITEM")) {
-      std::filesystem::path path = IGUI::get_path_from_im_gui_payload(payload);
+      std::filesystem::path path = IGUI::get_path_from_imgui_payload(payload);
       const std::string ext = path.extension().string();
       if (ext == ".oxmat") {
         MaterialSerializer(material).Deserialize(path.string());
@@ -221,7 +222,7 @@ static void DrawParticleBySpeedModule(std::string_view moduleName,
 }
 
 template <typename Component>
-void InspectorPanel::DrawAddComponent(Entity entity, const char* name) const {
+void InspectorPanel::draw_add_component(Entity entity, const char* name) const {
   if (ImGui::MenuItem(name)) {
     if (!entity.has_component<Component>())
       entity.add_component_internal<Component>();
@@ -231,7 +232,7 @@ void InspectorPanel::DrawAddComponent(Entity entity, const char* name) const {
   }
 }
 
-void InspectorPanel::DrawComponents(Entity entity) const {
+void InspectorPanel::draw_components(Entity entity) const {
   if (entity.has_component<TagComponent>()) {
     auto& tag = entity.get_component<TagComponent>().tag;
     char buffer[256] = {};
@@ -249,21 +250,21 @@ void InspectorPanel::DrawComponents(Entity entity) const {
     ImGui::OpenPopup("Add Component");
   }
   if (ImGui::BeginPopup("Add Component")) {
-    DrawAddComponent<MeshRendererComponent>(m_SelectedEntity, "Mesh Renderer");
-    DrawAddComponent<MaterialComponent>(m_SelectedEntity, "Material");
-    DrawAddComponent<AudioSourceComponent>(m_SelectedEntity, "Audio Source");
-    DrawAddComponent<LightComponent>(m_SelectedEntity, "Light");
-    DrawAddComponent<ParticleSystemComponent>(m_SelectedEntity, "Particle System");
-    DrawAddComponent<CameraComponent>(m_SelectedEntity, "Camera");
-    DrawAddComponent<PostProcessProbe>(m_SelectedEntity, "PostProcess Probe");
-    DrawAddComponent<RigidbodyComponent>(m_SelectedEntity, "Rigidbody");
-    DrawAddComponent<BoxColliderComponent>(entity, "Box Collider");
-    DrawAddComponent<SphereColliderComponent>(entity, "Sphere Collider");
-    DrawAddComponent<CapsuleColliderComponent>(entity, "Capsule Collider");
-    DrawAddComponent<TaperedCapsuleColliderComponent>(entity, "Tapered Capsule Collider");
-    DrawAddComponent<CylinderColliderComponent>(entity, "Cylinder Collider");
-    DrawAddComponent<CharacterControllerComponent>(entity, "Character Controller");
-    DrawAddComponent<CustomComponent>(entity, "Custom Component");
+    draw_add_component<MeshRendererComponent>(m_SelectedEntity, "Mesh Renderer");
+    draw_add_component<MaterialComponent>(m_SelectedEntity, "Material");
+    draw_add_component<AudioSourceComponent>(m_SelectedEntity, "Audio Source");
+    draw_add_component<LightComponent>(m_SelectedEntity, "Light");
+    draw_add_component<ParticleSystemComponent>(m_SelectedEntity, "Particle System");
+    draw_add_component<CameraComponent>(m_SelectedEntity, "Camera");
+    draw_add_component<PostProcessProbe>(m_SelectedEntity, "PostProcess Probe");
+    draw_add_component<RigidbodyComponent>(m_SelectedEntity, "Rigidbody");
+    draw_add_component<BoxColliderComponent>(entity, "Box Collider");
+    draw_add_component<SphereColliderComponent>(entity, "Sphere Collider");
+    draw_add_component<CapsuleColliderComponent>(entity, "Capsule Collider");
+    draw_add_component<TaperedCapsuleColliderComponent>(entity, "Tapered Capsule Collider");
+    draw_add_component<CylinderColliderComponent>(entity, "Cylinder Collider");
+    draw_add_component<CharacterControllerComponent>(entity, "Character Controller");
+    draw_add_component<CustomComponent>(entity, "Custom Component");
 
     ImGui::EndPopup();
   }
@@ -321,7 +322,7 @@ void InspectorPanel::DrawComponents(Entity entity) const {
             "%s %s",
             StringUtils::from_char8_t(ICON_MDI_CIRCLE),
             material->name.c_str())) {
-            if (DrawMaterialProperties(material)) {
+            if (draw_material_properties(material)) {
               component.using_material_asset = true;
             }
             ImGui::TreePop();
@@ -338,7 +339,7 @@ void InspectorPanel::DrawComponents(Entity entity) const {
                            : "Drop a hdr file";
       const float x = ImGui::GetContentRegionAvail().x;
       const float y = ImGui::GetFrameHeight();
-      auto loadCubeMap = [](const Ref<Scene>& scene, const std::string& path, SkyLightComponent& comp) {
+      auto loadCubeMap = [](Scene* scene, const std::string& path, SkyLightComponent& comp) {
         if (path.empty())
           return;
         const auto ext = std::filesystem::path(path).extension().string();
@@ -353,7 +354,7 @@ void InspectorPanel::DrawComponents(Entity entity) const {
       }
       if (ImGui::BeginDragDropTarget()) {
         if (const ImGuiPayload* payload = ImGui::AcceptDragDropPayload("CONTENT_BROWSER_ITEM")) {
-          const auto path = IGUI::get_path_from_im_gui_payload(payload).string();
+          const auto path = IGUI::get_path_from_imgui_payload(payload).string();
           loadCubeMap(m_Scene, path, component);
         }
         ImGui::EndDragDropTarget();
@@ -369,29 +370,29 @@ void InspectorPanel::DrawComponents(Entity entity) const {
     [this](PostProcessProbe& component) {
       ImGui::Text("Vignette");
       IGUI::begin_properties();
-      PP_ProbeProperty(IGUI::property("Enable", component.vignette_enabled), component);
-      PP_ProbeProperty(IGUI::property("Intensity", component.vignette_intensity), component);
+      pp_probe_property(IGUI::property("Enable", component.vignette_enabled), component);
+      pp_probe_property(IGUI::property("Intensity", component.vignette_intensity), component);
       IGUI::end_properties();
       ImGui::Separator();
 
       ImGui::Text("FilmGrain");
       IGUI::begin_properties();
-      PP_ProbeProperty(IGUI::property("Enable", component.film_grain_enabled), component);
-      PP_ProbeProperty(IGUI::property("Intensity", component.film_grain_intensity), component);
+      pp_probe_property(IGUI::property("Enable", component.film_grain_enabled), component);
+      pp_probe_property(IGUI::property("Intensity", component.film_grain_intensity), component);
       IGUI::end_properties();
       ImGui::Separator();
 
       ImGui::Text("ChromaticAberration");
       IGUI::begin_properties();
-      PP_ProbeProperty(IGUI::property("Enable", component.chromatic_aberration_enabled), component);
-      PP_ProbeProperty(IGUI::property("Intensity", component.chromatic_aberration_intensity), component);
+      pp_probe_property(IGUI::property("Enable", component.chromatic_aberration_enabled), component);
+      pp_probe_property(IGUI::property("Intensity", component.chromatic_aberration_intensity), component);
       IGUI::end_properties();
       ImGui::Separator();
 
       ImGui::Text("Sharpen");
       IGUI::begin_properties();
-      PP_ProbeProperty(IGUI::property("Enable", component.sharpen_enabled), component);
-      PP_ProbeProperty(IGUI::property("Intensity", component.sharpen_intensity), component);
+      pp_probe_property(IGUI::property("Enable", component.sharpen_enabled), component);
+      pp_probe_property(IGUI::property("Intensity", component.sharpen_intensity), component);
       IGUI::end_properties();
       ImGui::Separator();
     });
@@ -409,7 +410,7 @@ void InspectorPanel::DrawComponents(Entity entity) const {
       ImGui::Button(filepath, {x, y});
       if (ImGui::BeginDragDropTarget()) {
         if (const ImGuiPayload* payload = ImGui::AcceptDragDropPayload("CONTENT_BROWSER_ITEM")) {
-          const std::filesystem::path path = IGUI::get_path_from_im_gui_payload(payload);
+          const std::filesystem::path path = IGUI::get_path_from_imgui_payload(payload);
           const std::string ext = path.extension().string();
           if (ext == ".mp3" || ext == ".wav")
             component.source = create_ref<AudioSource>(AssetManager::get_asset_file_system_path(path).string().c_str());
@@ -824,7 +825,7 @@ void InspectorPanel::DrawComponents(Entity entity) const {
   }
 }
 
-void InspectorPanel::PP_ProbeProperty(const bool value, const PostProcessProbe& component) const {
+void InspectorPanel::pp_probe_property(const bool value, const PostProcessProbe& component) const {
   if (value) {
     m_SelectedEntity.get_scene()->get_renderer()->dispatcher.trigger(SceneRenderer::ProbeChangeEvent{component});
   }

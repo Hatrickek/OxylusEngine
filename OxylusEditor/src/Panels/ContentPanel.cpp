@@ -301,7 +301,7 @@ void ContentPanel::on_imgui_render() {
     Init();
   }
 
-  OnBegin(windowFlags);
+  on_begin(windowFlags);
   {
     RenderHeader();
     ImGui::Separator();
@@ -317,7 +317,7 @@ void ContentPanel::on_imgui_render() {
       ImGui::EndTable();
     }
   }
-  OnEnd();
+  on_end();
 }
 
 void ContentPanel::Invalidate() {

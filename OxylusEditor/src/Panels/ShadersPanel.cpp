@@ -10,7 +10,7 @@ namespace Oxylus {
   ShadersPanel::ShadersPanel() : EditorPanel("Shaders", ICON_MDI_FILE_CHART, false) { }
 
   void ShadersPanel::on_imgui_render() {
-    if (OnBegin()) {
+    if (on_begin()) {
 #if 0
       constexpr ImGuiTableFlags tableFlags = ImGuiTableFlags_RowBg | ImGuiTableFlags_ContextMenuInBody |
                                              ImGuiTableFlags_ScrollY;
@@ -59,7 +59,7 @@ namespace Oxylus {
         ImGui::EndTable();
       }
 #endif
-      OnEnd();
+      on_end();
     }
   }
 }

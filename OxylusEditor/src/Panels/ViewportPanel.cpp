@@ -27,7 +27,7 @@ void ViewportPanel::on_imgui_render() {
   constexpr ImGuiWindowFlags flags = ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_MenuBar;
   ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2{0, 0});
 
-  if (OnBegin(flags)) {
+  if (on_begin(flags)) {
     ImVec2 startCursorPos = ImGui::GetCursorPos();
 
     const auto popupItemSpacing = ImGuiLayer::PopupItemSpacing;
@@ -267,7 +267,7 @@ void ViewportPanel::on_imgui_render() {
     }
 
     ImGui::PopStyleVar();
-    OnEnd();
+    on_end();
   }
 }
 
@@ -367,8 +367,8 @@ void ViewportPanel::draw_performance_overlay() {
                                   ImGuiWindowFlags_AlwaysAutoResize | ImGuiWindowFlags_NoSavedSettings |
                                   ImGuiWindowFlags_NoFocusOnAppearing | ImGuiWindowFlags_NoNav;
   if (corner != -1) {
-    constexpr float PAD_X = 20;
-    constexpr float PAD_Y = 40;
+    constexpr float PAD_X = 15;
+    constexpr float PAD_Y = 55;
     const ImGuiViewport* viewport = ImGui::GetMainViewport();
     const ImVec2 work_pos = m_ViewportOffset;
     const ImVec2 work_size = m_ViewportPanelSize;
@@ -382,6 +382,7 @@ void ViewportPanel::draw_performance_overlay() {
     window_flags |= ImGuiWindowFlags_NoMove;
   }
   ImGui::SetNextWindowBgAlpha(0.35f);
+  ImGui::PushStyleVar(ImGuiStyleVar_WindowRounding, 3.0f);
   if (ImGui::Begin("Performance Overlay", nullptr, window_flags)) {
     ImGui::Text("%.3f ms/frame (%.1f FPS)", 1000.0f / ImGui::GetIO().Framerate, ImGui::GetIO().Framerate);
   }
@@ -401,6 +402,7 @@ void ViewportPanel::draw_performance_overlay() {
     ImGui::EndPopup();
   }
   ImGui::End();
+  ImGui::PopStyleVar();
 }
 
 void ViewportPanel::draw_gizmos() {

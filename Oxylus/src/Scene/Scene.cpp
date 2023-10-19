@@ -304,7 +304,6 @@ void Scene::on_runtime_stop() {
     delete contact_listener_3d;
     body_activation_listener_3d = nullptr;
     contact_listener_3d = nullptr;
-    Physics::Shutdown();
   }
 }
 
@@ -337,6 +336,8 @@ Entity Scene::get_entity_by_uuid(UUID uuid) {
 Ref<Scene> Scene::copy(const Ref<Scene>& other) {
   OX_SCOPED_ZONE;
   Ref<Scene> newScene = create_ref<Scene>();
+
+  newScene->scene_renderer = other->scene_renderer;
 
   auto& srcSceneRegistry = other->m_registry;
   auto& dstSceneRegistry = newScene->m_registry;

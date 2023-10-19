@@ -10,7 +10,7 @@ namespace Oxylus {
   StatisticsPanel::StatisticsPanel() : EditorPanel("Statistics", ICON_MDI_CLIPBOARD_TEXT, false) {}
 
   void StatisticsPanel::on_imgui_render() {
-    if (OnBegin()) {
+    if (on_begin()) {
       if (ImGui::BeginTabBar("TabBar")) {
         if (ImGui::BeginTabItem("Memory")) {
           MemoryTab();
@@ -23,7 +23,7 @@ namespace Oxylus {
 
         ImGui::EndTabBar();
       }
-      OnEnd();
+      on_end();
     }
   }
 

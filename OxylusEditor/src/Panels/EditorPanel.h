@@ -20,17 +20,17 @@ namespace Oxylus {
 
     virtual void on_imgui_render() = 0;
 
-    const char* GetName() const {
+    const char* get_name() const {
       return m_Name.c_str();
     }
 
-    const char8_t* GetIcon() const {
+    const char8_t* get_icon() const {
       return m_Icon;
     }
 
   protected:
-    bool OnBegin(int32_t windowFlags = 0);
-    void OnEnd() const;
+    bool on_begin(int32_t window_flags = 0);
+    void on_end() const;
 
     std::string m_Name;
     const char8_t* m_Icon;

@@ -13,18 +13,18 @@ namespace Oxylus {
     s_Count++;
   }
 
-  bool EditorPanel::OnBegin(int32_t windowFlags) {
+  bool EditorPanel::on_begin(int32_t window_flags) {
     if (!Visible)
       return false;
 
     ImGui::SetNextWindowSize(ImVec2(480, 640), ImGuiCond_FirstUseEver);
 
-    ImGui::Begin(m_ID.c_str(), &Visible, windowFlags | ImGuiWindowFlags_NoCollapse);
+    ImGui::Begin(m_ID.c_str(), &Visible, window_flags | ImGuiWindowFlags_NoCollapse);
 
     return true;
   }
 
-  void EditorPanel::OnEnd() const {
+  void EditorPanel::on_end() const {
     ImGui::End();
   }
 }

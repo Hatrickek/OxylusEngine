@@ -12,7 +12,7 @@ namespace Oxylus {
   RendererSettingsPanel::RendererSettingsPanel() : EditorPanel("Renderer Settings", ICON_MDI_GPU, true) { }
 
   void RendererSettingsPanel::on_imgui_render() {
-    if (OnBegin()) {
+    if (on_begin()) {
       float avg = 0.0;
 
       const size_t size = m_FrameTimes.size();
@@ -70,7 +70,7 @@ namespace Oxylus {
       ConfigProperty(IGUI::property("Enabled", RendererConfig::get()->fxaa_config.enabled));
       IGUI::end_properties();
 
-      OnEnd();
+      on_end();
     }
   }
 

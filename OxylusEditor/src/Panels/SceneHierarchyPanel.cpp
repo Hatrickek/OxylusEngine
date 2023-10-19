@@ -4,6 +4,7 @@
 #include <icons/IconsMaterialDesignIcons.h>
 #include <imgui.h>
 #include <imgui_internal.h>
+
 #include <misc/cpp/imgui_stdlib.h>
 
 #include "EditorLayer.h"
@@ -251,7 +252,7 @@ ImRect SceneHierarchyPanel::DrawEntityNode(Entity entity, uint32_t depth, bool f
 void SceneHierarchyPanel::DragDropTarget() const {
   if (ImGui::BeginDragDropTarget()) {
     if (const ImGuiPayload* payload = ImGui::AcceptDragDropPayload("CONTENT_BROWSER_ITEM")) {
-      const std::filesystem::path path = IGUI::get_path_from_im_gui_payload(payload);
+      const std::filesystem::path path = IGUI::get_path_from_imgui_payload(payload);
       if (path.extension() == ".oxscene") {
         EditorLayer::get()->OpenScene(path);
       }
@@ -405,8 +406,9 @@ void SceneHierarchyPanel::on_update() {
 void SceneHierarchyPanel::on_imgui_render() {
   ImGuiScoped::StyleVar cellpad(ImGuiStyleVar_CellPadding, {0, 0});
 
-  if (OnBegin(ImGuiWindowFlags_NoScrollWithMouse | ImGuiWindowFlags_NoScrollbar)) {
+  if (on_begin(ImGuiWindowFlags_NoScrollWithMouse | ImGuiWindowFlags_NoScrollbar)) {
     const float lineHeight = ImGui::GetTextLineHeight();
+
     const ImVec2 padding = ImGui::GetStyle().FramePadding;
     constexpr ImGuiTableFlags tableFlags = ImGuiTableFlags_RowBg | ImGuiTableFlags_ContextMenuInBody |
                                            ImGuiTableFlags_BordersInner | ImGuiTableFlags_ScrollY;
@@ -486,7 +488,6 @@ void SceneHierarchyPanel::on_imgui_render() {
       if (ImGui::IsItemClicked())
         ClearSelectionContext();
     }
-
     m_WindowHovered = ImGui::IsWindowHovered();
 
     if (ImGui::IsMouseDown(0) && m_WindowHovered)
@@ -498,7 +499,9 @@ void SceneHierarchyPanel::on_imgui_render() {
       m_DraggedEntityTarget = {};
     }
 
-    OnEnd();
+    IGUI::draw_gradient_shadow();
+
+    on_end();
   }
 }
 }

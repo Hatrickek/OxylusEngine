@@ -8,7 +8,7 @@ namespace Oxylus {
   FramebufferViewerPanel::FramebufferViewerPanel() : EditorPanel("Framebuffer Viewer", ICON_MDI_IMAGE_FRAME) { }
 
   void FramebufferViewerPanel::on_imgui_render() {
-    if (OnBegin()) {
+    if (on_begin()) {
 #if 0
       constexpr ImGuiTableFlags tableFlags = ImGuiTableFlags_RowBg | ImGuiTableFlags_ContextMenuInBody |
                                              ImGuiTableFlags_ScrollY;
@@ -45,7 +45,7 @@ namespace Oxylus {
         ImGui::EndTable();
       }
 #endif
-      OnEnd();
+      on_end();
     }
   }
 

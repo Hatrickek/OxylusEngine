@@ -183,7 +183,9 @@ public:
                           const ImRect* clip_rect,
                           float wrap_width);
 
-  static std::filesystem::path get_path_from_im_gui_payload(const ImGuiPayload* payload);
+  static std::filesystem::path get_path_from_imgui_payload(const ImGuiPayload* payload);
+
+  static void draw_gradient_shadow();
 
   static void begin_property_grid(const char* label, const char* tooltip, bool rightAlignNextColumn = true);
 

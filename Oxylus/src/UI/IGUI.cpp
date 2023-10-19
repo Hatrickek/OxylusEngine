@@ -123,7 +123,7 @@ bool IGUI::property(const char* label, Ref<TextureAsset>& texture, uint64_t over
   }
   if (ImGui::BeginDragDropTarget()) {
     if (const ImGuiPayload* payload = ImGui::AcceptDragDropPayload("CONTENT_BROWSER_ITEM")) {
-      const auto path = get_path_from_im_gui_payload(payload);
+      const auto path = get_path_from_imgui_payload(payload);
       texture = AssetManager::get_texture_asset({path.string()});
       changed = true;
     }
@@ -152,7 +152,7 @@ void IGUI::image(const vuk::Texture& texture, ImVec2 size, const ImVec2& uv0, co
   sci.mipmapMode = vuk::SamplerMipmapMode::eLinear;
   sci.addressModeU = sci.addressModeV = sci.addressModeW = vuk::SamplerAddressMode::eRepeat;
   vuk::SampledImage sampledImage(vuk::SampledImage::Global{.iv = *texture.view, .sci = sci, .image_layout = vuk::ImageLayout::eShaderReadOnlyOptimal});
-  
+
   ImGui::Image(Application::get()->get_imgui_layer()->add_sampled_image(sampledImage), size, uv0, uv1, tintCol, borderCol);
 }
 
@@ -350,8 +350,20 @@ void IGUI::clipped_text(ImDrawList* draw_list, const ImVec2& pos_min, const ImVe
   draw_list->AddText(nullptr, 0.0f, pos, ImGui::GetColorU32(ImGuiCol_Text), text, text_display_end, wrap_width, &fine_clip_rect);
 }
 
-std::filesystem::path IGUI::get_path_from_im_gui_payload(const ImGuiPayload* payload) {
+std::filesystem::path IGUI::get_path_from_imgui_payload(const ImGuiPayload* payload) {
   return std::string(static_cast<const char*>(payload->Data));
+}
+
+void IGUI::draw_gradient_shadow() {
+  const auto draw_list = ImGui::GetWindowDrawList();
+  const auto* window = ImGui::GetCurrentWindow();
+  const auto pos = window->DC.CursorPos;
+  const auto window_height = ImGui::GetWindowHeight();
+  const auto window_width = ImGui::GetWindowWidth();
+  constexpr auto size = 70.0f;
+
+  const ImRect bb(pos.x - 30.0f, window_height, window_width, window_height + size);
+  draw_list->AddRectFilledMultiColor(bb.Min, bb.Max, IM_COL32(20, 20, 20, 0), IM_COL32(20, 20, 20, 0), IM_COL32(20, 20, 20, 255), IM_COL32(20, 20, 20, 255));
 }
 
 void IGUI::push_id() {

@@ -33,36 +33,14 @@ void ImGuiLayer::on_attach(EventDispatcher&) {
   IMGUI_CHECKVERSION();
   ImGui::CreateContext();
   ImGuiIO& io = ImGui::GetIO();
-  io.ConfigFlags |= ImGuiConfigFlags_NavEnableKeyboard | ImGuiConfigFlags_ViewportsEnable |
+  io.ConfigFlags |= ImGuiConfigFlags_NavEnableKeyboard /*| ImGuiConfigFlags_ViewportsEnable*/ |
     ImGuiConfigFlags_DockingEnable | ImGuiConfigFlags_DpiEnableScaleFonts |
     ImGuiConfigFlags_DpiEnableScaleViewports;
   io.BackendFlags |= ImGuiBackendFlags_RendererHasVtxOffset;
-  io.BackendFlags |= ImGuiBackendFlags_RendererHasViewports;
+  /*io.BackendFlags |= ImGuiBackendFlags_RendererHasViewports;*/
 
   apply_theme();
   set_style();
-
-  //ImGuizmo style
-  /*{
-    ImGuizmo::Style* imguizmoStyle = &ImGuizmo::GetStyle();
-    ImVec4* colors = imguizmoStyle->Colors;
-
-    imguizmoStyle->TranslationLineThickness = 3.0f;
-    imguizmoStyle->TranslationLineArrowSize = 10.0f;
-    imguizmoStyle->RotationLineThickness = 3.0f;
-    imguizmoStyle->RotationOuterLineThickness = 5.0f;
-    imguizmoStyle->ScaleLineThickness = 3.0f;
-    imguizmoStyle->ScaleLineCircleSize = 8.0f;
-    imguizmoStyle->HatchedAxisLineThickness = 0.0f;
-    imguizmoStyle->CenterCircleSize = 6.0f;
-
-    colors[ImGuizmo::DIRECTION_X] = ImVec4(0.858f, 0.243f, 0.113f, 0.929f);
-    colors[ImGuizmo::DIRECTION_Y] = ImVec4(0.375f, 0.825f, 0.372f, 0.929f);
-    colors[ImGuizmo::DIRECTION_Z] = ImVec4(0.227f, 0.478f, 0.972f, 0.929f);
-    colors[ImGuizmo::PLANE_X] = colors[ImGuizmo::DIRECTION_X];
-    colors[ImGuizmo::PLANE_Y] = colors[ImGuizmo::DIRECTION_Y];
-    colors[ImGuizmo::PLANE_Z] = colors[ImGuizmo::DIRECTION_Z];
-  }*/
 
   InitForVulkan();
 }
@@ -492,6 +470,7 @@ void ImGuiLayer::set_style() {
   style->PopupBorderSize = 1.5f;
   style->FrameBorderSize = 0.0f;
   style->TabBorderSize = 0.0f;
+  style->DockingSeparatorSize = 0.0f;
 
   style->WindowRounding = 6.0f;
   style->ChildRounding = 0.0f;
