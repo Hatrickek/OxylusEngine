@@ -221,7 +221,7 @@ set_targets_static_and_folder(spdlog)
 FetchContent_Declare(
     vk-bootstrap 
     GIT_REPOSITORY https://github.com/charles-lunarg/vk-bootstrap
-    GIT_TAG        "main"
+    GIT_TAG        8e61b2d81c3f5f84339735085ff5651f71bbe1e7
     GIT_SHALLOW    TRUE
     GIT_PROGRESS   TRUE
 )

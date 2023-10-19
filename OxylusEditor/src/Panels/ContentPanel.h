@@ -2,9 +2,10 @@
 
 #include <filesystem>
 #include <stack>
+#include <vector>
 
-#include "EditorPanel.h"
 #include <imgui.h>
+#include "EditorPanel.h"
 
 #include "Core/Base.h"
 

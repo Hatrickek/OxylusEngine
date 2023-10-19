@@ -28,7 +28,7 @@ build multiple games to test the API and engine in general.
 - 3D Audio with miniaudio
 
 ## Showcase
-![911](https://cdn.discordapp.com/attachments/1012357737256058924/1164236195384008835/image.png?ex=65427a73&is=65300573&hm=4a1fe1a73a643e9460acd4a7d21fdee22bc9ea8d5cd23fed0e0ac8a7fa2db65c&)
+![911](https://cdn.discordapp.com/attachments/1012357737256058924/1164661835610464387/image.png?ex=654406db&is=653191db&hm=78980e1510de7ca9cd4fc352faa71fda54c4ac920a4e6384fca7dcf3886eea16&)
 (New Editor UI)
 ![PostProcessing](https://cdn.discordapp.com/attachments/882355531463938078/1101916100414931066/image.png)
 PBR Testing scene with Depth Of Field, SSR, SSAO, Bloom, Vignette, Film Grain, Chromatic Aberration, Sharpen

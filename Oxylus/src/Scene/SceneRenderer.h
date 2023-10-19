@@ -11,14 +11,6 @@ public:
   SceneRenderer() = default;
   ~SceneRenderer() = default;
 
-  struct SkyboxLoadEvent {
-    Ref<TextureAsset> cube_map = nullptr;
-  };
-
-  struct ProbeChangeEvent {
-    PostProcessProbe probe;
-  };
-
   EventDispatcher dispatcher;
   void init(Scene* scene);
 

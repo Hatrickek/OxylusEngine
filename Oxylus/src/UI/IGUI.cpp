@@ -39,7 +39,7 @@ void IGUI::end_properties() {
 void IGUI::text(const char* text1, const char* text2, const char* tooltip) {
   begin_property_grid(text1, tooltip);
   ImGui::SetCursorPosY(ImGui::GetCursorPosY() + ImGui::GetStyle().FramePadding.y * 0.5f);
-  ImGui::Text(text2);
+  ImGui::Text("%s", text2);
   end_property_grid();
 }
 

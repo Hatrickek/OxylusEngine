@@ -42,11 +42,11 @@ static VkBool32 DebugCallback(const VkDebugUtilsMessageSeverityFlagBitsEXT messa
   }
   else if (messageSeverity & VK_DEBUG_UTILS_MESSAGE_SEVERITY_WARNING_BIT_EXT) {
     OX_CORE_WARN(debugMessage.str());
-    OX_DEBUGBREAK()
+    OX_DEBUGBREAK();
   }
   else if (messageSeverity & VK_DEBUG_UTILS_MESSAGE_SEVERITY_ERROR_BIT_EXT) {
     OX_CORE_ERROR(debugMessage.str());
-    OX_DEBUGBREAK()
+    OX_DEBUGBREAK();
   }
   return VK_FALSE;
 }

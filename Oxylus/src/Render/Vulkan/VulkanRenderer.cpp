@@ -49,7 +49,7 @@ void VulkanRenderer::draw(VulkanContext* context, ImGuiLayer* imgui_layer, Layer
   imgui_layer->begin();
 
   auto frameAllocator = context->begin();
-  const Ref rg = create_ref<vuk::RenderGraph>("runner");
+  const Ref<vuk::RenderGraph> rg = create_ref<vuk::RenderGraph>("runner");
   rg->attach_swapchain("_swp", context->swapchain);
   rg->clear_image("_swp", "final_image", vuk::ClearColor{0.0f, 0.0f, 0.0f, 1.0f});
 

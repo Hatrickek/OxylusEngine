@@ -1,13 +1,13 @@
 ﻿#pragma once
 
 #include "RenderPipeline.h"
-#include "Core/Entity.h"
+
 #include "PBR/DirectShadowPass.h"
 #include "PBR/GTAO/XeGTAO.h"
-#include "Scene/Scene.h"
-#include "Vulkan/VulkanRenderer.h"
 
 namespace Oxylus {
+struct ProbeChangeEvent;
+struct SkyboxLoadEvent;
 constexpr auto MAX_NUM_LIGHTS = 1000;
 constexpr auto MAX_NUM_MESHES = 1000;
 constexpr auto MAX_NUM_LIGHTS_PER_TILE = 128;
@@ -33,10 +33,6 @@ private:
   } m_renderer_context;
 
   struct RendererData {
-    struct Frustum {
-      Vec4 planes[4] = {Vec4(0)};
-    } frustums[MAX_NUM_FRUSTUMS];
-
     struct UBOVS {
       Mat4 projection;
       Mat4 view;
@@ -90,9 +86,9 @@ private:
   Ref<Mesh> skybox_cube = nullptr;
 
   void init_render_graph();
-  void update_skybox(const SceneRenderer::SkyboxLoadEvent& e);
+  void update_skybox(const SkyboxLoadEvent& e);
   void generate_prefilter();
-  void update_parameters(SceneRenderer::ProbeChangeEvent& e);
+  void update_parameters(ProbeChangeEvent& e);
   void update_final_pass_data(RendererConfig::ConfigChangeEvent& e);
 
   void depth_pre_pass(const Ref<vuk::RenderGraph>& rg, vuk::Buffer& vs_buffer, std::unordered_map<uint32_t, uint32_t> material_map, vuk::Buffer& mat_buffer);

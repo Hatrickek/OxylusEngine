@@ -1,7 +1,5 @@
 #pragma once
 
-#include <chrono>
-
 #include <vuk/Types.hpp>
 
 // Profilers 
@@ -91,12 +89,10 @@ public:
 
   void Reset();
 
-  void Print(const std::string_view arg = "");
+  void Print(std::string_view arg = "");
 
 private:
   const char* m_Name;
-  std::chrono::microseconds m_ElapsedTime;
-  std::chrono::time_point<std::chrono::steady_clock> m_StartTimepoint;
   bool m_Stopped;
 };
 }

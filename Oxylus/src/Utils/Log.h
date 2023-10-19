@@ -25,7 +25,7 @@ private:
 #define OX_CORE_ERROR(...) ::Oxylus::Log::GetCoreLogger()->error(__VA_ARGS__)
 #define OX_CORE_FATAL(...) ::Oxylus::Log::GetCoreLogger()->critical(__VA_ARGS__)
 
-//#define OX_DISABLE_DEBUG_BREAKS
+#define OX_DISABLE_DEBUG_BREAKS
 
 #ifdef OX_DISTRIBUTION
 #define OX_DISABLE_DEBUG_BREAKS
@@ -33,7 +33,7 @@ private:
 
 #ifndef OX_DISABLE_DEBUG_BREAKS
 #if defined(OX_PLATFORM_WINDOWS)
-#define OX_DEBUGBREAK() __debugbreak();
+#define OX_DEBUGBREAK() __debugbreak()
 #elif defined(OX_PLATFORM_LINUX)
 #include <signal.h>
 #define OX_DEBUGBREAK() raise(SIGTRAP)

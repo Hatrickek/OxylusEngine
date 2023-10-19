@@ -1,8 +1,7 @@
 #pragma once
 #include <map>
 
-#include "JoltBuild.h"
-#include "PhyiscsInterfaces.h"
+#include "PhysicsInterfaces.h"
 
 namespace Oxylus {
 class Physics {

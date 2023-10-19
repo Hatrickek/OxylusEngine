@@ -17,6 +17,8 @@
 #include "Utils/StringUtils.h"
 #include "Utils/UIUtils.h"
 #include "Assets/MaterialSerializer.h"
+
+#include "Render/SceneRendererEvents.h"
 #include "Render/Vulkan/VulkanRenderer.h"
 
 namespace Oxylus {
@@ -345,7 +347,7 @@ void InspectorPanel::draw_components(Entity entity) const {
         const auto ext = std::filesystem::path(path).extension().string();
         if (ext == ".hdr") {
           comp.cubemap = AssetManager::get_texture_asset({.Path = path, .Format = vuk::Format::eR8G8B8A8Srgb});
-          scene->get_renderer()->dispatcher.trigger(SceneRenderer::SkyboxLoadEvent{comp.cubemap});
+          scene->get_renderer()->dispatcher.trigger(SkyboxLoadEvent{comp.cubemap});
         }
       };
       if (ImGui::Button(name, {x, y})) {
@@ -827,7 +829,7 @@ void InspectorPanel::draw_components(Entity entity) const {
 
 void InspectorPanel::pp_probe_property(const bool value, const PostProcessProbe& component) const {
   if (value) {
-    m_SelectedEntity.get_scene()->get_renderer()->dispatcher.trigger(SceneRenderer::ProbeChangeEvent{component});
+    m_SelectedEntity.get_scene()->get_renderer()->dispatcher.trigger(ProbeChangeEvent{component});
   }
 }
 }

@@ -2,9 +2,6 @@
 
 #include <icons/IconsMaterialDesignIcons.h>
 #include <imgui.h>
-#include <fmt/format.h>
-
-#include "Core/Memory.h"
 
 namespace Oxylus {
   StatisticsPanel::StatisticsPanel() : EditorPanel("Statistics", ICON_MDI_CLIPBOARD_TEXT, false) {}
@@ -28,11 +25,11 @@ namespace Oxylus {
   }
 
   void StatisticsPanel::MemoryTab() const {
+#if 0
     static bool showInMegabytes;
     ImGui::Checkbox("Show in megabytes", &showInMegabytes);
     ImGui::Separator();
     const auto sizetype = showInMegabytes ? "mb" : "kb";
-    //CPU
     {
       ImGui::Text("RAM");
       auto totalAllocated = showInMegabytes ? (float)Memory::TotalAllocated / 1024.0f / 1024.0f : (float)Memory::TotalAllocated / 1024.0f;
@@ -58,6 +55,7 @@ namespace Oxylus {
       ImGui::Text("%s", fmt::format("Total Freed: {0} {1}", totalFreed, sizetype).c_str());
       ImGui::Text("%s", fmt::format("Current Usage: {0} {1}", currentUsage, sizetype).c_str());
     }
+#endif
   }
 
   void StatisticsPanel::RendererTab() {

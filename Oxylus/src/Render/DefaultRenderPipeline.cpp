@@ -4,6 +4,7 @@
 #include <vuk/Partials.hpp>
 
 #include "RendererCommon.h"
+#include "SceneRendererEvents.h"
 
 #include "Core/Application.h"
 #include "Assets/AssetManager.h"
@@ -118,8 +119,8 @@ void DefaultRenderPipeline::update(Scene* scene) {
 }
 
 void DefaultRenderPipeline::on_dispatcher_events(EventDispatcher& dispatcher) {
-  dispatcher.sink<SceneRenderer::SkyboxLoadEvent>().connect<&DefaultRenderPipeline::update_skybox>(*this);
-  dispatcher.sink<SceneRenderer::ProbeChangeEvent>().connect<&DefaultRenderPipeline::update_parameters>(*this);
+  dispatcher.sink<SkyboxLoadEvent>().connect<&DefaultRenderPipeline::update_skybox>(*this);
+  dispatcher.sink<ProbeChangeEvent>().connect<&DefaultRenderPipeline::update_parameters>(*this);
 }
 
 void DefaultRenderPipeline::shutdown() { }
@@ -665,7 +666,7 @@ Scope<vuk::Future> DefaultRenderPipeline::on_render(vuk::Allocator& frame_alloca
   return create_scope<vuk::Future>(std::move(final_image_fut));
 }
 
-void DefaultRenderPipeline::update_skybox(const SceneRenderer::SkyboxLoadEvent& e) {
+void DefaultRenderPipeline::update_skybox(const SkyboxLoadEvent& e) {
   m_resources.cube_map = e.cube_map;
 
   generate_prefilter();
@@ -950,7 +951,7 @@ void DefaultRenderPipeline::generate_prefilter() {
   prefiltered_image = std::move(prefilter_img);
 }
 
-void DefaultRenderPipeline::update_parameters(SceneRenderer::ProbeChangeEvent& e) {
+void DefaultRenderPipeline::update_parameters(ProbeChangeEvent& e) {
   auto& ubo = m_renderer_data.final_pass_data;
   auto& component = e.probe;
   ubo.film_grain = {component.film_grain_enabled, component.film_grain_intensity};
@@ -971,6 +972,6 @@ void DefaultRenderPipeline::update_final_pass_data(RendererConfig::ConfigChangeE
   // GTAO
   ubo.enable_ssao = RendererConfig::get()->gtao_config.enabled;
 
-  memcpy(&gtao_settings, &RendererConfig::get()->gtao_config.settings, sizeof RendererConfig::GTAO::Settings);
+  memcpy(&gtao_settings, &RendererConfig::get()->gtao_config.settings, sizeof(RendererConfig::GTAO::Settings));
 }
 }

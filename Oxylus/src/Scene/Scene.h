@@ -8,7 +8,7 @@
 #include "Core/Systems/System.h"
 #include "Jolt/Physics/PhysicsSystem.h"
 #include "Jolt/Physics/Body/BodyInterface.h"
-#include "Physics/PhyiscsInterfaces.h"
+#include "Physics/PhysicsInterfaces.h"
 #include "Render/Mesh.h"
 #include <entt/entity/registry.hpp>
 

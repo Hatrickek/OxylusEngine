@@ -37,7 +37,12 @@ endif()
 # Sub-projects
 
 # fix for the new stupid 'set' issue
-cmake_policy(SET CMP0077 NEW)
+set(CMAKE_POLICY_DEFAULT_CMP0077 NEW)
+
+# fix for dxc
+if (UNIX)
+    add_compile_options(-fms-extensions)
+endif(UNIX)
 
 add_subdirectory(Oxylus)
 add_subdirectory(OxylusEditor)
