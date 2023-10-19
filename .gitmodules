@@ -1,6 +1,3 @@
-[submodule "Oxylus/vendor/ktx"]
-	path = Oxylus/vendor/ktx
-	url = https://github.com/KhronosGroup/KTX-Software
 [submodule "Oxylus/vendor/tinygltf"]
 	path = Oxylus/vendor/tinygltf
 	url = https://github.com/syoyo/tinygltf.git
