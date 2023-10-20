@@ -68,7 +68,7 @@ void VulkanRenderer::draw(VulkanContext* context, ImGuiLayer* imgui_layer, Layer
 
     for (const auto& layer : layer_stack)
       layer->on_imgui_render();
-    system_manager->on_im_gui_render();
+    system_manager->on_imgui_render();
     imgui_layer->end();
 
     fut = imgui_layer->render_draw_data(frameAllocator, fut, ImGui::GetDrawData());
@@ -114,7 +114,7 @@ void VulkanRenderer::draw(VulkanContext* context, ImGuiLayer* imgui_layer, Layer
     for (const auto& layer : layer_stack)
       layer->on_imgui_render();
 
-    system_manager->on_im_gui_render();
+    system_manager->on_imgui_render();
 
     imgui_layer->end();
 

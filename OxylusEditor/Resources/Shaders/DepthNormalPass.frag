@@ -22,15 +22,18 @@ layout(location = 0) out vec4 out_Normal;
 void main() {
     Material mat = Materials[MaterialIndex];
 
+    vec2 scaled_uv = in_UV;
+	scaled_uv *= mat.UVScale;
+
     const float normalMapStrenght = mat.UseNormal ? 1.0 : 0.0;
-    vec3 normal = texture(in_NormalMap, in_UV).rgb;
+    vec3 normal = texture(in_NormalMap, scaled_uv).rgb;
     normal = in_WorldTangent * normalize(normal * 2.0 - 1.0);
     normal = normalize(mix(normalize(in_Normal), normal, normalMapStrenght));
     normal = normalize(mat3(view) * normal);
     
     float inv_roughness = 0.0;
     if (mat.UsePhysicalMap) {
-      inv_roughness = 1.0 - texture(in_PhysicalMap, in_UV * mat.UVScale).g;
+      inv_roughness = 1.0 - texture(in_PhysicalMap, scaled_uv).g;
       inv_roughness *= mat.Roughness;
     } else {
       inv_roughness = 1.0 - mat.Roughness;

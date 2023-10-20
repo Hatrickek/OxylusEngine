@@ -47,7 +47,8 @@ void EditorLayer::on_attach(EventDispatcher& dispatcher) {
 
   Input::SetCursorState(Input::CursorState::NORMAL, Window::get_glfw_window());
 
-  m_EditorScene = create_ref<Scene>();
+  auto scene = create_ref<Scene>();
+  SetEditorScene(scene);
 
   // Initialize panels
   m_EditorPanels.emplace("EditorSettings", create_scope<EditorSettingsPanel>());
@@ -57,7 +58,9 @@ void EditorLayer::on_attach(EventDispatcher& dispatcher) {
   m_EditorPanels.emplace("ProjectPanel", create_scope<ProjectPanel>());
   m_EditorPanels.emplace("StatisticsPanel", create_scope<StatisticsPanel>());
   m_EditorPanels.emplace("EditorDebugPanel", create_scope<EditorDebugPanel>());
-  m_ViewportPanels.emplace_back(create_scope<ViewportPanel>())->m_camera.SetPosition({-2, 2, 0});
+  const auto& viewport = m_ViewportPanels.emplace_back(create_scope<ViewportPanel>());
+  viewport->m_camera.SetPosition({-2, 2, 0});
+  viewport->set_context(m_EditorScene, m_SceneHierarchyPanel);
 
   // Register panel events
   m_ConsolePanel.m_RuntimeConsole.RegisterCommand("show_style_editor",
@@ -70,7 +73,6 @@ void EditorLayer::on_attach(EventDispatcher& dispatcher) {
     [this] {
       m_ShowDemoWindow = !m_ShowDemoWindow;
     });
-  SetEditorScene(m_EditorScene);
 }
 
 void EditorLayer::on_detach() {
@@ -100,7 +102,7 @@ void EditorLayer::on_update(Timestep deltaTime) {
 
   switch (m_SceneState) {
     case SceneState::Edit: {
-      m_ActiveScene->on_editor_update(deltaTime, m_ViewportPanels[0]->m_camera);
+      m_EditorScene->on_editor_update(deltaTime, m_ViewportPanels[0]->m_camera);
       break;
     }
     case SceneState::Play: {
@@ -199,8 +201,7 @@ void EditorLayer::on_imgui_render() {
         }
         if (ImGui::BeginMenu("Window")) {
           if (ImGui::MenuItem("Add viewport", nullptr)) {
-            m_ViewportPanels.emplace_back(create_scope<ViewportPanel>())->set_context(m_ActiveScene,
-              m_SceneHierarchyPanel);
+            m_ViewportPanels.emplace_back(create_scope<ViewportPanel>())->set_context(m_EditorScene, m_SceneHierarchyPanel);
           }
           if (ImGui::MenuItem("Shaders", nullptr)) {
             m_EditorPanels["Shaders"]->Visible = true;
@@ -491,6 +492,8 @@ Ref<Scene> EditorLayer::GetActiveScene() {
 }
 
 void EditorLayer::SetEditorScene(const Ref<Scene>& scene) {
+  m_EditorScene.reset();
+  m_ActiveScene.reset();
   m_EditorScene = scene;
   m_ActiveScene = scene;
   m_SceneHierarchyPanel.ClearSelectionContext();

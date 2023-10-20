@@ -7,7 +7,7 @@ namespace Oxylus {
 class SystemManager {
 public:
   template <typename T, typename... Args>
-  Ref<T> AddSystem(Args&&... args) {
+  Ref<T> add_system(Args&&... args) {
     auto typeName = typeid(T).hash_code();
 
     OX_CORE_ASSERT(!m_Systems.contains(typeName), "Registering system more than once.");
@@ -18,7 +18,7 @@ public:
   }
 
   template <typename T>
-  Ref<T> AddSystem(T* t) {
+  Ref<T> add_system(T* t) {
     auto typeName = typeid(T).hash_code();
 
     OX_CORE_ASSERT(!m_Systems.contains(typeName), "Registering system more than once.");
@@ -29,7 +29,7 @@ public:
   }
 
   template <typename T>
-  void RemoveSystem() {
+  void remove_system() {
     const auto typeName = typeid(T).hash_code();
 
     if (m_Systems.contains(typeName)) {
@@ -38,7 +38,7 @@ public:
   }
 
   template <typename T>
-  T* GetSystem() {
+  T* get_system() {
     const auto typeName = typeid(T).hash_code();
 
     if (m_Systems.contains(typeName)) {
@@ -49,25 +49,25 @@ public:
   }
 
   template <typename T>
-  T* HasSystem() {
+  T* has_system() {
     const auto typeName = typeid(T).hash_code();
 
     return m_Systems.contains(typeName);
   }
 
-  std::unordered_map<size_t, Ref<System>>& GetSystems() { return m_Systems; }
+  std::unordered_map<size_t, Ref<System>>& get_systems() { return m_Systems; }
 
-  void OnUpdate() const {
+  void on_update() const {
     for (auto& system : m_Systems)
       system.second->OnUpdate();
   }
 
-  void on_im_gui_render() const {
+  void on_imgui_render() const {
     for (const auto& system : m_Systems)
       system.second->OnImGuiRender();
   }
 
-  void Shutdown() const {
+  void shutdown() const {
     for (const auto& system : m_Systems)
       system.second->OnShutdown();
   }

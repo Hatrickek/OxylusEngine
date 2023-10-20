@@ -21,7 +21,6 @@ void Window::init_vulkan_window(const AppSpec& spec) {
   if (spec.custom_window_title)
     glfwWindowHint(GLFW_DECORATED, GLFW_FALSE);
   s_window_handle = glfwCreateWindow(1600, 900, spec.name.c_str(), nullptr, nullptr);
-  glfwSetWindowUserPointer(s_window_handle, &s_window_data);
 
   //Load file icon
   {

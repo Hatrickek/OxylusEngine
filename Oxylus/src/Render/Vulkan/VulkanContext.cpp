@@ -51,7 +51,7 @@ static VkBool32 DebugCallback(const VkDebugUtilsMessageSeverityFlagBitsEXT messa
   return VK_FALSE;
 }
 
-inline vuk::Swapchain MakeSwapchain(vkb::Device vkbdevice, std::optional<VkSwapchainKHR> old_swapchain) {
+inline vuk::Swapchain make_swapchain(vkb::Device vkbdevice, std::optional<VkSwapchainKHR> old_swapchain) {
   vkb::SwapchainBuilder swb(vkbdevice);
   swb.add_fallback_format(vuk::SurfaceFormatKHR{vuk::Format::eR8G8B8A8Unorm, vuk::ColorSpaceKHR::eSrgbNonlinear});
   swb.add_fallback_present_mode((VkPresentModeKHR)vuk::PresentModeKHR::eImmediate);
@@ -84,6 +84,20 @@ void VulkanContext::init() {
     return;
 
   s_instance = new VulkanContext();
+}
+
+inline VkSurfaceKHR create_surface_glfw(const VkInstance instance, GLFWwindow* window) {
+  VkSurfaceKHR surface = nullptr;
+  const VkResult err = glfwCreateWindowSurface(instance, window, nullptr, &surface);
+  if (err) {
+    const char* error_msg;
+    const int ret = glfwGetError(&error_msg);
+    if (ret != 0) {
+      OX_CORE_ERROR("GLFW error: {}", error_msg);
+    }
+    surface = nullptr;
+  }
+  return surface;
 }
 
 void VulkanContext::create_context(const AppSpec& spec) {
@@ -121,28 +135,7 @@ void VulkanContext::create_context(const AppSpec& spec) {
   vkb_instance = inst_ret.value();
   auto instance = vkb_instance.instance;
   vkb::PhysicalDeviceSelector selector{vkb_instance};
-  VkSurfaceKHR surface;
-  Window::set_window_user_data(this);
-  glfwSetWindowSizeCallback(Window::get_glfw_window(),
-    [](GLFWwindow* window, const int width, const int height) {
-      VulkanContext& runner = *reinterpret_cast<VulkanContext*>(glfwGetWindowUserPointer(window));
-      if (width == 0 && height == 0) {
-        runner.suspend = true;
-      }
-      else {
-        Window::get_window_extent().x = width;
-        Window::get_window_extent().y = height;
-        runner.superframe_allocator->deallocate(std::span{&runner.swapchain->swapchain, 1});
-        runner.superframe_allocator->deallocate(runner.swapchain->image_views);
-        runner.context->remove_swapchain(runner.swapchain);
-        runner.swapchain = runner.context->add_swapchain(MakeSwapchain(runner.vkb_device, runner.swapchain->swapchain));
-        for (auto& iv : runner.swapchain->image_views) {
-          runner.context->set_name(iv.payload, "Swapchain ImageView");
-        }
-        runner.suspend = false;
-      }
-    });
-  glfwCreateWindowSurface(instance, Window::get_glfw_window(), nullptr, &surface);
+  surface = create_surface_glfw(instance, Window::get_glfw_window());
   selector.set_surface(surface)
           .set_minimum_version(1, 0)
           .add_required_extension(VK_KHR_SYNCHRONIZATION_2_EXTENSION_NAME)
@@ -231,7 +224,7 @@ void VulkanContext::create_context(const AppSpec& spec) {
   constexpr unsigned num_inflight_frames = 3;
   superframe_resource.emplace(*context, num_inflight_frames);
   superframe_allocator.emplace(*superframe_resource);
-  swapchain = context->add_swapchain(MakeSwapchain(vkb_device, {}));
+  swapchain = context->add_swapchain(make_swapchain(vkb_device, {}));
   present_ready = vuk::Unique<std::array<VkSemaphore, 3>>(*superframe_allocator);
   render_complete = vuk::Unique<std::array<VkSemaphore, 3>>(*superframe_allocator);
 
@@ -246,6 +239,25 @@ void VulkanContext::create_context(const AppSpec& spec) {
 
   tracy_profiler = create_ref<TracyProfiler>();
   tracy_profiler->init_tracy_for_vulkan(this);
+
+  Window::set_window_user_data(this);
+  glfwSetWindowSizeCallback(Window::get_glfw_window(),
+    [](GLFWwindow* window, const int width, const int height) {
+      VulkanContext& ctx = *reinterpret_cast<VulkanContext*>(glfwGetWindowUserPointer(window));
+      if (width == 0 && height == 0) {
+        ctx.suspend = true;
+      }
+      else {
+        ctx.superframe_allocator->deallocate(std::span{&ctx.swapchain->swapchain, 1});
+        ctx.superframe_allocator->deallocate(ctx.swapchain->image_views);
+        ctx.context->remove_swapchain(ctx.swapchain);
+        ctx.swapchain = ctx.context->add_swapchain(make_swapchain(ctx.vkb_device, ctx.swapchain->swapchain));
+        for (auto& iv : ctx.swapchain->image_views) {
+          ctx.context->set_name(iv.payload, "Swapchain ImageView");
+        }
+        ctx.suspend = false;
+      }
+    });
 
   OX_CORE_TRACE("Vulkan context initialized using device: {}", properties.deviceName);
 }

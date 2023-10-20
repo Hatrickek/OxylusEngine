@@ -11,7 +11,7 @@
 #include "Utils/UIUtils.h"
 
 namespace Oxylus {
-bool Core::Init(const AppSpec& spec) {
+bool Core::init(const AppSpec& spec) {
   OX_SCOPED_ZONE;
   if (!Resources::resources_path_exists()) {
     OX_CORE_FATAL("Resources path doesn't exists. Make sure the working directory is correct!");
@@ -33,7 +33,7 @@ bool Core::Init(const AppSpec& spec) {
   return true;
 }
 
-void Core::Shutdown() {
+void Core::shutdown() {
   FileDialogs::CloseNFD();
 
   VulkanRenderer::shutdown();

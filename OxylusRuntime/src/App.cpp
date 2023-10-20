@@ -20,7 +20,7 @@ namespace Oxylus {
     const auto app = new OxylusRuntime(spec);
     app->push_layer(new ::OxylusRuntime::RuntimeLayer());
     app->get_system_manager()
-        ->AddSystem<HotReloadableScenes>(::OxylusRuntime::RuntimeLayer::get_assets_path("Scenes/Main.oxscene"));
+        ->add_system<HotReloadableScenes>(::OxylusRuntime::RuntimeLayer::get_assets_path("Scenes/Main.oxscene"));
 
     return app;
   }

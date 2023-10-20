@@ -15,7 +15,6 @@ public:
   static GLFWwindow* get_glfw_window();
   static uint32_t get_width();
   static uint32_t get_height();
-  static UVec2& get_window_extent() { return s_window_data.screen_extent; }
 
   static bool is_focused();
   static bool is_minimized();
@@ -28,7 +27,6 @@ public:
 
 private:
   static struct WindowData {
-    UVec2 screen_extent = {1600, 900};
     bool is_over_title_bar = false;
   } s_window_data;
 

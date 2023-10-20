@@ -74,6 +74,7 @@ private:
   void run();
   void update_layers(Timestep ts);
   void update_renderer();
+  void update_timestep();
 
   friend int ::main(int argc, char** argv);
 };

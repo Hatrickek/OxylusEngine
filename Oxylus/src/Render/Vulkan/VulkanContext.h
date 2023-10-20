@@ -34,6 +34,7 @@ public:
   bool has_rt = false;
   bool suspend = false;
   vuk::SwapchainRef swapchain = nullptr;
+  VkSurfaceKHR surface;
   vkb::Instance vkb_instance;
   vkb::Device vkb_device;
   double old_time = 0;

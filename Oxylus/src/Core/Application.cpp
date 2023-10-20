@@ -7,6 +7,9 @@
 #include "Render/Window.h"
 #include "Render/Vulkan/VulkanContext.h"
 #include "Render/Vulkan/VulkanRenderer.h"
+
+#include "Scene/SceneRenderer.h"
+
 #include "Systems/SystemManager.h"
 #include "Utils/Profiler.h"
 
@@ -33,7 +36,7 @@ Application::Application(AppSpec spec) : m_spec(std::move(spec)), system_manager
     }
   }
 
-  if (!core.Init(m_spec))
+  if (!core.init(m_spec))
     return;
 
   glfwSetKeyCallback(Window::get_glfw_window(),
@@ -59,21 +62,21 @@ Application::~Application() {
 }
 
 void Application::init_systems() {
-  for (const auto& system : system_manager->GetSystems()) {
+  for (const auto& system : system_manager->get_systems()) {
     system.second->SetDispatcher(&dispatcher);
     system.second->OnInit();
   }
 }
 
 Application& Application::push_layer(Layer* layer) {
-  layer_stack.PushLayer(layer);
+  layer_stack.push_layer(layer);
   layer->on_attach(dispatcher);
 
   return *this;
 }
 
 Application& Application::push_overlay(Layer* layer) {
-  layer_stack.PushOverlay(layer);
+  layer_stack.push_overlay(layer);
   layer->on_attach(dispatcher);
 
   return *this;
@@ -81,31 +84,24 @@ Application& Application::push_overlay(Layer* layer) {
 
 void Application::run() {
   while (is_running) {
-    Window::update_window();
-    while (VulkanContext::get()->suspend) {
-      Window::wait_for_events();
-    }
-
-    const auto time = static_cast<float>(glfwGetTime());
-    timestep = time - last_frame_time;
-    last_frame_time = time;
-
-    if (!is_running)
-      break;
+    update_timestep();
 
     // Layers
     update_layers(timestep);
 
     // Systems
-    system_manager->OnUpdate();
+    system_manager->on_update();
 
     update_renderer();
 
-    FrameMark;
+    Window::update_window();
+    while (VulkanContext::get()->suspend) {
+      Window::wait_for_events();
+    }
   }
 
-  system_manager->Shutdown();
-  core.Shutdown();
+  system_manager->shutdown();
+  core.shutdown();
 }
 
 void Application::update_layers(Timestep ts) {
@@ -116,6 +112,12 @@ void Application::update_layers(Timestep ts) {
 
 void Application::update_renderer() {
   VulkanRenderer::draw(VulkanContext::get(), imgui_layer, layer_stack, system_manager);
+}
+
+void Application::update_timestep() {
+  const auto time = static_cast<float>(glfwGetTime());
+  timestep = time - last_frame_time;
+  last_frame_time = time;
 }
 
 void Application::close() {
