@@ -91,8 +91,8 @@ private:
   void update_parameters(ProbeChangeEvent& e);
   void update_final_pass_data(RendererConfig::ConfigChangeEvent& e);
 
-  void depth_pre_pass(const Ref<vuk::RenderGraph>& rg, vuk::Buffer& vs_buffer, std::unordered_map<uint32_t, uint32_t> material_map, vuk::Buffer& mat_buffer);
-  void geomerty_pass(const Ref<vuk::RenderGraph>& rg, vuk::Buffer& vs_buffer, std::unordered_map<uint32_t, uint32_t> material_map, vuk::Buffer& mat_buffer, vuk::Buffer& shadow_buffer, vuk::Buffer& point_lights_buffer, vuk::Buffer pbr_buffer);
+  void depth_pre_pass(const Ref<vuk::RenderGraph>& rg, vuk::Buffer& vs_buffer, const std::unordered_map<uint32_t, uint32_t>&, vuk::Buffer& mat_buffer);
+  void geomerty_pass(const Ref<vuk::RenderGraph>& rg, vuk::Buffer& vs_buffer, const std::unordered_map<uint32_t, uint32_t>&, vuk::Buffer& mat_buffer, vuk::Buffer& shadow_buffer, vuk::Buffer& point_lights_buffer, vuk::Buffer pbr_buffer);
   vuk::Future apply_fxaa(vuk::Future source, vuk::Future dst);
   void cascaded_shadow_pass(const Ref<vuk::RenderGraph>& rg, vuk::Buffer& shadow_buffer);
   void gtao_pass(vuk::Allocator& frame_allocator, const Ref<vuk::RenderGraph>& rg);

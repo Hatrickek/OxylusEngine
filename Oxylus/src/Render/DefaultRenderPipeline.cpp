@@ -235,7 +235,7 @@ static uint32_t get_material_index(const std::unordered_map<uint32_t, uint32_t>&
   return size + material_index;
 }
 
-void DefaultRenderPipeline::depth_pre_pass(const Ref<vuk::RenderGraph>& rg, vuk::Buffer& vs_buffer, std::unordered_map<uint32_t, uint32_t> material_map, vuk::Buffer& mat_buffer) {
+void DefaultRenderPipeline::depth_pre_pass(const Ref<vuk::RenderGraph>& rg, vuk::Buffer& vs_buffer, const std::unordered_map<uint32_t, uint32_t>& material_map, vuk::Buffer& mat_buffer) {
   rg->add_pass({
     .name = "depth_pre_pass",
     .resources = {
@@ -243,6 +243,30 @@ void DefaultRenderPipeline::depth_pre_pass(const Ref<vuk::RenderGraph>& rg, vuk:
       "depth_image"_image >> vuk::eDepthStencilRW >> "depth_output"
     },
     .execute = [this, vs_buffer, mat_buffer, material_map](vuk::CommandBuffer& command_buffer) {
+      // Skybox pass
+      struct SkyboxPushConstant {
+        Mat4 view;
+        float lod_bias;
+      } skybox_push_constant = {};
+
+      skybox_push_constant.view = m_renderer_context.current_camera->SkyboxView;
+
+      command_buffer.bind_graphics_pipeline("skybox_pipeline")
+                    .set_viewport(0, vuk::Rect2D::framebuffer())
+                    .set_scissor(0, vuk::Rect2D::framebuffer())
+                    .broadcast_color_blend({})
+                    .set_rasterization({.cullMode = vuk::CullModeFlagBits::eNone})
+                    .set_depth_stencil(vuk::PipelineDepthStencilStateCreateInfo{
+                       .depthTestEnable = false,
+                       .depthWriteEnable = false,
+                       .depthCompareOp = vuk::CompareOp::eLessOrEqual,
+                     })
+                    .bind_buffer(0, 0, vs_buffer)
+                    .bind_sampler(0, 1, vuk::LinearSamplerRepeated)
+                    .bind_image(0, 1, m_resources.cube_map->as_attachment())
+                    .push_constants(vuk::ShaderStageFlagBits::eVertex | vuk::ShaderStageFlagBits::eFragment, 0, skybox_push_constant);
+
+      skybox_cube->draw(command_buffer);
       command_buffer.set_viewport(0, vuk::Rect2D::framebuffer())
                     .set_scissor(0, vuk::Rect2D::framebuffer())
                     .broadcast_color_blend(vuk::BlendPreset::eOff)
@@ -283,7 +307,7 @@ void DefaultRenderPipeline::depth_pre_pass(const Ref<vuk::RenderGraph>& rg, vuk:
 
 void DefaultRenderPipeline::geomerty_pass(const Ref<vuk::RenderGraph>& rg,
                                           vuk::Buffer& vs_buffer,
-                                          std::unordered_map<uint32_t, uint32_t> material_map,
+                                          const std::unordered_map<uint32_t, uint32_t>& material_map,
                                           vuk::Buffer& mat_buffer,
                                           vuk::Buffer& shadow_buffer,
                                           vuk::Buffer& point_lights_buffer,
@@ -451,6 +475,13 @@ void DefaultRenderPipeline::geomerty_pass(const Ref<vuk::RenderGraph>& rg,
   });
 }
 
+std::pair<vuk::Resource, vuk::Name> get_attachment_or_black(const char* name, const bool enabled, const vuk::Access access = vuk::eFragmentSampled) {
+  if (enabled)
+    return {vuk::Resource(name, vuk::Resource::Type::eImage, access), name};
+
+  return {vuk::Resource("black_image", vuk::Resource::Type::eImage, access), "black_image"};
+}
+
 Scope<vuk::Future> DefaultRenderPipeline::on_render(vuk::Allocator& frame_allocator, const vuk::Future& target, vuk::Dimension3D dim) {
   mesh_draw_list.clear();
 
@@ -489,7 +520,8 @@ Scope<vuk::Future> DefaultRenderPipeline::on_render(vuk::Allocator& frame_alloca
   rg->inference_rule("normal_image", vuk::same_shape_as("final_image"));
   rg->inference_rule("depth_image", vuk::same_shape_as("final_image"));
 
-  gtao_pass(frame_allocator, rg);
+  if (RendererConfig::get()->gtao_config.enabled)
+    gtao_pass(frame_allocator, rg);
 
   auto [buffer, buffer_fut] = create_buffer(frame_allocator, vuk::MemoryUsage::eCPUtoGPU, vuk::DomainFlagBits::eTransferOnGraphics, std::span(&direct_shadow_ub, 1));
   auto& shadow_buffer = *buffer;
@@ -512,6 +544,8 @@ Scope<vuk::Future> DefaultRenderPipeline::on_render(vuk::Allocator& frame_alloca
   pbr_pass_params.screen_dimensions = glm::ivec2(VulkanRenderer::get_viewport_width(), VulkanRenderer::get_viewport_height());
 
   point_lights_data.clear();
+  dir_lights_data.clear();
+  spot_lights_data.clear();
 
   auto [pbr_buf, pbr_buffer_fut] = create_buffer(frame_allocator, vuk::MemoryUsage::eCPUtoGPU, vuk::DomainFlagBits::eTransferOnGraphics, std::span(&pbr_pass_params, 1));
   auto pbr_buffer = *pbr_buf;
@@ -523,7 +557,8 @@ Scope<vuk::Future> DefaultRenderPipeline::on_render(vuk::Allocator& frame_alloca
   rg->inference_rule("pbr_image", vuk::same_shape_as("final_image"));
   rg->inference_rule("pbr_depth", vuk::same_shape_as("final_image"));
 
-  ssr_pass(frame_allocator, rg, vk_context, vs_buffer);
+  if (RendererConfig::get()->ssr_config.enabled)
+    ssr_pass(frame_allocator, rg, vk_context, vs_buffer);
 
 #if Bloom
   struct BloomPushConst {
@@ -621,16 +656,21 @@ Scope<vuk::Future> DefaultRenderPipeline::on_render(vuk::Allocator& frame_alloca
   auto [final_buff, final_buff_fut] = create_buffer(frame_allocator, vuk::MemoryUsage::eCPUtoGPU, vuk::DomainFlagBits::eTransferOnGraphics, std::span(&m_renderer_data.final_pass_data, 1));
   auto final_buffer = *final_buff;
 
+  auto [ssr_resouce, ssr_name] = get_attachment_or_black("ssr_output", RendererConfig::get()->ssr_config.enabled);
+  auto [gtao_resouce, gtao_name] = get_attachment_or_black("gtao_final_output", RendererConfig::get()->gtao_config.enabled);
+
+  std::vector<vuk::Resource> final_resources = {
+    "final_image"_image >> vuk::eColorRW >> "final_output",
+    "pbr_output"_image >> vuk::eFragmentSampled,
+    ssr_resouce,
+    gtao_resouce,
+    "black_image"_image >> vuk::eFragmentSampled,
+  };
+
   rg->add_pass({
     .name = "final_pass",
-    .resources = {
-      "final_image"_image >> vuk::eColorRW >> "final_output",
-      "pbr_output"_image >> vuk::eFragmentSampled,
-      "ssr_output"_image >> vuk::eFragmentSampled,
-      "black_image"_image >> vuk::eFragmentSampled,
-      "gtao_final_output"_image >> vuk::eFragmentSampled,
-    },
-    .execute = [final_buffer](vuk::CommandBuffer& command_buffer) {
+    .resources = std::move(final_resources),
+    .execute = [final_buffer, ssr_name, gtao_name](vuk::CommandBuffer& command_buffer) {
       command_buffer.bind_graphics_pipeline("final_pipeline")
                     .set_viewport(0, vuk::Rect2D::framebuffer())
                     .set_scissor(0, vuk::Rect2D::framebuffer())
@@ -639,9 +679,9 @@ Scope<vuk::Future> DefaultRenderPipeline::on_render(vuk::Allocator& frame_alloca
                     .bind_sampler(0, 0, vuk::LinearSamplerClamped)
                     .bind_image(0, 0, "pbr_output")
                     .bind_sampler(0, 3, vuk::LinearSamplerClamped)
-                    .bind_image(0, 3, "ssr_output")
+                    .bind_image(0, 3, ssr_name)
                     .bind_sampler(0, 4, {})
-                    .bind_image(0, 4, "gtao_final_output")
+                    .bind_image(0, 4, gtao_name)
                     .bind_sampler(0, 5, {})
                     .bind_image(0, 5, "black_image")
                     .bind_buffer(0, 6, final_buffer)

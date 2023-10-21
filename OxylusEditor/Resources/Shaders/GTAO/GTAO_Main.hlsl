@@ -44,7 +44,7 @@ lpfloat3 LoadNormal( int2 pos )
 #else 
     // example of a different encoding
     float3 encodedNormal = g_srcNormalmap.Load(int3(pos, 0)).xyz;
-    float3 normal = normalize(encodedNormal * 2.0.xxx - 1.0.xxx);
+    float3 normal = normalize(encodedNormal);
 #endif
 
     return (lpfloat3)normal;

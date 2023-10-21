@@ -25,10 +25,10 @@ void main() {
     vec2 scaled_uv = in_UV;
 	scaled_uv *= mat.UVScale;
 
-    const float normalMapStrenght = mat.UseNormal ? 1.0 : 0.0;
+    const float normal_map_strenght = mat.UseNormal ? 1.0 : 0.0;
     vec3 normal = texture(in_NormalMap, scaled_uv).rgb;
     normal = in_WorldTangent * normalize(normal * 2.0 - 1.0);
-    normal = normalize(mix(normalize(in_Normal), normal, normalMapStrenght));
+    normal = mix(normalize(in_Normal), normal, normal_map_strenght);
     normal = normalize(mat3(view) * normal);
     
     float inv_roughness = 0.0;
@@ -39,5 +39,5 @@ void main() {
       inv_roughness = 1.0 - mat.Roughness;
     }
     
-    out_Normal = vec4(normalize(normal), inv_roughness);
+    out_Normal = vec4(normal, inv_roughness);
 }
