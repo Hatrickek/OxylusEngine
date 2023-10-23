@@ -161,7 +161,7 @@ void Scene::update_physics(Timestep delta_time) {
 void Scene::iterate_over_mesh_node(const Ref<Mesh>& mesh, const std::vector<Mesh::Node*>& node, Entity parent) {
   for (const auto child : node) {
     Entity entity = create_entity(child->name).set_parent(parent);
-    if (child->contains_mesh) {
+    if (child->mesh_data) {
       entity.add_component_internal<MeshRendererComponent>(mesh).submesh_index = child->index;
       entity.get_component<MaterialComponent>().materials = mesh->get_materials_as_ref();
     }
@@ -172,7 +172,7 @@ void Scene::iterate_over_mesh_node(const Ref<Mesh>& mesh, const std::vector<Mesh
 void Scene::create_entity_with_mesh(const Ref<Mesh>& mesh_asset) {
   for (const auto& node : mesh_asset->nodes) {
     Entity entity = create_entity(node->name);
-    if (node->contains_mesh) {
+    if (node->mesh_data) {
       entity.add_component_internal<MeshRendererComponent>(mesh_asset).submesh_index = node->index;
       entity.get_component<MaterialComponent>().materials = mesh_asset->get_materials_as_ref();
     }
