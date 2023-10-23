@@ -53,13 +53,11 @@ void ViewportPanel::on_imgui_render() {
     ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2(10, 10));
     if (ImGui::BeginPopup("ViewportSettings")) {
       IGUI::begin_properties();
-#if 0 // TODO:
-        static bool vsync = VulkanRenderer::s_SwapChain.m_PresentMode == VK_PRESENT_MODE_FIFO_KHR ? true : false;
-        if (IGUI::Property("VSync", vsync)) {
-          vsync = VulkanRenderer::s_SwapChain.ToggleVsync();
-          RendererConfig::Get()->DisplayConfig.VSync = vsync;
-        }
-#endif
+      static bool vsync = VulkanContext::get()->present_mode == vuk::PresentModeKHR::eFifo ? true : false;
+      if (IGUI::property("VSync", vsync)) {
+        VulkanContext::get()->rebuild_swapchain();
+        RendererConfig::get()->display_config.vsync = vsync;
+      }
       IGUI::property<float>("Camera sensitivity", m_MouseSensitivity, 0.1f, 20.0f);
       IGUI::property<float>("Movement speed", m_MovementSpeed, 5, 100.0f);
       IGUI::property("Smooth camera", m_SmoothCamera);

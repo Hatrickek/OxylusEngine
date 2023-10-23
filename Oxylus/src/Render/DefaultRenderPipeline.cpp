@@ -267,6 +267,7 @@ void DefaultRenderPipeline::depth_pre_pass(const Ref<vuk::RenderGraph>& rg, vuk:
                     .push_constants(vuk::ShaderStageFlagBits::eVertex | vuk::ShaderStageFlagBits::eFragment, 0, skybox_push_constant);
 
       skybox_cube->draw(command_buffer);
+
       command_buffer.set_viewport(0, vuk::Rect2D::framebuffer())
                     .set_scissor(0, vuk::Rect2D::framebuffer())
                     .broadcast_color_blend(vuk::BlendPreset::eOff)
@@ -548,7 +549,7 @@ Scope<vuk::Future> DefaultRenderPipeline::on_render(vuk::Allocator& frame_alloca
   spot_lights_data.clear();
 
   auto [pbr_buf, pbr_buffer_fut] = create_buffer(frame_allocator, vuk::MemoryUsage::eCPUtoGPU, vuk::DomainFlagBits::eTransferOnGraphics, std::span(&pbr_pass_params, 1));
-  auto pbr_buffer = *pbr_buf;
+  auto& pbr_buffer = *pbr_buf;
 
   geomerty_pass(rg, vs_buffer, material_map, mat_buffer, shadow_buffer, point_lights_buffer, pbr_buffer);
 
@@ -654,7 +655,7 @@ Scope<vuk::Future> DefaultRenderPipeline::on_render(vuk::Allocator& frame_alloca
 #endif
 
   auto [final_buff, final_buff_fut] = create_buffer(frame_allocator, vuk::MemoryUsage::eCPUtoGPU, vuk::DomainFlagBits::eTransferOnGraphics, std::span(&m_renderer_data.final_pass_data, 1));
-  auto final_buffer = *final_buff;
+  auto& final_buffer = *final_buff;
 
   auto [ssr_resouce, ssr_name] = get_attachment_or_black("ssr_output", RendererConfig::get()->ssr_config.enabled);
   auto [gtao_resouce, gtao_name] = get_attachment_or_black("gtao_final_output", RendererConfig::get()->gtao_config.enabled);

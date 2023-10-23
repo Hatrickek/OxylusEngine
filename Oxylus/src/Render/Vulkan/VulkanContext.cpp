@@ -51,10 +51,10 @@ static VkBool32 DebugCallback(const VkDebugUtilsMessageSeverityFlagBitsEXT messa
   return VK_FALSE;
 }
 
-inline vuk::Swapchain make_swapchain(vkb::Device vkbdevice, std::optional<VkSwapchainKHR> old_swapchain) {
-  vkb::SwapchainBuilder swb(vkbdevice);
+inline vuk::Swapchain make_swapchain(VulkanContext* context, std::optional<VkSwapchainKHR> old_swapchain, vuk::PresentModeKHR present_mode = vuk::PresentModeKHR::eFifo) {
+  vkb::SwapchainBuilder swb(context->vkb_device, context->surface);
   swb.add_fallback_format(vuk::SurfaceFormatKHR{vuk::Format::eR8G8B8A8Unorm, vuk::ColorSpaceKHR::eSrgbNonlinear});
-  swb.add_fallback_present_mode((VkPresentModeKHR)vuk::PresentModeKHR::eFifo);
+  swb.add_fallback_present_mode((VkPresentModeKHR)present_mode);
   swb.set_image_usage_flags(VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT);
   if (old_swapchain) {
     swb.set_old_swapchain(*old_swapchain);
@@ -74,7 +74,7 @@ inline vuk::Swapchain make_swapchain(vkb::Device vkbdevice, std::optional<VkSwap
   }
   sw.extent = vuk::Extent2D{vkswapchain->extent.width, vkswapchain->extent.height};
   sw.format = vuk::Format(vkswapchain->image_format);
-  sw.surface = vkbdevice.surface;
+  sw.surface = context->vkb_device.surface;
   sw.swapchain = vkswapchain->swapchain;
   return sw;
 }
@@ -224,7 +224,7 @@ void VulkanContext::create_context(const AppSpec& spec) {
   constexpr unsigned num_inflight_frames = 3;
   superframe_resource.emplace(*context, num_inflight_frames);
   superframe_allocator.emplace(*superframe_resource);
-  swapchain = context->add_swapchain(make_swapchain(vkb_device, {}));
+  swapchain = context->add_swapchain(make_swapchain(this, {}));
   present_ready = vuk::Unique<std::array<VkSemaphore, 3>>(*superframe_allocator);
   render_complete = vuk::Unique<std::array<VkSemaphore, 3>>(*superframe_allocator);
 
@@ -243,23 +243,27 @@ void VulkanContext::create_context(const AppSpec& spec) {
   Window::set_window_user_data(this);
   glfwSetWindowSizeCallback(Window::get_glfw_window(),
     [](GLFWwindow* window, const int width, const int height) {
-      VulkanContext& ctx = *reinterpret_cast<VulkanContext*>(glfwGetWindowUserPointer(window));
+      auto* ctx = reinterpret_cast<VulkanContext*>(glfwGetWindowUserPointer(window));
       if (width == 0 && height == 0) {
-        ctx.suspend = true;
+        ctx->suspend = true;
       }
       else {
-        ctx.superframe_allocator->deallocate(std::span{&ctx.swapchain->swapchain, 1});
-        ctx.superframe_allocator->deallocate(ctx.swapchain->image_views);
-        ctx.context->remove_swapchain(ctx.swapchain);
-        ctx.swapchain = ctx.context->add_swapchain(make_swapchain(ctx.vkb_device, ctx.swapchain->swapchain));
-        for (auto& iv : ctx.swapchain->image_views) {
-          ctx.context->set_name(iv.payload, "Swapchain ImageView");
-        }
-        ctx.suspend = false;
+        ctx->rebuild_swapchain();
       }
     });
 
   OX_CORE_TRACE("Vulkan context initialized using device: {}", properties.deviceName);
+}
+
+void VulkanContext::rebuild_swapchain() {
+  superframe_allocator->deallocate(std::span{&swapchain->swapchain, 1});
+  superframe_allocator->deallocate(swapchain->image_views);
+  context->remove_swapchain(swapchain);
+  swapchain = context->add_swapchain(make_swapchain(this, swapchain->swapchain, present_mode));
+  for (auto& iv : swapchain->image_views) {
+    context->set_name(iv.payload, "Swapchain ImageView");
+  }
+  suspend = false;
 }
 
 vuk::Allocator VulkanContext::begin() {

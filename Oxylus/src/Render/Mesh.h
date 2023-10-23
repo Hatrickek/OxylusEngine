@@ -14,17 +14,6 @@
 #include "tinygltf/tiny_gltf.h"
 
 namespace Oxylus {
-enum class VertexComponent {
-  POSITION2D,
-  POSITION,
-  NORMAL,
-  COLOR,
-  UV,
-  TANGENT,
-  BITANGENT,
-  JOINT0,
-  WEIGHT0,
-};
 
 class Mesh {
 public:
