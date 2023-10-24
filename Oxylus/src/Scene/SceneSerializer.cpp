@@ -9,82 +9,81 @@
 
 #include "EntitySerializer.h"
 #include "Assets/AssetManager.h"
-#include "Utils/StringUtils.h"
 
 namespace Oxylus {
-  SceneSerializer::SceneSerializer(const Ref<Scene>& scene) : m_Scene(scene) { }
+SceneSerializer::SceneSerializer(const Ref<Scene>& scene) : m_Scene(scene) { }
 
-  void SceneSerializer::Serialize(const std::string& filePath) const {
-    ryml::Tree tree;
+void SceneSerializer::Serialize(const std::string& filePath) const {
+  ryml::Tree tree;
 
-    ryml::NodeRef root = tree.rootref();
-    root |= ryml::MAP;
+  ryml::NodeRef root = tree.rootref();
+  root |= ryml::MAP;
 
-    root["Scene"] << std::filesystem::path(filePath).filename().string();
+  root["Scene"] << std::filesystem::path(filePath).filename().string();
 
-    // Entities
-    ryml::NodeRef entities = root["Entities"];
-    entities |= ryml::SEQ;
+  // Entities
+  ryml::NodeRef entities = root["Entities"];
+  entities |= ryml::SEQ;
 
-    for(const auto [e] : m_Scene->m_Registry.storage<entt::entity>().each()) {
-      const Entity entity = {e, m_Scene.get()};
-      if (!entity)
-        return;
+  for (const auto [e] : m_Scene->m_registry.storage<entt::entity>().each()) {
+    const Entity entity = {e, m_Scene.get()};
+    if (!entity)
+      return;
 
-      EntitySerializer::SerializeEntity(m_Scene.get(), entities, entity);
-    }
-
-    std::stringstream ss;
-    ss << tree;
-    std::ofstream filestream(filePath);
-    filestream << ss.str();
-
-    OX_CORE_INFO("Saved scene {0}.", m_Scene->SceneName);
+    EntitySerializer::SerializeEntity(m_Scene.get(), entities, entity);
   }
 
-  bool SceneSerializer::Deserialize(const std::string& filePath) const {
-    ProfilerTimer timer("Scene serializer");
+  std::stringstream ss;
+  ss << tree;
+  std::ofstream filestream(filePath);
+  filestream << ss.str();
 
-    auto content = FileUtils::ReadFile(filePath);
-    if (!content) {
-      OX_CORE_ASSERT(content, fmt::format("Couldn't read scene file: {0}", filePath).c_str());
+  OX_CORE_INFO("Saved scene {0}.", m_Scene->scene_name);
+}
 
-      // Try to read it again from assets path
-      content = FileUtils::ReadFile(AssetManager::GetAssetFileSystemPath(filePath).string());
-      if (content)
-        OX_CORE_INFO("Could load the file from assets path: {0}", filePath);
-      else {
-        return false;
-      }
-    }
+bool SceneSerializer::deserialize(const std::string& filePath) const {
+  ProfilerTimer timer("Scene serializer");
 
-    ryml::Tree tree = ryml::parse_in_arena(ryml::to_csubstr(content.value()));
+  auto content = FileUtils::read_file(filePath);
+  if (content.empty()) {
+    OX_CORE_ASSERT(!content.empty(), fmt::format("Couldn't read scene file: {0}", filePath).c_str());
 
-    if (tree.empty()) {
-      OX_CORE_ERROR("Scene was unable to load from YAML file {0}", filePath);
+    // Try to read it again from assets path
+    content = FileUtils::read_file(AssetManager::get_asset_file_system_path(filePath).string());
+    if (!content.empty())
+      OX_CORE_INFO("Could load the file from assets path: {0}", filePath);
+    else {
       return false;
     }
+  }
 
-    const ryml::ConstNodeRef root = tree.rootref();
+  ryml::Tree tree = ryml::parse_in_arena(ryml::to_csubstr(content));
 
-    if (!root.has_child("Scene"))
-      return false;
-
-    root["Scene"] >> m_Scene->SceneName;
-
-    if (root.has_child("Entities")) {
-      const ryml::ConstNodeRef entities = root["Entities"];
-
-      for (const auto entity : entities) {
-        EntitySerializer::DeserializeEntity(entity, m_Scene.get(), true);
-      }
-
-      timer.Stop();
-      OX_CORE_INFO("Scene loaded : {0}, {1} ms", StringUtils::GetName(m_Scene->SceneName), timer.ElapsedMilliSeconds());
-      return true;
-    }
-
-    OX_CORE_BERROR("Scene doesn't contain any entities! {0}", StringUtils::GetName(m_Scene->SceneName));
+  if (tree.empty()) {
+    OX_CORE_ERROR("Scene was unable to load from YAML file {0}", filePath);
     return false;
   }
+
+  const ryml::ConstNodeRef root = tree.rootref();
+
+  if (!root.has_child("Scene"))
+    return false;
+
+  root["Scene"] >> m_Scene->scene_name;
+
+  if (root.has_child("Entities")) {
+    const ryml::ConstNodeRef entities = root["Entities"];
+
+    for (const auto entity : entities) {
+      EntitySerializer::DeserializeEntity(entity, m_Scene.get(), true);
+    }
+
+    timer.Stop();
+    OX_CORE_INFO("Scene loaded : {0}, {1} ms", FileSystem::GetFileName(m_Scene->scene_name), timer.ElapsedMilliSeconds());
+    return true;
+  }
+
+  OX_CORE_ERROR("Scene doesn't contain any entities! {0}", FileSystem::GetFileName(m_Scene->scene_name));
+  return false;
+}
 }

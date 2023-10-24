@@ -2,29 +2,28 @@
 
 #include <icons/IconsMaterialDesignIcons.h>
 
-#include <UI/IGUI.h>
-
 #include "EditorLayer.h"
 #include "Assets/AssetManager.h"
 
 namespace Oxylus {
   AssetInspectorPanel::AssetInspectorPanel() : EditorPanel("AssetInspector", ICON_MDI_INFORMATION) { }
 
-  void AssetInspectorPanel::OnUpdate() { }
+  void AssetInspectorPanel::on_update() { }
 
-  void AssetInspectorPanel::OnImGuiRender() {
-    if (OnBegin()) {
-      if (EditorContextType::Asset == EditorLayer::Get()->GetContext().GetType()) {
-        if (EditorLayer::Get()->GetContext().GetAssetExtension() == ".oxmat") {
-          DrawMaterialAsset(EditorLayer::Get()->GetContext().As<std::string>());
+  void AssetInspectorPanel::on_imgui_render() {
+    if (on_begin()) {
+      if (EditorContextType::Asset == EditorLayer::get()->GetContext().GetType()) {
+        if (EditorLayer::get()->GetContext().GetAssetExtension() == ".oxmat") {
+          DrawMaterialAsset(EditorLayer::get()->GetContext().As<std::string>());
         }
       }
-      OnEnd();
+      on_end();
     }
   }
 
   void AssetInspectorPanel::DrawMaterialAsset(const std::string* path) {
-    m_SelectedMaterial = AssetManager::GetMaterialAsset(*path).Data;
-    InspectorPanel::DrawMaterialProperties(m_SelectedMaterial, true);
+    //TODO:
+    //m_SelectedMaterial = AssetManager::GetMaterialAsset(*path).Data;
+    //InspectorPanel::DrawMaterialProperties(m_SelectedMaterial, true);
   }
 }

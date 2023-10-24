@@ -13,12 +13,12 @@ namespace OxylusRuntime {
   void FreeCamera::OnInit() { }
 
   void FreeCamera::OnUpdate(Scene* scene, Timestep deltaTime) {
-    auto& registery = scene->m_Registry;
+    auto& registery = scene->m_registry;
     const auto group = registery.view<TransformComponent, CameraComponent>();
     for (const auto entity : group) {
       auto&& [transform, component] = group.get<TransformComponent, CameraComponent>(entity);
-      auto& camera = component.System;
-      const glm::vec3& position = camera->GetPosition();
+      auto& camera = component.system;
+      const glm::vec3& position = camera->get_position();
       const glm::vec2 yawPitch = glm::vec2(camera->GetYaw(), camera->GetPitch());
       glm::vec3 finalPosition = position;
       glm::vec2 finalYawPitch = yawPitch;
@@ -59,22 +59,22 @@ namespace OxylusRuntime {
         m_UsingEditorCamera = false;
       }
 
-      const glm::vec3 dampedPosition = Math::SmoothDamp(position,
+      const glm::vec3 dampedPosition = Math::smooth_damp(position,
         finalPosition,
         m_TranslationVelocity,
         m_TranslationDampening,
         10000.0f,
         deltaTime);
-      const glm::vec2 dampedYawPitch = Math::SmoothDamp(yawPitch,
+      const glm::vec2 dampedYawPitch = Math::smooth_damp(yawPitch,
         finalYawPitch,
         m_RotationVelocity,
         m_RotationDampening,
         1000.0f,
         deltaTime);
       
-      transform.Translation = m_SmoothCamera ? dampedPosition : finalPosition;
-      transform.Rotation.x = m_SmoothCamera ? dampedYawPitch.y : finalYawPitch.y;
-      transform.Rotation.y = m_SmoothCamera ? dampedYawPitch.x : finalYawPitch.x;
+      transform.translation = m_SmoothCamera ? dampedPosition : finalPosition;
+      transform.rotation.x = m_SmoothCamera ? dampedYawPitch.y : finalYawPitch.y;
+      transform.rotation.y = m_SmoothCamera ? dampedYawPitch.x : finalYawPitch.x;
     }
   }
 }

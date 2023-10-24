@@ -1,30 +1,58 @@
 ﻿#pragma once
+#include <mutex>
+
 #include "Event/Event.h"
+#include <vuk/Future.hpp>
 #include "Core/Base.h"
 
+namespace vuk {
+struct SampledImage;
+}
+
 namespace Oxylus {
-  class Scene;
-  class VulkanImage;
-  class RenderGraph;
+class VulkanContext;
+class Scene;
 
-  class RenderPipeline {
-  public:
-    virtual ~RenderPipeline() = default;
+class RenderPipeline {
+public:
+  RenderPipeline(std::string name) : m_name(std::move(name)), attach_swapchain(true) { }
 
-    virtual void OnInit() {}
-    virtual void OnRender(Scene* scene) {}
-    virtual void OnShutdown() {}
+  virtual ~RenderPipeline() = default;
 
-    virtual void OnDispatcherEvents(EventDispatcher& dispatcher) {};
+  virtual void init(Scene* scene) { }
+  virtual void update(Scene* scene) { }
+  virtual void shutdown() { }
 
-    const virtual VulkanImage& GetFinalImage() = 0;
+  virtual Scope<vuk::Future> on_render(vuk::Allocator& frameAllocator, const vuk::Future& target, vuk::Dimension3D dim) = 0;
 
-    Ref<RenderGraph> GetRenderGraph() const { return m_RenderGraph; }
+  virtual void on_dispatcher_events(EventDispatcher& dispatcher) { }
 
-  protected:
-    virtual void InitRenderGraph() = 0;
+  virtual void enqueue_future(vuk::Future&& fut);
+  virtual void wait_for_futures(VulkanContext* vkContext);
 
-  protected:
-    Ref<RenderGraph> m_RenderGraph = nullptr;
-  };
+  virtual void detach_swapchain(vuk::Dimension3D dim);
+  virtual bool is_swapchain_attached() { return attach_swapchain; }
+
+  virtual Ref<vuk::SampledImage> get_final_image() { return final_image; }
+  virtual void set_final_image(Ref<vuk::SampledImage>& image) { final_image = image; }
+
+  virtual Ref<vuk::RenderGraph> get_frame_render_graph() { return frame_render_graph; }
+  virtual void set_frame_render_graph(Ref<vuk::RenderGraph> render_graph) { frame_render_graph = render_graph; }
+
+  virtual vuk::Allocator* get_frame_allocator() { return m_frame_allocator; }
+  virtual void set_frame_allocator(vuk::Allocator* allocator) { m_frame_allocator = allocator; }
+
+  virtual const std::string& get_name() { return m_name; }
+  virtual vuk::Dimension3D get_dimension() { return dimension; }
+
+protected:
+  std::string m_name = {};
+  bool attach_swapchain = false;
+  vuk::Dimension3D dimension = {};
+  Ref<vuk::SampledImage> final_image = nullptr;
+  Ref<vuk::RenderGraph> frame_render_graph = nullptr;
+  vuk::Allocator* m_frame_allocator;
+  std::mutex setup_lock;
+  std::vector<vuk::Future> futures;
+};
 }

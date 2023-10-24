@@ -8,19 +8,19 @@ namespace Oxylus {
   public:
     InspectorPanel();
 
-    void OnImGuiRender() override;
+    void on_imgui_render() override;
 
-    static bool DrawMaterialProperties(Ref<Material>& material, bool saveToCurrentPath = false);
+    static bool draw_material_properties(Ref<Material>& material, bool saveToCurrentPath = false);
 
   private:
-    void DrawComponents(Entity entity) const;
+    void draw_components(Entity entity) const;
 
     template <typename Component>
-    void DrawAddComponent(Entity entity, const char* name) const;
+    void draw_add_component(Entity entity, const char* name) const;
 
-    void PP_ProbeProperty(bool value) const;
+    void pp_probe_property(bool value, const PostProcessProbe& component) const;
 
     Entity m_SelectedEntity;
-    Ref<Scene> m_Scene;
+    Scene* m_Scene;
   };
 }

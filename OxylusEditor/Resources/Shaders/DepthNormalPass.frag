@@ -1,7 +1,14 @@
 #version 450
+#pragma shader_stage(fragment)
 
-layout(set = 1, binding = 1) uniform sampler2D in_NormalMap;
-layout(set = 1, binding = 2) uniform sampler2D in_RoughnessMap;
+layout(binding = 0) uniform UBO {
+  mat4 projection;
+  mat4 view;
+  vec3 camPos;
+};
+
+layout(set = 1, binding = 0) uniform sampler2D in_NormalMap;
+layout(set = 1, binding = 1) uniform sampler2D in_PhysicalMap;
 
 layout(location = 0) in vec3 in_WorldPos;
 layout(location = 1) in vec3 in_Normal;
@@ -13,18 +20,24 @@ layout(location = 0) out vec4 out_Normal;
 #include "Material.glsl"
 
 void main() {
-  const float normalMapStrenght = u_Material.UseNormal ? 1.0 : 0.0;
-  vec3 normal = texture(in_NormalMap, in_UV).rgb;
-  normal = in_WorldTangent * normalize(normal * 2.0 - 1.0);
-  normal = normalize(mix(normalize(in_Normal), normal, normalMapStrenght));
+    Material mat = Materials[MaterialIndex];
 
-  float roughness = 0;
-  if (u_Material.UseRoughness) {
-    roughness = 1.0 - texture(in_RoughnessMap, in_UV * u_Material.UVScale).r;
-    roughness *= u_Material.Roughness;
-  } else {
-    // roughness = 1.0 - u_Material.Roughness;
-  }
+    vec2 scaled_uv = in_UV;
+	scaled_uv *= mat.UVScale;
 
-  out_Normal = vec4(normal, roughness);
+    const float normal_map_strenght = mat.UseNormal ? 1.0 : 0.0;
+    vec3 normal = texture(in_NormalMap, scaled_uv).rgb;
+    normal = in_WorldTangent * normalize(normal * 2.0 - 1.0);
+    normal = mix(normalize(in_Normal), normal, normal_map_strenght);
+    normal = normalize(mat3(view) * normal);
+    
+    float inv_roughness = 0.0;
+    if (mat.UsePhysicalMap) {
+      inv_roughness = 1.0 - texture(in_PhysicalMap, scaled_uv).g;
+      inv_roughness *= mat.Roughness;
+    } else {
+      inv_roughness = 1.0 - mat.Roughness;
+    }
+    
+    out_Normal = vec4(normal, inv_roughness);
 }

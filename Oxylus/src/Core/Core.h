@@ -1,18 +1,11 @@
 #pragma once
-
 namespace Oxylus {
-  struct AppSpec;
+class VulkanContext;
+struct AppSpec;
 
-  class Core {
-  public:
-    enum class RenderBackend {
-      Vulkan
-    };
-
-    static bool Init(const AppSpec& spec);
-
-    static void Shutdown();
-
-    static RenderBackend s_Backend;
-  };
+class Core {
+public:
+  bool init(const AppSpec& spec);
+  void shutdown();
+};
 }

@@ -4,62 +4,80 @@
 #include "Event/Event.h"
 
 namespace Oxylus {
-  class RendererConfig {
-  public:
-    struct ConfigChangeEvent { };
+class RendererConfig {
+public:
+  struct ConfigChangeEvent { };
 
-    EventDispatcher ConfigChangeDispatcher;
+  EventDispatcher config_change_dispatcher;
 
-    struct Display {
-      bool VSync = true;
-    } DisplayConfig;
+  struct Display {
+    bool vsync = true;
+  } display_config;
 
-    enum Tonemaps {
-      TONEMAP_ACES = 0,
-      TONEMAP_UNCHARTED,
-      TONEMAP_FILMIC,
-      TONEMAP_REINHARD,
-    };
-
-    struct Color {
-      int Tonemapper = TONEMAP_ACES;
-      float Exposure = 1.0f;
-      float Gamma = 2.5f;
-    } ColorConfig;
-
-    struct SSAO {
-      bool Enabled = false;
-      float Radius = 0.2f;
-    } SSAOConfig;
-
-    struct Bloom {
-      bool Enabled = true;
-      float Threshold = 1.0f;
-      float Clamp = 3.0f;
-    } BloomConfig;
-
-    struct SSR {
-      bool Enabled = true;
-      int Samples = 30;
-      float MaxDist = 50.0f;
-    } SSRConfig;
-
-    struct DirectShadows {
-      bool Enabled = true;
-      uint32_t Quality = 3;
-      bool UsePCF = true;
-      uint32_t Size = 4096;
-    } DirectShadowsConfig;
-
-    RendererConfig();
-    ~RendererConfig() = default;
-
-    void SaveConfig(const char* path) const;
-    bool LoadConfig(const char* path);
-
-    static RendererConfig* Get() { return s_Instance; }
-
-  private:
-    static RendererConfig* s_Instance;
+  enum Tonemaps {
+    TONEMAP_ACES = 0,
+    TONEMAP_UNCHARTED,
+    TONEMAP_FILMIC,
+    TONEMAP_REINHARD,
   };
+
+  struct Color {
+    int tonemapper = TONEMAP_ACES;
+    float exposure = 1.0f;
+    float gamma = 2.5f;
+  } color_config;
+
+  struct GTAO {
+    bool enabled = false;
+
+    // this matches the XeGTAO.h struct
+    struct Settings {
+      int quality_level = 2;  // 0: low; 1: medium; 2: high; 3: ultra 
+      int denoise_passes = 3; // 0: disabled; 1: sharp; 2: medium; 3: soft
+      float radius = 0.5f;
+      float radius_multiplier = 1.0f;
+      float falloff_range = 0.615f;
+      float sample_distribution_power = 2.0f;
+      float thin_occluder_compensation = 0.0f;
+      float final_value_power = 1.5f;
+      float depth_mip_sampling_offset = 3.30f;
+    } settings;
+  } gtao_config;
+
+  struct Bloom {
+    bool enabled = true;
+    float threshold = 1.0f;
+    float clamp = 3.0f;
+  } bloom_config;
+
+  struct SSR {
+    bool enabled = true;
+    int samples = 30;
+    float max_dist = 50.0f;
+  } ssr_config;
+
+  struct DirectShadows {
+    bool enabled = true;
+    uint32_t quality = 3;
+    bool use_pcf = true;
+    uint32_t size = 4096;
+  } direct_shadows_config;
+
+  struct FXAA {
+    bool enabled = true;
+  } fxaa_config;
+
+  RendererConfig();
+  ~RendererConfig() = default;
+
+  void save_config(const char* path) const;
+  bool load_config(const char* path);
+
+  void dispatch_config_change();
+
+  static RendererConfig* get() { return s_instance; }
+
+private:
+  static RendererConfig* s_instance;
+};
 }

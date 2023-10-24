@@ -1,6 +1,8 @@
 ﻿#include "CharacterSystem.h"
 
+#include "Core/Application.h"
 #include "Core/Components.h"
+#include "Core/Input.h"
 #include "Scene/Scene.h"
 #include "UI/IGUI.h"
 
@@ -21,7 +23,7 @@ namespace OxylusRuntime {
   void CharacterSystem::OnInit() { }
 
   void CharacterSystem::OnUpdate(Scene* scene, Timestep deltaTime) {
-    auto& registery = scene->m_Registry;
+    auto& registery = scene->m_registry;
     const auto characterView = registery.view<TransformComponent, CharacterControllerComponent>();
     const auto cameraView = registery.view<TransformComponent, CameraComponent>();
 
@@ -46,15 +48,15 @@ namespace OxylusRuntime {
         if (wishDir != JPH::Vec3::sZero())
           wishDir = wishDir.Normalized();
 
-        JPH::Vec3 camFwd = {cameraComponent.System->GetFront().x, cameraComponent.System->GetFront().y, cameraComponent.System->GetFront().z};
+        JPH::Vec3 camFwd = {cameraComponent.system->GetFront().x, cameraComponent.system->GetFront().y, cameraComponent.system->GetFront().z};
         camFwd.SetY(0.0f);
         camFwd = camFwd.NormalizedOr(JPH::Vec3::sAxisX());
         JPH::Quat rotation = JPH::Quat::sFromTo(JPH::Vec3::sAxisX(), camFwd);
         wishDir = rotation * wishDir;
 
-        bool jumpQueued = QueueJump(chComponent.AutoBunnyHop);
+        bool jumpQueued = QueueJump(chComponent.auto_bunny_hop);
 
-        const bool isGrounded = chComponent.Character->IsSupported();
+        const bool isGrounded = chComponent.character->IsSupported();
 
         // Set movement state.
         MovementArgs args{
@@ -66,16 +68,16 @@ namespace OxylusRuntime {
         };
 
         if (isGrounded) {
-          GroundMove(chComponent.CurrentVelocity, args, deltaTime);
+          GroundMove(chComponent.current_velocity, args, deltaTime);
           jumpQueued = false;
         }
         else {
-          AirMove(chComponent.CurrentVelocity, args, deltaTime);
+          AirMove(chComponent.current_velocity, args, deltaTime);
         }
 
         // Rotate the character and camera.
 
-        const auto& camera = cameraComponent.System;
+        const auto& camera = cameraComponent.system;
         const Vec2 yawPitch = Vec2(camera->GetYaw(), camera->GetPitch());
         Vec2 finalYawPitch = yawPitch;
 
@@ -102,57 +104,57 @@ namespace OxylusRuntime {
         }
 
         auto charRotation = JPH::Quat::sEulerAngles({0.0f, -finalYawPitch.x, 0.0f});
-        chComponent.Character->SetRotation(charRotation);
+        chComponent.character->SetRotation(charRotation);
 
-        Vec3 finalPosition = chTransform.Translation;
-        finalPosition.y += chComponent.CharacterHeightStanding;
+        Vec3 finalPosition = chTransform.translation;
+        finalPosition.y += chComponent.character_height_standing;
 
-        cameraTransform.Translation = finalPosition;
-        cameraTransform.Rotation.x = finalYawPitch.y;
-        cameraTransform.Rotation.y = finalYawPitch.x;
+        cameraTransform.translation = finalPosition;
+        cameraTransform.rotation.x = finalYawPitch.y;
+        cameraTransform.rotation.y = finalYawPitch.x;
         
         // Cancel movement in opposite direction of normal when touching something we can't walk up
-        const JPH::Character::EGroundState groundState = chComponent.Character->GetGroundState();
+        const JPH::Character::EGroundState groundState = chComponent.character->GetGroundState();
         if (groundState == JPH::Character::EGroundState::OnSteepGround || groundState == JPH::Character::EGroundState::NotSupported) {
-          JPH::Vec3 normal = chComponent.Character->GetGroundNormal();
+          JPH::Vec3 normal = chComponent.character->GetGroundNormal();
           normal.SetY(0.0f);
-          const float dot = normal.Dot(chComponent.CurrentVelocity);
+          const float dot = normal.Dot(chComponent.current_velocity);
           if (dot < 0.0f)
-            chComponent.CurrentVelocity -= (dot * normal) / normal.LengthSq();
+            chComponent.current_velocity -= (dot * normal) / normal.LengthSq();
         }
 
         // Move the character.
-        chComponent.Character->SetLinearVelocity(chComponent.CurrentVelocity);
+        chComponent.character->SetLinearVelocity(chComponent.current_velocity);
       }
     }
   }
 
   void CharacterSystem::OnImGuiRender(Scene* scene, Timestep deltaTime) {
-    auto& registery = scene->m_Registry;
+    auto& registery = scene->m_registry;
     const auto characterView = registery.view<TransformComponent, CharacterControllerComponent>();
     for (const auto entity : characterView) {
       auto&& [transform, component] = characterView.get<TransformComponent, CharacterControllerComponent>(entity);
       
       if (ImGui::Begin("Character Debug")) {
-        IGUI::BeginProperties();
-        IGUI::PropertyVector("Position", transform.Translation);
-        IGUI::PropertyVector("Rotation", transform.Rotation);
-        IGUI::Property("AutoBunnyHop", component.AutoBunnyHop);
-        IGUI::Property("JumpForce", component.JumpForce, 1.0f, 10.0f);
-        IGUI::Property("CollisionTolerance", component.CollisionTolerance, 0.05f, 0.5f);
+        IGUI::begin_properties();
+        IGUI::PropertyVector("Position", transform.translation);
+        IGUI::PropertyVector("Rotation", transform.rotation);
+        IGUI::property("AutoBunnyHop", component.auto_bunny_hop);
+        IGUI::property("JumpForce", component.jump_force, 1.0f, 10.0f);
+        IGUI::property("CollisionTolerance", component.collision_tolerance, 0.05f, 0.5f);
 
-        auto velocity = glm::make_vec3(component.Character->GetLinearVelocity().mF32);
-        auto speed = component.Character->GetLinearVelocity().Length();
-        IGUI::Text("IsGrounded", fmt::format("{}", component.Character->IsSupported()).c_str());
+        auto velocity = glm::make_vec3(component.character->GetLinearVelocity().mF32);
+        auto speed = component.character->GetLinearVelocity().Length();
+        IGUI::text("IsGrounded", fmt::format("{}", component.character->IsSupported()).c_str());
         IGUI::PropertyVector("Velocity", velocity);
-        IGUI::Property("Speed", speed);
+        IGUI::property("Speed", speed);
         if (s_MaxVerticalVelocity <= velocity.y)
           s_MaxVerticalVelocity = velocity.y;
-        IGUI::Text("Max Vertical Velocity", fmt::format("{}", s_MaxVerticalVelocity).c_str());
+        IGUI::text("Max Vertical Velocity", fmt::format("{}", s_MaxVerticalVelocity).c_str());
         if (s_MaxHorizontalVelocity <= velocity.x)
           s_MaxHorizontalVelocity = velocity.x;
-        IGUI::Text("Max Horizontal Velocity", fmt::format("{}", s_MaxHorizontalVelocity).c_str());
-        IGUI::EndProperties();
+        IGUI::text("Max Horizontal Velocity", fmt::format("{}", s_MaxHorizontalVelocity).c_str());
+        IGUI::end_properties();
 
         ImGui::End();
       }
@@ -160,32 +162,32 @@ namespace OxylusRuntime {
   }
 
   void CharacterSystem::OnContactAdded(Scene* scene, const JPH::Body& body1, const JPH::Body& body2, const JPH::ContactManifold& manifold, const JPH::ContactSettings& settings) {
-    auto& registery = scene->m_Registry;
+    auto& registery = scene->m_registry;
     const auto characterView = registery.view<TransformComponent, CharacterControllerComponent>();
     const auto rbView = registery.view<TagComponent, TransformComponent, RigidbodyComponent>();
 
     for (const auto rbEntity : rbView) {
       auto&& [tag, rbTransform, rb] = rbView.get<TagComponent, TransformComponent, RigidbodyComponent>(rbEntity);
 
-      const auto& id = ((JPH::Body*)rb.RuntimeBody)->GetID();
+      const auto& id = ((JPH::Body*)rb.runtime_body)->GetID();
 
       if (!body1.IsSensor() || id != body1.GetID()) {
         continue;
       }
 
-      if (tag.Tag == "BouncePad") {
+      if (tag.tag == "BouncePad") {
         for (const auto chEntity : characterView) {
           auto&& [chTransform, ch] = characterView.get<TransformComponent, CharacterControllerComponent>(chEntity);
-          if (body2.GetID() == ch.Character->GetBodyID()) {
-            ch.Character->SetLinearVelocity(JPH::Vec3{0.0f, 12.0f, 0.0f}, false);
+          if (body2.GetID() == ch.character->GetBodyID()) {
+            ch.character->SetLinearVelocity(JPH::Vec3{0.0f, 12.0f, 0.0f}, false);
           }
         }
       }
-      else if (tag.Tag == "AccelPad") {
+      else if (tag.tag == "AccelPad") {
         for (const auto chEntity : characterView) {
           auto&& [chTransform, ch] = characterView.get<TransformComponent, CharacterControllerComponent>(chEntity);
-          if (body2.GetID() == ch.Character->GetBodyID()) {
-            ch.Character->SetLinearVelocity(JPH::Vec3(rb.Translation.x, rb.Translation.y, rb.Translation.z) * 30, false);
+          if (body2.GetID() == ch.character->GetBodyID()) {
+            ch.character->SetLinearVelocity(JPH::Vec3(rb.translation.x, rb.translation.y, rb.translation.z) * 30, false);
           }
         }
       }
@@ -212,22 +214,22 @@ namespace OxylusRuntime {
   void CharacterSystem::GroundMove(JPH::Vec3& velocity, const MovementArgs& args, float deltaTime) {
     // Do not apply friction if the player is queueing up the next jump
     if (!args.JumpQueued) {
-      ApplyFriction(velocity, args.CharacterController.GroundSettings.Deceleration, args.IsGrounded, args.CharacterController.Friction, deltaTime, 1.0f);
+      ApplyFriction(velocity, args.CharacterController.ground_settings.deceleration, args.IsGrounded, args.CharacterController.friction, deltaTime, 1.0f);
     }
     else {
-      ApplyFriction(velocity, args.CharacterController.GroundSettings.Deceleration, args.IsGrounded, args.CharacterController.Friction, deltaTime, 0.0f);
+      ApplyFriction(velocity, args.CharacterController.ground_settings.deceleration, args.IsGrounded, args.CharacterController.friction, deltaTime, 0.0f);
     }
 
     auto wishspeed = args.WishDir.Length();
-    wishspeed *= args.CharacterController.GroundSettings.MaxSpeed;
+    wishspeed *= args.CharacterController.ground_settings.max_speed;
 
-    Accelerate(velocity, args.WishDir, wishspeed, args.CharacterController.GroundSettings.Acceleration);
+    Accelerate(velocity, args.WishDir, wishspeed, args.CharacterController.ground_settings.acceleration);
 
     // Reset the gravity velocity
-    velocity.SetY(-args.CharacterController.Gravity * deltaTime);
+    velocity.SetY(-args.CharacterController.gravity * deltaTime);
 
     if (args.JumpQueued) {
-      velocity.SetY(args.CharacterController.JumpForce);
+      velocity.SetY(args.CharacterController.jump_force);
     }
   }
 
@@ -235,24 +237,24 @@ namespace OxylusRuntime {
     float accel;
 
     float wishspeed = args.WishDir.Length();
-    wishspeed *= args.CharacterController.AirSettings.MaxSpeed;
+    wishspeed *= args.CharacterController.air_settings.max_speed;
 
     // CPM Air control.
     const float wishspeed2 = wishspeed;
     if (velocity.Dot(args.WishDir) < 0) {
-      accel = args.CharacterController.AirSettings.Deceleration;
+      accel = args.CharacterController.air_settings.deceleration;
     }
     else {
-      accel = args.CharacterController.AirSettings.Acceleration;
+      accel = args.CharacterController.air_settings.acceleration;
     }
 
     // If the player is ONLY strafing left or right
     if (args.MovementDirection.GetZ() == 0.0f && args.MovementDirection.GetX() != 0.0f) {
-      if (wishspeed > args.CharacterController.StrafeSettings.MaxSpeed) {
-        wishspeed = args.CharacterController.StrafeSettings.MaxSpeed;
+      if (wishspeed > args.CharacterController.strafe_settings.max_speed) {
+        wishspeed = args.CharacterController.strafe_settings.max_speed;
       }
 
-      accel = args.CharacterController.StrafeSettings.Acceleration;
+      accel = args.CharacterController.strafe_settings.acceleration;
     }
 
     Accelerate(velocity, args.WishDir, wishspeed, accel);
@@ -261,7 +263,7 @@ namespace OxylusRuntime {
     }*/
 
     // Apply gravity
-    velocity.SetY(velocity.GetY() - args.CharacterController.Gravity * deltaTime);
+    velocity.SetY(velocity.GetY() - args.CharacterController.gravity * deltaTime);
   }
 
   void CharacterSystem::AirControl(JPH::Vec3& velocity, JPH::Vec3 targetDir, JPH::Vec3 movInput, float targetSpeed, float airControl) {
@@ -278,7 +280,7 @@ namespace OxylusRuntime {
 
     const float dot = velocity.Dot(targetDir);
     float k = 32;
-    k *= airControl * dot * dot * Application::GetTimestep();
+    k *= airControl * dot * dot * Application::get_timestep();
 
     // Change direction while slowing down.
     if (dot > 0) {
@@ -327,7 +329,7 @@ namespace OxylusRuntime {
       return;
     }
 
-    float accelspeed = accel * Application::GetTimestep() * targetSpeed;
+    float accelspeed = accel * Application::get_timestep() * targetSpeed;
     if (accelspeed > addspeed) {
       accelspeed = addspeed;
     }

@@ -1,6 +1,7 @@
 #pragma once
 #include "Jolt/Jolt.h"
 JPH_SUPPRESS_WARNING_PUSH
+#include "Jolt/Core/Reference.h"
 #include "Jolt/Core/JobSystemThreadPool.h"
 #include "Jolt/Core/TempAllocator.h"
 #include "Jolt/Physics/PhysicsSystem.h"

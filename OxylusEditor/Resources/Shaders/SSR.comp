@@ -1,4 +1,5 @@
 #version 460 core
+#pragma shader_stage(compute)
 #define EPSILON 0.001
 
 layout(local_size_x = 8, local_size_y = 8, local_size_z = 1) in;
@@ -18,9 +19,9 @@ layout(binding = 5) uniform UBO {
 u_Ubo;
 
 layout(binding = 6) uniform SSRUBO {
-  int Samples;             // default: 30
-  int BinarySearchSamples; // default: 8
-  float MaxDist;           // default: 50
+  int samples;             // default: 30
+  int binary_search_samples; // default: 8
+  float max_dist;           // default: 50
 }
 u_SSRUBO;
 
@@ -31,7 +32,7 @@ vec3 ViewToNDC(vec3 viewPos);
 vec3 NDCToView(vec3 ndc);
 
 vec3 prefilteredReflection(vec3 R, float roughness) {
-  const float MAX_REFLECTION_LOD = 9.0; // todo: param/const
+  const float MAX_REFLECTION_LOD = 9.0;
   float lod = roughness * MAX_REFLECTION_LOD;
   float lodf = floor(lod);
   float lodc = ceil(lod);
@@ -52,8 +53,10 @@ void main() {
   }
 
   vec3 fragPos = NDCToView(vec3(uv, depth) * 2.0 - 1.0);
-  mat3 normalToView = mat3(transpose(inverse(u_Ubo.view)));
-  normalSpec.xyz = normalize(normalToView * normalSpec.xyz);
+
+  // world space to view space conversion for normals
+  // mat3 normalToView = mat3(transpose(inverse(u_Ubo.view)));
+  // normalSpec.xyz = normalize(normalToView * normalSpec.xyz);
 
   vec3 color = SSR(normalSpec.xyz, fragPos, normalSpec.a);
 
@@ -64,11 +67,11 @@ vec3 SSR(vec3 normal, vec3 fragPos, float spec) {
   // Viewpos is origin in view space
   const vec3 VIEW_POS = vec3(0.0);
   vec3 reflectDir = reflect(normalize(fragPos - VIEW_POS), normal);
-  vec3 maxReflectPoint = fragPos + reflectDir * u_SSRUBO.MaxDist;
-  vec3 deltaStep = (maxReflectPoint - fragPos) / u_SSRUBO.Samples;
+  vec3 maxReflectPoint = fragPos + reflectDir * u_SSRUBO.max_dist;
+  vec3 deltaStep = (maxReflectPoint - fragPos) / u_SSRUBO.samples;
 
   vec3 samplePoint = fragPos;
-  for (int i = 0; i < u_SSRUBO.Samples; i++) {
+  for (int i = 0; i < u_SSRUBO.samples; i++) {
     samplePoint += deltaStep;
 
     vec3 projectedSample = ViewToNDC(samplePoint) * 0.5 + 0.5;
@@ -95,7 +98,7 @@ void CustomBinarySearch(vec3 samplePoint, vec3 deltaStep,
   // Go back one step at the beginning because we know we are to far
   deltaStep *= 0.5;
   samplePoint -= deltaStep * 0.5;
-  for (int i = 1; i < u_SSRUBO.BinarySearchSamples; i++) {
+  for (int i = 1; i < u_SSRUBO.binary_search_samples; i++) {
     projectedSample = ViewToNDC(samplePoint) * 0.5 + 0.5;
     float depth = texture(in_Depth, projectedSample.xy).r;
 

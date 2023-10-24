@@ -1,7 +1,8 @@
-﻿#include "PhyiscsInterfaces.h"
+﻿#include "PhysicsInterfaces.h"
 
 #include "PhysicsMaterial.h"
 #include "Scene/Scene.h"
+#include "Utils/Log.h"
 #include "Utils/Profiler.h"
 
 
@@ -60,6 +61,7 @@ void Physics3DBodyActivationListener::OnBodyActivated(const JPH::BodyID& inBodyI
 
   /* Body Activated */
 }
+
 void Physics3DBodyActivationListener::OnBodyDeactivated(const JPH::BodyID& inBodyID, JPH::uint64 inBodyUserData) {
   OX_SCOPED_ZONE;
 
@@ -81,6 +83,7 @@ void Physics3DContactListener::GetFrictionAndRestitution(const JPH::Body& inBody
     outRestitution = phyMaterial->Restitution;
   }
 }
+
 void Physics3DContactListener::OverrideContactSettings(const JPH::Body& inBody1, const JPH::Body& inBody2, const JPH::ContactManifold& inManifold, JPH::ContactSettings& ioSettings) {
   OX_SCOPED_ZONE;
 
@@ -93,7 +96,8 @@ void Physics3DContactListener::OverrideContactSettings(const JPH::Body& inBody1,
   ioSettings.mCombinedFriction = JPH::sqrt(friction1 * friction2);
   ioSettings.mCombinedRestitution = JPH::max(restitution1, restitution2);
 }
-JPH::ValidateResult Physics3DContactListener::OnContactValidate(const JPH::Body &inBody1, const JPH::Body &inBody2, JPH::RVec3Arg inBaseOffset, const JPH::CollideShapeResult &inCollisionResult) {
+
+JPH::ValidateResult Physics3DContactListener::OnContactValidate(const JPH::Body& inBody1, const JPH::Body& inBody2, JPH::RVec3Arg inBaseOffset, const JPH::CollideShapeResult& inCollisionResult) {
   OX_SCOPED_ZONE;
 
   return JPH::ValidateResult::AcceptAllContactsForThisBodyPair;
@@ -104,7 +108,7 @@ void Physics3DContactListener::OnContactAdded(const JPH::Body& inBody1, const JP
 
   OverrideContactSettings(inBody1, inBody2, inManifold, ioSettings);
 
-  m_Scene->OnContactAdded(inBody1, inBody2, inManifold, ioSettings);
+  m_Scene->on_contact_added(inBody1, inBody2, inManifold, ioSettings);
 }
 
 void Physics3DContactListener::OnContactPersisted(const JPH::Body& inBody1, const JPH::Body& inBody2, const JPH::ContactManifold& inManifold, JPH::ContactSettings& ioSettings) {
@@ -112,7 +116,7 @@ void Physics3DContactListener::OnContactPersisted(const JPH::Body& inBody1, cons
 
   OverrideContactSettings(inBody1, inBody2, inManifold, ioSettings);
 
-  m_Scene->OnContactPersisted(inBody1, inBody2, inManifold, ioSettings);
+  m_Scene->on_contact_persisted(inBody1, inBody2, inManifold, ioSettings);
 }
 
 void Physics3DContactListener::OnContactRemoved(const JPH::SubShapeIDPair& inSubShapePair) {

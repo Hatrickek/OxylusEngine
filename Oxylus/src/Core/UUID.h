@@ -4,24 +4,24 @@
 #include <unordered_map>
 
 namespace Oxylus {
-  class UUID {
-  public:
-    UUID();
+class UUID {
+public:
+  UUID();
 
-    UUID(uint64_t uuid);
+  UUID(uint64_t uuid);
 
-    UUID(const UUID&) = default;
+  UUID(const UUID&) = default;
 
-    operator uint64_t() const {
-      return m_UUID;
-    }
+  operator uint64_t() const {
+    return m_UUID;
+  }
 
-  private:
-    uint64_t m_UUID;
-  };
+private:
+  uint64_t m_UUID;
+};
 }
 
-template<>
+template <>
 struct std::hash<Oxylus::UUID> {
   size_t operator()(const Oxylus::UUID& uuid) const noexcept {
     return uuid;

@@ -5,6 +5,6 @@ namespace Oxylus {
   class EditorDebugPanel : public EditorPanel {
   public:
     EditorDebugPanel();
-    void OnImGuiRender() override;
+    void on_imgui_render() override;
   };
 }

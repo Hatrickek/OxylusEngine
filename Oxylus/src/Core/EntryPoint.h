@@ -7,10 +7,10 @@
 int main(int argc, char** argv) {
   Oxylus::Log::Init();
 
-  const auto app = Oxylus::CreateApplication({argc, argv});
+  const auto app = Oxylus::create_application({argc, argv});
 
-  app->InitSystems();
-  app->Run();
+  app->init_systems();
+  app->run();
 
   delete app;
 }

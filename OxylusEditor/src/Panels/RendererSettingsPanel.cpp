@@ -4,14 +4,15 @@
 
 #include "imgui.h"
 #include "Core/Application.h"
+#include "Render/Vulkan/VulkanContext.h"
 #include "Render/Vulkan/VulkanRenderer.h"
 #include "UI/IGUI.h"
 
 namespace Oxylus {
   RendererSettingsPanel::RendererSettingsPanel() : EditorPanel("Renderer Settings", ICON_MDI_GPU, true) { }
 
-  void RendererSettingsPanel::OnImGuiRender() {
-    if (OnBegin()) {
+  void RendererSettingsPanel::on_imgui_render() {
+    if (on_begin()) {
       float avg = 0.0;
 
       const size_t size = m_FrameTimes.size();
@@ -25,44 +26,56 @@ namespace Oxylus {
         avg += frameTime;
       }
       avg /= (float)size;
-      ImGui::Text("FPS: %lf", static_cast<double>(avg));
       const double fps = (1.0 / static_cast<double>(avg)) * 1000.0;
-      ImGui::Text("Frame time (ms): %lf", fps);
+      ImGui::Text("FPS: %lf / (ms): %lf", static_cast<double>(avg), fps);
+      ImGui::Text("GPU: %s", VulkanContext::get()->device_name.c_str());
 
       ImGui::Text("Environment");
-      IGUI::BeginProperties();
+      IGUI::begin_properties();
       const char* tonemaps[4] = {"ACES", "Uncharted2", "Filmic", "Reinhard"};
-      ConfigProperty(IGUI::Property("Tonemapper", RendererConfig::Get()->ColorConfig.Tonemapper, tonemaps, 4));
-      ConfigProperty(IGUI::Property<float>("Exposure", RendererConfig::Get()->ColorConfig.Exposure, 0, 5, "%.2f"));
-      ConfigProperty(IGUI::Property<float>("Gamma", RendererConfig::Get()->ColorConfig.Gamma, 0, 5, "%.2f"));
-      IGUI::EndProperties();
+      ConfigProperty(IGUI::property("Tonemapper", RendererConfig::get()->color_config.tonemapper, tonemaps, 4));
+      ConfigProperty(IGUI::property<float>("Exposure", RendererConfig::get()->color_config.exposure, 0, 5, "%.2f"));
+      ConfigProperty(IGUI::property<float>("Gamma", RendererConfig::get()->color_config.gamma, 0, 5, "%.2f"));
+      IGUI::end_properties();
 
-      ImGui::Text("SSAO");
-      IGUI::BeginProperties();
-      ConfigProperty(IGUI::Property("Enabled", RendererConfig::Get()->SSAOConfig.Enabled));
-      ConfigProperty(IGUI::Property<float>("Radius", RendererConfig::Get()->SSAOConfig.Radius, 0, 1));
-      IGUI::EndProperties();
+      ImGui::Text("GTAO");
+      IGUI::begin_properties();
+      ConfigProperty(IGUI::property("Enabled", RendererConfig::get()->gtao_config.enabled));
+      ConfigProperty(IGUI::property<int>("Denoise Passes", RendererConfig::get()->gtao_config.settings.denoise_passes, 1, 5));
+      ConfigProperty(IGUI::property<float>("Radius", RendererConfig::get()->gtao_config.settings.radius, 0, 1));
+      ConfigProperty(IGUI::property<float>("Radius Multiplier", RendererConfig::get()->gtao_config.settings.radius_multiplier, 0, 5));
+      ConfigProperty(IGUI::property<float>("Falloff Range", RendererConfig::get()->gtao_config.settings.falloff_range, 0, 1));
+      ConfigProperty(IGUI::property<float>("Sample Distribution Power", RendererConfig::get()->gtao_config.settings.sample_distribution_power, 0, 5));
+      ConfigProperty(IGUI::property<float>("Thin Occluder Compensation", RendererConfig::get()->gtao_config.settings.thin_occluder_compensation, 0, 5));
+      ConfigProperty(IGUI::property<float>("Final Value Power", RendererConfig::get()->gtao_config.settings.final_value_power, 0, 5));
+      ConfigProperty(IGUI::property<float>("Depth Mip Sampling Offset", RendererConfig::get()->gtao_config.settings.depth_mip_sampling_offset, 0, 5));
+      IGUI::end_properties();
 
       ImGui::Text("Bloom");
-      IGUI::BeginProperties();
-      ConfigProperty(IGUI::Property("Enabled", RendererConfig::Get()->BloomConfig.Enabled));
-      ConfigProperty(IGUI::Property<float>("Threshold", RendererConfig::Get()->BloomConfig.Threshold, 0, 5));
-      ConfigProperty(IGUI::Property<float>("Clamp", RendererConfig::Get()->BloomConfig.Clamp, 0, 5));
-      IGUI::EndProperties();
+      IGUI::begin_properties();
+      ConfigProperty(IGUI::property("Enabled", RendererConfig::get()->bloom_config.enabled));
+      ConfigProperty(IGUI::property<float>("Threshold", RendererConfig::get()->bloom_config.threshold, 0, 5));
+      ConfigProperty(IGUI::property<float>("Clamp", RendererConfig::get()->bloom_config.clamp, 0, 5));
+      IGUI::end_properties();
 
       ImGui::Text("SSR");
-      IGUI::BeginProperties();
-      ConfigProperty(IGUI::Property("Enabled", RendererConfig::Get()->SSRConfig.Enabled));
-      ConfigProperty(IGUI::Property<>("Samples", RendererConfig::Get()->SSRConfig.Samples, 30, 1024));
-      ConfigProperty(IGUI::Property<>("Max Distance", RendererConfig::Get()->SSRConfig.MaxDist, 50.0f, 500.0f));
-      IGUI::EndProperties();
+      IGUI::begin_properties();
+      ConfigProperty(IGUI::property("Enabled", RendererConfig::get()->ssr_config.enabled));
+      ConfigProperty(IGUI::property("Samples", RendererConfig::get()->ssr_config.samples, 30, 1024));
+      ConfigProperty(IGUI::property("Max Distance", RendererConfig::get()->ssr_config.max_dist, 50.0f, 500.0f));
+      IGUI::end_properties();
 
-      OnEnd();
+      ImGui::Text("FXAA");
+      IGUI::begin_properties();
+      ConfigProperty(IGUI::property("Enabled", RendererConfig::get()->fxaa_config.enabled));
+      IGUI::end_properties();
+
+      on_end();
     }
   }
 
   void RendererSettingsPanel::ConfigProperty(bool value) {
     if (value)
-      RendererConfig::Get()->ConfigChangeDispatcher.trigger(RendererConfig::ConfigChangeEvent{});
+      RendererConfig::get()->dispatch_config_change();
   }
 }

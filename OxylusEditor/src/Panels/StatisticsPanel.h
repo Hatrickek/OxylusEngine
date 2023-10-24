@@ -7,7 +7,7 @@ namespace Oxylus {
   class StatisticsPanel : public EditorPanel {
   public:
     StatisticsPanel();
-    void OnImGuiRender() override;
+    void on_imgui_render() override;
 
   private:
     float m_FpsValues[50] = {};

@@ -1,4 +1,5 @@
 #version 460 core
+#pragma shader_stage(compute)
 #define EPSILON 0.0001
 #define PREFILTER_STAGE 0
 #define DOWNSAMPLE_STAGE 1
@@ -8,117 +9,112 @@
 
 layout(local_size_x = 8, local_size_y = 8, local_size_z = 1) in;
 
-// 0: PBR Image, 1: Downsampled, 2: Upsampled
-layout(binding = 0) uniform sampler2D Samplers[3];
-layout(binding = 1) restrict writeonly uniform image2D DownSampledMips[9];
-layout(binding = 2) restrict writeonly uniform image2D UpSampledMips[8];
+layout(binding = 0) restrict writeonly uniform image2D ImgResult;
+layout(binding = 1) uniform sampler2D SamplerDownsample;
+layout(binding = 2) uniform sampler2D SamplerUpsample;
 
 layout(push_constant, std140) uniform uPC {
   // x: threshold, y: clamp, z: radius, w: unused
   layout(offset = 0) vec4 Params;
   // x: Stage, y: Lod
   layout(offset = 16) ivec2 Stage;
-}
-u_PC;
+};
 
 vec3 Downsample(sampler2D srcTexture, vec2 uv, float lod);
 vec3 Upsample(sampler2D srcTexture, vec2 uv, float lod);
 vec3 Prefilter(vec3 color);
 
-void main() {
-  ivec2 imgCoord = ivec2(gl_GlobalInvocationID.xy);
-  ivec2 imgSize = ivec2(0);
-  if (u_PC.Stage.x == PREFILTER_STAGE) {
-    imgSize = textureSize(Samplers[1], 0);
-  } else if (u_PC.Stage.x == DOWNSAMPLE_STAGE) {
-    imgSize = textureSize(Samplers[1], u_PC.Stage.y + 1);
-  } else if (u_PC.Stage.x == UPSAMPLE_STAGE) {
-    imgSize = textureSize(Samplers[2], u_PC.Stage.y);
-  }
-  if (any(greaterThanEqual(imgCoord, imgSize))) return;
+void main()
+{
+    ivec2 imgCoord = ivec2(gl_GlobalInvocationID.xy);
+    ivec2 imgSize = imageSize(ImgResult);
+    if (any(greaterThanEqual(imgCoord, imgSize)))
+        return;
 
-  vec3 downSampleResult = vec3(0.0);
-  vec3 upSampleResult = vec3(0.0);
-  vec2 uv = (imgCoord + 0.5) / imgSize;
-
-  if (u_PC.Stage.x == PREFILTER_STAGE) {
-    downSampleResult = Downsample(Samplers[0], uv, 0);
-    downSampleResult = Prefilter(downSampleResult);
-    imageStore(DownSampledMips[0], imgCoord, vec4(downSampleResult, 1.0));
-  } else if (u_PC.Stage.x == DOWNSAMPLE_STAGE) {
-    downSampleResult = Downsample(Samplers[1], uv, u_PC.Stage.y);
-    imageStore(DownSampledMips[u_PC.Stage.y + 1], imgCoord, vec4(downSampleResult, 1.0));
-  } else if (u_PC.Stage.x == UPSAMPLE_STAGE) {
-    if (u_PC.Stage.y == 6) {
-      upSampleResult = Upsample(Samplers[1], uv, u_PC.Stage.y) + textureLod(Samplers[1], uv, u_PC.Stage.y).rgb;
-    } else {
-      upSampleResult = Upsample(Samplers[2], uv, u_PC.Stage.y + 1) + textureLod(Samplers[1], uv, u_PC.Stage.y).rgb;
+    vec3 result = vec3(0.0);
+    vec2 uv = (imgCoord + 0.5) / imgSize;
+    
+    if (Stage.x == DOWNSAMPLE_STAGE)
+    {
+        result = Downsample(SamplerDownsample, uv, Stage.y);
+        if (Stage.y == 0)
+        {
+            result = Prefilter(result);
+        }
     }
-    imageStore(UpSampledMips[u_PC.Stage.y], imgCoord, vec4(upSampleResult, 1.0));
-  }
+    else if (Stage.x == UPSAMPLE_STAGE)
+    {
+        result = Upsample(SamplerUpsample, uv, Stage.y) + textureLod(SamplerDownsample, uv, Stage.y).rgb;
+    }
+    // writes to Lod + 1 mip level when downsampling
+    // writes to Lod - 1 mip level when upsampling
+    imageStore(ImgResult, imgCoord, vec4(result, 1.0));
 }
 
-vec3 Downsample(sampler2D src, vec2 uv, float lod) {
-  vec3 center = textureLod(src, uv, lod).rgb;
-  vec3 yellowUpRight = textureLodOffset(src, uv, lod, ivec2(0, 2)).rgb;
-  vec3 yellowDownLeft = textureLodOffset(src, uv, lod, ivec2(-2, 0)).rgb;
-  vec3 greenDownRight = textureLodOffset(src, uv, lod, ivec2(2, 0)).rgb;
-  vec3 blueDownLeft = textureLodOffset(src, uv, lod, ivec2(0, -2)).rgb;
+vec3 Downsample(sampler2D src, vec2 uv, float lod)
+{
+    vec3 center = textureLod(src, uv, lod).rgb;
+    vec3 yellowUpRight  = textureLodOffset(src, uv, lod, ivec2( 0,  2)).rgb;
+    vec3 yellowDownLeft = textureLodOffset(src, uv, lod, ivec2(-2,  0)).rgb;
+    vec3 greenDownRight = textureLodOffset(src, uv, lod, ivec2( 2,  0)).rgb;
+    vec3 blueDownLeft   = textureLodOffset(src, uv, lod, ivec2( 0, -2)).rgb;
 
-  vec3 yellow = textureLodOffset(src, uv, lod, ivec2(-2, 2)).rgb;
-  yellow += yellowUpRight;
-  yellow += center;
-  yellow += yellowDownLeft;
+    vec3 yellow  = textureLodOffset(src, uv, lod, ivec2(-2,  2)).rgb;
+    yellow      += yellowUpRight;
+    yellow      += center;
+    yellow      += yellowDownLeft;
 
-  vec3 green = yellowUpRight;
-  green += textureLodOffset(src, uv, lod, ivec2(2, 2)).rgb;
-  green += greenDownRight;
-  green += center;
+    vec3 green = yellowUpRight;
+    green     += textureLodOffset(src, uv, lod, ivec2( 2,  2)).rgb;
+    green     += greenDownRight;
+    green     += center;
 
-  vec3 blue = center;
-  blue += greenDownRight;
-  blue += textureLodOffset(src, uv, lod, ivec2(2, -2)).rgb;
-  blue += blueDownLeft;
+    vec3 blue = center;
+    blue     += greenDownRight;
+    blue     += textureLodOffset(src, uv, lod, ivec2( 2, -2)).rgb;
+    blue     += blueDownLeft;
 
-  vec3 lila = yellowDownLeft;
-  lila += center;
-  lila += blueDownLeft;
-  lila += textureLodOffset(src, uv, lod, ivec2(-2, -2)).rgb;
+    vec3 lila  = yellowDownLeft;
+    lila      += center;
+    lila      += blueDownLeft;
+    lila      += textureLodOffset(src, uv, lod, ivec2(-2, -2)).rgb;
 
-  vec3 red = textureLodOffset(src, uv, lod, ivec2(-1, 1)).rgb;
-  red += textureLodOffset(src, uv, lod, ivec2(1, 1)).rgb;
-  red += textureLodOffset(src, uv, lod, ivec2(1, -1)).rgb;
-  red += textureLodOffset(src, uv, lod, ivec2(-1, -1)).rgb;
+    vec3 red = textureLodOffset(src, uv, lod, ivec2(-1,  1)).rgb;
+    red     += textureLodOffset(src, uv, lod, ivec2( 1,  1)).rgb;
+    red     += textureLodOffset(src, uv, lod, ivec2( 1, -1)).rgb;
+    red     += textureLodOffset(src, uv, lod, ivec2(-1, -1)).rgb;
 
-  return (red * 0.5 + (yellow + green + blue + lila) * 0.125) * 0.25;
+    return (red * 0.5 + (yellow + green + blue + lila) * 0.125) * 0.25;
 }
 
-vec3 Upsample(sampler2D src, vec2 uv, float lod) {
-  vec3 result = textureLodOffset(src, uv, lod, ivec2(-1.0, 1.0)).rgb * 1.0;
-  result += textureLodOffset(src, uv, lod, ivec2(0.0, 1.0)).rgb * 2.0;
-  result += textureLodOffset(src, uv, lod, ivec2(1.0, 1.0)).rgb * 1.0;
+vec3 Upsample(sampler2D src, vec2 uv, float lod)
+{
+    vec3 result = textureLodOffset(src, uv, lod, ivec2(-1.0, 1.0)).rgb * 1.0;
+    result     += textureLodOffset(src, uv, lod, ivec2( 0.0, 1.0)).rgb * 2.0;
+    result     += textureLodOffset(src, uv, lod, ivec2( 1.0, 1.0)).rgb * 1.0;
 
-  result += textureLodOffset(src, uv, lod, ivec2(-1.0, 0.0)).rgb * 2.0;
-  result += textureLod(src, uv, lod).rgb * 4.0;
-  result += textureLodOffset(src, uv, lod, ivec2(1.0, 0.0)).rgb * 2.0;
+    result     += textureLodOffset(src, uv, lod, ivec2(-1.0, 0.0)).rgb * 2.0;
+    result     += textureLod(src, uv, lod).rgb * 4.0;
+    result     += textureLodOffset(src, uv, lod, ivec2( 1.0, 0.0)).rgb * 2.0;
+    
+    result     += textureLodOffset(src, uv, lod, ivec2(-1.0, -1.0)).rgb * 1.0;
+    result     += textureLodOffset(src, uv, lod, ivec2( 0.0, -1.0)).rgb * 2.0;
+    result     += textureLodOffset(src, uv, lod, ivec2( 1.0, -1.0)).rgb * 1.0;
 
-  result += textureLodOffset(src, uv, lod, ivec2(-1.0, -1.0)).rgb * 1.0;
-  result += textureLodOffset(src, uv, lod, ivec2(0.0, -1.0)).rgb * 2.0;
-  result += textureLodOffset(src, uv, lod, ivec2(1.0, -1.0)).rgb * 1.0;
-
-  return result / 16.0;
+    return result / 16.0;
 }
 
-vec3 Prefilter(vec3 color) {
-  const float Knee = 0.2;
-  color = min(vec3(u_PC.Params.y), color);
+vec3 Prefilter(vec3 color)
+{
+    const float Knee = 0.2;
+    color = min(vec3(Params.y), color);
 
-  float brightness = max(max(color.r, color.g), color.b);
+    float brightness = max(max(color.r, color.g), color.b);
 
-  vec3 curve = vec3(u_PC.Params.x - Knee, Knee * 2.0, 0.25 / Knee);
-  float rq = clamp(brightness - curve.x, 0.0, curve.y);
-  rq = (rq * rq) * curve.z;
-  color *= max(rq, brightness - u_PC.Params.x) / max(brightness, EPSILON);
-
-  return color;
+    vec3 curve = vec3(Params.x - Knee, Knee * 2.0, 0.25 / Knee);
+    float rq = clamp(brightness - curve.x, 0.0, curve.y);
+    rq = (rq * rq) * curve.z;
+    color *= max(rq, brightness - Params.x) / max(brightness, EPSILON);
+    
+    return color;
 }

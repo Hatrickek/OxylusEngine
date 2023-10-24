@@ -10,22 +10,11 @@ add_executable(${PROJECT_NAME} ${ALL_FILES})
 
 set(ROOT_NAMESPACE OxylusRuntime)
 
-set_target_properties(${PROJECT_NAME} PROPERTIES
-    VS_GLOBAL_KEYWORD "Win32Proj"
-)
-
 # Target name
 set_target_properties(${PROJECT_NAME} PROPERTIES
     TARGET_NAME_DEBUG   "OxylusRuntime"
     TARGET_NAME_RELEASE "OxylusRuntime"
     TARGET_NAME_Distribution    "OxylusRuntime"
-)
-
-# Output directory
-set_target_properties(${PROJECT_NAME} PROPERTIES
-    OUTPUT_DIRECTORY_DEBUG   "${CMAKE_CURRENT_SOURCE_DIR}/../bin/Debug-windows-x86_64/OxylusRuntime/"
-    OUTPUT_DIRECTORY_RELEASE "${CMAKE_CURRENT_SOURCE_DIR}/../bin/Release-windows-x86_64/OxylusRuntime/"
-    OUTPUT_DIRECTORY_Distribution    "${CMAKE_CURRENT_SOURCE_DIR}/../bin/Distribution-windows-x86_64/OxylusRuntime/"
 )
 
 # MSVC OxylusRuntime library
@@ -69,66 +58,22 @@ target_compile_definitions(${PROJECT_NAME} PRIVATE
     "$<$<CONFIG:Debug>:"
         "OX_DEBUG;"
         "_DEBUG;"
-        "TRACY_ENABLE"
     ">"
     "$<$<CONFIG:Release>:"
         "OX_RELEASE;"
         "NDEBUG;"
-        "TRACY_ENABLE"
     ">"
     "$<$<CONFIG:Distribution>:"
         "OX_DISTRIBUTION;"
         "NDEBUG"
     ">"
-    "_HAS_EXCEPTIONS=0;"
-    "UNICODE;"
-    "_UNICODE"
 )
 
 # Compile and link options
 if(MSVC)
-    target_compile_options(${PROJECT_NAME} PRIVATE
-        $<$<CONFIG:Debug>:
-            /Od;
-            /Zi
-        >
-        $<$<CONFIG:Release>:
-            /Ox;
-            /Oi;
-            /GF;
-            /Gy;
-            /Zi;
-            ${DEFAULT_CXX_DEBUG_INFORMATION_FORMAT}
-        >
-        $<$<CONFIG:Distribution>:
-            /Ox;
-            /Oi;
-            /GF;
-            /Gy;
-            ${DEFAULT_CXX_DEBUG_INFORMATION_FORMAT}
-        >
-        /MP;
-        /std:c++latest;
-        /Gm-;
-        /W3;
-        /Y-
-    )
-    target_link_options(${PROJECT_NAME} PRIVATE
-        $<$<CONFIG:Debug>:
-            /DEBUG;
-        >
-        $<$<CONFIG:Release>:
-            /DEBUG;
-            /OPT:REF;
-            /OPT:ICF;
-        >
-        $<$<CONFIG:Distribution>:
-            /OPT:REF;
-            /OPT:ICF;
-        >
-        /SUBSYSTEM:CONSOLE
-    )
-    set(CMAKE_SHARED_LINKER_FLAGS_DISTRIBUTION ${CMAKE_SHARED_LINKER_FLAGS})
+    target_compile_options(${PROJECT_NAME} PRIVATE PRIVATE /std:c++20 /permissive-)
+    target_link_options(${PROJECT_NAME} PRIVATE PRIVATE /DEBUG:FULL)
+	set(CMAKE_SHARED_LINKER_FLAGS_DISTRIBUTION ${CMAKE_SHARED_LINKER_FLAGS})
     set(CMAKE_EXE_LINKER_FLAGS_DISTRIBUTION ${CMAKE_EXE_LINKER_FLAGS})
 endif()
 

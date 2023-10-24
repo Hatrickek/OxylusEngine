@@ -7,6 +7,6 @@ namespace Oxylus {
   public:
     ShadersPanel();
     ~ShadersPanel() override = default;
-    void OnImGuiRender() override;
+    void on_imgui_render() override;
   };
 }

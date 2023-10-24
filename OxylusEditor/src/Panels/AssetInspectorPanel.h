@@ -1,8 +1,7 @@
 ﻿#pragma once
 
-#include <Assets/Assets.h>
-
 #include "EditorPanel.h"
+#include "Core/Base.h"
 
 namespace Oxylus {
   class Material;
@@ -10,8 +9,8 @@ namespace Oxylus {
   class AssetInspectorPanel : public EditorPanel {
   public:
     AssetInspectorPanel();
-    void OnUpdate() override;
-    void OnImGuiRender() override;
+    void on_update() override;
+    void on_imgui_render() override;
 
   private:
     void DrawMaterialAsset(const std::string* path);

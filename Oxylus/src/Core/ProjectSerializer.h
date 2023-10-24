@@ -4,14 +4,14 @@
 #include "Base.h"
 
 namespace Oxylus {
-  class ProjectSerializer {
-  public:
-    ProjectSerializer(Ref <Project> project);
+class ProjectSerializer {
+public:
+  ProjectSerializer(Ref<Project> project);
 
-    bool Serialize(const std::filesystem::path& filePath) const;
-    bool Deserialize(const std::filesystem::path& filePath) const;
+  bool Serialize(const std::filesystem::path& filePath) const;
+  bool Deserialize(const std::filesystem::path& filePath) const;
 
-  private:
-    Ref <Project> m_Project;
-  };
+private:
+  Ref<Project> m_Project;
+};
 }

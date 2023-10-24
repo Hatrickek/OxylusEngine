@@ -11,35 +11,37 @@
 #include "Utils/UIUtils.h"
 
 namespace Oxylus {
-  Core::RenderBackend Core::s_Backend = RenderBackend::Vulkan;
-
-  bool Core::Init(const AppSpec& spec) {
-    OX_SCOPED_ZONE;
-    if (!Resources::ResourcesPathExists()) {
-      OX_CORE_FATAL("Resources path doesn't exists. Make sure the working directory is correct!");
-      Application::Get()->Close();
-      return false;
-    }
-
-    FileDialogs::InitNFD();
-    Project::New();
-    Window::InitWindow(spec);
-    VulkanContext::CreateContext(spec);
-    VulkanRenderer::Init();
-    Input::Init();
-    AudioEngine::Init();
-
-    return true;
+bool Core::init(const AppSpec& spec) {
+  OX_SCOPED_ZONE;
+  if (!Resources::resources_path_exists()) {
+    OX_CORE_FATAL("Resources path doesn't exists. Make sure the working directory is correct!");
+    Application::get()->close();
+    return false;
   }
 
-  void Core::Shutdown() {
-    FileDialogs::CloseNFD();
-    VulkanRenderer::WaitDeviceIdle();
-    VulkanRenderer::Shutdown();
-    AudioEngine::Shutdown();
+  FileDialogs::InitNFD();
+  Project::New();
+  Window::init_window(spec);
 
-    ThreadManager::Get()->WaitAllThreads();
+  VulkanContext::init();
+  VulkanContext::get()->create_context(spec);
+  VulkanRenderer::init();
 
-    Window::CloseWindow(Window::GetGLFWWindow());
-  }
+  Input::Init();
+  AudioEngine::Init();
+
+  return true;
+}
+
+void Core::shutdown() {
+  FileDialogs::CloseNFD();
+
+  VulkanRenderer::shutdown();
+
+  AudioEngine::Shutdown();
+
+  ThreadManager::get()->wait_all_threads();
+
+  Window::close_window(Window::get_glfw_window());
+}
 }

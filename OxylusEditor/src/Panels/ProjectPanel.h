@@ -8,8 +8,8 @@ namespace Oxylus {
     ProjectPanel();
     ~ProjectPanel() override = default;
 
-    void OnUpdate() override;
-    void OnImGuiRender() override;
+    void on_update() override;
+    void on_imgui_render() override;
   private:
     void LoadProjectForEditor(const std::string& filepath);
   };

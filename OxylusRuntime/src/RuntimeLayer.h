@@ -13,26 +13,25 @@ namespace OxylusRuntime {
   public:
     RuntimeLayer();
     ~RuntimeLayer() override;
-    void OnAttach(Oxylus::EventDispatcher& dispatcher) override;
-    void OnDetach() override;
-    void OnUpdate(Oxylus::Timestep deltaTime) override;
-    void OnImGuiRender() override;
+    void on_attach(Oxylus::EventDispatcher& dispatcher) override;
+    void on_detach() override;
+    void on_update(Oxylus::Timestep deltaTime) override;
+    void on_imgui_render() override;
 
     static RuntimeLayer* Get() { return s_Instance; }
 
-    static std::string GetAssetsPath(const std::string_view path) {
+    static std::string get_assets_path(const std::string_view path) {
       return (std::filesystem::path(ProjectPath) / "Assets" / path).string();
     }
 
   private:
     void LoadScene();
     bool OnSceneReload(Oxylus::ReloadSceneEvent& e);
-    void RenderFinalImage() const;
 
   private:
     Oxylus::EventDispatcher m_Dispatcher;
     static RuntimeLayer* s_Instance;
-    Oxylus::Ref<Oxylus::Scene> m_Scene;
+    Oxylus::Ref<Oxylus::Scene> scene;
     Oxylus::Entity m_CameraEntity;
   };
 }

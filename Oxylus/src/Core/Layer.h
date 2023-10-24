@@ -4,21 +4,25 @@
 #include <Event/Event.h>
 
 #include "Utils/Timestep.h"
+#include "Keycodes.h"
 
 namespace Oxylus {
-  class Layer {
-  public:
-    Layer(const std::string& name = "Layer");
-    virtual ~Layer() = default;
-    
-    virtual void OnAttach(EventDispatcher& dispatcher) { }
-    virtual void OnDetach() { }
-    virtual void OnUpdate(Timestep deltaTime) { }
-    virtual void OnImGuiRender() { }
+class Layer {
+public:
+  Layer(const std::string& name = "Layer");
+  virtual ~Layer() = default;
 
-    const std::string& GetName() const { return m_DebugName; }
+  virtual void on_attach(EventDispatcher& dispatcher) { }
+  virtual void on_detach() { }
+  virtual void on_update(Timestep delta_time) { }
+  virtual void on_imgui_render() { }
 
-  protected:
-    std::string m_DebugName;
-  };
+  virtual void on_key_pressed(KeyCode key) {}
+  virtual void on_key_released(KeyCode key) {}
+
+  const std::string& get_name() const { return debug_name; }
+
+protected:
+  std::string debug_name;
+};
 }

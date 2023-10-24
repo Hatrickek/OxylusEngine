@@ -1,14 +1,14 @@
 #version 450
+#pragma shader_stage(fragment)
 
 layout(location = 0) in vec3 inPos;
 layout(location = 0) out vec4 outColor;
 
-layout(binding = 0) uniform samplerCube samplerEnv;
+layout(set = 1, binding = 0) uniform samplerCube samplerEnv;
 
 layout(push_constant) uniform PushConsts {
-  layout(offset = 0)  mat4 mvp; 
-  layout(offset = 64) float roughness;
-  layout(offset = 68) uint numSamples;
+  layout(offset = 0) float roughness;
+  layout(offset = 4) uint numSamples;
 }
 consts;
 
@@ -89,8 +89,7 @@ vec3 prefilterEnvMap(vec3 R, float roughness) {
       // Solid angle of 1 pixel across all cube faces
       float omegaP = 4.0 * PI / (6.0 * envMapDim * envMapDim);
       // Biased (+1.0) mip level for better result
-      float mipLevel =
-          roughness == 0.0 ? 0.0 : max(0.5 * log2(omegaS / omegaP) + 1.0, 0.0f);
+      float mipLevel = roughness == 0.0 ? 0.0 : max(0.5 * log2(omegaS / omegaP) + 1.0, 0.0f);
       color += textureLod(samplerEnv, L, mipLevel).rgb * dotNL;
       totalWeight += dotNL;
     }

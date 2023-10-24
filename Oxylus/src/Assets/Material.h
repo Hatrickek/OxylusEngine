@@ -1,67 +1,66 @@
 #pragma once
 
+#include <string>
+
+#include "TextureAsset.h"
 #include "glm/vec4.hpp"
 #include "Core/Base.h"
-#include "Render/Vulkan/VulkanDescriptorSet.h"
-#include "Render/Vulkan/VulkanImage.h"
-#include "Render/Vulkan/VulkanShader.h"
+#include "Core/Types.h"
+
+namespace vuk {
+class CommandBuffer;
+struct Texture;
+}
 
 namespace Oxylus {
-  class Material {
-  public:
-    enum class AlphaMode {
-      Opaque = 0,
-      Mask,
-      Blend
-    } AlphaMode = AlphaMode::Opaque;
-
-    struct Parameters {
-      Vec4 Color = Vec4(1.0f);
-      Vec4 Emmisive = Vec4(0);
-      float Roughness = 1.0f;
-      float Metallic = 0.0f;
-      float Specular = 0.0f;
-      float Normal = 1.0f;
-      float AO = 1.0f;
-      GLSL_BOOL UseAlbedo = false;
-      GLSL_BOOL UseRoughness = false;
-      GLSL_BOOL UseMetallic = false;
-      GLSL_BOOL UseNormal = false;
-      GLSL_BOOL UseAO = false;
-      GLSL_BOOL UseEmissive = false;
-      GLSL_BOOL UseSpecular = false;
-      GLSL_BOOL FlipImage = false;
-      float AlphaCutoff = 1;
-      GLSL_BOOL DoubleSided = false;
-      uint32_t UVScale = 1;
-    } Parameters;
-
-    std::string Name = "Material";
-    std::string Path{};
-
-    static VulkanDescriptorSet s_DescriptorSet;
-    VulkanDescriptorSet MaterialDescriptorSet;
-    VulkanDescriptorSet DepthDescriptorSet;
-    Ref<VulkanShader> Shader = nullptr;
-    Ref<VulkanImage> AlbedoTexture = nullptr;
-    Ref<VulkanImage> NormalTexture = nullptr;
-    Ref<VulkanImage> RoughnessTexture = nullptr;
-    Ref<VulkanImage> MetallicTexture = nullptr;
-    Ref<VulkanImage> AOTexture = nullptr;
-    Ref<VulkanImage> EmissiveTexture = nullptr;
-    Ref<VulkanImage> SpecularTexture = nullptr;
-    Ref<VulkanImage> DiffuseTexture = nullptr;
-
-    Material() = default;
-    ~Material();
-
-    void Create(const std::string& name = "Material");
-    bool IsOpaque() const;
-    void Update();
-    void Destroy();
-  private:
-    Ref<VulkanShader> m_Shader = nullptr;
-
-    void ClearTextures();
+class Material {
+public:
+  enum class AlphaMode : uint32_t {
+    Opaque = 0,
+    Blend,
+    Mask,
   };
+
+  struct Parameters {
+    Vec4 color = Vec4(1.0f);
+    Vec4 emmisive = Vec4(0);
+    float roughness = 1.0f;
+    float metallic = 0.0f;
+    float specular = 0.0f;
+    float normal = 1.0f;
+    float ao = 1.0f;
+    GLSL_BOOL use_albedo = false;
+    GLSL_BOOL use_physical_map = false;
+    GLSL_BOOL use_normal = false;
+    GLSL_BOOL use_ao = false;
+    GLSL_BOOL use_emissive = false;
+    GLSL_BOOL use_specular = false;
+    float alpha_cutoff = 0.5f;
+    GLSL_BOOL double_sided = false;
+    uint32_t uv_scale = 1;
+    uint32_t alpha_mode = (uint32_t)AlphaMode::Opaque;
+    uint32_t _pad;
+  } parameters;
+
+  std::string name = "Material";
+  std::string path{};
+
+  Ref<TextureAsset> albedo_texture = nullptr;
+  Ref<TextureAsset> normal_texture = nullptr;
+  Ref<TextureAsset> metallic_roughness_texture = nullptr;
+  Ref<TextureAsset> ao_texture = nullptr;
+  Ref<TextureAsset> emissive_texture = nullptr;
+  Ref<TextureAsset> specular_texture = nullptr;
+
+  Material() = default;
+  ~Material();
+
+  void create(const std::string& material_name = "Material");
+  void bind_textures(vuk::CommandBuffer& command_buffer) const;
+  void reset();
+  void destroy();
+
+  bool is_opaque() const;
+  const char* alpha_mode_to_string() const;
+};
 }

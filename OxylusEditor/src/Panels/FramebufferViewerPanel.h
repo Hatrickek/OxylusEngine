@@ -11,9 +11,9 @@ namespace Oxylus {
   public:
     FramebufferViewerPanel();
 
-    void OnImGuiRender() override;
+    void on_imgui_render() override;
 
   private:
-    void DrawViewer(vk::DescriptorSet imageDescriptorSet) const;
+    void DrawViewer(void* imageDescriptorSet) const;
   };
 }

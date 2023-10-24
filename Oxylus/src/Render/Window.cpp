@@ -1,99 +1,99 @@
 #include "Window.h"
 
-#include "Core/EmbeddedResources.h"
+#include "Core/EmbeddedLogo.h"
 #include "Utils/Log.h"
 
 #include "tinygltf/stb_image.h"
 #include "Vulkan/VulkanRenderer.h"
 
 namespace Oxylus {
-  Window::WindowData Window::s_WindowData;
-  GLFWwindow* Window::s_WindowHandle;
+Window::WindowData Window::s_window_data;
+GLFWwindow* Window::s_window_handle;
 
-  void Window::InitWindow(const AppSpec& spec) {
-    switch (spec.Backend) {
-      case Core::RenderBackend::Vulkan: InitVulkanWindow(spec);
-        break;
-    }
+void Window::init_window(const AppSpec& spec) {
+  init_vulkan_window(spec);
+}
+
+void Window::init_vulkan_window(const AppSpec& spec) {
+  glfwInit();
+
+  glfwWindowHint(GLFW_CLIENT_API, GLFW_NO_API);
+  if (spec.custom_window_title)
+    glfwWindowHint(GLFW_DECORATED, GLFW_FALSE);
+  s_window_handle = glfwCreateWindow(1600, 900, spec.name.c_str(), nullptr, nullptr);
+
+  //Load file icon
+  {
+    int width, height, channels;
+    const auto imageData = stbi_load_from_memory(EngineLogo, (int)EngineLogoLen, &width, &height, &channels, 4);
+    const GLFWimage windowIcon{.width = 40, .height = 40, .pixels = imageData,};
+    glfwSetWindowIcon(s_window_handle, 1, &windowIcon);
+    stbi_image_free(imageData);
   }
-
-  void Window::InitVulkanWindow(const AppSpec& spec) {
-    glfwInit();
-
-    glfwWindowHint(GLFW_CLIENT_API, GLFW_NO_API);
-    if (spec.CustomWindowTitle)
-      glfwWindowHint(GLFW_DECORATED, GLFW_FALSE);
-    s_WindowHandle = glfwCreateWindow((int)GetWidth(), (int)GetHeight(), spec.Name.c_str(), nullptr, nullptr);
-    glfwSetWindowUserPointer(s_WindowHandle, &s_WindowData);
-
-    //Load file icon
-    {
-      int width, height, channels;
-      const auto imageData = stbi_load_from_memory(EngineLogo, (int)EngineLogoLen, &width, &height, &channels, 4);
-      const GLFWimage windowIcon{.width = 40, .height = 40, .pixels = imageData,};
-      glfwSetWindowIcon(s_WindowHandle, 1, &windowIcon);
-      stbi_image_free(imageData);
-    }
-    if (s_WindowHandle == nullptr) {
-      OX_CORE_FATAL("Failed to create GLFW WindowHandle");
-      glfwTerminate();
-    }
-    glfwSetWindowCloseCallback(s_WindowHandle, CloseWindow);
-    glfwSetFramebufferSizeCallback(s_WindowHandle,
-      [](GLFWwindow*, int width, int height) {
-        s_WindowData.ScreenExtent.width = width;
-        s_WindowData.ScreenExtent.height = height;
-        OnResize();
-      });
-    OnResize();
-  }
-
-  void Window::OnResize() {
-    VulkanRenderer::OnResize();
-  }
-
-  void Window::UpdateWindow() {
-    glfwPollEvents();
-    //glfwWaitEvents();
-  }
-
-  void Window::CloseWindow(GLFWwindow*) {
-    Application::Get()->Close();
+  if (s_window_handle == nullptr) {
+    OX_CORE_FATAL("Failed to create GLFW WindowHandle");
     glfwTerminate();
   }
+  glfwSetWindowCloseCallback(s_window_handle, close_window);
+}
 
-  GLFWwindow* Window::GetGLFWWindow() {
-    if (s_WindowHandle == nullptr) {
-      OX_CORE_FATAL("Glfw WindowHandle is nullptr. Did you call InitWindow() ?");
-    }
-    return s_WindowHandle;
-  }
+void Window::update_window() {
+  glfwPollEvents();
+}
 
-  bool Window::IsFocused() {
-    return glfwGetWindowAttrib(GetGLFWWindow(), GLFW_FOCUSED);
-  }
+void Window::close_window(GLFWwindow*) {
+  Application::get()->close();
+  glfwTerminate();
+}
 
-  bool Window::IsMinimized() {
-    return glfwGetWindowAttrib(GetGLFWWindow(), GLFW_ICONIFIED);
-  }
+void Window::set_window_user_data(void* data) {
+  glfwSetWindowUserPointer(get_glfw_window(), data);
+}
 
-  void Window::Minimize() {
-    glfwIconifyWindow(s_WindowHandle);
+GLFWwindow* Window::get_glfw_window() {
+  if (s_window_handle == nullptr) {
+    OX_CORE_FATAL("Glfw WindowHandle is nullptr. Did you call InitWindow() ?");
   }
+  return s_window_handle;
+}
 
-  void Window::Maximize() {
-    glfwMaximizeWindow(s_WindowHandle);
-  }
+uint32_t Window::get_width() {
+  int width, height;
+  glfwGetWindowSize(s_window_handle, &width, &height);
+  return (uint32_t)width;
+}
 
-  bool Window::IsMaximized() {
-    return glfwGetWindowAttrib(s_WindowHandle, GLFW_MAXIMIZED);
-  }
+uint32_t Window::get_height() {
+  int width, height;
+  glfwGetWindowSize(s_window_handle, &width, &height);
+  return (uint32_t)height;
+}
 
-  void Window::Restore() {
-    glfwRestoreWindow(s_WindowHandle);
-  }
+bool Window::is_focused() {
+  return glfwGetWindowAttrib(get_glfw_window(), GLFW_FOCUSED);
+}
 
-  void Window::WaitForEvents() {
-    glfwWaitEvents();
-  }
+bool Window::is_minimized() {
+  return glfwGetWindowAttrib(get_glfw_window(), GLFW_ICONIFIED);
+}
+
+void Window::minimize() {
+  glfwIconifyWindow(s_window_handle);
+}
+
+void Window::maximize() {
+  glfwMaximizeWindow(s_window_handle);
+}
+
+bool Window::is_maximized() {
+  return glfwGetWindowAttrib(s_window_handle, GLFW_MAXIMIZED);
+}
+
+void Window::restore() {
+  glfwRestoreWindow(s_window_handle);
+}
+
+void Window::wait_for_events() {
+  glfwWaitEvents();
+}
 }

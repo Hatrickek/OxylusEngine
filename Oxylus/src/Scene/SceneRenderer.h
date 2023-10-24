@@ -1,31 +1,22 @@
 ﻿#pragma once
+#include "Core/Components.h"
 #include "Event/Event.h"
-#include "Render/RenderPipeline.h"
-#include "Render/Vulkan/VulkanImage.h"
 
 namespace Oxylus {
-  class Scene;
+class RenderPipeline;
+class Scene;
 
-  class SceneRenderer {
-  public:
-    struct SkyboxLoadEvent {
-      Ref<VulkanImage> CubeMap = nullptr;
-    };
+class SceneRenderer {
+public:
+  SceneRenderer() = default;
+  ~SceneRenderer() = default;
 
-    struct ProbeChangeEvent {};
+  EventDispatcher dispatcher;
+  void init(Scene* scene);
 
-    EventDispatcher Dispatcher;
+  Ref<RenderPipeline> get_render_pipeline() const { return m_RenderPipeline; }
 
-    SceneRenderer() = default;
-    ~SceneRenderer() = default;
-
-    void Init(Scene* scene);
-    void Render() const;
-
-    Ref<RenderPipeline> GetRenderPipeline() const { return m_RenderPipeline; }
-
-  private:
-    Ref<RenderPipeline> m_RenderPipeline = nullptr;
-    Scene* m_Scene = nullptr;
-  };
+private:
+  Ref<RenderPipeline> m_RenderPipeline = nullptr;
+};
 }

@@ -1,44 +1,36 @@
 #pragma once
 #include "Core/Input.h"
 #include "Core/Application.h"
+#include "Core/Types.h"
 
 namespace Oxylus {
-  class Window {
-  public:
-    static void InitWindow(const AppSpec& spec);
-    static void UpdateWindow();
-    static void CloseWindow(GLFWwindow* window);
-    static void OnResize();
-    static GLFWwindow* GetGLFWWindow();
+class Window {
+public:
+  static void init_window(const AppSpec& spec);
+  static void update_window();
+  static void close_window(GLFWwindow* window);
 
-    static uint32_t GetWidth() {
-      return s_WindowData.ScreenExtent.width;
-    }
+  static void set_window_user_data(void* data);
 
-    static uint32_t GetHeight() {
-      return s_WindowData.ScreenExtent.height;
-    }
+  static GLFWwindow* get_glfw_window();
+  static uint32_t get_width();
+  static uint32_t get_height();
 
-    static vk::Extent2D& GetWindowExtent() {
-      return s_WindowData.ScreenExtent;
-    }
+  static bool is_focused();
+  static bool is_minimized();
+  static void minimize();
+  static void maximize();
+  static bool is_maximized();
+  static void restore();
 
-    static bool IsFocused();
-    static bool IsMinimized();
-    static void Minimize();
-    static void Maximize();
-    static bool IsMaximized();
-    static void Restore();
+  static void wait_for_events();
 
-    static void WaitForEvents();
+private:
+  static struct WindowData {
+    bool is_over_title_bar = false;
+  } s_window_data;
 
-  private:
-    static struct WindowData {
-      vk::Extent2D ScreenExtent = {1600, 900};
-      bool IsOverTitleBar = false;
-    } s_WindowData;
-
-    static void InitVulkanWindow(const AppSpec& spec);
-    static GLFWwindow* s_WindowHandle;
-  };
+  static void init_vulkan_window(const AppSpec& spec);
+  static GLFWwindow* s_window_handle;
+};
 }

@@ -1,15 +1,17 @@
 #pragma once
 
-#include <tracy/Tracy.hpp>
-#include <vulkan/vulkan.hpp>
-#include <tracy/TracyVulkan.hpp>
-
-#include <chrono>
+#include <vuk/Types.hpp>
 
 // Profilers 
-#define GPU_PROFILER_ENABLED 0
-#define CPU_PROFILER_ENABLED 0
+#define GPU_PROFILER_ENABLED 1
+#define CPU_PROFILER_ENABLED 1
 #define MEMORY_PROFILER_ENABLED 0
+
+#define TRACY_VK_USE_SYMBOL_TABLE
+
+#include <tracy/Tracy.hpp>
+#include <vulkan/vulkan.h>
+#include <tracy/TracyVulkan.hpp>
 
 #ifdef OX_DISTRIBUTION
 #undef GPU_PROFILER_ENABLED
@@ -17,9 +19,9 @@
 #endif
 
 #if GPU_PROFILER_ENABLED
-#define OX_TRACE_GPU(cmdbuf, name) TracyVkZone(Oxylus::TracyProfiler::GetContext(), cmdbuf, name)
+#define OX_TRACE_GPU_TRANSIENT(context, cmdbuf, name) TracyVkZoneTransient(context, , cmdbuf, name, true) 
 #else
-#define OX_TRACE_GPU(cmdbuf, name)
+#define OX_TRACE_GPU_TRANSIENT(cmdbuf, name)
 #endif
 
 #ifdef OX_DISTRIBUTION
@@ -29,7 +31,7 @@
 
 #if CPU_PROFILER_ENABLED
 #define OX_SCOPED_ZONE ZoneScoped
-#define OX_SCOPED_ZONE_N(name) OX_SCOPED_ZONE_N(name)
+#define OX_SCOPED_ZONE_N(name) ZoneScopedN(name)
 #else
 #define OX_SCOPED_ZONE
 #define OX_SCOPED_ZONE_N(name) 
@@ -49,42 +51,48 @@
 #endif
 
 namespace Oxylus {
-  class TracyProfiler {
-  public:
-    static void InitTracyForVulkan(VkPhysicalDevice physdev, VkDevice device, VkQueue queue, VkCommandBuffer cmdbuf);
+class VulkanContext;
 
-    static void DestroyContext();
+class TracyProfiler {
+public:
 
-    static void Collect(const vk::CommandBuffer& commandBuffer);
+  TracyProfiler() = default;
+  ~TracyProfiler();
 
-    static TracyVkCtx& GetContext() { return s_VulkanContext; }
+  void init_tracy_for_vulkan(VulkanContext* context);
+  void destroy_context() const;
+  void collect(tracy::VkCtx* ctx, const VkCommandBuffer& command_buffer);
 
-  private:
-    static TracyVkCtx s_VulkanContext;
-  };
+  tracy::VkCtx* get_graphics_ctx() const { return tracy_graphics_ctx; }
+  tracy::VkCtx* get_transfer_ctx() const { return tracy_transfer_ctx; }
 
-  using FloatingPointMicroseconds = std::chrono::duration<double, std::micro>;
+private:
+  tracy::VkCtx* tracy_graphics_ctx;
+  tracy::VkCtx* tracy_transfer_ctx;
+  vuk::Unique<vuk::CommandPool> tracy_cpool;
+  vuk::Unique<vuk::CommandBufferAllocation> tracy_cbufai;
+};
 
-  class ProfilerTimer {
-  public:
-    ProfilerTimer(const char* name = "");
+using FloatingPointMicroseconds = std::chrono::duration<double, std::micro>;
 
-    ~ProfilerTimer();
+class ProfilerTimer {
+public:
+  ProfilerTimer(const char* name = "");
 
-    double ElapsedMilliSeconds() const;
+  ~ProfilerTimer();
 
-    double ElapsedMicroSeconds() const;
+  double ElapsedMilliSeconds() const;
 
-    void Stop();
+  double ElapsedMicroSeconds() const;
 
-    void Reset();
+  void Stop();
 
-    void Print(const std::string_view arg = "");
+  void Reset();
 
-  private:
-    const char* m_Name;
-    std::chrono::microseconds m_ElapsedTime;
-    std::chrono::time_point<std::chrono::steady_clock> m_StartTimepoint;
-    bool m_Stopped;
-  };
+  void Print(std::string_view arg = "");
+
+private:
+  const char* m_Name;
+  bool m_Stopped;
+};
 }

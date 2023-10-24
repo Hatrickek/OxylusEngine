@@ -1,9 +1,8 @@
-#include <OxylusEngine.h>
-#include <Assets/AssetManager.h>
 #include <Core/EntryPoint.h>
 #include <Core/Systems/HotReloadableScenes.h>
 
 #include "RuntimeLayer.h"
+#include "Core/Systems/SystemManager.h"
 
 namespace Oxylus {
   class OxylusRuntime : public Application {
@@ -11,18 +10,17 @@ namespace Oxylus {
     OxylusRuntime(const AppSpec& spec) : Application(spec) { }
   };
 
-  Application* CreateApplication(const ApplicationCommandLineArgs args) {
+  Application* create_application(const ApplicationCommandLineArgs args) {
     AppSpec spec;
-    spec.Name = "OxylusRuntime";
-    spec.WorkingDirectory = std::filesystem::current_path().string();
-    spec.CommandLineArgs = args;
-    spec.CustomWindowTitle = false;
-    spec.UseImGui = true;
+    spec.name = "OxylusRuntime";
+    spec.working_directory = std::filesystem::current_path().string();
+    spec.command_line_args = args;
+    spec.custom_window_title = false;
 
     const auto app = new OxylusRuntime(spec);
-    app->PushLayer(new ::OxylusRuntime::RuntimeLayer());
-    app->GetSystemManager()
-        .AddSystem<HotReloadableScenes>(::OxylusRuntime::RuntimeLayer::GetAssetsPath("Scenes/Main.oxscene"));
+    app->push_layer(new ::OxylusRuntime::RuntimeLayer());
+    app->get_system_manager()
+        ->add_system<HotReloadableScenes>(::OxylusRuntime::RuntimeLayer::get_assets_path("Scenes/Main.oxscene"));
 
     return app;
   }

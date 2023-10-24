@@ -1,26 +1,25 @@
 #pragma once
+#include <string>
 
-#include <filesystem>
+#include "Base.h"
 
-#include "Render/Vulkan/VulkanImage.h"
+
+namespace vuk {
+struct Texture;
+}
 
 namespace Oxylus {
-  
-  class Resources {
-  public:
-    static struct EditorRes {
-      VulkanImage EngineIcon;
-    } s_EditorResources;
+class TextureAsset;
 
-    static struct EngineRes {
-      Ref<VulkanImage> EmptyTexture = nullptr;
-      VulkanImage CheckboardTexture;
-    } s_EngineResources;
+class Resources {
+public:
+  static struct EditorRes {
+    Ref<TextureAsset> engine_icon;
+  } editor_resources;
 
-    static void InitEngineResources();
-    static void InitEditorResources();
+  static void init_editor_resources();
 
-    static std::string GetResourcesPath(const std::filesystem::path& path);
-    static bool ResourcesPathExists();
-  };
+  static std::string get_resources_path(const std::string& path);
+  static bool resources_path_exists();
+};
 }

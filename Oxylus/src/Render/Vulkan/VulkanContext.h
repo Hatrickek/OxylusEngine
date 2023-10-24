@@ -1,44 +1,65 @@
 #pragma once
-#include <vulkan/vulkan.hpp>
 
-#include "Core/Application.h"
-#include <vk_mem_alloc.h>
+#include "Core/Base.h"
+
+#include <optional>
+
+#include <VkBootstrap.h>
+#include <vuk/Allocator.hpp>
+#include <vuk/AllocatorHelpers.hpp>
+#include <vuk/Context.hpp>
+#include <vuk/Types.hpp>
+#include <vuk/resources/DeviceFrameResource.hpp>
+
+
+namespace vkb {
+struct Device;
+struct Instance;
+}
 
 namespace Oxylus {
-  class VulkanContext {
-  public:
-    struct VkContext {
-      vk::Instance Instance;
-      vk::SurfaceKHR Surface;
-      std::vector<vk::PhysicalDevice> PhysicalDevices;
-      vk::PhysicalDevice PhysicalDevice;
-      vk::PhysicalDeviceFeatures DeviceFeatures;
-      vk::PhysicalDeviceProperties DeviceProperties;
-      vk::PhysicalDeviceMemoryProperties DeviceMemoryProperties;
-      vk::Device Device;
-      VmaAllocator Allocator;
-      vk::DynamicLoader DynamicLoader;
-    };
+class TracyProfiler;
+struct AppSpec;
 
-    struct VkQueue {
-      vk::Queue GraphicsQueue;
-      vk::Queue PresentQueue;
-      vk::Queue ComputeQueue;
-      std::vector<vk::QueueFamilyProperties> queueFamilyProperties;
-      uint32_t graphicsQueueFamilyIndex;
-      uint32_t presentQueueFamilyIndex;
-      uint32_t computeQueueFamilyIndex; //TODO:
-    };
+class VulkanContext {
+public:
+  VkDevice device = nullptr;
+  VkPhysicalDevice physical_device = nullptr;
+  VkQueue graphics_queue = nullptr;
+  uint32_t graphics_queue_family_index = 0;
+  VkQueue transfer_queue = nullptr;
+  std::optional<vuk::Context> context;
+  std::optional<vuk::DeviceSuperFrameResource> superframe_resource;
+  std::optional<vuk::Allocator> superframe_allocator;
+  bool has_rt = false;
+  bool suspend = false;
+  vuk::SwapchainRef swapchain = nullptr;
+  VkSurfaceKHR surface;
+  vkb::Instance vkb_instance;
+  vkb::Device vkb_device;
+  double old_time = 0;
+  uint32_t num_frames = 0;
+  vuk::Unique<std::array<VkSemaphore, 3>> present_ready;
+  vuk::Unique<std::array<VkSemaphore, 3>> render_complete;
+  Ref<TracyProfiler> tracy_profiler = {};
 
-    static void CreateContext(const AppSpec& spec);
+  std::string device_name = {};
+  uint32_t driver_version = {};
 
-    static vk::Instance& GetInstance() { return Context.Instance; }
-    static VmaAllocator& GetAllocator() { return Context.Allocator; }
-    static vk::Device& GetDevice() { return Context.Device; }
-    static vk::PhysicalDevice& GetPhysicalDevice() { return Context.PhysicalDevice; }
-    static vk::DynamicLoader& GetDynamicLoader() { return Context.DynamicLoader; }
+  VulkanContext() = default;
 
-    static VkContext Context;
-    static VkQueue VulkanQueue;
-  };
+  static void init();
+
+  void create_context(const AppSpec& spec);
+
+  vuk::Allocator begin();
+  void end(const vuk::Future& src, vuk::Allocator frame_allocator);
+
+  static VulkanContext* get() { return s_instance; }
+
+private:
+  vuk::SingleSwapchainRenderBundle m_bundle = {};
+
+  static VulkanContext* s_instance;
+};
 }

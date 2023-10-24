@@ -9,22 +9,22 @@ namespace Oxylus {
 
   EditorPanel::EditorPanel(const char* name, const char8_t* icon, bool defaultShow)
     : Visible(defaultShow), m_Name(name), m_Icon(icon) {
-    m_ID = fmt::format(" {} {}\t\t###{}{}", StringUtils::FromChar8T(icon), name, s_Count, name);
+    m_ID = fmt::format(" {} {}\t\t###{}{}", StringUtils::from_char8_t(icon), name, s_Count, name);
     s_Count++;
   }
 
-  bool EditorPanel::OnBegin(int32_t windowFlags) {
+  bool EditorPanel::on_begin(int32_t window_flags) {
     if (!Visible)
       return false;
 
     ImGui::SetNextWindowSize(ImVec2(480, 640), ImGuiCond_FirstUseEver);
 
-    ImGui::Begin(m_ID.c_str(), &Visible, windowFlags | ImGuiWindowFlags_NoCollapse);
+    ImGui::Begin(m_ID.c_str(), &Visible, window_flags | ImGuiWindowFlags_NoCollapse);
 
     return true;
   }
 
-  void EditorPanel::OnEnd() const {
+  void EditorPanel::on_end() const {
     ImGui::End();
   }
 }

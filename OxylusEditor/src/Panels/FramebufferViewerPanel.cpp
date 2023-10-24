@@ -3,14 +3,13 @@
 
 #include <imgui.h>
 #include <icons/IconsMaterialDesignIcons.h>
-#include <Render/Vulkan/VulkanFramebuffer.h>
-#include <Render/ResourcePool.h>
 
 namespace Oxylus {
   FramebufferViewerPanel::FramebufferViewerPanel() : EditorPanel("Framebuffer Viewer", ICON_MDI_IMAGE_FRAME) { }
 
-  void FramebufferViewerPanel::OnImGuiRender() {
-    if (OnBegin()) {
+  void FramebufferViewerPanel::on_imgui_render() {
+    if (on_begin()) {
+#if 0
       constexpr ImGuiTableFlags tableFlags = ImGuiTableFlags_RowBg | ImGuiTableFlags_ContextMenuInBody |
                                              ImGuiTableFlags_ScrollY;
 
@@ -42,15 +41,15 @@ namespace Oxylus {
           }
         }
         if (s_SelectedFramebuffer)
-          DrawViewer(s_SelectedFramebuffer->GetImage()[0].GetDescriptorSet());
+          DrawViewer(s_SelectedFramebuffer->GetImage()[0]->GetDescriptorSet());
         ImGui::EndTable();
       }
-
-      OnEnd();
+#endif
+      on_end();
     }
   }
 
-  void FramebufferViewerPanel::DrawViewer(const vk::DescriptorSet imageDescriptorSet) const {
+  void FramebufferViewerPanel::DrawViewer(void* imageDescriptorSet) const {
     if (!imageDescriptorSet)
       return;
     if (ImGui::BeginChild("Frame")) {

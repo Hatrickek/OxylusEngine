@@ -2,95 +2,92 @@
 
 #include "EntitySerializer.h"
 #include "SceneRenderer.h"
-#include "Assets/Assets.h"
 #include "Core/Components.h"
 
 #include "Core/UUID.h"
 #include "Core/Systems/System.h"
 #include "Jolt/Physics/PhysicsSystem.h"
 #include "Jolt/Physics/Body/BodyInterface.h"
-#include "Physics/PhyiscsInterfaces.h"
+#include "Physics/PhysicsInterfaces.h"
 #include "Render/Mesh.h"
-#include "Render/Camera.h"
 #include <entt/entity/registry.hpp>
 
 namespace Oxylus {
-  class Entity;
+class Entity;
 
-  class Scene {
-  public:
-    Scene();
+class Scene {
+public:
+  Scene();
 
-    Scene(std::string name);
+  Scene(std::string name);
 
-    ~Scene();
-    Scene(const Scene&);
+  ~Scene();
+  Scene(const Scene&);
 
-    Entity CreateEntity(const std::string& name);
-    Entity CreateEntityWithUUID(UUID uuid, const std::string& name = std::string());
-    void CreateEntityWithMesh(const Asset<Mesh>& meshAsset);
+  Entity create_entity(const std::string& name);
+  Entity create_entity_with_uuid(UUID uuid, const std::string& name = std::string());
+  void create_entity_with_mesh(const Ref<Mesh>& mesh_asset);
 
-    template <typename T, typename... Args>
-    Scene* AddSystem(Args&&... args) {
-      m_Systems.emplace_back(CreateScope<T>(std::forward<Args>(args)...));
-      return this;
-    }
+  template <typename T, typename... Args>
+  Scene* add_system(Args&&... args) {
+    systems.emplace_back(create_scope<T>(std::forward<Args>(args)...));
+    return this;
+  }
 
-    void DestroyEntity(Entity entity);
-    void DuplicateEntity(Entity entity);
+  void destroy_entity(Entity entity);
+  void duplicate_entity(Entity entity);
 
-    void OnRuntimeStart();
-    void OnRuntimeStop();
+  void on_runtime_start();
+  void on_runtime_stop();
 
-    void OnRuntimeUpdate(float deltaTime);
-    void OnEditorUpdate(float deltaTime, Camera& camera);
+  void on_runtime_update(float delta_time);
+  void on_editor_update(float delta_time, Camera& camera);
 
-    void OnImGuiRender(float deltaTime);
+  void on_imgui_render(float delta_time);
 
-    Entity FindEntity(const std::string_view& name);
-    bool HasEntity(UUID uuid) const;
-    static Ref<Scene> Copy(const Ref<Scene>& other);
+  Entity find_entity(const std::string_view& name);
+  bool has_entity(UUID uuid) const;
+  static Ref<Scene> copy(const Ref<Scene>& other);
 
-    // Physics interfaces
-    void OnContactAdded(const JPH::Body& body1, const JPH::Body& body2, const JPH::ContactManifold& manifold, const JPH::ContactSettings& settings);
-    void OnContactPersisted(const JPH::Body& body1, const JPH::Body& body2, const JPH::ContactManifold& manifold, JPH::ContactSettings& settings);
+  // Physics interfaces
+  void on_contact_added(const JPH::Body& body1, const JPH::Body& body2, const JPH::ContactManifold& manifold, const JPH::ContactSettings& settings);
+  void on_contact_persisted(const JPH::Body& body1, const JPH::Body& body2, const JPH::ContactManifold& manifold, JPH::ContactSettings& settings);
 
-    Entity GetEntityByUUID(UUID uuid);
-    SceneRenderer& GetRenderer() { return m_SceneRenderer; }
+  Entity get_entity_by_uuid(UUID uuid);
+  Ref<SceneRenderer> get_renderer() { return scene_renderer; }
 
-    std::string SceneName = "Untitled";
-    entt::registry m_Registry;
-    std::unordered_map<UUID, entt::entity> m_EntityMap;
+  std::string scene_name = "Untitled";
+  entt::registry m_registry;
+  std::unordered_map<UUID, entt::entity> entity_map;
 
-  private:
-    void Init();
+private:
+  void init();
 
-    // Physics
-    void UpdatePhysics(Timestep deltaTime);
-    void CreateRigidbody(Entity entity, const TransformComponent& transform, RigidbodyComponent& component) const;
-    void CreateCharacterController(const TransformComponent& transform, CharacterControllerComponent& component) const;
+  // Physics
+  void update_physics(Timestep delta_time);
+  void create_rigidbody(Entity entity, const TransformComponent& transform, RigidbodyComponent& component) const;
+  void create_character_controller(const TransformComponent& transform, CharacterControllerComponent& component) const;
 
-    void RenderScene();
-    template <typename T>
-    void OnComponentAdded(Entity entity, T& component);
+  template <typename T>
+  void on_component_added(Entity entity, T& component);
 
-    void IterateOverMeshNode(const Ref<Mesh>& mesh, const std::vector<Mesh::Node*>& node, Entity parent);
+  void iterate_over_mesh_node(const Ref<Mesh>& mesh, const std::vector<Mesh::Node*>& node, Entity parent);
 
-    bool m_IsRunning = false;
+  bool is_running = false;
 
-    // Renderer
-    SceneRenderer m_SceneRenderer;
+  // Renderer
+  Ref<SceneRenderer> scene_renderer;
 
-    // Systems
-    std::vector<Scope<System>> m_Systems;
+  // Systems
+  std::vector<Scope<System>> systems;
 
-    // Physics
-    Physics3DContactListener* m_ContactListener3D = nullptr;
-    Physics3DBodyActivationListener* m_BodyActivationListener3D = nullptr;
-    float m_PhysicsFrameAccumulator = 0.0f;
+  // Physics
+  Physics3DContactListener* contact_listener_3d = nullptr;
+  Physics3DBodyActivationListener* body_activation_listener_3d = nullptr;
+  float physics_frame_accumulator = 0.0f;
 
-    friend class Entity;
-    friend class SceneSerializer;
-    friend class SceneHPanel;
-  };
+  friend class Entity;
+  friend class SceneSerializer;
+  friend class SceneHPanel;
+};
 }
