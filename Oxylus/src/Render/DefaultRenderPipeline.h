@@ -97,5 +97,6 @@ private:
   void cascaded_shadow_pass(const Ref<vuk::RenderGraph>& rg, vuk::Buffer& shadow_buffer);
   void gtao_pass(vuk::Allocator& frame_allocator, const Ref<vuk::RenderGraph>& rg);
   void ssr_pass(vuk::Allocator& frame_allocator, const Ref<vuk::RenderGraph>& rg, VulkanContext* vk_context, vuk::Buffer& vs_buffer) const;
+  void bloom_pass(const Ref<vuk::RenderGraph>& rg, const VulkanContext* vk_context);
 };
 }

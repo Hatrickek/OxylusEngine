@@ -161,8 +161,11 @@ void Scene::update_physics(Timestep delta_time) {
 void Scene::iterate_over_mesh_node(const Ref<Mesh>& mesh, const std::vector<Mesh::Node*>& node, Entity parent) {
   for (const auto child : node) {
     Entity entity = create_entity(child->name).set_parent(parent);
-    if (child->contains_mesh) {
-      entity.add_component_internal<MeshRendererComponent>(mesh).submesh_index = child->index;
+    if (child->mesh_data) {
+      const auto it = std::find(mesh->linear_nodes.begin(), mesh->linear_nodes.end(), child);
+      const auto index = std::distance(mesh->linear_nodes.begin(), it);
+
+      entity.add_component_internal<MeshRendererComponent>(mesh).submesh_index = index;
       entity.get_component<MaterialComponent>().materials = mesh->get_materials_as_ref();
     }
     iterate_over_mesh_node(mesh, child->children, entity);
@@ -172,7 +175,7 @@ void Scene::iterate_over_mesh_node(const Ref<Mesh>& mesh, const std::vector<Mesh
 void Scene::create_entity_with_mesh(const Ref<Mesh>& mesh_asset) {
   for (const auto& node : mesh_asset->nodes) {
     Entity entity = create_entity(node->name);
-    if (node->contains_mesh) {
+    if (node->mesh_data) {
       entity.add_component_internal<MeshRendererComponent>(mesh_asset).submesh_index = node->index;
       entity.get_component<MaterialComponent>().materials = mesh_asset->get_materials_as_ref();
     }
@@ -480,7 +483,7 @@ void Scene::create_rigidbody(Entity entity, const TransformComponent& transform,
 void Scene::create_character_controller(const TransformComponent& transform, CharacterControllerComponent& component) const {
   if (!is_running)
     return;
-  auto position = JPH::Vec3(transform.translation.x, transform.translation.y, transform.translation.z);
+  const auto position = JPH::Vec3(transform.translation.x, transform.translation.y, transform.translation.z);
   const auto capsuleShape = JPH::RotatedTranslatedShapeSettings(
     JPH::Vec3(0, 0.5f * component.character_height_standing + component.character_radius_standing, 0),
     JPH::Quat::sIdentity(),
@@ -626,7 +629,7 @@ void Scene::on_component_added<PostProcessProbe>(Entity entity, PostProcessProbe
 
 template <>
 void Scene::on_component_added<ParticleSystemComponent>(Entity entity,
-                                                      ParticleSystemComponent& component) { }
+                                                        ParticleSystemComponent& component) { }
 
 template <>
 void Scene::on_component_added<RigidbodyComponent>(Entity entity, RigidbodyComponent& component) {

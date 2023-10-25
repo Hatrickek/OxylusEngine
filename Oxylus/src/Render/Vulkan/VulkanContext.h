@@ -33,6 +33,7 @@ public:
   std::optional<vuk::Allocator> superframe_allocator;
   bool has_rt = false;
   bool suspend = false;
+  vuk::PresentModeKHR present_mode = vuk::PresentModeKHR::eImmediate;
   vuk::SwapchainRef swapchain = nullptr;
   VkSurfaceKHR surface;
   vkb::Instance vkb_instance;
@@ -51,6 +52,8 @@ public:
   static void init();
 
   void create_context(const AppSpec& spec);
+
+  void rebuild_swapchain();
 
   vuk::Allocator begin();
   void end(const vuk::Future& src, vuk::Allocator frame_allocator);

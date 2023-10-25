@@ -17,13 +17,13 @@ Thread::~Thread() {
 }
 
 void Thread::queue_job(std::function<void()> function) {
-  std::lock_guard<std::mutex> lock(queue_mutex);
+  std::lock_guard lock(queue_mutex);
   job_queue.push(std::move(function));
   condition.notify_one();
 }
 
 void Thread::wait() {
-  std::unique_lock<std::mutex> lock(queue_mutex);
+  std::unique_lock lock(queue_mutex);
   condition.wait(lock,
     [this]() {
       return job_queue.empty();
@@ -34,7 +34,7 @@ void Thread::queue_loop() {
   while (true) {
     std::function<void()> job;
     {
-      std::unique_lock<std::mutex> lock(queue_mutex);
+      std::unique_lock lock(queue_mutex);
       condition.wait(lock,
         [this] {
           return !job_queue.empty() || destroying;
@@ -48,7 +48,7 @@ void Thread::queue_loop() {
     job();
 
     {
-      std::lock_guard<std::mutex> lock(queue_mutex);
+      std::lock_guard lock(queue_mutex);
       job_queue.pop();
       condition.notify_one();
     }

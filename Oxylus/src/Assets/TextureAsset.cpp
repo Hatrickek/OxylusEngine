@@ -88,7 +88,8 @@ void TextureAsset::create_blank_texture() {
 
 void TextureAsset::create_white_texture() {
   s_white_texture = create_ref<TextureAsset>();
-  uint32_t white_texture_data = 0xffffffff;
-  s_white_texture->create_texture(16, 16, &white_texture_data);
+  char white_texture_data[16 * 16 * 4];
+  memset(white_texture_data, 0xff, 16 * 16 * 4);
+  s_white_texture->create_texture(16, 16, white_texture_data);
 }
 }

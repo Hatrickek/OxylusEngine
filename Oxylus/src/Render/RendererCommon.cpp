@@ -101,7 +101,7 @@ std::pair<vuk::Unique<vuk::Image>, vuk::Future> RendererCommon::generate_cubemap
       cube->bind_vertex_buffer(cbuf);
       cube->bind_index_buffer(cbuf);
       for (const auto& node : cube->nodes)
-        for (const auto& primitive : node->primitives)
+        for (const auto& primitive : node->mesh_data->primitives)
           cbuf.draw_indexed(primitive->index_count, 6, 0, 0, 0);
     }
   });

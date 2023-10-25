@@ -5,14 +5,12 @@
 
 #include "VulkanContext.h"
 #include "Assets/AssetManager.h"
-#include "Core/Resources.h"
 #include "Core/Systems/SystemManager.h"
 #include "Render/Mesh.h"
 #include "Render/Window.h"
 #include "Utils/Profiler.h"
 #include "Render/DebugRenderer.h"
 #include "Render/DefaultRenderPipeline.h"
-#include "Utils/FileUtils.h"
 
 namespace Oxylus {
 VulkanRenderer::RendererContext VulkanRenderer::renderer_context;
@@ -124,12 +122,14 @@ void VulkanRenderer::draw(VulkanContext* context, ImGuiLayer* imgui_layer, Layer
   context->end(fut, frameAllocator);
 }
 
-void VulkanRenderer::render_node(const Mesh::Node* node, vuk::CommandBuffer& command_buffer, const std::function<bool(Mesh::Primitive* prim)>& per_mesh_func) {
-  for (const auto& part : node->primitives) {
-    if (!per_mesh_func(part))
-      continue;
+void VulkanRenderer::render_node(const Mesh::Node* node, vuk::CommandBuffer& command_buffer, const std::function<bool(Mesh::Primitive* prim, Mesh::MeshData* mesh_data)>& per_mesh_func) {
+  if (node->mesh_data) {
+    for (const auto& part : node->mesh_data->primitives) {
+      if (!per_mesh_func(part, node->mesh_data))
+        continue;
 
-    command_buffer.draw_indexed(part->index_count, 1, part->first_index, 0, 0);
+      command_buffer.draw_indexed(part->index_count, 1, part->first_index, 0, 0);
+    }
   }
   for (const auto& child : node->children)
     render_node(child, command_buffer, per_mesh_func);
@@ -137,7 +137,7 @@ void VulkanRenderer::render_node(const Mesh::Node* node, vuk::CommandBuffer& com
 
 void VulkanRenderer::render_mesh(const MeshData& mesh,
                                  vuk::CommandBuffer& command_buffer,
-                                 const std::function<bool(Mesh::Primitive* prim)>& per_mesh_func) {
+                                 const std::function<bool(Mesh::Primitive* prim, Mesh::MeshData* mesh_data)>& per_mesh_func) {
   mesh.mesh_geometry->bind_vertex_buffer(command_buffer);
   mesh.mesh_geometry->bind_index_buffer(command_buffer);
   render_node(mesh.mesh_geometry->linear_nodes[mesh.submesh_index], command_buffer, per_mesh_func);

@@ -39,7 +39,7 @@ public:
     Mesh* mesh_geometry;
     std::vector<Ref<Material>> materials;
     Mat4 transform;
-    uint32_t submesh_index = 0;
+    uint32_t submesh_index = 0; // todo: get rid of this
 
     MeshData(Mesh* mesh,
              const Mat4& transform,
@@ -53,8 +53,8 @@ public:
 
   // Drawing
   static void draw(VulkanContext* context, ImGuiLayer* imgui_layer, LayerStack& layer_stack, const Ref<SystemManager>& system_manager);
-  static void render_node(const Mesh::Node* node, vuk::CommandBuffer& command_buffer, const std::function<bool(Mesh::Primitive* prim)>& per_mesh_func);
-  static void render_mesh(const MeshData& mesh, vuk::CommandBuffer& command_buffer, const std::function<bool(Mesh::Primitive* prim)>& per_mesh_func);
+  static void render_node(const Mesh::Node* node, vuk::CommandBuffer& command_buffer, const std::function<bool(Mesh::Primitive* prim, Mesh::MeshData* mesh_data)>& per_mesh_func);
+  static void render_mesh(const MeshData& mesh, vuk::CommandBuffer& command_buffer, const std::function<bool(Mesh::Primitive* prim, Mesh::MeshData* mesh_data)>& per_mesh_func);
 
   static UVec2 get_viewport_size() { return renderer_context.viewport_size; }
   static unsigned get_viewport_width() { return renderer_context.viewport_size.x; }
