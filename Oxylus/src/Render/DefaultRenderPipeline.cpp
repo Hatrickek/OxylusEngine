@@ -55,9 +55,10 @@ void DefaultRenderPipeline::update(Scene* scene) {
     OX_SCOPED_ZONE_N("Mesh System");
     const auto view = scene->m_registry.view<TransformComponent, MeshRendererComponent, MaterialComponent, TagComponent>();
     for (const auto&& [entity, transform, meshrenderer, material, tag] : view.each()) {
+      // TODO : temporary
       if (!meshrenderer.mesh_geometry->animations.empty()) {
         static auto animationTimer = 0.0f;
-        animationTimer += Application::get_timestep();
+        animationTimer += Application::get_timestep() * 0.1f;
         if (animationTimer > meshrenderer.mesh_geometry->animations[0].end) {
           animationTimer -= meshrenderer.mesh_geometry->animations[0].end;
         }
@@ -494,6 +495,104 @@ std::pair<vuk::Resource, vuk::Name> get_attachment_or_black(const char* name, co
   return {vuk::Resource("black_image", vuk::Resource::Type::eImage, access), "black_image"};
 }
 
+void DefaultRenderPipeline::bloom_pass(const Ref<vuk::RenderGraph>& rg, const VulkanContext* vk_context) {
+  struct BloomPushConst {
+    // x: threshold, y: clamp, z: radius, w: unused
+    Vec4 params = {};
+    int lod = 0;
+  } bloom_push_const;
+
+  bloom_push_const.params.x = RendererConfig::get()->bloom_config.threshold;
+  bloom_push_const.params.y = RendererConfig::get()->bloom_config.clamp;
+
+  uint32_t bloom_mip_count = 7;
+
+  rg->attach_and_clear_image("bloom_image", {.format = vk_context->swapchain->format, .sample_count = vuk::SampleCountFlagBits::e1, .level_count = bloom_mip_count, .layer_count = 1}, vuk::Black<float>);
+  rg->inference_rule("bloom_image", vuk::same_extent_as("final_image"));
+
+  auto [diverged_names, down_output_names] = diverge_image_mips(rg, "bloom_image", bloom_mip_count);
+
+  rg->add_pass({
+    .name = "bloom_prefilter",
+    .resources = {
+      vuk::Resource(diverged_names[0], vuk::Resource::Type::eImage, vuk::eComputeRW, down_output_names[0]),
+      "pbr_output"_image >> vuk::eComputeSampled
+    },
+    .execute = [bloom_push_const, diverged_names](vuk::CommandBuffer& command_buffer) {
+      //const auto size = IVec2(VulkanRenderer::get_viewport_width() / (1 << 1), VulkanRenderer::get_viewport_height() / (1 << 1));
+
+      command_buffer.bind_compute_pipeline("bloom_prefilter_pipeline")
+                    .push_constants(vuk::ShaderStageFlagBits::eCompute, 0, bloom_push_const)
+                    .bind_image(0, 0, diverged_names[0])
+                    .bind_sampler(0, 0, vuk::NearestMagLinearMinSamplerClamped)
+                    .bind_image(0, 1, "pbr_output")
+                    .bind_sampler(0, 1, {})
+                    .dispatch((VulkanRenderer::get_viewport_width() + 8 - 1) / 8, (VulkanRenderer::get_viewport_height() + 8 - 1) / 8, 1);
+    }
+  });
+
+  for (int32_t i = 1; i < (int32_t)bloom_mip_count; i++) {
+    auto input_name = down_output_names[i - 1];
+    rg->add_pass({
+      .name = "bloom_downsample",
+      .resources = {
+        vuk::Resource(diverged_names[i], vuk::Resource::Type::eImage, vuk::eComputeRW, down_output_names[i]),
+        vuk::Resource(input_name, vuk::Resource::Type::eImage, vuk::eComputeSampled),
+      },
+      .execute = [bloom_push_const, diverged_names, input_name, i](vuk::CommandBuffer& command_buffer) {
+        const auto size = IVec2(VulkanRenderer::get_viewport_width() / (1 << i), VulkanRenderer::get_viewport_height() / (1 << i));
+
+        command_buffer.bind_compute_pipeline("bloom_downsample_pipeline")
+                      .push_constants(vuk::ShaderStageFlagBits::eCompute, 0, bloom_push_const)
+                      .bind_image(0, 0, diverged_names[i])
+                      .bind_sampler(0, 0, vuk::NearestMagLinearMinSamplerClamped)
+                      .bind_image(0, 1, input_name)
+                      .bind_sampler(0, 1, vuk::NearestMagLinearMinSamplerClamped)
+                      .dispatch((size.x + 8 - 1) / 8, (size.y + 8 - 1) / 8, 1);
+      }
+    });
+  }
+
+  rg->converge_image_explicit(down_output_names, "bloom_downsampled_image");
+
+  // Upsampling
+  // https://www.froyok.fr/blog/2021-12-ue4-custom-bloom/resources/code/bloom_down_up_demo.jpg
+
+  rg->attach_and_clear_image("bloom_upsample_image", {.format = vk_context->swapchain->format, .sample_count = vuk::SampleCountFlagBits::e1, .level_count = bloom_mip_count - 1, .layer_count = 1}, vuk::Black<float>);
+  rg->inference_rule("bloom_upsample_image", vuk::same_extent_as("final_image"));
+
+  auto [up_diverged_names, up_output_names] = diverge_image_mips(rg, "bloom_upsample_image", bloom_mip_count - 1);
+  auto [down_read_diverged_names, down_read_output_names] = diverge_image_mips(rg, "bloom_downsampled_image", bloom_mip_count);
+
+  for (int32_t i = (int32_t)bloom_mip_count - 2; i >= 0; i--) {
+    const auto input_name = i == (int32_t)bloom_mip_count - 2 ? down_read_diverged_names[i + 1] : up_output_names[i + 1];
+    rg->add_pass({
+      .name = "bloom_upsample",
+      .resources = {
+        vuk::Resource(up_diverged_names[i], vuk::Resource::Type::eImage, vuk::eComputeRW, up_output_names[i]),
+        vuk::Resource(input_name, vuk::Resource::Type::eImage, vuk::eComputeSampled),
+        vuk::Resource(down_read_diverged_names[i], vuk::Resource::Type::eImage, vuk::eComputeSampled),
+      },
+      .execute = [bloom_push_const, up_diverged_names, i, input_name, down_read_diverged_names](vuk::CommandBuffer& command_buffer) {
+        const auto size = IVec2(VulkanRenderer::get_viewport_width() / (1 << i), VulkanRenderer::get_viewport_height() / (1 << i));
+
+        command_buffer.bind_compute_pipeline("bloom_upsample_pipeline")
+                      .push_constants(vuk::ShaderStageFlagBits::eCompute, 0, bloom_push_const)
+                      .bind_image(0, 0, up_diverged_names[i])
+                      .bind_sampler(0, 0, vuk::NearestMagLinearMinSamplerClamped)
+                      .bind_image(0, 1, input_name)
+                      .bind_sampler(0, 1, vuk::NearestMagLinearMinSamplerClamped)
+                      .bind_image(0, 2, down_read_diverged_names[i])
+                      .bind_sampler(0, 2, vuk::NearestMagLinearMinSamplerClamped)
+                      .dispatch((size.x + 8 - 1) / 8, (size.y + 8 - 1) / 8, 1);
+      }
+    });
+  }
+
+  //rg->converge_image_explicit(down_read_diverged_names, "bloom_downsampled_image_final");
+  rg->converge_image_explicit(up_output_names, "bloom_upsampled_image");
+}
+
 Scope<vuk::Future> DefaultRenderPipeline::on_render(vuk::Allocator& frame_allocator, const vuk::Future& target, vuk::Dimension3D dim) {
   mesh_draw_list.clear();
 
@@ -572,98 +671,8 @@ Scope<vuk::Future> DefaultRenderPipeline::on_render(vuk::Allocator& frame_alloca
   if (RendererConfig::get()->ssr_config.enabled)
     ssr_pass(frame_allocator, rg, vk_context, vs_buffer);
 
-#pragma region Bloom
-  struct BloomPushConst {
-    // x: threshold, y: clamp, z: radius, w: unused
-    Vec4 params = {};
-    int lod = 0;
-  } bloom_push_const;
-
-  bloom_push_const.params.x = RendererConfig::get()->bloom_config.threshold;
-  bloom_push_const.params.y = RendererConfig::get()->bloom_config.clamp;
-
-  uint32_t bloom_mip_count = 7;
-
-  rg->attach_and_clear_image("bloom_image", {.format = vk_context->swapchain->format, .sample_count = vuk::SampleCountFlagBits::e1, .level_count = bloom_mip_count, .layer_count = 1}, vuk::Black<float>);
-  rg->inference_rule("bloom_image", vuk::same_extent_as("final_image"));
-
-  auto [diverged_names, down_output_names] = diverge_image_mips(rg, "bloom_image", bloom_mip_count);
-
-  rg->add_pass({
-    .name = "bloom_prefilter",
-    .resources = {
-      vuk::Resource(diverged_names[0], vuk::Resource::Type::eImage, vuk::eComputeRW, down_output_names[0]),
-      "pbr_output"_image >> vuk::eComputeSampled
-    },
-    .execute = [bloom_push_const, diverged_names](vuk::CommandBuffer& command_buffer) {
-      command_buffer.bind_compute_pipeline("bloom_prefilter_pipeline")
-                    .push_constants(vuk::ShaderStageFlagBits::eCompute, 0, bloom_push_const)
-                    .bind_image(0, 0, diverged_names[0])
-                    .bind_sampler(0, 0, {})
-                    .bind_image(0, 1, "pbr_output")
-                    .bind_sampler(0, 1, {})
-                    .dispatch((VulkanRenderer::get_viewport_width() + 8 - 1) / 8, (VulkanRenderer::get_viewport_height() + 8 - 1) / 8, 1);
-    }
-  });
-
-  for (int32_t i = 1; i < (int32_t)bloom_mip_count; i++) {
-    auto input_name = down_output_names[i - 1];
-    rg->add_pass({
-      .name = "bloom_downsample",
-      .resources = {
-        vuk::Resource(diverged_names[i], vuk::Resource::Type::eImage, vuk::eComputeRW, down_output_names[i]),
-        vuk::Resource(input_name, vuk::Resource::Type::eImage, vuk::eComputeSampled),
-      },
-      .execute = [bloom_push_const, diverged_names, input_name, i](vuk::CommandBuffer& command_buffer) {
-        command_buffer.bind_compute_pipeline("bloom_downsample_pipeline")
-                      .push_constants(vuk::ShaderStageFlagBits::eCompute, 0, bloom_push_const)
-                      .bind_image(0, 0, diverged_names[i])
-                      .bind_sampler(0, 0, {})
-                      .bind_image(0, 1, input_name)
-                      .bind_sampler(0, 1, {})
-                      .dispatch((VulkanRenderer::get_viewport_width() + 8 - 1) / 8, (VulkanRenderer::get_viewport_height() + 8 - 1) / 8, 1);
-      }
-    });
-  }
-
-  rg->converge_image_explicit(down_output_names, "bloom_downsampled_image");
-
-  // Upsampling
-  // https://www.froyok.fr/blog/2021-12-ue4-custom-bloom/resources/code/bloom_down_up_demo.jpg
-
-  rg->attach_and_clear_image("bloom_upsample_image", {.format = vk_context->swapchain->format, .sample_count = vuk::SampleCountFlagBits::e1, .level_count = bloom_mip_count - 1, .layer_count = 1}, vuk::Black<float>);
-  rg->inference_rule("bloom_upsample_image", vuk::same_extent_as("final_image"));
-
-  auto [up_diverged_names, up_output_names] = diverge_image_mips(rg, "bloom_upsample_image", bloom_mip_count - 1);
-  auto [down_read_diverged_names, down_read_output_names] = diverge_image_mips(rg, "bloom_downsampled_image", bloom_mip_count);
-
-  for (int32_t i = (int32_t)bloom_mip_count - 2; i >= 0; i--) {
-    const auto input_name = i == (int32_t)bloom_mip_count - 2 ? down_read_diverged_names[i + 1] : up_diverged_names[i + 1];
-    rg->add_pass({
-      .name = "bloom_upsample",
-      .resources = {
-        vuk::Resource(up_diverged_names[i], vuk::Resource::Type::eImage, vuk::eComputeRW, up_output_names[i]),
-        vuk::Resource(input_name, vuk::Resource::Type::eImage, vuk::eComputeSampled),
-        vuk::Resource(down_read_diverged_names[i], vuk::Resource::Type::eImage, vuk::eComputeSampled),
-      },
-      .execute = [bloom_push_const, up_diverged_names, i, input_name, down_read_diverged_names](vuk::CommandBuffer& command_buffer) {
-        command_buffer.bind_compute_pipeline("bloom_upsample_pipeline")
-                      .push_constants(vuk::ShaderStageFlagBits::eCompute, 0, bloom_push_const)
-                      .bind_image(0, 0, up_diverged_names[i])
-                      .bind_sampler(0, 0, {})
-                      .bind_image(0, 1, input_name)
-                      .bind_sampler(0, 1, {})
-                      .bind_image(0, 2, down_read_diverged_names[i])
-                      .bind_sampler(0, 2, {})
-                      .dispatch((VulkanRenderer::get_viewport_width() + 8 - 1) / 8, (VulkanRenderer::get_viewport_height() + 8 - 1) / 8, 1);
-      }
-    });
-  }
-
-  //rg->converge_image_explicit(down_read_diverged_names, "bloom_downsampled_image_final");
-  rg->converge_image_explicit(up_output_names, "bloom_upsampled_image");
-
-#pragma endregion
+  if (RendererConfig::get()->bloom_config.enabled)
+    bloom_pass(rg, vk_context);
 
   auto [final_buff, final_buff_fut] = create_buffer(frame_allocator, vuk::MemoryUsage::eCPUtoGPU, vuk::DomainFlagBits::eTransferOnGraphics, std::span(&m_renderer_data.final_pass_data, 1));
   auto& final_buffer = *final_buff;
