@@ -97,8 +97,8 @@ void Mesh::load_from_file(const std::string& file_path, int file_loading_flags, 
 
   for (auto node : linear_nodes) {
     // Assign skins
-    if (node->skinIndex > -1) {
-      node->skin = skins[node->skinIndex];
+    if (node->skin_index > -1) {
+      node->skin = skins[node->skin_index];
     }
     // Initial pose
     if (node->mesh_data) {
@@ -134,13 +134,13 @@ void Mesh::bind_vertex_buffer(vuk::CommandBuffer& commandBuffer) const {
     *verticies_buffer,
     0,
     vuk::Packed{
-      vuk::Format::eR32G32B32Sfloat,
-      vuk::Format::eR32G32B32Sfloat,
-      vuk::Format::eR32G32Sfloat,
-      vuk::Format::eR32G32B32A32Sfloat,
-      vuk::Format::eR32G32B32A32Sfloat,
-      vuk::Format::eR32G32B32A32Sfloat,
-      vuk::Format::eR32G32B32A32Sfloat,
+      vuk::Format::eR32G32B32Sfloat,    // 12 postition
+      vuk::Format::eR32G32B32Sfloat,    // 12 normal
+      vuk::Format::eR32G32Sfloat,       // 8  uv
+      vuk::Format::eR32G32B32A32Sfloat, // 16 tangent
+      vuk::Format::eR32G32B32A32Sfloat, // 16 color
+      vuk::Format::eR32G32B32A32Sfloat, // 16 joint
+      vuk::Format::eR32G32B32A32Sfloat, // 16 weight
     });
 }
 
@@ -403,6 +403,18 @@ void Mesh::update_animation(uint32_t index, const float time) {
   }
 }
 
+Mesh::MeshData::MeshData(const glm::mat4& matrix): bb(), aabb() {
+  uniform_block.matrix = matrix;
+
+  node_buffer = *vuk::allocate_buffer(*VulkanContext::get()->superframe_allocator, {vuk::MemoryUsage::eCPUtoGPU, sizeof(uniform_block), 1});
+
+  //auto [node_buff, noder_buffer_fut] = create_buffer(*VulkanContext::get()->superframe_allocator, vuk::MemoryUsage::eCPUtoGPU, vuk::DomainFlagBits::eTransferOnGraphics, std::span(&uniform_block, 1));
+  //vuk::Compiler compiler = {};
+  //noder_buffer_fut.wait(*VulkanContext::get()->superframe_allocator, compiler);
+
+  //node_buffer = std::move(node_buff);
+}
+
 Mesh::MeshData::~MeshData() {
   for (const auto p : primitives)
     delete p;
@@ -414,30 +426,30 @@ void Mesh::MeshData::set_bounding_box(const glm::vec3 min, const glm::vec3 max) 
   bb.valid = true;
 }
 
-Mesh::BoundingBox Mesh::BoundingBox::get_aabb(glm::mat4 m) {
-  glm::vec3 min = glm::vec3(m[3]);
+Mesh::BoundingBox Mesh::BoundingBox::get_aabb(glm::mat4 m) const {
+  auto min = glm::vec3(m[3]);
   glm::vec3 max = min;
   glm::vec3 v0, v1;
 
-  glm::vec3 right = glm::vec3(m[0]);
+  auto right = glm::vec3(m[0]);
   v0 = right * this->min.x;
   v1 = right * this->max.x;
   min += glm::min(v0, v1);
   max += glm::max(v0, v1);
 
-  glm::vec3 up = glm::vec3(m[1]);
+  auto up = glm::vec3(m[1]);
   v0 = up * this->min.y;
   v1 = up * this->max.y;
   min += glm::min(v0, v1);
   max += glm::max(v0, v1);
 
-  glm::vec3 back = glm::vec3(m[2]);
+  auto back = glm::vec3(m[2]);
   v0 = back * this->min.z;
   v1 = back * this->max.z;
   min += glm::min(v0, v1);
   max += glm::max(v0, v1);
 
-  return BoundingBox(min, max);
+  return {min, max};
 }
 
 void Mesh::Primitive::set_bounding_box(const glm::vec3 min, const glm::vec3 max) {
@@ -473,17 +485,21 @@ void Mesh::Node::update() const {
   if (mesh_data) {
     const glm::mat4 m = get_matrix();
     if (skin) {
-      mesh_data->uniformBlock.matrix = m;
+      mesh_data->uniform_block.matrix = m;
       // Update join matrices
-      const glm::mat4 inverseTransform = glm::inverse(m);
-      size_t numJoints = std::min((uint32_t)skin->joints.size(), MAX_NUM_JOINTS);
-      for (size_t i = 0; i < numJoints; i++) {
-        const Node* jointNode = skin->joints[i];
-        glm::mat4 jointMat = jointNode->get_matrix() * skin->inverse_bind_matrices[i];
-        jointMat = inverseTransform * jointMat;
-        mesh_data->uniformBlock.jointMatrix[i] = jointMat;
+      const glm::mat4 inverse_transform = glm::inverse(m);
+      size_t num_joints = std::min((uint32_t)skin->joints.size(), MAX_NUM_JOINTS);
+      for (size_t i = 0; i < num_joints; i++) {
+        const Node* joint_node = skin->joints[i];
+        glm::mat4 joint_mat = joint_node->get_matrix() * skin->inverse_bind_matrices[i];
+        joint_mat = inverse_transform * joint_mat;
+        mesh_data->uniform_block.joint_matrix[i] = joint_mat;
       }
-      mesh_data->uniformBlock.jointcount = (float)numJoints;
+      mesh_data->uniform_block.jointcount = (float)num_joints;
+      memcpy(mesh_data->node_buffer->mapped_ptr, &mesh_data->uniform_block, sizeof(mesh_data->uniform_block));
+    }
+    else {
+      memcpy(mesh_data->node_buffer->mapped_ptr, &m, sizeof(glm::mat4));
     }
   }
 
@@ -542,8 +558,8 @@ void Mesh::load_node(Node* parent,
     newNode->mesh_index = node.mesh;
     for (size_t j = 0; j < mesh.primitives.size(); j++) {
       const tinygltf::Primitive& primitive = mesh.primitives[j];
-      uint32_t indexStart = (uint32_t)index_buffer.size();
-      uint32_t vertexStart = (uint32_t)vertex_buffer.size();
+      auto indexStart = (uint32_t)index_buffer.size();
+      auto vertexStart = (uint32_t)vertex_buffer.size();
       uint32_t indexCount = 0;
       uint32_t vertexCount = 0;
       glm::vec3 posMin{};
@@ -639,12 +655,12 @@ void Mesh::load_node(Node* parent,
           if (hasSkin) {
             switch (jointComponentType) {
               case TINYGLTF_COMPONENT_TYPE_UNSIGNED_SHORT: {
-                const uint16_t* buf = static_cast<const uint16_t*>(bufferJoints);
+                const auto* buf = static_cast<const uint16_t*>(bufferJoints);
                 vert.joint0 = glm::vec4(glm::make_vec4(&buf[v * jointByteStride]));
                 break;
               }
               case TINYGLTF_COMPONENT_TYPE_UNSIGNED_BYTE: {
-                const uint8_t* buf = static_cast<const uint8_t*>(bufferJoints);
+                const auto* buf = static_cast<const uint8_t*>(bufferJoints);
                 vert.joint0 = glm::vec4(glm::make_vec4(&buf[v * jointByteStride]));
                 break;
               }
@@ -675,7 +691,7 @@ void Mesh::load_node(Node* parent,
 
         switch (accessor.componentType) {
           case TINYGLTF_PARAMETER_TYPE_UNSIGNED_INT: {
-            uint32_t* buf = new uint32_t[accessor.count];
+            auto* buf = new uint32_t[accessor.count];
             memcpy(buf, &buffer.data[accessor.byteOffset + bufferView.byteOffset], accessor.count * sizeof(uint32_t));
             for (size_t index = 0; index < accessor.count; index++) {
               index_buffer.emplace_back(buf[index] + vertexStart);
@@ -684,7 +700,7 @@ void Mesh::load_node(Node* parent,
             break;
           }
           case TINYGLTF_PARAMETER_TYPE_UNSIGNED_SHORT: {
-            uint16_t* buf = new uint16_t[accessor.count];
+            auto* buf = new uint16_t[accessor.count];
             memcpy(buf, &buffer.data[accessor.byteOffset + bufferView.byteOffset], accessor.count * sizeof(uint16_t));
             for (size_t index = 0; index < accessor.count; index++) {
               index_buffer.emplace_back(buf[index] + vertexStart);
@@ -693,7 +709,7 @@ void Mesh::load_node(Node* parent,
             break;
           }
           case TINYGLTF_PARAMETER_TYPE_UNSIGNED_BYTE: {
-            uint8_t* buf = new uint8_t[accessor.count];
+            auto* buf = new uint8_t[accessor.count];
             memcpy(buf, &buffer.data[accessor.byteOffset + bufferView.byteOffset], accessor.count * sizeof(uint8_t));
             for (size_t index = 0; index < accessor.count; index++) {
               index_buffer.emplace_back(buf[index] + vertexStart);
@@ -706,6 +722,9 @@ void Mesh::load_node(Node* parent,
         }
       }
       auto newPrimitive = new Primitive(indexStart, indexCount, vertexCount, vertexStart);
+      newPrimitive->material_index = primitive.material;
+      if (newPrimitive->material_index < 0)
+        newPrimitive->material_index = 0;
       newPrimitive->set_bounding_box(posMin, posMax);
       newMesh->primitives.push_back(newPrimitive);
     }

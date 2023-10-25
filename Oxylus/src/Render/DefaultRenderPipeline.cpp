@@ -55,6 +55,15 @@ void DefaultRenderPipeline::update(Scene* scene) {
     OX_SCOPED_ZONE_N("Mesh System");
     const auto view = scene->m_registry.view<TransformComponent, MeshRendererComponent, MaterialComponent, TagComponent>();
     for (const auto&& [entity, transform, meshrenderer, material, tag] : view.each()) {
+      if (!meshrenderer.mesh_geometry->animations.empty()) {
+        static auto animationTimer = 0.0f;
+        animationTimer += Application::get_timestep();
+        if (animationTimer > meshrenderer.mesh_geometry->animations[0].end) {
+          animationTimer -= meshrenderer.mesh_geometry->animations[0].end;
+        }
+        meshrenderer.mesh_geometry->update_animation(0, animationTimer);
+      }
+
       auto e = Entity(entity, scene);
       auto parent = e.get_parent();
       bool parentEnabled = true;
@@ -286,14 +295,15 @@ void DefaultRenderPipeline::depth_pre_pass(const Ref<vuk::RenderGraph>& rg, vuk:
 
         VulkanRenderer::render_mesh(mesh,
           command_buffer,
-          [&mesh, &command_buffer, i, material_map](const Mesh::Primitive* part) {
+          [&mesh, &command_buffer, i, material_map](const Mesh::Primitive* part, Mesh::MeshData* mesh_data) {
             const auto& material = mesh.materials[part->material_index];
 
             if (material->parameters.alpha_mode == (uint32_t)Material::AlphaMode::Mask) {
               return false;
             }
 
-            command_buffer.push_constants(vuk::ShaderStageFlagBits::eVertex | vuk::ShaderStageFlagBits::eFragment, 0, mesh.transform)
+            command_buffer.bind_buffer(3, 0, *mesh_data->node_buffer)
+                          .push_constants(vuk::ShaderStageFlagBits::eVertex | vuk::ShaderStageFlagBits::eFragment, 0, mesh.transform)
                           .push_constants(vuk::ShaderStageFlagBits::eFragment, sizeof(glm::mat4), get_material_index(material_map, i, part->material_index))
                           .bind_sampler(1, 0, vuk::LinearSamplerRepeated)
                           .bind_image(1, 0, *material->normal_texture->get_texture().view)
@@ -415,14 +425,15 @@ void DefaultRenderPipeline::geomerty_pass(const Ref<vuk::RenderGraph>& rg,
         auto& mesh = mesh_draw_list[i];
         VulkanRenderer::render_mesh(mesh,
           command_buffer,
-          [&](const Mesh::Primitive* part) {
+          [&](const Mesh::Primitive* part, Mesh::MeshData* mesh_data) {
             const auto& material = mesh.materials[part->material_index];
             if (material->parameters.alpha_mode == (uint32_t)Material::AlphaMode::Blend) {
               transparent_mesh_draw_list.emplace_back(i);
               return false;
             }
 
-            command_buffer.push_constants(vuk::ShaderStageFlagBits::eVertex | vuk::ShaderStageFlagBits::eFragment, 0, mesh.transform)
+            command_buffer.bind_buffer(3, 0, *mesh_data->node_buffer)
+                          .push_constants(vuk::ShaderStageFlagBits::eVertex | vuk::ShaderStageFlagBits::eFragment, 0, mesh.transform)
                           .push_constants(vuk::ShaderStageFlagBits::eFragment, sizeof(glm::mat4), get_material_index(material_map, i, part->material_index));
 
             material->bind_textures(command_buffer);
@@ -437,7 +448,7 @@ void DefaultRenderPipeline::geomerty_pass(const Ref<vuk::RenderGraph>& rg,
         auto& mesh = mesh_draw_list[i];
         VulkanRenderer::render_mesh(mesh,
           command_buffer,
-          [&](const Mesh::Primitive* part) {
+          [&](const Mesh::Primitive* part, Mesh::MeshData*) {
             const auto& material = mesh.materials[part->material_index];
             command_buffer.push_constants(vuk::ShaderStageFlagBits::eVertex | vuk::ShaderStageFlagBits::eFragment, 0, mesh.transform)
                           .push_constants(vuk::ShaderStageFlagBits::eFragment, sizeof(glm::mat4), get_material_index(material_map, i, part->material_index));
@@ -561,7 +572,7 @@ Scope<vuk::Future> DefaultRenderPipeline::on_render(vuk::Allocator& frame_alloca
   if (RendererConfig::get()->ssr_config.enabled)
     ssr_pass(frame_allocator, rg, vk_context, vs_buffer);
 
-#if Bloom
+#pragma region Bloom
   struct BloomPushConst {
     // x: threshold, y: clamp, z: radius, w: unused
     Vec4 params = {};
@@ -649,29 +660,30 @@ Scope<vuk::Future> DefaultRenderPipeline::on_render(vuk::Allocator& frame_alloca
     });
   }
 
-  rg->converge_image_explicit(down_read_diverged_names, "bloom_downsampled_image_final");
+  //rg->converge_image_explicit(down_read_diverged_names, "bloom_downsampled_image_final");
   rg->converge_image_explicit(up_output_names, "bloom_upsampled_image");
 
-#endif
+#pragma endregion
 
   auto [final_buff, final_buff_fut] = create_buffer(frame_allocator, vuk::MemoryUsage::eCPUtoGPU, vuk::DomainFlagBits::eTransferOnGraphics, std::span(&m_renderer_data.final_pass_data, 1));
   auto& final_buffer = *final_buff;
 
   auto [ssr_resouce, ssr_name] = get_attachment_or_black("ssr_output", RendererConfig::get()->ssr_config.enabled);
   auto [gtao_resouce, gtao_name] = get_attachment_or_black("gtao_final_output", RendererConfig::get()->gtao_config.enabled);
+  auto [bloom_resource, bloom_name] = get_attachment_or_black("bloom_upsampled_image", RendererConfig::get()->bloom_config.enabled);
 
   std::vector<vuk::Resource> final_resources = {
     "final_image"_image >> vuk::eColorRW >> "final_output",
     "pbr_output"_image >> vuk::eFragmentSampled,
     ssr_resouce,
     gtao_resouce,
-    "black_image"_image >> vuk::eFragmentSampled,
+    bloom_resource,
   };
 
   rg->add_pass({
     .name = "final_pass",
     .resources = std::move(final_resources),
-    .execute = [final_buffer, ssr_name, gtao_name](vuk::CommandBuffer& command_buffer) {
+    .execute = [final_buffer, ssr_name, gtao_name, bloom_name](vuk::CommandBuffer& command_buffer) {
       command_buffer.bind_graphics_pipeline("final_pipeline")
                     .set_viewport(0, vuk::Rect2D::framebuffer())
                     .set_scissor(0, vuk::Rect2D::framebuffer())
@@ -684,7 +696,7 @@ Scope<vuk::Future> DefaultRenderPipeline::on_render(vuk::Allocator& frame_alloca
                     .bind_sampler(0, 4, {})
                     .bind_image(0, 4, gtao_name)
                     .bind_sampler(0, 5, {})
-                    .bind_image(0, 5, "black_image")
+                    .bind_image(0, 5, bloom_name)
                     .bind_buffer(0, 6, final_buffer)
                     .draw(3, 1, 0, 0);
     }
@@ -950,7 +962,7 @@ void DefaultRenderPipeline::cascaded_shadow_pass(const Ref<vuk::RenderGraph>& rg
             push_const.cascade_index = cascade_index;
 
             command_buffer.push_constants(vuk::ShaderStageFlagBits::eVertex, 0, push_const);
-            VulkanRenderer::render_mesh(mesh, command_buffer, [](const Mesh::Primitive*) { return true; });
+            VulkanRenderer::render_mesh(mesh, command_buffer, [](const Mesh::Primitive*, Mesh::MeshData*) { return true; });
           }
         }
       }

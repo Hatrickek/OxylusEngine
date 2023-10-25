@@ -162,7 +162,10 @@ void Scene::iterate_over_mesh_node(const Ref<Mesh>& mesh, const std::vector<Mesh
   for (const auto child : node) {
     Entity entity = create_entity(child->name).set_parent(parent);
     if (child->mesh_data) {
-      entity.add_component_internal<MeshRendererComponent>(mesh).submesh_index = child->index;
+      const auto it = std::find(mesh->linear_nodes.begin(), mesh->linear_nodes.end(), child);
+      const auto index = std::distance(mesh->linear_nodes.begin(), it);
+
+      entity.add_component_internal<MeshRendererComponent>(mesh).submesh_index = index;
       entity.get_component<MaterialComponent>().materials = mesh->get_materials_as_ref();
     }
     iterate_over_mesh_node(mesh, child->children, entity);
@@ -480,7 +483,7 @@ void Scene::create_rigidbody(Entity entity, const TransformComponent& transform,
 void Scene::create_character_controller(const TransformComponent& transform, CharacterControllerComponent& component) const {
   if (!is_running)
     return;
-  auto position = JPH::Vec3(transform.translation.x, transform.translation.y, transform.translation.z);
+  const auto position = JPH::Vec3(transform.translation.x, transform.translation.y, transform.translation.z);
   const auto capsuleShape = JPH::RotatedTranslatedShapeSettings(
     JPH::Vec3(0, 0.5f * component.character_height_standing + component.character_radius_standing, 0),
     JPH::Quat::sIdentity(),
@@ -626,7 +629,7 @@ void Scene::on_component_added<PostProcessProbe>(Entity entity, PostProcessProbe
 
 template <>
 void Scene::on_component_added<ParticleSystemComponent>(Entity entity,
-                                                      ParticleSystemComponent& component) { }
+                                                        ParticleSystemComponent& component) { }
 
 template <>
 void Scene::on_component_added<RigidbodyComponent>(Entity entity, RigidbodyComponent& component) {

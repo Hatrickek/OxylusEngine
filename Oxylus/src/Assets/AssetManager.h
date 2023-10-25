@@ -12,10 +12,10 @@ struct ImageCreateInfo;
 class Material;
 class Mesh;
 
+using AssetID = std::string;
+
 class AssetManager {
 public:
-  using AssetID = std::string;
-
   static std::filesystem::path get_asset_file_system_path(const std::filesystem::path& path);
 
   static Ref<TextureAsset> get_texture_asset(const TextureLoadInfo& info);

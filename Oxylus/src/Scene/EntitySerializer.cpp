@@ -297,8 +297,7 @@ UUID EntitySerializer::DeserializeEntity(ryml::ConstNodeRef entityNode, Scene* s
     node["Mesh"] >> meshPath;
     node["SubmeshIndex"] >> submeshIndex;
 
-    deserializedEntity.add_component<MeshRendererComponent>(AssetManager::get_mesh_asset(meshPath)).submesh_index =
-      submeshIndex;
+    deserializedEntity.add_component<MeshRendererComponent>(AssetManager::get_mesh_asset(meshPath)).submesh_index = submeshIndex;
   }
 
   if (entityNode.has_child("MaterialComponent")) {

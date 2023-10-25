@@ -28,7 +28,7 @@ public:
     bool valid = false;
     BoundingBox() = default;
     BoundingBox(glm::vec3 min, glm::vec3 max) : min(min), max(max) { }
-    BoundingBox get_aabb(glm::mat4 m);
+    BoundingBox get_aabb(glm::mat4 m) const;
   };
 
   struct Primitive {
@@ -45,20 +45,21 @@ public:
     Primitive(uint32_t firstIndex, uint32_t indexCount, uint32_t vertex_count, uint32_t first_vertex) : first_index(firstIndex), index_count(indexCount), first_vertex(first_vertex), vertex_count(vertex_count) { }
   };
 
-  constexpr auto MAX_NUM_JOINTS = 128u;
+  static constexpr auto MAX_NUM_JOINTS = 128u;
 
   struct MeshData {
     std::vector<Primitive*> primitives;
     BoundingBox bb;
     BoundingBox aabb;
+    vuk::Unique<vuk::Buffer> node_buffer;
 
     struct UniformBlock {
-      glm::mat4 matrix;
-      glm::mat4 jointMatrix[MAX_NUM_JOINTS]{};
-      float jointcount{0};
-    } uniformBlock;
+      glm::mat4 matrix = glm::identity<glm::mat4>();
+      glm::mat4 joint_matrix[MAX_NUM_JOINTS]{};
+      float jointcount = 0.0f;
+    } uniform_block;
 
-    MeshData(const glm::mat4& matrix): bb(), aabb() { uniformBlock.matrix = matrix; }
+    MeshData(const glm::mat4& matrix);
     ~MeshData();
     void set_bounding_box(glm::vec3 min, glm::vec3 max);
   };
@@ -72,10 +73,9 @@ public:
     std::vector<Node*> children;
     MeshData* mesh_data;
     Skin* skin;
-    int32_t skinIndex = -1;
+    int32_t skin_index = -1;
     Mat4 matrix;
     std::string name;
-    int32_t skin_index = -1;
     Vec3 translation{};
     Vec3 scale{1.0f};
     Quat rotation{};
@@ -128,6 +128,8 @@ public:
     Vec4 weight0;
   };
 
+  std::vector<Animation> animations;
+
   std::vector<Ref<TextureAsset>> m_textures;
   std::vector<Node*> nodes;
   std::vector<Node*> linear_nodes;
@@ -147,6 +149,7 @@ public:
   void bind_index_buffer(vuk::CommandBuffer& command_buffer) const;
   void draw_node(const Node* node, vuk::CommandBuffer& commandBuffer) const;
   void draw(vuk::CommandBuffer& command_buffer) const;
+  void update_animation(uint32_t index, float time);
   void destroy();
 
   /// Export a mesh file as glb file.
@@ -178,7 +181,6 @@ private:
   Vec3 center{0.0f};
   Vec2 uv_scale{1.0f};
 
-  std::vector<Animation> animations;
   std::vector<Skin*> skins;
 
   void load_textures(tinygltf::Model& model);
@@ -194,7 +196,6 @@ private:
   void load_skins(tinygltf::Model& gltf_model);
   void calculate_bounding_box(Node* node, Node* parent);
   void get_scene_dimensions();
-  void update_animation(uint32_t index, float time);
   Node* find_node(Node* parent, uint32_t index);
   Node* node_from_index(uint32_t index);
 };
