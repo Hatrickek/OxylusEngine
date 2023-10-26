@@ -1,4 +1,4 @@
-#include "VulkanRenderer.h"
+#include "Renderer.h"
 
 #include <future>
 #include <vuk/Partials.hpp>
@@ -13,12 +13,10 @@
 #include "Render/DefaultRenderPipeline.h"
 
 namespace Oxylus {
-VulkanRenderer::RendererContext VulkanRenderer::renderer_context;
-RendererConfig VulkanRenderer::renderer_config;
+Renderer::RendererContext Renderer::renderer_context;
+RendererConfig Renderer::renderer_config;
 
-void VulkanRenderer::init() {
-  renderer_context.default_render_pipeline = create_ref<DefaultRenderPipeline>("DefaultRenderPipeline");
-
+void Renderer::init() {
   // Save/Load renderer config
   if (!RendererConfig::get()->load_config("renderer.oxconfig"))
     RendererConfig::get()->save_config("renderer.oxconfig");
@@ -33,16 +31,12 @@ void VulkanRenderer::init() {
   renderer_config.config_change_dispatcher.trigger(RendererConfig::ConfigChangeEvent{});
 }
 
-void VulkanRenderer::shutdown() {
+void Renderer::shutdown() {
   RendererConfig::get()->save_config("renderer.oxconfig");
   DebugRenderer::release();
 }
 
-void VulkanRenderer::set_camera(Camera& camera) {
-  renderer_context.current_camera = &camera;
-}
-
-void VulkanRenderer::draw(VulkanContext* context, ImGuiLayer* imgui_layer, LayerStack& layer_stack, const Ref<SystemManager>& system_manager) {
+void Renderer::draw(VulkanContext* context, ImGuiLayer* imgui_layer, LayerStack& layer_stack, const Ref<SystemManager>& system_manager) {
   OX_SCOPED_ZONE;
   imgui_layer->begin();
 
@@ -122,7 +116,7 @@ void VulkanRenderer::draw(VulkanContext* context, ImGuiLayer* imgui_layer, Layer
   context->end(fut, frameAllocator);
 }
 
-void VulkanRenderer::render_node(const Mesh::Node* node, vuk::CommandBuffer& command_buffer, const std::function<bool(Mesh::Primitive* prim, Mesh::MeshData* mesh_data)>& per_mesh_func) {
+void Renderer::render_node(const Mesh::Node* node, vuk::CommandBuffer& command_buffer, const std::function<bool(Mesh::Primitive* prim, Mesh::MeshData* mesh_data)>& per_mesh_func) {
   if (node->mesh_data) {
     for (const auto& part : node->mesh_data->primitives) {
       if (!per_mesh_func(part, node->mesh_data))
@@ -135,7 +129,7 @@ void VulkanRenderer::render_node(const Mesh::Node* node, vuk::CommandBuffer& com
     render_node(child, command_buffer, per_mesh_func);
 }
 
-void VulkanRenderer::render_mesh(const MeshData& mesh,
+void Renderer::render_mesh(const MeshData& mesh,
                                  vuk::CommandBuffer& command_buffer,
                                  const std::function<bool(Mesh::Primitive* prim, Mesh::MeshData* mesh_data)>& per_mesh_func) {
   mesh.mesh_geometry->bind_vertex_buffer(command_buffer);

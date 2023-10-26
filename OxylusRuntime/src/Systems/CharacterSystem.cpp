@@ -20,9 +20,9 @@ namespace OxylusRuntime {
 
   CharacterSystem::~CharacterSystem() = default;
 
-  void CharacterSystem::OnInit() { }
+  void CharacterSystem::on_init() { }
 
-  void CharacterSystem::OnUpdate(Scene* scene, Timestep deltaTime) {
+  void CharacterSystem::on_update(Scene* scene, Timestep deltaTime) {
     auto& registery = scene->m_registry;
     const auto characterView = registery.view<TransformComponent, CharacterControllerComponent>();
     const auto cameraView = registery.view<TransformComponent, CameraComponent>();
@@ -129,7 +129,7 @@ namespace OxylusRuntime {
     }
   }
 
-  void CharacterSystem::OnImGuiRender(Scene* scene, Timestep deltaTime) {
+  void CharacterSystem::on_imgui_render(Scene* scene, Timestep deltaTime) {
     auto& registery = scene->m_registry;
     const auto characterView = registery.view<TransformComponent, CharacterControllerComponent>();
     for (const auto entity : characterView) {
@@ -161,7 +161,7 @@ namespace OxylusRuntime {
     }
   }
 
-  void CharacterSystem::OnContactAdded(Scene* scene, const JPH::Body& body1, const JPH::Body& body2, const JPH::ContactManifold& manifold, const JPH::ContactSettings& settings) {
+  void CharacterSystem::on_contact_added(Scene* scene, const JPH::Body& body1, const JPH::Body& body2, const JPH::ContactManifold& manifold, const JPH::ContactSettings& settings) {
     auto& registery = scene->m_registry;
     const auto characterView = registery.view<TransformComponent, CharacterControllerComponent>();
     const auto rbView = registery.view<TagComponent, TransformComponent, RigidbodyComponent>();

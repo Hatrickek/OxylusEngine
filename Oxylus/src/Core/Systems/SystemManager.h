@@ -59,17 +59,17 @@ public:
 
   void on_update() const {
     for (auto& system : m_Systems)
-      system.second->OnUpdate();
+      system.second->on_update();
   }
 
   void on_imgui_render() const {
     for (const auto& system : m_Systems)
-      system.second->OnImGuiRender();
+      system.second->on_imgui_render();
   }
 
   void shutdown() const {
     for (const auto& system : m_Systems)
-      system.second->OnShutdown();
+      system.second->on_shutdown();
   }
 
 private:

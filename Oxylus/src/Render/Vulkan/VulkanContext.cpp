@@ -224,7 +224,7 @@ void VulkanContext::create_context(const AppSpec& spec) {
   constexpr unsigned num_inflight_frames = 3;
   superframe_resource.emplace(*context, num_inflight_frames);
   superframe_allocator.emplace(*superframe_resource);
-  swapchain = context->add_swapchain(make_swapchain(this, {}));
+  swapchain = context->add_swapchain(make_swapchain(this, {}, present_mode));
   present_ready = vuk::Unique<std::array<VkSemaphore, 3>>(*superframe_allocator);
   render_complete = vuk::Unique<std::array<VkSemaphore, 3>>(*superframe_allocator);
 

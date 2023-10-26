@@ -135,6 +135,14 @@ public:
   std::vector<Node*> linear_nodes;
   vuk::Unique<vuk::Buffer> verticies_buffer;
   vuk::Unique<vuk::Buffer> indicies_buffer;
+
+  struct Dimensions {
+    glm::vec3 min = glm::vec3(FLT_MAX);
+    glm::vec3 max = glm::vec3(-FLT_MAX);
+  } dimensions;
+
+  glm::mat4 aabb;
+
   std::string name;
   std::string path;
   uint32_t loading_flags = 0;
@@ -169,13 +177,6 @@ private:
 
   std::vector<uint32_t> indices;
   std::vector<Vertex> vertices;
-
-  struct Dimensions {
-    glm::vec3 min = glm::vec3(FLT_MAX);
-    glm::vec3 max = glm::vec3(-FLT_MAX);
-  } dimensions;
-
-  glm::mat4 aabb;
 
   Vec3 scale{1.0f};
   Vec3 center{0.0f};

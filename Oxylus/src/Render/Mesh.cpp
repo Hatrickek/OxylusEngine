@@ -10,7 +10,6 @@
 #include "Assets/AssetManager.h"
 #include "Utils/Profiler.h"
 #include "Vulkan/VulkanContext.h"
-#include "Vulkan/VulkanRenderer.h"
 #include "Utils/Log.h"
 
 namespace Oxylus {

@@ -17,11 +17,10 @@
 #include "Vulkan/VukUtils.h"
 #include "Vulkan/VulkanContext.h"
 
-#include "Vulkan/VulkanRenderer.h"
+#include "Vulkan/Renderer.h"
 
 namespace Oxylus {
-void DefaultRenderPipeline::init(Scene* scene) {
-  m_scene = scene;
+void DefaultRenderPipeline::init() {
   // Lights data
   point_lights_data.reserve(MAX_NUM_LIGHTS);
 
@@ -43,94 +42,36 @@ void DefaultRenderPipeline::init(Scene* scene) {
   RendererConfig::get()->dispatch_config_change();
 }
 
-void DefaultRenderPipeline::update(Scene* scene) {
-  // TODO:(hatrickek) Temporary solution for camera.
-  m_renderer_context.current_camera = VulkanRenderer::renderer_context.current_camera;
-
-  if (!m_renderer_context.current_camera)
-    OX_CORE_FATAL("No camera is set for rendering!");
-
-  // Mesh
-  {
-    OX_SCOPED_ZONE_N("Mesh System");
-    const auto view = scene->m_registry.view<TransformComponent, MeshRendererComponent, MaterialComponent, TagComponent>();
-    for (const auto&& [entity, transform, meshrenderer, material, tag] : view.each()) {
-      // TODO : temporary
-      if (!meshrenderer.mesh_geometry->animations.empty()) {
-        static auto animationTimer = 0.0f;
-        animationTimer += Application::get_timestep() * 0.1f;
-        if (animationTimer > meshrenderer.mesh_geometry->animations[0].end) {
-          animationTimer -= meshrenderer.mesh_geometry->animations[0].end;
-        }
-        meshrenderer.mesh_geometry->update_animation(0, animationTimer);
-      }
-
-      auto e = Entity(entity, scene);
-      auto parent = e.get_parent();
-      bool parentEnabled = true;
-      if (parent)
-        parentEnabled = parent.get_component<TagComponent>().enabled;
-      if (tag.enabled && parentEnabled && !material.materials.empty()) {
-        mesh_draw_list.emplace_back(meshrenderer.mesh_geometry.get(), e.get_world_transform(), material.materials, meshrenderer.submesh_index);
-      }
-    }
-  }
-
-  // Particle system
-  {
-    OX_SCOPED_ZONE_N("Particle System");
-    const auto particleSystemView = scene->m_registry.view<TransformComponent, ParticleSystemComponent>();
-    for (auto&& [e, tc, psc] : particleSystemView.each()) {
-      psc.system->on_update(Application::get_timestep(), tc.translation);
-      psc.system->on_render();
-    }
-  }
-
-  // Lighting
-  {
-    OX_SCOPED_ZONE_N("Lighting System");
-    // Scene lights
-    {
-      const auto view = scene->m_registry.view<TransformComponent, LightComponent>();
-      for (auto&& [e,tc, lc] : view.each()) {
-        Entity entity = {e, scene};
-        if (!entity.get_component<TagComponent>().enabled)
-          continue;
-        switch (lc.type) {
-          case LightComponent::LightType::Directional: {
-            dir_lights_data.emplace_back(VulkanRenderer::LightingData{
-              Vec4{tc.translation, lc.intensity},
-              Vec4{lc.color, lc.range},
-              Vec4{tc.rotation, 1.0f}
-            });
-            break;
-          }
-          case LightComponent::LightType::Point: {
-            point_lights_data.emplace_back(VulkanRenderer::LightingData{
-              Vec4{tc.translation, lc.intensity},
-              Vec4{lc.color, lc.range},
-              Vec4{tc.rotation, 1.0f}
-            });
-            break;
-          }
-          case LightComponent::LightType::Spot: {
-            spot_lights_data.emplace_back(VulkanRenderer::LightingData{
-              Vec4{tc.translation, lc.intensity},
-              Vec4{lc.color, lc.range},
-              Vec4{tc.rotation, 1.0f}
-            });
-            break;
-          }
-        }
-      }
-      light_buffer_dispatcher.trigger(LightChangeEvent{});
-    }
-  }
-}
-
 void DefaultRenderPipeline::on_dispatcher_events(EventDispatcher& dispatcher) {
   dispatcher.sink<SkyboxLoadEvent>().connect<&DefaultRenderPipeline::update_skybox>(*this);
   dispatcher.sink<ProbeChangeEvent>().connect<&DefaultRenderPipeline::update_parameters>(*this);
+}
+
+void DefaultRenderPipeline::on_register_render_object(const MeshData& render_object) {
+  mesh_draw_list.emplace_back(render_object);
+}
+
+void DefaultRenderPipeline::on_register_light(const LightingData& lighting_data, LightComponent::LightType light_type) {
+  switch (light_type) {
+    case LightComponent::LightType::Directional: {
+      dir_lights_data.emplace_back(lighting_data);
+      break;
+    }
+    case LightComponent::LightType::Point: {
+      point_lights_data.emplace_back(lighting_data);
+      break;
+    }
+    case LightComponent::LightType::Spot: {
+      spot_lights_data.emplace_back(lighting_data);
+      break;
+    }
+  }
+
+  light_buffer_dispatcher.trigger(LightChangeEvent{});
+}
+
+void DefaultRenderPipeline::on_register_camera(Camera* camera) {
+  m_renderer_context.current_camera = camera;
 }
 
 void DefaultRenderPipeline::shutdown() { }
@@ -294,7 +235,7 @@ void DefaultRenderPipeline::depth_pre_pass(const Ref<vuk::RenderGraph>& rg, vuk:
       for (uint32_t i = 0; i < mesh_draw_list.size(); i++) {
         auto& mesh = mesh_draw_list[i];
 
-        VulkanRenderer::render_mesh(mesh,
+        Renderer::render_mesh(mesh,
           command_buffer,
           [&mesh, &command_buffer, i, material_map](const Mesh::Primitive* part, Mesh::MeshData* mesh_data) {
             const auto& material = mesh.materials[part->material_index];
@@ -424,7 +365,7 @@ void DefaultRenderPipeline::geomerty_pass(const Ref<vuk::RenderGraph>& rg,
       // PBR pipeline
       for (uint32_t i = 0; i < mesh_draw_list.size(); i++) {
         auto& mesh = mesh_draw_list[i];
-        VulkanRenderer::render_mesh(mesh,
+        Renderer::render_mesh(mesh,
           command_buffer,
           [&](const Mesh::Primitive* part, Mesh::MeshData* mesh_data) {
             const auto& material = mesh.materials[part->material_index];
@@ -447,7 +388,7 @@ void DefaultRenderPipeline::geomerty_pass(const Ref<vuk::RenderGraph>& rg,
       command_buffer.broadcast_color_blend(vuk::BlendPreset::eAlphaBlend);
       for (auto i : transparent_mesh_draw_list) {
         auto& mesh = mesh_draw_list[i];
-        VulkanRenderer::render_mesh(mesh,
+        Renderer::render_mesh(mesh,
           command_buffer,
           [&](const Mesh::Primitive* part, Mesh::MeshData*) {
             const auto& material = mesh.materials[part->material_index];
@@ -505,7 +446,7 @@ void DefaultRenderPipeline::bloom_pass(const Ref<vuk::RenderGraph>& rg, const Vu
   bloom_push_const.params.x = RendererConfig::get()->bloom_config.threshold;
   bloom_push_const.params.y = RendererConfig::get()->bloom_config.clamp;
 
-  uint32_t bloom_mip_count = 7;
+  constexpr uint32_t bloom_mip_count = 8;
 
   rg->attach_and_clear_image("bloom_image", {.format = vk_context->swapchain->format, .sample_count = vuk::SampleCountFlagBits::e1, .level_count = bloom_mip_count, .layer_count = 1}, vuk::Black<float>);
   rg->inference_rule("bloom_image", vuk::same_extent_as("final_image"));
@@ -519,15 +460,15 @@ void DefaultRenderPipeline::bloom_pass(const Ref<vuk::RenderGraph>& rg, const Vu
       "pbr_output"_image >> vuk::eComputeSampled
     },
     .execute = [bloom_push_const, diverged_names](vuk::CommandBuffer& command_buffer) {
-      //const auto size = IVec2(VulkanRenderer::get_viewport_width() / (1 << 1), VulkanRenderer::get_viewport_height() / (1 << 1));
+      //const auto size = IVec2(Renderer::get_viewport_width() / (1 << 1), Renderer::get_viewport_height() / (1 << 1));
 
       command_buffer.bind_compute_pipeline("bloom_prefilter_pipeline")
                     .push_constants(vuk::ShaderStageFlagBits::eCompute, 0, bloom_push_const)
                     .bind_image(0, 0, diverged_names[0])
                     .bind_sampler(0, 0, vuk::NearestMagLinearMinSamplerClamped)
                     .bind_image(0, 1, "pbr_output")
-                    .bind_sampler(0, 1, {})
-                    .dispatch((VulkanRenderer::get_viewport_width() + 8 - 1) / 8, (VulkanRenderer::get_viewport_height() + 8 - 1) / 8, 1);
+                    .bind_sampler(0, 1, vuk::NearestMagLinearMinSamplerClamped)
+                    .dispatch((Renderer::get_viewport_width() + 8 - 1) / 8, (Renderer::get_viewport_height() + 8 - 1) / 8, 1);
     }
   });
 
@@ -540,7 +481,7 @@ void DefaultRenderPipeline::bloom_pass(const Ref<vuk::RenderGraph>& rg, const Vu
         vuk::Resource(input_name, vuk::Resource::Type::eImage, vuk::eComputeSampled),
       },
       .execute = [bloom_push_const, diverged_names, input_name, i](vuk::CommandBuffer& command_buffer) {
-        const auto size = IVec2(VulkanRenderer::get_viewport_width() / (1 << i), VulkanRenderer::get_viewport_height() / (1 << i));
+        const auto size = IVec2(Renderer::get_viewport_width() / (1 << i), Renderer::get_viewport_height() / (1 << i));
 
         command_buffer.bind_compute_pipeline("bloom_downsample_pipeline")
                       .push_constants(vuk::ShaderStageFlagBits::eCompute, 0, bloom_push_const)
@@ -574,7 +515,7 @@ void DefaultRenderPipeline::bloom_pass(const Ref<vuk::RenderGraph>& rg, const Vu
         vuk::Resource(down_read_diverged_names[i], vuk::Resource::Type::eImage, vuk::eComputeSampled),
       },
       .execute = [bloom_push_const, up_diverged_names, i, input_name, down_read_diverged_names](vuk::CommandBuffer& command_buffer) {
-        const auto size = IVec2(VulkanRenderer::get_viewport_width() / (1 << i), VulkanRenderer::get_viewport_height() / (1 << i));
+        const auto size = IVec2(Renderer::get_viewport_width() / (1 << i), Renderer::get_viewport_height() / (1 << i));
 
         command_buffer.bind_compute_pipeline("bloom_upsample_pipeline")
                       .push_constants(vuk::ShaderStageFlagBits::eCompute, 0, bloom_push_const)
@@ -588,15 +529,13 @@ void DefaultRenderPipeline::bloom_pass(const Ref<vuk::RenderGraph>& rg, const Vu
       }
     });
   }
-
-  //rg->converge_image_explicit(down_read_diverged_names, "bloom_downsampled_image_final");
+  
   rg->converge_image_explicit(up_output_names, "bloom_upsampled_image");
 }
 
 Scope<vuk::Future> DefaultRenderPipeline::on_render(vuk::Allocator& frame_allocator, const vuk::Future& target, vuk::Dimension3D dim) {
-  mesh_draw_list.clear();
-
-  update(m_scene);
+  if (!m_renderer_context.current_camera)
+    OX_CORE_FATAL("No camera is set for rendering!");
 
   const auto rg = create_ref<vuk::RenderGraph>("DefaultRenderPipelineRenderGraph");
 
@@ -650,9 +589,9 @@ Scope<vuk::Future> DefaultRenderPipeline::on_render(vuk::Allocator& frame_alloca
   } pbr_pass_params;
 
   pbr_pass_params.num_lights = (int)point_lights_data.size();
-  pbr_pass_params.num_threads = (glm::ivec2(VulkanRenderer::get_viewport_width(), VulkanRenderer::get_viewport_height()) + PIXELS_PER_TILE - 1) / PIXELS_PER_TILE;
+  pbr_pass_params.num_threads = (glm::ivec2(Renderer::get_viewport_width(), Renderer::get_viewport_height()) + PIXELS_PER_TILE - 1) / PIXELS_PER_TILE;
   pbr_pass_params.num_thread_groups = (pbr_pass_params.num_threads + TILES_PER_THREADGROUP - 1) / TILES_PER_THREADGROUP;
-  pbr_pass_params.screen_dimensions = glm::ivec2(VulkanRenderer::get_viewport_width(), VulkanRenderer::get_viewport_height());
+  pbr_pass_params.screen_dimensions = glm::ivec2(Renderer::get_viewport_width(), Renderer::get_viewport_height());
 
   point_lights_data.clear();
   dir_lights_data.clear();
@@ -692,7 +631,9 @@ Scope<vuk::Future> DefaultRenderPipeline::on_render(vuk::Allocator& frame_alloca
   rg->add_pass({
     .name = "final_pass",
     .resources = std::move(final_resources),
-    .execute = [final_buffer, ssr_name, gtao_name, bloom_name](vuk::CommandBuffer& command_buffer) {
+    .execute = [this, final_buffer, ssr_name, gtao_name, bloom_name](vuk::CommandBuffer& command_buffer) {
+      this->mesh_draw_list.clear();
+
       command_buffer.bind_graphics_pipeline("final_pipeline")
                     .set_viewport(0, vuk::Rect2D::framebuffer())
                     .set_scissor(0, vuk::Rect2D::framebuffer())
@@ -724,7 +665,7 @@ Scope<vuk::Future> DefaultRenderPipeline::on_render(vuk::Allocator& frame_alloca
 
   if (RendererConfig::get()->fxaa_config.enabled)
     final_image_fut = apply_fxaa(final_image_fut, target);
-
+  
   return create_scope<vuk::Future>(std::move(final_image_fut));
 }
 
@@ -736,7 +677,7 @@ void DefaultRenderPipeline::update_skybox(const SkyboxLoadEvent& e) {
 
 
 void DefaultRenderPipeline::gtao_pass(vuk::Allocator& frame_allocator, const Ref<vuk::RenderGraph>& rg) {
-  gtao_update_constants(gtao_constants, (int)VulkanRenderer::get_viewport_width(), (int)VulkanRenderer::get_viewport_height(), gtao_settings, value_ptr(m_renderer_data.ubo_vs.projection), true, 0);
+  gtao_update_constants(gtao_constants, (int)Renderer::get_viewport_width(), (int)Renderer::get_viewport_height(), gtao_settings, value_ptr(m_renderer_data.ubo_vs.projection), true, 0);
 
   auto [gtao_const_buff, gtao_const_buff_fut] = create_buffer(frame_allocator, vuk::MemoryUsage::eCPUtoGPU, vuk::DomainFlagBits::eTransferOnGraphics, std::span(&gtao_constants, 1));
   auto& gtao_const_buffer = *gtao_const_buff;
@@ -765,7 +706,7 @@ void DefaultRenderPipeline::gtao_pass(vuk::Allocator& frame_allocator, const Ref
                     .bind_image(0, 5, diverged_names[3])
                     .bind_image(0, 6, diverged_names[4])
                     .bind_sampler(0, 7, vuk::LinearSamplerClamped)
-                    .dispatch((VulkanRenderer::get_viewport_width() + 16 - 1) / 16, (VulkanRenderer::get_viewport_height() + 16 - 1) / 16);
+                    .dispatch((Renderer::get_viewport_width() + 16 - 1) / 16, (Renderer::get_viewport_height() + 16 - 1) / 16);
     }
   });
 
@@ -787,7 +728,7 @@ void DefaultRenderPipeline::gtao_pass(vuk::Allocator& frame_allocator, const Ref
                     .bind_image(0, 3, "gtao_main_image")
                     .bind_image(0, 4, "gtao_edge_image")
                     .bind_sampler(0, 5, vuk::LinearSamplerClamped)
-                    .dispatch((VulkanRenderer::get_viewport_width() + 8 - 1) / 8, (VulkanRenderer::get_viewport_height() + 8 - 1) / 8);
+                    .dispatch((Renderer::get_viewport_width() + 8 - 1) / 8, (Renderer::get_viewport_height() + 8 - 1) / 8);
     }
   });
 
@@ -821,7 +762,7 @@ void DefaultRenderPipeline::gtao_pass(vuk::Allocator& frame_allocator, const Ref
                      .bind_image(0, 2, "gtao_edge_output")
                      .bind_image(0, 3, attachment_name)
                      .bind_sampler(0, 4, {})
-                     .dispatch((VulkanRenderer::get_viewport_width() + (XE_GTAO_NUMTHREADS_X * 2) - 1) / (XE_GTAO_NUMTHREADS_X * 2), (VulkanRenderer::get_viewport_height() + XE_GTAO_NUMTHREADS_Y - 1) / XE_GTAO_NUMTHREADS_Y, 1);
+                     .dispatch((Renderer::get_viewport_width() + (XE_GTAO_NUMTHREADS_X * 2) - 1) / (XE_GTAO_NUMTHREADS_X * 2), (Renderer::get_viewport_height() + XE_GTAO_NUMTHREADS_Y - 1) / XE_GTAO_NUMTHREADS_Y, 1);
       }
     });
   }
@@ -840,7 +781,7 @@ void DefaultRenderPipeline::gtao_pass(vuk::Allocator& frame_allocator, const Ref
                     .bind_image(0, 2, "gtao_edge_output")
                     .bind_image(0, 3, "gtao_final_image")
                     .bind_sampler(0, 4, {})
-                    .dispatch((VulkanRenderer::get_viewport_width() + (XE_GTAO_NUMTHREADS_X * 2) - 1) / (XE_GTAO_NUMTHREADS_X * 2), (VulkanRenderer::get_viewport_height() + XE_GTAO_NUMTHREADS_Y - 1) / XE_GTAO_NUMTHREADS_Y, 1);
+                    .dispatch((Renderer::get_viewport_width() + (XE_GTAO_NUMTHREADS_X * 2) - 1) / (XE_GTAO_NUMTHREADS_X * 2), (Renderer::get_viewport_height() + XE_GTAO_NUMTHREADS_Y - 1) / XE_GTAO_NUMTHREADS_Y, 1);
     }
   });
 
@@ -883,7 +824,7 @@ void DefaultRenderPipeline::ssr_pass(vuk::Allocator& frame_allocator, const Ref<
                     .bind_image(0, 4, "normal_output")
                     .bind_buffer(0, 5, vs_buffer)
                     .bind_buffer(0, 6, ssr_buffer)
-                    .dispatch((VulkanRenderer::get_viewport_width() + 8 - 1) / 8, (VulkanRenderer::get_viewport_height() + 8 - 1) / 8, 1);
+                    .dispatch((Renderer::get_viewport_width() + 8 - 1) / 8, (Renderer::get_viewport_height() + 8 - 1) / 8, 1);
     }
   });
 
@@ -971,7 +912,7 @@ void DefaultRenderPipeline::cascaded_shadow_pass(const Ref<vuk::RenderGraph>& rg
             push_const.cascade_index = cascade_index;
 
             command_buffer.push_constants(vuk::ShaderStageFlagBits::eVertex, 0, push_const);
-            VulkanRenderer::render_mesh(mesh, command_buffer, [](const Mesh::Primitive*, Mesh::MeshData*) { return true; });
+            Renderer::render_mesh(mesh, command_buffer, [](const Mesh::Primitive*, Mesh::MeshData*) { return true; });
           }
         }
       }

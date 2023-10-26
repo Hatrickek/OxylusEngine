@@ -12,6 +12,7 @@
 #include "Render/RenderPipeline.h"
 
 #include "Render/Mesh.h"
+#include "Render/RendererData.h"
 
 namespace Oxylus {
 class DefaultRenderPipeline;
@@ -20,33 +21,15 @@ class LayerStack;
 class ImGuiLayer;
 class VulkanContext;
 
-class VulkanRenderer {
+class Renderer {
 public:
   static struct RendererContext {
-    Ref<RenderPipeline> render_pipeline = nullptr;
-    Ref<DefaultRenderPipeline> default_render_pipeline = nullptr;
-    Camera* current_camera = nullptr;
+    // TODO:
+    // need to get rid of this and instead use the render pipeline from scenes directly.
+    // currently this gets filled at scene creation 
+    Ref<RenderPipeline> render_pipeline = nullptr; 
     UVec2 viewport_size = {1600, 900};
   } renderer_context;
-
-  struct LightingData {
-    Vec4 position_and_intensity;
-    Vec4 color_and_radius;
-    Vec4 rotation;
-  };
-
-  struct MeshData {
-    Mesh* mesh_geometry;
-    std::vector<Ref<Material>> materials;
-    Mat4 transform;
-    uint32_t submesh_index = 0; // todo: get rid of this
-
-    MeshData(Mesh* mesh,
-             const Mat4& transform,
-             const std::vector<Ref<Material>>& materials,
-             const uint32_t submeshIndex) : mesh_geometry(mesh), materials(materials), transform(transform),
-                                            submesh_index(submeshIndex) { }
-  };
 
   static void init();
   static void shutdown();
@@ -59,9 +42,6 @@ public:
   static UVec2 get_viewport_size() { return renderer_context.viewport_size; }
   static unsigned get_viewport_width() { return renderer_context.viewport_size.x; }
   static unsigned get_viewport_height() { return renderer_context.viewport_size.y; }
-
-  // TODO(hatrickek): Temporary
-  static void set_camera(Camera& camera);
 
 private:
   // Config

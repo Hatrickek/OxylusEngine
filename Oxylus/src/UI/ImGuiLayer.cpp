@@ -16,7 +16,6 @@
 
 #include "Render/Window.h"
 #include "Render/Vulkan/VulkanContext.h"
-#include "Render/Vulkan/VulkanRenderer.h"
 #include "Utils/Profiler.h"
 
 namespace Oxylus {

@@ -3,7 +3,11 @@
 
 #include "Event/Event.h"
 #include <vuk/Future.hpp>
+
+#include "RendererData.h"
+
 #include "Core/Base.h"
+#include "Core/Components.h"
 
 namespace vuk {
 struct SampledImage;
@@ -19,13 +23,16 @@ public:
 
   virtual ~RenderPipeline() = default;
 
-  virtual void init(Scene* scene) { }
-  virtual void update(Scene* scene) { }
-  virtual void shutdown() { }
+  virtual void init() = 0;
+  virtual void shutdown() = 0;
 
   virtual Scope<vuk::Future> on_render(vuk::Allocator& frameAllocator, const vuk::Future& target, vuk::Dimension3D dim) = 0;
 
   virtual void on_dispatcher_events(EventDispatcher& dispatcher) { }
+
+  virtual void on_register_render_object(const MeshData& render_object) { }
+  virtual void on_register_light(const LightingData& lighting_data, LightComponent::LightType light_type) { }
+  virtual void on_register_camera(Camera* camera) { }
 
   virtual void enqueue_future(vuk::Future&& fut);
   virtual void wait_for_futures(VulkanContext* vkContext);

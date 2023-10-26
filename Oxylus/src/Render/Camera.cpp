@@ -3,7 +3,8 @@
 #include "Core/Input.h"
 #include "Utils/OxMath.h"
 #include "Utils/Profiler.h"
-#include "Vulkan/VulkanRenderer.h"
+
+#include "Vulkan/Renderer.h"
 
 namespace Oxylus {
 Camera::Camera(glm::vec3 position) {
@@ -58,7 +59,7 @@ void Camera::SetPerspective(float fov, float aspect, float znear, float zfar) {
 void Camera::SetFov(const float fov) {
   this->Fov = fov;
   m_Perspective = glm::perspective(glm::radians(fov),
-    static_cast<float>(VulkanRenderer::get_viewport_width()) / static_cast<float>(VulkanRenderer::get_viewport_height()),
+    static_cast<float>(Renderer::get_viewport_width()) / static_cast<float>(Renderer::get_viewport_height()),
     NearClip,
     FarClip);
 }
@@ -125,7 +126,7 @@ void Camera::UpdateViewMatrix() {
   SkyboxView = m_ViewMatrix;
   SkyboxView[3] = glm::vec4(0, 0, 0, 1);
 
-  Aspect = (float)VulkanRenderer::get_viewport_width() / (float)VulkanRenderer::get_viewport_height();
+  Aspect = (float)Renderer::get_viewport_width() / (float)Renderer::get_viewport_height();
 }
 
 Mat4 Camera::GenerateViewMatrix(const Vec3& position, const Vec3& viewDir, const Vec3& up) {

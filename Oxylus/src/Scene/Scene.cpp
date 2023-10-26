@@ -2,7 +2,6 @@
 
 #include "Core/Entity.h"
 #include "Render/Camera.h"
-#include "Render/Vulkan/VulkanRenderer.h"
 #include "Utils/Profiler.h"
 #include "Utils/Timestep.h"
 
@@ -19,6 +18,8 @@
 #include "Jolt/Physics/Collision/Shape/TaperedCapsuleShape.h"
 #include "Physics/PhysicsMaterial.h"
 #include "Physics/PhysicsUtils.h"
+
+#include "Render/RenderPipeline.h"
 
 namespace Oxylus {
 Scene::Scene() {
@@ -41,13 +42,13 @@ Scene::Scene(const Scene& scene) {
 
 void Scene::init() {
   // Renderer
-  scene_renderer = create_ref<SceneRenderer>();
+  scene_renderer = create_ref<SceneRenderer>(this);
 
-  scene_renderer->init(this);
+  scene_renderer->init();
 
   // Systems
   for (const auto& system : systems) {
-    system->OnInit();
+    system->on_init();
   }
 }
 
@@ -369,12 +370,12 @@ Ref<Scene> Scene::copy(const Ref<Scene>& other) {
 
 void Scene::on_contact_added(const JPH::Body& body1, const JPH::Body& body2, const JPH::ContactManifold& manifold, const JPH::ContactSettings& settings) {
   for (const auto& system : systems)
-    system->OnContactAdded(this, body1, body2, manifold, settings);
+    system->on_contact_added(this, body1, body2, manifold, settings);
 }
 
 void Scene::on_contact_persisted(const JPH::Body& body1, const JPH::Body& body2, const JPH::ContactManifold& manifold, JPH::ContactSettings& settings) {
   for (const auto& system : systems)
-    system->OnContactPersisted(this, body1, body2, manifold, settings);
+    system->on_contact_persisted(this, body1, body2, manifold, settings);
 }
 
 void Scene::create_rigidbody(Entity entity, const TransformComponent& transform, RigidbodyComponent& component) const {
@@ -510,21 +511,23 @@ void Scene::on_runtime_update(float delta_time) {
     for (const auto entity : group) {
       auto [transform, camera] = group.get<TransformComponent, CameraComponent>(entity);
       camera.system->Update(transform.translation, transform.rotation);
-      VulkanRenderer::set_camera(*camera.system);
+      scene_renderer->get_render_pipeline()->on_register_camera(camera.system.get());
     }
   }
+
+  scene_renderer->update();
 
   {
     OX_SCOPED_ZONE_N("OnUpdate Systems");
     for (const auto& system : systems) {
-      system->OnUpdate(this, delta_time);
+      system->on_update(this, delta_time);
     }
   }
   update_physics(delta_time);
   {
     OX_SCOPED_ZONE_N("PostOnUpdate Systems");
     for (const auto& system : systems) {
-      system->PostOnUpdate(this, delta_time);
+      system->post_on_update(this, delta_time);
     }
   }
 
@@ -560,10 +563,13 @@ void Scene::on_runtime_update(float delta_time) {
 
 void Scene::on_imgui_render(const float delta_time) {
   for (const auto& system : systems)
-    system->OnImGuiRender(this, delta_time);
+    system->on_imgui_render(this, delta_time);
 }
 
 void Scene::on_editor_update(float delta_time, Camera& camera) {
+  scene_renderer->get_render_pipeline()->on_register_camera(&camera);
+  scene_renderer->update();
+
   const auto rbView = m_registry.view<RigidbodyComponent>();
   for (auto&& [e, rb] : rbView.each()) {
     PhysicsUtils::DebugDraw(this, e);
@@ -572,8 +578,6 @@ void Scene::on_editor_update(float delta_time, Camera& camera) {
   for (auto&& [e, ch] : chView.each()) {
     PhysicsUtils::DebugDraw(this, e);
   }
-
-  VulkanRenderer::set_camera(camera);
 }
 
 template <typename T>

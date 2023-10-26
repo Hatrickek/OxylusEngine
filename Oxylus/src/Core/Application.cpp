@@ -5,10 +5,8 @@
 #include "Core.h"
 #include "Layer.h"
 #include "Render/Window.h"
+#include "Render/Vulkan/Renderer.h"
 #include "Render/Vulkan/VulkanContext.h"
-#include "Render/Vulkan/VulkanRenderer.h"
-
-#include "Scene/SceneRenderer.h"
 
 #include "Systems/SystemManager.h"
 #include "Utils/Profiler.h"
@@ -63,8 +61,8 @@ Application::~Application() {
 
 void Application::init_systems() {
   for (const auto& system : system_manager->get_systems()) {
-    system.second->SetDispatcher(&dispatcher);
-    system.second->OnInit();
+    system.second->set_dispatcher(&dispatcher);
+    system.second->on_init();
   }
 }
 
@@ -111,7 +109,7 @@ void Application::update_layers(Timestep ts) {
 }
 
 void Application::update_renderer() {
-  VulkanRenderer::draw(VulkanContext::get(), imgui_layer, layer_stack, system_manager);
+  Renderer::draw(VulkanContext::get(), imgui_layer, layer_stack, system_manager);
 }
 
 void Application::update_timestep() {

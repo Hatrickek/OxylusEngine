@@ -20,7 +20,6 @@
 
 #include "Vulkan/VukUtils.h"
 #include "Vulkan/VulkanContext.h"
-#include "Vulkan/VulkanRenderer.h"
 
 namespace Oxylus {
 std::pair<vuk::Unique<vuk::Image>, vuk::Future> RendererCommon::generate_cubemap_from_equirectangular(const vuk::Texture& cubemap) {

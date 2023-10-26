@@ -6,8 +6,8 @@
 namespace OxylusRuntime {
   class FreeCamera : public Oxylus::System {
   public:
-    void OnInit() override;
-    void OnUpdate(Oxylus::Scene* scene, Oxylus::Timestep deltaTime) override;
+    void on_init() override;
+    void on_update(Oxylus::Scene* scene, Oxylus::Timestep deltaTime) override;
 
   private:
     //Camera

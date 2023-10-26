@@ -4,7 +4,6 @@
 #include "Utils/Log.h"
 
 #include "tinygltf/stb_image.h"
-#include "Vulkan/VulkanRenderer.h"
 
 namespace Oxylus {
 Window::WindowData Window::s_window_data;

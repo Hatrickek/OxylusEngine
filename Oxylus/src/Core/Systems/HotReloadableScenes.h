@@ -16,9 +16,9 @@ public:
 
   HotReloadableScenes(std::string scenePath) : System("HotReloadableScenes"), m_ScenePath(std::move(scenePath)) { }
 
-  void OnInit() override;
-  void OnUpdate() override;
-  void OnShutdown() override;
+  void on_init() override;
+  void on_update() override;
+  void on_shutdown() override;
 
   void SetScenePath(const std::string& path);
 

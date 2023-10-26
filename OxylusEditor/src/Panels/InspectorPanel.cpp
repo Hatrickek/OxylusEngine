@@ -19,7 +19,6 @@
 #include "Assets/MaterialSerializer.h"
 
 #include "Render/SceneRendererEvents.h"
-#include "Render/Vulkan/VulkanRenderer.h"
 
 namespace Oxylus {
 static bool s_RenameEntity = false;

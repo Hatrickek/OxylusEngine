@@ -2,7 +2,6 @@
 
 #include <glm/gtx/norm.hpp>
 
-#include "Vulkan/VulkanRenderer.h"
 #include "Utils/Profiler.h"
 
 namespace Oxylus {
@@ -115,7 +114,7 @@ void ParticleSystem::on_render() const {
     glm::mat4 transform = glm::translate(glm::mat4(1.0f), particle.position) * glm::mat4(glm::quat(particle.rotation))
                           * glm::scale(glm::mat4(1.0f), particle.size);
 
-    //VulkanRenderer::SubmitQuad(transform, m_Properties.Texture, particle.Color);
+    //Renderer::SubmitQuad(transform, m_Properties.Texture, particle.Color);
   }
 }
 

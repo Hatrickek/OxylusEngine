@@ -1,5 +1,6 @@
 ﻿#pragma once
 
+#include "RendererConfig.h"
 #include "RenderPipeline.h"
 
 #include "PBR/DirectShadowPass.h"
@@ -20,11 +21,15 @@ public:
   explicit DefaultRenderPipeline(const std::string& name)
     : RenderPipeline(name) { }
 
-  void init(Scene* scene) override;
+  void init() override;
   void shutdown() override;
-  void update(Scene* scene) override;
+
   Scope<vuk::Future> on_render(vuk::Allocator& frame_allocator, const vuk::Future& target, vuk::Dimension3D dim) override;
+
   void on_dispatcher_events(EventDispatcher& dispatcher) override;
+  void on_register_render_object(const MeshData& render_object) override;
+  void on_register_light(const LightingData& lighting_data, LightComponent::LightType light_type) override;
+  void on_register_camera(Camera* camera) override;
 
 private:
   struct RendererContext {
@@ -65,23 +70,21 @@ private:
   XeGTAO::GTAOConstants gtao_constants = {};
   XeGTAO::GTAOSettings gtao_settings = {};
 
-  Scene* m_scene = nullptr;
-
   // PBR Resources
   vuk::Unique<vuk::Image> brdf_image;
   vuk::Unique<vuk::Image> irradiance_image;
   vuk::Unique<vuk::Image> prefiltered_image;
 
   // Mesh
-  std::vector<VulkanRenderer::MeshData> mesh_draw_list;
+  std::vector<MeshData> mesh_draw_list;
   std::vector<uint32_t> transparent_mesh_draw_list;
 
   struct LightChangeEvent { };
 
   DirectShadowPass::DirectShadowUB direct_shadow_ub = {};
-  std::vector<VulkanRenderer::LightingData> point_lights_data = {};
-  std::vector<VulkanRenderer::LightingData> dir_lights_data = {};
-  std::vector<VulkanRenderer::LightingData> spot_lights_data = {};
+  std::vector<LightingData> point_lights_data = {};
+  std::vector<LightingData> dir_lights_data = {};
+  std::vector<LightingData> spot_lights_data = {};
   EventDispatcher light_buffer_dispatcher;
   Ref<Mesh> skybox_cube = nullptr;
 

@@ -5,7 +5,7 @@
 #include <fstream>
 
 namespace Oxylus {
-void HotReloadableScenes::OnInit() {
+void HotReloadableScenes::on_init() {
   if (!std::filesystem::exists(m_ScenePath)) {
     OX_CORE_ERROR("System HotReloadableScene: Scene path doesn't exist: {0}", m_ScenePath);
     return;
@@ -13,7 +13,7 @@ void HotReloadableScenes::OnInit() {
   m_LastWriteTime = std::filesystem::last_write_time(m_ScenePath);
 }
 
-void HotReloadableScenes::OnUpdate() {
+void HotReloadableScenes::on_update() {
   using namespace std::filesystem;
   if (last_write_time(m_ScenePath).time_since_epoch().count()
       != m_LastWriteTime.time_since_epoch().count()) {
@@ -23,7 +23,7 @@ void HotReloadableScenes::OnUpdate() {
   }
 }
 
-void HotReloadableScenes::OnShutdown() { }
+void HotReloadableScenes::on_shutdown() { }
 
 void HotReloadableScenes::SetScenePath(const std::string& path) {
   m_ScenePath = path;

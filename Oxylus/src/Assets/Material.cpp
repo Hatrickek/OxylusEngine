@@ -3,7 +3,8 @@
 #include <vuk/CommandBuffer.hpp>
 
 #include "Render/Vulkan/VukUtils.h"
-#include "Render/Vulkan/VulkanRenderer.h"
+
+#include "Utils/Profiler.h"
 
 namespace Oxylus {
 Material::~Material() { }

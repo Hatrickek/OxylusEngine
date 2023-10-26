@@ -1,6 +1,5 @@
 ﻿#pragma once
 #include "Core/Types.h"
-#include "Render/Vulkan/VulkanRenderer.h"
 
 namespace Oxylus {
 class VulkanDescriptorSet;

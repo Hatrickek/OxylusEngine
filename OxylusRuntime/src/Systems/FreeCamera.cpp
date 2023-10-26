@@ -10,9 +10,9 @@
 namespace OxylusRuntime {
   using namespace Oxylus;
 
-  void FreeCamera::OnInit() { }
+  void FreeCamera::on_init() { }
 
-  void FreeCamera::OnUpdate(Scene* scene, Timestep deltaTime) {
+  void FreeCamera::on_update(Scene* scene, Timestep deltaTime) {
     auto& registery = scene->m_registry;
     const auto group = registery.view<TransformComponent, CameraComponent>();
     for (const auto entity : group) {

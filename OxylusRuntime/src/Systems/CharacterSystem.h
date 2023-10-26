@@ -6,10 +6,10 @@ namespace OxylusRuntime {
   class CharacterSystem : public Oxylus::System {
   public:
     ~CharacterSystem() override;
-    void OnInit() override;
-    void OnUpdate(Oxylus::Scene* scene, Oxylus::Timestep deltaTime) override;
-    void OnImGuiRender(Oxylus::Scene* scene, Oxylus::Timestep deltaTime) override;
-    void OnContactAdded(Oxylus::Scene* scene, const JPH::Body& body1, const JPH::Body& body2, const JPH::ContactManifold& manifold, const JPH::ContactSettings& settings) override;
+    void on_init() override;
+    void on_update(Oxylus::Scene* scene, Oxylus::Timestep deltaTime) override;
+    void on_imgui_render(Oxylus::Scene* scene, Oxylus::Timestep deltaTime) override;
+    void on_contact_added(Oxylus::Scene* scene, const JPH::Body& body1, const JPH::Body& body2, const JPH::ContactManifold& manifold, const JPH::ContactSettings& settings) override;
 
   private:
     struct MovementArgs {

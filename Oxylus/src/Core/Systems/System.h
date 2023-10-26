@@ -24,31 +24,31 @@ public:
 
   /// Scene systems: Called right after when the scene gets initalized.
   /// Engine systems: Called right before core is initalized.
-  virtual void OnInit() { }
+  virtual void on_init() { }
 
   /// Called at the end of the core update loop.
-  virtual void OnUpdate() { }
+  virtual void on_update() { }
 
   /// Called before physic system is updated.
-  virtual void OnUpdate(Scene* scene, Timestep deltaTime) { }
+  virtual void on_update(Scene* scene, Timestep deltaTime) { }
 
   /// Called after physics system is updated.
-  virtual void PostOnUpdate(Scene* scene, Timestep deltaTime) { }
+  virtual void post_on_update(Scene* scene, Timestep deltaTime) { }
 
   /// Called in the main imgui loop which is right before `OnUpdate`
-  virtual void OnImGuiRender() { }
+  virtual void on_imgui_render() { }
 
   /// Called in the main imgui loop which is right after `OnUpdate`
-  virtual void OnImGuiRender(Scene* scene, Timestep deltaTime) { }
+  virtual void on_imgui_render(Scene* scene, Timestep deltaTime) { }
 
   /// Called right after main loop is finished before the core shutdown process.
-  virtual void OnShutdown() { }
+  virtual void on_shutdown() { }
 
   /// Physics interfaces
-  virtual void OnContactAdded(Scene* scene, const JPH::Body& body1, const JPH::Body& body2, const JPH::ContactManifold& manifold, const JPH::ContactSettings& settings) { }
-  virtual void OnContactPersisted(Scene* scene, const JPH::Body& body1, const JPH::Body& body2, const JPH::ContactManifold& manifold, const JPH::ContactSettings& settings) { }
+  virtual void on_contact_added(Scene* scene, const JPH::Body& body1, const JPH::Body& body2, const JPH::ContactManifold& manifold, const JPH::ContactSettings& settings) { }
+  virtual void on_contact_persisted(Scene* scene, const JPH::Body& body1, const JPH::Body& body2, const JPH::ContactManifold& manifold, const JPH::ContactSettings& settings) { }
 
-  void SetDispatcher(EventDispatcher* dispatcher) { m_Dispatcher = dispatcher; }
+  void set_dispatcher(EventDispatcher* dispatcher) { m_Dispatcher = dispatcher; }
 
 protected:
   EventDispatcher* m_Dispatcher = nullptr;

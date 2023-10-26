@@ -1,13 +1,17 @@
 #include "Core.h"
-#include "Resources.h"
 #include "Project.h"
+#include "Resources.h"
 #include "Audio/AudioEngine.h"
 #include "Core/Input.h"
 
-#include "Render/Window.h"
 #include "Physics/Physics.h"
+#include "Render/Window.h"
+
+#include "Render/Vulkan/Renderer.h"
 #include "Render/Vulkan/VulkanContext.h"
-#include "Render/Vulkan/VulkanRenderer.h"
+
+#include "Utils/Profiler.h"
+
 #include "Utils/UIUtils.h"
 
 namespace Oxylus {
@@ -25,7 +29,7 @@ bool Core::init(const AppSpec& spec) {
 
   VulkanContext::init();
   VulkanContext::get()->create_context(spec);
-  VulkanRenderer::init();
+  Renderer::init();
 
   Input::Init();
   AudioEngine::Init();
@@ -36,7 +40,7 @@ bool Core::init(const AppSpec& spec) {
 void Core::shutdown() {
   FileDialogs::CloseNFD();
 
-  VulkanRenderer::shutdown();
+  Renderer::shutdown();
 
   AudioEngine::Shutdown();
 

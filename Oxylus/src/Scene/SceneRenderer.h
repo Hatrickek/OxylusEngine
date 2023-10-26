@@ -8,15 +8,17 @@ class Scene;
 
 class SceneRenderer {
 public:
-  SceneRenderer() = default;
+  SceneRenderer(Scene* scene) : m_scene(scene) {}
   ~SceneRenderer() = default;
 
   EventDispatcher dispatcher;
-  void init(Scene* scene);
+  void init();
+  void update() const;
 
-  Ref<RenderPipeline> get_render_pipeline() const { return m_RenderPipeline; }
+  Ref<RenderPipeline> get_render_pipeline() const { return m_render_pipeline; }
 
 private:
-  Ref<RenderPipeline> m_RenderPipeline = nullptr;
+  Scene* m_scene;
+  Ref<RenderPipeline> m_render_pipeline = nullptr;
 };
 }

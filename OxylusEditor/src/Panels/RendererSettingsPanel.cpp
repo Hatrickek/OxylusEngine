@@ -4,8 +4,9 @@
 
 #include "imgui.h"
 #include "Core/Application.h"
+
+#include "Render/RendererConfig.h"
 #include "Render/Vulkan/VulkanContext.h"
-#include "Render/Vulkan/VulkanRenderer.h"
 #include "UI/IGUI.h"
 
 namespace Oxylus {

@@ -19,7 +19,6 @@
 #include "Panels/ShadersPanel.h"
 #include "Panels/StatisticsPanel.h"
 #include "Render/Window.h"
-#include "Render/Vulkan/VulkanRenderer.h"
 #include "UI/IGUI.h"
 #include "Utils/EditorConfig.h"
 #include "Utils/ImGuiScoped.h"

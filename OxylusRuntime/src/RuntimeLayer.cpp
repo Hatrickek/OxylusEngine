@@ -2,9 +2,7 @@
 
 #include <imgui.h>
 #include <Assets/AssetManager.h>
-#include <Render/Vulkan/VulkanRenderer.h>
 #include <Scene/SceneSerializer.h>
-#include <Utils/ImGuiScoped.h>
 
 #include "Core/Application.h"
 #include "Render/Window.h"

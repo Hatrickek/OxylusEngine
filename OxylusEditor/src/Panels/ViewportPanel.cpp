@@ -7,17 +7,18 @@
 #include "EditorLayer.h"
 #include "ImGuizmo.h"
 #include "glm/gtc/type_ptr.hpp"
+
+#include "Render/RendererConfig.h"
+#include "Render/RenderPipeline.h"
 #include "Render/Vulkan/VulkanContext.h"
-#include "Render/Vulkan/VulkanRenderer.h"
 #include "UI/IGUI.h"
-#include "Utils/FileUtils.h"
 #include "Utils/OxMath.h"
 #include "Utils/StringUtils.h"
 #include "Utils/Timestep.h"
 
 namespace Oxylus {
 ViewportPanel::ViewportPanel() : EditorPanel("Viewport", ICON_MDI_TERRAIN, true) {
-  VulkanRenderer::set_camera(m_camera);
+
 }
 
 void ViewportPanel::on_imgui_render() {
@@ -75,7 +76,7 @@ void ViewportPanel::on_imgui_render() {
     m_ViewportHovered = ImGui::IsWindowHovered();
 
     m_ViewportPanelSize = ImGui::GetContentRegionAvail();
-    if (m_ViewportSize.x != m_ViewportPanelSize.x || m_ViewportSize.y != m_ViewportPanelSize.y) {
+    if ((int)m_ViewportSize.x != (int)m_ViewportPanelSize.x || (int)m_ViewportSize.y != (int)m_ViewportPanelSize.y) {
       m_ViewportSize = {m_ViewportPanelSize.x, m_ViewportPanelSize.y};
     }
 
@@ -239,10 +240,10 @@ void ViewportPanel::on_imgui_render() {
         ImGui::PushStyleVar(ImGuiStyleVar_FrameBorderSize, 0.0f);
         ImGui::PushStyleVar(ImGuiStyleVar_ItemSpacing, {1, 1});
 
-        const ImVec2 buttonSize = {frameHeight * 1.5f, frameHeight};
+        const ImVec2 buttonSize2 = {frameHeight * 1.5f, frameHeight};
         const bool highlight = EditorLayer::get()->m_SceneState == EditorLayer::SceneState::Play;
         const char8_t* icon = EditorLayer::get()->m_SceneState == EditorLayer::SceneState::Edit ? ICON_MDI_PLAY : ICON_MDI_STOP;
-        if (IGUI::toggle_button(StringUtils::from_char8_t(icon), highlight, buttonSize)) {
+        if (IGUI::toggle_button(StringUtils::from_char8_t(icon), highlight, buttonSize2)) {
           if (EditorLayer::get()->m_SceneState == EditorLayer::SceneState::Edit)
             EditorLayer::get()->OnScenePlay();
           else if (EditorLayer::get()->m_SceneState == EditorLayer::SceneState::Play)
@@ -250,11 +251,11 @@ void ViewportPanel::on_imgui_render() {
         }
         ImGui::SameLine();
         ImGui::PushStyleColor(ImGuiCol_Button, ImVec4(0.2f, 0.2f, 0.2f, 0.4f));
-        if (ImGui::Button(StringUtils::from_char8_t(ICON_MDI_PAUSE), buttonSize)) {
+        if (ImGui::Button(StringUtils::from_char8_t(ICON_MDI_PAUSE), buttonSize2)) {
           EditorLayer::get()->OnSceneStop();
         }
         ImGui::SameLine();
-        if (ImGui::Button(StringUtils::from_char8_t(ICON_MDI_STEP_FORWARD), buttonSize)) {
+        if (ImGui::Button(StringUtils::from_char8_t(ICON_MDI_STEP_FORWARD), buttonSize2)) {
           EditorLayer::get()->OnSceneSimulate();
         }
         ImGui::PopStyleColor();

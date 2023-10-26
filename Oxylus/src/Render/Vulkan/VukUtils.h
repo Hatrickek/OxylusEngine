@@ -8,7 +8,7 @@ namespace vuk {
 inline SamplerCreateInfo NearestMagLinearMinSamplerClamped = {
   .magFilter = Filter::eLinear,
   .minFilter = Filter::eNearest,
-  .mipmapMode = SamplerMipmapMode::eLinear,
+  .mipmapMode = SamplerMipmapMode::eNearest,
   .addressModeU = SamplerAddressMode::eClampToEdge,
   .addressModeV = SamplerAddressMode::eClampToEdge,
   .addressModeW = SamplerAddressMode::eClampToEdge
