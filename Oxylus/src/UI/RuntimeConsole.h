@@ -8,8 +8,24 @@
 #include "Utils/Log.h"
 
 namespace Oxylus {
+using LevelEnum = spdlog::level::level_enum;
+
 class RuntimeConsole {
 public:
+  struct ParsedCommandValue {
+    std::string str_value = {};
+
+    ParsedCommandValue(std::string str) : str_value(std::move(str)) { }
+
+    template <typename T = int32_t>
+    std::optional<T> as() const {
+      T value = {};
+      if (std::from_chars(str_value.c_str(), str_value.data() + str_value.size(), value).ec == std::errc{})
+        return (T)value;
+      return {};
+    }
+  };
+
   bool RenderMenuBar = false;
   bool SetFocusToKeyboardAlways = false;
   const char* PanelName = "RuntimeConsole";
@@ -18,24 +34,12 @@ public:
   RuntimeConsole();
   ~RuntimeConsole() = default;
 
-  // Call the `action` when the "command" is called.
-  void RegisterCommand(const std::string& command,
-                       const std::string& onSuccesLog,
-                       const std::function<void()>& action);
-
-  /// Change the `value` with the `command` \n
-  /// example: "command 100" -> "command" is now 100
+  void RegisterCommand(const std::string& command, const std::string& onSuccesLog, const std::function<void()>& action);
   void RegisterCommand(const std::string& command, const std::string& onSuccesLog, int32_t* value);
-
-  /// Change the `value` with the `command` \n
-  /// example: "command text" -> "command" is now text
   void RegisterCommand(const std::string& command, const std::string& onSuccesLog, std::string* value);
-
-  /// Change the `value` with the `command` \n
-  /// example: "command 1" -> "command" is now true
   void RegisterCommand(const std::string& command, const std::string& onSuccesLog, bool* value);
 
-  void AddLog(const char* fmt, spdlog::level::level_enum level);
+  void add_log(const char* fmt, spdlog::level::level_enum level);
   void ClearLog();
 
   void OnImGuiRender(ImGuiWindowFlags windowFlags = ImGuiWindowFlags_NoNavInputs | ImGuiWindowFlags_MenuBar | ImGuiWindowFlags_NoCollapse);
@@ -49,35 +53,21 @@ private:
   };
 
   struct ConsoleCommand {
-    int32_t* IntValue = nullptr;
-    std::string* StrValue = nullptr;
-    bool* BoolValue = nullptr;
-    std::function<void()> Action = nullptr;
-    std::string OnSuccesLog = {};
+    int32_t* int_value = nullptr;
+    std::string* str_value = nullptr;
+    bool* bool_value = nullptr;
+    std::function<void()> action = nullptr;
+    std::string on_succes_log = {};
   };
 
   // Commands
   std::unordered_map<std::string, ConsoleCommand> m_CommandMap;
-  void ProcessCommand(const std::string& command);
+  void process_command(const std::string& command);
 
   void HelpCommand();
 
-  struct ParsedCommandValue {
-    std::string StrValue = {};
-
-    ParsedCommandValue(std::string str) : StrValue(std::move(str)) { }
-
-    template <typename T= int32_t>
-    std::optional<T> As() const {
-      T value = {};
-      if (std::from_chars(StrValue.c_str(), StrValue.data() + StrValue.size(), value).ec == std::errc{})
-        return (T)value;
-      return {};
-    }
-  };
-
-  ParsedCommandValue ParseValue(const std::string& command);
-  std::string ParseCommand(const std::string& command);
+  ParsedCommandValue parse_value(const std::string& command);
+  std::string parse_command(const std::string& command);
 
   // Input field
   const int32_t MAX_TEXT_BUFFER_SIZE = 32;

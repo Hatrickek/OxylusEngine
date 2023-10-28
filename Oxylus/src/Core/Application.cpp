@@ -8,6 +8,7 @@
 #include "Render/Vulkan/Renderer.h"
 #include "Render/Vulkan/VulkanContext.h"
 
+#include "Thread/ThreadManager.h"
 #include "Systems/SystemManager.h"
 #include "Utils/Profiler.h"
 
@@ -21,6 +22,8 @@ Application::Application(AppSpec spec) : m_spec(std::move(spec)), system_manager
   }
 
   instance = this;
+
+  thread_manager = create_ref<ThreadManager>();
 
   if (m_spec.working_directory.empty())
     m_spec.working_directory = std::filesystem::current_path().string();

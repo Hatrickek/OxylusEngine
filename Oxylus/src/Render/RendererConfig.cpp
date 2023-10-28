@@ -26,7 +26,7 @@ void RendererConfig::save_config(const char* path) const {
     auto node = node_root["Display"];
     node |= ryml::MAP;
 
-    node["VSync"] << display_config.vsync;
+    node["VSync"] << RendererCVAR::cvar_vsync.get();
   }
 
   //Color
@@ -34,19 +34,17 @@ void RendererConfig::save_config(const char* path) const {
     auto node = node_root["Color"];
     node |= ryml::MAP;
 
-    node["Tonemapper"] << color_config.tonemapper;
-    node["Exposure"] << color_config.exposure;
-    node["Gamma"] << color_config.gamma;
+    node["Tonemapper"] << RendererCVAR::cvar_tonemapper.get();
+    node["Exposure"] << RendererCVAR::cvar_exposure.get();
+    node["Gamma"] << RendererCVAR::cvar_gamma.get();
   }
 
-  //SSAO
+  //GTAO
   {
-    auto node = node_root["SSAO"];
+    auto node = node_root["GTAO"];
     node |= ryml::MAP;
 
-    node["Enabled"] << gtao_config.enabled;
-    // TODO(hatrickek):
-    //node["Radius"] << ssao_config.radius;
+    node["Enabled"] << RendererCVAR::cvar_gtao_enable.get();
   }
 
   //Bloom
@@ -54,8 +52,8 @@ void RendererConfig::save_config(const char* path) const {
     auto node = node_root["Bloom"];
     node |= ryml::MAP;
 
-    node["Enabled"] << bloom_config.enabled;
-    node["Threshold"] << bloom_config.threshold;
+    node["Enabled"] << RendererCVAR::cvar_bloom_enable.get();
+    node["Threshold"] << RendererCVAR::cvar_bloom_threshold.get();
   }
 
   //SSR
@@ -63,7 +61,7 @@ void RendererConfig::save_config(const char* path) const {
     auto node = node_root["SSR"];
     node |= ryml::MAP;
 
-    node["Enabled"] << ssr_config.enabled;
+    node["Enabled"] << RendererCVAR::cvar_ssr_enable.get();
   }
 
   //DirectShadows
@@ -71,9 +69,7 @@ void RendererConfig::save_config(const char* path) const {
     auto node = node_root["DirectShadows"];
     node |= ryml::MAP;
 
-    node["Enabled"] << direct_shadows_config.enabled;
-    node["Quality"] << direct_shadows_config.quality;
-    node["UsePCF"] << direct_shadows_config.use_pcf;
+    node["UsePCF"] << RendererCVAR::cvar_shadows_pcf.get();
   }
 
   std::stringstream ss;
@@ -88,62 +84,65 @@ bool RendererConfig::load_config(const char* path) {
     return false;
 
   ryml::Tree tree = ryml::parse_in_arena(c4::to_csubstr(content));
-
   const ryml::ConstNodeRef root = tree.rootref();
-
   const ryml::ConstNodeRef nodeRoot = root;
 
   //Display
   {
     const ryml::ConstNodeRef node = nodeRoot["Display"];
-    node["VSync"] >> display_config.vsync;
+    auto vsync = 1;
+    node["VSync"] >> vsync;
+    RendererCVAR::cvar_vsync.set(vsync);
   }
 
   //Color
   {
     const ryml::ConstNodeRef node = nodeRoot["Color"];
-    node["Tonemapper"] >> color_config.tonemapper;
-    node["Exposure"] >> color_config.exposure;
-    node["Gamma"] >> color_config.gamma;
+    int tonemapper;
+    float exposure,gamma;
+    node["Tonemapper"] >> tonemapper;
+    node["Exposure"] >> exposure;
+    node["Gamma"] >> gamma;
+    RendererCVAR::cvar_tonemapper.set(tonemapper);
+    RendererCVAR::cvar_exposure.set(exposure);
+    RendererCVAR::cvar_gamma.set(gamma);
   }
 
-  //SSAO
+  //GTAO
   {
-    const ryml::ConstNodeRef node = nodeRoot["SSAO"];
-
-    node["Enabled"] >> gtao_config.enabled;
-    //TODO(hatrickek):
-    //node["Radius"] >> ssao_config.radius;
+    const ryml::ConstNodeRef node = nodeRoot["GTAO"];
+    int enabled;
+    node["Enabled"] >> enabled;
+    RendererCVAR::cvar_gtao_enable.set(enabled);
   }
 
   //Bloom
   {
     const ryml::ConstNodeRef node = nodeRoot["Bloom"];
-
-    node["Enabled"] >> bloom_config.enabled;
-    node["Threshold"] >> bloom_config.threshold;
+    int enabled;
+    float threshold;
+    node["Enabled"] >> enabled;
+    node["Threshold"] >> threshold;
+    RendererCVAR::cvar_bloom_enable.set(enabled);
+    RendererCVAR::cvar_bloom_threshold.set(threshold);
   }
 
   //SSR
   {
     const ryml::ConstNodeRef node = nodeRoot["SSR"];
-
-    node["Enabled"] >> ssr_config.enabled;
+    int enabled; 
+    node["Enabled"] >> enabled;
+    RendererCVAR::cvar_ssr_enable.set(enabled);
   }
 
   //DirectShadows
   {
     const ryml::ConstNodeRef node = nodeRoot["DirectShadows"];
-
-    node["Enabled"] >> direct_shadows_config.enabled;
-    node["Quality"] >> direct_shadows_config.quality;
-    node["UsePCF"] >> direct_shadows_config.use_pcf;
+    int use_pcf;
+    node["UsePCF"] >> use_pcf;
+    RendererCVAR::cvar_shadows_pcf.set(use_pcf);
   }
 
   return true;
-}
-
-void RendererConfig::dispatch_config_change() {
-  config_change_dispatcher.trigger(ConfigChangeEvent{});
 }
 }

@@ -11,7 +11,7 @@
 #include "Render/RendererConfig.h"
 #include "Render/RenderPipeline.h"
 #include "Render/Vulkan/VulkanContext.h"
-#include "UI/IGUI.h"
+#include "UI/OxUI.h"
 #include "Utils/OxMath.h"
 #include "Utils/StringUtils.h"
 #include "Utils/Timestep.h"
@@ -53,16 +53,16 @@ void ViewportPanel::on_imgui_render() {
 
     ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2(10, 10));
     if (ImGui::BeginPopup("ViewportSettings")) {
-      IGUI::begin_properties();
+      OxUI::begin_properties();
       static bool vsync = VulkanContext::get()->present_mode == vuk::PresentModeKHR::eFifo ? true : false;
-      if (IGUI::property("VSync", vsync)) {
+      if (OxUI::property("VSync", &vsync)) {
         VulkanContext::get()->rebuild_swapchain();
-        RendererConfig::get()->display_config.vsync = vsync;
+        RendererCVAR::cvar_vsync.set(vsync);
       }
-      IGUI::property<float>("Camera sensitivity", m_MouseSensitivity, 0.1f, 20.0f);
-      IGUI::property<float>("Movement speed", m_MovementSpeed, 5, 100.0f);
-      IGUI::property("Smooth camera", m_SmoothCamera);
-      IGUI::end_properties();
+      OxUI::property<float>("Camera sensitivity", &m_MouseSensitivity, 0.1f, 20.0f);
+      OxUI::property<float>("Movement speed", &m_MovementSpeed, 5, 100.0f);
+      OxUI::property("Smooth camera", &m_SmoothCamera);
+      OxUI::end_properties();
       ImGui::EndPopup();
     }
 
@@ -155,7 +155,7 @@ void ViewportPanel::on_imgui_render() {
 
 
     if (final_image) {
-      IGUI::image(*final_image, ImVec2{fixedWidth, m_ViewportSize.y});
+      OxUI::image(*final_image, ImVec2{fixedWidth, m_ViewportSize.y});
     }
     else {
       const auto textWidth = ImGui::CalcTextSize("No render target!").x;
@@ -204,17 +204,17 @@ void ViewportPanel::on_imgui_render() {
         lastMousePosition = mousePos;
 
         constexpr float alpha = 0.6f;
-        if (IGUI::toggle_button(StringUtils::from_char8_t(ICON_MDI_AXIS_ARROW), m_GizmoType == ImGuizmo::TRANSLATE, buttonSize, alpha, alpha))
+        if (OxUI::toggle_button(StringUtils::from_char8_t(ICON_MDI_AXIS_ARROW), m_GizmoType == ImGuizmo::TRANSLATE, buttonSize, alpha, alpha))
           m_GizmoType = ImGuizmo::TRANSLATE;
-        if (IGUI::toggle_button(StringUtils::from_char8_t(ICON_MDI_ROTATE_3D), m_GizmoType == ImGuizmo::ROTATE, buttonSize, alpha, alpha))
+        if (OxUI::toggle_button(StringUtils::from_char8_t(ICON_MDI_ROTATE_3D), m_GizmoType == ImGuizmo::ROTATE, buttonSize, alpha, alpha))
           m_GizmoType = ImGuizmo::ROTATE;
-        if (IGUI::toggle_button(StringUtils::from_char8_t(ICON_MDI_ARROW_EXPAND), m_GizmoType == ImGuizmo::SCALE, buttonSize, alpha, alpha))
+        if (OxUI::toggle_button(StringUtils::from_char8_t(ICON_MDI_ARROW_EXPAND), m_GizmoType == ImGuizmo::SCALE, buttonSize, alpha, alpha))
           m_GizmoType = ImGuizmo::SCALE;
-        if (IGUI::toggle_button(StringUtils::from_char8_t(ICON_MDI_VECTOR_SQUARE), m_GizmoType == ImGuizmo::BOUNDS, buttonSize, alpha, alpha))
+        if (OxUI::toggle_button(StringUtils::from_char8_t(ICON_MDI_VECTOR_SQUARE), m_GizmoType == ImGuizmo::BOUNDS, buttonSize, alpha, alpha))
           m_GizmoType = ImGuizmo::BOUNDS;
-        if (IGUI::toggle_button(StringUtils::from_char8_t(ICON_MDI_ARROW_EXPAND_ALL), m_GizmoType == ImGuizmo::UNIVERSAL, buttonSize, alpha, alpha))
+        if (OxUI::toggle_button(StringUtils::from_char8_t(ICON_MDI_ARROW_EXPAND_ALL), m_GizmoType == ImGuizmo::UNIVERSAL, buttonSize, alpha, alpha))
           m_GizmoType = ImGuizmo::UNIVERSAL;
-        if (IGUI::toggle_button(m_GizmoMode == ImGuizmo::WORLD ? StringUtils::from_char8_t(ICON_MDI_EARTH) : StringUtils::from_char8_t(ICON_MDI_EARTH_OFF), m_GizmoMode == ImGuizmo::WORLD, buttonSize, alpha, alpha))
+        if (OxUI::toggle_button(m_GizmoMode == ImGuizmo::WORLD ? StringUtils::from_char8_t(ICON_MDI_EARTH) : StringUtils::from_char8_t(ICON_MDI_EARTH_OFF), m_GizmoMode == ImGuizmo::WORLD, buttonSize, alpha, alpha))
           m_GizmoMode = m_GizmoMode == ImGuizmo::LOCAL ? ImGuizmo::WORLD : ImGuizmo::LOCAL;
 
         ImGui::PopStyleVar(2);
@@ -243,7 +243,7 @@ void ViewportPanel::on_imgui_render() {
         const ImVec2 buttonSize2 = {frameHeight * 1.5f, frameHeight};
         const bool highlight = EditorLayer::get()->m_SceneState == EditorLayer::SceneState::Play;
         const char8_t* icon = EditorLayer::get()->m_SceneState == EditorLayer::SceneState::Edit ? ICON_MDI_PLAY : ICON_MDI_STOP;
-        if (IGUI::toggle_button(StringUtils::from_char8_t(icon), highlight, buttonSize2)) {
+        if (OxUI::toggle_button(StringUtils::from_char8_t(icon), highlight, buttonSize2)) {
           if (EditorLayer::get()->m_SceneState == EditorLayer::SceneState::Edit)
             EditorLayer::get()->OnScenePlay();
           else if (EditorLayer::get()->m_SceneState == EditorLayer::SceneState::Play)

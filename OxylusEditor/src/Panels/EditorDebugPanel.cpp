@@ -1,6 +1,6 @@
 ﻿#include "EditorDebugPanel.h"
 #include <icons/IconsMaterialDesignIcons.h>
-#include <UI/IGUI.h>
+#include <UI/OxUI.h>
 
 #include "Assets/AssetManager.h"
 

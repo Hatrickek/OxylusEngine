@@ -33,8 +33,8 @@ void main() {
     
     float inv_roughness = 0.0;
     if (mat.UsePhysicalMap) {
-      inv_roughness = 1.0 - texture(in_PhysicalMap, scaled_uv).g;
-      inv_roughness *= mat.Roughness;
+      inv_roughness = texture(in_PhysicalMap, scaled_uv).g;
+      inv_roughness *= 1.0 - mat.Roughness;
     } else {
       inv_roughness = 1.0 - mat.Roughness;
     }

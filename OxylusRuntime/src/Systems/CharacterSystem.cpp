@@ -4,7 +4,7 @@
 #include "Core/Components.h"
 #include "Core/Input.h"
 #include "Scene/Scene.h"
-#include "UI/IGUI.h"
+#include "UI/OxUI.h"
 
 namespace OxylusRuntime {
   using namespace Oxylus;
@@ -136,25 +136,25 @@ namespace OxylusRuntime {
       auto&& [transform, component] = characterView.get<TransformComponent, CharacterControllerComponent>(entity);
       
       if (ImGui::Begin("Character Debug")) {
-        IGUI::begin_properties();
-        IGUI::PropertyVector("Position", transform.translation);
-        IGUI::PropertyVector("Rotation", transform.rotation);
-        IGUI::property("AutoBunnyHop", component.auto_bunny_hop);
-        IGUI::property("JumpForce", component.jump_force, 1.0f, 10.0f);
-        IGUI::property("CollisionTolerance", component.collision_tolerance, 0.05f, 0.5f);
+        OxUI::begin_properties();
+        OxUI::property_vector("Position", transform.translation);
+        OxUI::property_vector("Rotation", transform.rotation);
+        OxUI::property("AutoBunnyHop", &component.auto_bunny_hop);
+        OxUI::property<float>("JumpForce", &component.jump_force, 1.0f, 10.0f);
+        OxUI::property<float>("CollisionTolerance", &component.collision_tolerance, 0.05f, 0.5f);
 
         auto velocity = glm::make_vec3(component.character->GetLinearVelocity().mF32);
         auto speed = component.character->GetLinearVelocity().Length();
-        IGUI::text("IsGrounded", fmt::format("{}", component.character->IsSupported()).c_str());
-        IGUI::PropertyVector("Velocity", velocity);
-        IGUI::property("Speed", speed);
+        OxUI::text("IsGrounded", fmt::format("{}", component.character->IsSupported()).c_str());
+        OxUI::property_vector("Velocity", velocity);
+        OxUI::property<float>("Speed", &speed);
         if (s_MaxVerticalVelocity <= velocity.y)
           s_MaxVerticalVelocity = velocity.y;
-        IGUI::text("Max Vertical Velocity", fmt::format("{}", s_MaxVerticalVelocity).c_str());
+        OxUI::text("Max Vertical Velocity", fmt::format("{}", s_MaxVerticalVelocity).c_str());
         if (s_MaxHorizontalVelocity <= velocity.x)
           s_MaxHorizontalVelocity = velocity.x;
-        IGUI::text("Max Horizontal Velocity", fmt::format("{}", s_MaxHorizontalVelocity).c_str());
-        IGUI::end_properties();
+        OxUI::text("Max Horizontal Velocity", fmt::format("{}", s_MaxHorizontalVelocity).c_str());
+        OxUI::end_properties();
 
         ImGui::End();
       }

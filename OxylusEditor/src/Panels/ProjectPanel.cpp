@@ -6,7 +6,7 @@
 #include "EditorLayer.h"
 #include "Assets/AssetManager.h"
 #include "Core/Project.h"
-#include "UI/IGUI.h"
+#include "UI/OxUI.h"
 #include "UI/OxUI.h"
 #include "Utils/EditorConfig.h"
 #include "Utils/StringUtils.h"
@@ -37,7 +37,7 @@ void ProjectPanel::on_imgui_render() {
     const float x = ImGui::GetContentRegionAvail().x;
     const float y = ImGui::GetFrameHeight();
 
-    IGUI::image(EditorLayer::get()->m_EngineBanner->get_texture(), {x, 111});
+    OxUI::image(EditorLayer::get()->m_EngineBanner->get_texture(), {x, 111});
 
     ImGui::Text("Recent Projects");
     for (auto& project : EditorConfig::Get()->GetRecentProjects()) {

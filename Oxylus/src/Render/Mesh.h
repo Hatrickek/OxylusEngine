@@ -133,8 +133,11 @@ public:
   std::vector<Ref<TextureAsset>> m_textures;
   std::vector<Node*> nodes;
   std::vector<Node*> linear_nodes;
-  vuk::Unique<vuk::Buffer> verticies_buffer;
-  vuk::Unique<vuk::Buffer> indicies_buffer;
+
+  std::vector<uint32_t> indices;
+  std::vector<Vertex> vertices;
+  vuk::Unique<vuk::Buffer> vertex_buffer;
+  vuk::Unique<vuk::Buffer> index_buffer;
 
   struct Dimensions {
     glm::vec3 min = glm::vec3(FLT_MAX);
@@ -174,9 +177,6 @@ public:
 
 private:
   std::vector<Ref<Material>> materials;
-
-  std::vector<uint32_t> indices;
-  std::vector<Vertex> vertices;
 
   Vec3 scale{1.0f};
   Vec3 center{0.0f};

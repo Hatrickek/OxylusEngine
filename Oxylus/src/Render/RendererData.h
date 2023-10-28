@@ -15,6 +15,12 @@ struct LightingData {
 };
 
 struct MeshData {
+  uint32_t first_vertex;
+  uint32_t first_index;
+  uint32_t index_count;
+  uint32_t vertex_count;
+  bool is_merged;
+
   Mesh* mesh_geometry;
   std::vector<Ref<Material>> materials;
   Mat4 transform;

@@ -19,17 +19,24 @@
 #include "Panels/ShadersPanel.h"
 #include "Panels/StatisticsPanel.h"
 #include "Render/Window.h"
-#include "UI/IGUI.h"
+#include "UI/OxUI.h"
 #include "Utils/EditorConfig.h"
 #include "Utils/ImGuiScoped.h"
 #include "Utils/UIUtils.h"
 
 #include "Scene/SceneSerializer.h"
+
+#include "Thread/ThreadManager.h"
+
+#include "Utils/CVars.h"
 #include "Utils/EmbeddedBanner.h"
 #include "Utils/StringUtils.h"
 
 namespace Oxylus {
 EditorLayer* EditorLayer::s_Instance = nullptr;
+
+AutoCVar_Int cvar_show_style_editor("ui.imgui_style_editor", "show imgui style editor", 0, CVarFlags::EditCheckbox);
+AutoCVar_Int cvar_show_imgui_demo("ui.imgui_demo", "show imgui demo window", 0, CVarFlags::EditCheckbox);
 
 EditorLayer::EditorLayer() : Layer("Editor Layer") {
   s_Instance = this;
@@ -60,18 +67,6 @@ void EditorLayer::on_attach(EventDispatcher& dispatcher) {
   const auto& viewport = m_ViewportPanels.emplace_back(create_scope<ViewportPanel>());
   viewport->m_camera.SetPosition({-2, 2, 0});
   viewport->set_context(m_EditorScene, m_SceneHierarchyPanel);
-
-  // Register panel events
-  m_ConsolePanel.m_RuntimeConsole.RegisterCommand("show_style_editor",
-    "show_style_editor",
-    [this] {
-      m_ShowStyleEditor = !m_ShowStyleEditor;
-    });
-  m_ConsolePanel.m_RuntimeConsole.RegisterCommand("show_imgui_demo",
-    "show_imgui_demo",
-    [this] {
-      m_ShowDemoWindow = !m_ShowDemoWindow;
-    });
 }
 
 void EditorLayer::on_detach() {
@@ -116,9 +111,9 @@ void EditorLayer::on_update(Timestep deltaTime) {
 }
 
 void EditorLayer::on_imgui_render() {
-  if (m_ShowStyleEditor)
+  if (cvar_show_style_editor.get())
     ImGui::ShowStyleEditor();
-  if (m_ShowDemoWindow)
+  if (cvar_show_imgui_demo.get())
     ImGui::ShowDemoWindow();
 
   EditorShortcuts();
@@ -238,29 +233,29 @@ void EditorLayer::on_imgui_render() {
             const auto& assets = AssetManager::GetAssetLibrary();
             if (!assets.MeshAssets.empty()) {
               ImGui::Text("Mesh assets");
-              IGUI::BeginProperties();
+              OxUI::BeginProperties();
               for (const auto& [handle, asset] : assets.MeshAssets) {
                 auto handleStr = fmt::format("{}", (uint64_t)handle);
-                IGUI::Text(handleStr.c_str(), asset.Path.c_str());
+                OxUI::Text(handleStr.c_str(), asset.Path.c_str());
               }
-              IGUI::EndProperties();
+              OxUI::EndProperties();
             }
             if (!assets.ImageAssets.empty()) {
               ImGui::Text("Image assets");
-              IGUI::BeginProperties();
+              OxUI::BeginProperties();
               for (const auto& asset : assets.ImageAssets) {
-                IGUI::Text("Texture:", asset->GetPath().c_str());
+                OxUI::Text("Texture:", asset->GetPath().c_str());
               }
-              IGUI::EndProperties();
+              OxUI::EndProperties();
             }
             if (!assets.MaterialAssets.empty()) {
               ImGui::Text("Material assets");
-              IGUI::BeginProperties();
+              OxUI::BeginProperties();
               for (const auto& [handle, asset] : assets.MaterialAssets) {
                 auto handleStr = fmt::format("{}", (uint64_t)handle);
-                IGUI::Text(handleStr.c_str(), asset.Path.c_str());
+                OxUI::Text(handleStr.c_str(), asset.Path.c_str());
               }
-              IGUI::EndProperties();
+              OxUI::EndProperties();
             }
             if (ImGui::Button("Package assets")) {
               AssetManager::PackageAssets();
@@ -405,7 +400,7 @@ void EditorLayer::DrawWindowTitle() {
 
   {
     ImGuiScoped::StyleVar st(ImGuiStyleVar_FramePadding, {0, 8});
-    IGUI::image(Resources::editor_resources.engine_icon->get_texture(), {30, 30});
+    OxUI::image(Resources::editor_resources.engine_icon->get_texture(), {30, 30});
     auto& name = Application::get()->get_specification().name;
     ImGui::Text("%s", name.c_str());
   }

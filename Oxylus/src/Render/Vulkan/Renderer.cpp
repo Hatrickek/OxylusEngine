@@ -20,15 +20,12 @@ void Renderer::init() {
   // Save/Load renderer config
   if (!RendererConfig::get()->load_config("renderer.oxconfig"))
     RendererConfig::get()->save_config("renderer.oxconfig");
-  RendererConfig::get()->config_change_dispatcher.trigger(RendererConfig::ConfigChangeEvent{});
 
   TextureAsset::create_blank_texture();
   TextureAsset::create_white_texture();
 
   // Debug renderer
   DebugRenderer::init();
-
-  renderer_config.config_change_dispatcher.trigger(RendererConfig::ConfigChangeEvent{});
 }
 
 void Renderer::shutdown() {

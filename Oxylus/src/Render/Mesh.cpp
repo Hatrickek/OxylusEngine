@@ -111,15 +111,12 @@ void Mesh::load_from_file(const std::string& file_path, int file_loading_flags, 
   auto [vBuffer, vBufferFut] = create_buffer(*context->superframe_allocator, vuk::MemoryUsage::eGPUonly, vuk::DomainFlagBits::eTransferOnGraphics, std::span(vertices));
 
   vBufferFut.wait(*context->superframe_allocator, compiler);
-  verticies_buffer = std::move(vBuffer);
+  vertex_buffer = std::move(vBuffer);
 
   auto [iBuffer, iBufferFut] = create_buffer(*context->superframe_allocator, vuk::MemoryUsage::eGPUonly, vuk::DomainFlagBits::eTransferOnGraphics, std::span(indices));
 
   iBufferFut.wait(*context->superframe_allocator, compiler);
-  indicies_buffer = std::move(iBuffer);
-
-  vertices.clear();
-  indices.clear();
+  index_buffer = std::move(iBuffer);
 
   m_textures.clear();
 
@@ -127,10 +124,10 @@ void Mesh::load_from_file(const std::string& file_path, int file_loading_flags, 
 }
 
 void Mesh::bind_vertex_buffer(vuk::CommandBuffer& commandBuffer) const {
-  OX_CORE_ASSERT(verticies_buffer)
+  OX_CORE_ASSERT(vertex_buffer)
   // TODO: We should only bind the animation data if necessary etc.
   commandBuffer.bind_vertex_buffer(0,
-    *verticies_buffer,
+    *vertex_buffer,
     0,
     vuk::Packed{
       vuk::Format::eR32G32B32Sfloat,    // 12 postition
@@ -144,8 +141,8 @@ void Mesh::bind_vertex_buffer(vuk::CommandBuffer& commandBuffer) const {
 }
 
 void Mesh::bind_index_buffer(vuk::CommandBuffer& command_buffer) const {
-  OX_CORE_ASSERT(indicies_buffer)
-  command_buffer.bind_index_buffer(*indicies_buffer, vuk::IndexType::eUint32);
+  OX_CORE_ASSERT(index_buffer)
+  command_buffer.bind_index_buffer(*index_buffer, vuk::IndexType::eUint32);
 }
 
 void Mesh::set_scale(const Vec3& mesh_scale) {

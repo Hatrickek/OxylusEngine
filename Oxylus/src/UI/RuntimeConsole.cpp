@@ -4,13 +4,15 @@
 
 #include "ExternalConsoleSink.h"
 #include "Core/Application.h"
+
+#include "Utils/CVars.h"
 #include "Utils/StringUtils.h"
 
 namespace Oxylus {
 static ImVec4 GetColor(const spdlog::level::level_enum level) {
   switch (level) {
     case spdlog::level::level_enum::info: return {0, 1, 0, 1};
-    case spdlog::level::level_enum::warn: return {0.2f, 0, 0, 1};
+    case spdlog::level::level_enum::warn: return {0.9f, 0.6f, 0.2f, 1};
     case spdlog::level::level_enum::err: return {1, 0, 0, 1};
     case spdlog::level::level_enum::trace: return {1, 1, 1, 1};
     default: return {1, 1, 1, 1};
@@ -37,7 +39,7 @@ RuntimeConsole::RuntimeConsole() {
                                                          const char*,
                                                          int32_t,
                                                          spdlog::level::level_enum level) {
-    AddLog(message.data(), level);
+    add_log(message.data(), level);
   });
 
   // Default commands
@@ -66,7 +68,7 @@ void RuntimeConsole::RegisterCommand(const std::string& command, const std::stri
   m_CommandMap.emplace(command, ConsoleCommand{nullptr, nullptr, value, nullptr, onSuccesLog});
 }
 
-void RuntimeConsole::AddLog(const char* fmt, spdlog::level::level_enum level) {
+void RuntimeConsole::add_log(const char* fmt, spdlog::level::level_enum level) {
   if ((int32_t)m_TextBuffer.size() >= MAX_TEXT_BUFFER_SIZE)
     m_TextBuffer.erase(m_TextBuffer.begin());
   m_TextBuffer.emplace_back(ConsoleText{fmt, level});
@@ -124,20 +126,18 @@ void RuntimeConsole::OnImGuiRender(ImGuiWindowFlags windowFlags) {
     ImGui::PushFont(Application::get()->get_imgui_layer()->BoldFont);
     if (SetFocusToKeyboardAlways)
       ImGui::SetKeyboardFocusHere();
-    if (ImGui::InputText(
-      "##",
-      s_InputBuf,
-      OX_ARRAYSIZE(s_InputBuf),
-      inputFlags,
-      [](ImGuiInputTextCallbackData* data) {
-        const auto panel = (RuntimeConsole*)data->UserData;
-        return panel->InputTextCallback(data);
-      },
-      this)) {
-      ProcessCommand(s_InputBuf);
+
+    auto callback = [](ImGuiInputTextCallbackData* data) {
+      const auto panel = (RuntimeConsole*)data->UserData;
+      return panel->InputTextCallback(data);
+    };
+
+    if (ImGui::InputText("##", s_InputBuf,OX_ARRAYSIZE(s_InputBuf), inputFlags, callback, this)) {
+      process_command(s_InputBuf);
       m_InputLog.emplace_back(s_InputBuf);
       memset(s_InputBuf, 0, sizeof s_InputBuf);
     }
+
     ImGui::PopFont();
     ImGui::PopItemWidth();
   }
@@ -169,40 +169,107 @@ void RuntimeConsole::ConsoleText::Render() const {
   ImGui::PopID();
 }
 
-void RuntimeConsole::ProcessCommand(const std::string& command) {
-  const auto parsedCommand = ParseCommand(command);
-  if (m_CommandMap.contains(parsedCommand)) {
-    const auto& c = m_CommandMap[parsedCommand];
-    if (c.Action != nullptr) {
-      c.Action();
-    }
-    const auto value = ParseValue(command);
-    if (!value.StrValue.empty()) {
-      if (c.StrValue != nullptr) {
-        *c.StrValue = value.StrValue;
+template <typename T>
+T get_current_cvar_value(uint32_t cvar_array_index) {
+  auto current_value = CVarSystem::get()->get_cvar_array<T>()->cvars[cvar_array_index].current;
+
+  return current_value;
+}
+
+template <typename T>
+void log_cvar_change(RuntimeConsole* console, const char* cvar_name, T current_value, bool changed) {
+  const std::string log_text = changed
+                                 ? fmt::format("Changed {} to {}", cvar_name, current_value)
+                                 : fmt::format("{} {}", cvar_name, current_value);
+  const LevelEnum log_level = changed ? LevelEnum::info : LevelEnum::trace;
+  console->add_log(log_text.c_str(), log_level);
+}
+
+void RuntimeConsole::process_command(const std::string& command) {
+  const auto parsed_command = parse_command(command);
+  const auto value = parse_value(command);
+
+  bool is_cvar_variable = false;
+
+  const auto cvar = CVarSystem::get()->get_cvar(parsed_command.c_str());
+  if (cvar) {
+    is_cvar_variable = true;
+    switch (cvar->type) {
+      case CVarType::INT: {
+        auto current_value = get_current_cvar_value<int32_t>(cvar->arrayIndex);
+        bool changed = false;
+        if (!value.str_value.empty()) {
+          const auto parsed = value.as<int32_t>();
+          if (parsed.has_value()) {
+            CVarSystem::get()->set_int_cvar(cvar->name.c_str(), *parsed);
+            current_value = *parsed;
+            changed = true;
+          }
+        }
+        log_cvar_change<int32_t>(this, cvar->name.c_str(), current_value, changed);
+        break;
       }
-      else if (c.IntValue != nullptr) {
-        const auto v = value.As<int32_t>();
+      case CVarType::FLOAT: {
+        auto current_value = get_current_cvar_value<float>(cvar->arrayIndex);
+        bool changed = false;
+        if (!value.str_value.empty()) {
+          const auto parsed = value.as<float>();
+          if (parsed.has_value()) {
+            CVarSystem::get()->set_float_cvar(cvar->name.c_str(), *parsed);
+            current_value = *parsed;
+            changed = true;
+          }
+        }
+        log_cvar_change<float>(this, cvar->name.c_str(), current_value, changed);
+        break;
+      }
+      case CVarType::STRING: {
+        auto current_value = get_current_cvar_value<std::string>(cvar->arrayIndex);
+        bool changed = false;
+        if (!value.str_value.empty()) {
+          CVarSystem::get()->set_string_cvar(cvar->name.c_str(), value.str_value.c_str());
+            current_value = value.str_value;
+            changed = true;
+        }
+        log_cvar_change<std::string>(this, cvar->name.c_str(), current_value, changed);
+        break;
+      }
+    }
+  }
+
+  // commands registered with register_command()
+  if (m_CommandMap.contains(parsed_command)) {
+    const auto& c = m_CommandMap[parsed_command];
+    if (c.action != nullptr) {
+      c.action();
+    }
+    if (!value.str_value.empty()) {
+      if (c.str_value != nullptr) {
+        *c.str_value = value.str_value;
+      }
+      else if (c.int_value != nullptr) {
+        const auto v = value.as<int32_t>();
         if (v.has_value()) {
-          *c.IntValue = v.value();
+          *c.int_value = v.value();
         }
       }
-      else if (c.BoolValue != nullptr) {
-        const auto v = value.As<int32_t>();
+      else if (c.bool_value != nullptr) {
+        const auto v = value.as<int32_t>();
         if (v.has_value()) {
-          *c.BoolValue = v.value();
+          *c.bool_value = v.value();
         }
       }
     }
-    if (!c.OnSuccesLog.empty())
-      AddLog(c.OnSuccesLog.c_str(), spdlog::level::level_enum::info);
+    if (!c.on_succes_log.empty())
+      add_log(c.on_succes_log.c_str(), LevelEnum::info);
   }
   else {
-    AddLog("Non existent command.", spdlog::level::level_enum::err);
+    if (!is_cvar_variable)
+      add_log("Non existent command.", LevelEnum::err);
   }
 }
 
-RuntimeConsole::ParsedCommandValue RuntimeConsole::ParseValue(const std::string& command) {
+RuntimeConsole::ParsedCommandValue RuntimeConsole::parse_value(const std::string& command) {
   if (command.find(' ') == std::string::npos)
     return {""};
   const auto offset = command.find(' ');
@@ -210,7 +277,7 @@ RuntimeConsole::ParsedCommandValue RuntimeConsole::ParseValue(const std::string&
   return {value};
 }
 
-std::string RuntimeConsole::ParseCommand(const std::string& command) {
+std::string RuntimeConsole::parse_command(const std::string& command) {
   return command.substr(0, command.find(' '));
 }
 
@@ -245,6 +312,16 @@ void RuntimeConsole::HelpCommand() {
     availableCommands.append(fmt::format("\t{0} \n", commandStr));
   }
 
-  AddLog(availableCommands.c_str(), spdlog::level::level_enum::trace);
+  for (int i = 0; i < CVarSystem::get()->get_cvar_array<int32_t>()->lastCVar; i++) {
+    const auto p = CVarSystem::get()->get_cvar_array<int32_t>()->cvars[i].parameter;
+    availableCommands.append(fmt::format("\t{0} \n", p->name.c_str()));
+  }
+
+  for (int i = 0; i < CVarSystem::get()->get_cvar_array<float>()->lastCVar; i++) {
+    const auto p = CVarSystem::get()->get_cvar_array<int32_t>()->cvars[i].parameter;
+    availableCommands.append(fmt::format("\t{0} \n", p->name.c_str()));
+  }
+
+  add_log(availableCommands.c_str(), LevelEnum::trace);
 }
 }

@@ -3,6 +3,7 @@
 #include <vuk/CommandBuffer.hpp>
 
 #include "Render/Vulkan/VukUtils.h"
+#include "Render/Vulkan/VulkanContext.h"
 
 #include "Utils/Profiler.h"
 
@@ -16,6 +17,7 @@ void Material::create(const std::string& material_name) {
 }
 
 void Material::bind_textures(vuk::CommandBuffer& command_buffer) const {
+  OX_SCOPED_ZONE;
   command_buffer.bind_sampler(1, 0, vuk::LinearSamplerRepeated)
                 .bind_sampler(1, 1, vuk::LinearSamplerRepeated)
                 .bind_sampler(1, 2, vuk::LinearSamplerRepeated)

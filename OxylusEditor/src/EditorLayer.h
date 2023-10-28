@@ -81,8 +81,6 @@ private:
   void DrawPanels();
   std::unordered_map<std::string, Scope<EditorPanel>> m_EditorPanels;
   std::vector<Scope<ViewportPanel>> m_ViewportPanels;
-  bool m_ShowStyleEditor = false;
-  bool m_ShowDemoWindow = false;
   ConsolePanel m_ConsolePanel;
   SceneHierarchyPanel m_SceneHierarchyPanel;
   InspectorPanel m_InspectorPanel;

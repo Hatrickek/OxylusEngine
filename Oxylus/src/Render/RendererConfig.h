@@ -1,19 +1,42 @@
 #pragma once
 #include <cstdint>
 
-#include "Event/Event.h"
+#include "Utils/CVars.h"
 
 namespace Oxylus {
+namespace RendererCVAR {
+inline AutoCVar_Int cvar_vsync("gpu.vsync", "toggle vsync", 1);
+
+inline AutoCVar_Int cvar_ssr_enable("pp.ssr", "use ssr", 1);
+inline AutoCVar_Int cvar_ssr_samples("pp.ssr_samples", "ssr samples", 30);
+inline AutoCVar_Float cvar_ssr_max_dist("pp.ssr_max_dist", "ssr max distance", 50.0);
+
+inline AutoCVar_Int cvar_gtao_enable("pp.gtao", "use gtao", 1);
+inline AutoCVar_Int cvar_gtao_quality_level("pp.gtao_quality_level", "gtao quality level", 1);
+inline AutoCVar_Int cvar_gtao_denoise_passes("pp.gtao_denoise_passes", "amount of gtao denoise blur passes", 3);
+inline AutoCVar_Float cvar_gtao_radius("pp.gtao_radius", "gtao radius", 0.5f);
+inline AutoCVar_Float cvar_gtao_falloff_range("pp.gtao_falloff_range", "gtao falloff range", 0.615f);
+inline AutoCVar_Float cvar_gtao_sample_distribution_power("pp.gtao_sample_distribution_power", "gtao sample distribution power", 2.0f);
+inline AutoCVar_Float cvar_gtao_thin_occluder_compensation("pp.gtao_thin_occluder_compensation", "gtao thin occluder compensation", 0.0f);
+inline AutoCVar_Float cvar_gtao_final_value_power("pp.gtao_final_value_power", "gtao final value power", 1.5f);
+inline AutoCVar_Float cvar_gtao_depth_mip_sampling_offset("pp.gtao_depth_mip_sampling_offset", "gtao depth mip sampling offset", 3.30f);
+
+inline AutoCVar_Int cvar_bloom_enable("pp.bloom", "use bloom", 1);
+inline AutoCVar_Float cvar_bloom_threshold("pp.bloom_threshold", "bloom threshold", 1);
+inline AutoCVar_Float cvar_bloom_clamp("pp.bloom_clamp", "bloom clmap", 3);
+
+inline AutoCVar_Int cvar_fxaa_enable("pp.fxaa", "use fxaa", 1);
+
+inline AutoCVar_Int cvar_tonemapper("pp.tonemapper", "tonemapper preset", 0);
+inline AutoCVar_Float cvar_exposure("pp.exposure", "tonemapping exposure", 1.0f);
+inline AutoCVar_Float cvar_gamma("pp.gamma", "screen gamma", 2.2f);
+
+inline AutoCVar_Int cvar_shadows_size("rr.shadows_size", "cascaded shadow map size", 4096);
+inline AutoCVar_Int cvar_shadows_pcf("rr.shadows_pcf", "use pcf in cascaded shadows", 1);
+}
+
 class RendererConfig {
 public:
-  struct ConfigChangeEvent { };
-
-  EventDispatcher config_change_dispatcher;
-
-  struct Display {
-    bool vsync = true;
-  } display_config;
-
   enum Tonemaps {
     TONEMAP_ACES = 0,
     TONEMAP_UNCHARTED,
@@ -21,59 +44,11 @@ public:
     TONEMAP_REINHARD,
   };
 
-  struct Color {
-    int tonemapper = TONEMAP_ACES;
-    float exposure = 1.0f;
-    float gamma = 2.5f;
-  } color_config;
-
-  struct GTAO {
-    bool enabled = false;
-
-    // this matches the XeGTAO.h struct
-    struct Settings {
-      int quality_level = 2;  // 0: low; 1: medium; 2: high; 3: ultra 
-      int denoise_passes = 3; // 0: disabled; 1: sharp; 2: medium; 3: soft
-      float radius = 0.5f;
-      float radius_multiplier = 1.0f;
-      float falloff_range = 0.615f;
-      float sample_distribution_power = 2.0f;
-      float thin_occluder_compensation = 0.0f;
-      float final_value_power = 1.5f;
-      float depth_mip_sampling_offset = 3.30f;
-    } settings;
-  } gtao_config;
-
-  struct Bloom {
-    bool enabled = true;
-    float threshold = 1.0f;
-    float clamp = 3.0f;
-  } bloom_config;
-
-  struct SSR {
-    bool enabled = true;
-    int samples = 30;
-    float max_dist = 50.0f;
-  } ssr_config;
-
-  struct DirectShadows {
-    bool enabled = true;
-    uint32_t quality = 3;
-    bool use_pcf = true;
-    uint32_t size = 4096;
-  } direct_shadows_config;
-
-  struct FXAA {
-    bool enabled = true;
-  } fxaa_config;
-
   RendererConfig();
   ~RendererConfig() = default;
 
   void save_config(const char* path) const;
   bool load_config(const char* path);
-
-  void dispatch_config_change();
 
   static RendererConfig* get() { return s_instance; }
 

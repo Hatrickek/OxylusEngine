@@ -1,38 +1,54 @@
 #pragma once
 
-#include <string_view>
+#include <string>
+#include <cstdint>
 
 namespace Oxylus {
-class StringUtils {
-public:
-  struct StringHash {
-    using is_transparent = void;
+namespace StringUtils {
+constexpr uint32_t fnv1a_32(char const* s, std::size_t count) {
+  return ((count ? fnv1a_32(s, count - 1) : 2166136261u) ^ s[count]) * 16777619u;
+}
 
-    size_t operator()(const char* txt) const {
-      return std::hash<std::string_view>{}(txt);
-    }
+constexpr size_t const_strlen(const char* s) {
+  size_t size = 0;
+  while (s[size]) { size++; };
+  return size;
+}
 
-    size_t operator()(std::string_view txt) const {
-      return std::hash<std::string_view>{}(txt);
-    }
+struct StringHash {
+  using is_transparent = void;
 
-    size_t operator()(const std::string& txt) const {
-      return std::hash<std::string>{}(txt);
-    }
-  };
+  uint32_t computed_hash = 0;
 
-#define UM_StringTransparentEquality StringUtils::StringHash, std::equal_to<>
+  constexpr StringHash(uint32_t hash) noexcept : computed_hash(hash) {}
 
-  static void replace_string(std::string& subject, std::string_view search, std::string_view replace) {
-    size_t pos = 0;
-    while ((pos = subject.find(search, pos)) != std::string::npos) {
-      subject.replace(pos, search.length(), replace);
-      pos += replace.length();
-    }
+  constexpr StringHash(const char* s) noexcept : computed_hash(0) {
+    computed_hash = fnv1a_32(s, const_strlen(s));
   }
 
-  static const char* from_char8_t(const char8_t* c) {
-    return reinterpret_cast<const char*>(c);
+  constexpr StringHash(const char* s, std::size_t count) noexcept : computed_hash(0) {
+    computed_hash = fnv1a_32(s, count);
   }
+
+  constexpr StringHash(std::string_view s) noexcept : computed_hash(0) {
+    computed_hash = fnv1a_32(s.data(), s.size());
+  }
+
+  StringHash(const StringHash& other) = default;
+
+  constexpr operator uint32_t() const noexcept { return computed_hash; }
+};
+
+static void replace_string(std::string& subject, std::string_view search, std::string_view replace) {
+  size_t pos = 0;
+  while ((pos = subject.find(search, pos)) != std::string::npos) {
+    subject.replace(pos, search.length(), replace);
+    pos += replace.length();
+  }
+}
+
+static const char* from_char8_t(const char8_t* c) {
+  return reinterpret_cast<const char*>(c);
+}
 };
 }

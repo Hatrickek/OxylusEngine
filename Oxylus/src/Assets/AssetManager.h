@@ -1,6 +1,7 @@
 #pragma once
 
 #include <filesystem>
+#include <mutex>
 #include <unordered_map>
 
 #include "Core/Base.h"

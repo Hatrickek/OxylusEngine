@@ -10,6 +10,8 @@
 #include "Render/Vulkan/Renderer.h"
 #include "Render/Vulkan/VulkanContext.h"
 
+#include "Thread/ThreadManager.h"
+
 #include "Utils/Profiler.h"
 
 #include "Utils/UIUtils.h"

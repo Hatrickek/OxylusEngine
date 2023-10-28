@@ -13,7 +13,7 @@
 
 #include "EditorLayer.h"
 #include "Core/Entity.h"
-#include "UI/IGUI.h"
+#include "UI/OxUI.h"
 #include "Utils/StringUtils.h"
 #include "Utils/UIUtils.h"
 #include "Assets/MaterialSerializer.h"
@@ -115,7 +115,7 @@ bool InspectorPanel::draw_material_properties(Ref<Material>& material, bool save
   ImGui::Button("Drop a material file", {x, y});
   if (ImGui::BeginDragDropTarget()) {
     if (const ImGuiPayload* payload = ImGui::AcceptDragDropPayload("CONTENT_BROWSER_ITEM")) {
-      std::filesystem::path path = IGUI::get_path_from_imgui_payload(payload);
+      std::filesystem::path path = OxUI::get_path_from_imgui_payload(payload);
       const std::string ext = path.extension().string();
       if (ext == ".oxmat") {
         MaterialSerializer(material).Deserialize(path.string());
@@ -125,30 +125,30 @@ bool InspectorPanel::draw_material_properties(Ref<Material>& material, bool save
     ImGui::EndDragDropTarget();
   }
 
-  IGUI::begin_properties();
-  IGUI::text("Alpha mode: ", material->alpha_mode_to_string());
-  IGUI::property("UV Scale", material->parameters.uv_scale);
-  IGUI::property("Use Albedo", (bool&)material->parameters.use_albedo);
-  IGUI::property("Albedo", material->albedo_texture);
-  IGUI::PropertyVector("Color", material->parameters.color, true, true);
+  OxUI::begin_properties();
+  OxUI::text("Alpha mode: ", material->alpha_mode_to_string());
+  OxUI::property("UV Scale", &material->parameters.uv_scale);
+  OxUI::property<bool>("Use Albedo", (bool*)material->parameters.use_albedo);
+  OxUI::property("Albedo", material->albedo_texture);
+  OxUI::property_vector("Color", material->parameters.color, true, true);
 
-  IGUI::property("Specular", material->parameters.specular);
-  IGUI::PropertyVector("Emmisive", material->parameters.emmisive, true, true);
+  OxUI::property("Specular", &material->parameters.specular);
+  OxUI::property_vector("Emmisive", material->parameters.emmisive, true, true);
 
-  IGUI::property("Use Normal", (bool&)material->parameters.use_normal);
-  IGUI::property("Normal", material->normal_texture);
+  OxUI::property("Use Normal", (bool*)material->parameters.use_normal);
+  OxUI::property("Normal", material->normal_texture);
 
-  IGUI::property("Use PhysicalMap(Roughness/Metallic)", (bool&)material->parameters.use_physical_map);
-  IGUI::property("PhysicalMap", material->metallic_roughness_texture);
+  OxUI::property("Use PhysicalMap(Roughness/Metallic)", (bool*)material->parameters.use_physical_map);
+  OxUI::property("PhysicalMap", material->metallic_roughness_texture);
 
-  IGUI::property("Roughness", material->parameters.roughness);
+  OxUI::property("Roughness", &material->parameters.roughness);
 
-  IGUI::property("Metallic", material->parameters.metallic);
+  OxUI::property("Metallic", &material->parameters.metallic);
 
-  IGUI::property("Use AO", (bool&)material->parameters.use_ao);
-  IGUI::property("AO", material->ao_texture);
+  OxUI::property("Use AO", (bool*)material->parameters.use_ao);
+  OxUI::property("AO", material->ao_texture);
 
-  IGUI::end_properties();
+  OxUI::end_properties();
 
   return loadAsset;
 }
@@ -164,24 +164,24 @@ static void DrawParticleOverLifetimeModule(std::string_view moduleName,
                                                   ImGuiTreeNodeFlags_FramePadding;
 
   if (ImGui::TreeNodeEx(moduleName.data(), treeFlags, "%s", moduleName.data())) {
-    IGUI::begin_properties();
-    IGUI::property("Enabled", propertyModule.enabled);
+    OxUI::begin_properties();
+    OxUI::property("Enabled", &propertyModule.enabled);
 
     if (rotation) {
       T degrees = glm::degrees(propertyModule.start);
-      if (IGUI::PropertyVector("Start", degrees))
+      if (OxUI::property_vector("Start", degrees))
         propertyModule.start = glm::radians(degrees);
 
       degrees = glm::degrees(propertyModule.end);
-      if (IGUI::PropertyVector("End", degrees))
+      if (OxUI::property_vector("End", degrees))
         propertyModule.end = glm::radians(degrees);
     }
     else {
-      IGUI::PropertyVector("Start", propertyModule.start, color);
-      IGUI::PropertyVector("End", propertyModule.end, color);
+      OxUI::property_vector("Start", propertyModule.start, color);
+      OxUI::property_vector("End", propertyModule.end, color);
     }
 
-    IGUI::end_properties();
+    OxUI::end_properties();
 
     ImGui::TreePop();
   }
@@ -198,26 +198,26 @@ static void DrawParticleBySpeedModule(std::string_view moduleName,
                                                   ImGuiTreeNodeFlags_FramePadding;
 
   if (ImGui::TreeNodeEx(moduleName.data(), treeFlags, "%s", moduleName.data())) {
-    IGUI::begin_properties();
-    IGUI::property("Enabled", propertyModule.enabled);
+    OxUI::begin_properties();
+    OxUI::property("Enabled", &propertyModule.enabled);
 
     if (rotation) {
       T degrees = glm::degrees(propertyModule.start);
-      if (IGUI::PropertyVector("Start", degrees))
+      if (OxUI::property_vector("Start", degrees))
         propertyModule.start = glm::radians(degrees);
 
       degrees = glm::degrees(propertyModule.end);
-      if (IGUI::PropertyVector("End", degrees))
+      if (OxUI::property_vector("End", degrees))
         propertyModule.end = glm::radians(degrees);
     }
     else {
-      IGUI::PropertyVector("Start", propertyModule.start, color);
-      IGUI::PropertyVector("End", propertyModule.end, color);
+      OxUI::property_vector("Start", propertyModule.start, color);
+      OxUI::property_vector("End", propertyModule.end, color);
     }
 
-    IGUI::property("Min Speed", propertyModule.min_speed);
-    IGUI::property("Max Speed", propertyModule.max_speed);
-    IGUI::end_properties();
+    OxUI::property("Min Speed", &propertyModule.min_speed);
+    OxUI::property("Max Speed", &propertyModule.max_speed);
+    OxUI::end_properties();
     ImGui::TreePop();
   }
 }
@@ -274,13 +274,13 @@ void InspectorPanel::draw_components(Entity entity) const {
   DrawComponent<TransformComponent>(ICON_MDI_VECTOR_LINE " Transform Component",
     entity,
     [](TransformComponent& component) {
-      IGUI::begin_properties();
-      IGUI::draw_vec3_control("Translation", component.translation);
+      OxUI::begin_properties();
+      OxUI::draw_vec3_control("Translation", component.translation);
       Vec3 rotation = glm::degrees(component.rotation);
-      IGUI::draw_vec3_control("Rotation", rotation);
+      OxUI::draw_vec3_control("Rotation", rotation);
       component.rotation = glm::radians(rotation);
-      IGUI::draw_vec3_control("Scale", component.scale, nullptr, 1.0f);
-      IGUI::end_properties();
+      OxUI::draw_vec3_control("Scale", component.scale, nullptr, 1.0f);
+      OxUI::end_properties();
     });
 
   DrawComponent<MeshRendererComponent>(ICON_MDI_VECTOR_SQUARE " Mesh Renderer Component",
@@ -308,7 +308,7 @@ void InspectorPanel::draw_components(Entity entity) const {
       const float filter_cursor_pos_x = ImGui::GetCursorPosX();
       ImGuiTextFilter name_filter;
 
-      name_filter.Draw("##material_filter", ImGui::GetContentRegionAvail().x - (IGUI::get_icon_button_size(ICON_MDI_PLUS, "").x + 2.0f * ImGui::GetStyle().FramePadding.x));
+      name_filter.Draw("##material_filter", ImGui::GetContentRegionAvail().x - (OxUI::get_icon_button_size(ICON_MDI_PLUS, "").x + 2.0f * ImGui::GetStyle().FramePadding.x));
 
       if (!name_filter.IsActive()) {
         ImGui::SameLine();
@@ -355,46 +355,46 @@ void InspectorPanel::draw_components(Entity entity) const {
       }
       if (ImGui::BeginDragDropTarget()) {
         if (const ImGuiPayload* payload = ImGui::AcceptDragDropPayload("CONTENT_BROWSER_ITEM")) {
-          const auto path = IGUI::get_path_from_imgui_payload(payload).string();
+          const auto path = OxUI::get_path_from_imgui_payload(payload).string();
           loadCubeMap(m_Scene, path, component);
         }
         ImGui::EndDragDropTarget();
       }
       ImGui::Spacing();
-      IGUI::begin_properties();
-      IGUI::property("Lod Bias", component.lod_bias);
-      IGUI::end_properties();
+      OxUI::begin_properties();
+      OxUI::property("Lod Bias", &component.lod_bias);
+      OxUI::end_properties();
     });
 
   DrawComponent<PostProcessProbe>(ICON_MDI_SPRAY " PostProcess Probe Component",
     entity,
     [this](PostProcessProbe& component) {
       ImGui::Text("Vignette");
-      IGUI::begin_properties();
-      pp_probe_property(IGUI::property("Enable", component.vignette_enabled), component);
-      pp_probe_property(IGUI::property("Intensity", component.vignette_intensity), component);
-      IGUI::end_properties();
+      OxUI::begin_properties();
+      pp_probe_property(OxUI::property("Enable", &component.vignette_enabled), component);
+      pp_probe_property(OxUI::property("Intensity", &component.vignette_intensity), component);
+      OxUI::end_properties();
       ImGui::Separator();
 
       ImGui::Text("FilmGrain");
-      IGUI::begin_properties();
-      pp_probe_property(IGUI::property("Enable", component.film_grain_enabled), component);
-      pp_probe_property(IGUI::property("Intensity", component.film_grain_intensity), component);
-      IGUI::end_properties();
+      OxUI::begin_properties();
+      pp_probe_property(OxUI::property("Enable", &component.film_grain_enabled), component);
+      pp_probe_property(OxUI::property("Intensity", &component.film_grain_intensity), component);
+      OxUI::end_properties();
       ImGui::Separator();
 
       ImGui::Text("ChromaticAberration");
-      IGUI::begin_properties();
-      pp_probe_property(IGUI::property("Enable", component.chromatic_aberration_enabled), component);
-      pp_probe_property(IGUI::property("Intensity", component.chromatic_aberration_intensity), component);
-      IGUI::end_properties();
+      OxUI::begin_properties();
+      pp_probe_property(OxUI::property("Enable", &component.chromatic_aberration_enabled), component);
+      pp_probe_property(OxUI::property("Intensity", &component.chromatic_aberration_intensity), component);
+      OxUI::end_properties();
       ImGui::Separator();
 
       ImGui::Text("Sharpen");
-      IGUI::begin_properties();
-      pp_probe_property(IGUI::property("Enable", component.sharpen_enabled), component);
-      pp_probe_property(IGUI::property("Intensity", component.sharpen_intensity), component);
-      IGUI::end_properties();
+      OxUI::begin_properties();
+      pp_probe_property(OxUI::property("Enable", &component.sharpen_enabled), component);
+      pp_probe_property(OxUI::property("Intensity", &component.sharpen_intensity), component);
+      OxUI::end_properties();
       ImGui::Separator();
     });
 
@@ -411,7 +411,7 @@ void InspectorPanel::draw_components(Entity entity) const {
       ImGui::Button(filepath, {x, y});
       if (ImGui::BeginDragDropTarget()) {
         if (const ImGuiPayload* payload = ImGui::AcceptDragDropPayload("CONTENT_BROWSER_ITEM")) {
-          const std::filesystem::path path = IGUI::get_path_from_imgui_payload(payload);
+          const std::filesystem::path path = OxUI::get_path_from_imgui_payload(payload);
           const std::string ext = path.extension().string();
           if (ext == ".mp3" || ext == ".wav")
             component.source = create_ref<AudioSource>(AssetManager::get_asset_file_system_path(path).string().c_str());
@@ -420,12 +420,12 @@ void InspectorPanel::draw_components(Entity entity) const {
       }
       ImGui::Spacing();
 
-      IGUI::begin_properties();
-      IGUI::property("Volume Multiplier", config.VolumeMultiplier);
-      IGUI::property("Pitch Multiplier", config.PitchMultiplier);
-      IGUI::property("Play On Awake", config.PlayOnAwake);
-      IGUI::property("Looping", config.Looping);
-      IGUI::end_properties();
+      OxUI::begin_properties();
+      OxUI::property("Volume Multiplier", &config.VolumeMultiplier);
+      OxUI::property("Pitch Multiplier", &config.PitchMultiplier);
+      OxUI::property("Play On Awake", &config.PlayOnAwake);
+      OxUI::property("Looping", &config.Looping);
+      OxUI::end_properties();
 
       ImGui::Spacing();
       if (ImGui::Button(StringUtils::from_char8_t(ICON_MDI_PLAY "Play ")) &&
@@ -441,8 +441,8 @@ void InspectorPanel::draw_components(Entity entity) const {
         component.source->Stop();
       ImGui::Spacing();
 
-      IGUI::begin_properties();
-      IGUI::property("Spatialization", config.Spatialization);
+      OxUI::begin_properties();
+      OxUI::property("Spatialization", &config.Spatialization);
 
       if (config.Spatialization) {
         ImGui::Indent();
@@ -453,27 +453,24 @@ void InspectorPanel::draw_components(Entity entity) const {
           "Exponential"
         };
         int attenuationType = static_cast<int>(config.AttenuationModel);
-        if (IGUI::property("Attenuation Model",
-          attenuationType,
-          attenuationTypeStrings,
-          4))
+        if (OxUI::property("Attenuation Model", &attenuationType, attenuationTypeStrings, 4))
           config.AttenuationModel = static_cast<AttenuationModelType>(attenuationType);
-        IGUI::property("Roll Off", config.RollOff);
-        IGUI::property("Min Gain", config.MinGain);
-        IGUI::property("Max Gain", config.MaxGain);
-        IGUI::property("Min Distance", config.MinDistance);
-        IGUI::property("Max Distance", config.MaxDistance);
+        OxUI::property("Roll Off", &config.RollOff);
+        OxUI::property("Min Gain", &config.MinGain);
+        OxUI::property("Max Gain", &config.MaxGain);
+        OxUI::property("Min Distance", &config.MinDistance);
+        OxUI::property("Max Distance", &config.MaxDistance);
         float degrees = glm::degrees(config.ConeInnerAngle);
-        if (IGUI::property("Cone Inner Angle", degrees))
+        if (OxUI::property("Cone Inner Angle", &degrees))
           config.ConeInnerAngle = glm::radians(degrees);
         degrees = glm::degrees(config.ConeOuterAngle);
-        if (IGUI::property("Cone Outer Angle", degrees))
+        if (OxUI::property("Cone Outer Angle", &degrees))
           config.ConeOuterAngle = glm::radians(degrees);
-        IGUI::property("Cone Outer Gain", config.ConeOuterGain);
-        IGUI::property("Doppler Factor", config.DopplerFactor);
+        OxUI::property("Cone Outer Gain", &config.ConeOuterGain);
+        OxUI::property("Doppler Factor", &config.DopplerFactor);
         ImGui::Unindent();
       }
-      IGUI::end_properties();
+      OxUI::end_properties();
 
       if (component.source) {
         const glm::mat4 inverted = glm::inverse(entity.get_world_transform());
@@ -488,45 +485,43 @@ void InspectorPanel::draw_components(Entity entity) const {
     entity,
     [](AudioListenerComponent& component) {
       auto& config = component.config;
-      IGUI::begin_properties();
-      IGUI::property("Active", component.active);
+      OxUI::begin_properties();
+      OxUI::property("Active", &component.active);
       float degrees = glm::degrees(config.ConeInnerAngle);
-      if (IGUI::property("Cone Inner Angle", degrees))
+      if (OxUI::property("Cone Inner Angle", &degrees))
         config.ConeInnerAngle = glm::radians(degrees);
       degrees = glm::degrees(config.ConeOuterAngle);
-      if (IGUI::property("Cone Outer Angle", degrees))
+      if (OxUI::property("Cone Outer Angle", &degrees))
         config.ConeOuterAngle = glm::radians(degrees);
-      IGUI::property("Cone Outer Gain", config.ConeOuterGain);
-      IGUI::end_properties();
+      OxUI::property("Cone Outer Gain", &config.ConeOuterGain);
+      OxUI::end_properties();
     });
 
   DrawComponent<LightComponent>(ICON_MDI_LAMP " Light Component",
     entity,
     [](LightComponent& component) {
-      IGUI::begin_properties();
+      OxUI::begin_properties();
       const char* lightTypeStrings[] = {"Directional", "Point", "Spot"};
       int lightType = static_cast<int>(component.type);
-      if (IGUI::property("Light Type", lightType, lightTypeStrings, 3))
+      if (OxUI::property("Light Type", &lightType, lightTypeStrings, 3))
         component.type = static_cast<LightComponent::LightType>(lightType);
 
-      if (IGUI::property("Use color temperature mode",
-            component.use_color_temperature_mode) && component.
-          use_color_temperature_mode) {
+      if (OxUI::property("Use color temperature mode", &component.use_color_temperature_mode) && component.use_color_temperature_mode) {
         ColorUtils::TempratureToColor(component.temperature, component.color);
       }
 
       if (component.use_color_temperature_mode) {
-        if (IGUI::property<uint32_t>("Temperature (K)",
-          component.temperature,
+        if (OxUI::property<uint32_t>("Temperature (K)",
+          &component.temperature,
           1000,
           40000))
           ColorUtils::TempratureToColor(component.temperature, component.color);
       }
       else {
-        IGUI::PropertyVector("Color", component.color, true);
+        OxUI::property_vector("Color", component.color, true);
       }
 
-      if (IGUI::property("Intensity", component.intensity) &&
+      if (OxUI::property("Intensity", &component.intensity) &&
           component.intensity < 0.0f) {
         component.intensity = 0.0f;
       }
@@ -534,15 +529,15 @@ void InspectorPanel::draw_components(Entity entity) const {
       ImGui::Spacing();
 
       if (component.type == LightComponent::LightType::Point) {
-        IGUI::property("Range", component.range);
+        OxUI::property("Range", &component.range);
       }
       else if (component.type == LightComponent::LightType::Spot) {
-        IGUI::property("Range", component.range);
+        OxUI::property("Range", &component.range);
         float degrees = glm::degrees(component.outer_cut_off_angle);
-        if (IGUI::property("Outer Cut-Off Angle", degrees, 1.0f, 90.0f))
+        if (OxUI::property("Outer Cut-Off Angle", &degrees, 1.0f, 90.0f))
           component.outer_cut_off_angle = glm::radians(degrees);
         degrees = glm::degrees(component.cut_off_angle);
-        if (IGUI::property("Cut-Off Angle", degrees, 1.0f, 90.0f))
+        if (OxUI::property("Cut-Off Angle", &degrees, 1.0f, 90.0f))
           component.cut_off_angle = glm::radians(degrees);
 
         if (component.range < 0.1f)
@@ -556,51 +551,51 @@ void InspectorPanel::draw_components(Entity entity) const {
         const char* shadowQualityTypeStrings[] = {"Hard", "Soft", "Ultra Soft"};
         int shadowQualityType = static_cast<int>(component.shadow_quality);
 
-        if (IGUI::property("Shadow Quality Type", shadowQualityType, shadowQualityTypeStrings, 3))
+        if (OxUI::property("Shadow Quality Type", &shadowQualityType, shadowQualityTypeStrings, 3))
           component.shadow_quality = static_cast<LightComponent::ShadowQualityType>(shadowQualityType);
       }
 
-      IGUI::end_properties();
+      OxUI::end_properties();
     });
 
   DrawComponent<RigidbodyComponent>(ICON_MDI_SOCCER " Rigidbody Component",
     entity,
     [this](RigidbodyComponent& component) {
-      IGUI::begin_properties();
+      OxUI::begin_properties();
 
       const char* bodyTypeStrings[] = {"Static", "Kinematic", "Dynamic"};
       int bodyType = static_cast<int>(component.type);
-      if (IGUI::property("Body Type", bodyType, bodyTypeStrings, 3))
+      if (OxUI::property("Body Type", &bodyType, bodyTypeStrings, 3))
         component.type = static_cast<RigidbodyComponent::BodyType>(bodyType);
 
       if (component.type == RigidbodyComponent::BodyType::Dynamic) {
-        IGUI::property("Mass", component.mass, 0.01f, 10000.0f);
-        IGUI::property("Linear Drag", component.linear_drag);
-        IGUI::property("Angular Drag", component.angular_drag);
-        IGUI::property("Gravity Scale", component.gravity_scale);
-        IGUI::property("Allow Sleep", component.allow_sleep);
-        IGUI::property("Awake", component.awake);
-        IGUI::property("Continuous", component.continuous);
-        IGUI::property("Interpolation", component.interpolation);
+        OxUI::property("Mass", &component.mass, 0.01f, 10000.0f);
+        OxUI::property("Linear Drag", &component.linear_drag);
+        OxUI::property("Angular Drag", &component.angular_drag);
+        OxUI::property("Gravity Scale", &component.gravity_scale);
+        OxUI::property("Allow Sleep", &component.allow_sleep);
+        OxUI::property("Awake", &component.awake);
+        OxUI::property("Continuous", &component.continuous);
+        OxUI::property("Interpolation", &component.interpolation);
 
         component.linear_drag = glm::max(component.linear_drag, 0.0f);
         component.angular_drag = glm::max(component.angular_drag, 0.0f);
       }
 
-      IGUI::property("Is Sensor", component.is_sensor);
-      IGUI::end_properties();
+      OxUI::property("Is Sensor", &component.is_sensor);
+      OxUI::end_properties();
     });
 
   DrawComponent<BoxColliderComponent>(ICON_MDI_CHECKBOX_BLANK_OUTLINE " Box Collider",
     entity,
     [](BoxColliderComponent& component) {
-      IGUI::begin_properties();
-      IGUI::PropertyVector("Size", component.size);
-      IGUI::PropertyVector("Offset", component.offset);
-      IGUI::property("Density", component.density);
-      IGUI::property("Friction", component.friction, 0.0f, 1.0f);
-      IGUI::property("Restitution", component.restitution, 0.0f, 1.0f);
-      IGUI::end_properties();
+      OxUI::begin_properties();
+      OxUI::property_vector("Size", component.size);
+      OxUI::property_vector("Offset", component.offset);
+      OxUI::property("Density", &component.density);
+      OxUI::property("Friction", &component.friction, 0.0f, 1.0f);
+      OxUI::property("Restitution", &component.restitution, 0.0f, 1.0f);
+      OxUI::end_properties();
 
       component.density = glm::max(component.density, 0.001f);
     });
@@ -608,13 +603,13 @@ void InspectorPanel::draw_components(Entity entity) const {
   DrawComponent<SphereColliderComponent>(ICON_MDI_CIRCLE_OUTLINE " Sphere Collider",
     entity,
     [](SphereColliderComponent& component) {
-      IGUI::begin_properties();
-      IGUI::property("Radius", component.radius);
-      IGUI::PropertyVector("Offset", component.offset);
-      IGUI::property("Density", component.density);
-      IGUI::property("Friction", component.friction, 0.0f, 1.0f);
-      IGUI::property("Restitution", component.restitution, 0.0f, 1.0f);
-      IGUI::end_properties();
+      OxUI::begin_properties();
+      OxUI::property("Radius", &component.radius);
+      OxUI::property_vector("Offset", component.offset);
+      OxUI::property("Density", &component.density);
+      OxUI::property("Friction", &component.friction, 0.0f, 1.0f);
+      OxUI::property("Restitution", &component.restitution, 0.0f, 1.0f);
+      OxUI::end_properties();
 
       component.density = glm::max(component.density, 0.001f);
     });
@@ -622,14 +617,14 @@ void InspectorPanel::draw_components(Entity entity) const {
   DrawComponent<CapsuleColliderComponent>(ICON_MDI_CIRCLE_OUTLINE " Capsule Collider",
     entity,
     [](CapsuleColliderComponent& component) {
-      IGUI::begin_properties();
-      IGUI::property("Height", component.height);
-      IGUI::property("Radius", component.radius);
-      IGUI::PropertyVector("Offset", component.offset);
-      IGUI::property("Density", component.density);
-      IGUI::property("Friction", component.friction, 0.0f, 1.0f);
-      IGUI::property("Restitution", component.restitution, 0.0f, 1.0f);
-      IGUI::end_properties();
+      OxUI::begin_properties();
+      OxUI::property("Height", &component.height);
+      OxUI::property("Radius", &component.radius);
+      OxUI::property_vector("Offset", component.offset);
+      OxUI::property("Density", &component.density);
+      OxUI::property("Friction", &component.friction, 0.0f, 1.0f);
+      OxUI::property("Restitution", &component.restitution, 0.0f, 1.0f);
+      OxUI::end_properties();
 
       component.density = glm::max(component.density, 0.001f);
     });
@@ -637,15 +632,15 @@ void InspectorPanel::draw_components(Entity entity) const {
   DrawComponent<TaperedCapsuleColliderComponent>(ICON_MDI_CIRCLE_OUTLINE " Tapered Capsule Collider",
     entity,
     [](TaperedCapsuleColliderComponent& component) {
-      IGUI::begin_properties();
-      IGUI::property("Height", component.height);
-      IGUI::property("Top Radius", component.top_radius);
-      IGUI::property("Bottom Radius", component.bottom_radius);
-      IGUI::PropertyVector("Offset", component.offset);
-      IGUI::property("Density", component.density);
-      IGUI::property("Friction", component.friction, 0.0f, 1.0f);
-      IGUI::property("Restitution", component.restitution, 0.0f, 1.0f);
-      IGUI::end_properties();
+      OxUI::begin_properties();
+      OxUI::property("Height", &component.height);
+      OxUI::property("Top Radius", &component.top_radius);
+      OxUI::property("Bottom Radius", &component.bottom_radius);
+      OxUI::property_vector("Offset", component.offset);
+      OxUI::property("Density", &component.density);
+      OxUI::property("Friction", &component.friction, 0.0f, 1.0f);
+      OxUI::property("Restitution", &component.restitution, 0.0f, 1.0f);
+      OxUI::end_properties();
 
       component.density = glm::max(component.density, 0.001f);
     });
@@ -653,14 +648,14 @@ void InspectorPanel::draw_components(Entity entity) const {
   DrawComponent<CylinderColliderComponent>(ICON_MDI_CIRCLE_OUTLINE " Cylinder Collider",
     entity,
     [](CylinderColliderComponent& component) {
-      IGUI::begin_properties();
-      IGUI::property("Height", component.height);
-      IGUI::property("Radius", component.radius);
-      IGUI::PropertyVector("Offset", component.offset);
-      IGUI::property("Density", component.density);
-      IGUI::property("Friction", component.friction, 0.0f, 1.0f);
-      IGUI::property("Restitution", component.restitution, 0.0f, 1.0f);
-      IGUI::end_properties();
+      OxUI::begin_properties();
+      OxUI::property("Height", &component.height);
+      OxUI::property("Radius", &component.radius);
+      OxUI::property_vector("Offset", component.offset);
+      OxUI::property("Density", &component.density);
+      OxUI::property("Friction", &component.friction, 0.0f, 1.0f);
+      OxUI::property("Restitution", &component.restitution, 0.0f, 1.0f);
+      OxUI::end_properties();
 
       component.density = glm::max(component.density, 0.001f);
     });
@@ -668,38 +663,38 @@ void InspectorPanel::draw_components(Entity entity) const {
   DrawComponent<CharacterControllerComponent>(ICON_MDI_CIRCLE_OUTLINE " Character Controller",
     entity,
     [](CharacterControllerComponent& component) {
-      IGUI::begin_properties();
-      IGUI::property("CharacterHeightStanding", component.character_height_standing);
-      IGUI::property("CharacterRadiusStanding", component.character_radius_standing);
-      IGUI::property("CharacterHeightCrouching", component.character_height_crouching);
-      IGUI::property("CharacterRadiusCrouching", component.character_radius_crouching);
+      OxUI::begin_properties();
+      OxUI::property("CharacterHeightStanding", &component.character_height_standing);
+      OxUI::property("CharacterRadiusStanding", &component.character_radius_standing);
+      OxUI::property("CharacterHeightCrouching", &component.character_height_crouching);
+      OxUI::property("CharacterRadiusCrouching", &component.character_radius_crouching);
 
       // Movement
-      IGUI::property("ControlMovementDuringJump", component.control_movement_during_jump);
-      IGUI::property("JumpForce", component.jump_force);
+      OxUI::property("ControlMovementDuringJump", &component.control_movement_during_jump);
+      OxUI::property("JumpForce", &component.jump_force);
 
-      IGUI::property("Friction", component.friction, 0.0f, 1.0f);
-      IGUI::property("CollisionTolerance", component.collision_tolerance);
-      IGUI::end_properties();
+      OxUI::property("Friction", &component.friction, 0.0f, 1.0f);
+      OxUI::property("CollisionTolerance", &component.collision_tolerance);
+      OxUI::end_properties();
     });
 
   DrawComponent<CameraComponent>(ICON_MDI_CAMERA "Camera Component",
     entity,
     [](const CameraComponent& component) {
-      IGUI::begin_properties();
+      OxUI::begin_properties();
       static float fov = component.system->Fov;
-      if (IGUI::property("FOV", fov)) {
+      if (OxUI::property("FOV", &fov)) {
         component.system->SetFov(fov);
       }
       static float nearClip = component.system->NearClip;
-      if (IGUI::property("Near Clip", nearClip)) {
+      if (OxUI::property("Near Clip", &nearClip)) {
         component.system->SetNear(nearClip);
       }
       static float farClip = component.system->FarClip;
-      if (IGUI::property("Far Clip", farClip)) {
+      if (OxUI::property("Far Clip", &farClip)) {
         component.system->SetFar(farClip);
       }
-      IGUI::end_properties();
+      OxUI::end_properties();
     });
 
   DrawComponent<ParticleSystemComponent>(ICON_MDI_LAMP "Particle System Component",
@@ -719,35 +714,35 @@ void InspectorPanel::draw_components(Entity entity) const {
 
       ImGui::Separator();
 
-      IGUI::begin_properties();
-      IGUI::property("Duration", props.duration);
-      if (IGUI::property("Looping", props.looping)) {
+      OxUI::begin_properties();
+      OxUI::property("Duration", &props.duration);
+      if (OxUI::property("Looping", &props.looping)) {
         if (props.looping)
           component.system->play();
       }
-      IGUI::property("Start Delay", props.start_delay);
-      IGUI::property("Start Lifetime", props.start_lifetime);
-      IGUI::PropertyVector("Start Velocity", props.start_velocity);
-      IGUI::PropertyVector("Start Color", props.start_color, true);
-      IGUI::PropertyVector("Start Size", props.start_size);
-      IGUI::PropertyVector("Start Rotation", props.start_rotation);
-      IGUI::property("Gravity Modifier", props.gravity_modifier);
-      IGUI::property("Simulation Speed", props.simulation_speed);
-      IGUI::property("Play On Awake", props.play_on_awake);
-      IGUI::property("Max Particles", props.max_particles);
-      IGUI::end_properties();
+      OxUI::property("Start Delay", &props.start_delay);
+      OxUI::property("Start Lifetime", &props.start_lifetime);
+      OxUI::property_vector("Start Velocity", props.start_velocity);
+      OxUI::property_vector("Start Color", props.start_color, true);
+      OxUI::property_vector("Start Size", props.start_size);
+      OxUI::property_vector("Start Rotation", props.start_rotation);
+      OxUI::property("Gravity Modifier", &props.gravity_modifier);
+      OxUI::property("Simulation Speed", &props.simulation_speed);
+      OxUI::property("Play On Awake", &props.play_on_awake);
+      OxUI::property("Max Particles", &props.max_particles);
+      OxUI::end_properties();
 
       ImGui::Separator();
 
-      IGUI::begin_properties();
-      IGUI::property("Rate Over Time", props.rate_over_time);
-      IGUI::property("Rate Over Distance", props.rate_over_distance);
-      IGUI::property("Burst Count", props.burst_count);
-      IGUI::property("Burst Time", props.burst_time);
-      IGUI::PropertyVector("Position Start", props.position_start);
-      IGUI::PropertyVector("Position End", props.position_end);
-      //IGUI::Property("Texture", props.Texture); //TODO:
-      IGUI::end_properties();
+      OxUI::begin_properties();
+      OxUI::property("Rate Over Time", &props.rate_over_time);
+      OxUI::property("Rate Over Distance", &props.rate_over_distance);
+      OxUI::property("Burst Count", &props.burst_count);
+      OxUI::property("Burst Time", &props.burst_time);
+      OxUI::property_vector("Position Start", props.position_start);
+      OxUI::property_vector("Position End", props.position_end);
+      //OxUI::Property("Texture", props.Texture); //TODO:
+      OxUI::end_properties();
 
       DrawParticleOverLifetimeModule("Velocity Over Lifetime", props.velocity_over_lifetime);
       DrawParticleOverLifetimeModule("Force Over Lifetime", props.force_over_lifetime);
@@ -765,9 +760,9 @@ void InspectorPanel::draw_components(Entity entity) const {
     DrawComponent<CustomComponent>(n2,
       entity,
       [](CustomComponent& component) {
-        IGUI::begin_properties();
-        IGUI::property("Component Name", &component.name, ImGuiInputTextFlags_EnterReturnsTrue);
-        IGUI::end_properties();
+        OxUI::begin_properties();
+        OxUI::property("Component Name", &component.name, ImGuiInputTextFlags_EnterReturnsTrue);
+        OxUI::end_properties();
 
         ImGui::Text("Fields");
         ImGui::BeginTable("FieldTable",

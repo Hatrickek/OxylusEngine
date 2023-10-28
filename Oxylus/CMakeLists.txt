@@ -106,6 +106,7 @@ target_compile_definitions(${PROJECT_NAME} PRIVATE
 # Compile and link options
 if (MSVC)
   target_compile_options(${PROJECT_NAME} PRIVATE /std:c++20 /permissive-) 
+  add_definitions("/MP")
   set(CMAKE_SHARED_LINKER_FLAGS_DISTRIBUTION ${CMAKE_SHARED_LINKER_FLAGS})
   set(CMAKE_EXE_LINKER_FLAGS_DISTRIBUTION ${CMAKE_EXE_LINKER_FLAGS})
 endif ()

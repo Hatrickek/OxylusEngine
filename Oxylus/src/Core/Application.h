@@ -4,13 +4,13 @@
 #include "Core.h"
 #include "Layer.h"
 #include "LayerStack.h"
-#include "Thread/ThreadManager.h"
 #include "UI/ImGuiLayer.h"
 #include "Utils/Log.h"
 
 int main(int argc, char** argv);
 
 namespace Oxylus {
+class ThreadManager;
 class SystemManager;
 
 struct ApplicationCommandLineArgs {
@@ -64,7 +64,7 @@ private:
   Ref<SystemManager> system_manager = nullptr;
   EventDispatcher dispatcher;
 
-  ThreadManager thread_manager;
+  Ref<ThreadManager> thread_manager;
   Timestep timestep;
 
   bool is_running = true;

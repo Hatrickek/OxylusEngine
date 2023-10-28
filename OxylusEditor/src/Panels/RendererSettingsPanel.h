@@ -11,8 +11,6 @@ namespace Oxylus {
     void on_imgui_render() override;
 
   private:
-    void ConfigProperty(bool value);
-
     float m_FpsValues[50] = {};
     std::vector<float> m_FrameTimes{};
   };

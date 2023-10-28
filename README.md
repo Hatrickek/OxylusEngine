@@ -1,8 +1,8 @@
 # Oxylus Engine
 ![Logo](https://cdn.discordapp.com/attachments/1012357737256058924/1109482685388312677/OXLogoBanner.png)     
+[![CI](https://img.shields.io/github/actions/workflow/status/Hatrickek/OxylusEngine/cmake.yml?&style=for-the-badge&logo=cmake&logoColor=orange&labelColor=black)](https://github.com/Hatrickek/OxylusEngine/actions/workflows/cmake.yml)
 ## About   
-Game engine built with Vulkan and C++. It is focused on  stylistic and realistic 3D rendering.        
-This is my hobby project that I work on in my spare time to learn more about graphics programming and engine architectures. 
+This is my hobby project that I work on in my spare time to learn more about graphics programming and engine architectures. Especially Vulkan and C++.
 Also to produce some games including my dream game in the future.
 
 Currently I'm developing [OxArena](https://github.com/Hatrickek/OxArena) -a quake-like movement shooter- using Oxylus!
@@ -12,19 +12,29 @@ Windows, Linux and Mac (with MoltenVK) is supported.
 If you liked my work and would like to donate, you can do so with my [ko-fi page](https://ko-fi.com/hatrickek). Thanks!
 
 ## Features:     
-- Editor with features like Projects, Scenes and Saving/Loading Scenes, Content
-Browser, Prefabs, Shader Hot Reloading, Entity Parenting, and other entity
-manipulations, Inspector Panel which draws any component with its properties,
-Asset Manager, Material System&Editor, In-Editor Console, and a lot more QOL
-features...
 - Modular Vulkan renderer built with Vuk.
-- Modern rendering features; Clustered Forward IBL PBR, SSAO, SSR, PCF Shadows,
-Bloom, Depth Of Field also various Post Processing techniques like HDR
-Tonemapping, Chromatic Aberration, Film Grain, Vignette, Sharpen
+- Modern rendering features:
+	- Clustered Forward IBL PBR
+	- GPU Culling
+	- GTAO
+	- SSR
+	- PCF Cascaded Directional, Spot and Point Light Shadows
+	- Physically Based Bloom
+	- Depth Of Field 
+	- HDR
+	- Tonemapping 
+	- Chromatic Aberration
+	- Film Grain
+	- Vignette
+	- Sharpen
+	- and many more various post-processing effects.
 - Multithreaded physics with Jolt.   
 - Game scripting API with ECS events and ECS systems. Which has been used to
 build multiple games to test the API and engine in general.   
  More about that: [Oxrena](https://github.com/Hatrickek/OxArena), [(Creating a Game With Oxylus)](https://hatrickek.github.io/blog/oxylus-first-game)
+- Editor with features such as Projects, Serializable Scenes, ContentBrowser, Prefabs, Shader Hot Reloading, Entity managing, Prefabs, Inspector Panel,
+Asset Manager, Material System&Editor, In-Editor Console, and a lot more QOL
+features...
 - 3D Audio with miniaudio
 
 ## Showcase

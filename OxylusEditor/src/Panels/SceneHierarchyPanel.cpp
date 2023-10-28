@@ -9,7 +9,7 @@
 
 #include "EditorLayer.h"
 #include "Scene/EntitySerializer.h"
-#include "UI/IGUI.h"
+#include "UI/OxUI.h"
 #include "Utils/ImGuiScoped.h"
 #include "Utils/StringUtils.h"
 
@@ -252,7 +252,7 @@ ImRect SceneHierarchyPanel::DrawEntityNode(Entity entity, uint32_t depth, bool f
 void SceneHierarchyPanel::DragDropTarget() const {
   if (ImGui::BeginDragDropTarget()) {
     if (const ImGuiPayload* payload = ImGui::AcceptDragDropPayload("CONTENT_BROWSER_ITEM")) {
-      const std::filesystem::path path = IGUI::get_path_from_imgui_payload(payload);
+      const std::filesystem::path path = OxUI::get_path_from_imgui_payload(payload);
       if (path.extension() == ".oxscene") {
         EditorLayer::get()->OpenScene(path);
       }
@@ -416,7 +416,7 @@ void SceneHierarchyPanel::on_imgui_render() {
     const float filterCursorPosX = ImGui::GetCursorPosX();
     m_Filter.Draw("###HierarchyFilter",
       ImGui::GetContentRegionAvail().x -
-      (IGUI::get_icon_button_size(ICON_MDI_PLUS, "").x + 2.0f * padding.x));
+      (OxUI::get_icon_button_size(ICON_MDI_PLUS, "").x + 2.0f * padding.x));
     ImGui::SameLine();
 
     if (ImGui::Button(StringUtils::from_char8_t(ICON_MDI_PLUS)))
@@ -499,7 +499,7 @@ void SceneHierarchyPanel::on_imgui_render() {
       m_DraggedEntityTarget = {};
     }
 
-    IGUI::draw_gradient_shadow();
+    OxUI::draw_gradient_shadow();
 
     on_end();
   }
