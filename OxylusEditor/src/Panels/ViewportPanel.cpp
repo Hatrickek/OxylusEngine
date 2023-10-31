@@ -241,22 +241,22 @@ void ViewportPanel::on_imgui_render() {
         ImGui::PushStyleVar(ImGuiStyleVar_ItemSpacing, {1, 1});
 
         const ImVec2 buttonSize2 = {frameHeight * 1.5f, frameHeight};
-        const bool highlight = EditorLayer::get()->m_SceneState == EditorLayer::SceneState::Play;
-        const char8_t* icon = EditorLayer::get()->m_SceneState == EditorLayer::SceneState::Edit ? ICON_MDI_PLAY : ICON_MDI_STOP;
+        const bool highlight = EditorLayer::get()->scene_state == EditorLayer::SceneState::Play;
+        const char8_t* icon = EditorLayer::get()->scene_state == EditorLayer::SceneState::Edit ? ICON_MDI_PLAY : ICON_MDI_STOP;
         if (OxUI::toggle_button(StringUtils::from_char8_t(icon), highlight, buttonSize2)) {
-          if (EditorLayer::get()->m_SceneState == EditorLayer::SceneState::Edit)
-            EditorLayer::get()->OnScenePlay();
-          else if (EditorLayer::get()->m_SceneState == EditorLayer::SceneState::Play)
-            EditorLayer::get()->OnSceneStop();
+          if (EditorLayer::get()->scene_state == EditorLayer::SceneState::Edit)
+            EditorLayer::get()->on_scene_play();
+          else if (EditorLayer::get()->scene_state == EditorLayer::SceneState::Play)
+            EditorLayer::get()->on_scene_stop();
         }
         ImGui::SameLine();
         ImGui::PushStyleColor(ImGuiCol_Button, ImVec4(0.2f, 0.2f, 0.2f, 0.4f));
         if (ImGui::Button(StringUtils::from_char8_t(ICON_MDI_PAUSE), buttonSize2)) {
-          EditorLayer::get()->OnSceneStop();
+          EditorLayer::get()->on_scene_stop();
         }
         ImGui::SameLine();
         if (ImGui::Button(StringUtils::from_char8_t(ICON_MDI_STEP_FORWARD), buttonSize2)) {
-          EditorLayer::get()->OnSceneSimulate();
+          EditorLayer::get()->on_scene_simulate();
         }
         ImGui::PopStyleColor();
 

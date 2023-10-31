@@ -7,17 +7,17 @@
 namespace Oxylus {
 class FileDialogs {
 public:
-  static void InitNFD();
+  static void init_nfd();
 
-  static void CloseNFD();
-
-  /// Returns empty strings if cancelled
-  static std::string OpenFile(const std::vector<nfdfilteritem_t>& filter);
+  static void close_nfd();
 
   /// Returns empty strings if cancelled
-  static std::string SaveFile(const std::vector<nfdfilteritem_t>& filter, const char* defaultName);
+  static std::string open_file(const std::vector<nfdfilteritem_t>& filter);
 
-  static void OpenFolderAndSelectItem(const char* path);
-  static void OpenFileWithProgram(const char* filepath);
+  /// Returns empty strings if cancelled
+  static std::string save_file(const std::vector<nfdfilteritem_t>& filter, const char* defaultName);
+
+  static void open_folder_and_select_item(const char* path);
+  static void open_file_with_program(const char* filepath);
 };
 }

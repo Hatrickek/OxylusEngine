@@ -5,29 +5,29 @@
 #include "Utils/Log.h"
 
 namespace Oxylus {
-Ref<Project> Project::New() {
-  s_ActiveProject = create_ref<Project>();
-  return s_ActiveProject;
+Ref<Project> Project::create_new() {
+  s_active_project = create_ref<Project>();
+  return s_active_project;
 }
 
-Ref<Project> Project::Load(const std::filesystem::path& path) {
+Ref<Project> Project::load(const std::filesystem::path& path) {
   const Ref<Project> project = create_ref<Project>();
 
   const ProjectSerializer serializer(project);
   if (serializer.Deserialize(path)) {
-    project->m_ProjectDirectory = path.parent_path();
-    s_ActiveProject = project;
-    OX_CORE_INFO("Project loaded: {0}", project->GetConfig().Name);
-    return s_ActiveProject;
+    project->m_project_directory = path.parent_path();
+    s_active_project = project;
+    OX_CORE_INFO("Project loaded: {0}", project->get_config().name);
+    return s_active_project;
   }
 
   return nullptr;
 }
 
-bool Project::SaveActive(const std::filesystem::path& path) {
-  const ProjectSerializer serializer(s_ActiveProject);
+bool Project::save_active(const std::filesystem::path& path) {
+  const ProjectSerializer serializer(s_active_project);
   if (serializer.Serialize(path)) {
-    s_ActiveProject->m_ProjectDirectory = path.parent_path();
+    s_active_project->m_project_directory = path.parent_path();
     return true;
   }
   return false;

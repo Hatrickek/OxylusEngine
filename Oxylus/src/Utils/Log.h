@@ -9,21 +9,21 @@
 namespace Oxylus {
 class Log {
 public:
-  static void Init();
+  static void init();
 
-  static std::shared_ptr<spdlog::logger>& GetCoreLogger() { return s_CoreLogger; }
+  static std::shared_ptr<spdlog::logger>& get_core_logger() { return s_core_logger; }
 
 private:
-  static std::shared_ptr<spdlog::logger> s_CoreLogger;
+  static std::shared_ptr<spdlog::logger> s_core_logger;
 };
 }
 
 // log macros
-#define OX_CORE_TRACE(...) ::Oxylus::Log::GetCoreLogger()->trace(__VA_ARGS__)
-#define OX_CORE_INFO(...) ::Oxylus::Log::GetCoreLogger()->info(__VA_ARGS__)
-#define OX_CORE_WARN(...) ::Oxylus::Log::GetCoreLogger()->warn(__VA_ARGS__)
-#define OX_CORE_ERROR(...) ::Oxylus::Log::GetCoreLogger()->error(__VA_ARGS__)
-#define OX_CORE_FATAL(...) ::Oxylus::Log::GetCoreLogger()->critical(__VA_ARGS__)
+#define OX_CORE_TRACE(...) ::Oxylus::Log::get_core_logger()->trace(__VA_ARGS__)
+#define OX_CORE_INFO(...) ::Oxylus::Log::get_core_logger()->info(__VA_ARGS__)
+#define OX_CORE_WARN(...) ::Oxylus::Log::get_core_logger()->warn(__VA_ARGS__)
+#define OX_CORE_ERROR(...) ::Oxylus::Log::get_core_logger()->error(__VA_ARGS__)
+#define OX_CORE_FATAL(...) ::Oxylus::Log::get_core_logger()->critical(__VA_ARGS__)
 
 #define OX_DISABLE_DEBUG_BREAKS
 

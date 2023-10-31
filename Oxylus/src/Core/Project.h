@@ -7,30 +7,30 @@
 
 namespace Oxylus {
 struct ProjectConfig {
-  std::string Name = "Untitled";
+  std::string name = "Untitled";
 
-  std::string StartScene;
-  std::string AssetDirectory;
+  std::string start_scene;
+  std::string asset_directory;
 };
 
 class Project {
 public:
-  ProjectConfig& GetConfig() { return m_Config; }
+  ProjectConfig& get_config() { return m_config; }
 
-  static std::filesystem::path GetProjectDirectory() { return s_ActiveProject->m_ProjectDirectory; }
+  static std::filesystem::path get_project_directory() { return s_active_project->m_project_directory; }
 
-  static std::filesystem::path GetAssetDirectory() {
-    return GetProjectDirectory() / s_ActiveProject->m_Config.AssetDirectory;
+  static std::filesystem::path get_asset_directory() {
+    return get_project_directory() / s_active_project->m_config.asset_directory;
   }
 
-  static Ref<Project> GetActive() { return s_ActiveProject; }
-  static Ref<Project> New();
-  static Ref<Project> Load(const std::filesystem::path& path);
-  static bool SaveActive(const std::filesystem::path& path);
+  static Ref<Project> get_active() { return s_active_project; }
+  static Ref<Project> create_new();
+  static Ref<Project> load(const std::filesystem::path& path);
+  static bool save_active(const std::filesystem::path& path);
 
 private:
-  ProjectConfig m_Config;
-  std::filesystem::path m_ProjectDirectory;
-  inline static Ref<Project> s_ActiveProject;
+  ProjectConfig m_config;
+  std::filesystem::path m_project_directory;
+  inline static Ref<Project> s_active_project;
 };
 }

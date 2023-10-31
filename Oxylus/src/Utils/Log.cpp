@@ -5,21 +5,20 @@
 #include <spdlog/spdlog.h>
 
 namespace Oxylus {
-std::shared_ptr<spdlog::logger> Log::s_CoreLogger;
+std::shared_ptr<spdlog::logger> Log::s_core_logger;
 
-void Log::Init() {
-  std::vector<spdlog::sink_ptr> logSinks;
-  logSinks.emplace_back(std::make_shared<spdlog::sinks::stdout_color_sink_mt>());
-  logSinks.emplace_back(std::make_shared<ExternalConsoleSink>(true));
-  logSinks.emplace_back(std::make_shared<spdlog::sinks::basic_file_sink_mt>("logs/oxylus_log.txt", true));
+void Log::init() {
+  std::vector<spdlog::sink_ptr> log_sinks;
+  log_sinks.emplace_back(std::make_shared<spdlog::sinks::stdout_color_sink_mt>())
+         ->set_pattern("%^[%T] [%l]%$ %n: %v");
+  log_sinks.emplace_back(std::make_shared<ExternalConsoleSink>(true))
+         ->set_pattern("%^[%T] [%l]%$ %n: %v");
+  log_sinks.emplace_back(std::make_shared<spdlog::sinks::basic_file_sink_st>("logs/oxylus_log.txt", true))
+         ->set_pattern("[%T] [%l] %n: %v");
 
-  logSinks[0]->set_pattern("%^[%T] %n: %v%$");
-  logSinks[1]->set_pattern("%^[%T] %n: %v%$");
-  logSinks[2]->set_pattern("[%T] [%l] %n: %v");
-
-  s_CoreLogger = std::make_shared<spdlog::logger>("Oxylus", logSinks.begin(), logSinks.end());
-  s_CoreLogger->set_level(spdlog::level::trace);
-  spdlog::register_logger(s_CoreLogger);
+  s_core_logger = std::make_shared<spdlog::logger>("Oxylus", log_sinks.begin(), log_sinks.end());
+  s_core_logger->set_level(spdlog::level::trace);
+  spdlog::register_logger(s_core_logger);
 
   spdlog::set_error_handler([](const std::string& msg) {
     OX_CORE_ERROR(msg);

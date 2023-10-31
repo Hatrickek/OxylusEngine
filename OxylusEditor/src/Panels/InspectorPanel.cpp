@@ -27,7 +27,7 @@ InspectorPanel::InspectorPanel() : EditorPanel("Inspector", ICON_MDI_INFORMATION
 
 void InspectorPanel::on_imgui_render() {
   m_SelectedEntity = EditorLayer::get()->get_selected_entity();
-  m_Scene = EditorLayer::get()->GetSelectedScene().get();
+  m_Scene = EditorLayer::get()->get_selected_scene().get();
 
   ImGui::Begin(fmt::format("{} {}", StringUtils::from_char8_t(ICON_MDI_INFORMATION), "Inspector").c_str());
   if (m_SelectedEntity) {
@@ -78,7 +78,7 @@ static void DrawComponent(const char8_t* name,
 
     if (open) {
       uiFunction(component);
-      ImGui::TreePop();
+       ImGui::TreePop();
     }
 
     if (removeComponent)
@@ -92,14 +92,14 @@ bool InspectorPanel::draw_material_properties(Ref<Material>& material, bool save
   if (ImGui::Button("Save")) {
     std::string path;
     if (saveToCurrentPath)
-      path = FileDialogs::SaveFile({{"Material file", "oxmat"}}, "NewMaterial");
+      path = FileDialogs::save_file({{"Material file", "oxmat"}}, "NewMaterial");
     else
       path = material->path;
     MaterialSerializer(*material).Serialize(path);
   }
   ImGui::SameLine();
   if (ImGui::Button("Load")) {
-    const auto& path = FileDialogs::OpenFile({{"Material file", "oxmat"}});
+    const auto& path = FileDialogs::open_file({{"Material file", "oxmat"}});
     if (!path.empty()) {
       MaterialSerializer(material).Deserialize(path);
     }
@@ -128,24 +128,24 @@ bool InspectorPanel::draw_material_properties(Ref<Material>& material, bool save
   OxUI::begin_properties();
   OxUI::text("Alpha mode: ", material->alpha_mode_to_string());
   OxUI::property("UV Scale", &material->parameters.uv_scale);
-  OxUI::property<bool>("Use Albedo", (bool*)material->parameters.use_albedo);
+  OxUI::property("Use Albedo", (bool*)&material->parameters.use_albedo);
   OxUI::property("Albedo", material->albedo_texture);
   OxUI::property_vector("Color", material->parameters.color, true, true);
 
   OxUI::property("Specular", &material->parameters.specular);
   OxUI::property_vector("Emmisive", material->parameters.emmisive, true, true);
 
-  OxUI::property("Use Normal", (bool*)material->parameters.use_normal);
+  OxUI::property("Use Normal", (bool*)&material->parameters.use_normal);
   OxUI::property("Normal", material->normal_texture);
 
-  OxUI::property("Use PhysicalMap(Roughness/Metallic)", (bool*)material->parameters.use_physical_map);
+  OxUI::property("Use PhysicalMap(Roughness/Metallic)", (bool*)&material->parameters.use_physical_map);
   OxUI::property("PhysicalMap", material->metallic_roughness_texture);
 
   OxUI::property("Roughness", &material->parameters.roughness);
 
   OxUI::property("Metallic", &material->parameters.metallic);
 
-  OxUI::property("Use AO", (bool*)material->parameters.use_ao);
+  OxUI::property("Use AO", (bool*)&material->parameters.use_ao);
   OxUI::property("AO", material->ao_texture);
 
   OxUI::end_properties();
@@ -350,7 +350,7 @@ void InspectorPanel::draw_components(Entity entity) const {
         }
       };
       if (ImGui::Button(name, {x, y})) {
-        const std::string filePath = FileDialogs::OpenFile({{"HDR File", "hdr"}});
+        const std::string filePath = FileDialogs::open_file({{"HDR File", "hdr"}});
         loadCubeMap(m_Scene, filePath, component);
       }
       if (ImGui::BeginDragDropTarget()) {

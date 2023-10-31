@@ -2,10 +2,9 @@
 
 #include "Application.h"
 #include "Utils/Log.h"
-#include "Utils/Profiler.h"
 
 int main(int argc, char** argv) {
-  Oxylus::Log::Init();
+  Oxylus::Log::init();
 
   const auto app = Oxylus::create_application({argc, argv});
 

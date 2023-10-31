@@ -10,15 +10,15 @@
 #endif
 
 namespace Oxylus {
-void FileDialogs::InitNFD() {
+void FileDialogs::init_nfd() {
   NFD_Init();
 }
 
-void FileDialogs::CloseNFD() {
+void FileDialogs::close_nfd() {
   NFD_Quit();
 }
 
-void FileDialogs::OpenFileWithProgram(const char* filepath) {
+void FileDialogs::open_file_with_program(const char* filepath) {
 #ifdef OX_PLATFORM_WINDOWS
   const _bstr_t widePath(filepath);
   ShellExecute(nullptr, LPCSTR(L"open"), widePath, nullptr, nullptr, SW_RESTORE);
@@ -27,7 +27,7 @@ void FileDialogs::OpenFileWithProgram(const char* filepath) {
 #endif
 }
 
-std::string FileDialogs::OpenFile(const std::vector<nfdfilteritem_t>& filter) {
+std::string FileDialogs::open_file(const std::vector<nfdfilteritem_t>& filter) {
   nfdchar_t* outPath;
   const nfdresult_t result = NFD_OpenDialog(&outPath, filter.data(), (uint32_t)filter.size(), nullptr);
   if (result == NFD_OKAY) {
@@ -36,7 +36,7 @@ std::string FileDialogs::OpenFile(const std::vector<nfdfilteritem_t>& filter) {
   return {};
 }
 
-std::string FileDialogs::SaveFile(const std::vector<nfdfilteritem_t>& filter, const char* defaultName) {
+std::string FileDialogs::save_file(const std::vector<nfdfilteritem_t>& filter, const char* defaultName) {
   nfdchar_t* outPath;
   const nfdresult_t result = NFD_SaveDialog(&outPath, filter.data(), (uint32_t)filter.size(), nullptr, defaultName);
   if (result == NFD_OKAY) {
@@ -45,7 +45,7 @@ std::string FileDialogs::SaveFile(const std::vector<nfdfilteritem_t>& filter, co
   return {};
 }
 
-void FileDialogs::OpenFolderAndSelectItem(const char* path) {
+void FileDialogs::open_folder_and_select_item(const char* path) {
 #ifdef OX_PLATFORM_WINDOWS
   const _bstr_t widePath(path);
   if (const auto pidl = ILCreateFromPath(widePath)) {

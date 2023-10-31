@@ -7,7 +7,7 @@ namespace Oxylus {
 class Window {
 public:
   static void init_window(const AppSpec& spec);
-  static void update_window();
+  static void poll_events();
   static void close_window(GLFWwindow* window);
 
   static void set_window_user_data(void* data);

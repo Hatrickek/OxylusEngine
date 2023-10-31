@@ -11,7 +11,7 @@ namespace Oxylus {
 ProjectSerializer::ProjectSerializer(Ref<Project> project) : m_Project(std::move(project)) { }
 
 bool ProjectSerializer::Serialize(const std::filesystem::path& filePath) const {
-  const auto& config = m_Project->GetConfig();
+  const auto& config = m_Project->get_config();
 
   ryml::Tree tree;
 
@@ -19,9 +19,9 @@ bool ProjectSerializer::Serialize(const std::filesystem::path& filePath) const {
   root |= ryml::MAP;
   auto node = root["Project"];
 
-  node["Name"] << config.Name;
-  node["StartScene"] << config.StartScene;
-  node["AssetDirectory"] << config.AssetDirectory;
+  node["Name"] << config.name;
+  node["StartScene"] << config.start_scene;
+  node["AssetDirectory"] << config.asset_directory;
 
   std::stringstream ss;
   ss << tree;
@@ -32,7 +32,7 @@ bool ProjectSerializer::Serialize(const std::filesystem::path& filePath) const {
 }
 
 bool ProjectSerializer::Deserialize(const std::filesystem::path& filePath) const {
-  auto& [Name, StartScene, AssetDirectory] = m_Project->GetConfig();
+  auto& [Name, StartScene, AssetDirectory] = m_Project->get_config();
 
   const auto& content = FileUtils::read_file(filePath.string());
   if (content.empty()) {

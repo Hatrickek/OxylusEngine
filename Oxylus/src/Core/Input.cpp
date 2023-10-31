@@ -8,12 +8,10 @@ void ScrollCallback(GLFWwindow* window, double xoffset, double yoffset);
 static float s_MouseOffsetX;
 static float s_MouseOffsetY;
 static float s_MouseScrollOffsetY;
-int leftMouseClickedCount;
-int rightMouseClickedCount;
 static glm::vec2 s_MousePos;
 Input::CursorState cursorState = Input::CursorState::DISABLED;
 
-void Input::Init() {
+void Input::init() {
   glfwSetCursorPosCallback(Window::get_glfw_window(), MouseCallback);
   glfwSetScrollCallback(Window::get_glfw_window(), ScrollCallback);
   glfwSetKeyCallback(Window::get_glfw_window(), KeyCallback);
@@ -117,7 +115,5 @@ void ScrollCallback(GLFWwindow* window, double xoffset, double yoffset) {
   s_MouseScrollOffsetY = (float)yoffset;
 }
 
-void Input::KeyCallback(GLFWwindow* window, int key, int scancode, int action, int mods) {
-  
-}
+void Input::KeyCallback(GLFWwindow* window, int key, int scancode, int action, int mods) {}
 }

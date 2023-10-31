@@ -5,6 +5,8 @@
 #include <vector>
 
 #include <imgui.h>
+#include <unordered_map>
+
 #include "EditorPanel.h"
 
 #include "Core/Base.h"
@@ -35,50 +37,49 @@ enum class FileType {
     ContentPanel& operator=(const ContentPanel& other) = delete;
     ContentPanel& operator=(ContentPanel&& other) = delete;
 
-    void Init();
+    void init();
     void on_update() override;
     void on_imgui_render() override;
 
-    void Invalidate();
+    void invalidate();
 
   private:
-    std::pair<bool, uint32_t> DirectoryTreeViewRecursive(const std::filesystem::path& path, uint32_t* count, int* selectionMask, ImGuiTreeNodeFlags flags);
-    void RenderHeader();
-    void RenderSideView();
-    void RenderBody(bool grid);
-    void UpdateDirectoryEntries(const std::filesystem::path& directory);
-    void Refresh() { UpdateDirectoryEntries(m_CurrentDirectory); }
+    std::pair<bool, uint32_t> directory_tree_view_recursive(const std::filesystem::path& path, uint32_t* count, int* selectionMask, ImGuiTreeNodeFlags flags);
+    void render_header();
+    void render_side_view();
+    void render_body(bool grid);
+    void update_directory_entries(const std::filesystem::path& directory);
+    void refresh() { update_directory_entries(m_current_directory); }
 
-    void DrawContextMenuItems(const std::filesystem::path& context, bool isDir);
+    void draw_context_menu_items(const std::filesystem::path& context, bool isDir);
 
   private:
     struct File {
-      std::string Name;
-      std::string Filepath;
-      std::string Extension;
-      std::filesystem::directory_entry DirectoryEntry;
-      Ref<TextureAsset> Thumbnail = nullptr;
-      bool IsDirectory = false;
+      std::string name;
+      std::string file_path;
+      std::string extension;
+      std::filesystem::directory_entry directory_entry;
+      Ref<TextureAsset> thumbnail = nullptr;
+      bool is_directory = false;
 
-      FileType Type;
-      std::string_view FileTypeString;
-      ImVec4 FileTypeIndicatorColor;
+      FileType type;
+      std::string_view file_type_string;
+      ImVec4 file_type_indicator_color;
     };
 
-    std::filesystem::path m_AssetsDirectory;
-    std::filesystem::path m_CurrentDirectory;
-    std::stack<std::filesystem::path> m_BackStack;
-    std::vector<File> m_DirectoryEntries;
-    uint32_t m_CurrentlyVisibleItemsTreeView = 0;
-    float m_ThumbnailSize = 128.0f;
-    ImGuiTextFilter m_Filter;
-    float m_ElapsedTime = 0.0f;
-    bool m_TexturePreviews = false;
+    std::filesystem::path m_assets_directory;
+    std::filesystem::path m_current_directory;
+    std::stack<std::filesystem::path> m_back_stack;
+    std::vector<File> m_directory_entries;
+    uint32_t m_currently_visible_items_tree_view = 0;
+    float m_thumbnail_size = 128.0f;
+    ImGuiTextFilter m_filter;
+    float m_elapsed_time = 0.0f;
+    bool m_texture_previews = true;
 
-    Ref<TextureAsset> m_WhiteTexture;
-    Ref<TextureAsset> m_DirectoryIcon;
-    Ref<TextureAsset> m_MeshIcon;
-    Ref<TextureAsset> m_FileIcon;
-    std::filesystem::path m_DirectoryToDelete;
+    std::unordered_map<std::string, Ref<TextureAsset>> thumbnail_cache;
+
+    Ref<TextureAsset> m_white_texture;
+    std::filesystem::path m_directory_to_delete;
   };
 }

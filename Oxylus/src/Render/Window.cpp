@@ -5,6 +5,8 @@
 
 #include "tinygltf/stb_image.h"
 
+#include "Utils/Profiler.h"
+
 namespace Oxylus {
 Window::WindowData Window::s_window_data;
 GLFWwindow* Window::s_window_handle;
@@ -36,7 +38,8 @@ void Window::init_vulkan_window(const AppSpec& spec) {
   glfwSetWindowCloseCallback(s_window_handle, close_window);
 }
 
-void Window::update_window() {
+void Window::poll_events() {
+  OX_SCOPED_ZONE;
   glfwPollEvents();
 }
 
@@ -93,6 +96,7 @@ void Window::restore() {
 }
 
 void Window::wait_for_events() {
+  OX_SCOPED_ZONE;
   glfwWaitEvents();
 }
 }

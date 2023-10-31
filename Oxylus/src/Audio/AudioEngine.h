@@ -6,12 +6,12 @@ using AudioEngineInternal = void*;
 
 class AudioEngine {
 public:
-  static void Init();
-  static void Shutdown();
+  static void init();
+  static void shutdown();
 
-  static AudioEngineInternal GetEngine();
+  static AudioEngineInternal get_engine();
 
 private:
-  static ma_engine* s_Engine;
+  static ma_engine* s_engine;
 };
 }

@@ -207,6 +207,7 @@ set_targets_static_and_folder(fmt)
 
 # spdlog
 set(SPDLOG_FMT_EXTERNAL TRUE)
+add_definitions(-DSPDLOG_LEVEL_NAMES={\"TRACE\",\"DEBUG\",\"INFO\",\"WARN\",\"ERROR\",\"CRITICAL\",\"OFF\"})
 FetchContent_Declare(
     spdlog
     GIT_REPOSITORY "https://github.com/gabime/spdlog.git"

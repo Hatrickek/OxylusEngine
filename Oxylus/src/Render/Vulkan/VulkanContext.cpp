@@ -117,7 +117,7 @@ void VulkanContext::create_context(const AppSpec& spec) {
   }
 
   if (enable_validation) {
-    OX_CORE_TRACE("Vulkan validation layers enabled.");
+    OX_CORE_INFO("Vulkan validation layers enabled.");
     builder.request_validation_layers()
            .set_debug_callback([](const VkDebugUtilsMessageSeverityFlagBitsEXT messageSeverity,
                                   const VkDebugUtilsMessageTypeFlagsEXT messageType,
@@ -139,8 +139,8 @@ void VulkanContext::create_context(const AppSpec& spec) {
   selector.set_surface(surface)
           .set_minimum_version(1, 0)
           .add_required_extension(VK_KHR_SYNCHRONIZATION_2_EXTENSION_NAME)
-          .add_required_extension(VK_KHR_ACCELERATION_STRUCTURE_EXTENSION_NAME)
-          .add_required_extension(VK_KHR_RAY_TRACING_PIPELINE_EXTENSION_NAME)
+          //.add_required_extension(VK_KHR_ACCELERATION_STRUCTURE_EXTENSION_NAME)
+          //.add_required_extension(VK_KHR_RAY_TRACING_PIPELINE_EXTENSION_NAME)
           .add_required_extension(VK_KHR_DEFERRED_HOST_OPERATIONS_EXTENSION_NAME);
   auto phys_ret = selector.select();
   vkb::PhysicalDevice vkbphysical_device;
@@ -252,7 +252,7 @@ void VulkanContext::create_context(const AppSpec& spec) {
       }
     });
 
-  OX_CORE_TRACE("Vulkan context initialized using device: {}", properties.deviceName);
+  OX_CORE_INFO("Vulkan context initialized using device: {}", properties.deviceName);
 }
 
 void VulkanContext::rebuild_swapchain() {

@@ -108,7 +108,7 @@ bool OxUI::property(const char* label, Ref<TextureAsset>& texture, uint64_t over
   const vuk::SampledImage sampledImage(vuk::SampledImage::Global{.iv = *texture->get_texture().view, .sci = sci, .image_layout = vuk::ImageLayout::eShaderReadOnlyOptimal});
 
   if (ImGui::ImageButton(Application::get()->get_imgui_layer()->add_sampled_image(sampledImage), {buttonSize, buttonSize}, {1, 1}, {0, 0}, 0)) {
-    const auto& path = FileDialogs::OpenFile({{"Texture file", "png,jpg"}});
+    const auto& path = FileDialogs::open_file({{"Texture file", "png,jpg"}});
     if (!path.empty()) {
       texture = AssetManager::get_texture_asset({path});
       changed = true;

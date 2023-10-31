@@ -87,15 +87,12 @@ void Application::run() {
   while (is_running) {
     update_timestep();
 
-    // Layers
     update_layers(timestep);
-
-    // Systems
     system_manager->on_update();
 
     update_renderer();
 
-    Window::update_window();
+    Window::poll_events();
     while (VulkanContext::get()->suspend) {
       Window::wait_for_events();
     }

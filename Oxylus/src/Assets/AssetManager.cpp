@@ -12,7 +12,7 @@ AssetManager::AssetLibrary AssetManager::s_library;
 std::mutex AssetManager::s_asset_mutex;
 
 std::filesystem::path AssetManager::get_asset_file_system_path(const std::filesystem::path& path) {
-  return Project::GetAssetDirectory() / path;
+  return Project::get_asset_directory() / path;
 }
 
 Ref<TextureAsset> AssetManager::get_texture_asset(const TextureLoadInfo& info) {

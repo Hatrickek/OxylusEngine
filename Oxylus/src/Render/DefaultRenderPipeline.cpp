@@ -236,6 +236,10 @@ Scope<vuk::Future> DefaultRenderPipeline::on_render(vuk::Allocator& frame_alloca
 
   cascaded_shadow_pass(rg, shadow_buffer);
 
+  // fill it if it's empty. Or we could allow vulkan to bind null buffers with VK_EXT_robustness2 nullDescriptor feature. 
+  if (point_lights_data.empty())
+    point_lights_data.emplace_back(LightingData{Vec4{0}, Vec4{0}, Vec4{0}});
+
   auto [point_lights_buf, point_lights_buffer_fut] = create_buffer(frame_allocator, vuk::MemoryUsage::eCPUtoGPU, vuk::DomainFlagBits::eTransferOnGraphics, std::span(point_lights_data));
   auto& point_lights_buffer = *point_lights_buf;
 

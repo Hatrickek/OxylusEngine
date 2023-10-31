@@ -136,6 +136,7 @@ public:
 
 
   glm::mat4 get_world_transform() const {
+    OX_SCOPED_ZONE;
     const auto& transform = get_transform();
     const auto& rc = get_relationship();
     const Entity parent = m_Scene->get_entity_by_uuid(rc.parent);
@@ -145,6 +146,7 @@ public:
   }
 
   glm::mat4 get_local_transform() const {
+    OX_SCOPED_ZONE;
     const auto& transform = get_transform();
     return glm::translate(glm::mat4(1.0f), transform.translation) * glm::toMat4(glm::quat(transform.rotation)) *
            glm::scale(glm::mat4(1.0f), transform.scale);

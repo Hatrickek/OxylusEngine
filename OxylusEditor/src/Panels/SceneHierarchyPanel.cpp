@@ -254,7 +254,7 @@ void SceneHierarchyPanel::DragDropTarget() const {
     if (const ImGuiPayload* payload = ImGui::AcceptDragDropPayload("CONTENT_BROWSER_ITEM")) {
       const std::filesystem::path path = OxUI::get_path_from_imgui_payload(payload);
       if (path.extension() == ".oxscene") {
-        EditorLayer::get()->OpenScene(path);
+        EditorLayer::get()->open_scene(path);
       }
       if (path.extension() == ".gltf" || path.extension() == ".glb") {
         m_Context->create_entity_with_mesh(AssetManager::get_mesh_asset(path.string()));

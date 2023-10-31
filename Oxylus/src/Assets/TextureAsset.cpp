@@ -26,7 +26,7 @@ TextureAsset::TextureAsset(const TextureLoadInfo& info) {
 
 TextureAsset::~TextureAsset() = default;
 
-void TextureAsset::create_texture(uint32_t x, uint32_t y, void* data, vuk::Format format) {
+void TextureAsset::create_texture(const uint32_t x, const uint32_t y, void* data, const vuk::Format format) {
   auto [tex, tex_fut] = vuk::create_texture(*VulkanContext::get()->superframe_allocator, format, vuk::Extent3D{x, y, 1u}, data, true);
   texture = std::move(tex);
 
@@ -34,7 +34,7 @@ void TextureAsset::create_texture(uint32_t x, uint32_t y, void* data, vuk::Forma
   tex_fut.wait(*VulkanContext::get()->superframe_allocator, compiler);
 }
 
-void TextureAsset::load(const std::string& file_path, vuk::Format format) {
+void TextureAsset::load(const std::string& file_path, const vuk::Format format, const bool generate_cubemap_from_hdr) {
   path = file_path;
 
   uint32_t x, y, chans;
@@ -42,7 +42,7 @@ void TextureAsset::load(const std::string& file_path, vuk::Format format) {
 
   create_texture(x, y, data, format);
 
-  if (FileSystem::GetFileExtension(path) == "hdr") {
+  if (FileSystem::GetFileExtension(path) == "hdr" && generate_cubemap_from_hdr) {
     auto [image, future] = RendererCommon::generate_cubemap_from_equirectangular(texture);
     vuk::Compiler compiler;
     future.wait(*VulkanContext::get()->superframe_allocator, compiler);
@@ -68,7 +68,7 @@ void TextureAsset::load(const std::string& file_path, vuk::Format format) {
   delete[] data;
 }
 
-void TextureAsset::load_from_memory(void* initial_data, size_t size) {
+void TextureAsset::load_from_memory(void* initial_data, const size_t size) {
   uint32_t x, y, chans;
   const auto data = Texture::load_stb_image_from_memory(initial_data, size, &x, &y, &chans);
 

@@ -16,7 +16,7 @@ enum CameraMovement {
 };
 
 constexpr float FOV = 45.0f;
-constexpr float NEARCLIP = 0.01f;
+constexpr float NEARCLIP = 0.1f;
 constexpr float FARCLIP = 1000.0f;
 
 

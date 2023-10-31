@@ -33,78 +33,78 @@
 #include "Utils/StringUtils.h"
 
 namespace Oxylus {
-EditorLayer* EditorLayer::s_Instance = nullptr;
+EditorLayer* EditorLayer::s_instance = nullptr;
 
 AutoCVar_Int cvar_show_style_editor("ui.imgui_style_editor", "show imgui style editor", 0, CVarFlags::EditCheckbox);
 AutoCVar_Int cvar_show_imgui_demo("ui.imgui_demo", "show imgui demo window", 0, CVarFlags::EditCheckbox);
 
 EditorLayer::EditorLayer() : Layer("Editor Layer") {
-  s_Instance = this;
+  s_instance = this;
 }
 
 void EditorLayer::on_attach(EventDispatcher& dispatcher) {
-  m_EditorConfig.LoadConfig();
+  m_editor_config.LoadConfig();
   Resources::init_editor_resources();
 
-  m_CrosshairCursor = Input::LoadCursorIconStandard(GLFW_CROSSHAIR_CURSOR);
+  crosshair_cursor = Input::LoadCursorIconStandard(GLFW_CROSSHAIR_CURSOR);
 
-  m_EngineBanner = create_ref<TextureAsset>();
-  m_EngineBanner->create_texture(EngineBannerWidth, EngineBannerHeight, EngineBanner);
+  engine_banner = create_ref<TextureAsset>();
+  engine_banner->create_texture(EngineBannerWidth, EngineBannerHeight, EngineBanner);
 
   Input::SetCursorState(Input::CursorState::NORMAL, Window::get_glfw_window());
 
   auto scene = create_ref<Scene>();
-  SetEditorScene(scene);
+  set_editor_scene(scene);
 
   // Initialize panels
-  m_EditorPanels.emplace("EditorSettings", create_scope<EditorSettingsPanel>());
-  m_EditorPanels.emplace("RenderSettings", create_scope<RendererSettingsPanel>());
-  m_EditorPanels.emplace("Shaders", create_scope<ShadersPanel>());
-  m_EditorPanels.emplace("FramebufferViewer", create_scope<FramebufferViewerPanel>());
-  m_EditorPanels.emplace("ProjectPanel", create_scope<ProjectPanel>());
-  m_EditorPanels.emplace("StatisticsPanel", create_scope<StatisticsPanel>());
-  m_EditorPanels.emplace("EditorDebugPanel", create_scope<EditorDebugPanel>());
-  const auto& viewport = m_ViewportPanels.emplace_back(create_scope<ViewportPanel>());
+  m_editor_panels.emplace("EditorSettings", create_scope<EditorSettingsPanel>());
+  m_editor_panels.emplace("RenderSettings", create_scope<RendererSettingsPanel>());
+  m_editor_panels.emplace("Shaders", create_scope<ShadersPanel>());
+  m_editor_panels.emplace("FramebufferViewer", create_scope<FramebufferViewerPanel>());
+  m_editor_panels.emplace("ProjectPanel", create_scope<ProjectPanel>());
+  m_editor_panels.emplace("StatisticsPanel", create_scope<StatisticsPanel>());
+  m_editor_panels.emplace("EditorDebugPanel", create_scope<EditorDebugPanel>());
+  const auto& viewport = m_viewport_panels.emplace_back(create_scope<ViewportPanel>());
   viewport->m_camera.SetPosition({-2, 2, 0});
-  viewport->set_context(m_EditorScene, m_SceneHierarchyPanel);
+  viewport->set_context(m_editor_scene, m_scene_hierarchy_panel);
 }
 
 void EditorLayer::on_detach() {
-  Input::DestroyCursor(m_CrosshairCursor);
-  m_EditorConfig.SaveConfig();
+  Input::DestroyCursor(crosshair_cursor);
+  m_editor_config.SaveConfig();
 }
 
 void EditorLayer::on_update(Timestep deltaTime) {
-  for (const auto& [name, panel] : m_EditorPanels) {
+  for (const auto& [name, panel] : m_editor_panels) {
     if (!panel->Visible)
       continue;
     panel->on_update();
   }
-  for (const auto& panel : m_ViewportPanels) {
+  for (const auto& panel : m_viewport_panels) {
     if (!panel->Visible)
       continue;
     panel->on_update();
   }
-  if (m_SceneHierarchyPanel.Visible)
-    m_SceneHierarchyPanel.on_update();
-  if (m_ContentPanel.Visible)
-    m_ContentPanel.on_update();
-  if (m_InspectorPanel.Visible)
-    m_InspectorPanel.on_update();
+  if (m_scene_hierarchy_panel.Visible)
+    m_scene_hierarchy_panel.on_update();
+  if (m_content_panel.Visible)
+    m_content_panel.on_update();
+  if (m_inspector_panel.Visible)
+    m_inspector_panel.on_update();
 
-  m_AssetInspectorPanel.on_update();
+  m_asset_inspector_panel.on_update();
 
-  switch (m_SceneState) {
+  switch (scene_state) {
     case SceneState::Edit: {
-      m_EditorScene->on_editor_update(deltaTime, m_ViewportPanels[0]->m_camera);
+      m_editor_scene->on_editor_update(deltaTime, m_viewport_panels[0]->m_camera);
       break;
     }
     case SceneState::Play: {
-      m_ActiveScene->on_runtime_update(deltaTime);
+      m_active_scene->on_runtime_update(deltaTime);
       break;
     }
     case SceneState::Simulate: {
-      m_ActiveScene->on_editor_update(deltaTime, m_ViewportPanels[0]->m_camera);
+      m_active_scene->on_editor_update(deltaTime, m_viewport_panels[0]->m_camera);
       break;
     }
   }
@@ -116,7 +116,7 @@ void EditorLayer::on_imgui_render() {
   if (cvar_show_imgui_demo.get())
     ImGui::ShowDemoWindow();
 
-  EditorShortcuts();
+  editor_shortcuts();
 
   static ImGuiDockNodeFlags dockspace_flags = ImGuiDockNodeFlags_PassthruCentralNode;
 
@@ -149,36 +149,36 @@ void EditorLayer::on_imgui_render() {
                                             ImGuiWindowFlags_MenuBar | ImGuiWindowFlags_NoNavFocus;
 
     ImVec2 framePadding = ImGui::GetStyle().FramePadding;
-    DrawWindowTitle();
+    draw_window_title();
     ImGui::PushStyleVar(ImGuiStyleVar_FramePadding, {framePadding.x, 4.0f});
 
     if (ImGui::BeginViewportSideBar("##PrimaryMenuBar", viewport, ImGuiDir_Up, frameHeight, menu_flags)) {
       if (ImGui::BeginMenuBar()) {
         if (ImGui::BeginMenu("File")) {
           if (ImGui::MenuItem("New Scene", "Ctrl + N")) {
-            NewScene();
+            new_scene();
           }
           if (ImGui::MenuItem("Open Scene", "Ctrl + O")) {
-            OpenScene();
+            open_scene();
           }
           if (ImGui::MenuItem("Save Scene", "Ctrl + S")) {
-            SaveScene();
+            save_scene();
           }
           if (ImGui::MenuItem("Save Scene As...", "Ctrl + Shift + S")) {
-            SaveSceneAs();
+            save_scene_as();
           }
 
           ImGui::Separator();
           if (ImGui::MenuItem("New Project")) {
-            NewProject();
+            new_project();
           }
           if (ImGui::MenuItem("Open Project")) {
-            const std::string filepath = FileDialogs::OpenFile({{"Oxylus Project", "oxproj"}});
-            OpenProject(filepath);
+            const std::string filepath = FileDialogs::open_file({{"Oxylus Project", "oxproj"}});
+            open_project(filepath);
           }
           if (ImGui::MenuItem("Save Project")) {
-            const std::string filepath = FileDialogs::SaveFile({{"Oxylus Project", "oxproj"}}, "New Project");
-            SaveProject(filepath);
+            const std::string filepath = FileDialogs::save_file({{"Oxylus Project", "oxproj"}}, "New Project");
+            save_project(filepath);
           }
 
           ImGui::Separator();
@@ -189,26 +189,26 @@ void EditorLayer::on_imgui_render() {
         }
         if (ImGui::BeginMenu("Edit")) {
           if (ImGui::MenuItem("Settings")) {
-            m_EditorPanels["EditorSettings"]->Visible = true;
+            m_editor_panels["EditorSettings"]->Visible = true;
           }
           ImGui::EndMenu();
         }
         if (ImGui::BeginMenu("Window")) {
           if (ImGui::MenuItem("Add viewport", nullptr)) {
-            m_ViewportPanels.emplace_back(create_scope<ViewportPanel>())->set_context(m_EditorScene, m_SceneHierarchyPanel);
+            m_viewport_panels.emplace_back(create_scope<ViewportPanel>())->set_context(m_editor_scene, m_scene_hierarchy_panel);
           }
           if (ImGui::MenuItem("Shaders", nullptr)) {
-            m_EditorPanels["Shaders"]->Visible = true;
+            m_editor_panels["Shaders"]->Visible = true;
           }
           if (ImGui::MenuItem("Framebuffer Viewer", nullptr)) {
-            m_EditorPanels["FramebufferViewer"]->Visible = true;
+            m_editor_panels["FramebufferViewer"]->Visible = true;
           }
-          ImGui::MenuItem("Inspector", nullptr, &m_InspectorPanel.Visible);
-          ImGui::MenuItem("Scene hierarchy", nullptr, &m_SceneHierarchyPanel.Visible);
-          ImGui::MenuItem("Console window", nullptr, &m_ConsolePanel.m_RuntimeConsole.Visible);
-          ImGui::MenuItem("Performance Overlay", nullptr, &m_ViewportPanels[0]->performance_overlay_visible);
-          ImGui::MenuItem("Statistics", nullptr, &m_EditorPanels["StatisticsPanel"]->Visible);
-          ImGui::MenuItem("Editor Debug", nullptr, &m_EditorPanels["EditorDebugPanel"]->Visible);
+          ImGui::MenuItem("Inspector", nullptr, &m_inspector_panel.Visible);
+          ImGui::MenuItem("Scene hierarchy", nullptr, &m_scene_hierarchy_panel.Visible);
+          ImGui::MenuItem("Console window", nullptr, &m_console_panel.m_RuntimeConsole.Visible);
+          ImGui::MenuItem("Performance Overlay", nullptr, &m_viewport_panels[0]->performance_overlay_visible);
+          ImGui::MenuItem("Statistics", nullptr, &m_editor_panels["StatisticsPanel"]->Visible);
+          ImGui::MenuItem("Editor Debug", nullptr, &m_editor_panels["EditorDebugPanel"]->Visible);
           ImGui::EndMenu();
         }
 
@@ -267,11 +267,11 @@ void EditorLayer::on_imgui_render() {
           //Project name text
           ImGui::SetCursorPos(ImVec2(
             (float)Window::get_width() - 10 -
-            ImGui::CalcTextSize(Project::GetActive()->GetConfig().Name.c_str()).x,
+            ImGui::CalcTextSize(Project::get_active()->get_config().name.c_str()).x,
             0));
           ImGuiScoped::StyleColor bColor1(ImGuiCol_Button, ImVec4(0.2f, 0.2f, 0.2f, 0.7f));
           ImGuiScoped::StyleColor bColor2(ImGuiCol_ButtonHovered, ImVec4(0.2f, 0.2f, 0.2f, 0.7f));
-          ImGui::Button(Project::GetActive()->GetConfig().Name.c_str());
+          ImGui::Button(Project::get_active()->get_config().name.c_str());
         }
 
         ImGui::EndMenuBar();
@@ -280,42 +280,42 @@ void EditorLayer::on_imgui_render() {
     }
     ImGui::PopStyleVar();
 
-    DrawPanels();
+    draw_panels();
 
     ImGui::End();
   }
 }
 
-void EditorLayer::EditorShortcuts() {
+void EditorLayer::editor_shortcuts() {
   if (ImGui::IsKeyDown(ImGuiKey_LeftCtrl)) {
     if (ImGui::IsKeyPressed(ImGuiKey_N, false)) {
-      NewScene();
+      new_scene();
     }
     if (ImGui::IsKeyPressed(ImGuiKey_S, false)) {
-      SaveScene();
+      save_scene();
     }
     if (ImGui::IsKeyPressed(ImGuiKey_O, false)) {
-      OpenScene();
+      open_scene();
     }
     if (ImGui::IsKeyDown(ImGuiKey_LeftShift) && ImGui::IsKeyPressed(ImGuiKey_S, false)) {
-      SaveSceneAs();
+      save_scene_as();
     }
   }
 }
 
-void EditorLayer::NewScene() {
+void EditorLayer::new_scene() {
   const Ref<Scene> newScene = create_ref<Scene>();
-  SetEditorScene(newScene);
+  set_editor_scene(newScene);
   m_LastSaveScenePath.clear();
 }
 
-void EditorLayer::OpenScene() {
-  const std::string filepath = FileDialogs::OpenFile({{"Oxylus Scene", "oxscene"}});
+void EditorLayer::open_scene() {
+  const std::string filepath = FileDialogs::open_file({{"Oxylus Scene", "oxscene"}});
   if (!filepath.empty())
-    OpenScene(filepath);
+    open_scene(filepath);
 }
 
-bool EditorLayer::OpenScene(const std::filesystem::path& path) {
+bool EditorLayer::open_scene(const std::filesystem::path& path) {
   if (!exists(path)) {
     OX_CORE_WARN("Could not find {0}", path.filename().string());
     return false;
@@ -327,65 +327,65 @@ bool EditorLayer::OpenScene(const std::filesystem::path& path) {
   const Ref<Scene> newScene = create_ref<Scene>();
   const SceneSerializer serializer(newScene);
   if (serializer.deserialize(path.string())) {
-    SetEditorScene(newScene);
+    set_editor_scene(newScene);
   }
   m_LastSaveScenePath = path.string();
   return true;
 }
 
-void EditorLayer::SetSelectedEntity(const Entity& entity) {
-  m_SceneHierarchyPanel.SetSelectedEntity(entity);
+void EditorLayer::set_selected_entity(const Entity& entity) {
+  m_scene_hierarchy_panel.SetSelectedEntity(entity);
 }
 
-void EditorLayer::ClearSelectedEntity() {
-  m_SceneHierarchyPanel.ClearSelectionContext();
+void EditorLayer::clear_selected_entity() {
+  m_scene_hierarchy_panel.ClearSelectionContext();
 }
 
-void EditorLayer::SaveScene() {
+void EditorLayer::save_scene() {
   if (!m_LastSaveScenePath.empty()) {
     ThreadManager::get()->asset_thread.queue_job([this] {
-      SceneSerializer(GetActiveScene()).Serialize(m_LastSaveScenePath);
+      SceneSerializer(get_active_scene()).Serialize(m_LastSaveScenePath);
     });
   }
   else {
-    SaveSceneAs();
+    save_scene_as();
   }
 }
 
-void EditorLayer::SaveSceneAs() {
-  const std::string filepath = FileDialogs::SaveFile({{"Oxylus Scene", "oxscene"}}, "New Scene");
+void EditorLayer::save_scene_as() {
+  const std::string filepath = FileDialogs::save_file({{"Oxylus Scene", "oxscene"}}, "New Scene");
   if (!filepath.empty()) {
     ThreadManager::get()->asset_thread.queue_job([this, filepath] {
-      SceneSerializer(GetActiveScene()).Serialize(filepath);
+      SceneSerializer(get_active_scene()).Serialize(filepath);
     });
     m_LastSaveScenePath = filepath;
   }
 }
 
-void EditorLayer::OnScenePlay() {
-  ResetContext();
-  m_ActiveScene = Scene::copy(m_EditorScene);
-  SetRuntimeScene(m_ActiveScene);
+void EditorLayer::on_scene_play() {
+  reset_context();
+  m_active_scene = Scene::copy(m_editor_scene);
+  set_runtime_scene(m_active_scene);
 
-  m_ActiveScene->on_runtime_start();
-  SetSceneState(SceneState::Play);
+  m_active_scene->on_runtime_start();
+  set_scene_state(SceneState::Play);
 }
 
-void EditorLayer::OnSceneStop() {
-  ResetContext();
-  SetEditorScene(m_EditorScene);
+void EditorLayer::on_scene_stop() {
+  reset_context();
+  set_editor_scene(m_editor_scene);
 
-  m_ActiveScene->on_runtime_stop();
-  SetSceneState(SceneState::Edit);
+  m_active_scene->on_runtime_stop();
+  set_scene_state(SceneState::Edit);
 }
 
-void EditorLayer::OnSceneSimulate() {
-  SetSceneState(SceneState::Simulate);
-  m_ActiveScene = Scene::copy(m_EditorScene);
-  SetRuntimeScene(m_ActiveScene);
+void EditorLayer::on_scene_simulate() {
+  set_scene_state(SceneState::Simulate);
+  m_active_scene = Scene::copy(m_editor_scene);
+  set_runtime_scene(m_active_scene);
 }
 
-void EditorLayer::DrawWindowTitle() {
+void EditorLayer::draw_window_title() {
   if (!Application::get()->get_specification().custom_window_title)
     return;
 
@@ -446,10 +446,10 @@ void EditorLayer::DrawWindowTitle() {
   ImGui::PopStyleVar(4);
 }
 
-void EditorLayer::DrawPanels() {
+void EditorLayer::draw_panels() {
   static EditorPanel* fullscreenViewportPanel = nullptr;
 
-  for (const auto& panel : m_ViewportPanels) {
+  for (const auto& panel : m_viewport_panels) {
     if (panel->Visible && !panel->FullscreenViewport) {
       panel->on_imgui_render();
       if (panel->FullscreenViewport) {
@@ -465,65 +465,65 @@ void EditorLayer::DrawPanels() {
     return;
   }
 
-  for (const auto& [name, panel] : m_EditorPanels) {
+  for (const auto& [name, panel] : m_editor_panels) {
     if (panel->Visible)
       panel->on_imgui_render();
   }
 
-  m_ConsolePanel.OnImGuiRender();
-  if (m_SceneHierarchyPanel.Visible)
-    m_SceneHierarchyPanel.on_imgui_render();
-  if (m_InspectorPanel.Visible)
-    m_InspectorPanel.on_imgui_render();
-  if (m_ContentPanel.Visible)
-    m_ContentPanel.on_imgui_render();
-  if (m_AssetInspectorPanel.Visible)
-    m_AssetInspectorPanel.on_imgui_render();
+  m_console_panel.OnImGuiRender();
+  if (m_scene_hierarchy_panel.Visible)
+    m_scene_hierarchy_panel.on_imgui_render();
+  if (m_inspector_panel.Visible)
+    m_inspector_panel.on_imgui_render();
+  if (m_content_panel.Visible)
+    m_content_panel.on_imgui_render();
+  if (m_asset_inspector_panel.Visible)
+    m_asset_inspector_panel.on_imgui_render();
 }
 
-Ref<Scene> EditorLayer::GetActiveScene() {
-  return m_ActiveScene;
+Ref<Scene> EditorLayer::get_active_scene() {
+  return m_active_scene;
 }
 
-void EditorLayer::SetEditorScene(const Ref<Scene>& scene) {
-  m_EditorScene.reset();
-  m_ActiveScene.reset();
-  m_EditorScene = scene;
-  m_ActiveScene = scene;
-  m_SceneHierarchyPanel.ClearSelectionContext();
-  m_SceneHierarchyPanel.SetContext(scene);
-  for (const auto& panel : m_ViewportPanels) {
-    panel->set_context(m_EditorScene, m_SceneHierarchyPanel);
+void EditorLayer::set_editor_scene(const Ref<Scene>& scene) {
+  m_editor_scene.reset();
+  m_active_scene.reset();
+  m_editor_scene = scene;
+  m_active_scene = scene;
+  m_scene_hierarchy_panel.ClearSelectionContext();
+  m_scene_hierarchy_panel.SetContext(scene);
+  for (const auto& panel : m_viewport_panels) {
+    panel->set_context(m_editor_scene, m_scene_hierarchy_panel);
   }
 }
 
-void EditorLayer::SetRuntimeScene(const Ref<Scene>& scene) {
-  m_ActiveScene = scene;
-  m_SceneHierarchyPanel.ClearSelectionContext();
-  m_SceneHierarchyPanel.SetContext(scene);
-  for (const auto& panel : m_ViewportPanels) {
-    panel->set_context(m_ActiveScene, m_SceneHierarchyPanel);
+void EditorLayer::set_runtime_scene(const Ref<Scene>& scene) {
+  m_active_scene = scene;
+  m_scene_hierarchy_panel.ClearSelectionContext();
+  m_scene_hierarchy_panel.SetContext(scene);
+  for (const auto& panel : m_viewport_panels) {
+    panel->set_context(m_active_scene, m_scene_hierarchy_panel);
   }
 }
 
-void EditorLayer::SetSceneState(const SceneState state) {
-  m_SceneState = state;
+void EditorLayer::set_scene_state(const SceneState state) {
+  scene_state = state;
 }
 
-void EditorLayer::NewProject() {
-  Project::New();
+void EditorLayer::new_project() {
+  Project::create_new();
 }
 
-void EditorLayer::OpenProject(const std::filesystem::path& path) {
+void EditorLayer::open_project(const std::filesystem::path& path) {
   if (path.empty())
     return;
-  if (Project::Load(path)) {
-    const auto& startScene = AssetManager::get_asset_file_system_path(Project::GetActive()->GetConfig().StartScene);
-    OpenScene(startScene);
+  if (Project::load(path)) {
+    const auto& startScene = AssetManager::get_asset_file_system_path(Project::get_active()->get_config().start_scene);
+    open_scene(startScene);
   }
 }
 
-void EditorLayer::SaveProject(const std::string& path) {
-  Project::SaveActive(path);
+void EditorLayer::save_project(const std::string& path) {
+  Project::save_active(path);
 }
 }

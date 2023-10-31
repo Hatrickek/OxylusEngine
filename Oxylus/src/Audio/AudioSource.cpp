@@ -9,7 +9,7 @@ namespace Oxylus {
 AudioSource::AudioSource(const char* filepath) : m_Path(filepath) {
   m_Sound = create_scope<ma_sound>();
 
-  const ma_result result = ma_sound_init_from_file(static_cast<ma_engine*>(AudioEngine::GetEngine()),
+  const ma_result result = ma_sound_init_from_file(static_cast<ma_engine*>(AudioEngine::get_engine()),
     filepath,
     MA_SOUND_FLAG_NO_SPATIALIZATION,
     nullptr,

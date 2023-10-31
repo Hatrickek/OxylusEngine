@@ -17,7 +17,7 @@ public:
     HIDDEN = GLFW_CURSOR_HIDDEN
   };
 
-  static void Init();
+  static void init();
 
   static bool GetKey(KeyCode key);
   static bool GetKeyDown(KeyCode key);
