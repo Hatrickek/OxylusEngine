@@ -3,7 +3,7 @@
 #include "Core/EmbeddedLogo.h"
 #include "Utils/Log.h"
 
-#include "tinygltf/stb_image.h"
+#include "stb_image.h"
 
 #include "Utils/Profiler.h"
 

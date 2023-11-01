@@ -1,6 +1,6 @@
 #include "Input.h"
 #include "Render/Window.h"
-#include "tinygltf/stb_image.h"
+#include "stb_image.h"
 
 namespace Oxylus {
 void ScrollCallback(GLFWwindow* window, double xoffset, double yoffset);

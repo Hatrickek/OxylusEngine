@@ -1,6 +1,17 @@
+#include "Mesh.h"
+
 #define TINYGLTF_IMPLEMENTATION
 #define STB_IMAGE_IMPLEMENTATION
-#include "Mesh.h"
+#define TINYGLTF_USE_RAPIDJSON
+#define TINYGLTF_NO_INCLUDE_RAPIDJSON
+// includes for tinygltf
+#include <rapidjson/document.h> 
+#include <rapidjson/prettywriter.h>
+#include <rapidjson/rapidjson.h>
+#include <rapidjson/stringbuffer.h>
+#include <rapidjson/writer.h>
+
+#include <tiny_gltf.h>
 
 #include <glm/gtc/type_ptr.hpp>
 #include <vuk/CommandBuffer.hpp>
@@ -8,9 +19,13 @@
 
 #include "Texture.h"
 #include "Assets/AssetManager.h"
+
+#include <spdlog/stopwatch.h>
+#include <spdlog/fmt/chrono.h>
+
+#include "Utils/Log.h"
 #include "Utils/Profiler.h"
 #include "Vulkan/VulkanContext.h"
-#include "Utils/Log.h"
 
 namespace Oxylus {
 Mesh::Mesh(const std::string_view path, const int file_loading_flags, const float scale) {
@@ -57,6 +72,8 @@ bool Mesh::export_as_binary(const std::string& inPath, const std::string& outPat
 
 void Mesh::load_from_file(const std::string& file_path, int file_loading_flags, const float scale) {
   OX_SCOPED_ZONE;
+  spdlog::stopwatch sw;
+
   path = file_path;
   name = std::filesystem::path(file_path).stem().string();
   loading_flags = file_loading_flags;
@@ -120,7 +137,7 @@ void Mesh::load_from_file(const std::string& file_path, int file_loading_flags, 
 
   m_textures.clear();
 
-  OX_CORE_INFO("Mesh file loaded: {}, {} materials, {} animations", name.c_str(), gltf_model.materials.size(), animations.size());
+  OX_CORE_INFO("Mesh file loaded: ({}) {}, {} materials, {} animations", duration_cast<std::chrono::milliseconds>(sw.elapsed()), name.c_str(), gltf_model.materials.size(), animations.size());
 }
 
 void Mesh::bind_vertex_buffer(vuk::CommandBuffer& commandBuffer) const {
@@ -508,8 +525,8 @@ void Mesh::load_node(Node* parent,
                      const tinygltf::Node& node,
                      uint32_t node_index,
                      tinygltf::Model& model,
-                     std::vector<uint32_t>& index_buffer,
-                     std::vector<Vertex>& vertex_buffer,
+                     std::vector<uint32_t>& ibuffer,
+                     std::vector<Vertex>& vbuffer,
                      float globalscale) {
   OX_SCOPED_ZONE;
   Node* newNode = new Node{};
@@ -543,7 +560,7 @@ void Mesh::load_node(Node* parent,
   // Node with children
   if (!node.children.empty()) {
     for (int children : node.children) {
-      load_node(newNode, model.nodes[children], children, model, index_buffer, vertex_buffer, globalscale);
+      load_node(newNode, model.nodes[children], children, model, ibuffer, vbuffer, globalscale);
     }
   }
 
@@ -554,10 +571,10 @@ void Mesh::load_node(Node* parent,
     newNode->mesh_index = node.mesh;
     for (size_t j = 0; j < mesh.primitives.size(); j++) {
       const tinygltf::Primitive& primitive = mesh.primitives[j];
-      auto indexStart = (uint32_t)index_buffer.size();
-      auto vertexStart = (uint32_t)vertex_buffer.size();
-      uint32_t indexCount = 0;
-      uint32_t vertexCount = 0;
+      auto index_start = (uint32_t)ibuffer.size();
+      auto vertex_start = (uint32_t)vbuffer.size();
+      uint32_t index_count = 0;
+      uint32_t vertex_count = 0;
       glm::vec3 posMin{};
       glm::vec3 posMax{};
       bool hasSkin = false;
@@ -589,7 +606,7 @@ void Mesh::load_node(Node* parent,
         bufferPos = reinterpret_cast<const float*>(&model.buffers[posView.buffer].data[posAccessor.byteOffset + posView.byteOffset]);
         posMin = glm::vec3(posAccessor.minValues[0], posAccessor.minValues[1], posAccessor.minValues[2]);
         posMax = glm::vec3(posAccessor.maxValues[0], posAccessor.maxValues[1], posAccessor.maxValues[2]);
-        vertexCount = static_cast<uint32_t>(posAccessor.count);
+        vertex_count = static_cast<uint32_t>(posAccessor.count);
         posByteStride = posAccessor.ByteStride(posView) ? posAccessor.ByteStride(posView) / sizeof(float) : tinygltf::GetNumComponentsInType(TINYGLTF_TYPE_VEC3);
 
         if (primitive.attributes.find("NORMAL") != primitive.attributes.end()) {
@@ -674,7 +691,7 @@ void Mesh::load_node(Node* parent,
           if (glm::length(vert.weight0) == 0.0f) {
             vert.weight0 = glm::vec4(1.0f, 0.0f, 0.0f, 0.0f);
           }
-          vertex_buffer.emplace_back(vert);
+          vbuffer.emplace_back(vert);
         }
       }
       // Indices
@@ -683,14 +700,14 @@ void Mesh::load_node(Node* parent,
         const tinygltf::BufferView& bufferView = model.bufferViews[accessor.bufferView];
         const tinygltf::Buffer& buffer = model.buffers[bufferView.buffer];
 
-        indexCount = static_cast<uint32_t>(accessor.count);
+        index_count = static_cast<uint32_t>(accessor.count);
 
         switch (accessor.componentType) {
           case TINYGLTF_PARAMETER_TYPE_UNSIGNED_INT: {
             auto* buf = new uint32_t[accessor.count];
             memcpy(buf, &buffer.data[accessor.byteOffset + bufferView.byteOffset], accessor.count * sizeof(uint32_t));
             for (size_t index = 0; index < accessor.count; index++) {
-              index_buffer.emplace_back(buf[index] + vertexStart);
+              ibuffer.emplace_back(buf[index] + vertex_start);
             }
             delete[] buf;
             break;
@@ -699,7 +716,7 @@ void Mesh::load_node(Node* parent,
             auto* buf = new uint16_t[accessor.count];
             memcpy(buf, &buffer.data[accessor.byteOffset + bufferView.byteOffset], accessor.count * sizeof(uint16_t));
             for (size_t index = 0; index < accessor.count; index++) {
-              index_buffer.emplace_back(buf[index] + vertexStart);
+              ibuffer.emplace_back(buf[index] + vertex_start);
             }
             delete[] buf;
             break;
@@ -708,7 +725,7 @@ void Mesh::load_node(Node* parent,
             auto* buf = new uint8_t[accessor.count];
             memcpy(buf, &buffer.data[accessor.byteOffset + bufferView.byteOffset], accessor.count * sizeof(uint8_t));
             for (size_t index = 0; index < accessor.count; index++) {
-              index_buffer.emplace_back(buf[index] + vertexStart);
+              ibuffer.emplace_back(buf[index] + vertex_start);
             }
             delete[] buf;
             break;
@@ -717,7 +734,7 @@ void Mesh::load_node(Node* parent,
             return;
         }
       }
-      auto newPrimitive = new Primitive(indexStart, indexCount, vertexCount, vertexStart);
+      auto newPrimitive = new Primitive(index_start, index_count, vertex_count, vertex_start);
       newPrimitive->material_index = primitive.material;
       if (newPrimitive->material_index < 0)
         newPrimitive->material_index = 0;

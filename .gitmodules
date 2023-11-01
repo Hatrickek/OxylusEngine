@@ -1,6 +1,3 @@
-[submodule "Oxylus/vendor/tinygltf"]
-	path = Oxylus/vendor/tinygltf
-	url = https://github.com/syoyo/tinygltf.git
 [submodule "Oxylus/vendor/miniaudio"]
 	path = Oxylus/vendor/miniaudio
 	url = https://github.com/mackron/miniaudio.git

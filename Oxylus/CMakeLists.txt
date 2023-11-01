@@ -70,14 +70,13 @@ set_target_properties(${PROJECT_NAME} PROPERTIES
 
 # Include directories
 target_include_directories(${PROJECT_NAME} PUBLIC
-  "${CMAKE_CURRENT_SOURCE_DIR}/src;"
-  "${CMAKE_CURRENT_SOURCE_DIR}/vendor;"
-  "${CMAKE_CURRENT_SOURCE_DIR}/vendor/GLFW/include;"
-  "${CMAKE_CURRENT_SOURCE_DIR}/vendor/ImGui;"
-  "${CMAKE_CURRENT_SOURCE_DIR}/vendor/glm;"
-  "${CMAKE_CURRENT_SOURCE_DIR}/vendor/ImGuizmo;"
-  "${CMAKE_CURRENT_SOURCE_DIR}/vendor/tinygltf;"
-  "${CMAKE_CURRENT_SOURCE_DIR}/vendor/miniaudio;"
+  "${CMAKE_CURRENT_SOURCE_DIR}/src"
+  "${CMAKE_CURRENT_SOURCE_DIR}/vendor"
+  "${CMAKE_CURRENT_SOURCE_DIR}/vendor/GLFW/include"
+  "${CMAKE_CURRENT_SOURCE_DIR}/vendor/ImGui"
+  "${CMAKE_CURRENT_SOURCE_DIR}/vendor/glm"
+  "${CMAKE_CURRENT_SOURCE_DIR}/vendor/ImGuizmo"
+  "${CMAKE_CURRENT_SOURCE_DIR}/vendor/miniaudio"
   )
 
 # Compile definitions
@@ -193,6 +192,23 @@ FetchContent_MakeAvailable(EnTT)
 target_link_libraries(${PROJECT_NAME} PUBLIC EnTT)
 set_targets_static_and_folder(EnTT)
 
+# tinygltf
+set(TINYGLTF_NO_INCLUDE_JSON ON)
+set(TINYGLTF_USE_RAPIDJSON ON)
+set(TINYGLTF_USE_CPP14 ON)
+set(TINYGLTF_BUILD_LOADER_EXAMPLE OFF)
+set(TINYGLTF_HEADER_ONLY ON)
+FetchContent_Declare(
+    tinygltf
+    GIT_REPOSITORY "https://github.com/syoyo/tinygltf"
+    GIT_TAG "release"
+    GIT_SHALLOW    TRUE
+    GIT_PROGRESS   TRUE
+)
+FetchContent_MakeAvailable(tinygltf)
+target_link_libraries(${PROJECT_NAME} PUBLIC tinygltf)
+set_targets_static_and_folder(tinygltf)
+
 # FMT
 FetchContent_Declare(
     fmt
@@ -282,6 +298,20 @@ FetchContent_MakeAvailable(ryml)
 target_link_libraries(${PROJECT_NAME} PUBLIC ryml::ryml)
 target_link_libraries(${PROJECT_NAME} PUBLIC c4core)
 set_targets_static_and_folder(ryml)
+
+# RapidJSON
+FetchContent_Declare(
+    RapidJSON
+    GIT_REPOSITORY https://github.com/Tencent/rapidjson
+    GIT_TAG "master"
+    GIT_SHALLOW    TRUE
+    GIT_PROGRESS   TRUE
+    CONFIGURE_COMMAND ""
+    BUILD_COMMAND ""
+)
+FetchContent_Populate(RapidJSON)
+set(RapidJSON_DIR "${FETCHCONTENT_BASE_DIR}/rapidjson-src")
+target_include_directories(${PROJECT_NAME} PUBLIC ${RapidJSON_DIR}/include)
 
 # Jolt
 set(COMPILE_AS_SHARED_LIBRARY OFF)

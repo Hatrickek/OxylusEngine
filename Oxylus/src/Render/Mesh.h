@@ -11,7 +11,11 @@
 #include <vuk/Buffer.hpp>
 
 #include "Core/Types.h"
-#include "tinygltf/tiny_gltf.h"
+
+namespace tinygltf {
+class Node;
+class Model;
+}
 
 namespace Oxylus {
 class Mesh {
@@ -190,8 +194,8 @@ private:
                  const tinygltf::Node& node,
                  uint32_t node_index,
                  tinygltf::Model& model,
-                 std::vector<uint32_t>& index_buffer,
-                 std::vector<Vertex>& vertex_buffer,
+                 std::vector<uint32_t>& ibuffer,
+                 std::vector<Vertex>& vbuffer,
                  float globalscale);
   void load_animations(tinygltf::Model& gltf_model);
   void load_skins(tinygltf::Model& gltf_model);
