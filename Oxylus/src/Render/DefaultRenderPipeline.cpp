@@ -33,7 +33,7 @@ void DefaultRenderPipeline::init() {
   mesh_draw_list.reserve(MAX_NUM_MESHES);
   transparent_mesh_draw_list.reserve(MAX_NUM_MESHES);
 
-
+  // TODO: don't load a default hdr texture / load a light blue colored texture
   m_resources.cube_map = create_ref<TextureAsset>();
   m_resources.cube_map = AssetManager::get_texture_asset({.Path = Resources::get_resources_path("HDRs/table_mountain_2_puresky_2k.hdr"), .Format = vuk::Format::eR8G8B8A8Srgb});
   generate_prefilter();
@@ -113,7 +113,7 @@ void DefaultRenderPipeline::init_render_graph() {
 #endif
   {
     vuk::PipelineBaseCreateInfo pci;
-    pci.add_glsl(FileUtils::read_shader_file("SSR.comp"), "SSR.comp");
+    pci.add_glsl(FileUtils::read_shader_file("SSR.comp"), FileUtils::get_shader_path("SSR.comp"));
     vk_context->context->create_named_pipeline("ssr_pipeline", pci);
   }
   {
@@ -128,6 +128,7 @@ void DefaultRenderPipeline::init_render_graph() {
     pci.define("XE_GTAO_FP32_DEPTHS", "");
     pci.define("XE_GTAO_USE_HALF_FLOAT_PRECISION", "0");
     pci.define("XE_GTAO_USE_DEFAULT_CONSTANTS", "0");
+    //pci.define("XE_GTAO_COMPUTE_BENT_NORMALS", "");
     vk_context->context->create_named_pipeline("gtao_first_pipeline", pci);
   }
   {
@@ -136,6 +137,7 @@ void DefaultRenderPipeline::init_render_graph() {
     pci.define("XE_GTAO_FP32_DEPTHS", "");
     pci.define("XE_GTAO_USE_HALF_FLOAT_PRECISION", "0");
     pci.define("XE_GTAO_USE_DEFAULT_CONSTANTS", "0");
+    //pci.define("XE_GTAO_COMPUTE_BENT_NORMALS", "");
     vk_context->context->create_named_pipeline("gtao_main_pipeline", pci);
   }
   {
@@ -144,6 +146,7 @@ void DefaultRenderPipeline::init_render_graph() {
     pci.define("XE_GTAO_FP32_DEPTHS", "");
     pci.define("XE_GTAO_USE_HALF_FLOAT_PRECISION", "0");
     pci.define("XE_GTAO_USE_DEFAULT_CONSTANTS", "0");
+    //pci.define("XE_GTAO_COMPUTE_BENT_NORMALS", "");
     vk_context->context->create_named_pipeline("gtao_denoise_pipeline", pci);
   }
   {
@@ -152,6 +155,7 @@ void DefaultRenderPipeline::init_render_graph() {
     pci.define("XE_GTAO_FP32_DEPTHS", "");
     pci.define("XE_GTAO_USE_HALF_FLOAT_PRECISION", "0");
     pci.define("XE_GTAO_USE_DEFAULT_CONSTANTS", "0");
+    //pci.define("XE_GTAO_COMPUTE_BENT_NORMALS", "");
     vk_context->context->create_named_pipeline("gtao_final_pipeline", pci);
   }
   {
@@ -175,6 +179,12 @@ void DefaultRenderPipeline::init_render_graph() {
     pci.add_glsl(FileUtils::read_shader_file("BloomUpsample.comp"), FileUtils::get_shader_path("BloomUpsample.comp"));
     vk_context->context->create_named_pipeline("bloom_upsample_pipeline", pci);
   }
+  {
+    vuk::PipelineBaseCreateInfo pci;
+    pci.add_glsl(FileUtils::read_shader_file("Grid.vert"), FileUtils::get_shader_path("Grid.vert"));
+    pci.add_glsl(FileUtils::read_shader_file("Grid.frag"), FileUtils::get_shader_path("Grid.frag"));
+    vk_context->context->create_named_pipeline("grid_pipeline", pci);
+  }
 
   wait_for_futures(vk_context);
 }
@@ -187,11 +197,18 @@ static uint32_t get_material_index(const std::unordered_map<uint32_t, uint32_t>&
   return size + material_index;
 }
 
-std::pair<vuk::Resource, vuk::Name> get_attachment_or_black(const char* name, const bool enabled, const vuk::Access access = vuk::eFragmentSampled) {
+static std::pair<vuk::Resource, vuk::Name> get_attachment_or_black(const char* name, const bool enabled, const vuk::Access access = vuk::eFragmentSampled) {
   if (enabled)
     return {vuk::Resource(name, vuk::Resource::Type::eImage, access), name};
 
   return {vuk::Resource("black_image", vuk::Resource::Type::eImage, access), "black_image"};
+}
+
+static std::pair<vuk::Resource, vuk::Name> get_attachment_or_black_uint(const char* name, const bool enabled, const vuk::Access access = vuk::eFragmentSampled) {
+  if (enabled)
+    return {vuk::Resource(name, vuk::Resource::Type::eImage, access), name};
+
+  return {vuk::Resource("black_image_uint", vuk::Resource::Type::eImage, access), "black_image_uint"};
 }
 
 Scope<vuk::Future> DefaultRenderPipeline::on_render(vuk::Allocator& frame_allocator, const vuk::Future& target, vuk::Dimension3D dim) {
@@ -217,6 +234,10 @@ Scope<vuk::Future> DefaultRenderPipeline::on_render(vuk::Allocator& frame_alloca
 
   rg->attach_and_clear_image("black_image", {.format = vk_context->swapchain->format, .sample_count = vuk::SampleCountFlagBits::e1}, vuk::Black<float>);
   rg->inference_rule("black_image", vuk::same_shape_as("final_image"));
+
+  rg->attach_and_clear_image("black_image_uint", {.format = vuk::Format::eR8Uint, .sample_count = vuk::SampleCountFlagBits::e1}, vuk::Black<float>);
+  rg->inference_rule("black_image_uint", vuk::same_shape_as("final_image"));
+
 
   std::vector<Material::Parameters> materials = {};
 
@@ -295,8 +316,8 @@ Scope<vuk::Future> DefaultRenderPipeline::on_render(vuk::Allocator& frame_alloca
   auto& final_buffer = *final_buff;
 
   auto [ssr_resouce, ssr_name] = get_attachment_or_black("ssr_output", RendererCVAR::cvar_ssr_enable.get());
-  auto [gtao_resouce, gtao_name] = get_attachment_or_black("gtao_final_output", RendererCVAR::cvar_gtao_enable.get());
-  auto [bloom_resource, bloom_name] = get_attachment_or_black("bloom_upsampled_image", RendererCVAR::cvar_bloom_enable.get());
+  auto [gtao_resouce, gtao_name] = get_attachment_or_black_uint("gtao_final_output", RendererCVAR::cvar_gtao_enable.get());
+  auto [bloom_resource, bloom_name] = get_attachment_or_black("bloom_upsampled_image", RendererCVAR::cvar_bloom_enable.get(), vuk::eFragmentRead);
 
   std::vector<vuk::Resource> final_resources = {
     "final_image"_image >> vuk::eColorRW >> "final_output",
@@ -305,6 +326,15 @@ Scope<vuk::Future> DefaultRenderPipeline::on_render(vuk::Allocator& frame_alloca
     gtao_resouce,
     bloom_resource,
   };
+
+  auto final_image_attachment = vuk::ImageAttachment{
+    .extent = dim,
+    .format = vk_context->swapchain->format,
+    .sample_count = vuk::Samples::e1,
+    .level_count = 1,
+    .layer_count = 1
+  };
+  rg->attach_and_clear_image("final_image", final_image_attachment, vuk::Black<float>);
 
   rg->add_pass({
     .name = "final_pass",
@@ -330,16 +360,11 @@ Scope<vuk::Future> DefaultRenderPipeline::on_render(vuk::Allocator& frame_alloca
     }
   });
 
-  auto final_image_attachment = vuk::ImageAttachment{
-    .extent = dim,
-    .format = vk_context->swapchain->format,
-    .sample_count = vuk::Samples::e1,
-    .level_count = 1,
-    .layer_count = 1
-  };
-  rg->attach_and_clear_image("final_image", final_image_attachment, vuk::Black<float>);
 
-  auto final_image_fut = vuk::Future{rg, vuk::Name("final_output")};
+  // TODO: do it in ViewportPanel
+  apply_grid(rg.get(), "final_output", "depth_output", frame_allocator);
+
+  auto final_image_fut = vuk::Future{rg, vuk::Name("final_output+")};
 
   if (RendererCVAR::cvar_fxaa_enable.get())
     final_image_fut = apply_fxaa(final_image_fut, target);
@@ -884,6 +909,59 @@ vuk::Future DefaultRenderPipeline::apply_fxaa(vuk::Future source, vuk::Future ds
   rgp->inference_rule("jagged", vuk::same_shape_as("smooth"));
   rgp->inference_rule("smooth", vuk::same_shape_as("jagged"));
   return {std::move(rgp), "smooth+"};
+}
+
+void DefaultRenderPipeline::apply_grid(vuk::RenderGraph* rg, const vuk::Name dst, const vuk::Name depth_image, vuk::Allocator& frame_allocator) {
+  struct GridVertexBuffer {
+    Mat4 view;
+    Mat4 proj;
+  } grid_vertex_data;
+
+  grid_vertex_data.view = m_renderer_context.current_camera->get_view_matrix();
+  grid_vertex_data.proj = m_renderer_context.current_camera->get_projection_matrix_flipped();
+
+  auto [vgrid_buff, vgrid_buff_fut] = create_buffer(frame_allocator, vuk::MemoryUsage::eCPUtoGPU, vuk::DomainFlagBits::eTransferOnGraphics, std::span(&grid_vertex_data, 1));
+  auto& grid_vertex_buffer = *vgrid_buff;
+
+  struct GridFragmentBuffer {
+    Vec4 camera_pos;
+    float near;
+    float far;
+    float max_distance;
+  } grid_fragment_data;
+
+  grid_fragment_data.camera_pos = Vec4(m_renderer_context.current_camera->get_position(), 0.0);
+  grid_fragment_data.near = m_renderer_context.current_camera->get_near();
+  grid_fragment_data.far = m_renderer_context.current_camera->get_far();
+  grid_fragment_data.max_distance = 10000.0f;
+
+  auto [fgrid_buff, fgrid_buff_fut] = create_buffer(frame_allocator, vuk::MemoryUsage::eCPUtoGPU, vuk::DomainFlagBits::eTransferOnGraphics, std::span(&grid_fragment_data, 1));
+  auto& grid_fragment_buffer = *fgrid_buff;
+  rg->add_pass({
+    .name = "grid",
+    .resources = {
+      vuk::Resource(dst, vuk::Resource::Type::eImage, vuk::eColorWrite, dst.append("+")),
+      vuk::Resource(depth_image, vuk::Resource::Type::eImage, vuk::eDepthStencilRead)
+    },
+    .execute = [this, grid_vertex_buffer, grid_fragment_buffer](vuk::CommandBuffer& command_buffer) {
+      command_buffer.bind_graphics_pipeline("grid_pipeline")
+                    .set_viewport(0, vuk::Rect2D::framebuffer())
+                    .set_scissor(0, vuk::Rect2D::framebuffer())
+                    .broadcast_color_blend(vuk::BlendPreset::eAlphaBlend)
+                    .set_rasterization({.cullMode = vuk::CullModeFlagBits::eNone})
+                    .set_depth_stencil({
+                       .depthTestEnable = true,
+                       .depthWriteEnable = false,
+                       .depthCompareOp = vuk::CompareOp::eLessOrEqual
+                     })
+                    .bind_buffer(0, 0, grid_vertex_buffer)
+                    .bind_buffer(0, 1, grid_fragment_buffer);
+
+      m_quad->bind_index_buffer(command_buffer);
+      m_quad->bind_vertex_buffer(command_buffer);
+      command_buffer.draw_indexed(m_quad->indices.size(), 1, 0, 0, 0);
+    }
+  });
 }
 
 void DefaultRenderPipeline::cascaded_shadow_pass(const Ref<vuk::RenderGraph>& rg, vuk::Buffer& shadow_buffer) {
