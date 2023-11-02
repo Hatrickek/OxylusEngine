@@ -78,6 +78,11 @@ private:
   // Mesh
   std::vector<MeshData> mesh_draw_list;
   std::vector<uint32_t> transparent_mesh_draw_list;
+  bool m_should_merge_render_objects = false;
+  vuk::Buffer m_merged_index_buffer;
+  vuk::Buffer m_merged_vertex_buffer;
+  Ref<Mesh> m_quad;
+  Ref<Mesh> m_cube = nullptr;
 
   struct LightChangeEvent { };
 
@@ -86,7 +91,6 @@ private:
   std::vector<LightingData> dir_lights_data = {};
   std::vector<LightingData> spot_lights_data = {};
   EventDispatcher light_buffer_dispatcher;
-  Ref<Mesh> skybox_cube = nullptr;
 
   void init_render_graph();
   void update_skybox(const SkyboxLoadEvent& e);

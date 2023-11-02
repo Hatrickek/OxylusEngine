@@ -30,12 +30,27 @@ layout(location = 0) out vec4 out_Color;
 
 layout(location = 0) in vec2 in_UV;
 
+//#include "Conversions.glsl"
+
+//void DecodeVisibilityBentNormal(const uint packedValue, out float visibility, out vec3 bentNormal )
+//{
+//    vec4 decoded = R8G8B8A8_UNORM_to_FLOAT4( packedValue );
+//    bentNormal = decoded.xyz * 2.0.xxx - 1.0.xxx;   // could normalize - don't want to since it's done so many times, better to do it at the final step only
+//    visibility = decoded.w;
+//}
+
 void main() {
     vec4 finalImage = texture(in_Color, in_UV).rgba;
     
-    float aoVisibility    = 1.0;
+    float aoVisibility = 1.0;
     uint value = texture(in_SSAO, in_UV).r;
     aoVisibility = value / 255.0;
+
+    // NOTE: currently bent normals are not used but will be...
+    // vec3 bentNormal = vec3(0);
+    // DecodeVisibilityBentNormal( value, aoVisibility, bentNormal );
+    // viewspace to worldspace - makes sense to precalculate
+    // bentNormal = mul( (float3x3)g_globals.ViewInv, bentNormal );
 
     vec4 ssr = texture(in_SSR, in_UV).rgba;
     vec4 bloom = texture(in_Bloom, in_UV);

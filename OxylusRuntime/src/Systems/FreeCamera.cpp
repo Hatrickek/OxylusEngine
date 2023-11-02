@@ -19,7 +19,7 @@ namespace OxylusRuntime {
       auto&& [transform, component] = group.get<TransformComponent, CameraComponent>(entity);
       auto& camera = component.system;
       const glm::vec3& position = camera->get_position();
-      const glm::vec2 yawPitch = glm::vec2(camera->GetYaw(), camera->GetPitch());
+      const glm::vec2 yawPitch = glm::vec2(camera->get_yaw(), camera->get_pitch());
       glm::vec3 finalPosition = position;
       glm::vec2 finalYawPitch = yawPitch;
 
@@ -40,13 +40,13 @@ namespace OxylusRuntime {
 
         const float maxMoveSpeed = m_MovementSpeed * (ImGui::IsKeyDown(ImGuiKey_LeftShift) ? 3.0f : 1.0f);
         if (ImGui::IsKeyDown(ImGuiKey_W))
-          finalPosition += camera->GetFront() * maxMoveSpeed;
+          finalPosition += camera->get_front() * maxMoveSpeed;
         else if (ImGui::IsKeyDown(ImGuiKey_S))
-          finalPosition -= camera->GetFront() * maxMoveSpeed;
+          finalPosition -= camera->get_front() * maxMoveSpeed;
         if (ImGui::IsKeyDown(ImGuiKey_D))
-          finalPosition += camera->GetRight() * maxMoveSpeed;
+          finalPosition += camera->get_right() * maxMoveSpeed;
         else if (ImGui::IsKeyDown(ImGuiKey_A))
-          finalPosition -= camera->GetRight() * maxMoveSpeed;
+          finalPosition -= camera->get_right() * maxMoveSpeed;
 
         if (ImGui::IsKeyDown(ImGuiKey_Q)) {
           finalPosition.y -= maxMoveSpeed;

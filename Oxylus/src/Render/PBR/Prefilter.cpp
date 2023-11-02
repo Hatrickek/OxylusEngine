@@ -62,7 +62,7 @@ std::pair<vuk::Unique<vuk::Image>, vuk::Future> Prefilter::generate_brdflut() {
 }
 
 std::pair<vuk::Unique<vuk::Image>, vuk::Future> Prefilter::generate_irradiance_cube(const Ref<Mesh>& skybox,
-                                                                                  const Ref<TextureAsset>& cubemap) {
+                                                                                    const Ref<TextureAsset>& cubemap) {
   const auto vkContext = VulkanContext::get();
   constexpr int32_t dim = 64;
 
@@ -137,10 +137,7 @@ std::pair<vuk::Unique<vuk::Image>, vuk::Future> Prefilter::generate_irradiance_c
 
       skybox->bind_vertex_buffer(commandBuffer);
       skybox->bind_index_buffer(commandBuffer);
-      for (const auto& node : skybox->nodes) {
-        for (const auto& primitive : node->mesh_data->primitives)
-          commandBuffer.draw_indexed(primitive->index_count, 6, 0, 0, 0);
-      }
+      commandBuffer.draw_indexed(skybox->indices.size(), 6, 0, 0, 0);
     }
   });
 
@@ -148,7 +145,7 @@ std::pair<vuk::Unique<vuk::Image>, vuk::Future> Prefilter::generate_irradiance_c
 }
 
 std::pair<vuk::Unique<vuk::Image>, vuk::Future> Prefilter::generate_prefiltered_cube(const Ref<Mesh>& skybox,
-                                                                                   const Ref<TextureAsset>& cubemap) {
+                                                                                     const Ref<TextureAsset>& cubemap) {
   const auto vkContext = VulkanContext::get();
   constexpr int32_t dim = 512;
 
@@ -219,10 +216,7 @@ std::pair<vuk::Unique<vuk::Image>, vuk::Future> Prefilter::generate_prefiltered_
 
       skybox->bind_vertex_buffer(commandBuffer);
       skybox->bind_index_buffer(commandBuffer);
-      for (const auto& node : skybox->nodes) {
-        for (const auto& primitive : node->mesh_data->primitives)
-          commandBuffer.draw_indexed(primitive->index_count, 6, 0, 0, 0);
-      }
+      commandBuffer.draw_indexed(skybox->indices.size(), 6, 0, 0, 0);
     }
   });
 

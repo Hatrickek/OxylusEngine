@@ -684,15 +684,15 @@ void InspectorPanel::draw_components(Entity entity) const {
       OxUI::begin_properties();
       static float fov = component.system->Fov;
       if (OxUI::property("FOV", &fov)) {
-        component.system->SetFov(fov);
+        component.system->set_fov(fov);
       }
-      static float nearClip = component.system->NearClip;
+      static float nearClip = component.system->near_clip;
       if (OxUI::property("Near Clip", &nearClip)) {
-        component.system->SetNear(nearClip);
+        component.system->set_near(nearClip);
       }
-      static float farClip = component.system->FarClip;
+      static float farClip = component.system->far_clip;
       if (OxUI::property("Far Clip", &farClip)) {
-        component.system->SetFar(farClip);
+        component.system->set_far(farClip);
       }
       OxUI::end_properties();
     });

@@ -23,6 +23,9 @@
 
 namespace Oxylus {
 void DefaultRenderPipeline::init() {
+  m_quad = RendererCommon::generate_quad();
+  m_cube = RendererCommon::generate_cube();
+
   // Lights data
   point_lights_data.reserve(MAX_NUM_LIGHTS);
 
@@ -30,8 +33,6 @@ void DefaultRenderPipeline::init() {
   mesh_draw_list.reserve(MAX_NUM_MESHES);
   transparent_mesh_draw_list.reserve(MAX_NUM_MESHES);
 
-  skybox_cube = create_ref<Mesh>();
-  skybox_cube = AssetManager::get_mesh_asset(Resources::get_resources_path("Objects/cube.glb"));
 
   m_resources.cube_map = create_ref<TextureAsset>();
   m_resources.cube_map = AssetManager::get_texture_asset({.Path = Resources::get_resources_path("HDRs/table_mountain_2_puresky_2k.hdr"), .Format = vuk::Format::eR8G8B8A8Srgb});
@@ -47,6 +48,7 @@ void DefaultRenderPipeline::on_dispatcher_events(EventDispatcher& dispatcher) {
 
 void DefaultRenderPipeline::on_register_render_object(const MeshData& render_object) {
   mesh_draw_list.emplace_back(render_object);
+  m_should_merge_render_objects = true;
 }
 
 void DefaultRenderPipeline::on_register_light(const LightingData& lighting_data, LightComponent::LightType light_type) {
@@ -178,6 +180,7 @@ void DefaultRenderPipeline::init_render_graph() {
 }
 
 static uint32_t get_material_index(const std::unordered_map<uint32_t, uint32_t>& material_map, uint32_t mesh_index, uint32_t material_index) {
+  OX_SCOPED_ZONE;
   uint32_t size = 0;
   for (uint32_t i = 0; i < mesh_index; i++)
     size += material_map.at(i);
@@ -196,6 +199,13 @@ Scope<vuk::Future> DefaultRenderPipeline::on_render(vuk::Allocator& frame_alloca
     OX_CORE_FATAL("No camera is set for rendering!");
 
   auto vk_context = VulkanContext::get();
+
+  //if (m_should_merge_render_objects) {
+  //auto [index_buffer, vertex_buffer] = RendererCommon::merge_render_objects(mesh_draw_list);
+  //m_merged_index_buffer = index_buffer;
+  //m_merged_vertex_buffer = vertex_buffer;
+  //m_should_merge_render_objects = false;
+  //}
 
   const auto rg = create_ref<vuk::RenderGraph>("DefaultRenderPipelineRenderGraph");
 
@@ -357,7 +367,7 @@ void DefaultRenderPipeline::depth_pre_pass(const Ref<vuk::RenderGraph>& rg, vuk:
         float lod_bias;
       } skybox_push_constant = {};
 
-      skybox_push_constant.view = m_renderer_context.current_camera->SkyboxView;
+      skybox_push_constant.view = m_renderer_context.current_camera->skybox_view;
 
       command_buffer.bind_graphics_pipeline("skybox_pipeline")
                     .set_viewport(0, vuk::Rect2D::framebuffer())
@@ -374,7 +384,9 @@ void DefaultRenderPipeline::depth_pre_pass(const Ref<vuk::RenderGraph>& rg, vuk:
                     .bind_image(0, 1, m_resources.cube_map->as_attachment())
                     .push_constants(vuk::ShaderStageFlagBits::eVertex | vuk::ShaderStageFlagBits::eFragment, 0, skybox_push_constant);
 
-      skybox_cube->draw(command_buffer);
+      m_cube->bind_index_buffer(command_buffer);
+      m_cube->bind_vertex_buffer(command_buffer);
+      command_buffer.draw_indexed(m_cube->indices.size(), 1, 0, 0, 0);
 
       command_buffer.set_viewport(0, vuk::Rect2D::framebuffer())
                     .set_scissor(0, vuk::Rect2D::framebuffer())
@@ -436,7 +448,7 @@ void DefaultRenderPipeline::geomerty_pass(const Ref<vuk::RenderGraph>& rg,
         float lod_bias;
       } skybox_push_constant = {};
 
-      skybox_push_constant.view = m_renderer_context.current_camera->SkyboxView;
+      skybox_push_constant.view = m_renderer_context.current_camera->skybox_view;
 
       command_buffer.bind_graphics_pipeline("skybox_pipeline")
                     .set_viewport(0, vuk::Rect2D::framebuffer())
@@ -453,7 +465,9 @@ void DefaultRenderPipeline::geomerty_pass(const Ref<vuk::RenderGraph>& rg,
                     .bind_image(0, 1, m_resources.cube_map->as_attachment())
                     .push_constants(vuk::ShaderStageFlagBits::eVertex | vuk::ShaderStageFlagBits::eFragment, 0, skybox_push_constant);
 
-      skybox_cube->draw(command_buffer);
+      m_cube->bind_index_buffer(command_buffer);
+      m_cube->bind_vertex_buffer(command_buffer);
+      command_buffer.draw_indexed(m_cube->indices.size(), 1, 0, 0, 0);
 
       auto irradiance_att = vuk::ImageAttachment{
         .image = *irradiance_image,
@@ -959,11 +973,11 @@ void DefaultRenderPipeline::generate_prefilter() {
   brdf_fut.wait(allocator, compiler);
   brdf_image = std::move(brdf_img);
 
-  auto [irradiance_img, irradiance_fut] = Prefilter::generate_irradiance_cube(skybox_cube, m_resources.cube_map);
+  auto [irradiance_img, irradiance_fut] = Prefilter::generate_irradiance_cube(m_cube, m_resources.cube_map);
   irradiance_fut.wait(allocator, compiler);
   irradiance_image = std::move(irradiance_img);
 
-  auto [prefilter_img, prefilter_fut] = Prefilter::generate_prefiltered_cube(skybox_cube, m_resources.cube_map);
+  auto [prefilter_img, prefilter_fut] = Prefilter::generate_prefiltered_cube(m_cube, m_resources.cube_map);
   prefilter_fut.wait(allocator, compiler);
   prefiltered_image = std::move(prefilter_img);
 }

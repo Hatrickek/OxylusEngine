@@ -278,7 +278,7 @@ void ViewportPanel::set_context(const Ref<Scene>& scene, SceneHierarchyPanel& sc
 void ViewportPanel::on_update() {
   if (m_ViewportFocused && !m_SimulationRunning && m_UseEditorCamera) {
     const Vec3& position = m_camera.get_position();
-    const glm::vec2 yawPitch = glm::vec2(m_camera.GetYaw(), m_camera.GetPitch());
+    const glm::vec2 yawPitch = glm::vec2(m_camera.get_yaw(), m_camera.get_pitch());
     Vec3 finalPosition = position;
     glm::vec2 finalYawPitch = yawPitch;
 
@@ -299,13 +299,13 @@ void ViewportPanel::on_update() {
 
       const float maxMoveSpeed = m_MovementSpeed * (ImGui::IsKeyDown(ImGuiKey_LeftShift) ? 3.0f : 1.0f);
       if (ImGui::IsKeyDown(ImGuiKey_W))
-        finalPosition += m_camera.GetFront() * maxMoveSpeed;
+        finalPosition += m_camera.get_front() * maxMoveSpeed;
       else if (ImGui::IsKeyDown(ImGuiKey_S))
-        finalPosition -= m_camera.GetFront() * maxMoveSpeed;
+        finalPosition -= m_camera.get_front() * maxMoveSpeed;
       if (ImGui::IsKeyDown(ImGuiKey_D))
-        finalPosition += m_camera.GetRight() * maxMoveSpeed;
+        finalPosition += m_camera.get_right() * maxMoveSpeed;
       else if (ImGui::IsKeyDown(ImGuiKey_A))
-        finalPosition -= m_camera.GetRight() * maxMoveSpeed;
+        finalPosition -= m_camera.get_right() * maxMoveSpeed;
 
       if (ImGui::IsKeyDown(ImGuiKey_Q)) {
         finalPosition.y -= maxMoveSpeed;
@@ -329,8 +329,8 @@ void ViewportPanel::on_update() {
       const glm::vec2 change = (newMousePosition - m_LockedMousePosition) * m_MouseSensitivity;
 
       const float maxMoveSpeed = m_MovementSpeed * (ImGui::IsKeyDown(ImGuiKey_LeftShift) ? 3.0f : 1.0f);
-      finalPosition += m_camera.GetFront() * change.y * maxMoveSpeed;
-      finalPosition += m_camera.GetRight() * change.x * maxMoveSpeed;
+      finalPosition += m_camera.get_front() * change.y * maxMoveSpeed;
+      finalPosition += m_camera.get_right() * change.x * maxMoveSpeed;
     }
     else {
       //Input::SetCursorIconDefault();
@@ -350,11 +350,11 @@ void ViewportPanel::on_update() {
       1000.0f,
       Application::get_timestep());
 
-    m_camera.SetPosition(m_SmoothCamera ? dampedPosition : finalPosition);
-    m_camera.SetYaw(m_SmoothCamera ? dampedYawPitch.x : finalYawPitch.x);
-    m_camera.SetPitch(m_SmoothCamera ? dampedYawPitch.y : finalYawPitch.y);
+    m_camera.set_position(m_SmoothCamera ? dampedPosition : finalPosition);
+    m_camera.set_yaw(m_SmoothCamera ? dampedYawPitch.x : finalYawPitch.x);
+    m_camera.set_pitch(m_SmoothCamera ? dampedYawPitch.y : finalYawPitch.y);
 
-    m_camera.Update();
+    m_camera.update();
   }
 }
 
@@ -414,7 +414,7 @@ void ViewportPanel::draw_gizmos() {
       m_ViewportBounds[1].x - m_ViewportBounds[0].x,
       m_ViewportBounds[1].y - m_ViewportBounds[0].y);
 
-    const glm::mat4& cameraProjection = m_camera.GetProjectionMatrix();
+    const glm::mat4& cameraProjection = m_camera.get_projection_matrix();
     const glm::mat4& cameraView = m_camera.get_view_matrix();
 
     auto& tc = selectedEntity.get_component<TransformComponent>();

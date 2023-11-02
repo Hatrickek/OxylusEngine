@@ -31,16 +31,6 @@ void CustomBinarySearch(vec3 samplePoint, vec3 deltaStep,
 vec3 ViewToNDC(vec3 viewPos);
 vec3 NDCToView(vec3 ndc);
 
-vec3 prefilteredReflection(vec3 R, float roughness) {
-  const float MAX_REFLECTION_LOD = 9.0;
-  float lod = roughness * MAX_REFLECTION_LOD;
-  float lodf = floor(lod);
-  float lodc = ceil(lod);
-  vec3 a = textureLod(in_Skybox, R, lodf).rgb;
-  vec3 b = textureLod(in_Skybox, R, lodc).rgb;
-  return mix(a, b, lod - lodf);
-}
-
 void main() {
   ivec2 imgCoord = ivec2(gl_GlobalInvocationID.xy);
   vec2 uv = (imgCoord + 0.5) / imageSize(ImgResult);
@@ -75,13 +65,10 @@ vec3 SSR(vec3 normal, vec3 fragPos, float spec) {
     samplePoint += deltaStep;
 
     vec3 projectedSample = ViewToNDC(samplePoint) * 0.5 + 0.5;
-    if (any(greaterThanEqual(projectedSample.xy, vec2(1.0))) ||
-        any(lessThan(projectedSample.xy, vec2(0.0))) ||
-        projectedSample.z > 1.0) {
-      vec3 reflection = prefilteredReflection(reflectDir, spec).rgb;
-      return reflection * 0.2f;
+    if (any(greaterThanEqual(projectedSample.xy, vec2(1.0))) 
+        || any(lessThan(projectedSample.xy, vec2(0.0))) || projectedSample.z > 1.0) {
+        return vec3(0.0);
     }
-
     float depth = texture(in_Depth, projectedSample.xy).r;
     if (projectedSample.z > depth) {
       CustomBinarySearch(samplePoint, deltaStep, projectedSample);
@@ -90,7 +77,7 @@ vec3 SSR(vec3 normal, vec3 fragPos, float spec) {
   }
 
   vec3 worldSpaceReflectDir = (inverse(u_Ubo.view) * vec4(reflectDir, 0.0)).xyz;
-  return texture(in_Skybox, worldSpaceReflectDir).rgb;
+  return vec3(0);
 }
 
 void CustomBinarySearch(vec3 samplePoint, vec3 deltaStep,

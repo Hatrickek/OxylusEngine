@@ -61,6 +61,20 @@ public:
   std::unordered_map<UUID, entt::entity> entity_map;
 
 private:
+  bool is_running = false;
+
+
+  // Renderer
+  Ref<SceneRenderer> scene_renderer;
+
+  // Systems
+  std::vector<Scope<System>> systems;
+
+  // Physics
+  Physics3DContactListener* contact_listener_3d = nullptr;
+  Physics3DBodyActivationListener* body_activation_listener_3d = nullptr;
+  float physics_frame_accumulator = 0.0f;
+
   void init();
 
   // Physics
@@ -73,18 +87,6 @@ private:
 
   void iterate_over_mesh_node(const Ref<Mesh>& mesh, const std::vector<Mesh::Node*>& node, Entity parent);
 
-  bool is_running = false;
-
-  // Renderer
-  Ref<SceneRenderer> scene_renderer;
-
-  // Systems
-  std::vector<Scope<System>> systems;
-
-  // Physics
-  Physics3DContactListener* contact_listener_3d = nullptr;
-  Physics3DBodyActivationListener* body_activation_listener_3d = nullptr;
-  float physics_frame_accumulator = 0.0f;
 
   friend class Entity;
   friend class SceneSerializer;

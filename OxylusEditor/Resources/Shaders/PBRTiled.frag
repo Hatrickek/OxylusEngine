@@ -17,6 +17,8 @@ struct Frustum {
 struct Light {
   vec4 position;  // w: intensity
   vec4 color;     // w: radius
+  vec4 rotation;  // w: type
+  vec4 _pad;
 };
 
 layout(location = 0) in vec3 inWorldPos;
@@ -67,7 +69,7 @@ layout(location = 0) out vec4 outColor;
 
 #include "Material.glsl"
 //#define MANUAL_SRGB 1 // we have to tonemap some inputs to make this viable
-#include "SRGBToLinear.glsl"
+#include "Conversions.glsl"
 
 struct PBRInfo {
   float NdotL;                  // cos angle between normal and light direction
@@ -236,14 +238,12 @@ void main() {
 		float G = GeometricOcclusion(pbrInputs);
 		float D = MicrofacetDistribution(pbrInputs);
 
-		const vec3 u_LightColor = vec3(1.0);
-
 		// Calculation of analytical lighting contribution
 		vec3 diffuseContrib = (1.0 - F) * diffuse(pbrInputs);
 		vec3 specContrib = F * G * D / (4.0 * NdotL * NdotV);
 		specContrib *= current_light.position.w;
 		// Obtain final intensity as reflectance (BRDF) scaled by the energy of the light (cosine law)
-		color = NdotL * u_LightColor * (diffuseContrib + specContrib);
+		color = NdotL * current_light.color.rgb * (diffuseContrib + specContrib);
 	}
 
 	// Calculate lighting contribution from image based lighting source (IBL)

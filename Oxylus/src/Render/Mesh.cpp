@@ -5,7 +5,7 @@
 #define TINYGLTF_USE_RAPIDJSON
 #define TINYGLTF_NO_INCLUDE_RAPIDJSON
 // includes for tinygltf
-#include <rapidjson/document.h> 
+#include <rapidjson/document.h>
 #include <rapidjson/prettywriter.h>
 #include <rapidjson/rapidjson.h>
 #include <rapidjson/stringbuffer.h>
@@ -30,6 +30,25 @@
 namespace Oxylus {
 Mesh::Mesh(const std::string_view path, const int file_loading_flags, const float scale) {
   load_from_file(path.data(), file_loading_flags, scale);
+}
+
+Mesh::Mesh(const std::vector<Vertex>& vertices, const std::vector<uint32_t>& indices) {
+  this->vertices = vertices;
+  this->indices = indices;
+  this->aabb = {};
+
+  const auto context = VulkanContext::get();
+  auto compiler = vuk::Compiler{};
+
+  auto [vBuffer, vBufferFut] = create_buffer(*context->superframe_allocator, vuk::MemoryUsage::eGPUonly, vuk::DomainFlagBits::eTransferOnGraphics, std::span(this->vertices));
+
+  vBufferFut.wait(*context->superframe_allocator, compiler);
+  vertex_buffer = std::move(vBuffer);
+
+  auto [iBuffer, iBufferFut] = create_buffer(*context->superframe_allocator, vuk::MemoryUsage::eGPUonly, vuk::DomainFlagBits::eTransferOnGraphics, std::span(this->indices));
+
+  iBufferFut.wait(*context->superframe_allocator, compiler);
+  index_buffer = std::move(iBuffer);
 }
 
 Mesh::~Mesh() {
@@ -140,10 +159,11 @@ void Mesh::load_from_file(const std::string& file_path, int file_loading_flags, 
   OX_CORE_INFO("Mesh file loaded: ({}) {}, {} materials, {} animations", duration_cast<std::chrono::milliseconds>(sw.elapsed()), name.c_str(), gltf_model.materials.size(), animations.size());
 }
 
-void Mesh::bind_vertex_buffer(vuk::CommandBuffer& commandBuffer) const {
+void Mesh::bind_vertex_buffer(vuk::CommandBuffer& command_buffer) const {
+  OX_SCOPED_ZONE;
   OX_CORE_ASSERT(vertex_buffer)
   // TODO: We should only bind the animation data if necessary etc.
-  commandBuffer.bind_vertex_buffer(0,
+  command_buffer.bind_vertex_buffer(0,
     *vertex_buffer,
     0,
     vuk::Packed{
@@ -158,6 +178,7 @@ void Mesh::bind_vertex_buffer(vuk::CommandBuffer& commandBuffer) const {
 }
 
 void Mesh::bind_index_buffer(vuk::CommandBuffer& command_buffer) const {
+  OX_SCOPED_ZONE;
   OX_CORE_ASSERT(index_buffer)
   command_buffer.bind_index_buffer(*index_buffer, vuk::IndexType::eUint32);
 }

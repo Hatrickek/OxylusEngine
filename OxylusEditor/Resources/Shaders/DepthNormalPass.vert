@@ -48,13 +48,7 @@ void main() {
 		out_Normal = normalize(transpose(inverse(mat3(ModelMatrix * node.matrix))) * in_Normal);
 	}
 
-  //vec3 locPos = vec3(model * vec4(in_Pos, 1.0));
   out_WorldPos = locPos.xyz / locPos.w;
-
-  // normal in viewspace
-  mat4 view = view;
-  //mat3 normalMatrix = transpose(inverse(mat3(ModelMatrix)));
-  //out_Normal = normalMatrix * in_Normal;
 
   out_UV = in_UV;
 

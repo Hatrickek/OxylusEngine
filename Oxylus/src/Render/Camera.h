@@ -27,48 +27,51 @@ constexpr float FARCLIP = 1000.0f;
  */
 class Camera {
 public:
-  Mat4 SkyboxView;
+  Mat4 skybox_view;
 
   float Fov = FOV;
   float Aspect;
   uint32_t AspectRatioW = 1;
   uint32_t AspectRatioH = 1;
-  float FarClip = FARCLIP;
-  float NearClip = NEARCLIP;
-  bool ConstrainPitch = true;
+  float far_clip = FARCLIP;
+  float near_clip = NEARCLIP;
+  bool constrain_pitch = true;
 
   Camera(Vec3 position = Vec3(0.0f, 0.0f, 0.0f));
 
-  void Update();
-  void Update(const Vec3& pos, const Vec3& rotation);
+  void update();
+  void update(const Vec3& pos, const Vec3& rotation);
 
   Mat4 get_projection_matrix_flipped() const;
-  Mat4 GetProjectionMatrix() const;
+  Mat4 get_projection_matrix() const;
   Mat4 get_view_matrix() const;
-  Mat4 GetWorldMatrix() const;
+  Mat4 get_world_matrix() const;
 
-  void SetYaw(const float value) { m_Yaw = value; }
-  void SetPitch(const float value) { m_Pitch = value; }
+  void set_yaw(const float value) { m_Yaw = value; }
+  void set_pitch(const float value) { m_Pitch = value; }
 
-  float GetYaw() const { return m_Yaw; }
-  float GetPitch() const { return m_Pitch; }
-  float GetTilt() const { return m_Tilt; }
+  float get_yaw() const { return m_Yaw; }
+  float get_pitch() const { return m_Pitch; }
+  float get_tilt() const { return m_Tilt; }
 
-  void SetNear(float newNear);
-  void SetFar(float newFar);
-  void Dolly(float z);
-  void SetPosition(Vec3 pos);
-  void SetPerspective(float fov, float aspect, float znear, float zfar);
-  void SetFov(float fov);
-  void Translate(const Vec3& delta);
-  void UpdateAspectRatio(float aspect);
-  void UpdateAspectRatio(const VkExtent2D& size);
-  Vec3 GetFront() const;
-  Vec3 GetRight() const;
+  void set_near(float newNear);
+  float get_near() const { return near_clip; }
+  void set_far(float newFar);
+  float get_far() const { return far_clip; }
+
+  void dolly(float z);
+  void set_position(Vec3 pos);
+  void set_perspective(float fov, float aspect, float znear, float zfar);
+  void set_fov(float fov);
+  void translate(const Vec3& delta);
+  void update_aspect_ratio(float aspect);
+  void update_aspect_ratio(const VkExtent2D& size);
+  Vec3 get_front() const;
+  Vec3 get_right() const;
   const Vec3& get_position() const;
 
-  void UpdateViewMatrix();
-  static Mat4 GenerateViewMatrix(const Vec3& position, const Vec3& viewDir, const Vec3& up);
+  void update_view_matrix();
+  static Mat4 generate_view_matrix(const Vec3& position, const Vec3& viewDir, const Vec3& up);
 
 private:
   Mat4 m_Perspective;

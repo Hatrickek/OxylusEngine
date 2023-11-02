@@ -20,8 +20,8 @@ void DirectShadowPass::update_cascades(const Vec3& dir_light_transform, Camera* 
   OX_SCOPED_ZONE;
   float cascadeSplits[SHADOW_MAP_CASCADE_COUNT];
 
-  float nearClip = camera->NearClip;
-  float farClip = camera->FarClip;
+  float nearClip = camera->near_clip;
+  float farClip = camera->far_clip;
   float clipRange = farClip - nearClip;
 
   float minZ = nearClip;
@@ -97,7 +97,7 @@ void DirectShadowPass::update_cascades(const Vec3& dir_light_transform, Camera* 
     glm::mat4 lightOrthoMatrix = glm::ortho(minExtents.x, maxExtents.x, minExtents.y, maxExtents.y, 0.0f, maxExtents.z - minExtents.z);
 
     // Store split distance and matrix in cascade
-    cascades_ubo->cascade_splits[i] = (camera->NearClip + splitDist * clipRange) * -1.0f;
+    cascades_ubo->cascade_splits[i] = (camera->near_clip + splitDist * clipRange) * -1.0f;
     cascades_ubo->cascade_view_proj_mat[i] = lightOrthoMatrix * lightViewMatrix;
 
     lastSplitDist = cascadeSplits[i];

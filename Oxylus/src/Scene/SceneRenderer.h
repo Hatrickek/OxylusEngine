@@ -20,5 +20,7 @@ public:
 private:
   Scene* m_scene;
   Ref<RenderPipeline> m_render_pipeline = nullptr;
+
+  friend class Scene;
 };
 }

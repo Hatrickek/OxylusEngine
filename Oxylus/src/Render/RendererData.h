@@ -12,14 +12,15 @@ struct LightingData {
   Vec4 position_and_intensity;
   Vec4 color_and_radius;
   Vec4 rotation;
+  Vec4 _pad;
 };
 
 struct MeshData {
-  uint32_t first_vertex;
-  uint32_t first_index;
-  uint32_t index_count;
-  uint32_t vertex_count;
-  bool is_merged;
+  uint32_t first_vertex = 0;
+  uint32_t first_index = 0;
+  uint32_t index_count = 0;
+  uint32_t vertex_count = 0;
+  bool is_merged = false;
 
   Mesh* mesh_geometry;
   std::vector<Ref<Material>> materials;
@@ -29,7 +30,9 @@ struct MeshData {
   MeshData(Mesh* mesh,
            const Mat4& transform,
            const std::vector<Ref<Material>>& materials,
-           const uint32_t submeshIndex) : mesh_geometry(mesh), materials(materials), transform(transform),
-                                          submesh_index(submeshIndex) { }
+           const uint32_t submeshIndex,
+           const uint32_t index_count = 0,
+           const uint32_t vertex_count = 0) : index_count(index_count), vertex_count(vertex_count), mesh_geometry(mesh),
+                                              materials(materials), transform(transform), submesh_index(submeshIndex) { }
 };
 }

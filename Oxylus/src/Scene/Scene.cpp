@@ -510,7 +510,7 @@ void Scene::on_runtime_update(float delta_time) {
     const auto group = m_registry.view<TransformComponent, CameraComponent>();
     for (const auto entity : group) {
       auto [transform, camera] = group.get<TransformComponent, CameraComponent>(entity);
-      camera.system->Update(transform.translation, transform.rotation);
+      camera.system->update(transform.translation, transform.rotation);
       scene_renderer->get_render_pipeline()->on_register_camera(camera.system.get());
     }
   }

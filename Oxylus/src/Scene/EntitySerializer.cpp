@@ -118,8 +118,8 @@ void EntitySerializer::SerializeEntity(Scene* scene, ryml::NodeRef& entities, En
     auto node = entityNode["CameraComponent"];
     node |= ryml::MAP;
     node["FOV"] << camera.system->Fov;
-    node["NearClip"] << camera.system->NearClip;
-    node["FarClip"] << camera.system->FarClip;
+    node["NearClip"] << camera.system->near_clip;
+    node["FarClip"] << camera.system->far_clip;
   }
 
   // Physics
@@ -379,9 +379,9 @@ UUID EntitySerializer::DeserializeEntity(ryml::ConstNodeRef entityNode, Scene* s
     node["NearClip"] >> nearclip;
     node["FarClip"] >> farclip;
 
-    camera.system->SetFov(fov);
-    camera.system->SetNear(nearclip);
-    camera.system->SetFar(farclip);
+    camera.system->set_fov(fov);
+    camera.system->set_near(nearclip);
+    camera.system->set_far(farclip);
   }
 
   if (entityNode.has_child("RigidbodyComponent")) {

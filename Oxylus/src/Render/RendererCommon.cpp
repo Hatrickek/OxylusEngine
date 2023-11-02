@@ -9,6 +9,7 @@
 #include <vuk/RenderGraph.hpp>
 
 #include "Mesh.h"
+#include "RendererData.h"
 
 #include "Assets/AssetManager.h"
 
@@ -17,6 +18,7 @@
 
 #include "Utils/FileUtils.h"
 #include "Utils/Log.h"
+#include "Utils/Profiler.h"
 
 #include "Vulkan/VukUtils.h"
 #include "Vulkan/VulkanContext.h"
@@ -65,7 +67,7 @@ std::pair<vuk::Unique<vuk::Image>, vuk::Future> RendererCommon::generate_cubemap
     allocator.get_context().create_named_pipeline("equirectangular_to_cubemap", equirectangular_to_cubemap);
   }
 
-  const auto cube = AssetManager::get_mesh_asset(Resources::get_resources_path("Objects/cube.glb"));
+  const auto cube = generate_cube();
 
   const auto capture_projection = glm::perspective(glm::radians(90.0f), 1.0f, 0.1f, 10.0f);
   const Mat4 capture_views[] = {
@@ -99,15 +101,228 @@ std::pair<vuk::Unique<vuk::Image>, vuk::Future> RendererCommon::generate_cubemap
 
       cube->bind_vertex_buffer(cbuf);
       cube->bind_index_buffer(cbuf);
-      for (const auto& node : cube->nodes)
-        for (const auto& primitive : node->mesh_data->primitives)
-          cbuf.draw_indexed(primitive->index_count, 6, 0, 0, 0);
+      cbuf.draw_indexed(cube->indices.size(), 6, 0, 0, 0);
     }
   });
 
   return {
     std::move(output), transition(vuk::Future{std::move(rg), "env_cubemap+"}, vuk::eFragmentSampled)
   };
+}
+
+std::pair<vuk::Buffer, vuk::Buffer> RendererCommon::merge_render_objects(std::vector<MeshData>& draw_list) {
+  OX_SCOPED_ZONE_N("Mesh Merge");
+  size_t total_vertices = 0;
+  size_t total_indices = 0;
+
+  for (auto& m : draw_list) {
+    m.first_index = (uint32_t)total_indices;
+    m.first_vertex = (uint32_t)total_vertices;
+
+    OX_CORE_ASSERT(m.vertex_count != 0)
+    OX_CORE_ASSERT(m.index_count != 0)
+    total_vertices += m.vertex_count;
+    total_indices += m.index_count;
+
+    m.is_merged = true;
+  }
+
+  const auto vk_context = VulkanContext::get();
+
+  vuk::Buffer merged_vertex_buffer;
+  vuk::BufferCreateInfo bci_vertex{vuk::MemoryUsage::eGPUonly, total_vertices * sizeof(Mesh::Vertex), 1};
+  vk_context->superframe_allocator->allocate_buffers(std::span{&merged_vertex_buffer, 1}, std::span{&bci_vertex, 1});
+
+  vuk::Buffer merged_index_buffer;
+  vuk::BufferCreateInfo bci_index{vuk::MemoryUsage::eGPUonly, total_indices * sizeof(uint32_t), 1};
+  vk_context->superframe_allocator->allocate_buffers(std::span{&merged_index_buffer, 1}, std::span{&bci_index, 1});
+
+  std::vector<vuk::Future> futures;
+
+  for (auto& m : draw_list) {
+    Ref<vuk::RenderGraph> rgv = create_ref<vuk::RenderGraph>("host_data_to_buffer");
+    //const auto dst_vertex_offset = m.first_vertex * sizeof(Mesh::Vertex);
+    //merged_vertex_buffer = merged_vertex_buffer.add_offset(dst_vertex_offset);
+    rgv->attach_buffer("_src_vertex", *m.mesh_geometry->vertex_buffer, vuk::Access::eNone);
+    rgv->attach_buffer("_dst_vertex", merged_vertex_buffer, vuk::Access::eNone);
+
+    rgv->add_pass({
+      .name = "mesh_merge_vertex_copy",
+      .execute_on = vuk::DomainFlagBits::eTransferOnGraphics,
+      .resources = {
+        "_dst_vertex"_buffer >> vuk::Access::eTransferWrite,
+        "_src_vertex"_buffer >> vuk::Access::eTransferRead,
+      },
+      .execute = [&m](vuk::CommandBuffer& command_buffer) {
+        const auto& buffer = *command_buffer.get_resource_buffer("_dst_vertex");
+
+        VkBufferCopy vertexCopy;
+        vertexCopy.dstOffset = m.first_vertex * sizeof(Mesh::Vertex);
+        vertexCopy.size = m.vertex_count * sizeof(Mesh::Vertex);
+        vertexCopy.srcOffset = 0;
+
+        vkCmdCopyBuffer(command_buffer.get_underlying(), m.mesh_geometry->vertex_buffer->buffer, buffer.buffer, 1, &vertexCopy);
+
+        //command_buffer.copy_buffer("_src_vertex", "_dst_vertex", m.vertex_count * sizeof(Mesh::Vertex));
+      }
+    });
+    futures.emplace_back(rgv, "_dst_vertex+");
+
+    const Ref<vuk::RenderGraph> rgi = create_ref<vuk::RenderGraph>("host_data_to_buffer");
+    //const auto dst_index_offset = m.first_index * sizeof(uint32_t);
+    //merged_index_buffer = merged_index_buffer.add_offset(dst_index_offset);
+    rgi->attach_buffer("_src_index", *m.mesh_geometry->index_buffer, vuk::Access::eNone);
+    rgi->attach_buffer("_dst_index", merged_index_buffer, vuk::Access::eNone);
+
+    rgi->add_pass({
+      .name = "mesh_merge_index_copy",
+      .execute_on = vuk::DomainFlagBits::eTransferOnGraphics,
+      .resources = {
+        "_dst_index"_buffer >> vuk::Access::eTransferWrite,
+        "_src_index"_buffer >> vuk::Access::eTransferRead,
+      },
+      .execute = [&m](vuk::CommandBuffer& command_buffer) {
+        const auto& buffer = *command_buffer.get_resource_buffer("_dst_index");
+        VkBufferCopy indexCopy;
+        indexCopy.dstOffset = m.first_index * sizeof(uint32_t);
+        indexCopy.size = m.index_count * sizeof(uint32_t);
+        indexCopy.srcOffset = 0;
+
+        vkCmdCopyBuffer(command_buffer.get_underlying(), m.mesh_geometry->index_buffer->buffer, buffer.buffer, 1, &indexCopy);
+        //command_buffer.copy_buffer("_src_index", "_dst_index", m.index_count * sizeof(uint32_t));
+      }
+    });
+    futures.emplace_back(rgi, "_dst_index+");
+  }
+
+  vuk::Compiler compiler{};
+  for (auto& f : futures) {
+    f.wait(*vk_context->superframe_allocator, compiler);
+  }
+
+  auto index_buffer = futures.back().get_result<vuk::Buffer>();
+  auto vertex_buffer = std::vector<vuk::Future>::iterator(futures.end() - 1)->get_result<vuk::Buffer>();
+
+  return {index_buffer, vertex_buffer};
+}
+
+Ref<Mesh> RendererCommon::generate_quad() {
+  std::vector<Mesh::Vertex> vertices(4);
+  vertices[0].position = Vec3{-1.0f, -1.0f, 0.0f};
+  vertices[0].uv = {};
+
+  vertices[1].position = Vec3{1.0f, -1.0f, 0.0f};
+  vertices[1].uv = Vec2{1.0f, 0.0f};
+
+  vertices[2].position = Vec3{1.0f, 1.0f, 0.0f};
+  vertices[2].uv = Vec2{1.0f, 1.0f};
+
+  vertices[3].position = Vec3{-1.0f, 1.0f, 0.0f};
+  vertices[3].uv = {0.0f, 1.0f};
+
+  const auto indices = std::vector<uint32_t>{0, 1, 2, 2, 3, 0};
+
+  return create_ref<Mesh>(vertices, indices);
+}
+
+Ref<Mesh> RendererCommon::generate_cube() {
+  std::vector<Mesh::Vertex> vertices(24);
+
+  vertices[0].position = Vec3(0.5f, 0.5f, 0.5f);
+  vertices[0].normal = Vec3(0.0f, 0.0f, 1.0f);
+
+  vertices[1].position = Vec3(-0.5f, 0.5f, 0.5f);
+  vertices[1].normal = Vec3(0.0f, 0.0f, 1.0f);
+
+  vertices[2].position = Vec3(-0.5f, -0.5f, 0.5f);
+  vertices[2].normal = Vec3(0.0f, 0.0f, 1.0f);
+
+  vertices[3].position = Vec3(0.5f, -0.5f, 0.5f);
+  vertices[3].normal = Vec3(0.0f, 0.0f, 1.0f);
+
+  vertices[4].position = Vec3(0.5f, 0.5f, 0.5f);
+  vertices[4].normal = Vec3(1.0f, 0.0f, 0.0f);
+
+  vertices[5].position = Vec3(0.5f, -0.5f, 0.5f);
+  vertices[5].normal = Vec3(1.0f, 0.0f, 0.0f);
+
+  vertices[6].position = Vec3(0.5f, -0.5f, -0.5f);
+  vertices[6].normal = Vec3(1.0f, 0.0f, 0.0f);
+
+  vertices[7].position = Vec3(0.5f, 0.5f, -0.5f);
+  vertices[7].normal = Vec3(1.0f, 0.0f, 0.0f);
+
+  vertices[8].position = Vec3(0.5f, 0.5f, 0.5f);
+  vertices[8].normal = Vec3(0.0f, 1.0f, 0.0f);
+
+  vertices[9].position = Vec3(0.5f, 0.5f, -0.5f);
+  vertices[9].normal = Vec3(0.0f, 1.0f, 0.0f);
+
+  vertices[10].position = Vec3(-0.5f, 0.5f, -0.5f);
+  vertices[10].normal = Vec3(0.0f, 1.0f, 0.0f);
+
+  vertices[11].position = Vec3(-0.5f, 0.5f, 0.5f);
+  vertices[11].normal = Vec3(0.0f, 1.0f, 0.0f);
+
+  vertices[12].position = Vec3(-0.5f, 0.5f, 0.5f);
+  vertices[12].normal = Vec3(-1.0f, 0.0f, 0.0f);
+
+  vertices[13].position = Vec3(-0.5f, 0.5f, -0.5f);
+  vertices[13].normal = Vec3(-1.0f, 0.0f, 0.0f);
+
+  vertices[14].position = Vec3(-0.5f, -0.5f, -0.5f);
+  vertices[14].normal = Vec3(-1.0f, 0.0f, 0.0f);
+
+  vertices[15].position = Vec3(-0.5f, -0.5f, 0.5f);
+  vertices[15].normal = Vec3(-1.0f, 0.0f, 0.0f);
+
+  vertices[16].position = Vec3(-0.5f, -0.5f, -0.5f);
+  vertices[16].normal = Vec3(0.0f, -1.0f, 0.0f);
+
+  vertices[17].position = Vec3(0.5f, -0.5f, -0.5f);
+  vertices[17].normal = Vec3(0.0f, -1.0f, 0.0f);
+
+  vertices[18].position = Vec3(0.5f, -0.5f, 0.5f);
+  vertices[18].normal = Vec3(0.0f, -1.0f, 0.0f);
+
+  vertices[19].position = Vec3(-0.5f, -0.5f, 0.5f);
+  vertices[19].normal = Vec3(0.0f, -1.0f, 0.0f);
+
+  vertices[20].position = Vec3(0.5f, -0.5f, -0.5f);
+  vertices[20].normal = Vec3(0.0f, 0.0f, -1.0f);
+
+  vertices[21].position = Vec3(-0.5f, -0.5f, -0.5f);
+  vertices[21].normal = Vec3(0.0f, 0.0f, -1.0f);
+
+  vertices[22].position = Vec3(-0.5f, 0.5f, -0.5f);
+  vertices[22].normal = Vec3(0.0f, 0.0f, -1.0f);
+
+  vertices[23].position = Vec3(0.5f, 0.5f, -0.5f);
+  vertices[23].normal = Vec3(0.0f, 0.0f, -1.0f);
+
+  for (int i = 0; i < 6; i++) {
+    vertices[i * 4 + 0].uv = Vec2(0.0f, 0.0f);
+    vertices[i * 4 + 1].uv = Vec2(1.0f, 0.0f);
+    vertices[i * 4 + 2].uv = Vec2(1.0f, 1.0f);
+    vertices[i * 4 + 3].uv = Vec2(0.0f, 1.0f);
+  }
+
+  std::vector<uint32_t> indices = {
+    0, 1, 2,
+    0, 2, 3,
+    4, 5, 6,
+    4, 6, 7,
+    8, 9, 10,
+    8, 10, 11,
+    12, 13, 14,
+    12, 14, 15,
+    16, 17, 18,
+    16, 18, 19,
+    20, 21, 22,
+    20, 22, 23
+  };
+
+  return create_ref<Mesh>(vertices, indices);
 }
 
 void RendererCommon::apply_blur(const std::shared_ptr<vuk::RenderGraph>& render_graph, vuk::Name src_attachment, const vuk::Name attachment_name, const vuk::Name attachment_name_output) {

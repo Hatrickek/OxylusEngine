@@ -48,7 +48,7 @@ namespace OxylusRuntime {
         if (wishDir != JPH::Vec3::sZero())
           wishDir = wishDir.Normalized();
 
-        JPH::Vec3 camFwd = {cameraComponent.system->GetFront().x, cameraComponent.system->GetFront().y, cameraComponent.system->GetFront().z};
+        JPH::Vec3 camFwd = {cameraComponent.system->get_front().x, cameraComponent.system->get_front().y, cameraComponent.system->get_front().z};
         camFwd.SetY(0.0f);
         camFwd = camFwd.NormalizedOr(JPH::Vec3::sAxisX());
         JPH::Quat rotation = JPH::Quat::sFromTo(JPH::Vec3::sAxisX(), camFwd);
@@ -78,7 +78,7 @@ namespace OxylusRuntime {
         // Rotate the character and camera.
 
         const auto& camera = cameraComponent.system;
-        const Vec2 yawPitch = Vec2(camera->GetYaw(), camera->GetPitch());
+        const Vec2 yawPitch = Vec2(camera->get_yaw(), camera->get_pitch());
         Vec2 finalYawPitch = yawPitch;
 
         if (ImGui::IsKeyPressed(ImGuiKey_Escape, false))

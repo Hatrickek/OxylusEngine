@@ -39,7 +39,14 @@ void SceneRenderer::update() const {
       if (parent)
         parentEnabled = parent.get_component<TagComponent>().enabled;
       if (tag.enabled && parentEnabled && !material.materials.empty()) {
-        auto render_object = MeshData{meshrenderer.mesh_geometry.get(), e.get_world_transform(), material.materials, meshrenderer.submesh_index};
+        auto render_object = MeshData{
+          meshrenderer.mesh_geometry.get(),
+          e.get_world_transform(),
+          material.materials,
+          meshrenderer.submesh_index,
+          (uint32_t)meshrenderer.mesh_geometry->indices.size(),
+          (uint32_t)meshrenderer.mesh_geometry->vertices.size()
+        };
         m_render_pipeline->on_register_render_object(render_object);
       }
     }

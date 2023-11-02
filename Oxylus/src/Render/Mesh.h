@@ -156,11 +156,12 @@ public:
 
   Mesh() = default;
   Mesh(std::string_view path, int file_loading_flags = None, float scale = 1);
+  Mesh(const std::vector<Vertex>& vertices, const std::vector<uint32_t>& indices);
   ~Mesh();
 
   void load_from_file(const std::string& file_path, int file_loading_flags = None, float scale = 1);
 
-  void bind_vertex_buffer(vuk::CommandBuffer& commandBuffer) const;
+  void bind_vertex_buffer(vuk::CommandBuffer& command_buffer) const;
   void bind_index_buffer(vuk::CommandBuffer& command_buffer) const;
   void draw_node(const Node* node, vuk::CommandBuffer& commandBuffer) const;
   void draw(vuk::CommandBuffer& command_buffer) const;
