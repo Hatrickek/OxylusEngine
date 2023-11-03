@@ -317,7 +317,7 @@ Scope<vuk::Future> DefaultRenderPipeline::on_render(vuk::Allocator& frame_alloca
 
   auto [ssr_resouce, ssr_name] = get_attachment_or_black("ssr_output", RendererCVAR::cvar_ssr_enable.get());
   auto [gtao_resouce, gtao_name] = get_attachment_or_black_uint("gtao_final_output", RendererCVAR::cvar_gtao_enable.get());
-  auto [bloom_resource, bloom_name] = get_attachment_or_black("bloom_upsampled_image", RendererCVAR::cvar_bloom_enable.get(), vuk::eFragmentRead);
+  auto [bloom_resource, bloom_name] = get_attachment_or_black("bloom_upsampled_image", RendererCVAR::cvar_bloom_enable.get());
 
   std::vector<vuk::Resource> final_resources = {
     "final_image"_image >> vuk::eColorRW >> "final_output",
@@ -692,11 +692,12 @@ void DefaultRenderPipeline::bloom_pass(const Ref<vuk::RenderGraph>& rg, const Vu
 
   for (int32_t i = (int32_t)bloom_mip_count - 2; i >= 0; i--) {
     const auto input_name = i == (int32_t)bloom_mip_count - 2 ? down_read_diverged_names[i + 1] : up_output_names[i + 1];
+    const auto layout = i == (int32_t)bloom_mip_count - 2 ? vuk::eComputeRead : vuk::eComputeSampled;
     rg->add_pass({
       .name = "bloom_upsample",
       .resources = {
         vuk::Resource(up_diverged_names[i], vuk::Resource::Type::eImage, vuk::eComputeRW, up_output_names[i]),
-        vuk::Resource(input_name, vuk::Resource::Type::eImage, vuk::eComputeSampled),
+        vuk::Resource(input_name, vuk::Resource::Type::eImage, layout),
         vuk::Resource(down_read_diverged_names[i], vuk::Resource::Type::eImage, vuk::eComputeSampled),
       },
       .execute = [up_diverged_names, i, input_name, down_read_diverged_names](vuk::CommandBuffer& command_buffer) {
@@ -911,7 +912,7 @@ vuk::Future DefaultRenderPipeline::apply_fxaa(vuk::Future source, vuk::Future ds
   return {std::move(rgp), "smooth+"};
 }
 
-void DefaultRenderPipeline::apply_grid(vuk::RenderGraph* rg, const vuk::Name dst, const vuk::Name depth_image, vuk::Allocator& frame_allocator) {
+void DefaultRenderPipeline::apply_grid(vuk::RenderGraph* rg, const vuk::Name dst, const vuk::Name depth_image, vuk::Allocator& frame_allocator) const {
   struct GridVertexBuffer {
     Mat4 view;
     Mat4 proj;
