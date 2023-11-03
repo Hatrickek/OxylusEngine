@@ -2,6 +2,7 @@
 
 #include "Event/Event.h"
 #include "Utils/Timestep.h"
+#include "Core/Keycodes.h"
 
 #include <string>
 
@@ -47,6 +48,10 @@ public:
   /// Physics interfaces
   virtual void on_contact_added(Scene* scene, const JPH::Body& body1, const JPH::Body& body2, const JPH::ContactManifold& manifold, const JPH::ContactSettings& settings) { }
   virtual void on_contact_persisted(Scene* scene, const JPH::Body& body1, const JPH::Body& body2, const JPH::ContactManifold& manifold, const JPH::ContactSettings& settings) { }
+
+  /// Input interfaces
+  virtual void on_key_pressed(KeyCode key) { }
+  virtual void on_key_released(KeyCode key) { }
 
   void set_dispatcher(EventDispatcher* dispatcher) { m_Dispatcher = dispatcher; }
 

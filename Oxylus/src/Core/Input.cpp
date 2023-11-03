@@ -14,7 +14,6 @@ Input::CursorState cursorState = Input::CursorState::DISABLED;
 void Input::init() {
   glfwSetCursorPosCallback(Window::get_glfw_window(), MouseCallback);
   glfwSetScrollCallback(Window::get_glfw_window(), ScrollCallback);
-  glfwSetKeyCallback(Window::get_glfw_window(), KeyCallback);
 }
 
 bool Input::GetKey(const KeyCode key) {
@@ -114,6 +113,4 @@ void Input::MouseCallback(GLFWwindow* window, const double xposIn, const double 
 void ScrollCallback(GLFWwindow* window, double xoffset, double yoffset) {
   s_MouseScrollOffsetY = (float)yoffset;
 }
-
-void Input::KeyCallback(GLFWwindow* window, int key, int scancode, int action, int mods) {}
 }

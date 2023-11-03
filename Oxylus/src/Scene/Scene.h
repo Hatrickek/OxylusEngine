@@ -12,6 +12,8 @@
 #include "Render/Mesh.h"
 #include <entt/entity/registry.hpp>
 
+#include "Core/Keycodes.h"
+
 namespace Oxylus {
 class Entity;
 
@@ -52,6 +54,10 @@ public:
   // Physics interfaces
   void on_contact_added(const JPH::Body& body1, const JPH::Body& body2, const JPH::ContactManifold& manifold, const JPH::ContactSettings& settings);
   void on_contact_persisted(const JPH::Body& body1, const JPH::Body& body2, const JPH::ContactManifold& manifold, JPH::ContactSettings& settings);
+
+  // Input interfaces
+  void on_key_pressed(KeyCode key) const;
+  void on_key_released(KeyCode key) const;
 
   Entity get_entity_by_uuid(UUID uuid);
   Ref<SceneRenderer> get_renderer() { return scene_renderer; }
