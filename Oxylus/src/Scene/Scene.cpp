@@ -69,22 +69,29 @@ Entity Scene::create_entity_with_uuid(UUID uuid, const std::string& name) {
 void Scene::update_physics(Timestep delta_time) {
   OX_SCOPED_ZONE;
   // Minimum stable value is 16.0
-  constexpr float physicsStepRate = 64.0f;
+  constexpr float physicsStepRate = 50.0f;
   constexpr float physicsTs = 1.0f / physicsStepRate;
 
   bool stepped = false;
   physics_frame_accumulator += delta_time;
 
   while (physics_frame_accumulator >= physicsTs) {
-    Physics::Step(physicsTs);
+    Physics::step(physicsTs);
+
+    {
+      OX_SCOPED_ZONE_N("OnFixedUpdate Systems");
+      for (const auto& system : systems) {
+        system->on_fixed_update(this, physicsTs);
+      }
+    }
 
     physics_frame_accumulator -= physicsTs;
     stepped = true;
   }
 
-  const float interpolationFactor = physics_frame_accumulator / physicsTs;
+  const float interpolation_factor = physics_frame_accumulator / physicsTs;
 
-  const auto& bodyInterface = Physics::GetPhysicsSystem()->GetBodyInterface();
+  const auto& body_interface = Physics::get_physics_system()->GetBodyInterface();
   const auto view = m_registry.group<RigidbodyComponent>(entt::get<TransformComponent>);
   for (auto&& [e, rb, tc] : view.each()) {
     if (!rb.runtime_body)
@@ -94,7 +101,7 @@ void Scene::update_physics(Timestep delta_time) {
 
     const auto* body = static_cast<const JPH::Body*>(rb.runtime_body);
 
-    if (!bodyInterface.IsActive(body->GetID()))
+    if (!body_interface.IsActive(body->GetID()))
       continue;
 
     if (rb.interpolation) {
@@ -108,8 +115,8 @@ void Scene::update_physics(Timestep delta_time) {
         rb.rotation = glm::vec3(rotation.GetX(), rotation.GetY(), rotation.GetZ());
       }
 
-      tc.translation = glm::lerp(rb.previous_translation, rb.translation, interpolationFactor);
-      tc.rotation = glm::eulerAngles(glm::slerp(rb.previous_rotation, rb.rotation, interpolationFactor));
+      tc.translation = glm::lerp(rb.previous_translation, rb.translation, interpolation_factor);
+      tc.rotation = glm::eulerAngles(glm::slerp(rb.previous_rotation, rb.rotation, interpolation_factor));
     }
     else {
       const JPH::Vec3 position = body->GetPosition();
@@ -140,8 +147,8 @@ void Scene::update_physics(Timestep delta_time) {
           ch.Rotation = glm::vec3(rotation.GetX(), rotation.GetY(), rotation.GetZ());
         }
 
-        tc.translation = glm::lerp(ch.previous_translation, ch.translation, interpolationFactor);
-        tc.rotation = glm::eulerAngles(glm::slerp(ch.previous_rotation, ch.Rotation, interpolationFactor));
+        tc.translation = glm::lerp(ch.previous_translation, ch.translation, interpolation_factor);
+        tc.rotation = glm::eulerAngles(glm::slerp(ch.previous_rotation, ch.Rotation, interpolation_factor));
       }
       else {
         const JPH::Vec3 position = ch.character->GetPosition();
@@ -251,10 +258,10 @@ void Scene::on_runtime_start() {
   // Physics
   {
     OX_SCOPED_ZONE_N("Physics Start");
-    Physics::Init();
+    Physics::init();
     body_activation_listener_3d = new Physics3DBodyActivationListener();
     contact_listener_3d = new Physics3DContactListener(this);
-    const auto physicsSystem = Physics::GetPhysicsSystem();
+    const auto physicsSystem = Physics::get_physics_system();
     physicsSystem->SetBodyActivationListener(body_activation_listener_3d);
     physicsSystem->SetContactListener(contact_listener_3d);
 
@@ -287,7 +294,7 @@ void Scene::on_runtime_stop() {
 
   // Physics
   {
-    JPH::BodyInterface& bodyInterface = Physics::GetPhysicsSystem()->GetBodyInterface();
+    JPH::BodyInterface& bodyInterface = Physics::get_physics_system()->GetBodyInterface();
     const auto rbView = m_registry.view<RigidbodyComponent>();
     for (auto&& [e, rb] : rbView.each()) {
       if (rb.runtime_body) {
@@ -393,7 +400,7 @@ void Scene::create_rigidbody(Entity entity, const TransformComponent& transform,
   if (!is_running)
     return;
 
-  auto& bodyInterface = Physics::GetBodyInterface();
+  auto& bodyInterface = Physics::get_body_interface();
   if (component.runtime_body) {
     bodyInterface.DestroyBody(static_cast<JPH::Body*>(component.runtime_body)->GetID());
     component.runtime_body = nullptr;
@@ -465,9 +472,9 @@ void Scene::create_rigidbody(Entity entity, const TransformComponent& transform,
 
   auto layer = entity.get_component<TagComponent>().layer;
   uint8_t layerIndex = 1;	// Default Layer
-  auto collisionMaskIt = Physics::LayerCollisionMask.find(layer);
-  if (collisionMaskIt != Physics::LayerCollisionMask.end())
-    layerIndex = collisionMaskIt->second.Index;
+  auto collisionMaskIt = Physics::layer_collision_mask.find(layer);
+  if (collisionMaskIt != Physics::layer_collision_mask.end())
+    layerIndex = collisionMaskIt->second.index;
 
   JPH::BodyCreationSettings bodySettings(compoundShapeSettings.Create().Get(), {transform.translation.x, transform.translation.y, transform.translation.z}, {rotation.x, rotation.y, rotation.z, rotation.w}, static_cast<JPH::EMotionType>(component.type), layerIndex);
 
@@ -507,7 +514,7 @@ void Scene::create_character_controller(const TransformComponent& transform, Cha
   settings->mShape = capsuleShape;
   settings->mFriction = 0.0f; // For now this is not set. 
   settings->mSupportingVolume = JPH::Plane(JPH::Vec3::sAxisY(), -component.character_radius_standing); // Accept contacts that touch the lower sphere of the capsule
-  component.character = new JPH::Character(settings.get(), position, JPH::Quat::sIdentity(), 0, Physics::GetPhysicsSystem());
+  component.character = new JPH::Character(settings.get(), position, JPH::Quat::sIdentity(), 0, Physics::get_physics_system());
   component.character->AddToPhysicsSystem(JPH::EActivation::Activate);
 }
 

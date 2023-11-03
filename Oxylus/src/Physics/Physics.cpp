@@ -7,14 +7,14 @@
 #include "Utils/Profiler.h"
 
 namespace Oxylus {
-BPLayerInterfaceImpl Physics::s_LayerInterface;
+BPLayerInterfaceImpl Physics::s_layer_interface;
 JPH::TempAllocatorImpl* Physics::s_TempAllocator = nullptr;
-ObjectVsBroadPhaseLayerFilterImpl Physics::s_ObjectVsBroadPhaseLayerFilterInterface;
-ObjectLayerPairFilterImpl Physics::s_ObjectLayerPairFilterInterface;
+ObjectVsBroadPhaseLayerFilterImpl Physics::s_object_vs_broad_phase_layer_filter_interface;
+ObjectLayerPairFilterImpl Physics::s_object_layer_pair_filter_interface;
 JPH::PhysicsSystem* Physics::s_PhysicsSystem = nullptr;
 JPH::JobSystemThreadPool* Physics::s_JobSystem = nullptr;
 
-std::map<Physics::EntityLayer, Physics::EntityLayerData> Physics::LayerCollisionMask =
+std::map<Physics::EntityLayer, Physics::EntityLayerData> Physics::layer_collision_mask =
 {
   {BIT(0), {"Static", static_cast<uint16_t>(0xFFFF), 0}},
   {BIT(1), {"Default", static_cast<uint16_t>(0xFFFF), 1}},
@@ -39,7 +39,7 @@ static void TraceImpl(const char* inFMT, ...) {
   };
 #endif
 
-void Physics::Init() {
+void Physics::init() {
   // TODO: Override default allocators with Oxylus allocators.
   JPH::RegisterDefaultAllocator();
 
@@ -62,12 +62,12 @@ void Physics::Init() {
     0,
     MAX_BODY_PAIRS,
     MAX_CONTACT_CONSTRAINS,
-    s_LayerInterface,
-    s_ObjectVsBroadPhaseLayerFilterInterface,
-    s_ObjectLayerPairFilterInterface);
+    s_layer_interface,
+    s_object_vs_broad_phase_layer_filter_interface,
+    s_object_layer_pair_filter_interface);
 }
 
-void Physics::Step(float physicsTs) {
+void Physics::step(float physicsTs) {
   OX_SCOPED_ZONE;
 
   OX_CORE_ASSERT(s_PhysicsSystem, "Physics system not initialized")
@@ -75,7 +75,7 @@ void Physics::Step(float physicsTs) {
   s_PhysicsSystem->Update(physicsTs, 1, s_TempAllocator, s_JobSystem);
 }
 
-void Physics::Shutdown() {
+void Physics::shutdown() {
   JPH::UnregisterTypes();
   delete JPH::Factory::sInstance;
   JPH::Factory::sInstance = nullptr;
@@ -84,7 +84,7 @@ void Physics::Shutdown() {
   delete s_JobSystem;
 }
 
-JPH::PhysicsSystem* Physics::GetPhysicsSystem() {
+JPH::PhysicsSystem* Physics::get_physics_system() {
   OX_SCOPED_ZONE;
 
   OX_CORE_ASSERT(s_PhysicsSystem, "Physics system not initialized")
@@ -92,7 +92,7 @@ JPH::PhysicsSystem* Physics::GetPhysicsSystem() {
   return s_PhysicsSystem;
 }
 
-JPH::BodyInterface& Physics::GetBodyInterface() {
-  return GetPhysicsSystem()->GetBodyInterface();
+JPH::BodyInterface& Physics::get_body_interface() {
+  return get_physics_system()->GetBodyInterface();
 }
 }

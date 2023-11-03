@@ -31,10 +31,13 @@ public:
   virtual void on_update() { }
 
   /// Called before physic system is updated.
-  virtual void on_update(Scene* scene, Timestep deltaTime) { }
+  virtual void on_update(Scene* scene, Timestep delta_time) { }
+
+  /// Called every fixed frame-rate frame with the frequency of the physics system
+  virtual void on_fixed_update(Scene* scene, Timestep delta_time) { }
 
   /// Called after physics system is updated.
-  virtual void post_on_update(Scene* scene, Timestep deltaTime) { }
+  virtual void post_on_update(Scene* scene, Timestep delta_time) { }
 
   /// Called in the main imgui loop which is right before `OnUpdate`
   virtual void on_imgui_render() { }
