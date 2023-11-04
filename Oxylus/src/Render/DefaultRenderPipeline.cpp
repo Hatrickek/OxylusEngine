@@ -34,8 +34,8 @@ void DefaultRenderPipeline::init() {
   transparent_mesh_draw_list.reserve(MAX_NUM_MESHES);
 
   // TODO: don't load a default hdr texture / load a light blue colored texture
-  m_resources.cube_map = create_ref<TextureAsset>();
-  m_resources.cube_map = AssetManager::get_texture_asset({.Path = Resources::get_resources_path("HDRs/table_mountain_2_puresky_2k.hdr"), .Format = vuk::Format::eR8G8B8A8Srgb});
+  cube_map = create_ref<TextureAsset>();
+  cube_map = AssetManager::get_texture_asset({.Path = Resources::get_resources_path("HDRs/table_mountain_2_puresky_2k.hdr"), .Format = vuk::Format::eR8G8B8A8Srgb});
   generate_prefilter();
 
   init_render_graph();
@@ -211,9 +211,16 @@ static std::pair<vuk::Resource, vuk::Name> get_attachment_or_black_uint(const ch
   return {vuk::Resource("black_image_uint", vuk::Resource::Type::eImage, access), "black_image_uint"};
 }
 
+
 Scope<vuk::Future> DefaultRenderPipeline::on_render(vuk::Allocator& frame_allocator, const vuk::Future& target, vuk::Dimension3D dim) {
-  if (!m_renderer_context.current_camera)
+  if (!m_renderer_context.current_camera) {
     OX_CORE_FATAL("No camera is set for rendering!");
+    // set a temporary one
+    if (!default_camera)
+      default_camera = create_ref<Camera>();
+    m_renderer_context.current_camera = default_camera.get();
+  }
+
 
   auto vk_context = VulkanContext::get();
 
@@ -381,7 +388,7 @@ Scope<vuk::Future> DefaultRenderPipeline::on_render(vuk::Allocator& frame_alloca
 }
 
 void DefaultRenderPipeline::update_skybox(const SkyboxLoadEvent& e) {
-  m_resources.cube_map = e.cube_map;
+  cube_map = e.cube_map;
 
   generate_prefilter();
 }
@@ -414,7 +421,7 @@ void DefaultRenderPipeline::depth_pre_pass(const Ref<vuk::RenderGraph>& rg, vuk:
                      })
                     .bind_buffer(0, 0, vs_buffer)
                     .bind_sampler(0, 1, vuk::LinearSamplerRepeated)
-                    .bind_image(0, 1, m_resources.cube_map->as_attachment())
+                    .bind_image(0, 1, cube_map->as_attachment())
                     .push_constants(vuk::ShaderStageFlagBits::eVertex | vuk::ShaderStageFlagBits::eFragment, 0, skybox_push_constant);
 
       m_cube->bind_index_buffer(command_buffer);
@@ -495,7 +502,7 @@ void DefaultRenderPipeline::geomerty_pass(const Ref<vuk::RenderGraph>& rg,
                      })
                     .bind_buffer(0, 0, vs_buffer)
                     .bind_sampler(0, 1, vuk::LinearSamplerRepeated)
-                    .bind_image(0, 1, m_resources.cube_map->as_attachment())
+                    .bind_image(0, 1, cube_map->as_attachment())
                     .push_constants(vuk::ShaderStageFlagBits::eVertex | vuk::ShaderStageFlagBits::eFragment, 0, skybox_push_constant);
 
       m_cube->bind_index_buffer(command_buffer);
@@ -687,8 +694,6 @@ void DefaultRenderPipeline::bloom_pass(const Ref<vuk::RenderGraph>& rg, const Vu
     });
   }
 
-  rg->converge_image_explicit(down_output_names, "bloom_downsampled_image");
-
   // Upsampling
   // https://www.froyok.fr/blog/2021-12-ue4-custom-bloom/resources/code/bloom_down_up_demo.jpg
 
@@ -696,19 +701,18 @@ void DefaultRenderPipeline::bloom_pass(const Ref<vuk::RenderGraph>& rg, const Vu
   rg->inference_rule("bloom_upsample_image", vuk::same_extent_as("final_image"));
 
   auto [up_diverged_names, up_output_names] = diverge_image_mips(rg, "bloom_upsample_image", bloom_mip_count - 1);
-  auto [down_read_diverged_names, down_read_output_names] = diverge_image_mips(rg, "bloom_downsampled_image", bloom_mip_count);
 
   for (int32_t i = (int32_t)bloom_mip_count - 2; i >= 0; i--) {
-    const auto input_name = i == (int32_t)bloom_mip_count - 2 ? down_read_diverged_names[i + 1] : up_output_names[i + 1];
-    const auto layout = i == (int32_t)bloom_mip_count - 2 ? vuk::eComputeRead : vuk::eComputeSampled;
+    const auto input_name = i == (int32_t)bloom_mip_count - 2 ? down_output_names[i + 1] : up_output_names[i + 1];
     rg->add_pass({
       .name = "bloom_upsample",
       .resources = {
         vuk::Resource(up_diverged_names[i], vuk::Resource::Type::eImage, vuk::eComputeRW, up_output_names[i]),
-        vuk::Resource(input_name, vuk::Resource::Type::eImage, layout),
-        vuk::Resource(down_read_diverged_names[i], vuk::Resource::Type::eImage, vuk::eComputeSampled),
+        vuk::Resource(input_name, vuk::Resource::Type::eImage, vuk::eComputeSampled),
+        vuk::Resource(down_output_names[i], vuk::Resource::Type::eImage, vuk::eComputeSampled),
+        vuk::Resource(down_output_names.back(), vuk::Resource::Type::eImage, vuk::eComputeSampled)
       },
-      .execute = [up_diverged_names, i, input_name, down_read_diverged_names](vuk::CommandBuffer& command_buffer) {
+      .execute = [up_diverged_names, i, input_name, down_output_names](vuk::CommandBuffer& command_buffer) {
         const auto size = IVec2(Renderer::get_viewport_width() / (1 << i), Renderer::get_viewport_height() / (1 << i));
 
         command_buffer.bind_compute_pipeline("bloom_upsample_pipeline")
@@ -716,7 +720,7 @@ void DefaultRenderPipeline::bloom_pass(const Ref<vuk::RenderGraph>& rg, const Vu
                       .bind_sampler(0, 0, vuk::NearestMagLinearMinSamplerClamped)
                       .bind_image(0, 1, input_name)
                       .bind_sampler(0, 1, vuk::NearestMagLinearMinSamplerClamped)
-                      .bind_image(0, 2, down_read_diverged_names[i])
+                      .bind_image(0, 2, down_output_names[i])
                       .bind_sampler(0, 2, vuk::NearestMagLinearMinSamplerClamped)
                       .dispatch((size.x + 8 - 1) / 8, (size.y + 8 - 1) / 8, 1);
       }
@@ -879,7 +883,7 @@ void DefaultRenderPipeline::ssr_pass(vuk::Allocator& frame_allocator, const Ref<
                     .bind_sampler(0, 2, vuk::LinearSamplerClamped)
                     .bind_image(0, 2, "depth_output")
                     .bind_sampler(0, 3, vuk::LinearSamplerClamped)
-                    .bind_image(0, 3, m_resources.cube_map->as_attachment())
+                    .bind_image(0, 3, cube_map->as_attachment())
                     .bind_sampler(0, 4, vuk::LinearSamplerClamped)
                     .bind_image(0, 4, "normal_output")
                     .bind_buffer(0, 5, vs_buffer)
@@ -1045,7 +1049,7 @@ void DefaultRenderPipeline::generate_prefilter() {
   // blur cubemap layers
   const Ref<vuk::RenderGraph> rg = create_ref<vuk::RenderGraph>("cubemap_blurring");
 
-  rg->attach_image("cubemap", vuk::ImageAttachment::from_texture(m_resources.cube_map->get_texture()));
+  rg->attach_image("cubemap", vuk::ImageAttachment::from_texture(cube_map->get_texture()));
   auto [diverged_image, diverged_image_output] = vuk::diverge_image_layers(rg, "cubemap_image", 6);
 
   for (uint32_t i = 0; i < 6; i++) {
@@ -1056,11 +1060,11 @@ void DefaultRenderPipeline::generate_prefilter() {
   brdf_fut.wait(allocator, compiler);
   brdf_image = std::move(brdf_img);
 
-  auto [irradiance_img, irradiance_fut] = Prefilter::generate_irradiance_cube(m_cube, m_resources.cube_map);
+  auto [irradiance_img, irradiance_fut] = Prefilter::generate_irradiance_cube(m_cube, cube_map);
   irradiance_fut.wait(allocator, compiler);
   irradiance_image = std::move(irradiance_img);
 
-  auto [prefilter_img, prefilter_fut] = Prefilter::generate_prefiltered_cube(m_cube, m_resources.cube_map);
+  auto [prefilter_img, prefilter_fut] = Prefilter::generate_prefiltered_cube(m_cube, cube_map);
   prefilter_fut.wait(allocator, compiler);
   prefiltered_image = std::move(prefilter_img);
 }

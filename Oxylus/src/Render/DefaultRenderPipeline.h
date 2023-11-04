@@ -60,17 +60,11 @@ private:
     } final_pass_data;
   } m_renderer_data = {};
 
-  struct RendererResources {
-    Ref<TextureAsset> cube_map;
-    Ref<vuk::Texture> lut_brdf;
-    Ref<vuk::Texture> irradiance_cube;
-    Ref<vuk::Texture> prefiltered_cube;
-  } m_resources;
-
   XeGTAO::GTAOConstants gtao_constants = {};
   XeGTAO::GTAOSettings gtao_settings = {};
 
   // PBR Resources
+  Ref<TextureAsset> cube_map;
   vuk::Unique<vuk::Image> brdf_image;
   vuk::Unique<vuk::Image> irradiance_image;
   vuk::Unique<vuk::Image> prefiltered_image;
@@ -83,6 +77,7 @@ private:
   vuk::Buffer m_merged_vertex_buffer;
   Ref<Mesh> m_quad;
   Ref<Mesh> m_cube = nullptr;
+  Ref<Camera> default_camera;
 
   struct LightChangeEvent { };
 
