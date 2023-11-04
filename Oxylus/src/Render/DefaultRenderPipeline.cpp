@@ -366,8 +366,16 @@ Scope<vuk::Future> DefaultRenderPipeline::on_render(vuk::Allocator& frame_alloca
 
   auto final_image_fut = vuk::Future{rg, vuk::Name("final_output+")};
 
-  if (RendererCVAR::cvar_fxaa_enable.get())
-    final_image_fut = apply_fxaa(final_image_fut, target);
+  if (RendererCVAR::cvar_fxaa_enable.get()) {
+    struct FXAAData {
+      Vec2 inverse_screen_size;
+    } fxaa_data;
+
+    fxaa_data.inverse_screen_size = 1.0f / glm::vec2(Renderer::get_viewport_width(), Renderer::get_viewport_height());
+    auto [buffer, buffer_fut] = create_buffer(frame_allocator, vuk::MemoryUsage::eCPUtoGPU, vuk::DomainFlagBits::eTransferOnGraphics, std::span(&fxaa_data, 1));
+    auto& fxaa_buffer = *buffer;
+    final_image_fut = apply_fxaa(final_image_fut, target, fxaa_buffer);
+  }
 
   return create_scope<vuk::Future>(std::move(final_image_fut));
 }
@@ -884,26 +892,22 @@ void DefaultRenderPipeline::ssr_pass(vuk::Allocator& frame_allocator, const Ref<
   rg->inference_rule("ssr_image", vuk::same_shape_as("final_image"));
 }
 
-vuk::Future DefaultRenderPipeline::apply_fxaa(vuk::Future source, vuk::Future dst) {
+vuk::Future DefaultRenderPipeline::apply_fxaa(vuk::Future source, vuk::Future dst, vuk::Buffer& fxaa_buffer) {
   std::unique_ptr<vuk::RenderGraph> rgp = std::make_unique<vuk::RenderGraph>("fxaa");
   rgp->attach_in("jagged", std::move(source));
   rgp->attach_in("smooth", std::move(dst));
   rgp->add_pass({
     .name = "fxaa",
     .resources = {"jagged"_image >> vuk::eFragmentSampled, "smooth"_image >> vuk::eColorWrite},
-    .execute = [](vuk::CommandBuffer& command_buffer) {
-      // TODO(hatrickek): make settings
-      constexpr auto current_threshold = 0.0625;
-      constexpr auto relative_threshold = 0.125f;
-
+    .execute = [fxaa_buffer](vuk::CommandBuffer& command_buffer) {
       command_buffer.bind_graphics_pipeline("fxaa_pipeline")
                     .set_viewport(0, vuk::Rect2D::framebuffer())
                     .set_scissor(0, vuk::Rect2D::framebuffer())
                     .broadcast_color_blend(vuk::BlendPreset::eOff)
                     .set_rasterization({.cullMode = vuk::CullModeFlagBits::eNone})
-                    .specialize_constants(0, current_threshold).specialize_constants(1, relative_threshold)
                     .bind_image(0, 0, "jagged")
                     .bind_sampler(0, 0, {})
+                    .bind_buffer(0, 1, fxaa_buffer)
                     .draw(3, 1, 0, 0);
     }
   });
