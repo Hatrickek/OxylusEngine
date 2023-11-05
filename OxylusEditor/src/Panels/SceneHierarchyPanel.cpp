@@ -14,24 +14,24 @@
 #include "Utils/StringUtils.h"
 
 namespace Oxylus {
-void SceneHierarchyPanel::ClearSelectionContext() {
+void SceneHierarchyPanel::clear_selection_context() {
   m_SelectedEntity = {};
 }
 
-Entity SceneHierarchyPanel::GetSelectedEntity() const {
+Entity SceneHierarchyPanel::get_selected_entity() const {
   return m_SelectedEntity;
 }
 
-void SceneHierarchyPanel::SetSelectedEntity(Entity entity) {
+void SceneHierarchyPanel::set_selected_entity(Entity entity) {
   m_SelectedEntity = entity;
 }
 
-void SceneHierarchyPanel::SetContext(const Ref<Scene>& scene) {
+void SceneHierarchyPanel::set_context(const Ref<Scene>& scene) {
   m_Context = scene;
   m_SelectedEntity = {};
 }
 
-ImRect SceneHierarchyPanel::DrawEntityNode(Entity entity, uint32_t depth, bool forceExpandTree, bool isPartOfPrefab) {
+ImRect SceneHierarchyPanel::draw_entity_node(Entity entity, uint32_t depth, bool forceExpandTree, bool isPartOfPrefab) {
   ImGui::TableNextRow();
   ImGui::TableNextColumn();
 
@@ -43,7 +43,7 @@ ImRect SceneHierarchyPanel::DrawEntityNode(Entity entity, uint32_t depth, bool f
 
   if (m_Filter.IsActive() && !m_Filter.PassFilter(tag.c_str())) {
     for (const auto& childId : rc.children) {
-      DrawEntityNode(m_Context->get_entity_by_uuid(childId));
+      draw_entity_node(m_Context->get_entity_by_uuid(childId));
     }
     return {0, 0, 0, 0};
   }
@@ -111,7 +111,7 @@ ImRect SceneHierarchyPanel::DrawEntityNode(Entity entity, uint32_t depth, bool f
 
     ImGui::Separator();
 
-    DrawContextMenu();
+    draw_context_menu();
 
     ImGui::EndPopup();
   }
@@ -225,7 +225,7 @@ ImRect SceneHierarchyPanel::DrawEntityNode(Entity entity, uint32_t depth, bool f
         Entity child = m_Context->get_entity_by_uuid(childId);
         const float HorizontalTreeLineSize = child.get_relationship().children.empty() ? 18.0f : 9.0f;
         // chosen arbitrarily
-        const ImRect childRect = DrawEntityNode(child, depth + 1, forceExpandTree, isPartOfPrefab);
+        const ImRect childRect = draw_entity_node(child, depth + 1, forceExpandTree, isPartOfPrefab);
 
         const float midpoint = (childRect.Min.y + childRect.Max.y) / 2.0f;
         drawList->AddLine(ImVec2(verticalLineStart.x, midpoint),
@@ -249,7 +249,7 @@ ImRect SceneHierarchyPanel::DrawEntityNode(Entity entity, uint32_t depth, bool f
   return nodeRect;
 }
 
-void SceneHierarchyPanel::DragDropTarget() const {
+void SceneHierarchyPanel::drag_drop_target() const {
   if (ImGui::BeginDragDropTarget()) {
     if (const ImGuiPayload* payload = ImGui::AcceptDragDropPayload("CONTENT_BROWSER_ITEM")) {
       const std::filesystem::path path = OxUI::get_path_from_imgui_payload(payload);
@@ -268,7 +268,7 @@ void SceneHierarchyPanel::DragDropTarget() const {
   }
 }
 
-void SceneHierarchyPanel::DrawContextMenu() {
+void SceneHierarchyPanel::draw_context_menu() {
   const bool hasContext = m_SelectedEntity;
 
   if (!hasContext)
@@ -396,7 +396,7 @@ void SceneHierarchyPanel::on_update() {
   }
   if (m_DeletedEntity) {
     if (m_SelectedEntity == m_DeletedEntity)
-      ClearSelectionContext();
+      clear_selection_context();
 
     m_Context->destroy_entity(m_DeletedEntity);
     m_DeletedEntity = {};
@@ -425,7 +425,7 @@ void SceneHierarchyPanel::on_imgui_render() {
     ImGui::PushStyleVar(ImGuiStyleVar_ItemSpacing, ImVec2(6.0f, 8.0f));
     if (ImGui::BeginPopupContextWindow("SceneHierarchyContextWindow",
       ImGuiPopupFlags_MouseButtonRight | ImGuiPopupFlags_NoOpenOverItems)) {
-      DrawContextMenu();
+      draw_context_menu();
       ImGui::EndPopup();
     }
     ImGui::PopStyleVar();
@@ -438,8 +438,9 @@ void SceneHierarchyPanel::on_imgui_render() {
 
     const ImVec2 cursorPos = ImGui::GetCursorPos();
     const ImVec2 region = ImGui::GetContentRegionAvail();
-    ImGui::InvisibleButton("##DragDropTargetBehindTable", region);
-    DragDropTarget();
+    if (region.x != 0.0f && region.y != 0.0f)
+      ImGui::InvisibleButton("##DragDropTargetBehindTable", region);
+    drag_drop_target();
 
     ImGui::SetCursorPos(cursorPos);
     if (ImGui::BeginTable("HierarchyTable", 3, tableFlags)) {
@@ -467,7 +468,7 @@ void SceneHierarchyPanel::on_imgui_render() {
       for (const auto e : view) {
         const Entity entity = {e, m_Context.get()};
         if (entity && !entity.get_parent())
-          DrawEntityNode(entity);
+          draw_entity_node(entity);
       }
       ImGui::PopStyleVar();
 
@@ -475,8 +476,8 @@ void SceneHierarchyPanel::on_imgui_render() {
       ImGui::PushStyleVar(ImGuiStyleVar_ItemSpacing, popItemSpacing);
       if (ImGui::BeginPopupContextWindow("SceneHierarchyContextWindow",
         ImGuiPopupFlags_MouseButtonRight | ImGuiPopupFlags_NoOpenOverItems)) {
-        ClearSelectionContext();
-        DrawContextMenu();
+        clear_selection_context();
+        draw_context_menu();
         ImGui::EndPopup();
       }
       ImGui::PopStyleVar();
@@ -486,12 +487,12 @@ void SceneHierarchyPanel::on_imgui_render() {
       m_TableHovered = ImGui::IsItemHovered();
 
       if (ImGui::IsItemClicked())
-        ClearSelectionContext();
+        clear_selection_context();
     }
     m_WindowHovered = ImGui::IsWindowHovered();
 
     if (ImGui::IsMouseDown(0) && m_WindowHovered)
-      ClearSelectionContext();
+      clear_selection_context();
 
     if (m_DraggedEntity && m_DraggedEntityTarget) {
       m_DraggedEntity.set_parent(m_DraggedEntityTarget);
@@ -499,7 +500,7 @@ void SceneHierarchyPanel::on_imgui_render() {
       m_DraggedEntityTarget = {};
     }
 
-    OxUI::draw_gradient_shadow();
+    //OxUI::draw_gradient_shadow_bottom();
 
     on_end();
   }

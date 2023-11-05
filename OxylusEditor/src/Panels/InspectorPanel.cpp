@@ -29,12 +29,14 @@ void InspectorPanel::on_imgui_render() {
   m_SelectedEntity = EditorLayer::get()->get_selected_entity();
   m_Scene = EditorLayer::get()->get_selected_scene().get();
 
-  ImGui::Begin(fmt::format("{} {}", StringUtils::from_char8_t(ICON_MDI_INFORMATION), "Inspector").c_str());
+  on_begin();
   if (m_SelectedEntity) {
     draw_components(m_SelectedEntity);
   }
 
-  ImGui::End();
+  //OxUI::draw_gradient_shadow_bottom();
+
+  on_end();
 }
 
 template <typename T, typename UIFunction>
@@ -78,7 +80,7 @@ static void DrawComponent(const char8_t* name,
 
     if (open) {
       uiFunction(component);
-       ImGui::TreePop();
+      ImGui::TreePop();
     }
 
     if (removeComponent)

@@ -1,17 +1,15 @@
 #include "ConsolePanel.h"
 
-#include <icons/IconsMaterialDesignIcons.h>
-
 #include "Assets/AssetManager.h"
 
 namespace Oxylus {
   ConsolePanel::ConsolePanel() {
-    m_RuntimeConsole.RenderMenuBar = true;
-    m_RuntimeConsole.PanelName = "Console";
-    m_RuntimeConsole.RegisterCommand("clear_assets", "Asset cleared.", [] { AssetManager::free_unused_assets(); });
+    runtime_console.render_menu_bar = true;
+    runtime_console.panel_name = "Console";
+    runtime_console.register_command("clear_assets", "Asset cleared.", [] { AssetManager::free_unused_assets(); });
   }
 
-  void ConsolePanel::OnImGuiRender() {
-    m_RuntimeConsole.OnImGuiRender();
+  void ConsolePanel::on_imgui_render() {
+    runtime_console.on_imgui_render();
   }
 }

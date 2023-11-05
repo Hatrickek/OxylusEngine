@@ -17,9 +17,7 @@
 #include "Utils/Timestep.h"
 
 namespace Oxylus {
-ViewportPanel::ViewportPanel() : EditorPanel("Viewport", ICON_MDI_TERRAIN, true) {
-
-}
+ViewportPanel::ViewportPanel() : EditorPanel("Viewport", ICON_MDI_TERRAIN, true) {}
 
 void ViewportPanel::on_imgui_render() {
   draw_performance_overlay();
@@ -153,7 +151,6 @@ void ViewportPanel::on_imgui_render() {
     final_viewport_image = create_ref<vuk::SampledImage>(make_sampled_image(vuk::NameReference{rg.get(), vuk::QualifiedName({}, "viewport_final")}, {}));
 #endif
 
-
     if (final_image) {
       OxUI::image(*final_image, ImVec2{fixedWidth, m_ViewportSize.y});
     }
@@ -165,7 +162,7 @@ void ViewportPanel::on_imgui_render() {
     }
 
     if (scene_hierarchy_panel)
-      scene_hierarchy_panel->DragDropTarget();
+      scene_hierarchy_panel->drag_drop_target();
 
     draw_gizmos();
 
@@ -252,7 +249,8 @@ void ViewportPanel::on_imgui_render() {
         ImGui::SameLine();
         ImGui::PushStyleColor(ImGuiCol_Button, ImVec4(0.2f, 0.2f, 0.2f, 0.4f));
         if (ImGui::Button(StringUtils::from_char8_t(ICON_MDI_PAUSE), buttonSize2)) {
-          EditorLayer::get()->on_scene_stop();
+          if (EditorLayer::get()->scene_state == EditorLayer::SceneState::Play)
+            EditorLayer::get()->on_scene_stop();
         }
         ImGui::SameLine();
         if (ImGui::Button(StringUtils::from_char8_t(ICON_MDI_STEP_FORWARD), buttonSize2)) {
@@ -405,7 +403,7 @@ void ViewportPanel::draw_performance_overlay() {
 }
 
 void ViewportPanel::draw_gizmos() {
-  const Entity selectedEntity = scene_hierarchy_panel->GetSelectedEntity();
+  const Entity selectedEntity = scene_hierarchy_panel->get_selected_entity();
   if (selectedEntity && m_GizmoType != -1) {
     ImGuizmo::SetOrthographic(false);
     ImGuizmo::SetDrawlist();

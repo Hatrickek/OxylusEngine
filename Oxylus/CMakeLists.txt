@@ -12,6 +12,8 @@ file(GLOB_RECURSE Event "src/Event/*.h" "src/Event/*.cpp" )
 source_group("src/Event" FILES ${Event})
 file(GLOB_RECURSE Physics "src/Physics/*.h" "src/Physics/*.cpp" )
 source_group("src/Physics" FILES ${Physics})
+file(GLOB_RECURSE Scripting "src/Scripting/*.h" "src/Scripting/*.cpp" )
+source_group("src/Scripting" FILES ${Scripting})
 
 file(GLOB Render "src/Render/*.h" "src/Render/*.cpp" )
 source_group("src/Render" FILES ${Render})
@@ -36,23 +38,17 @@ file(GLOB_RECURSE Utils "src/Utils/*.h" "src/Utils/*.cpp" )
 source_group("src/Utils" FILES ${Utils})
 
 set(SOURCE_FILES ${src} ${Core} ${Assets} ${Audio} ${Event} ${Physics} 
-                  ${RENDERER_FILES} ${Scene} ${Thread} ${UI} ${Utils})
+                  ${RENDERER_FILES} ${Scene} ${Thread} ${UI} ${Utils} ${Scripting})
 
 set(vendor__ImGuizmo "vendor/ImGuizmo/ImGuizmo.cpp" "vendor/ImGuizmo/ImGuizmo.h")
 source_group("vendor/ImGuizmo" FILES ${vendor__ImGuizmo})
-
-file(GLOB vendor__glm "vendor/glm/*.hpp")
-source_group("vendor/glm" FILES ${vendor__glm})
 
 set(vendor__miniaudio "vendor/miniaudio/miniaudio.h")
 source_group("vendor/miniaudio" FILES ${vendor__miniaudio})
 
 set(ALL_FILES
   ${SOURCE_FILES}
-  ${vendor__ImGui__backends}
-  ${vendor__ImGui__misc__cpp}
   ${vendor__ImGuizmo}
-  ${vendor__glm}
   ${vendor__miniaudio}
   )
 
@@ -73,7 +69,6 @@ target_include_directories(${PROJECT_NAME} PUBLIC
   "${CMAKE_CURRENT_SOURCE_DIR}/src"
   "${CMAKE_CURRENT_SOURCE_DIR}/vendor"
   "${CMAKE_CURRENT_SOURCE_DIR}/vendor/GLFW/include"
-  "${CMAKE_CURRENT_SOURCE_DIR}/vendor/ImGui"
   "${CMAKE_CURRENT_SOURCE_DIR}/vendor/glm"
   "${CMAKE_CURRENT_SOURCE_DIR}/vendor/ImGuizmo"
   "${CMAKE_CURRENT_SOURCE_DIR}/vendor/miniaudio"
@@ -168,6 +163,7 @@ target_include_directories(${PROJECT_NAME} PUBLIC ${IMGUI_DIR})
 
 file(GLOB ImGuiFiles "${IMGUI_DIR}/*.h" "${IMGUI_DIR}/*.cpp")
 target_sources(${PROJECT_NAME} PUBLIC "${ImGuiFiles}")
+source_group("vendor/ImGui" FILES ${ImGuiFiles})
 
 set(ImGui_Backends
     "${IMGUI_DIR}/backends/imgui_impl_glfw.cpp"
@@ -176,9 +172,11 @@ set(ImGui_Backends
     "${IMGUI_DIR}/backends/imgui_impl_vulkan.h"
 )
 target_sources(${PROJECT_NAME} PUBLIC "${ImGui_Backends}")
+source_group("vendor/ImGui" FILES ${ImGui_Backends})
 
 set(ImGui_Misc "${IMGUI_DIR}/misc/cpp/imgui_stdlib.cpp" "${IMGUI_DIR}/misc/cpp/imgui_stdlib.h")
 target_sources(${PROJECT_NAME} PUBLIC "${ImGui_Misc}")
+source_group("vendor/ImGui" FILES ${ImGui_Misc})
 
 # entt
 FetchContent_Declare(

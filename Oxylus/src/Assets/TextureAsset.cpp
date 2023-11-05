@@ -42,7 +42,7 @@ void TextureAsset::load(const std::string& file_path, const vuk::Format format, 
 
   create_texture(x, y, data, format);
 
-  if (FileSystem::GetFileExtension(path) == "hdr" && generate_cubemap_from_hdr) {
+  if (FileSystem::get_file_extension(path) == "hdr" && generate_cubemap_from_hdr) {
     auto [image, future] = RendererCommon::generate_cubemap_from_equirectangular(texture);
     vuk::Compiler compiler;
     future.wait(*VulkanContext::get()->superframe_allocator, compiler);

@@ -15,45 +15,16 @@
 namespace Oxylus {
 class EditorLayer : public Layer {
 public:
-  EditorLayer();
-  ~EditorLayer() override = default;
-  void on_attach(EventDispatcher& dispatcher) override;
-  void on_detach() override;
-
-  void on_update(Timestep deltaTime) override;
-  void on_imgui_render() override;
-
-  void on_scene_play();
-  void on_scene_stop();
-  void on_scene_simulate();
-
-  static EditorLayer* get() { return s_instance; }
-
-  void set_context(EditorContextType type, const char* data, size_t size) { m_selected_context.Set(type, data, size); }
-  void set_context_as_asset_with_path(const std::string& path) { m_selected_context.Set(EditorContextType::Asset, path.c_str(), sizeof(char) * (path.length() + 1)); }
-  void set_context_as_file_with_path(const std::string& path) { m_selected_context.Set(EditorContextType::File, path.c_str(), sizeof(char) * (path.length() + 1)); }
-
-  void reset_context() { m_selected_context.Reset(); }
-  const EditorContext& get_context() const { return m_selected_context; }
-
-  void editor_shortcuts();
-  Ref<Scene> get_active_scene();
-  void set_editor_scene(const Ref<Scene>& scene);
-  void set_runtime_scene(const Ref<Scene>& scene);
-  bool open_scene(const std::filesystem::path& path);
-
-  void set_selected_entity(const Entity& entity);
-  Entity get_selected_entity() const { return m_scene_hierarchy_panel.GetSelectedEntity(); }
-  Ref<Scene> get_selected_scene() const { return m_scene_hierarchy_panel.GetScene(); }
-  void clear_selected_entity();
-
   enum class SceneState {
     Edit     = 0,
     Play     = 1,
     Simulate = 2
   };
 
-  void set_scene_state(SceneState state);
+  enum class EditorLayout {
+    Classic = 0,
+    BigViewport
+  };
 
   SceneState scene_state = SceneState::Edit;
 
@@ -63,6 +34,48 @@ public:
   // Logo
   Ref<TextureAsset> engine_banner = nullptr;
 
+  // Layout
+  ImGuiID dockspace_id;
+  EditorLayout current_layout = EditorLayout::Classic;
+
+  EditorLayer();
+  ~EditorLayer() override = default;
+  void on_attach(EventDispatcher& dispatcher) override;
+  void on_detach() override;
+
+  void on_update(Timestep deltaTime) override;
+  void on_imgui_render() override;
+
+  void new_scene();
+  void open_scene_file_dialog();
+  void save_scene();
+  void save_scene_as();
+  void on_scene_play();
+  void on_scene_stop();
+  void on_scene_simulate();
+
+  static EditorLayer* get() { return s_instance; }
+
+  void set_context(EditorContextType type, const char* data, size_t size) { m_editor_context.Set(type, data, size); }
+  void set_context_as_asset_with_path(const std::string& path) { m_editor_context.Set(EditorContextType::Asset, path.c_str(), sizeof(char) * (path.length() + 1)); }
+  void set_context_as_file_with_path(const std::string& path) { m_editor_context.Set(EditorContextType::File, path.c_str(), sizeof(char) * (path.length() + 1)); }
+
+  void reset_context() { m_editor_context.Reset(); }
+  const EditorContext& get_context() const { return m_editor_context; }
+
+  void editor_shortcuts();
+  Ref<Scene> get_active_scene();
+  void set_editor_context(const Ref<Scene>& scene);
+  bool open_scene(const std::filesystem::path& path);
+
+  void set_selected_entity(const Entity& entity);
+  Entity get_selected_entity() const { return m_scene_hierarchy_panel.get_selected_entity(); }
+  Ref<Scene> get_selected_scene() const { return m_scene_hierarchy_panel.get_scene(); }
+  void clear_selected_entity();
+
+  void set_scene_state(SceneState state);
+  void set_docking_layout(EditorLayout layout);
+
 private:
   // Project
   void new_project();
@@ -70,11 +83,7 @@ private:
   void save_project(const std::string& path);
 
   // Scene
-  void new_scene();
-  void open_scene();
-  void save_scene();
-  void save_scene_as();
-  std::string m_LastSaveScenePath{};
+  std::string m_last_save_scene_path{};
 
   // Panels
   static void draw_window_title();
@@ -91,7 +100,7 @@ private:
   EditorConfig m_editor_config;
 
   // Context
-  EditorContext m_selected_context = {};
+  EditorContext m_editor_context = {};
 
   Ref<Scene> m_editor_scene;
   Ref<Scene> m_active_scene;

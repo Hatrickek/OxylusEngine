@@ -19,6 +19,8 @@
 #include "Panels/ShadersPanel.h"
 #include "Panels/StatisticsPanel.h"
 #include "Render/Window.h"
+#include "Render/Vulkan/Renderer.h"
+
 #include "UI/OxUI.h"
 #include "Utils/EditorConfig.h"
 #include "Utils/ImGuiScoped.h"
@@ -53,15 +55,15 @@ void EditorLayer::on_attach(EventDispatcher& dispatcher) {
 
   Input::SetCursorState(Input::CursorState::NORMAL, Window::get_glfw_window());
 
-  auto scene = create_ref<Scene>();
-  set_editor_scene(scene);
+  m_editor_scene = create_ref<Scene>();
+  set_editor_context(m_editor_scene);
 
   // Initialize panels
   m_editor_panels.emplace("EditorSettings", create_scope<EditorSettingsPanel>());
   m_editor_panels.emplace("RenderSettings", create_scope<RendererSettingsPanel>());
   m_editor_panels.emplace("Shaders", create_scope<ShadersPanel>());
   m_editor_panels.emplace("FramebufferViewer", create_scope<FramebufferViewerPanel>());
-  m_editor_panels.emplace("ProjectPanel", create_scope<ProjectPanel>());
+  //m_editor_panels.emplace("ProjectPanel", create_scope<ProjectPanel>());
   m_editor_panels.emplace("StatisticsPanel", create_scope<StatisticsPanel>());
   m_editor_panels.emplace("EditorDebugPanel", create_scope<EditorDebugPanel>());
   const auto& viewport = m_viewport_panels.emplace_back(create_scope<ViewportPanel>());
@@ -118,7 +120,7 @@ void EditorLayer::on_imgui_render() {
 
   editor_shortcuts();
 
-  static ImGuiDockNodeFlags dockspace_flags = ImGuiDockNodeFlags_PassthruCentralNode;
+  constexpr ImGuiDockNodeFlags dockspace_flags = ImGuiDockNodeFlags_PassthruCentralNode;
 
   constexpr ImGuiWindowFlags window_flags = ImGuiWindowFlags_MenuBar | ImGuiWindowFlags_NoDocking |
                                             ImGuiWindowFlags_NoBackground | ImGuiWindowFlags_NoNavFocus |
@@ -133,13 +135,13 @@ void EditorLayer::on_imgui_render() {
   ImGui::PushStyleVar(ImGuiStyleVar_WindowRounding, 0.0f);
   ImGui::PushStyleVar(ImGuiStyleVar_WindowBorderSize, 0.0f);
   ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2(0.0f, 0.0f));
-  if (ImGui::Begin("DockSpace Demo", nullptr, window_flags)) {
+  if (ImGui::Begin("DockSpace", nullptr, window_flags)) {
     ImGui::PopStyleVar(3);
 
     // Submit the DockSpace
     const ImGuiIO& io = ImGui::GetIO();
     if (io.ConfigFlags & ImGuiConfigFlags_DockingEnable) {
-      const ImGuiID dockspace_id = ImGui::GetID("Main dockspace");
+      dockspace_id = ImGui::GetID("MainDockspace");
       ImGui::DockSpace(dockspace_id, ImVec2(0.0f, 0.0f), dockspace_flags);
     }
 
@@ -159,7 +161,7 @@ void EditorLayer::on_imgui_render() {
             new_scene();
           }
           if (ImGui::MenuItem("Open Scene", "Ctrl + O")) {
-            open_scene();
+            open_scene_file_dialog();
           }
           if (ImGui::MenuItem("Save Scene", "Ctrl + S")) {
             save_scene();
@@ -205,13 +207,21 @@ void EditorLayer::on_imgui_render() {
           }
           ImGui::MenuItem("Inspector", nullptr, &m_inspector_panel.Visible);
           ImGui::MenuItem("Scene hierarchy", nullptr, &m_scene_hierarchy_panel.Visible);
-          ImGui::MenuItem("Console window", nullptr, &m_console_panel.m_RuntimeConsole.Visible);
+          ImGui::MenuItem("Console window", nullptr, &m_console_panel.runtime_console.visible);
           ImGui::MenuItem("Performance Overlay", nullptr, &m_viewport_panels[0]->performance_overlay_visible);
           ImGui::MenuItem("Statistics", nullptr, &m_editor_panels["StatisticsPanel"]->Visible);
           ImGui::MenuItem("Editor Debug", nullptr, &m_editor_panels["EditorDebugPanel"]->Visible);
+          if (ImGui::BeginMenu("Layout")) {
+            if (ImGui::MenuItem("Classic")) {
+              set_docking_layout(EditorLayout::Classic);
+            }
+            if (ImGui::MenuItem("Big Viewport")) {
+              set_docking_layout(EditorLayout::BigViewport);
+            }
+            ImGui::EndMenu();
+          }
           ImGui::EndMenu();
         }
-
         static bool renderAssetManager = false;
 
         if (ImGui::BeginMenu("Assets")) {
@@ -282,6 +292,12 @@ void EditorLayer::on_imgui_render() {
 
     draw_panels();
 
+    static bool dock_layout_initalized = false;
+    if (!dock_layout_initalized) {
+      set_docking_layout(current_layout);
+      dock_layout_initalized = true;
+    }
+
     ImGui::End();
   }
 }
@@ -295,7 +311,7 @@ void EditorLayer::editor_shortcuts() {
       save_scene();
     }
     if (ImGui::IsKeyPressed(ImGuiKey_O, false)) {
-      open_scene();
+      open_scene_file_dialog();
     }
     if (ImGui::IsKeyDown(ImGuiKey_LeftShift) && ImGui::IsKeyPressed(ImGuiKey_S, false)) {
       save_scene_as();
@@ -305,11 +321,12 @@ void EditorLayer::editor_shortcuts() {
 
 void EditorLayer::new_scene() {
   const Ref<Scene> newScene = create_ref<Scene>();
-  set_editor_scene(newScene);
-  m_LastSaveScenePath.clear();
+  m_editor_scene = newScene;
+  set_editor_context(newScene);
+  m_last_save_scene_path.clear();
 }
 
-void EditorLayer::open_scene() {
+void EditorLayer::open_scene_file_dialog() {
   const std::string filepath = FileDialogs::open_file({{"Oxylus Scene", "oxscene"}});
   if (!filepath.empty())
     open_scene(filepath);
@@ -324,27 +341,28 @@ bool EditorLayer::open_scene(const std::filesystem::path& path) {
     OX_CORE_WARN("Could not load {0} - not a scene file", path.filename().string());
     return false;
   }
-  const Ref<Scene> newScene = create_ref<Scene>();
-  const SceneSerializer serializer(newScene);
+  const Ref<Scene> new_scene = create_ref<Scene>();
+  const SceneSerializer serializer(new_scene);
   if (serializer.deserialize(path.string())) {
-    set_editor_scene(newScene);
+    m_editor_scene = new_scene;
+    set_editor_context(new_scene);
   }
-  m_LastSaveScenePath = path.string();
+  m_last_save_scene_path = path.string();
   return true;
 }
 
 void EditorLayer::set_selected_entity(const Entity& entity) {
-  m_scene_hierarchy_panel.SetSelectedEntity(entity);
+  m_scene_hierarchy_panel.set_selected_entity(entity);
 }
 
 void EditorLayer::clear_selected_entity() {
-  m_scene_hierarchy_panel.ClearSelectionContext();
+  m_scene_hierarchy_panel.clear_selection_context();
 }
 
 void EditorLayer::save_scene() {
-  if (!m_LastSaveScenePath.empty()) {
+  if (!m_last_save_scene_path.empty()) {
     ThreadManager::get()->asset_thread.queue_job([this] {
-      SceneSerializer(get_active_scene()).Serialize(m_LastSaveScenePath);
+      SceneSerializer(get_active_scene()).Serialize(m_last_save_scene_path);
     });
   }
   else {
@@ -358,31 +376,32 @@ void EditorLayer::save_scene_as() {
     ThreadManager::get()->asset_thread.queue_job([this, filepath] {
       SceneSerializer(get_active_scene()).Serialize(filepath);
     });
-    m_LastSaveScenePath = filepath;
+    m_last_save_scene_path = filepath;
   }
 }
 
 void EditorLayer::on_scene_play() {
   reset_context();
-  m_active_scene = Scene::copy(m_editor_scene);
-  set_runtime_scene(m_active_scene);
-
-  m_active_scene->on_runtime_start();
   set_scene_state(SceneState::Play);
+  m_active_scene = Scene::copy(m_editor_scene);
+  set_editor_context(m_active_scene);
+  m_active_scene->on_runtime_start();
 }
 
 void EditorLayer::on_scene_stop() {
   reset_context();
-  set_editor_scene(m_editor_scene);
-
-  m_active_scene->on_runtime_stop();
   set_scene_state(SceneState::Edit);
+  m_active_scene->on_runtime_stop();
+  m_active_scene = nullptr;
+  m_editor_scene->get_renderer()->init();
+  set_editor_context(m_editor_scene);
 }
 
 void EditorLayer::on_scene_simulate() {
+  reset_context();
   set_scene_state(SceneState::Simulate);
   m_active_scene = Scene::copy(m_editor_scene);
-  set_runtime_scene(m_active_scene);
+  set_editor_context(m_active_scene);
 }
 
 void EditorLayer::draw_window_title() {
@@ -470,7 +489,7 @@ void EditorLayer::draw_panels() {
       panel->on_imgui_render();
   }
 
-  m_console_panel.OnImGuiRender();
+  m_console_panel.on_imgui_render();
   if (m_scene_hierarchy_panel.Visible)
     m_scene_hierarchy_panel.on_imgui_render();
   if (m_inspector_panel.Visible)
@@ -485,29 +504,54 @@ Ref<Scene> EditorLayer::get_active_scene() {
   return m_active_scene;
 }
 
-void EditorLayer::set_editor_scene(const Ref<Scene>& scene) {
-  m_editor_scene.reset();
-  m_active_scene.reset();
-  m_editor_scene = scene;
-  m_active_scene = scene;
-  m_scene_hierarchy_panel.ClearSelectionContext();
-  m_scene_hierarchy_panel.SetContext(scene);
+void EditorLayer::set_editor_context(const Ref<Scene>& scene) {
+  m_scene_hierarchy_panel.clear_selection_context();
+  m_scene_hierarchy_panel.set_context(scene);
   for (const auto& panel : m_viewport_panels) {
-    panel->set_context(m_editor_scene, m_scene_hierarchy_panel);
-  }
-}
-
-void EditorLayer::set_runtime_scene(const Ref<Scene>& scene) {
-  m_active_scene = scene;
-  m_scene_hierarchy_panel.ClearSelectionContext();
-  m_scene_hierarchy_panel.SetContext(scene);
-  for (const auto& panel : m_viewport_panels) {
-    panel->set_context(m_active_scene, m_scene_hierarchy_panel);
+    panel->set_context(scene, m_scene_hierarchy_panel);
   }
 }
 
 void EditorLayer::set_scene_state(const SceneState state) {
   scene_state = state;
+}
+
+void EditorLayer::set_docking_layout(EditorLayout layout) {
+  current_layout = layout;
+  ImGui::DockBuilderRemoveNode(dockspace_id);
+  ImGui::DockBuilderAddNode(dockspace_id, ImGuiDockNodeFlags_PassthruCentralNode);
+
+  const ImVec2 size = ImGui::GetMainViewport()->WorkSize;
+  ImGui::DockBuilderSetNodeSize(dockspace_id, size);
+
+  if (layout == EditorLayout::BigViewport) {
+    ImGuiID right_dock = ImGui::DockBuilderSplitNode(dockspace_id, ImGuiDir_Right, 0.8f, nullptr, &dockspace_id);
+    ImGuiID left_dock = ImGui::DockBuilderSplitNode(dockspace_id, ImGuiDir_Left, 0.2f, nullptr, &dockspace_id);
+    ImGuiID left_split_dock = ImGui::DockBuilderSplitNode(left_dock, ImGuiDir_Down, 0.4f, nullptr, &left_dock);
+
+    ImGui::DockBuilderDockWindow(m_viewport_panels[0]->get_id(), right_dock);
+    ImGui::DockBuilderDockWindow(m_scene_hierarchy_panel.get_id(), left_dock);
+    ImGui::DockBuilderDockWindow(m_editor_panels["RenderSettings"]->get_id(), left_split_dock);
+    ImGui::DockBuilderDockWindow(m_content_panel.get_id(), left_split_dock);
+    ImGui::DockBuilderDockWindow(m_console_panel.runtime_console.id.c_str(), left_split_dock);
+    ImGui::DockBuilderDockWindow(m_inspector_panel.get_id(), left_dock);
+  }
+  else if (layout == EditorLayout::Classic) {
+    ImGuiID right_dock = ImGui::DockBuilderSplitNode(dockspace_id, ImGuiDir_Right, 0.2f, nullptr, &dockspace_id);
+    ImGuiID left_dock = ImGui::DockBuilderSplitNode(dockspace_id, ImGuiDir_Left, 0.2f, nullptr, &dockspace_id);
+    ImGuiID left_split_vertical_dock = ImGui::DockBuilderSplitNode(left_dock, ImGuiDir_Right, 0.8f, nullptr, &left_dock);
+    ImGuiID bottom_dock = ImGui::DockBuilderSplitNode(left_split_vertical_dock, ImGuiDir_Down, 0.3f, nullptr, &left_split_vertical_dock);
+    ImGuiID left_split_dock = ImGui::DockBuilderSplitNode(left_dock, ImGuiDir_Down, 0.4f, nullptr, &left_dock);
+
+    ImGui::DockBuilderDockWindow(m_scene_hierarchy_panel.get_id(), left_dock);
+    ImGui::DockBuilderDockWindow(m_editor_panels["RenderSettings"]->get_id(), left_split_dock);
+    ImGui::DockBuilderDockWindow(m_content_panel.get_id(), bottom_dock);
+    ImGui::DockBuilderDockWindow(m_console_panel.runtime_console.id.c_str(), bottom_dock);
+    ImGui::DockBuilderDockWindow(m_inspector_panel.get_id(), right_dock);
+    ImGui::DockBuilderDockWindow(m_viewport_panels[0]->get_id(), left_split_vertical_dock);
+  }
+
+  ImGui::DockBuilderFinish(dockspace_id);
 }
 
 void EditorLayer::new_project() {

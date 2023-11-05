@@ -26,30 +26,31 @@ public:
     }
   };
 
-  bool RenderMenuBar = false;
-  bool SetFocusToKeyboardAlways = false;
-  const char* PanelName = "RuntimeConsole";
-  bool Visible = true;
+  bool render_menu_bar = false;
+  bool set_focus_to_keyboard_always = false;
+  const char* panel_name = "RuntimeConsole";
+  bool visible = true;
+  std::string id = {};
 
   RuntimeConsole();
   ~RuntimeConsole() = default;
 
-  void RegisterCommand(const std::string& command, const std::string& onSuccesLog, const std::function<void()>& action);
-  void RegisterCommand(const std::string& command, const std::string& onSuccesLog, int32_t* value);
-  void RegisterCommand(const std::string& command, const std::string& onSuccesLog, std::string* value);
-  void RegisterCommand(const std::string& command, const std::string& onSuccesLog, bool* value);
+  void register_command(const std::string& command, const std::string& on_succes_log, const std::function<void()>& action);
+  void register_command(const std::string& command, const std::string& on_succes_log, int32_t* value);
+  void register_command(const std::string& command, const std::string& on_succes_log, std::string* value);
+  void register_command(const std::string& command, const std::string& on_succes_log, bool* value);
 
   void add_log(const char* fmt, spdlog::level::level_enum level);
-  void ClearLog();
+  void clear_log();
 
-  void OnImGuiRender(ImGuiWindowFlags windowFlags = ImGuiWindowFlags_NoNavInputs | ImGuiWindowFlags_MenuBar | ImGuiWindowFlags_NoCollapse);
+  void on_imgui_render(ImGuiWindowFlags window_flags = ImGuiWindowFlags_NoNavInputs | ImGuiWindowFlags_MenuBar | ImGuiWindowFlags_NoCollapse);
 
 private:
   struct ConsoleText {
-    std::string Text = {};
-    spdlog::level::level_enum Level = {};
+    std::string text = {};
+    spdlog::level::level_enum level = {};
 
-    void Render() const;
+    void render() const;
   };
 
   struct ConsoleCommand {
@@ -61,20 +62,20 @@ private:
   };
 
   // Commands
-  std::unordered_map<std::string, ConsoleCommand> m_CommandMap;
+  std::unordered_map<std::string, ConsoleCommand> m_command_map;
   void process_command(const std::string& command);
 
-  void HelpCommand();
+  void help_command();
 
   ParsedCommandValue parse_value(const std::string& command);
   std::string parse_command(const std::string& command);
 
   // Input field
   const int32_t MAX_TEXT_BUFFER_SIZE = 32;
-  int32_t m_HistoryPosition = 0;
-  std::vector<ConsoleText> m_TextBuffer = {};
-  std::vector<char*> m_InputLog = {};
-  bool m_RequestScrollToBottom = true;
-  int InputTextCallback(ImGuiInputTextCallbackData* data);
+  int32_t m_history_position = 0;
+  std::vector<ConsoleText> m_text_buffer = {};
+  std::vector<char*> m_input_log = {};
+  bool m_request_scroll_to_bottom = true;
+  int input_text_callback(ImGuiInputTextCallbackData* data);
 };
 }

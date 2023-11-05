@@ -545,20 +545,20 @@ Entity EntitySerializer::DeserializeEntityAsPrefab(const char* filepath, Scene* 
   const ryml::Tree tree = ryml::parse_in_arena(ryml::to_csubstr(content));
 
   if (tree.empty()) {
-    OX_CORE_ERROR("Couldn't parse the prefab file {0}", FileSystem::GetFileName(filepath));
+    OX_CORE_ERROR("Couldn't parse the prefab file {0}", FileSystem::get_file_name(filepath));
   }
 
   const ryml::ConstNodeRef root = tree.rootref();
 
   if (!root.has_child("Prefab")) {
-    OX_CORE_ERROR("Prefab file doesn't contain a prefab{0}", FileSystem::GetFileName(filepath));
+    OX_CORE_ERROR("Prefab file doesn't contain a prefab{0}", FileSystem::get_file_name(filepath));
     return {};
   }
 
   const UUID prefabID = (uint64_t)root["Prefab"].val().data();
 
   if (!prefabID) {
-    OX_CORE_ERROR("Invalid prefab ID {0}", FileSystem::GetFileName(filepath));
+    OX_CORE_ERROR("Invalid prefab ID {0}", FileSystem::get_file_name(filepath));
     return {};
   }
 
@@ -594,7 +594,7 @@ Entity EntitySerializer::DeserializeEntityAsPrefab(const char* filepath, Scene* 
     return rootEntity;
   }
 
-  OX_CORE_ERROR("There are not entities in the prefab to deserialize! {0}", FileSystem::GetFileName(filepath));
+  OX_CORE_ERROR("There are not entities in the prefab to deserialize! {0}", FileSystem::get_file_name(filepath));
   return {};
 }
 }

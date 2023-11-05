@@ -35,6 +35,7 @@ void Renderer::shutdown() {
 
 void Renderer::draw(VulkanContext* context, ImGuiLayer* imgui_layer, LayerStack& layer_stack, const Ref<SystemManager>& system_manager) {
   OX_SCOPED_ZONE;
+
   imgui_layer->begin();
 
   auto frameAllocator = context->begin();
@@ -66,10 +67,16 @@ void Renderer::draw(VulkanContext* context, ImGuiLayer* imgui_layer, LayerStack&
   else {
     const auto rgx = create_ref<vuk::RenderGraph>(rp->get_name().c_str());
 
-    const auto& dim = rp->get_dimension();
+    auto dim = rp->get_dimension();
 
     OX_CORE_ASSERT(dim.extent.width > 0)
     OX_CORE_ASSERT(dim.extent.height > 0)
+
+    // recover if the size is somehow 0
+    if(dim.extent.width <= 0)
+      dim.extent.width = 10;
+    if(dim.extent.height <= 0)
+      dim.extent.height = 10;
 
     renderer_context.viewport_size.x = dim.extent.width;
     renderer_context.viewport_size.y = dim.extent.height;
@@ -127,8 +134,8 @@ void Renderer::render_node(const Mesh::Node* node, vuk::CommandBuffer& command_b
 }
 
 void Renderer::render_mesh(const MeshData& mesh,
-                                 vuk::CommandBuffer& command_buffer,
-                                 const std::function<bool(Mesh::Primitive* prim, Mesh::MeshData* mesh_data)>& per_mesh_func) {
+                           vuk::CommandBuffer& command_buffer,
+                           const std::function<bool(Mesh::Primitive* prim, Mesh::MeshData* mesh_data)>& per_mesh_func) {
   mesh.mesh_geometry->bind_vertex_buffer(command_buffer);
   mesh.mesh_geometry->bind_index_buffer(command_buffer);
   render_node(mesh.mesh_geometry->linear_nodes[mesh.submesh_index], command_buffer, per_mesh_func);

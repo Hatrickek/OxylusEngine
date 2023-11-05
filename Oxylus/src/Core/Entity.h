@@ -9,14 +9,14 @@ namespace Oxylus {
 class Entity {
 public:
   Entity() = default;
+  ~Entity() = default;
 
   Entity(entt::entity handle, Scene* scene);
-
-  Entity(const Entity& other) = default;
 
   //Add component for Internal components which calls OnComponentAdded for them.
   template <typename T, typename... Args>
   T& add_component_internal(Args&&... args) {
+    OX_SCOPED_ZONE;
     if (has_component<T>()) {
       OX_CORE_ERROR("Entity already has {0}!", typeid(T).name());
     }
@@ -29,6 +29,7 @@ public:
   //Add component for exposing the raw ECS system for use.
   template <typename T, typename... Args>
   T& add_component(Args&&... args) {
+    OX_SCOPED_ZONE;
     if (has_component<T>()) {
       OX_CORE_ERROR("Entity already has {0}!", typeid(T).name());
     }
@@ -39,6 +40,7 @@ public:
 
   template <typename T>
   T& get_component() const {
+    OX_SCOPED_ZONE;
     if (!has_component<T>()) {
       OX_CORE_ERROR("Entity doesn't have {0}!", typeid(T).name());
     }
@@ -47,11 +49,13 @@ public:
 
   template <typename T>
   bool has_component() const {
+    OX_SCOPED_ZONE;
     return m_Scene->m_registry.all_of<T>(m_EntityHandle);
   }
 
   template <typename T>
   void remove_component() const {
+    OX_SCOPED_ZONE;
     if (!has_component<T>()) {
       OX_CORE_ERROR("Entity does not have {0} to remove!", typeid(T).name());
     }
@@ -60,9 +64,22 @@ public:
 
   template <typename T, typename... Args>
   T& add_or_replace_component(Args&&... args) {
+    OX_SCOPED_ZONE;
     T& component = m_Scene->m_registry.emplace_or_replace<T>(m_EntityHandle, std::forward<Args>(args)...);
     m_Scene->on_component_added<T>(*this, component);
     return component;
+  }
+
+  template <typename T, typename... Args>
+  T& get_or_add_component(Args&&... args) {
+    OX_SCOPED_ZONE;
+    return m_Scene->m_registry.get_or_emplace<T>(m_EntityHandle, std::forward<Args>(args)...);
+  }
+
+  template <typename T>
+  T* try_get_component() {
+    OX_SCOPED_ZONE;
+    return m_Scene->m_registry.try_get<T>(m_EntityHandle);
   }
 
   RelationshipComponent& get_relationship() const { return get_component<RelationshipComponent>(); }
@@ -154,16 +171,16 @@ public:
 
   Scene* get_scene() const { return m_Scene; }
 
-  operator bool() const {
-    return m_EntityHandle != entt::null;
-  }
-
   operator entt::entity() const {
     return m_EntityHandle;
   }
 
   operator uint32_t() const {
     return (uint32_t)m_EntityHandle;
+  }
+
+  operator bool() const {
+    return m_EntityHandle != entt::null && m_Scene;
   }
 
   bool operator==(const Entity& other) const {

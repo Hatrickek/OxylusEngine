@@ -7,7 +7,7 @@ layout(location = 0) out vec4 o_FragColor;
 layout(binding = 0) uniform sampler2D screenTexture;
 
 layout(set = 0, binding = 1) uniform UniformBlock {
-	vec2 inverseScreenSize; /// Vec2 invRenderSize = 1.0f / glm::vec2(dst.width, dst.height);
+	vec2 inverseScreenSize;
 };
 
 #define EDGE_THRESHOLD_MIN 0.0312

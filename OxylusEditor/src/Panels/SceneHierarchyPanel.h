@@ -12,15 +12,15 @@ namespace Oxylus {
     void on_update() override;
     void on_imgui_render() override;
 
-    ImRect DrawEntityNode(Entity entity, uint32_t depth = 0, bool forceExpandTree = false, bool isPartOfPrefab = false);
-    void SetContext(const Ref<Scene>& scene);
+    ImRect draw_entity_node(Entity entity, uint32_t depth = 0, bool forceExpandTree = false, bool isPartOfPrefab = false);
+    void set_context(const Ref<Scene>& scene);
 
-    void ClearSelectionContext();
-    Entity GetSelectedEntity() const;
-    Ref<Scene> GetScene() const { return m_Context; }
-    void SetSelectedEntity(Entity entity);
+    void clear_selection_context();
+    Entity get_selected_entity() const;
+    Ref<Scene> get_scene() const { return m_Context; }
+    void set_selected_entity(Entity entity);
 
-    void DragDropTarget() const;
+    void drag_drop_target() const;
 
   private:
     bool m_TableHovered = false;
@@ -30,7 +30,7 @@ namespace Oxylus {
     Entity m_DraggedEntity;
     Entity m_DraggedEntityTarget;
     Entity m_DeletedEntity;
-    void DrawContextMenu();
+    void draw_context_menu();
 
     Ref<Scene> m_Context = nullptr;
 

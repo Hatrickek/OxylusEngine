@@ -213,7 +213,7 @@ std::pair<bool, uint32_t> ContentPanel::directory_tree_view_recursive(const std:
       DragDropTarget(entryPath);
     DragDropFrom(entryPath);
 
-    auto name = FileSystem::GetNameWithExtension(filepath);
+    auto name = FileSystem::get_name_with_extension(filepath);
 
     const char8_t* folderIcon = ICON_MDI_FILE;
     if (entryIsFile) {
@@ -312,9 +312,9 @@ void ContentPanel::on_imgui_render() {
     ImGui::Separator();
     const ImVec2 availableRegion = ImGui::GetContentRegionAvail();
     if (ImGui::BeginTable("MainViewTable", 2, tableFlags, availableRegion)) {
+      ImGui::TableSetupColumn("##side_view", ImGuiTableColumnFlags_WidthFixed, 150);
       ImGui::TableNextRow();
       ImGui::TableNextColumn();
-
       render_side_view();
       ImGui::TableNextColumn();
       render_body(m_thumbnail_size >= 96.0f);
@@ -683,7 +683,8 @@ void ContentPanel::render_body(bool grid) {
 
         ImGui::SameLine();
         ImGui::SetCursorPosX(ImGui::GetCursorPosX() - lineHeight);
-        OxUI::image(thumbnail_cache[texture_name]->get_texture(), {lineHeight, lineHeight});
+        if (thumbnail_cache.contains(texture_name))
+          OxUI::image(thumbnail_cache[texture_name]->get_texture(), {lineHeight, lineHeight});
         ImGui::SameLine();
         ImGui::TextUnformatted(filename);
 

@@ -47,7 +47,7 @@ public:
   void close();
 
   const AppSpec& get_specification() const { return m_spec; }
-  static const std::string& get_resources_path() { return instance->m_spec.resources_path;}
+  static const std::string& get_resources_path() { return instance->m_spec.resources_path; }
   const std::vector<std::string>& get_command_line_args() const { return command_line_args; }
   ImGuiLayer* get_imgui_layer() const { return imgui_layer; }
   const LayerStack& get_layer_stack() const { return layer_stack; }
@@ -55,6 +55,7 @@ public:
   static Timestep get_timestep() { return instance->timestep; }
 
 private:
+  static Application* instance;
   AppSpec m_spec;
   std::vector<std::string> command_line_args;
   Core core;
@@ -69,7 +70,6 @@ private:
 
   bool is_running = true;
   float last_frame_time = 0.0f;
-  static Application* instance;
 
   void run();
   void update_layers(Timestep ts);

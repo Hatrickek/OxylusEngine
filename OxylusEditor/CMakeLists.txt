@@ -47,11 +47,8 @@ target_include_directories(${PROJECT_NAME} PUBLIC
     "${CMAKE_CURRENT_SOURCE_DIR}/../Oxylus/src"
     "${CMAKE_CURRENT_SOURCE_DIR}/../Oxylus/vendor"
     "${CMAKE_CURRENT_SOURCE_DIR}/../Oxylus/vendor/GLFW/include"
-    "${CMAKE_CURRENT_SOURCE_DIR}/../Oxylus/vendor/ImGui"
     "${CMAKE_CURRENT_SOURCE_DIR}/../Oxylus/vendor/glm"
-    "${CMAKE_CURRENT_SOURCE_DIR}/../Oxylus/vendor/entt"
     "${CMAKE_CURRENT_SOURCE_DIR}/../Oxylus/vendor/ImGuizmo"
-    "${CMAKE_CURRENT_SOURCE_DIR}/../Oxylus/vendor/ktx/include"
     "${CMAKE_CURRENT_SOURCE_DIR}/../Oxylus/vendor/miniaudio"
 )
 

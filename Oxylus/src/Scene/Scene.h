@@ -19,6 +19,10 @@ class Entity;
 
 class Scene {
 public:
+  std::string scene_name = "Untitled";
+  entt::registry m_registry;
+  std::unordered_map<UUID, entt::entity> entity_map;
+
   Scene();
 
   Scene(std::string name);
@@ -26,7 +30,7 @@ public:
   ~Scene();
   Scene(const Scene&);
 
-  Entity create_entity(const std::string& name);
+  Entity create_entity(const std::string& name = "New Entity");
   Entity create_entity_with_uuid(UUID uuid, const std::string& name = std::string());
   void create_entity_with_mesh(const Ref<Mesh>& mesh_asset);
 
@@ -62,9 +66,7 @@ public:
   Entity get_entity_by_uuid(UUID uuid);
   Ref<SceneRenderer> get_renderer() { return scene_renderer; }
 
-  std::string scene_name = "Untitled";
-  entt::registry m_registry;
-  std::unordered_map<UUID, entt::entity> entity_map;
+  entt::registry& get_registry() { return m_registry;}
 
 private:
   bool is_running = false;

@@ -5,11 +5,11 @@
 namespace Oxylus {
   class ConsolePanel {
   public:
-    RuntimeConsole m_RuntimeConsole = {};
+    RuntimeConsole runtime_console = {};
 
     ConsolePanel();
     ~ConsolePanel() = default;
 
-    void OnImGuiRender();
+    void on_imgui_render();
   };
 }

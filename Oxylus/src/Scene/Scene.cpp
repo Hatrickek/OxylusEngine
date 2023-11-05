@@ -348,8 +348,6 @@ Ref<Scene> Scene::copy(const Ref<Scene>& other) {
   OX_SCOPED_ZONE;
   Ref<Scene> newScene = create_ref<Scene>();
 
-  newScene->scene_renderer = other->scene_renderer;
-
   auto& srcSceneRegistry = other->m_registry;
   auto& dstSceneRegistry = newScene->m_registry;
 
@@ -524,9 +522,9 @@ void Scene::on_runtime_update(float delta_time) {
   // Camera
   {
     OX_SCOPED_ZONE_N("Camera System");
-    const auto group = m_registry.view<TransformComponent, CameraComponent>();
-    for (const auto entity : group) {
-      auto [transform, camera] = group.get<TransformComponent, CameraComponent>(entity);
+    const auto camera_view = m_registry.view<TransformComponent, CameraComponent>();
+    for (const auto entity : camera_view) {
+      auto [transform, camera] = camera_view.get<TransformComponent, CameraComponent>(entity);
       camera.system->update(transform.translation, transform.rotation);
       scene_renderer->get_render_pipeline()->on_register_camera(camera.system.get());
     }
@@ -535,23 +533,23 @@ void Scene::on_runtime_update(float delta_time) {
   scene_renderer->update();
 
   {
+    OX_SCOPED_ZONE_N("PostOnUpdate Systems");
+    for (const auto& system : systems) {
+      system->pre_on_update(this, delta_time);
+    }
+  }
+  update_physics(delta_time);
+  {
     OX_SCOPED_ZONE_N("OnUpdate Systems");
     for (const auto& system : systems) {
       system->on_update(this, delta_time);
     }
   }
-  update_physics(delta_time);
-  {
-    OX_SCOPED_ZONE_N("PostOnUpdate Systems");
-    for (const auto& system : systems) {
-      system->post_on_update(this, delta_time);
-    }
-  }
 
   // Audio
   {
-    const auto listenerView = m_registry.group<AudioListenerComponent>(entt::get<TransformComponent>);
-    for (auto&& [e, ac, tc] : listenerView.each()) {
+    const auto listener_view = m_registry.group<AudioListenerComponent>(entt::get<TransformComponent>);
+    for (auto&& [e, ac, tc] : listener_view.each()) {
       ac.listener = create_ref<AudioListener>();
       if (ac.active) {
         const glm::mat4 inverted = glm::inverse(Entity(e, this).get_world_transform());
@@ -563,8 +561,8 @@ void Scene::on_runtime_update(float delta_time) {
       }
     }
 
-    const auto sourceView = m_registry.group<AudioSourceComponent>(entt::get<TransformComponent>);
-    for (auto&& [e, ac, tc] : sourceView.each()) {
+    const auto source_view = m_registry.group<AudioSourceComponent>(entt::get<TransformComponent>);
+    for (auto&& [e, ac, tc] : source_view.each()) {
       if (ac.source) {
         const glm::mat4 inverted = glm::inverse(Entity(e, this).get_world_transform());
         const glm::vec3 forward = normalize(glm::vec3(inverted[2]));

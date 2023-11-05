@@ -21,6 +21,8 @@ public:
   explicit DefaultRenderPipeline(const std::string& name)
     : RenderPipeline(name) { }
 
+  ~DefaultRenderPipeline() override = default;
+
   void init() override;
   void shutdown() override;
 

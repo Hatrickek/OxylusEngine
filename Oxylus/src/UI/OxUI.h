@@ -19,7 +19,7 @@ class TextureAsset;
 
 class OxUI {
 public:
-  static void begin_properties(ImGuiTableFlags flags = ImGuiTableFlags_Resizable | ImGuiTableFlags_SizingStretchSame |
+  static bool begin_properties(ImGuiTableFlags flags = ImGuiTableFlags_Resizable | ImGuiTableFlags_SizingStretchSame |
                                                        ImGuiTableFlags_BordersInner | ImGuiTableFlags_BordersOuterH);
 
   static void end_properties();
@@ -185,7 +185,8 @@ public:
 
   static std::filesystem::path get_path_from_imgui_payload(const ImGuiPayload* payload);
 
-  static void draw_gradient_shadow();
+  // bigger scale = smaller gradient
+  static void draw_gradient_shadow_bottom(float scale = 600.f);
 
   static void begin_property_grid(const char* label, const char* tooltip, bool rightAlignNextColumn = true);
 

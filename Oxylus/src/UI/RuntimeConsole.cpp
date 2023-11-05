@@ -43,51 +43,51 @@ RuntimeConsole::RuntimeConsole() {
   });
 
   // Default commands
-  RegisterCommand("quit", "", [] { Application::get()->close(); });
-  RegisterCommand("clear", "", [this] { ClearLog(); });
-  RegisterCommand("help", "", [this] { HelpCommand(); });
+  register_command("quit", "", [] { Application::get()->close(); });
+  register_command("clear", "", [this] { clear_log(); });
+  register_command("help", "", [this] { help_command(); });
 
-  m_RequestScrollToBottom = true;
+  m_request_scroll_to_bottom = true;
 }
 
-void RuntimeConsole::RegisterCommand(const std::string& command,
-                                     const std::string& onSuccesLog,
+void RuntimeConsole::register_command(const std::string& command,
+                                     const std::string& on_succes_log,
                                      const std::function<void()>& action) {
-  m_CommandMap.emplace(command, ConsoleCommand{nullptr, nullptr, nullptr, action, onSuccesLog});
+  m_command_map.emplace(command, ConsoleCommand{nullptr, nullptr, nullptr, action, on_succes_log});
 }
 
-void RuntimeConsole::RegisterCommand(const std::string& command, const std::string& onSuccesLog, int32_t* value) {
-  m_CommandMap.emplace(command, ConsoleCommand{value, nullptr, nullptr, nullptr, onSuccesLog});
+void RuntimeConsole::register_command(const std::string& command, const std::string& on_succes_log, int32_t* value) {
+  m_command_map.emplace(command, ConsoleCommand{value, nullptr, nullptr, nullptr, on_succes_log});
 }
 
-void RuntimeConsole::RegisterCommand(const std::string& command, const std::string& onSuccesLog, std::string* value) {
-  m_CommandMap.emplace(command, ConsoleCommand{nullptr, value, nullptr, nullptr, onSuccesLog});
+void RuntimeConsole::register_command(const std::string& command, const std::string& on_succes_log, std::string* value) {
+  m_command_map.emplace(command, ConsoleCommand{nullptr, value, nullptr, nullptr, on_succes_log});
 }
 
-void RuntimeConsole::RegisterCommand(const std::string& command, const std::string& onSuccesLog, bool* value) {
-  m_CommandMap.emplace(command, ConsoleCommand{nullptr, nullptr, value, nullptr, onSuccesLog});
+void RuntimeConsole::register_command(const std::string& command, const std::string& on_succes_log, bool* value) {
+  m_command_map.emplace(command, ConsoleCommand{nullptr, nullptr, value, nullptr, on_succes_log});
 }
 
 void RuntimeConsole::add_log(const char* fmt, spdlog::level::level_enum level) {
-  if ((int32_t)m_TextBuffer.size() >= MAX_TEXT_BUFFER_SIZE)
-    m_TextBuffer.erase(m_TextBuffer.begin());
-  m_TextBuffer.emplace_back(ConsoleText{fmt, level});
-  m_RequestScrollToBottom = true;
+  if ((int32_t)m_text_buffer.size() >= MAX_TEXT_BUFFER_SIZE)
+    m_text_buffer.erase(m_text_buffer.begin());
+  m_text_buffer.emplace_back(ConsoleText{fmt, level});
+  m_request_scroll_to_bottom = true;
 }
 
-void RuntimeConsole::ClearLog() {
-  m_TextBuffer.clear();
+void RuntimeConsole::clear_log() {
+  m_text_buffer.clear();
 }
 
-void RuntimeConsole::OnImGuiRender(ImGuiWindowFlags windowFlags) {
-  if (!Visible)
+void RuntimeConsole::on_imgui_render(ImGuiWindowFlags window_flags) {
+  if (!visible)
     return;
-  const auto name = fmt::format(" {} {}\t\t###", StringUtils::from_char8_t(ICON_MDI_CONSOLE), PanelName);
-  if (ImGui::Begin(name.c_str(), &Visible, windowFlags)) {
-    if (RenderMenuBar) {
+  id = fmt::format(" {} {}\t\t###", StringUtils::from_char8_t(ICON_MDI_CONSOLE), panel_name);
+  if (ImGui::Begin(id.c_str(), &visible, window_flags)) {
+    if (render_menu_bar) {
       if (ImGui::BeginMenuBar()) {
         if (ImGui::MenuItem(StringUtils::from_char8_t(ICON_MDI_TRASH_CAN))) {
-          ClearLog();
+          clear_log();
         }
         ImGui::EndMenuBar();
       }
@@ -102,14 +102,14 @@ void RuntimeConsole::OnImGuiRender(ImGuiWindowFlags windowFlags) {
       ImGui::PushStyleVar(ImGuiStyleVar_CellPadding, {1, 1});
       if (ImGui::BeginTable("ScrollRegionTable", 1, tableFlags)) {
         width = ImGui::GetWindowSize().x;
-        ImGui::PushFont(Application::get()->get_imgui_layer()->BoldFont);
-        for (auto& text : m_TextBuffer) {
-          text.Render();
+        ImGui::PushFont(ImGuiLayer::BoldFont);
+        for (auto& text : m_text_buffer) {
+          text.render();
         }
         ImGui::PopFont();
-        if (m_RequestScrollToBottom) {
+        if (m_request_scroll_to_bottom) {
           ImGui::SetScrollY(ImGui::GetScrollMaxY() * 10);
-          m_RequestScrollToBottom = false;
+          m_request_scroll_to_bottom = false;
         }
         ImGui::EndTable();
       }
@@ -123,18 +123,18 @@ void RuntimeConsole::OnImGuiRender(ImGuiWindowFlags windowFlags) {
                                                ImGuiInputTextFlags_CallbackHistory |
                                                ImGuiInputTextFlags_EscapeClearsAll;
     static char s_InputBuf[256];
-    ImGui::PushFont(Application::get()->get_imgui_layer()->BoldFont);
-    if (SetFocusToKeyboardAlways)
+    ImGui::PushFont(ImGuiLayer::BoldFont);
+    if (set_focus_to_keyboard_always)
       ImGui::SetKeyboardFocusHere();
 
     auto callback = [](ImGuiInputTextCallbackData* data) {
       const auto panel = (RuntimeConsole*)data->UserData;
-      return panel->InputTextCallback(data);
+      return panel->input_text_callback(data);
     };
 
     if (ImGui::InputText("##", s_InputBuf,OX_ARRAYSIZE(s_InputBuf), inputFlags, callback, this)) {
       process_command(s_InputBuf);
-      m_InputLog.emplace_back(s_InputBuf);
+      m_input_log.emplace_back(s_InputBuf);
       memset(s_InputBuf, 0, sizeof s_InputBuf);
     }
 
@@ -144,7 +144,7 @@ void RuntimeConsole::OnImGuiRender(ImGuiWindowFlags windowFlags) {
   ImGui::End();
 }
 
-void RuntimeConsole::ConsoleText::Render() const {
+void RuntimeConsole::ConsoleText::render() const {
   ImGui::TableNextRow();
   ImGui::TableNextColumn();
 
@@ -154,15 +154,15 @@ void RuntimeConsole::ConsoleText::Render() const {
   flags |= ImGuiTreeNodeFlags_FramePadding;
   flags |= ImGuiTreeNodeFlags_Leaf | ImGuiTreeNodeFlags_NoTreePushOnOpen;
 
-  ImGui::PushID(Text.c_str());
-  ImGui::PushStyleColor(ImGuiCol_Text, GetColor(Level));
-  const auto levelIcon = GetLevelIcon(Level);
-  ImGui::TreeNodeEx(Text.c_str(), flags, "%s  %s", StringUtils::from_char8_t(levelIcon), Text.c_str());
+  ImGui::PushID(text.c_str());
+  ImGui::PushStyleColor(ImGuiCol_Text, GetColor(level));
+  const auto levelIcon = GetLevelIcon(level);
+  ImGui::TreeNodeEx(text.c_str(), flags, "%s  %s", StringUtils::from_char8_t(levelIcon), text.c_str());
   ImGui::PopStyleColor();
 
   if (ImGui::BeginPopupContextItem("Popup")) {
     if (ImGui::MenuItem("Copy"))
-      ImGui::SetClipboardText(Text.c_str());
+      ImGui::SetClipboardText(text.c_str());
 
     ImGui::EndPopup();
   }
@@ -238,8 +238,8 @@ void RuntimeConsole::process_command(const std::string& command) {
   }
 
   // commands registered with register_command()
-  if (m_CommandMap.contains(parsed_command)) {
-    const auto& c = m_CommandMap[parsed_command];
+  if (m_command_map.contains(parsed_command)) {
+    const auto& c = m_command_map[parsed_command];
     if (c.action != nullptr) {
       c.action();
     }
@@ -281,23 +281,23 @@ std::string RuntimeConsole::parse_command(const std::string& command) {
   return command.substr(0, command.find(' '));
 }
 
-int RuntimeConsole::InputTextCallback(ImGuiInputTextCallbackData* data) {
+int RuntimeConsole::input_text_callback(ImGuiInputTextCallbackData* data) {
   if (data->EventFlag == ImGuiInputTextFlags_CallbackHistory) {
-    const int prevHistoryPos = m_HistoryPosition;
+    const int prevHistoryPos = m_history_position;
     if (data->EventKey == ImGuiKey_UpArrow) {
-      if (m_HistoryPosition == -1)
-        m_HistoryPosition = (int32_t)m_InputLog.size() - 1;
-      else if (m_HistoryPosition > 0)
-        m_HistoryPosition--;
+      if (m_history_position == -1)
+        m_history_position = (int32_t)m_input_log.size() - 1;
+      else if (m_history_position > 0)
+        m_history_position--;
     }
     else if (data->EventKey == ImGuiKey_DownArrow) {
-      if (m_HistoryPosition != -1)
-        if (++m_HistoryPosition >= (int32_t)m_InputLog.size())
-          m_HistoryPosition = -1;
+      if (m_history_position != -1)
+        if (++m_history_position >= (int32_t)m_input_log.size())
+          m_history_position = -1;
     }
 
-    if (prevHistoryPos != m_HistoryPosition) {
-      const char* historyStr = m_HistoryPosition >= 0 ? m_InputLog[m_HistoryPosition] : "";
+    if (prevHistoryPos != m_history_position) {
+      const char* historyStr = m_history_position >= 0 ? m_input_log[m_history_position] : "";
       data->DeleteChars(0, data->BufTextLen);
       data->InsertChars(0, historyStr);
     }
@@ -306,9 +306,9 @@ int RuntimeConsole::InputTextCallback(ImGuiInputTextCallbackData* data) {
   return 0;
 }
 
-void RuntimeConsole::HelpCommand() {
+void RuntimeConsole::help_command() {
   std::string availableCommands = "Available commands: \n";
-  for (auto& [commandStr, command] : m_CommandMap) {
+  for (auto& [commandStr, command] : m_command_map) {
     availableCommands.append(fmt::format("\t{0} \n", commandStr));
   }
 

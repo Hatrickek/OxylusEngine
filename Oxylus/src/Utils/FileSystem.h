@@ -8,8 +8,8 @@ namespace Oxylus {
 class FileSystem {
 public:
   // Returns what left after the last dot in `filepath`
-  static std::string GetFileExtension(std::string_view filepath);
-  static std::string GetFileName(std::string_view filepath);
-  static std::string GetNameWithExtension(std::string_view filepath);
+  static std::string get_file_extension(std::string_view filepath);
+  static std::string get_file_name(std::string_view filepath);
+  static std::string get_name_with_extension(std::string_view filepath);
 };
 }

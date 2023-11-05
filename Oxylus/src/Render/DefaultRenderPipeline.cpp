@@ -379,8 +379,8 @@ Scope<vuk::Future> DefaultRenderPipeline::on_render(vuk::Allocator& frame_alloca
     } fxaa_data;
 
     fxaa_data.inverse_screen_size = 1.0f / glm::vec2(Renderer::get_viewport_width(), Renderer::get_viewport_height());
-    auto [buffer, buffer_fut] = create_buffer(frame_allocator, vuk::MemoryUsage::eCPUtoGPU, vuk::DomainFlagBits::eTransferOnGraphics, std::span(&fxaa_data, 1));
-    auto& fxaa_buffer = *buffer;
+    auto [fxaa_buff, fxaa_buffer_fut] = create_buffer(frame_allocator, vuk::MemoryUsage::eCPUtoGPU, vuk::DomainFlagBits::eTransferOnGraphics, std::span(&fxaa_data, 1));
+    auto& fxaa_buffer = *fxaa_buff;
     final_image_fut = apply_fxaa(final_image_fut, target, fxaa_buffer);
   }
 
@@ -910,7 +910,7 @@ vuk::Future DefaultRenderPipeline::apply_fxaa(vuk::Future source, vuk::Future ds
                     .broadcast_color_blend(vuk::BlendPreset::eOff)
                     .set_rasterization({.cullMode = vuk::CullModeFlagBits::eNone})
                     .bind_image(0, 0, "jagged")
-                    .bind_sampler(0, 0, {})
+                    .bind_sampler(0, 0, vuk::LinearSamplerClamped)
                     .bind_buffer(0, 1, fxaa_buffer)
                     .draw(3, 1, 0, 0);
     }

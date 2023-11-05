@@ -18,7 +18,7 @@ inline static int ui_context_id = 0;
 inline static int s_Counter = 0;
 char OxUI::id_buffer[16];
 
-void OxUI::begin_properties(ImGuiTableFlags flags) {
+bool OxUI::begin_properties(ImGuiTableFlags flags) {
   id_buffer[0] = '#';
   id_buffer[1] = '#';
   memset(id_buffer + 2, 0, 14);
@@ -27,9 +27,12 @@ void OxUI::begin_properties(ImGuiTableFlags flags) {
   std::memcpy(&id_buffer, buffer.data(), 16);
 
   constexpr ImGuiTableFlags tableFlags = ImGuiTableFlags_PadOuterX;
-  ImGui::BeginTable(id_buffer, 2, tableFlags | flags);
-  ImGui::TableSetupColumn("PropertyName", 0, 0.5f);
-  ImGui::TableSetupColumn("Property", ImGuiTableColumnFlags_WidthStretch);
+  if (ImGui::BeginTable(id_buffer, 2, tableFlags | flags)) {
+    ImGui::TableSetupColumn("PropertyName", 0, 0.5f);
+    ImGui::TableSetupColumn("Property", ImGuiTableColumnFlags_WidthStretch);
+    return true;
+  }
+  return false;
 }
 
 void OxUI::end_properties() {
@@ -354,15 +357,13 @@ std::filesystem::path OxUI::get_path_from_imgui_payload(const ImGuiPayload* payl
   return std::string(static_cast<const char*>(payload->Data));
 }
 
-void OxUI::draw_gradient_shadow() {
+void OxUI::draw_gradient_shadow_bottom(float scale) {
   const auto draw_list = ImGui::GetWindowDrawList();
-  const auto* window = ImGui::GetCurrentWindow();
-  const auto pos = window->DC.CursorPos;
+  const auto pos = ImGui::GetWindowPos();
   const auto window_height = ImGui::GetWindowHeight();
   const auto window_width = ImGui::GetWindowWidth();
-  constexpr auto size = 70.0f;
 
-  const ImRect bb(pos.x - 30.0f, window_height, window_width, window_height + size);
+  const ImRect bb(0, scale, pos.x + window_width, window_height + pos.y);
   draw_list->AddRectFilledMultiColor(bb.Min, bb.Max, IM_COL32(20, 20, 20, 0), IM_COL32(20, 20, 20, 0), IM_COL32(20, 20, 20, 255), IM_COL32(20, 20, 20, 255));
 }
 

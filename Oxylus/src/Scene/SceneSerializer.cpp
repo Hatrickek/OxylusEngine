@@ -79,11 +79,11 @@ bool SceneSerializer::deserialize(const std::string& filePath) const {
     }
 
     timer.Stop();
-    OX_CORE_INFO("Scene loaded : {0}, {1} ms", FileSystem::GetFileName(m_Scene->scene_name), timer.ElapsedMilliSeconds());
+    OX_CORE_INFO("Scene loaded : {0}, {1} ms", FileSystem::get_file_name(m_Scene->scene_name), timer.ElapsedMilliSeconds());
     return true;
   }
 
-  OX_CORE_ERROR("Scene doesn't contain any entities! {0}", FileSystem::GetFileName(m_Scene->scene_name));
+  OX_CORE_ERROR("Scene doesn't contain any entities! {0}", FileSystem::get_file_name(m_Scene->scene_name));
   return false;
 }
 }
