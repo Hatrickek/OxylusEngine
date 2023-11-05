@@ -11,6 +11,8 @@
 #include "Render/Camera.h"
 #include "Physics/Physics.h"
 
+#include "Scripting/LuaSystem.h"
+
 namespace Oxylus {
 class TextureAsset;
 class Material;
@@ -35,7 +37,7 @@ struct TagComponent {
 
   TagComponent() = default;
 
-  explicit TagComponent(std::string tag) : tag(std::move(tag)) { }
+  TagComponent(std::string tag) : tag(std::move(tag)) { }
 };
 
 struct RelationshipComponent {
@@ -262,6 +264,11 @@ struct AudioListenerComponent {
   Ref<AudioListener> listener;
 };
 
+// Scripting
+struct LuaScriptComponent {
+  Ref<LuaSystem> lua_system = nullptr;
+};
+
 // Custom
 struct CustomComponent {
   enum FieldType {
@@ -301,5 +308,7 @@ using AllComponents = ComponentGroup<TransformComponent, RelationshipComponent, 
                                      AudioSourceComponent, AudioListenerComponent,
 
                                      // Custom  
-                                     CustomComponent>;
+                                     CustomComponent,
+                                     // Scripting
+                                     LuaScriptComponent>;
 }

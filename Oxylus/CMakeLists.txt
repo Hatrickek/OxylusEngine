@@ -341,3 +341,30 @@ FetchContent_Declare(
 FetchContent_MakeAvailable(Tracy)
 target_link_libraries(${PROJECT_NAME} PUBLIC Tracy::TracyClient)
 set_targets_static_and_folder(TracyClient)
+
+# lua
+set(LUA_ENABLE_SHARED OFF)
+set(LUA_ENABLE_TESTING OFF)
+FetchContent_Declare(
+    lua
+    GIT_REPOSITORY "https://github.com/walterschell/Lua"
+    GIT_TAG master
+    GIT_SHALLOW    TRUE
+    GIT_PROGRESS   TRUE
+)
+FetchContent_MakeAvailable(lua)
+target_link_libraries(${PROJECT_NAME} PUBLIC lua_static)
+set_targets_static_and_folder(lua_static)
+
+# sol
+set(SOL2_LUA_VERSION 5.4.6)
+FetchContent_Declare(
+    sol
+    GIT_REPOSITORY "https://github.com/ThePhD/sol2"
+    GIT_TAG v3.3.0
+    GIT_SHALLOW    TRUE
+    GIT_PROGRESS   TRUE
+)
+FetchContent_MakeAvailable(sol)
+target_link_libraries(${PROJECT_NAME} PUBLIC sol2)
+set_targets_static_and_folder(sol2)

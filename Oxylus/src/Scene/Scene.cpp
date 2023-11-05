@@ -546,6 +546,15 @@ void Scene::on_runtime_update(float delta_time) {
     }
   }
 
+  // Scripting
+  {
+    const auto script_view = m_registry.view<LuaScriptComponent>();
+    for (auto&& [e, script_component] : script_view.each()) {
+      if (script_component.lua_system)
+        script_component.lua_system->on_update(this, delta_time);
+    }
+  }
+
   // Audio
   {
     const auto listener_view = m_registry.group<AudioListenerComponent>(entt::get<TransformComponent>);
@@ -692,4 +701,8 @@ void Scene::on_component_added<CharacterControllerComponent>(Entity entity, Char
 
 template <>
 void Scene::on_component_added<CustomComponent>(Entity entity, CustomComponent& component) { }
+
+template <>
+void Scene::on_component_added<LuaScriptComponent>(Entity entity, LuaScriptComponent& component) { }
 }
+

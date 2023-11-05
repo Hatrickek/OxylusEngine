@@ -13,6 +13,8 @@
 #include "Render/Vulkan/Renderer.h"
 #include "Render/Vulkan/VulkanContext.h"
 
+#include "Scripting/LuaManager.h"
+
 #include "Thread/ThreadManager.h"
 
 #include "Utils/Profiler.h"
@@ -37,6 +39,8 @@ bool Core::init(const AppSpec& spec) {
 
   Input::init();
   AudioEngine::init();
+
+  LuaManager::get()->init();
 
   return true;
 }

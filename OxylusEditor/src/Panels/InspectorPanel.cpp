@@ -268,6 +268,7 @@ void InspectorPanel::draw_components(Entity entity) const {
     draw_add_component<CylinderColliderComponent>(entity, "Cylinder Collider");
     draw_add_component<CharacterControllerComponent>(entity, "Character Controller");
     draw_add_component<CustomComponent>(entity, "Custom Component");
+    draw_add_component<LuaScriptComponent>(entity, "Lua Script Component");
 
     ImGui::EndPopup();
   }
@@ -337,11 +338,10 @@ void InspectorPanel::draw_components(Entity entity) const {
   DrawComponent<SkyLightComponent>(ICON_MDI_WEATHER_SUNNY " Sky Light Component",
     entity,
     [this](SkyLightComponent& component) {
+      auto file_name = FileSystem::get_file_name(component.cubemap->get_path());
       const char* name = component.cubemap
-                           ? component.cubemap->get_path().c_str()
+                           ? file_name.c_str()
                            : "Drop a hdr file";
-      const float x = ImGui::GetContentRegionAvail().x;
-      const float y = ImGui::GetFrameHeight();
       auto loadCubeMap = [](Scene* scene, const std::string& path, SkyLightComponent& comp) {
         if (path.empty())
           return;
@@ -351,6 +351,8 @@ void InspectorPanel::draw_components(Entity entity) const {
           scene->get_renderer()->dispatcher.trigger(SkyboxLoadEvent{comp.cubemap});
         }
       };
+      const float x = ImGui::GetContentRegionAvail().x;
+      const float y = ImGui::GetFrameHeight();
       if (ImGui::Button(name, {x, y})) {
         const std::string filePath = FileDialogs::open_file({{"HDR File", "hdr"}});
         loadCubeMap(m_Scene, filePath, component);
@@ -698,6 +700,40 @@ void InspectorPanel::draw_components(Entity entity) const {
       }
       OxUI::end_properties();
     });
+
+  DrawComponent<LuaScriptComponent>(ICON_MDI_CAMERA "Lua Script Component",
+    entity,
+    [](LuaScriptComponent& component) {
+      const std::string name = component.lua_system
+                                 ? FileSystem::get_file_name(component.lua_system->get_path())
+                                 : "Drop a lua script file";
+      auto load_script = [](const std::string& path, LuaScriptComponent& comp) {
+        if (path.empty())
+          return;
+        const auto ext = FileSystem::get_file_extension(path);
+        if (ext == "lua") {
+          comp.lua_system = create_ref<LuaSystem>(path);
+        }
+      };
+      const float x = ImGui::GetContentRegionAvail().x;
+      const float y = ImGui::GetFrameHeight();
+      if (ImGui::Button(name.c_str(), {x, y})) {
+        const std::string filePath = FileDialogs::open_file({{"Lua file", "lua"}});
+        load_script(filePath, component);
+      }
+      if (ImGui::BeginDragDropTarget()) {
+        if (const ImGuiPayload* payload = ImGui::AcceptDragDropPayload("CONTENT_BROWSER_ITEM")) {
+          const auto path = OxUI::get_path_from_imgui_payload(payload).string();
+          load_script(path, component);
+        }
+        ImGui::EndDragDropTarget();
+      }
+      if (ImGui::Button("Reload", {x, y})) {
+        if (component.lua_system)
+          component.lua_system->reload();
+      }
+    });
+
 
   DrawComponent<ParticleSystemComponent>(ICON_MDI_LAMP "Particle System Component",
     entity,
