@@ -63,7 +63,7 @@ void EditorLayer::on_attach(EventDispatcher& dispatcher) {
   m_editor_panels.emplace("RenderSettings", create_scope<RendererSettingsPanel>());
   m_editor_panels.emplace("Shaders", create_scope<ShadersPanel>());
   m_editor_panels.emplace("FramebufferViewer", create_scope<FramebufferViewerPanel>());
-  //m_editor_panels.emplace("ProjectPanel", create_scope<ProjectPanel>());
+  m_editor_panels.emplace("ProjectPanel", create_scope<ProjectPanel>());
   m_editor_panels.emplace("StatisticsPanel", create_scope<StatisticsPanel>());
   m_editor_panels.emplace("EditorDebugPanel", create_scope<EditorDebugPanel>());
   const auto& viewport = m_viewport_panels.emplace_back(create_scope<ViewportPanel>());

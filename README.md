@@ -29,7 +29,7 @@ If you liked my work and would like to donate, you can do so with my [ko-fi page
 	- Sharpen
 	- and many more various post-processing effects.
 - Multithreaded physics with Jolt.   
-- Game scripting API with ECS events and ECS systems. Which has been used to
+- C++ and Lua scripting API with ECS events and ECS systems. Which has been used to
 build multiple games to test the API and engine in general.   
  More about that: [Oxrena](https://github.com/Hatrickek/Oxrena), [(Creating a Game With Oxylus)](https://hatrickek.github.io/blog/oxylus-first-game)
 - Editor with features such as Projects, Serializable Scenes, ContentBrowser, Prefabs, Shader Hot Reloading, Entity managing, Prefabs, Inspector Panel,
@@ -67,6 +67,9 @@ Or with `cmake -B ./build -DCMAKE_BUILD_TYPE=Release -DCMAKE_CXX_COMPILER=clang+
 - [MiniAudio](https://github.com/mackron/miniaudio)
 - [Tracy](https://github.com/wolfpld/tracy)
 - [ryml](https://github.com/biojppm/rapidyaml)
+- [lua](https://github.com/walterschell/Lua)
+- [sol2](https://github.com/ThePhD/sol2)
+- [RapidJson](https://github.com/Tencent/rapidjson/tree/master)
 - [NFD](https://github.com/btzy/nativefiledialog-extended)
 
 ## Special Mentions and Thanks To
