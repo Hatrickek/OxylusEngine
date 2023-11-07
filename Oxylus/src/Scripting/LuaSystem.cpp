@@ -63,13 +63,15 @@ void LuaSystem::init_script(const std::string& file_path) {
   if (!m_on_release_func->valid())
     m_on_release_func.reset();
 
+
   state->collect_garbage();
 }
 
-void LuaSystem::on_update(Scene* scene, Timestep delta_time) {
+void LuaSystem::on_update(Scene* scene, const Timestep& delta_time) {
   if (m_on_update_func) {
     (*m_env)["scene"] = scene;
-    const auto result = m_on_update_func->call(scene, delta_time);
+    (*m_env)["current_time"] = delta_time.get_elapsed_seconds();
+    const auto result = m_on_update_func->call(scene, delta_time.get_millis());
     check_result(result);
   }
 }

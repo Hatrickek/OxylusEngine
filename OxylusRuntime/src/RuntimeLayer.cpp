@@ -29,7 +29,7 @@ namespace OxylusRuntime {
 
   void RuntimeLayer::on_detach() { }
 
-  void RuntimeLayer::on_update(Timestep deltaTime) {
+  void RuntimeLayer::on_update(const Timestep& deltaTime) {
     scene->on_runtime_update(deltaTime);
   }
 

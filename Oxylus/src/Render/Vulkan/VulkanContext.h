@@ -38,7 +38,6 @@ public:
   VkSurfaceKHR surface;
   vkb::Instance vkb_instance;
   vkb::Device vkb_device;
-  double old_time = 0;
   uint32_t num_frames = 0;
   vuk::Unique<std::array<VkSemaphore, 3>> present_ready;
   vuk::Unique<std::array<VkSemaphore, 3>> render_complete;

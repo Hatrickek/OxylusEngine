@@ -66,30 +66,30 @@ Entity Scene::create_entity_with_uuid(UUID uuid, const std::string& name) {
   return entity;
 }
 
-void Scene::update_physics(Timestep delta_time) {
+void Scene::update_physics(const Timestep& delta_time) {
   OX_SCOPED_ZONE;
   // Minimum stable value is 16.0
   constexpr float physicsStepRate = 50.0f;
-  constexpr float physicsTs = 1.0f / physicsStepRate;
+  constexpr float physics_ts = 1.0f / physicsStepRate;
 
   bool stepped = false;
   physics_frame_accumulator += delta_time;
 
-  while (physics_frame_accumulator >= physicsTs) {
-    Physics::step(physicsTs);
+  while (physics_frame_accumulator >= physics_ts) {
+    Physics::step(physics_ts);
 
     {
       OX_SCOPED_ZONE_N("OnFixedUpdate Systems");
       for (const auto& system : systems) {
-        system->on_fixed_update(this, physicsTs);
+        system->on_fixed_update(this, physics_ts);
       }
     }
 
-    physics_frame_accumulator -= physicsTs;
+    physics_frame_accumulator -= physics_ts;
     stepped = true;
   }
 
-  const float interpolation_factor = physics_frame_accumulator / physicsTs;
+  const float interpolation_factor = physics_frame_accumulator / physics_ts;
 
   const auto& body_interface = Physics::get_physics_system()->GetBodyInterface();
   const auto view = m_registry.group<RigidbodyComponent>(entt::get<TransformComponent>);
@@ -115,7 +115,7 @@ void Scene::update_physics(Timestep delta_time) {
         rb.rotation = glm::vec3(rotation.GetX(), rotation.GetY(), rotation.GetZ());
       }
 
-      tc.translation = glm::lerp(rb.previous_translation, rb.translation, interpolation_factor);
+      tc.position = glm::lerp(rb.previous_translation, rb.translation, interpolation_factor);
       tc.rotation = glm::eulerAngles(glm::slerp(rb.previous_rotation, rb.rotation, interpolation_factor));
     }
     else {
@@ -126,7 +126,7 @@ void Scene::update_physics(Timestep delta_time) {
       rb.previous_rotation = rb.rotation;
       rb.translation = {position.GetX(), position.GetY(), position.GetZ()};
       rb.rotation = glm::vec3(rotation.GetX(), rotation.GetY(), rotation.GetZ());
-      tc.translation = rb.translation;
+      tc.position = rb.translation;
       tc.rotation = glm::eulerAngles(rb.rotation);
     }
   }
@@ -147,7 +147,7 @@ void Scene::update_physics(Timestep delta_time) {
           ch.Rotation = glm::vec3(rotation.GetX(), rotation.GetY(), rotation.GetZ());
         }
 
-        tc.translation = glm::lerp(ch.previous_translation, ch.translation, interpolation_factor);
+        tc.position = glm::lerp(ch.previous_translation, ch.translation, interpolation_factor);
         tc.rotation = glm::eulerAngles(glm::slerp(ch.previous_rotation, ch.Rotation, interpolation_factor));
       }
       else {
@@ -158,7 +158,7 @@ void Scene::update_physics(Timestep delta_time) {
         ch.previous_rotation = ch.Rotation;
         ch.translation = {position.GetX(), position.GetY(), position.GetZ()};
         ch.Rotation = glm::vec3(rotation.GetX(), rotation.GetY(), rotation.GetZ());
-        tc.translation = ch.translation;
+        tc.position = ch.translation;
         tc.rotation = glm::eulerAngles(ch.Rotation);
       }
       PhysicsUtils::DebugDraw(this, e);
@@ -269,7 +269,7 @@ void Scene::on_runtime_start() {
     {
       const auto group = m_registry.group<RigidbodyComponent>(entt::get<TransformComponent>);
       for (auto&& [e, rb, tc] : group.each()) {
-        rb.previous_translation = rb.translation = tc.translation;
+        rb.previous_translation = rb.translation = tc.position;
         rb.previous_rotation = rb.rotation = tc.rotation;
         create_rigidbody({e, this}, tc, rb);
       }
@@ -474,7 +474,7 @@ void Scene::create_rigidbody(Entity entity, const TransformComponent& transform,
   if (collisionMaskIt != Physics::layer_collision_mask.end())
     layerIndex = collisionMaskIt->second.index;
 
-  JPH::BodyCreationSettings bodySettings(compoundShapeSettings.Create().Get(), {transform.translation.x, transform.translation.y, transform.translation.z}, {rotation.x, rotation.y, rotation.z, rotation.w}, static_cast<JPH::EMotionType>(component.type), layerIndex);
+  JPH::BodyCreationSettings bodySettings(compoundShapeSettings.Create().Get(), {transform.position.x, transform.position.y, transform.position.z}, {rotation.x, rotation.y, rotation.z, rotation.w}, static_cast<JPH::EMotionType>(component.type), layerIndex);
 
   JPH::MassProperties massProperties;
   massProperties.mMass = glm::max(0.01f, component.mass);
@@ -499,7 +499,7 @@ void Scene::create_rigidbody(Entity entity, const TransformComponent& transform,
 void Scene::create_character_controller(const TransformComponent& transform, CharacterControllerComponent& component) const {
   if (!is_running)
     return;
-  const auto position = JPH::Vec3(transform.translation.x, transform.translation.y, transform.translation.z);
+  const auto position = JPH::Vec3(transform.position.x, transform.position.y, transform.position.z);
   const auto capsuleShape = JPH::RotatedTranslatedShapeSettings(
     JPH::Vec3(0, 0.5f * component.character_height_standing + component.character_radius_standing, 0),
     JPH::Quat::sIdentity(),
@@ -516,7 +516,7 @@ void Scene::create_character_controller(const TransformComponent& transform, Cha
   component.character->AddToPhysicsSystem(JPH::EActivation::Activate);
 }
 
-void Scene::on_runtime_update(float delta_time) {
+void Scene::on_runtime_update(const Timestep& delta_time) {
   OX_SCOPED_ZONE;
 
   // Camera
@@ -525,7 +525,7 @@ void Scene::on_runtime_update(float delta_time) {
     const auto camera_view = m_registry.view<TransformComponent, CameraComponent>();
     for (const auto entity : camera_view) {
       auto [transform, camera] = camera_view.get<TransformComponent, CameraComponent>(entity);
-      camera.system->update(transform.translation, transform.rotation);
+      camera.system->update(transform.position, transform.rotation);
       scene_renderer->get_render_pipeline()->on_register_camera(camera.system.get());
     }
   }
@@ -564,7 +564,7 @@ void Scene::on_runtime_update(float delta_time) {
         const glm::mat4 inverted = glm::inverse(Entity(e, this).get_world_transform());
         const glm::vec3 forward = normalize(glm::vec3(inverted[2]));
         ac.listener->SetConfig(ac.config);
-        ac.listener->SetPosition(tc.translation);
+        ac.listener->SetPosition(tc.position);
         ac.listener->SetDirection(-forward);
         break;
       }
@@ -576,7 +576,7 @@ void Scene::on_runtime_update(float delta_time) {
         const glm::mat4 inverted = glm::inverse(Entity(e, this).get_world_transform());
         const glm::vec3 forward = normalize(glm::vec3(inverted[2]));
         ac.source->SetConfig(ac.config);
-        ac.source->SetPosition(tc.translation);
+        ac.source->SetPosition(tc.position);
         ac.source->SetDirection(forward);
         if (ac.config.PlayOnAwake)
           ac.source->Play();
@@ -585,12 +585,12 @@ void Scene::on_runtime_update(float delta_time) {
   }
 }
 
-void Scene::on_imgui_render(const float delta_time) {
+void Scene::on_imgui_render(const Timestep& delta_time) {
   for (const auto& system : systems)
     system->on_imgui_render(this, delta_time);
 }
 
-void Scene::on_editor_update(float delta_time, Camera& camera) {
+void Scene::on_editor_update(const Timestep& delta_time, Camera& camera) {
   scene_renderer->get_render_pipeline()->on_register_camera(&camera);
   scene_renderer->update();
 

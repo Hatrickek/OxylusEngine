@@ -34,19 +34,19 @@ public:
   virtual void on_update() { }
 
   /// Called after physic system is updated.
-  virtual void on_update(Scene* scene, Timestep delta_time) { }
+  virtual void on_update(Scene* scene, const Timestep& delta_time) { }
 
   /// Called every fixed frame-rate frame with the frequency of the physics system
-  virtual void on_fixed_update(Scene* scene, Timestep delta_time) { }
+  virtual void on_fixed_update(Scene* scene, float delta_time) { }
 
   /// Called before physics system is updated.
-  virtual void pre_on_update(Scene* scene, Timestep delta_time) { }
+  virtual void pre_on_update(Scene* scene, const Timestep& delta_time) { }
 
   /// Called in the main imgui loop which is right before `OnUpdate`
   virtual void on_imgui_render() { }
 
   /// Called in the main imgui loop which is right after `OnUpdate`
-  virtual void on_imgui_render(Scene* scene, Timestep deltaTime) { }
+  virtual void on_imgui_render(Scene* scene, const Timestep& deltaTime) { }
 
   /// Called right after main loop is finished before the core shutdown process.
   virtual void on_shutdown() { }

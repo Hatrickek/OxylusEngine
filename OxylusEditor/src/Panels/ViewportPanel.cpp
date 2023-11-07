@@ -340,13 +340,13 @@ void ViewportPanel::on_update() {
       m_TranslationVelocity,
       m_TranslationDampening,
       10000.0f,
-      Application::get_timestep());
+      Application::get_timestep().get_seconds());
     const glm::vec2 dampedYawPitch = Math::smooth_damp(yawPitch,
       finalYawPitch,
       m_RotationVelocity,
       m_RotationDampening,
       1000.0f,
-      Application::get_timestep());
+      Application::get_timestep().get_seconds());
 
     m_camera.set_position(m_SmoothCamera ? dampedPosition : finalPosition);
     m_camera.set_yaw(m_SmoothCamera ? dampedYawPitch.x : finalYawPitch.x);

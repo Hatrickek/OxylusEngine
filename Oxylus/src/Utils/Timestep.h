@@ -1,17 +1,27 @@
 #pragma once
 
 namespace Oxylus {
+class Timer;
+
 class Timestep {
 public:
-  Timestep(float time = 0)
-    : m_Time(time) { }
+  Timestep();
+  ~Timestep();
 
-  operator float() const { return m_Time; }
+  void on_update();
+  double get_millis() const { return m_timestep; }
+  double get_elapsed_millis() const { return m_elapsed; }
 
-  [[nodiscard]] float GetSeconds() const { return m_Time; }
-  [[nodiscard]] float GetMilliseconds() const { return m_Time * 1000.0f; }
+  double get_seconds() const { return m_timestep * 0.001; }
+  double get_elapsed_seconds() const { return m_elapsed * 0.001; }
+
+  operator float() const { return (float)m_timestep; }
 
 private:
-  float m_Time;
+  double m_timestep; // MilliSeconds
+  double m_last_time;
+  double m_elapsed;
+
+  Timer* m_Timer;
 };
 }

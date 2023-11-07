@@ -76,7 +76,7 @@ void EditorLayer::on_detach() {
   m_editor_config.SaveConfig();
 }
 
-void EditorLayer::on_update(Timestep deltaTime) {
+void EditorLayer::on_update(const Timestep& deltaTime) {
   for (const auto& [name, panel] : m_editor_panels) {
     if (!panel->Visible)
       continue;

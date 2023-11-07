@@ -10,7 +10,7 @@ public:
   LuaSystem(const std::string& file_path);
   ~LuaSystem() = default;
 
-  void on_update(Scene* scene, Timestep delta_time) override;
+  void on_update(Scene* scene, const Timestep& delta_time) override;
   void on_release(Scene* scene) override;
 
   void reload();

@@ -52,7 +52,7 @@ public:
   ImGuiLayer* get_imgui_layer() const { return imgui_layer; }
   const LayerStack& get_layer_stack() const { return layer_stack; }
   static Application* get() { return instance; }
-  static Timestep get_timestep() { return instance->timestep; }
+  static const Timestep& get_timestep() { return instance->timestep; }
 
 private:
   static Application* instance;
@@ -72,7 +72,7 @@ private:
   float last_frame_time = 0.0f;
 
   void run();
-  void update_layers(Timestep ts);
+  void update_layers(const Timestep& ts);
   void update_renderer();
   void update_timestep();
 

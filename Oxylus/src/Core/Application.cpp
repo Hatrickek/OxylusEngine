@@ -84,6 +84,7 @@ Application& Application::push_overlay(Layer* layer) {
 }
 
 void Application::run() {
+  std::chrono::steady_clock::time_point begin = std::chrono::steady_clock::now();
   while (is_running) {
     update_timestep();
 
@@ -102,7 +103,7 @@ void Application::run() {
   core.shutdown();
 }
 
-void Application::update_layers(Timestep ts) {
+void Application::update_layers(const Timestep& ts) {
   OX_SCOPED_ZONE_N("LayersLoop");
   for (Layer* layer : layer_stack)
     layer->on_update(ts);
@@ -113,9 +114,10 @@ void Application::update_renderer() {
 }
 
 void Application::update_timestep() {
-  const auto time = static_cast<float>(glfwGetTime());
-  timestep = time - last_frame_time;
-  last_frame_time = time;
+  timestep.on_update();
+
+  ImGuiIO& io = ImGui::GetIO();
+  io.DeltaTime = (float)timestep.get_seconds();
 }
 
 void Application::close() {

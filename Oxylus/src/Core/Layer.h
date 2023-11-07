@@ -14,7 +14,7 @@ public:
 
   virtual void on_attach(EventDispatcher& dispatcher) { }
   virtual void on_detach() { }
-  virtual void on_update(Timestep delta_time) { }
+  virtual void on_update(const Timestep& delta_time) { }
   virtual void on_imgui_render() { }
 
   virtual void on_key_pressed(KeyCode key) {}

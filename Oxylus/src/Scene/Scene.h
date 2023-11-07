@@ -46,10 +46,10 @@ public:
   void on_runtime_start();
   void on_runtime_stop();
 
-  void on_runtime_update(float delta_time);
-  void on_editor_update(float delta_time, Camera& camera);
+  void on_runtime_update(const Timestep& delta_time);
+  void on_editor_update(const Timestep& delta_time, Camera& camera);
 
-  void on_imgui_render(float delta_time);
+  void on_imgui_render(const Timestep& delta_time);
 
   Entity find_entity(const std::string_view& name);
   bool has_entity(UUID uuid) const;
@@ -86,7 +86,7 @@ private:
   void init();
 
   // Physics
-  void update_physics(Timestep delta_time);
+  void update_physics(const Timestep& delta_time);
   void create_rigidbody(Entity entity, const TransformComponent& transform, RigidbodyComponent& component) const;
   void create_character_controller(const TransformComponent& transform, CharacterControllerComponent& component) const;
 

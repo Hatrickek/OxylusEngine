@@ -22,7 +22,7 @@ namespace OxylusRuntime {
 
   void CharacterSystem::on_init() { }
 
-  void CharacterSystem::on_update(Scene* scene, Timestep deltaTime) {
+  void CharacterSystem::on_update(Scene* scene, const Timestep& deltaTime) {
     auto& registery = scene->m_registry;
     const auto characterView = registery.view<TransformComponent, CharacterControllerComponent>();
     const auto cameraView = registery.view<TransformComponent, CameraComponent>();
@@ -129,7 +129,7 @@ namespace OxylusRuntime {
     }
   }
 
-  void CharacterSystem::on_imgui_render(Scene* scene, Timestep deltaTime) {
+  void CharacterSystem::on_imgui_render(Scene* scene, const Timestep& deltaTime) {
     auto& registery = scene->m_registry;
     const auto characterView = registery.view<TransformComponent, CharacterControllerComponent>();
     for (const auto entity : characterView) {
