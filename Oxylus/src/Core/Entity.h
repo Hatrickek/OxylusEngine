@@ -158,14 +158,14 @@ public:
     const auto& rc = get_relationship();
     const Entity parent = m_Scene->get_entity_by_uuid(rc.parent);
     const glm::mat4 parentTransform = parent ? parent.get_world_transform() : glm::mat4(1.0f);
-    return parentTransform * glm::translate(glm::mat4(1.0f), transform.translation) *
+    return parentTransform * glm::translate(glm::mat4(1.0f), transform.position) *
            glm::toMat4(glm::quat(transform.rotation)) * glm::scale(glm::mat4(1.0f), transform.scale);
   }
 
   glm::mat4 get_local_transform() const {
     OX_SCOPED_ZONE;
     const auto& transform = get_transform();
-    return glm::translate(glm::mat4(1.0f), transform.translation) * glm::toMat4(glm::quat(transform.rotation)) *
+    return glm::translate(glm::mat4(1.0f), transform.position) * glm::toMat4(glm::quat(transform.rotation)) *
            glm::scale(glm::mat4(1.0f), transform.scale);
   }
 

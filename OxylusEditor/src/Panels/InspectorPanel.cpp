@@ -278,7 +278,7 @@ void InspectorPanel::draw_components(Entity entity) const {
     entity,
     [](TransformComponent& component) {
       OxUI::begin_properties();
-      OxUI::draw_vec3_control("Translation", component.translation);
+      OxUI::draw_vec3_control("Translation", component.position);
       Vec3 rotation = glm::degrees(component.rotation);
       OxUI::draw_vec3_control("Rotation", rotation);
       component.rotation = glm::radians(rotation);
@@ -480,7 +480,7 @@ void InspectorPanel::draw_components(Entity entity) const {
         const glm::mat4 inverted = glm::inverse(entity.get_world_transform());
         const Vec3 forward = normalize(Vec3(inverted[2]));
         component.source->SetConfig(config);
-        component.source->SetPosition(entity.get_transform().translation);
+        component.source->SetPosition(entity.get_transform().position);
         component.source->SetDirection(-forward);
       }
     });

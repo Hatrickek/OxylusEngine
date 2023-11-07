@@ -25,8 +25,8 @@ namespace OxylusRuntime {
     }
 
   private:
-    void LoadScene();
-    bool OnSceneReload(Oxylus::ReloadSceneEvent& e);
+    void load_scene();
+    bool on_scene_reload(Oxylus::ReloadSceneEvent& e);
 
   private:
     Oxylus::EventDispatcher m_Dispatcher;

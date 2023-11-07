@@ -50,7 +50,7 @@ struct PrefabComponent {
 };
 
 struct TransformComponent {
-  Vec3 translation = Vec3(0);
+  Vec3 position = Vec3(0);
   Vec3 rotation = Vec3(0); // Stored in radians
   Vec3 scale = Vec3(1);
 
@@ -58,7 +58,7 @@ struct TransformComponent {
 
   TransformComponent(const TransformComponent&) = default;
 
-  TransformComponent(const Vec3& translation) : translation(translation) { }
+  TransformComponent(const Vec3& translation) : position(translation) { }
 };
 
 // Rendering

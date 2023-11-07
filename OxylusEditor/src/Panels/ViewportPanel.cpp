@@ -440,7 +440,7 @@ void ViewportPanel::draw_gizmos() {
       const glm::mat4& parentWorldTransform = parent ? parent.get_world_transform() : glm::mat4(1.0f);
       Vec3 translation, rotation, scale;
       if (Math::decompose_transform(glm::inverse(parentWorldTransform) * transform, translation, rotation, scale)) {
-        tc.translation = translation;
+        tc.position = translation;
         const Vec3 deltaRotation = rotation - tc.rotation;
         tc.rotation += deltaRotation;
         tc.scale = scale;

@@ -72,7 +72,7 @@ namespace OxylusRuntime {
         1000.0f,
         deltaTime);
       
-      transform.translation = m_SmoothCamera ? dampedPosition : finalPosition;
+      transform.position = m_SmoothCamera ? dampedPosition : finalPosition;
       transform.rotation.x = m_SmoothCamera ? dampedYawPitch.y : finalYawPitch.y;
       transform.rotation.y = m_SmoothCamera ? dampedYawPitch.x : finalYawPitch.x;
     }

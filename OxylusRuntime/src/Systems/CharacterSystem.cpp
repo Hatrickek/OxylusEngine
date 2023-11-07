@@ -106,10 +106,10 @@ namespace OxylusRuntime {
         auto charRotation = JPH::Quat::sEulerAngles({0.0f, -finalYawPitch.x, 0.0f});
         chComponent.character->SetRotation(charRotation);
 
-        Vec3 finalPosition = chTransform.translation;
+        Vec3 finalPosition = chTransform.position;
         finalPosition.y += chComponent.character_height_standing;
 
-        cameraTransform.translation = finalPosition;
+        cameraTransform.position = finalPosition;
         cameraTransform.rotation.x = finalYawPitch.y;
         cameraTransform.rotation.y = finalYawPitch.x;
         
@@ -137,7 +137,7 @@ namespace OxylusRuntime {
       
       if (ImGui::Begin("Character Debug")) {
         OxUI::begin_properties();
-        OxUI::property_vector("Position", transform.translation);
+        OxUI::property_vector("Position", transform.position);
         OxUI::property_vector("Rotation", transform.rotation);
         OxUI::property("AutoBunnyHop", &component.auto_bunny_hop);
         OxUI::property<float>("JumpForce", &component.jump_force, 1.0f, 10.0f);

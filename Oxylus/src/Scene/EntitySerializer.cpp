@@ -51,7 +51,7 @@ void EntitySerializer::SerializeEntity(Scene* scene, ryml::NodeRef& entities, En
     auto translation = node["Translation"];
     auto rotation = node["Rotation"];
     auto scale = node["Scale"];
-    glm::write(&translation, tc.translation);
+    glm::write(&translation, tc.position);
     glm::write(&rotation, tc.rotation);
     glm::write(&scale, tc.scale);
   }
@@ -260,7 +260,7 @@ UUID EntitySerializer::DeserializeEntity(ryml::ConstNodeRef entityNode, Scene* s
     auto& tc = deserializedEntity.get_component<TransformComponent>();
     const auto& node = entityNode["TransformComponent"];
 
-    glm::read(node["Translation"], &tc.translation);
+    glm::read(node["Translation"], &tc.position);
     glm::read(node["Rotation"], &tc.rotation);
     glm::read(node["Scale"], &tc.scale);
   }

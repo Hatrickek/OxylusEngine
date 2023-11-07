@@ -63,7 +63,7 @@ void SceneRenderer::update() const {
         if (!entity.get_component<TagComponent>().enabled)
           continue;
         auto lighting_data = LightingData{
-          Vec4{tc.translation, lc.intensity},
+          Vec4{tc.position, lc.intensity},
           Vec4{lc.color, lc.range},
           Vec4{tc.rotation, 1.0f}
         };
@@ -78,7 +78,7 @@ void SceneRenderer::update() const {
     OX_SCOPED_ZONE_N("Particle System");
     const auto particleSystemView = m_scene->m_registry.view<TransformComponent, ParticleSystemComponent>();
     for (auto&& [e, tc, psc] : particleSystemView.each()) {
-      psc.system->on_update(Application::get_timestep(), tc.translation);
+      psc.system->on_update(Application::get_timestep(), tc.position);
       psc.system->on_render();
     }
   }

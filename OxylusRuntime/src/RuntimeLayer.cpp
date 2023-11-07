@@ -23,8 +23,8 @@ namespace OxylusRuntime {
     auto& style = ImGui::GetStyle();
     style.WindowMenuButtonPosition = ImGuiDir_Left;
 
-    dispatcher.sink<ReloadSceneEvent>().connect<&RuntimeLayer::OnSceneReload>(*this);
-    LoadScene();
+    dispatcher.sink<ReloadSceneEvent>().connect<&RuntimeLayer::on_scene_reload>(*this);
+    load_scene();
   }
 
   void RuntimeLayer::on_detach() { }
@@ -53,7 +53,7 @@ namespace OxylusRuntime {
     }
   }
 
-  void RuntimeLayer::LoadScene() {
+  void RuntimeLayer::load_scene() {
     scene = create_ref<Scene>();
     const SceneSerializer serializer(scene);
     serializer.deserialize(get_assets_path("Scenes/Main.oxscene"));
@@ -64,8 +64,8 @@ namespace OxylusRuntime {
     scene->add_system<FreeCamera>();
   }
 
-  bool RuntimeLayer::OnSceneReload(ReloadSceneEvent&) {
-    LoadScene();
+  bool RuntimeLayer::on_scene_reload(ReloadSceneEvent&) {
+    load_scene();
     OX_CORE_INFO("Scene reloaded.");
     return true;
   }
