@@ -35,7 +35,7 @@ void DefaultRenderPipeline::init() {
 
   // TODO: don't load a default hdr texture / load a light blue colored texture
   cube_map = create_ref<TextureAsset>();
-  cube_map = AssetManager::get_texture_asset({.Path = Resources::get_resources_path("HDRs/table_mountain_2_puresky_2k.hdr"), .Format = vuk::Format::eR8G8B8A8Srgb});
+  cube_map = AssetManager::get_texture_asset({.path = Resources::get_resources_path("HDRs/table_mountain_2_puresky_2k.hdr"), .format = vuk::Format::eR8G8B8A8Srgb});
   generate_prefilter();
 
   init_render_graph();

@@ -347,7 +347,7 @@ void InspectorPanel::draw_components(Entity entity) const {
           return;
         const auto ext = std::filesystem::path(path).extension().string();
         if (ext == ".hdr") {
-          comp.cubemap = AssetManager::get_texture_asset({.Path = path, .Format = vuk::Format::eR8G8B8A8Srgb});
+          comp.cubemap = AssetManager::get_texture_asset({.path = path, .format = vuk::Format::eR8G8B8A8Srgb});
           scene->get_renderer()->dispatcher.trigger(SkyboxLoadEvent{comp.cubemap});
         }
       };

@@ -374,7 +374,7 @@ void EditorLayer::save_scene_as() {
   const std::string filepath = FileDialogs::save_file({{"Oxylus Scene", "oxscene"}}, "New Scene");
   if (!filepath.empty()) {
     ThreadManager::get()->asset_thread.queue_job([this, filepath] {
-      SceneSerializer(get_active_scene()).Serialize(filepath);
+      SceneSerializer(m_editor_scene).Serialize(filepath);
     });
     m_last_save_scene_path = filepath;
   }

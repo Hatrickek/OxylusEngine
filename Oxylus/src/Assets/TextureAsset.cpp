@@ -18,10 +18,10 @@ TextureAsset::TextureAsset(const std::string& file_path) {
 }
 
 TextureAsset::TextureAsset(const TextureLoadInfo& info) {
-  if (!info.Path.empty())
-    load(info.Path, info.Format);
+  if (!info.path.empty())
+    load(info.path, info.format);
   else
-    create_texture(info.Width, info.Height, info.Data, info.Format);
+    create_texture(info.width, info.height, info.data, info.format);
 }
 
 TextureAsset::~TextureAsset() = default;

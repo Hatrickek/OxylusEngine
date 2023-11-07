@@ -8,10 +8,11 @@ class Scene;
 
 class SceneRenderer {
 public:
+  EventDispatcher dispatcher;
+
   SceneRenderer(Scene* scene) : m_scene(scene) {}
   ~SceneRenderer() = default;
 
-  EventDispatcher dispatcher;
   void init();
   void update() const;
 

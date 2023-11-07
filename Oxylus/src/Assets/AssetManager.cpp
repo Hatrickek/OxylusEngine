@@ -16,11 +16,11 @@ std::filesystem::path AssetManager::get_asset_file_system_path(const std::filesy
 }
 
 Ref<TextureAsset> AssetManager::get_texture_asset(const TextureLoadInfo& info) {
-  if (s_library.texture_assets.contains(info.Path)) {
-    return s_library.texture_assets[info.Path];
+  if (s_library.texture_assets.contains(info.path)) {
+    return s_library.texture_assets[info.path];
   }
 
-  return load_texture_asset(info.Path, info);
+  return load_texture_asset(info.path, info);
 }
 
 Ref<TextureAsset> AssetManager::get_texture_asset(const std::string& name, const TextureLoadInfo& info) {

@@ -8,6 +8,8 @@
 #include "Core/Entity.h"
 #include "Core/YamlHelpers.h"
 
+#include "Render/SceneRendererEvents.h"
+
 #include "Utils/FileUtils.h"
 
 namespace Oxylus {
@@ -224,6 +226,16 @@ void EntitySerializer::SerializeEntity(Scene* scene, ryml::NodeRef& entities, En
     node["CollisionTolerance"] << component.collision_tolerance;
   }
 
+  if (entity.has_component<LuaScriptComponent>()) {
+    auto node = entityNode["LuaScriptComponent"];
+    node |= ryml::MAP;
+
+    const auto& component = entity.get_component<LuaScriptComponent>();
+    const auto& system = component.lua_system;
+
+    node["Path"] << system->get_path();
+  }
+
   if (entity.has_component<CustomComponent>()) {
     auto node = entityNode["CustomComponent"];
     node |= ryml::MAP;
@@ -340,15 +352,10 @@ UUID EntitySerializer::DeserializeEntity(ryml::ConstNodeRef entityNode, Scene* s
 
     std::string path{};
     node["ImagePath"] >> path;
-#if 0 //TODO:
     if (!path.empty()) {
-      ImageCreateInfo CubeMapDesc;
-      CubeMapDesc.Path = FileUtils::GetPreferredPath(path);
-      CubeMapDesc.Type = ImageType::TYPE_CUBE;
-      light.Cubemap = AssetManager::GetImageAsset(CubeMapDesc).Data;
-      scene->GetRenderer().Dispatcher.trigger(SceneRenderer::SkyboxLoadEvent{light.Cubemap});
+      light.cubemap = AssetManager::get_texture_asset({.path = path});
+      scene->get_renderer()->dispatcher.trigger(SkyboxLoadEvent{light.cubemap});
     }
-#endif
   }
 
   if (entityNode.has_child("PostProcessProbe")) {
@@ -476,6 +483,19 @@ UUID EntitySerializer::DeserializeEntity(ryml::ConstNodeRef entityNode, Scene* s
 
     node["Friction"] >> component.friction;
     node["CollisionTolerance"] >> component.collision_tolerance;
+  }
+
+  if (entityNode.has_child("LuaScriptComponent")) {
+    auto& component = deserializedEntity.add_component_internal<LuaScriptComponent>();
+    const auto& node = entityNode["LuaScriptComponent"];
+
+    // Size
+    std::string path = {};
+    node["Path"] >> path;
+
+    if (!path.empty()) {
+      component.lua_system = create_ref<LuaSystem>(path);
+    }
   }
 
   if (entityNode.has_child("CustomComponent")) {

@@ -7,11 +7,11 @@
 
 namespace Oxylus {
 struct TextureLoadInfo {
-  std::string Path = {};
-  uint32_t Width = 0;
-  uint32_t Height = 0;
-  void* Data = nullptr;
-  vuk::Format Format = vuk::Format::eR8G8B8A8Unorm;
+  std::string path = {};
+  uint32_t width = 0;
+  uint32_t height = 0;
+  void* data = nullptr;
+  vuk::Format format = vuk::Format::eR8G8B8A8Unorm;
 };
 
 class TextureAsset {

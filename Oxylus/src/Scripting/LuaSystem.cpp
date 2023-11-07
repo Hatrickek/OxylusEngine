@@ -83,6 +83,10 @@ void LuaSystem::on_release(Scene* scene) {
   }
 }
 
+void LuaSystem::load(const std::string& file_path) {
+  init_script(file_path);
+}
+
 void LuaSystem::reload() {
   if (m_env) {
     const sol::protected_function releaseFunc = (*m_env)["on_release"];
