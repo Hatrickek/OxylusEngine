@@ -18,6 +18,6 @@ u_PC;
 void main() {
   out_TexCoord = in_TexCoord;
   out_Position = in_Position;
-  out_Color = vec4(1);//u_PC.Color;
+  out_Color = u_PC.Color;
   gl_Position = u_PC.MVP * vec4(in_Position, 1.0);
 }

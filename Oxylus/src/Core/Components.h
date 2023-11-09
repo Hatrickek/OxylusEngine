@@ -5,11 +5,15 @@
 
 #include "Types.h"
 #include "UUID.h"
+
 #include "Audio/AudioListener.h"
 #include "Audio/AudioSource.h"
-#include "Render/ParticleSystem.h"
-#include "Render/Camera.h"
+
 #include "Physics/Physics.h"
+
+#include "Render/Camera.h"
+#include "Render/Mesh.h"
+#include "Render/ParticleSystem.h"
 
 #include "Scripting/LuaSystem.h"
 
@@ -84,6 +88,13 @@ struct MeshRendererComponent {
   ~MeshRendererComponent() {
     mesh_geometry.reset();
   }
+};
+
+struct AnimationComponent {
+  float animation_timer = 0.0;
+  float animation_speed = 1.0f;
+  uint32_t current_animation_index = 0;
+  std::vector<Ref<Mesh::Animation>> animations;
 };
 
 struct ParticleSystemComponent {

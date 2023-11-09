@@ -362,7 +362,7 @@ void EditorLayer::clear_selected_entity() {
 void EditorLayer::save_scene() {
   if (!m_last_save_scene_path.empty()) {
     ThreadManager::get()->asset_thread.queue_job([this] {
-      SceneSerializer(get_active_scene()).Serialize(m_last_save_scene_path);
+      SceneSerializer(get_active_scene()).serialize(m_last_save_scene_path);
     });
   }
   else {
@@ -374,7 +374,7 @@ void EditorLayer::save_scene_as() {
   const std::string filepath = FileDialogs::save_file({{"Oxylus Scene", "oxscene"}}, "New Scene");
   if (!filepath.empty()) {
     ThreadManager::get()->asset_thread.queue_job([this, filepath] {
-      SceneSerializer(m_editor_scene).Serialize(filepath);
+      SceneSerializer(m_editor_scene).serialize(filepath);
     });
     m_last_save_scene_path = filepath;
   }

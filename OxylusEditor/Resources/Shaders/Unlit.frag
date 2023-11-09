@@ -9,8 +9,5 @@ layout(location = 0) out vec4 out_Color;
 
 void main() {
   vec4 color = in_Color;
-  //if (color.a < 0.1) {
-  //  discard;
-  //}
-  out_Color = vec4(1, 1, 0, 1);
+  out_Color = color;
 }

@@ -8,10 +8,15 @@
 #include "ImGuizmo.h"
 #include "glm/gtc/type_ptr.hpp"
 
+#include "Render/DebugRenderer.h"
 #include "Render/RendererConfig.h"
 #include "Render/RenderPipeline.h"
+#include "Render/Vulkan/Renderer.h"
 #include "Render/Vulkan/VulkanContext.h"
+
 #include "UI/OxUI.h"
+
+#include "Utils/FileUtils.h"
 #include "Utils/OxMath.h"
 #include "Utils/StringUtils.h"
 #include "Utils/Timestep.h"
@@ -55,7 +60,7 @@ void ViewportPanel::on_imgui_render() {
       static bool vsync = VulkanContext::get()->present_mode == vuk::PresentModeKHR::eFifo ? true : false;
       if (OxUI::property("VSync", &vsync)) {
         VulkanContext::get()->rebuild_swapchain();
-        RendererCVAR::cvar_vsync.set(vsync);
+        RendererCVar::cvar_vsync.set(vsync);
       }
       OxUI::property<float>("Camera sensitivity", &m_MouseSensitivity, 0.1f, 20.0f);
       OxUI::property<float>("Movement speed", &m_MovementSpeed, 5, 100.0f);
@@ -83,73 +88,9 @@ void ViewportPanel::on_imgui_render() {
     ImGui::SetCursorPosX((m_ViewportPanelSize.x - fixedWidth) * 0.5f);
 
     const auto dim = vuk::Dimension3D::absolute((uint32_t)fixedWidth, (uint32_t)m_ViewportPanelSize.y);
-    auto rp = m_Scene->get_renderer()->get_render_pipeline();
+    const auto rp = m_Scene->get_renderer()->get_render_pipeline();
     rp->detach_swapchain(dim);
     const auto final_image = rp->get_final_image();
-
-#if 0
-    vuk::ImageViewCreateInfo view_create_info;
-    auto image_view = vuk::allocate_image_view(*rp->get_frame_allocator(), *final_image->rg_attachment.ivci);
-
-      Ref<vuk::SampledImage> final_viewport_image = nullptr;
-
-    // entity highlighting
-    auto vk_context = VulkanContext::get();
-    if (!vk_context->context->is_pipeline_available("entity_highliting_pipeline")) {
-      vuk::PipelineBaseCreateInfo pci;
-      pci.add_glsl(FileUtils::read_shader_file("Unlit.vert"), "Unlit.vert");
-      pci.add_glsl(FileUtils::read_shader_file("Unlit.frag"), "Unlit.frag");
-      vk_context->context->create_named_pipeline("entity_highliting_pipeline", pci);
-    }
-
-    Ref<vuk::RenderGraph> rg = create_ref<vuk::RenderGraph>("viewport_render_graph");
-
-    rg->attach_and_clear_image("viewport_image", {.extent = dim, .format = vk_context->swapchain->format, .sample_count = vuk::SampleCountFlagBits::e1, .level_count = 1, .layer_count = 1}, vuk::Black<float>);
-    rg->attach_image("final_image_output", {})
-    rg->add_pass({
-      .name = "entity_highlighting_pass",
-      .resources = {
-        {final_image_reference.rg, final_image_reference.name, vuk::Resource::Type::eImage, vuk::Access::eFragmentSampled},
-        {"viewport_image"_image >> vuk::Access::eColorRW >> "viewport_final"}
-      },
-      .execute = [this](vuk::CommandBuffer& command_buffer) {
-        command_buffer.bind_graphics_pipeline("entity_highliting_pipeline")
-                      .set_viewport(0, vuk::Rect2D::framebuffer())
-                      .set_scissor(0, vuk::Rect2D::framebuffer())
-                      .broadcast_color_blend(vuk::BlendPreset::eOff)
-                      .set_rasterization({.cullMode = vuk::CullModeFlagBits::eNone})
-                      .set_depth_stencil(vuk::PipelineDepthStencilStateCreateInfo{
-                       });
-
-        const auto entity = EditorLayer::get()->get_selected_entity();
-
-        if (!entity || !entity.has_component<MeshRendererComponent>())
-          return;
-
-        struct PushConst {
-          Mat4 model_view_projection;
-          Vec4 color;
-        };
-
-        const PushConst push_const = {m_camera.GetProjectionMatrixFlipped() * m_camera.get_view_matrix() * entity.get_world_transform(), Vec4(0, 1, 0, 1)};
-
-        command_buffer.push_constants(vuk::ShaderStageFlagBits::eVertex, 0, push_const);
-
-        const auto mrc = entity.get_component<MeshRendererComponent>();
-        const auto mesh_geometry = mrc.mesh_geometry;
-
-        mesh_geometry->bind_vertex_buffer(command_buffer);
-        mesh_geometry->bind_index_buffer(command_buffer);
-        VulkanRenderer::render_node(mesh_geometry->linear_nodes[mrc.submesh_index], command_buffer, [](Mesh::Primitive*) { return true; });
-      }
-    });
-
-    vuk::Compiler compiler;
-    auto exec = compiler.link({&rg, 1}, {});
-    vuk::execute_submit_and_wait(*vk_context->superframe_allocator, std::move(*exec));
-
-    final_viewport_image = create_ref<vuk::SampledImage>(make_sampled_image(vuk::NameReference{rg.get(), vuk::QualifiedName({}, "viewport_final")}, {}));
-#endif
 
     if (final_image) {
       OxUI::image(*final_image, ImVec2{fixedWidth, m_ViewportSize.y});
@@ -171,7 +112,7 @@ void ViewportPanel::on_imgui_render() {
       const float frameHeight = 1.3f * ImGui::GetFrameHeight();
       const ImVec2 framePadding = ImGui::GetStyle().FramePadding;
       const ImVec2 buttonSize = {frameHeight, frameHeight};
-      constexpr float buttonCount = 6.0f;
+      constexpr float buttonCount = 7.0f;
       const ImVec2 gizmoPosition = {m_ViewportBounds[0].x + m_GizmoPosition.x, m_ViewportBounds[0].y + m_GizmoPosition.y};
       const ImRect bb(gizmoPosition.x, gizmoPosition.y, gizmoPosition.x + buttonSize.x + 8, gizmoPosition.y + (buttonSize.y + 2) * (buttonCount + 0.5f));
       ImVec4 frameColor = ImGui::GetStyleColorVec4(ImGuiCol_Tab);
@@ -213,6 +154,8 @@ void ViewportPanel::on_imgui_render() {
           m_GizmoType = ImGuizmo::UNIVERSAL;
         if (OxUI::toggle_button(m_GizmoMode == ImGuizmo::WORLD ? StringUtils::from_char8_t(ICON_MDI_EARTH) : StringUtils::from_char8_t(ICON_MDI_EARTH_OFF), m_GizmoMode == ImGuizmo::WORLD, buttonSize, alpha, alpha))
           m_GizmoMode = m_GizmoMode == ImGuizmo::LOCAL ? ImGuizmo::WORLD : ImGuizmo::LOCAL;
+        if (OxUI::toggle_button(StringUtils::from_char8_t(ICON_MDI_GRID), RendererCVar::cvar_draw_grid.get(), buttonSize, alpha, alpha))
+          RendererCVar::cvar_draw_grid.toggle();
 
         ImGui::PopStyleVar(2);
       }
@@ -274,6 +217,19 @@ void ViewportPanel::set_context(const Ref<Scene>& scene, SceneHierarchyPanel& sc
 }
 
 void ViewportPanel::on_update() {
+  // entity highlighting
+  if (scene_hierarchy_panel) {
+    auto entity = scene_hierarchy_panel->get_selected_entity();
+    if (entity && entity.has_component<MeshRendererComponent>()) {
+      DebugRenderer::draw_mesh(
+        entity.get_component<MeshRendererComponent>().mesh_geometry,
+        entity.get_component<TransformComponent>().position,
+        Vec3(1.01f),
+        Vec4(0, 1, 0, 1)
+      );
+    }
+  }
+
   if (m_ViewportFocused && !m_SimulationRunning && m_UseEditorCamera) {
     const Vec3& position = m_camera.get_position();
     const glm::vec2 yawPitch = glm::vec2(m_camera.get_yaw(), m_camera.get_pitch());

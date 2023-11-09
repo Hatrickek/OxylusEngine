@@ -386,11 +386,12 @@ void Mesh::update_animation(uint32_t index, const float time) {
     OX_CORE_WARN("No animation with index {} !", index);
     return;
   }
-  Animation& animation = animations[index];
+
+  Ref<Animation>& animation = animations[index];
 
   bool updated = false;
-  for (const auto& channel : animation.channels) {
-    AnimationSampler& sampler = animation.samplers[channel.samplerIndex];
+  for (const auto& channel : animation->channels) {
+    AnimationSampler& sampler = animation->samplers[channel.samplerIndex];
     if (sampler.inputs.size() > sampler.outputs_vec4.size()) {
       continue;
     }
@@ -620,7 +621,7 @@ void Mesh::load_node(Node* parent,
         int jointComponentType;
 
         // Position attribute is required
-        assert(primitive.attributes.find("POSITION") != primitive.attributes.end());
+        OX_CORE_ASSERT(primitive.attributes.contains("POSITION"));
 
         const tinygltf::Accessor& posAccessor = model.accessors[primitive.attributes.find("POSITION")->second];
         const tinygltf::BufferView& posView = model.bufferViews[posAccessor.bufferView];
@@ -630,7 +631,7 @@ void Mesh::load_node(Node* parent,
         vertex_count = static_cast<uint32_t>(posAccessor.count);
         posByteStride = posAccessor.ByteStride(posView) ? posAccessor.ByteStride(posView) / sizeof(float) : tinygltf::GetNumComponentsInType(TINYGLTF_TYPE_VEC3);
 
-        if (primitive.attributes.find("NORMAL") != primitive.attributes.end()) {
+        if (primitive.attributes.contains("NORMAL")) {
           const tinygltf::Accessor& normAccessor = model.accessors[primitive.attributes.find("NORMAL")->second];
           const tinygltf::BufferView& normView = model.bufferViews[normAccessor.bufferView];
           bufferNormals = reinterpret_cast<const float*>(&model.buffers[normView.buffer].data[normAccessor.byteOffset + normView.byteOffset]);
@@ -638,7 +639,7 @@ void Mesh::load_node(Node* parent,
         }
 
         // UVs
-        if (primitive.attributes.find("TEXCOORD_0") != primitive.attributes.end()) {
+        if (primitive.attributes.contains("TEXCOORD_0")) {
           const tinygltf::Accessor& uvAccessor = model.accessors[primitive.attributes.find("TEXCOORD_0")->second];
           const tinygltf::BufferView& uvView = model.bufferViews[uvAccessor.bufferView];
           bufferTexCoordSet0 = reinterpret_cast<const float*>(&model.buffers[uvView.buffer].data[uvAccessor.byteOffset + uvView.byteOffset]);
@@ -646,7 +647,7 @@ void Mesh::load_node(Node* parent,
         }
 
         // Vertex colors
-        if (primitive.attributes.find("COLOR_0") != primitive.attributes.end()) {
+        if (primitive.attributes.contains("COLOR_0")) {
           const tinygltf::Accessor& accessor = model.accessors[primitive.attributes.find("COLOR_0")->second];
           const tinygltf::BufferView& view = model.bufferViews[accessor.bufferView];
           bufferColorSet0 = reinterpret_cast<const float*>(&model.buffers[view.buffer].data[accessor.byteOffset + view.byteOffset]);
@@ -661,7 +662,7 @@ void Mesh::load_node(Node* parent,
 
         // Skinning
         // Joints
-        if (primitive.attributes.find("JOINTS_0") != primitive.attributes.end()) {
+        if (primitive.attributes.contains("JOINTS_0")) {
           const tinygltf::Accessor& jointAccessor = model.accessors[primitive.attributes.find("JOINTS_0")->second];
           const tinygltf::BufferView& jointView = model.bufferViews[jointAccessor.bufferView];
           bufferJoints = &(model.buffers[jointView.buffer].data[jointAccessor.byteOffset + jointView.byteOffset]);
@@ -669,7 +670,7 @@ void Mesh::load_node(Node* parent,
           jointByteStride = jointAccessor.ByteStride(jointView) ? jointAccessor.ByteStride(jointView) / tinygltf::GetComponentSizeInBytes(jointComponentType) : tinygltf::GetNumComponentsInType(TINYGLTF_TYPE_VEC4);
         }
 
-        if (primitive.attributes.find("WEIGHTS_0") != primitive.attributes.end()) {
+        if (primitive.attributes.contains("WEIGHTS_0")) {
           const tinygltf::Accessor& weightAccessor = model.accessors[primitive.attributes.find("WEIGHTS_0")->second];
           const tinygltf::BufferView& weightView = model.bufferViews[weightAccessor.bufferView];
           bufferWeights = reinterpret_cast<const float*>(&(model.buffers[weightView.buffer].data[weightAccessor.byteOffset + weightView.byteOffset]));
@@ -889,7 +890,7 @@ void Mesh::load_animations(tinygltf::Model& gltf_model) {
       animation.channels.emplace_back(channel);
     }
 
-    animations.emplace_back(animation);
+    animations.emplace_back(create_ref<Animation>(std::move(animation)));
   }
 }
 

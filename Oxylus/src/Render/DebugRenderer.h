@@ -23,9 +23,9 @@ struct PointInfo {
 };
 
 struct ShapeInfo {
-  Mat4 ModelMatrix = {};
-  Vec4 Color = {};
-  Ref<Mesh> ShapeMesh = nullptr;
+  Mat4 model_matrix = {};
+  Vec4 color = {};
+  Ref<Mesh> shape_mesh = nullptr;
 };
 
 class DebugRenderer {
@@ -52,6 +52,7 @@ public:
   static void draw_box(const Vec3& pos, const Vec3& scale, const Vec4& color = Vec4(1.0f, 1.0f, 1.0f, 1.0f), const Vec3& rotation = Vec3(0), bool ndt = false);
   static void draw_sphere(const Vec3& pos, const Vec3& scale, const Vec4& color = Vec4(1.0f, 1.0f, 1.0f, 1.0f), const Vec3& rotation = Vec3(0), bool ndt = false);
   static void draw_capsule(const Vec3& pos, const Vec3& scale, const Vec4& color = Vec4(1.0f, 1.0f, 1.0f, 1.0f), const Vec3& rotation = Vec3(0), bool ndt = false);
+  static void draw_mesh(const Ref<Mesh>& mesh, const Vec3& pos, const Vec3& scale, const Vec4& color = Vec4(1.0f, 1.0f, 1.0f, 1.0f), const Vec3& rotation = Vec3(0), bool ndt = false);
 
   static DebugRenderer* get_instance() { return instance; }
   const std::vector<LineInfo>& get_lines(bool depth_tested = true) const { return depth_tested ? draw_list.debug_lines : draw_list_ndt.debug_lines; }

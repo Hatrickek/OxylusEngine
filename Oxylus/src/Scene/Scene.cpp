@@ -636,6 +636,10 @@ void Scene::on_component_added<AudioListenerComponent>(Entity entity, AudioListe
 template <>
 void Scene::on_component_added<MeshRendererComponent>(Entity entity, MeshRendererComponent& component) {
   entity.add_component_internal<MaterialComponent>();
+  if (!component.mesh_geometry->animations.empty()) {
+    auto& animation_component = entity.add_component_internal<AnimationComponent>();
+    animation_component.animations = component.mesh_geometry->animations;
+  }
 }
 
 template <>
@@ -648,6 +652,9 @@ void Scene::on_component_added<MaterialComponent>(Entity entity, MaterialCompone
       component.materials = entity.get_component<MeshRendererComponent>().mesh_geometry->get_materials_as_ref();
   }
 }
+
+template <>
+void Scene::on_component_added<AnimationComponent>(Entity entity, AnimationComponent& component) { }
 
 template <>
 void Scene::on_component_added<LightComponent>(Entity entity, LightComponent& component) { }

@@ -17,5 +17,6 @@ public:
 
   static Ref<Mesh> generate_quad();
   static Ref<Mesh> generate_cube();
+  static Ref<Mesh> generate_sphere();
 };
 }

@@ -38,7 +38,7 @@ void Renderer::draw(VulkanContext* context, ImGuiLayer* imgui_layer, LayerStack&
 
   imgui_layer->begin();
 
-  auto frameAllocator = context->begin();
+  auto frame_allocator = context->begin();
   const Ref<vuk::RenderGraph> rg = create_ref<vuk::RenderGraph>("runner");
   rg->attach_swapchain("_swp", context->swapchain);
   rg->clear_image("_swp", "final_image", vuk::ClearColor{0.0f, 0.0f, 0.0f, 1.0f});
@@ -54,14 +54,14 @@ void Renderer::draw(VulkanContext* context, ImGuiLayer* imgui_layer, LayerStack&
 
     const auto dim = vuk::Dimension3D::absolute(context->swapchain->extent);
 
-    fut = *rp->on_render(frameAllocator, vuk::Future{rg, "final_image"}, dim);
+    fut = *rp->on_render(frame_allocator, vuk::Future{rg, "final_image"}, dim);
 
     for (const auto& layer : layer_stack)
       layer->on_imgui_render();
     system_manager->on_imgui_render();
     imgui_layer->end();
 
-    fut = imgui_layer->render_draw_data(frameAllocator, fut, ImGui::GetDrawData());
+    fut = imgui_layer->render_draw_data(frame_allocator, fut, ImGui::GetDrawData());
   }
   // Render it into a separate image with given dimension
   else {
@@ -92,20 +92,20 @@ void Renderer::draw(VulkanContext* context, ImGuiLayer* imgui_layer, LayerStack&
       vuk::ClearColor(0.0f, 0.0f, 0.0f, 1.f)
     );
 
-    auto rpFut = *rp->on_render(frameAllocator, vuk::Future{rgx, "_img"}, dim);
-    const auto attachmentNameOut = rpFut.get_bound_name().name;
+    const auto rp_fut = rp->on_render(frame_allocator, vuk::Future{rgx, "_img"}, dim);
+    const auto attachment_name_out = rp_fut->get_bound_name().name;
 
-    auto rpRg = rpFut.get_render_graph();
+    auto rp_rg = rp_fut->get_render_graph();
 
     vuk::Compiler compiler;
-    compiler.compile({&rpRg, 1}, {});
+    compiler.compile({&rp_rg, 1}, {});
 
-    rg->attach_in(attachmentNameOut, std::move(rpFut));
+    rg->attach_in(attachment_name_out, std::move(*rp_fut));
 
-    auto si = create_ref<vuk::SampledImage>(make_sampled_image(vuk::NameReference{rg.get(), vuk::QualifiedName({}, attachmentNameOut)}, {}));
+    auto si = create_ref<vuk::SampledImage>(make_sampled_image(vuk::NameReference{rg.get(), vuk::QualifiedName({}, attachment_name_out)}, {}));
     rp->set_final_image(si);
     rp->set_frame_render_graph(rg);
-    rp->set_frame_allocator(&frameAllocator);
+    rp->set_frame_allocator(&frame_allocator);
 
     for (const auto& layer : layer_stack)
       layer->on_imgui_render();
@@ -114,10 +114,10 @@ void Renderer::draw(VulkanContext* context, ImGuiLayer* imgui_layer, LayerStack&
 
     imgui_layer->end();
 
-    fut = imgui_layer->render_draw_data(frameAllocator, vuk::Future{rg, "final_image"}, ImGui::GetDrawData());
+    fut = imgui_layer->render_draw_data(frame_allocator, vuk::Future{rg, "final_image"}, ImGui::GetDrawData());
   }
 
-  context->end(fut, frameAllocator);
+  context->end(fut, frame_allocator);
 }
 
 void Renderer::render_node(const Mesh::Node* node, vuk::CommandBuffer& command_buffer, const std::function<bool(Mesh::Primitive* prim, Mesh::MeshData* mesh_data)>& per_mesh_func) {

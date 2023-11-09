@@ -1,7 +1,7 @@
 ﻿#include "DebugRenderer.h"
 
-#include "Mesh.h"
-#include "Core/Resources.h"
+#include "RendererCommon.h"
+
 #include "Utils/OxMath.h"
 #include "Utils/Profiler.h"
 
@@ -14,8 +14,8 @@ void DebugRenderer::init() {
 
   instance = new DebugRenderer();
 
-  instance->debug_draw_data.cube = create_ref<Mesh>(Resources::get_resources_path("Objects/cube.glb"), Mesh::FileLoadingFlags::DontLoadImages | Mesh::FileLoadingFlags::DontCreateMaterials, 1.0f);
-  instance->debug_draw_data.sphere = create_ref<Mesh>(Resources::get_resources_path("Objects/sphere.gltf"), Mesh::FileLoadingFlags::DontLoadImages | Mesh::FileLoadingFlags::DontCreateMaterials, 1.0f);
+  instance->debug_draw_data.cube = RendererCommon::generate_cube();
+  instance->debug_draw_data.sphere = RendererCommon::generate_sphere();
 }
 
 void DebugRenderer::release() {
@@ -79,4 +79,12 @@ void DebugRenderer::draw_sphere(const Vec3& pos, const Vec3& scale, const Vec4& 
 }
 
 void DebugRenderer::draw_capsule(const Vec3& pos, const Vec3& scale, const Vec4& color, const Vec3& rotation, bool ndt) { }
+
+void DebugRenderer::draw_mesh(const Ref<Mesh>& mesh, const Vec3& pos, const Vec3& scale, const Vec4& color, const Vec3& rotation, bool ndt) {
+  const auto transform = glm::translate(glm::mat4(1.0f), pos) * glm::toMat4(glm::quat(rotation)) * glm::scale(glm::mat4(1.0f), scale);
+  if (ndt)
+    instance->draw_list_ndt.debug_shapes.emplace_back(ShapeInfo{transform, color, mesh});
+  else
+    instance->draw_list.debug_shapes.emplace_back(ShapeInfo{transform, color, mesh});
+}
 }

@@ -132,7 +132,7 @@ public:
     Vec4 weight0;
   };
 
-  std::vector<Animation> animations;
+  std::vector<Ref<Animation>> animations = {};
 
   std::vector<Ref<TextureAsset>> m_textures;
   std::vector<Node*> nodes;

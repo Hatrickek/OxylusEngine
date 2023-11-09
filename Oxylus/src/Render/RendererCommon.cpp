@@ -141,8 +141,6 @@ std::pair<vuk::Buffer, vuk::Buffer> RendererCommon::merge_render_objects(std::ve
 
   for (auto& m : draw_list) {
     Ref<vuk::RenderGraph> rgv = create_ref<vuk::RenderGraph>("host_data_to_buffer");
-    //const auto dst_vertex_offset = m.first_vertex * sizeof(Mesh::Vertex);
-    //merged_vertex_buffer = merged_vertex_buffer.add_offset(dst_vertex_offset);
     rgv->attach_buffer("_src_vertex", *m.mesh_geometry->vertex_buffer, vuk::Access::eNone);
     rgv->attach_buffer("_dst_vertex", merged_vertex_buffer, vuk::Access::eNone);
 
@@ -169,8 +167,6 @@ std::pair<vuk::Buffer, vuk::Buffer> RendererCommon::merge_render_objects(std::ve
     futures.emplace_back(rgv, "_dst_vertex+");
 
     const Ref<vuk::RenderGraph> rgi = create_ref<vuk::RenderGraph>("host_data_to_buffer");
-    //const auto dst_index_offset = m.first_index * sizeof(uint32_t);
-    //merged_index_buffer = merged_index_buffer.add_offset(dst_index_offset);
     rgi->attach_buffer("_src_index", *m.mesh_geometry->index_buffer, vuk::Access::eNone);
     rgi->attach_buffer("_dst_index", merged_index_buffer, vuk::Access::eNone);
 
@@ -321,6 +317,56 @@ Ref<Mesh> RendererCommon::generate_cube() {
     20, 21, 22,
     20, 22, 23
   };
+
+  return create_ref<Mesh>(vertices, indices);
+}
+
+Ref<Mesh> RendererCommon::generate_sphere() {
+  std::vector<Mesh::Vertex> vertices;
+  std::vector<uint32_t> indices;
+
+  int latitude_bands = 30;
+  int longitude_bands = 30;
+  float radius = 2;
+
+  for (int i = 0; i <= latitude_bands; i++) {
+    float theta = (float)i * glm::pi<float>() / (float)latitude_bands;
+    float sinTheta = sin(theta);
+    float cosTheta = cos(theta);
+
+    for (int longNumber = 0; longNumber <= longitude_bands; longNumber++) {
+      float phi = (float)longNumber * 2.0f * glm::pi<float>() / (float)longitude_bands;
+      float sinPhi = sin(phi);
+      float cosPhi = cos(phi);
+
+      Mesh::Vertex vs;
+      vs.normal[0] = cosPhi * sinTheta;   // x
+      vs.normal[1] = cosTheta;            // y
+      vs.normal[2] = sinPhi * sinTheta;   // z
+      vs.uv[0] = 1.0f - (float)longNumber / (float)longitude_bands; // u
+      vs.uv[1] = 1.0f - (float)i / (float)latitude_bands;   // v
+      vs.position[0] = radius * vs.normal[0];
+      vs.position[1] = radius * vs.normal[1];
+      vs.position[2] = radius * vs.normal[2];
+
+      vertices.push_back(vs);
+    }
+
+    for (int j = 0; j < latitude_bands; j++) {
+      for (int longNumber = 0; longNumber < longitude_bands; longNumber++) {
+        int first = j * (longitude_bands + 1) + longNumber;
+        int second = first + longitude_bands + 1;
+
+        indices.push_back(first);
+        indices.push_back(second);
+        indices.push_back(first + 1);
+
+        indices.push_back(second);
+        indices.push_back(second + 1);
+        indices.push_back(first + 1);
+      }
+    }
+  }
 
   return create_ref<Mesh>(vertices, indices);
 }

@@ -13,7 +13,7 @@
 namespace Oxylus {
 SceneSerializer::SceneSerializer(const Ref<Scene>& scene) : m_Scene(scene) { }
 
-void SceneSerializer::Serialize(const std::string& filePath) const {
+void SceneSerializer::serialize(const std::string& filePath) const {
   ryml::Tree tree;
 
   ryml::NodeRef root = tree.rootref();

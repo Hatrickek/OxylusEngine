@@ -26,7 +26,7 @@ void RendererConfig::save_config(const char* path) const {
     auto node = node_root["Display"];
     node |= ryml::MAP;
 
-    node["VSync"] << RendererCVAR::cvar_vsync.get();
+    node["VSync"] << RendererCVar::cvar_vsync.get();
   }
 
   //Color
@@ -34,9 +34,9 @@ void RendererConfig::save_config(const char* path) const {
     auto node = node_root["Color"];
     node |= ryml::MAP;
 
-    node["Tonemapper"] << RendererCVAR::cvar_tonemapper.get();
-    node["Exposure"] << RendererCVAR::cvar_exposure.get();
-    node["Gamma"] << RendererCVAR::cvar_gamma.get();
+    node["Tonemapper"] << RendererCVar::cvar_tonemapper.get();
+    node["Exposure"] << RendererCVar::cvar_exposure.get();
+    node["Gamma"] << RendererCVar::cvar_gamma.get();
   }
 
   //GTAO
@@ -44,7 +44,7 @@ void RendererConfig::save_config(const char* path) const {
     auto node = node_root["GTAO"];
     node |= ryml::MAP;
 
-    node["Enabled"] << RendererCVAR::cvar_gtao_enable.get();
+    node["Enabled"] << RendererCVar::cvar_gtao_enable.get();
   }
 
   //Bloom
@@ -52,8 +52,8 @@ void RendererConfig::save_config(const char* path) const {
     auto node = node_root["Bloom"];
     node |= ryml::MAP;
 
-    node["Enabled"] << RendererCVAR::cvar_bloom_enable.get();
-    node["Threshold"] << RendererCVAR::cvar_bloom_threshold.get();
+    node["Enabled"] << RendererCVar::cvar_bloom_enable.get();
+    node["Threshold"] << RendererCVar::cvar_bloom_threshold.get();
   }
 
   //SSR
@@ -61,7 +61,7 @@ void RendererConfig::save_config(const char* path) const {
     auto node = node_root["SSR"];
     node |= ryml::MAP;
 
-    node["Enabled"] << RendererCVAR::cvar_ssr_enable.get();
+    node["Enabled"] << RendererCVar::cvar_ssr_enable.get();
   }
 
   //DirectShadows
@@ -69,7 +69,7 @@ void RendererConfig::save_config(const char* path) const {
     auto node = node_root["DirectShadows"];
     node |= ryml::MAP;
 
-    node["UsePCF"] << RendererCVAR::cvar_shadows_pcf.get();
+    node["UsePCF"] << RendererCVar::cvar_shadows_pcf.get();
   }
 
   std::stringstream ss;
@@ -92,7 +92,7 @@ bool RendererConfig::load_config(const char* path) {
     const ryml::ConstNodeRef node = nodeRoot["Display"];
     auto vsync = 1;
     node["VSync"] >> vsync;
-    RendererCVAR::cvar_vsync.set(vsync);
+    RendererCVar::cvar_vsync.set(vsync);
   }
 
   //Color
@@ -103,9 +103,9 @@ bool RendererConfig::load_config(const char* path) {
     node["Tonemapper"] >> tonemapper;
     node["Exposure"] >> exposure;
     node["Gamma"] >> gamma;
-    RendererCVAR::cvar_tonemapper.set(tonemapper);
-    RendererCVAR::cvar_exposure.set(exposure);
-    RendererCVAR::cvar_gamma.set(gamma);
+    RendererCVar::cvar_tonemapper.set(tonemapper);
+    RendererCVar::cvar_exposure.set(exposure);
+    RendererCVar::cvar_gamma.set(gamma);
   }
 
   //GTAO
@@ -113,7 +113,7 @@ bool RendererConfig::load_config(const char* path) {
     const ryml::ConstNodeRef node = nodeRoot["GTAO"];
     int enabled;
     node["Enabled"] >> enabled;
-    RendererCVAR::cvar_gtao_enable.set(enabled);
+    RendererCVar::cvar_gtao_enable.set(enabled);
   }
 
   //Bloom
@@ -123,8 +123,8 @@ bool RendererConfig::load_config(const char* path) {
     float threshold;
     node["Enabled"] >> enabled;
     node["Threshold"] >> threshold;
-    RendererCVAR::cvar_bloom_enable.set(enabled);
-    RendererCVAR::cvar_bloom_threshold.set(threshold);
+    RendererCVar::cvar_bloom_enable.set(enabled);
+    RendererCVar::cvar_bloom_threshold.set(threshold);
   }
 
   //SSR
@@ -132,7 +132,7 @@ bool RendererConfig::load_config(const char* path) {
     const ryml::ConstNodeRef node = nodeRoot["SSR"];
     int enabled; 
     node["Enabled"] >> enabled;
-    RendererCVAR::cvar_ssr_enable.set(enabled);
+    RendererCVar::cvar_ssr_enable.set(enabled);
   }
 
   //DirectShadows
@@ -140,7 +140,7 @@ bool RendererConfig::load_config(const char* path) {
     const ryml::ConstNodeRef node = nodeRoot["DirectShadows"];
     int use_pcf;
     node["UsePCF"] >> use_pcf;
-    RendererCVAR::cvar_shadows_pcf.set(use_pcf);
+    RendererCVar::cvar_shadows_pcf.set(use_pcf);
   }
 
   return true;

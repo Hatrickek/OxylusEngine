@@ -51,7 +51,7 @@ static VkBool32 DebugCallback(const VkDebugUtilsMessageSeverityFlagBitsEXT messa
   return VK_FALSE;
 }
 
-inline vuk::Swapchain make_swapchain(VulkanContext* context, std::optional<VkSwapchainKHR> old_swapchain, vuk::PresentModeKHR present_mode = vuk::PresentModeKHR::eFifo) {
+static vuk::Swapchain make_swapchain(VulkanContext* context, std::optional<VkSwapchainKHR> old_swapchain, vuk::PresentModeKHR present_mode = vuk::PresentModeKHR::eFifo) {
   vkb::SwapchainBuilder swb(context->vkb_device, context->surface);
   swb.add_fallback_format(vuk::SurfaceFormatKHR{vuk::Format::eR8G8B8A8Unorm, vuk::ColorSpaceKHR::eSrgbNonlinear});
   swb.add_fallback_present_mode((VkPresentModeKHR)present_mode);
@@ -224,7 +224,8 @@ void VulkanContext::create_context(const AppSpec& spec) {
   constexpr unsigned num_inflight_frames = 3;
   superframe_resource.emplace(*context, num_inflight_frames);
   superframe_allocator.emplace(*superframe_resource);
-  swapchain = context->add_swapchain(make_swapchain(this, {}, present_mode));
+  auto sw = make_swapchain(this, {}, present_mode);
+  swapchain = context->add_swapchain(sw);
   present_ready = vuk::Unique<std::array<VkSemaphore, 3>>(*superframe_allocator);
   render_complete = vuk::Unique<std::array<VkSemaphore, 3>>(*superframe_allocator);
 
@@ -256,10 +257,12 @@ void VulkanContext::create_context(const AppSpec& spec) {
 }
 
 void VulkanContext::rebuild_swapchain() {
+  context->wait_idle();
   superframe_allocator->deallocate(std::span{&swapchain->swapchain, 1});
   superframe_allocator->deallocate(swapchain->image_views);
   context->remove_swapchain(swapchain);
-  swapchain = context->add_swapchain(make_swapchain(this, swapchain->swapchain, present_mode));
+  auto sw = make_swapchain(this, swapchain->swapchain, present_mode);
+  swapchain = context->add_swapchain(sw);
   for (auto& iv : swapchain->image_views) {
     context->set_name(iv.payload, "Swapchain ImageView");
   }

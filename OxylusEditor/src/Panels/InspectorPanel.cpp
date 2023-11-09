@@ -40,10 +40,10 @@ void InspectorPanel::on_imgui_render() {
 }
 
 template <typename T, typename UIFunction>
-static void DrawComponent(const char8_t* name,
-                          Entity entity,
-                          UIFunction uiFunction,
-                          const bool removable = true) {
+static void draw_component(const char8_t* name,
+                           Entity entity,
+                           UIFunction uiFunction,
+                           const bool removable = true) {
   if (entity.has_component<T>()) {
     static constexpr ImGuiTreeNodeFlags treeFlags = ImGuiTreeNodeFlags_DefaultOpen
                                                     | ImGuiTreeNodeFlags_SpanAvailWidth |
@@ -274,7 +274,7 @@ void InspectorPanel::draw_components(Entity entity) const {
   }
   ImGui::PopItemWidth();
 
-  DrawComponent<TransformComponent>(ICON_MDI_VECTOR_LINE " Transform Component",
+  draw_component<TransformComponent>(ICON_MDI_VECTOR_LINE " Transform Component",
     entity,
     [](TransformComponent& component) {
       OxUI::begin_properties();
@@ -286,7 +286,7 @@ void InspectorPanel::draw_components(Entity entity) const {
       OxUI::end_properties();
     });
 
-  DrawComponent<MeshRendererComponent>(ICON_MDI_VECTOR_SQUARE " Mesh Renderer Component",
+  draw_component<MeshRendererComponent>(ICON_MDI_VECTOR_SQUARE " Mesh Renderer Component",
     entity,
     [](const MeshRendererComponent& component) {
       if (!component.mesh_geometry)
@@ -298,7 +298,7 @@ void InspectorPanel::draw_components(Entity entity) const {
       ImGui::Text("Material Count: %d", (uint32_t)component.mesh_geometry->get_materials_as_ref().size());
     });
 
-  DrawComponent<MaterialComponent>(ICON_MDI_SPRAY " Material Component",
+  draw_component<MaterialComponent>(ICON_MDI_SPRAY " Material Component",
     entity,
     [](MaterialComponent& component) {
       if (component.materials.empty())
@@ -335,7 +335,37 @@ void InspectorPanel::draw_components(Entity entity) const {
       }
     });
 
-  DrawComponent<SkyLightComponent>(ICON_MDI_WEATHER_SUNNY " Sky Light Component",
+  draw_component<AnimationComponent>(ICON_MDI_ANIMATION " Animation Component",
+    entity,
+    [](AnimationComponent& component) {
+      constexpr ImGuiTreeNodeFlags flags = ImGuiTreeNodeFlags_OpenOnArrow | ImGuiTreeNodeFlags_SpanFullWidth |
+                                           ImGuiTreeNodeFlags_FramePadding;
+
+      const float filter_cursor_pos_x = ImGui::GetCursorPosX();
+      ImGuiTextFilter name_filter;
+
+      name_filter.Draw("##animation_filter", ImGui::GetContentRegionAvail().x - (OxUI::get_icon_button_size(ICON_MDI_PLUS, "").x + 2.0f * ImGui::GetStyle().FramePadding.x));
+
+      if (!name_filter.IsActive()) {
+        ImGui::SameLine();
+        ImGui::SetCursorPosX(filter_cursor_pos_x + ImGui::GetFontSize() * 0.5f);
+        ImGui::TextUnformatted(StringUtils::from_char8_t(ICON_MDI_MAGNIFY " Search..."));
+      }
+
+      for (uint32_t index = 0; index < (uint32_t)component.animations.size(); index++) {
+        auto& animation = component.animations[index];
+        if (name_filter.PassFilter(animation->name.c_str())) {
+          if (ImGui::TreeNodeEx(animation->name.c_str(), flags, "%s %s", StringUtils::from_char8_t(ICON_MDI_CIRCLE), animation->name.c_str())) {
+            if (ImGui::Button("Play", {ImGui::GetContentRegionAvail().x, ImGui::GetFrameHeight()})) {
+              component.current_animation_index = index;
+            }
+            ImGui::TreePop();
+          }
+        }
+      }
+    });
+
+  draw_component<SkyLightComponent>(ICON_MDI_WEATHER_SUNNY " Sky Light Component",
     entity,
     [this](SkyLightComponent& component) {
       auto file_name = FileSystem::get_file_name(component.cubemap->get_path());
@@ -370,7 +400,7 @@ void InspectorPanel::draw_components(Entity entity) const {
       OxUI::end_properties();
     });
 
-  DrawComponent<PostProcessProbe>(ICON_MDI_SPRAY " PostProcess Probe Component",
+  draw_component<PostProcessProbe>(ICON_MDI_SPRAY " PostProcess Probe Component",
     entity,
     [this](PostProcessProbe& component) {
       ImGui::Text("Vignette");
@@ -402,7 +432,7 @@ void InspectorPanel::draw_components(Entity entity) const {
       ImGui::Separator();
     });
 
-  DrawComponent<AudioSourceComponent>(ICON_MDI_VOLUME_MEDIUM " Audio Source Component",
+  draw_component<AudioSourceComponent>(ICON_MDI_VOLUME_MEDIUM " Audio Source Component",
     entity,
     [&entity](AudioSourceComponent& component) {
       auto& config = component.config;
@@ -485,7 +515,7 @@ void InspectorPanel::draw_components(Entity entity) const {
       }
     });
 
-  DrawComponent<AudioListenerComponent>(ICON_MDI_CIRCLE_SLICE_8 " Audio Listener Component",
+  draw_component<AudioListenerComponent>(ICON_MDI_CIRCLE_SLICE_8 " Audio Listener Component",
     entity,
     [](AudioListenerComponent& component) {
       auto& config = component.config;
@@ -501,7 +531,7 @@ void InspectorPanel::draw_components(Entity entity) const {
       OxUI::end_properties();
     });
 
-  DrawComponent<LightComponent>(ICON_MDI_LAMP " Light Component",
+  draw_component<LightComponent>(ICON_MDI_LAMP " Light Component",
     entity,
     [](LightComponent& component) {
       OxUI::begin_properties();
@@ -562,7 +592,7 @@ void InspectorPanel::draw_components(Entity entity) const {
       OxUI::end_properties();
     });
 
-  DrawComponent<RigidbodyComponent>(ICON_MDI_SOCCER " Rigidbody Component",
+  draw_component<RigidbodyComponent>(ICON_MDI_SOCCER " Rigidbody Component",
     entity,
     [this](RigidbodyComponent& component) {
       OxUI::begin_properties();
@@ -590,7 +620,7 @@ void InspectorPanel::draw_components(Entity entity) const {
       OxUI::end_properties();
     });
 
-  DrawComponent<BoxColliderComponent>(ICON_MDI_CHECKBOX_BLANK_OUTLINE " Box Collider",
+  draw_component<BoxColliderComponent>(ICON_MDI_CHECKBOX_BLANK_OUTLINE " Box Collider",
     entity,
     [](BoxColliderComponent& component) {
       OxUI::begin_properties();
@@ -604,7 +634,7 @@ void InspectorPanel::draw_components(Entity entity) const {
       component.density = glm::max(component.density, 0.001f);
     });
 
-  DrawComponent<SphereColliderComponent>(ICON_MDI_CIRCLE_OUTLINE " Sphere Collider",
+  draw_component<SphereColliderComponent>(ICON_MDI_CIRCLE_OUTLINE " Sphere Collider",
     entity,
     [](SphereColliderComponent& component) {
       OxUI::begin_properties();
@@ -618,7 +648,7 @@ void InspectorPanel::draw_components(Entity entity) const {
       component.density = glm::max(component.density, 0.001f);
     });
 
-  DrawComponent<CapsuleColliderComponent>(ICON_MDI_CIRCLE_OUTLINE " Capsule Collider",
+  draw_component<CapsuleColliderComponent>(ICON_MDI_CIRCLE_OUTLINE " Capsule Collider",
     entity,
     [](CapsuleColliderComponent& component) {
       OxUI::begin_properties();
@@ -633,7 +663,7 @@ void InspectorPanel::draw_components(Entity entity) const {
       component.density = glm::max(component.density, 0.001f);
     });
 
-  DrawComponent<TaperedCapsuleColliderComponent>(ICON_MDI_CIRCLE_OUTLINE " Tapered Capsule Collider",
+  draw_component<TaperedCapsuleColliderComponent>(ICON_MDI_CIRCLE_OUTLINE " Tapered Capsule Collider",
     entity,
     [](TaperedCapsuleColliderComponent& component) {
       OxUI::begin_properties();
@@ -649,7 +679,7 @@ void InspectorPanel::draw_components(Entity entity) const {
       component.density = glm::max(component.density, 0.001f);
     });
 
-  DrawComponent<CylinderColliderComponent>(ICON_MDI_CIRCLE_OUTLINE " Cylinder Collider",
+  draw_component<CylinderColliderComponent>(ICON_MDI_CIRCLE_OUTLINE " Cylinder Collider",
     entity,
     [](CylinderColliderComponent& component) {
       OxUI::begin_properties();
@@ -664,7 +694,7 @@ void InspectorPanel::draw_components(Entity entity) const {
       component.density = glm::max(component.density, 0.001f);
     });
 
-  DrawComponent<CharacterControllerComponent>(ICON_MDI_CIRCLE_OUTLINE " Character Controller",
+  draw_component<CharacterControllerComponent>(ICON_MDI_CIRCLE_OUTLINE " Character Controller",
     entity,
     [](CharacterControllerComponent& component) {
       OxUI::begin_properties();
@@ -682,7 +712,7 @@ void InspectorPanel::draw_components(Entity entity) const {
       OxUI::end_properties();
     });
 
-  DrawComponent<CameraComponent>(ICON_MDI_CAMERA "Camera Component",
+  draw_component<CameraComponent>(ICON_MDI_CAMERA "Camera Component",
     entity,
     [](const CameraComponent& component) {
       OxUI::begin_properties();
@@ -701,7 +731,7 @@ void InspectorPanel::draw_components(Entity entity) const {
       OxUI::end_properties();
     });
 
-  DrawComponent<LuaScriptComponent>(ICON_MDI_CAMERA "Lua Script Component",
+  draw_component<LuaScriptComponent>(ICON_MDI_CAMERA "Lua Script Component",
     entity,
     [](LuaScriptComponent& component) {
       const std::string name = component.lua_system
@@ -735,7 +765,7 @@ void InspectorPanel::draw_components(Entity entity) const {
     });
 
 
-  DrawComponent<ParticleSystemComponent>(ICON_MDI_LAMP "Particle System Component",
+  draw_component<ParticleSystemComponent>(ICON_MDI_LAMP "Particle System Component",
     entity,
     [](const ParticleSystemComponent& component) {
       auto& props = component.system->get_properties();
@@ -795,7 +825,7 @@ void InspectorPanel::draw_components(Entity entity) const {
   if (entity.has_component<CustomComponent>()) {
     const auto n = entity.get_component<CustomComponent>().name;
     const auto* n2 = (const char8_t*)n.c_str();
-    DrawComponent<CustomComponent>(n2,
+    draw_component<CustomComponent>(n2,
       entity,
       [](CustomComponent& component) {
         OxUI::begin_properties();
