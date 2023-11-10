@@ -73,9 +73,9 @@ void Renderer::draw(VulkanContext* context, ImGuiLayer* imgui_layer, LayerStack&
     OX_CORE_ASSERT(dim.extent.height > 0)
 
     // recover if the size is somehow 0
-    if(dim.extent.width <= 0)
+    if (dim.extent.width <= 0)
       dim.extent.width = 10;
-    if(dim.extent.height <= 0)
+    if (dim.extent.height <= 0)
       dim.extent.height = 10;
 
     renderer_context.viewport_size.x = dim.extent.width;

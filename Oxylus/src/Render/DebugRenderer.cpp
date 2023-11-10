@@ -87,4 +87,11 @@ void DebugRenderer::draw_mesh(const Ref<Mesh>& mesh, const Vec3& pos, const Vec3
   else
     instance->draw_list.debug_shapes.emplace_back(ShapeInfo{transform, color, mesh});
 }
+
+void DebugRenderer::draw_mesh(const Ref<Mesh>& mesh, const Mat4& model_matrix, const Vec4& color, bool ndt) {
+  if (ndt)
+    instance->draw_list_ndt.debug_shapes.emplace_back(ShapeInfo{model_matrix, color, mesh});
+  else
+    instance->draw_list.debug_shapes.emplace_back(ShapeInfo{model_matrix, color, mesh});
+}
 }

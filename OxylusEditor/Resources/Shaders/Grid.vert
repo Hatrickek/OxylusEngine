@@ -28,7 +28,7 @@ vec3 unproject_point(float x, float y, float z, mat4 view, mat4 projection) {
 }
 
 void main() {
-  vec4 position = vec4(in_Pos, 1.0f);//vec4(inPosition, 1.0);  // * ubo.u_MVP;
+  vec4 position = vec4(in_Pos, 1.0f);
   out_Position = in_Pos;
 
   vec3 normal = in_Normal;
@@ -37,10 +37,10 @@ void main() {
   out_FragProj = ubo.proj;
 
   vec3 p = position.xyz;
-  out_NearPoint = unproject_point(p.x, p.y, 0.0, ubo.view, ubo.proj).xyz;  // unprojecting on the near plane
-  out_FarPoint = unproject_point(p.x, p.y, 1.0, ubo.view, ubo.proj).xyz;   // unprojecting on the far plane
+  out_NearPoint = unproject_point(p.x, p.y, 0.0, ubo.view, ubo.proj).xyz;
+  out_FarPoint = unproject_point(p.x, p.y, 1.0, ubo.view, ubo.proj).xyz;
 
   vec2 uv = in_UV;
   out_UV =  uv;
-  gl_Position = vec4(p.xyz, 1.0);  // using directly
+  gl_Position = vec4(p.xyz, 1.0);
 }

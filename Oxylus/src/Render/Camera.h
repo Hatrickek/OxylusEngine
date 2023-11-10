@@ -8,19 +8,9 @@
 struct VkExtent2D;
 
 namespace Oxylus {
-enum CameraMovement {
-  FORWARD,
-  BACKWARD,
-  LEFT,
-  RIGHT
-};
-
-constexpr float FOV = 45.0f;
+constexpr float FOV = 60.0f;
 constexpr float NEARCLIP = 0.1f;
 constexpr float FARCLIP = 1000.0f;
-
-
-// TODO(hatrickek): Cleanup
 
 /**
  * \brief Camera class only to be used for the Editor. For Runtime `Camera Component` must be used.
@@ -58,6 +48,9 @@ public:
   float get_near() const { return near_clip; }
   void set_far(float newFar);
   float get_far() const { return far_clip; }
+
+  float get_fov() const { return FOV; }
+  float get_aspect() const { return Aspect; }
 
   void dolly(float z);
   void set_position(Vec3 pos);

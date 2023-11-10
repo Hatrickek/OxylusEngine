@@ -102,6 +102,6 @@ private:
   void ssr_pass(vuk::Allocator& frame_allocator, const Ref<vuk::RenderGraph>& rg, VulkanContext* vk_context, vuk::Buffer& vs_buffer) const;
   void bloom_pass(const Ref<vuk::RenderGraph>& rg, const VulkanContext* vk_context);
   void apply_grid(vuk::RenderGraph* rg, vuk::Name dst, vuk::Name depth_image, vuk::Allocator& frame_allocator) const;
-  void debug_pass(const Ref<vuk::RenderGraph>& rg, vuk::Name dst, const char* depth) const;
+  void debug_pass(const Ref<vuk::RenderGraph>& rg, vuk::Name dst, const char* depth, vuk::Allocator& frame_allocator) const;
 };
 }

@@ -1,5 +1,8 @@
 ﻿#include "SceneRenderer.h"
 
+#include <future>
+#include <execution>
+
 #include "Scene.h"
 
 #include "Core/Application.h"
@@ -18,52 +21,53 @@ void SceneRenderer::init() {
 
 void SceneRenderer::update() const {
   OX_SCOPED_ZONE;
-  // Mesh
-  {
-    OX_SCOPED_ZONE_N("Mesh System");
-    const auto view = m_scene->m_registry.view<TransformComponent, MeshRendererComponent, MaterialComponent, TagComponent>();
-    for (const auto&& [entity, transform, meshrenderer, material, tag] : view.each()) {
-      auto e = Entity(entity, m_scene);
-      auto parent = e.get_parent();
-      bool parentEnabled = true;
-      if (parent)
-        parentEnabled = parent.get_component<TagComponent>().enabled;
-      if (tag.enabled && parentEnabled && !material.materials.empty()) {
-        auto render_object = MeshData{
-          meshrenderer.mesh_geometry.get(),
-          e.get_world_transform(),
-          material.materials,
-          meshrenderer.submesh_index,
-          (uint32_t)meshrenderer.mesh_geometry->indices.size(),
-          (uint32_t)meshrenderer.mesh_geometry->vertices.size()
-        };
-        m_render_pipeline->on_register_render_object(render_object);
-      }
-    }
-  }
 
-  // Animations
-  {
-    OX_SCOPED_ZONE_N("Animated Mesh System");
-    const auto view = m_scene->m_registry.view<TransformComponent, MeshRendererComponent, AnimationComponent, TagComponent>();
-    for (const auto&& [entity, transform, mesh_renderer, animation, tag] : view.each()) {
-      if (!animation.animations.empty()) {
-        animation.animation_timer += Application::get_timestep() * animation.animation_speed;
-        if (animation.animation_timer > mesh_renderer.mesh_geometry->animations[animation.current_animation_index]->end) {
-          animation.animation_timer -= mesh_renderer.mesh_geometry->animations[animation.current_animation_index]->end;
+  // Mesh system
+  const auto mesh_view = m_scene->m_registry.view<TransformComponent, MeshRendererComponent, MaterialComponent, TagComponent>();
+  auto mesh_system_task = std::async(std::launch::async,
+    [&] {
+      OX_SCOPED_ZONE_N("Mesh System");
+      for (const auto&& [entity, transform, meshrenderer, material, tag] : mesh_view.each()) {
+        auto e = Entity(entity, m_scene);
+        auto parent = e.get_parent();
+        bool parentEnabled = true;
+        if (parent)
+          parentEnabled = parent.get_component<TagComponent>().enabled;
+        if (tag.enabled && parentEnabled && !material.materials.empty()) {
+          m_render_pipeline->on_register_render_object(MeshData{
+            .index_count = (uint32_t)meshrenderer.mesh_geometry->indices.size(),
+            .vertex_count = (uint32_t)meshrenderer.mesh_geometry->vertices.size(),
+            .mesh_geometry = meshrenderer.mesh_geometry.get(),
+            .materials = material.materials,
+            .transform = e.get_world_transform(),
+            .submesh_index = meshrenderer.submesh_index
+          });
         }
-        mesh_renderer.mesh_geometry->update_animation(animation.current_animation_index, animation.animation_timer);
       }
-    }
-  }
+    });
+
+  // Animated Mesh System
+  const auto animation_view = m_scene->m_registry.view<TransformComponent, MeshRendererComponent, AnimationComponent, TagComponent>();
+  auto animation_system_task = std::async(std::launch::async,
+    [&] {
+      OX_SCOPED_ZONE_N("Animated Mesh System");
+      for (const auto&& [entity, transform, mesh_renderer, animation, tag] : animation_view.each()) {
+        if (!animation.animations.empty()) {
+          animation.animation_timer += Application::get_timestep() * animation.animation_speed;
+          if (animation.animation_timer > mesh_renderer.mesh_geometry->animations[animation.current_animation_index]->end) {
+            animation.animation_timer -= mesh_renderer.mesh_geometry->animations[animation.current_animation_index]->end;
+          }
+          mesh_renderer.mesh_geometry->update_animation(animation.current_animation_index, animation.animation_timer);
+        }
+      }
+    });
 
   // Lighting
-  {
-    OX_SCOPED_ZONE_N("Lighting System");
-    // Scene lights
-    {
-      const auto view = m_scene->m_registry.view<TransformComponent, LightComponent>();
-      for (auto&& [e,tc, lc] : view.each()) {
+  const auto lighting_view = m_scene->m_registry.view<TransformComponent, LightComponent>();
+  auto lighting_system_task = std::async(std::launch::async,
+    [&] {
+      OX_SCOPED_ZONE_N("Lighting System");
+      for (auto&& [e,tc, lc] : lighting_view.each()) {
         Entity entity = {e, m_scene};
         if (!entity.get_component<TagComponent>().enabled)
           continue;
@@ -74,18 +78,22 @@ void SceneRenderer::update() const {
         };
         m_render_pipeline->on_register_light(lighting_data, lc.type);
       }
-    }
-  }
+    });
 
   // TODO: (very outdated, currently not working)
   // Particle system 
-  {
-    OX_SCOPED_ZONE_N("Particle System");
-    const auto particleSystemView = m_scene->m_registry.view<TransformComponent, ParticleSystemComponent>();
-    for (auto&& [e, tc, psc] : particleSystemView.each()) {
-      psc.system->on_update(Application::get_timestep(), tc.position);
-      psc.system->on_render();
-    }
-  }
+  const auto particle_system_view = m_scene->m_registry.view<TransformComponent, ParticleSystemComponent>();
+  auto particle_system_task = std::async(std::launch::async,
+    [&] {
+      for (auto&& [e, tc, psc] : particle_system_view.each()) {
+        psc.system->on_update(Application::get_timestep(), tc.position);
+        psc.system->on_render();
+      }
+    });
+
+  mesh_system_task.get();
+  animation_system_task.get();
+  lighting_system_task.get();
+  particle_system_task.get();
 }
 }

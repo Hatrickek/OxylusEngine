@@ -1,5 +1,8 @@
 ﻿#include "XeGTAO.h"
 
+#include "Render/Camera.h"
+#include <glm/gtc/type_ptr.hpp>
+
 namespace XeGTAO {
 uint HilbertIndex(uint posX, uint posY) {
   uint index = 0U;
@@ -21,33 +24,28 @@ uint HilbertIndex(uint posX, uint posY) {
   return index;
 }
 
-void gtao_update_constants(GTAOConstants& consts, int viewportWidth, int viewportHeight, const GTAOSettings& settings, const float projMatrix[16], bool rowMajor, unsigned frameCounter) {
+void gtao_update_constants(GTAOConstants& consts, int viewportWidth, int viewportHeight, const GTAOSettings& settings, const Oxylus::Camera* camera, unsigned frameCounter) {
   consts.ViewportSize = {viewportWidth, viewportHeight};
   consts.ViewportPixelSize = {1.0f / static_cast<float>(viewportWidth), 1.0f / static_cast<float>(viewportHeight)};
 
-  float depthLinearizeMul = (rowMajor)
-                              ? (-projMatrix[3 * 4 + 2])
-                              : (-projMatrix[3 + 2 *
-                                             4]);     // float depthLinearizeMul = ( clipFar * clipNear ) / ( clipFar - clipNear );
-  float depthLinearizeAdd = (rowMajor)
-                              ? (projMatrix[2 * 4 + 2])
-                              : (projMatrix[2 + 2 *
-                                            4]);     // float depthLinearizeAdd = clipFar / ( clipFar - clipNear );
+  //float depth_linearize_mul = camera->get_far() * camera->get_near() / (camera->get_far() - camera->get_near());
+  //float depth_linearize_add = camera->get_far() / (camera->get_far() - camera->get_near());
+
+  auto projMatrix = value_ptr(camera->get_projection_matrix_flipped());
+
+  float depth_linearize_mul = -projMatrix[3 + 2 * 4];     // float depthLinearizeMul = ( clipFar * clipNear ) / ( clipFar - clipNear );
+  float depth_linearize_add = projMatrix[2 + 2 * 4];     // float depthLinearizeAdd = clipFar / ( clipFar - clipNear );
 
   // correct the handedness issue. need to make sure this below is correct, but I think it is.
-  if (depthLinearizeMul * depthLinearizeAdd < 0)
-    depthLinearizeAdd = -depthLinearizeAdd;
-  consts.DepthUnpackConsts = {depthLinearizeMul, depthLinearizeAdd};
+  if (depth_linearize_mul * depth_linearize_add < 0)
+    depth_linearize_add = -depth_linearize_add;
+  consts.DepthUnpackConsts = {depth_linearize_mul, depth_linearize_add};
 
-  float tanHalfFOVY = 1.0f / ((rowMajor)
-                                ? (projMatrix[1 * 4 + 1])
-                                : (projMatrix[1 + 1 *
-                                              4]));    // = tanf( drawContext.Camera.GetYFOV( ) * 0.5f );
-  float tanHalfFOVX = 1.0F / ((rowMajor)
-                                ? (projMatrix[0 * 4 + 0])
-                                : (projMatrix[0 + 0 *
-                                              4]));    // = tanHalfFOVY * drawContext.Camera.GetAspect( );
-  consts.CameraTanHalfFOV = {tanHalfFOVX, tanHalfFOVY};
+  //float tan_half_fovy = glm::tan(camera->get_fov()) * 0.5f;
+  //float tan_half_fovx = tan_half_fovy * camera->get_aspect();
+  float tan_half_fovy = 1.0f / projMatrix[1 + 1 *4];    // = tanf( drawContext.Camera.GetYFOV( ) * 0.5f );
+  float tan_half_fovx = 1.0F /  projMatrix[0 + 0 *4];    // = tanHalfFOVY * drawContext.Camera.GetAspect( );
+  consts.CameraTanHalfFOV = {tan_half_fovx, tan_half_fovy};
 
   consts.NDCToViewMul = {consts.CameraTanHalfFOV.x * 2.0f, consts.CameraTanHalfFOV.y * -2.0f};
   consts.NDCToViewAdd = {consts.CameraTanHalfFOV.x * -1.0f, consts.CameraTanHalfFOV.y * 1.0f};
@@ -69,7 +67,7 @@ void gtao_update_constants(GTAOConstants& consts, int viewportWidth, int viewpor
   consts.ThinOccluderCompensation = settings.ThinOccluderCompensation;
   consts.FinalValuePower = settings.FinalValuePower;
   consts.DepthMIPSamplingOffset = settings.DepthMIPSamplingOffset;
-  consts.NoiseIndex = (settings.DenoisePasses > 0) ? (frameCounter % 64) : (0);
+  consts.NoiseIndex = settings.DenoisePasses > 0 ? frameCounter % 64u : 0u;
   consts.Padding0 = 0;
 }
 }

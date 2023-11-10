@@ -3,8 +3,8 @@
 #include <vuk/Types.hpp>
 
 // Profilers 
-#define GPU_PROFILER_ENABLED 1
-#define CPU_PROFILER_ENABLED 1
+#define GPU_PROFILER_ENABLED 0
+#define CPU_PROFILER_ENABLED 0
 #define MEMORY_PROFILER_ENABLED 0
 
 #define TRACY_VK_USE_SYMBOL_TABLE
@@ -21,7 +21,7 @@
 #if GPU_PROFILER_ENABLED
 #define OX_TRACE_GPU_TRANSIENT(context, cmdbuf, name) TracyVkZoneTransient(context, , cmdbuf, name, true) 
 #else
-#define OX_TRACE_GPU_TRANSIENT(cmdbuf, name)
+#define OX_TRACE_GPU_TRANSIENT(context, cmdbuf, name)
 #endif
 
 #ifdef OX_DISTRIBUTION

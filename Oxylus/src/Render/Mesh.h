@@ -36,10 +36,10 @@ public:
   };
 
   struct Primitive {
-    uint32_t first_index;
-    uint32_t index_count;
-    uint32_t first_vertex;
-    uint32_t vertex_count;
+    uint32_t first_index = 0;
+    uint32_t index_count = 0;
+    uint32_t first_vertex = 0;
+    uint32_t vertex_count = 0;
 
     BoundingBox bb = {};
 

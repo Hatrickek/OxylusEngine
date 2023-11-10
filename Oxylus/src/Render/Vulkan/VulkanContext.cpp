@@ -283,6 +283,7 @@ void VulkanContext::end(const vuk::Future& src, vuk::Allocator frame_allocator) 
   rg_p->release_for_present("_src");
 
   vuk::ProfilingCallbacks cbs;
+#if GPU_PROFILER_ENABLED
   cbs.on_begin_command_buffer = [](void*, const VkCommandBuffer cbuf) {
     get()->tracy_profiler->get_graphics_ctx()->Collect(cbuf);
     get()->tracy_profiler->get_transfer_ctx()->Collect(cbuf);
@@ -305,6 +306,7 @@ void VulkanContext::end(const vuk::Future& src, vuk::Allocator frame_allocator) 
     const auto tracy_scope = reinterpret_cast<tracy::VkCtxScope*>(pass_data);
     tracy_scope->~VkCtxScope();
   };
+#endif
 
   vuk::Compiler compiler;
   auto erg = *compiler.link(std::span{&rg_p, 1}, {.callbacks = cbs});

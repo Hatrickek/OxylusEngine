@@ -29,6 +29,10 @@
 
 #ifdef __cplusplus
 
+namespace Oxylus {
+class Camera;
+}
+
 namespace XeGTAO {
 // cpp<->hlsl mapping
 struct Matrix4x4 {
@@ -139,8 +143,7 @@ void gtao_update_constants(GTAOConstants& consts,
                            int viewportWidth,
                            int viewportHeight,
                            const GTAOSettings& settings,
-                           const float projMatrix[16],
-                           bool rowMajor,
+                           const Oxylus::Camera* camera,
                            unsigned int frameCounter);
 }   // close the namespace
 

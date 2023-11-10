@@ -217,20 +217,37 @@ static std::pair<vuk::Resource, vuk::Name> get_attachment_or_black_uint(const ch
   return {vuk::Resource("black_image_uint", vuk::Resource::Type::eImage, access), "black_image_uint"};
 }
 
-void DefaultRenderPipeline::debug_pass(const Ref<vuk::RenderGraph>& rg, const vuk::Name dst, const char* depth) const {
+void DefaultRenderPipeline::debug_pass(const Ref<vuk::RenderGraph>& rg, const vuk::Name dst, const char* depth, vuk::Allocator& frame_allocator) const {
+  struct DebugPassData {
+    Mat4 vp = {};
+    Mat4 model = {};
+    Vec4 color = {};
+  };
+
+  const auto* camera = m_renderer_context.current_camera;
+  std::vector<DebugPassData> buffers;
+
+  auto& shapes = DebugRenderer::get_instance()->get_shapes();
+  for (auto& shape : shapes) {
+    DebugPassData data;
+    data.vp = camera->get_projection_matrix_flipped() * camera->get_view_matrix();
+    data.model = shape.model_matrix;
+    data.color = Vec4(0, 1, 0, 1);
+
+    buffers.emplace_back(data);
+  }
+
+  auto [buff, buff_fut] = create_buffer(frame_allocator, vuk::MemoryUsage::eCPUtoGPU, vuk::DomainFlagBits::eTransferOnGraphics, std::span(buffers));
+  auto& buffer = *buff;
+
   rg->add_pass({
     .name = "debug_shapes_pass",
     .resources = {
       vuk::Resource(dst, vuk::Resource::Type::eImage, vuk::eColorWrite, dst.append("+")),
       vuk::Resource(depth, vuk::Resource::Type::eImage, vuk::eDepthStencilRead)
     },
-    .execute = [this](vuk::CommandBuffer& command_buffer) {
+    .execute = [this, buffer](vuk::CommandBuffer& command_buffer) {
       auto& shapes = DebugRenderer::get_instance()->get_shapes();
-
-      struct DebugPassData {
-        Mat4 mvp = {};
-        Vec4 color = {};
-      } push_const;
 
       command_buffer.bind_graphics_pipeline("unlit_pipeline")
                     .set_depth_stencil({
@@ -239,16 +256,21 @@ void DefaultRenderPipeline::debug_pass(const Ref<vuk::RenderGraph>& rg, const vu
                        .depthCompareOp = vuk::CompareOp::eLessOrEqual
                      })
                     .broadcast_color_blend({})
-                    .set_rasterization({.cullMode = vuk::CullModeFlagBits::eBack})
+                    .set_rasterization({.cullMode = vuk::CullModeFlagBits::eFront})
                     .set_viewport(0, vuk::Rect2D::framebuffer())
-                    .set_scissor(0, vuk::Rect2D::framebuffer());
+                    .set_scissor(0, vuk::Rect2D::framebuffer())
+                    .bind_buffer(0, 0, buffer);
 
-      const auto* camera = m_renderer_context.current_camera;
-      for (auto& shape : shapes) {
-        push_const.mvp = shape.model_matrix * camera->get_projection_matrix_flipped() * camera->get_view_matrix();
-        push_const.color = shape.color;
-        command_buffer.push_constants(vuk::ShaderStageFlagBits::eVertex, 0, push_const);
-        shape.shape_mesh->draw(command_buffer);
+      for (uint32_t i = 0; i < (uint32_t)shapes.size(); i++) {
+        const struct PushConst {
+          uint32_t index;
+        } pc = {i};
+        command_buffer.push_constants(vuk::ShaderStageFlagBits::eVertex, 0, pc);
+        shapes[i].shape_mesh->bind_vertex_buffer(command_buffer);
+        shapes[i].shape_mesh->bind_index_buffer(command_buffer);
+        for (auto node : shapes[i].shape_mesh->nodes) {
+          Renderer::render_node(node, command_buffer, [](Mesh::Primitive*, Mesh::MeshData*) { return true; });
+        }
       }
 
       DebugRenderer::reset(false);
@@ -419,7 +441,7 @@ Scope<vuk::Future> DefaultRenderPipeline::on_render(vuk::Allocator& frame_alloca
 
   if (RendererCVar::cvar_enable_debug_renderer.get()) {
     if (!DebugRenderer::get_instance()->get_shapes().empty()) {
-      debug_pass(rg, final_image_name, "depth_output");
+      debug_pass(rg, final_image_name, "depth_output", frame_allocator);
       final_image_name = final_image_name.append("+");
     }
   }
@@ -769,7 +791,7 @@ void DefaultRenderPipeline::gtao_pass(vuk::Allocator& frame_allocator, const Ref
   gtao_settings.FinalValuePower = RendererCVar::cvar_gtao_final_value_power.get();
   gtao_settings.DepthMIPSamplingOffset = RendererCVar::cvar_gtao_depth_mip_sampling_offset.get();
 
-  gtao_update_constants(gtao_constants, (int)Renderer::get_viewport_width(), (int)Renderer::get_viewport_height(), gtao_settings, value_ptr(m_renderer_data.ubo_vs.projection), true, 0);
+  gtao_update_constants(gtao_constants, (int)Renderer::get_viewport_width(), (int)Renderer::get_viewport_height(), gtao_settings, m_renderer_context.current_camera, 0);
 
   auto [gtao_const_buff, gtao_const_buff_fut] = create_buffer(frame_allocator, vuk::MemoryUsage::eCPUtoGPU, vuk::DomainFlagBits::eTransferOnGraphics, std::span(&gtao_constants, 1));
   auto& gtao_const_buffer = *gtao_const_buff;
