@@ -52,7 +52,7 @@ void main() {
 
   out_UV = in_UV;
 
-  vec3 T = normalize((ModelMatrix * (in_Tangent + vec4(0.00001))).xyz);
+  vec3 T = normalize((ModelMatrix * vec4(in_Tangent.xyz, 0.0)).xyz);
   vec3 N = normalize((ModelMatrix * vec4(in_Normal, 0.0)).xyz);
   T = normalize(T - dot(T, N) * N);
   vec3 B = cross(N, T);

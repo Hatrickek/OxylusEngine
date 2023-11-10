@@ -28,13 +28,13 @@ void gtao_update_constants(GTAOConstants& consts, int viewportWidth, int viewpor
   consts.ViewportSize = {viewportWidth, viewportHeight};
   consts.ViewportPixelSize = {1.0f / static_cast<float>(viewportWidth), 1.0f / static_cast<float>(viewportHeight)};
 
-  //float depth_linearize_mul = camera->get_far() * camera->get_near() / (camera->get_far() - camera->get_near());
-  //float depth_linearize_add = camera->get_far() / (camera->get_far() - camera->get_near());
+  float depth_linearize_mul = camera->get_far() * camera->get_near() / (camera->get_far() - camera->get_near());
+  float depth_linearize_add = camera->get_far() / (camera->get_far() - camera->get_near());
 
   auto projMatrix = value_ptr(camera->get_projection_matrix_flipped());
 
-  float depth_linearize_mul = -projMatrix[3 + 2 * 4];     // float depthLinearizeMul = ( clipFar * clipNear ) / ( clipFar - clipNear );
-  float depth_linearize_add = projMatrix[2 + 2 * 4];     // float depthLinearizeAdd = clipFar / ( clipFar - clipNear );
+  //float depth_linearize_mul = -projMatrix[3 + 2 * 4];     // float depthLinearizeMul = ( clipFar * clipNear ) / ( clipFar - clipNear );
+  //float depth_linearize_add = projMatrix[2 + 2 * 4];     // float depthLinearizeAdd = clipFar / ( clipFar - clipNear );
 
   // correct the handedness issue. need to make sure this below is correct, but I think it is.
   if (depth_linearize_mul * depth_linearize_add < 0)

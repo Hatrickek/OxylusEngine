@@ -283,7 +283,7 @@ void XeGTAO_MainPass( const uint2 pixCoord, lpfloat sliceCount, lpfloat stepsPer
     const lpfloat3 viewVec      = (lpfloat3)normalize(-pixCenterPos);
     
     // prevents normals that are facing away from the view vector - xeGTAO struggles with extreme cases, but in Vanilla it seems rare so it's disabled by default
-    // viewspaceNormal = normalize( viewspaceNormal + max( 0, -dot( viewspaceNormal, viewVec ) ) * viewVec );
+    viewspaceNormal = normalize( viewspaceNormal + max( 0, -dot( viewspaceNormal, viewVec ) ) * viewVec );
 
 #ifdef XE_GTAO_SHOW_NORMALS
     g_outputDbgImage[pixCoord] = float4( DisplayNormalSRGB( viewspaceNormal.xyz ), 1 );

@@ -262,13 +262,14 @@ void DefaultRenderPipeline::debug_pass(const Ref<vuk::RenderGraph>& rg, const vu
                     .bind_buffer(0, 0, buffer);
 
       for (uint32_t i = 0; i < (uint32_t)shapes.size(); i++) {
-        const struct PushConst {
-          uint32_t index;
-        } pc = {i};
-        command_buffer.push_constants(vuk::ShaderStageFlagBits::eVertex, 0, pc);
         shapes[i].shape_mesh->bind_vertex_buffer(command_buffer);
         shapes[i].shape_mesh->bind_index_buffer(command_buffer);
-        for (auto node : shapes[i].shape_mesh->nodes) {
+        for (const auto node : shapes[i].shape_mesh->nodes) {
+          const struct PushConst {
+            Mat4 node_matrix;
+            uint32_t index;
+          } pc = {node->get_matrix(), i};
+          command_buffer.push_constants(vuk::ShaderStageFlagBits::eVertex, 0, pc);
           Renderer::render_node(node, command_buffer, [](Mesh::Primitive*, Mesh::MeshData*) { return true; });
         }
       }
@@ -476,33 +477,6 @@ void DefaultRenderPipeline::depth_pre_pass(const Ref<vuk::RenderGraph>& rg, vuk:
       "depth_image"_image >> vuk::eDepthStencilRW >> "depth_output"
     },
     .execute = [this, vs_buffer, mat_buffer, material_map](vuk::CommandBuffer& command_buffer) {
-      // Skybox pass
-      struct SkyboxPushConstant {
-        Mat4 view;
-        float lod_bias;
-      } skybox_push_constant = {};
-
-      skybox_push_constant.view = m_renderer_context.current_camera->skybox_view;
-
-      command_buffer.bind_graphics_pipeline("skybox_pipeline")
-                    .set_viewport(0, vuk::Rect2D::framebuffer())
-                    .set_scissor(0, vuk::Rect2D::framebuffer())
-                    .broadcast_color_blend({})
-                    .set_rasterization({.cullMode = vuk::CullModeFlagBits::eNone})
-                    .set_depth_stencil(vuk::PipelineDepthStencilStateCreateInfo{
-                       .depthTestEnable = false,
-                       .depthWriteEnable = false,
-                       .depthCompareOp = vuk::CompareOp::eLessOrEqual,
-                     })
-                    .bind_buffer(0, 0, vs_buffer)
-                    .bind_sampler(0, 1, vuk::LinearSamplerRepeated)
-                    .bind_image(0, 1, cube_map->as_attachment())
-                    .push_constants(vuk::ShaderStageFlagBits::eVertex | vuk::ShaderStageFlagBits::eFragment, 0, skybox_push_constant);
-
-      m_cube->bind_index_buffer(command_buffer);
-      m_cube->bind_vertex_buffer(command_buffer);
-      command_buffer.draw_indexed(m_cube->indices.size(), 1, 0, 0, 0);
-
       command_buffer.set_viewport(0, vuk::Rect2D::framebuffer())
                     .set_scissor(0, vuk::Rect2D::framebuffer())
                     .broadcast_color_blend(vuk::BlendPreset::eOff)
@@ -554,7 +528,7 @@ void DefaultRenderPipeline::geomerty_pass(const Ref<vuk::RenderGraph>& rg,
     .resources = {
       "pbr_image"_image >> vuk::eColorRW >> "pbr_output",
       "pbr_depth"_image >> vuk::eDepthStencilRW,
-      "shadow_array_output"_image >> vuk::eFragmentSampled
+      "shadow_array_output"_image >> vuk::eFragmentSampled,
     },
     .execute = [this, vs_buffer, point_lights_buffer, shadow_buffer, pbr_buffer, mat_buffer, material_map](vuk::CommandBuffer& command_buffer) {
       // Skybox pass
@@ -875,7 +849,7 @@ void DefaultRenderPipeline::gtao_pass(vuk::Allocator& frame_allocator, const Ref
                      .bind_image(0, 1, read_input)
                      .bind_image(0, 2, "gtao_edge_output")
                      .bind_image(0, 3, attachment_name)
-                     .bind_sampler(0, 4, {})
+                     .bind_sampler(0, 4, vuk::LinearSamplerClamped)
                      .dispatch((Renderer::get_viewport_width() + (XE_GTAO_NUMTHREADS_X * 2) - 1) / (XE_GTAO_NUMTHREADS_X * 2), (Renderer::get_viewport_height() + XE_GTAO_NUMTHREADS_Y - 1) / XE_GTAO_NUMTHREADS_Y, 1);
       }
     });
@@ -894,7 +868,7 @@ void DefaultRenderPipeline::gtao_pass(vuk::Allocator& frame_allocator, const Ref
                     .bind_image(0, 1, gtao_denoise_output)
                     .bind_image(0, 2, "gtao_edge_output")
                     .bind_image(0, 3, "gtao_final_image")
-                    .bind_sampler(0, 4, {})
+                    .bind_sampler(0, 4, vuk::LinearSamplerClamped)
                     .dispatch((Renderer::get_viewport_width() + (XE_GTAO_NUMTHREADS_X * 2) - 1) / (XE_GTAO_NUMTHREADS_X * 2), (Renderer::get_viewport_height() + XE_GTAO_NUMTHREADS_Y - 1) / XE_GTAO_NUMTHREADS_Y, 1);
     }
   });

@@ -685,7 +685,10 @@ void Mesh::load_node(Node* parent,
           vert.normal = glm::normalize(glm::vec3(bufferNormals ? glm::make_vec3(&bufferNormals[v * normByteStride]) : glm::vec3(0.0f)));
           vert.uv = bufferTexCoordSet0 ? glm::make_vec2(&bufferTexCoordSet0[v * uv0ByteStride]) : glm::vec3(0.0f);
           vert.color = bufferColorSet0 ? glm::make_vec4(&bufferColorSet0[v * color0ByteStride]) : glm::vec4(1.0f);
-          vert.tangent = buffer_tangents ? glm::vec4(glm::make_vec4(&buffer_tangents[v * 4])) : glm::vec4(0.0f);
+          Vec3 c1 = glm::cross(vert.normal, Vec3(0, 0, 1));
+          Vec3 c2 = glm::cross(vert.normal, Vec3(0, 1, 0));
+          Vec3 tangent = glm::dot(c1, c1) > glm::dot(c2, c2) ? c1 : c2;
+          vert.tangent = buffer_tangents ? glm::vec4(glm::make_vec4(&buffer_tangents[v * 4])) : Vec4(tangent, 0.0);
 
           if (hasSkin) {
             switch (jointComponentType) {
