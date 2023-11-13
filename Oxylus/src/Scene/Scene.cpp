@@ -176,6 +176,7 @@ void Scene::update_physics(const Timestep& delta_time) {
 }
 
 void Scene::iterate_over_mesh_node(const Ref<Mesh>& mesh, const std::vector<Mesh::Node*>& node, Entity parent) {
+  OX_SCOPED_ZONE;
   for (const auto child : node) {
     Entity entity = create_entity(child->name).set_parent(parent);
     if (child->mesh_data) {
@@ -184,19 +185,20 @@ void Scene::iterate_over_mesh_node(const Ref<Mesh>& mesh, const std::vector<Mesh
 
       entity.add_component_internal<MeshRendererComponent>(mesh).submesh_index = (uint32_t)index;
       entity.get_component<MaterialComponent>().materials = mesh->get_materials_as_ref();
-      entity.get_component<TransformComponent>().set_from_matrix(child->matrix);
+      entity.get_transform().set_from_matrix(child->get_matrix());
     }
     iterate_over_mesh_node(mesh, child->children, entity);
   }
 }
 
 void Scene::create_entity_with_mesh(const Ref<Mesh>& mesh_asset) {
+  OX_SCOPED_ZONE;
   for (const auto& node : mesh_asset->nodes) {
     Entity entity = create_entity(node->name);
     if (node->mesh_data) {
       entity.add_component_internal<MeshRendererComponent>(mesh_asset).submesh_index = node->index;
       entity.get_component<MaterialComponent>().materials = mesh_asset->get_materials_as_ref();
-      entity.get_component<TransformComponent>().set_from_matrix(node->matrix);
+      entity.get_transform().set_from_matrix(node->get_matrix());
     }
     iterate_over_mesh_node(mesh_asset, node->children, entity);
   }

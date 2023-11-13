@@ -18,10 +18,22 @@ void Window::init_window(const AppSpec& spec) {
 void Window::init_vulkan_window(const AppSpec& spec) {
   glfwInit();
 
+  constexpr auto window_width = 1600;
+  constexpr auto window_height = 900;
+
   glfwWindowHint(GLFW_CLIENT_API, GLFW_NO_API);
   if (spec.custom_window_title)
     glfwWindowHint(GLFW_DECORATED, GLFW_FALSE);
-  s_window_handle = glfwCreateWindow(1600, 900, spec.name.c_str(), nullptr, nullptr);
+  s_window_handle = glfwCreateWindow(window_width, window_height, spec.name.c_str(), nullptr, nullptr);
+
+  // center window
+  int32_t monitor_width = 0, monitor_height = 0;
+  int32_t monitor_posx = 0, monitor_posy = 0;
+  glfwGetMonitorWorkarea(glfwGetPrimaryMonitor(), &monitor_posx, &monitor_posy, &monitor_width, &monitor_height);
+  auto video_mode = glfwGetVideoMode(glfwGetPrimaryMonitor());
+  glfwSetWindowPos(s_window_handle,
+    monitor_posx + (video_mode->width - window_width) / 2,
+    monitor_posy + (video_mode->height - window_height) / 2);
 
   //Load file icon
   {

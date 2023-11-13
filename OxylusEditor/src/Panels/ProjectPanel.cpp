@@ -30,7 +30,7 @@ void ProjectPanel::on_imgui_render() {
   if (Visible && !ImGui::IsPopupOpen("ProjectSelector"))
     ImGui::OpenPopup("ProjectSelector");
   ImGui::SetNextWindowSize(ImVec2(480, 320), ImGuiCond_FirstUseEver);
-  OxUI::CenterNextWindow();
+  OxUI::center_next_window();
   constexpr auto flags = ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoSavedSettings
                          | ImGuiWindowFlags_NoDecoration | ImGuiWindowFlags_NoDocking;
   if (ImGui::BeginPopupModal("ProjectSelector", nullptr, flags)) {

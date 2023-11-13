@@ -516,8 +516,8 @@ Mat4 Mesh::Node::get_matrix() const {
 
 void Mesh::Node::update() const {
   if (mesh_data) {
-    const glm::mat4 m = get_matrix();
     if (skin) {
+      const glm::mat4 m = get_matrix();
       // Update join matrices
       const glm::mat4 inverse_transform = glm::inverse(m);
       size_t num_joints = std::min((uint32_t)skin->joints.size(), MAX_NUM_JOINTS);
@@ -529,9 +529,6 @@ void Mesh::Node::update() const {
       }
       mesh_data->uniform_block.jointcount = (float)num_joints;
       memcpy(mesh_data->node_buffer->mapped_ptr, &mesh_data->uniform_block, sizeof(mesh_data->uniform_block));
-    }
-    else {
-      memcpy(mesh_data->node_buffer->mapped_ptr, &m, sizeof(glm::mat4));
     }
   }
 
@@ -553,7 +550,7 @@ void Mesh::load_node(Node* parent,
   newNode->parent = parent;
   newNode->name = node.name;
   newNode->skin_index = node.skin;
-  newNode->matrix = Mat4(1.0f);
+  newNode->matrix = glm::identity<Mat4>();
   newNode->scale = Vec3(globalscale);
 
   // Generate local node matrix

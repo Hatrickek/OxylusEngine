@@ -19,6 +19,11 @@ class TextureAsset;
 
 class OxUI {
 public:
+  static char id_buffer[16];
+
+  static void push_id();
+  static void pop_id();
+
   static bool begin_properties(ImGuiTableFlags flags = ImGuiTableFlags_Resizable | ImGuiTableFlags_SizingStretchSame |
                                                        ImGuiTableFlags_BordersInner | ImGuiTableFlags_BordersOuterH);
 
@@ -107,11 +112,11 @@ public:
   // Vec2/3/4
   template <typename T>
   static bool property_vector(const char* label,
-                             T& value,
-                             bool color = false,
-                             bool showAlpha = true,
-                             const char* tooltip = nullptr,
-                             float delta = 0.1f) {
+                              T& value,
+                              bool color = false,
+                              bool showAlpha = true,
+                              const char* tooltip = nullptr,
+                              float delta = 0.1f) {
     begin_property_grid(label, tooltip);
     bool modified;
     int componentCount = value.length();
@@ -172,7 +177,6 @@ public:
                            const ImVec2& align,
                            const ImRect* clip_rect,
                            float wrap_width);
-
   static void clipped_text(ImDrawList* draw_list,
                            const ImVec2& pos_min,
                            const ImVec2& pos_max,
@@ -189,15 +193,10 @@ public:
   static void draw_gradient_shadow_bottom(float scale = 600.f);
 
   static void begin_property_grid(const char* label, const char* tooltip, bool rightAlignNextColumn = true);
-
   static void end_property_grid();
 
-  static void CenterNextWindow();
+  static void center_next_window();
 
-  static void push_id();
-
-  static void pop_id();
-
-  static char id_buffer[16];
+  static void draw_framerate_overlay(ImVec2 work_pos = {}, ImVec2 work_size = {}, ImVec2 padding = {}, bool* visible = nullptr);
 };
 }

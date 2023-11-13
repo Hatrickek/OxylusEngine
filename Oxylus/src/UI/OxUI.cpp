@@ -411,8 +411,48 @@ void OxUI::end_property_grid() {
   pop_id();
 }
 
-void OxUI::CenterNextWindow() {
+void OxUI::center_next_window() {
   const auto center = ImGui::GetMainViewport()->GetCenter();
   ImGui::SetNextWindowPos(center, ImGuiCond_Always, ImVec2(0.5f, 0.5f));
+}
+
+void OxUI::draw_framerate_overlay(const ImVec2 work_pos, const ImVec2 work_size, ImVec2 padding, bool* visible) {
+  static int corner = 1;
+  ImGuiWindowFlags window_flags = ImGuiWindowFlags_NoDecoration | ImGuiWindowFlags_NoDocking |
+                                  ImGuiWindowFlags_AlwaysAutoResize | ImGuiWindowFlags_NoSavedSettings |
+                                  ImGuiWindowFlags_NoFocusOnAppearing | ImGuiWindowFlags_NoNav;
+  if (corner != -1) {
+    const ImGuiViewport* viewport = ImGui::GetMainViewport();
+    ImVec2 window_pos, window_pos_pivot;
+    window_pos.x = corner & 1 ? work_pos.x + work_size.x - padding.x : work_pos.x + padding.x;
+    window_pos.y = corner & 2 ? work_pos.y + work_size.y - padding.y: work_pos.y + padding.y ;
+    window_pos_pivot.x = corner & 1 ? 1.0f : 0.0f;
+    window_pos_pivot.y = corner & 2 ? 1.0f : 0.0f;
+    ImGui::SetNextWindowPos(window_pos, ImGuiCond_Always, window_pos_pivot);
+    ImGui::SetNextWindowViewport(viewport->ID);
+    window_flags |= ImGuiWindowFlags_NoMove;
+  }
+  ImGui::SetNextWindowBgAlpha(0.35f);
+  ImGui::PushStyleVar(ImGuiStyleVar_WindowRounding, 3.0f);
+  if (ImGui::Begin("Performance Overlay", nullptr, window_flags)) {
+    ImGui::Text("%.3f ms/frame (%.1f FPS)", 1000.0f / ImGui::GetIO().Framerate, ImGui::GetIO().Framerate);
+  }
+  if (ImGui::BeginPopupContextWindow()) {
+    if (ImGui::MenuItem("Custom", nullptr, corner == -1))
+      corner = -1;
+    if (ImGui::MenuItem("Top-left", nullptr, corner == 0))
+      corner = 0;
+    if (ImGui::MenuItem("Top-right", nullptr, corner == 1))
+      corner = 1;
+    if (ImGui::MenuItem("Bottom-left", nullptr, corner == 2))
+      corner = 2;
+    if (ImGui::MenuItem("Bottom-right", nullptr, corner == 3))
+      corner = 3;
+    if (visible && *visible && ImGui::MenuItem("Close"))
+      *visible = false;
+    ImGui::EndPopup();
+  }
+  ImGui::End();
+  ImGui::PopStyleVar();
 }
 }

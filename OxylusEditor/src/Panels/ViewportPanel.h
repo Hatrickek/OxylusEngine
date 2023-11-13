@@ -29,8 +29,8 @@ private:
 
   ImVec2 m_ViewportSize;
   ImVec2 m_ViewportBounds[2];
-  ImVec2 m_ViewportPanelSize = ImVec2();
-  ImVec2 m_ViewportOffset;
+  ImVec2 viewport_panel_size = ImVec2();
+  ImVec2 viewport_offset;
   ImVec2 m_GizmoPosition = ImVec2(1.0f, 1.0f);
   bool m_ViewportFocused{};
   bool m_ViewportHovered{};

@@ -73,23 +73,23 @@ void ViewportPanel::on_imgui_render() {
 
     const auto viewportMinRegion = ImGui::GetWindowContentRegionMin();
     const auto viewportMaxRegion = ImGui::GetWindowContentRegionMax();
-    m_ViewportOffset = ImGui::GetWindowPos();
-    m_ViewportBounds[0] = {viewportMinRegion.x + m_ViewportOffset.x, viewportMinRegion.y + m_ViewportOffset.y};
-    m_ViewportBounds[1] = {viewportMaxRegion.x + m_ViewportOffset.x, viewportMaxRegion.y + m_ViewportOffset.y};
+    viewport_offset = ImGui::GetWindowPos();
+    m_ViewportBounds[0] = {viewportMinRegion.x + viewport_offset.x, viewportMinRegion.y + viewport_offset.y};
+    m_ViewportBounds[1] = {viewportMaxRegion.x + viewport_offset.x, viewportMaxRegion.y + viewport_offset.y};
 
     m_ViewportFocused = ImGui::IsWindowFocused();
     m_ViewportHovered = ImGui::IsWindowHovered();
 
-    m_ViewportPanelSize = ImGui::GetContentRegionAvail();
-    if ((int)m_ViewportSize.x != (int)m_ViewportPanelSize.x || (int)m_ViewportSize.y != (int)m_ViewportPanelSize.y) {
-      m_ViewportSize = {m_ViewportPanelSize.x, m_ViewportPanelSize.y};
+    viewport_panel_size = ImGui::GetContentRegionAvail();
+    if ((int)m_ViewportSize.x != (int)viewport_panel_size.x || (int)m_ViewportSize.y != (int)viewport_panel_size.y) {
+      m_ViewportSize = {viewport_panel_size.x, viewport_panel_size.y};
     }
 
     constexpr auto sixteenNineAR = 1.7777777f;
     const auto fixedWidth = m_ViewportSize.y * sixteenNineAR;
-    ImGui::SetCursorPosX((m_ViewportPanelSize.x - fixedWidth) * 0.5f);
+    ImGui::SetCursorPosX((viewport_panel_size.x - fixedWidth) * 0.5f);
 
-    const auto dim = vuk::Dimension3D::absolute((uint32_t)fixedWidth, (uint32_t)m_ViewportPanelSize.y);
+    const auto dim = vuk::Dimension3D::absolute((uint32_t)fixedWidth, (uint32_t)viewport_panel_size.y);
     const auto rp = m_Scene->get_renderer()->get_render_pipeline();
     rp->detach_swapchain(dim);
     const auto final_image = rp->get_final_image();
@@ -317,47 +317,7 @@ void ViewportPanel::on_update() {
 void ViewportPanel::draw_performance_overlay() {
   if (!performance_overlay_visible)
     return;
-  static int corner = 1;
-  ImGuiWindowFlags window_flags = ImGuiWindowFlags_NoDecoration | ImGuiWindowFlags_NoDocking |
-                                  ImGuiWindowFlags_AlwaysAutoResize | ImGuiWindowFlags_NoSavedSettings |
-                                  ImGuiWindowFlags_NoFocusOnAppearing | ImGuiWindowFlags_NoNav;
-  if (corner != -1) {
-    constexpr float PAD_X = 15;
-    constexpr float PAD_Y = 55;
-    const ImGuiViewport* viewport = ImGui::GetMainViewport();
-    const ImVec2 work_pos = m_ViewportOffset;
-    const ImVec2 work_size = m_ViewportPanelSize;
-    ImVec2 window_pos, window_pos_pivot;
-    window_pos.x = corner & 1 ? work_pos.x + work_size.x - PAD_X : work_pos.x + PAD_X;
-    window_pos.y = corner & 2 ? work_pos.y + work_size.y - PAD_Y : work_pos.y + PAD_Y;
-    window_pos_pivot.x = corner & 1 ? 1.0f : 0.0f;
-    window_pos_pivot.y = corner & 2 ? 1.0f : 0.0f;
-    ImGui::SetNextWindowPos(window_pos, ImGuiCond_Always, window_pos_pivot);
-    ImGui::SetNextWindowViewport(viewport->ID);
-    window_flags |= ImGuiWindowFlags_NoMove;
-  }
-  ImGui::SetNextWindowBgAlpha(0.35f);
-  ImGui::PushStyleVar(ImGuiStyleVar_WindowRounding, 3.0f);
-  if (ImGui::Begin("Performance Overlay", nullptr, window_flags)) {
-    ImGui::Text("%.3f ms/frame (%.1f FPS)", 1000.0f / ImGui::GetIO().Framerate, ImGui::GetIO().Framerate);
-  }
-  if (ImGui::BeginPopupContextWindow()) {
-    if (ImGui::MenuItem("Custom", nullptr, corner == -1))
-      corner = -1;
-    if (ImGui::MenuItem("Top-left", nullptr, corner == 0))
-      corner = 0;
-    if (ImGui::MenuItem("Top-right", nullptr, corner == 1))
-      corner = 1;
-    if (ImGui::MenuItem("Bottom-left", nullptr, corner == 2))
-      corner = 2;
-    if (ImGui::MenuItem("Bottom-right", nullptr, corner == 3))
-      corner = 3;
-    if (performance_overlay_visible && ImGui::MenuItem("Close"))
-      performance_overlay_visible = false;
-    ImGui::EndPopup();
-  }
-  ImGui::End();
-  ImGui::PopStyleVar();
+  OxUI::draw_framerate_overlay(viewport_offset, viewport_panel_size, {15, 55}, &performance_overlay_visible);
 }
 
 void ViewportPanel::draw_gizmos() {
