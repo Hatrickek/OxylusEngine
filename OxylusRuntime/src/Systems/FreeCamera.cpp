@@ -64,13 +64,13 @@ namespace OxylusRuntime {
         m_TranslationVelocity,
         m_TranslationDampening,
         10000.0f,
-        deltaTime);
+        deltaTime.get_seconds());
       const glm::vec2 dampedYawPitch = Math::smooth_damp(yawPitch,
         finalYawPitch,
         m_RotationVelocity,
         m_RotationDampening,
         1000.0f,
-        deltaTime);
+        deltaTime.get_seconds());
       
       transform.position = m_SmoothCamera ? dampedPosition : finalPosition;
       transform.rotation.x = m_SmoothCamera ? dampedYawPitch.y : finalYawPitch.y;

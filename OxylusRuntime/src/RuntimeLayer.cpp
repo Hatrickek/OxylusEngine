@@ -4,6 +4,8 @@
 #include <Assets/AssetManager.h>
 #include <Scene/SceneSerializer.h>
 
+#include "CustomRenderPipeline.h"
+
 #include "Core/Application.h"
 #include "Render/Window.h"
 #include "Systems/CharacterSystem.h"
@@ -20,9 +22,7 @@ namespace OxylusRuntime {
   RuntimeLayer::~RuntimeLayer() = default;
 
   void RuntimeLayer::on_attach(EventDispatcher& dispatcher) {
-    auto& style = ImGui::GetStyle();
-    style.WindowMenuButtonPosition = ImGuiDir_Left;
-
+    // HotReloadableScenesSystem listener
     dispatcher.sink<ReloadSceneEvent>().connect<&RuntimeLayer::on_scene_reload>(*this);
     load_scene();
   }
@@ -35,32 +35,19 @@ namespace OxylusRuntime {
 
   void RuntimeLayer::on_imgui_render() {
     scene->on_imgui_render(Application::get_timestep());
-
-    constexpr ImGuiWindowFlags window_flags = ImGuiWindowFlags_NoDecoration | ImGuiWindowFlags_NoDocking |
-                                              ImGuiWindowFlags_AlwaysAutoResize | ImGuiWindowFlags_NoSavedSettings |
-                                              ImGuiWindowFlags_NoFocusOnAppearing | ImGuiWindowFlags_NoNav | ImGuiWindowFlags_NoMove;
-    constexpr float PAD = 10.0f;
-    const ImGuiViewport* viewport = ImGui::GetMainViewport();
-    const ImVec2 work_pos = viewport->WorkPos; // Use work area to avoid menu-bar/task-bar, if any!
-    ImVec2 window_pos;
-    window_pos.x = (work_pos.x + PAD);
-    window_pos.y = work_pos.y + PAD;
-    ImGui::SetNextWindowPos(window_pos, ImGuiCond_Always);
-    ImGui::SetNextWindowBgAlpha(0.35f);
-    if (ImGui::Begin("Performance Overlay", nullptr, window_flags)) {
-      ImGui::Text("%.3f ms/frame (%.1f FPS)", 1000.0f / (float)ImGui::GetIO().Framerate, (float)ImGui::GetIO().Framerate);
-      ImGui::End();
-    }
   }
 
   void RuntimeLayer::load_scene() {
-    scene = create_ref<Scene>();
+    // Instead of leaving the constructor empty we pass our own custom render pipeline.
+    // If left empty the scene will use the DefaultRenderPipeline.
+    Ref<CustomRenderPipeline> custom_rp = create_ref<CustomRenderPipeline>();
+    scene = create_ref<Scene>(custom_rp);
+
     const SceneSerializer serializer(scene);
-    serializer.deserialize(get_assets_path("Scenes/Main.oxscene"));
+    serializer.deserialize(get_assets_path("Scenes/TestScene.oxscene"));
 
     scene->on_runtime_start();
 
-    //m_Scene->add_system<CharacterSystem>();
     scene->add_system<FreeCamera>();
   }
 
