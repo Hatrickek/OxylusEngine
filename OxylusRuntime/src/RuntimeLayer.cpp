@@ -4,69 +4,59 @@
 #include <Assets/AssetManager.h>
 #include <Scene/SceneSerializer.h>
 
+#include "CustomRenderPipeline.h"
+
 #include "Core/Application.h"
 #include "Render/Window.h"
 #include "Systems/CharacterSystem.h"
 #include "Systems/FreeCamera.h"
 
+#include "UI/OxUI.h"
+
 namespace OxylusRuntime {
-  using namespace Oxylus;
-  RuntimeLayer* RuntimeLayer::s_Instance = nullptr;
+using namespace Oxylus;
+RuntimeLayer* RuntimeLayer::s_Instance = nullptr;
 
-  RuntimeLayer::RuntimeLayer() : Layer("Game Layer") {
-    s_Instance = this;
-  }
+RuntimeLayer::RuntimeLayer() : Layer("Game Layer") {
+  s_Instance = this;
+}
 
-  RuntimeLayer::~RuntimeLayer() = default;
+RuntimeLayer::~RuntimeLayer() = default;
 
-  void RuntimeLayer::on_attach(EventDispatcher& dispatcher) {
-    auto& style = ImGui::GetStyle();
-    style.WindowMenuButtonPosition = ImGuiDir_Left;
+void RuntimeLayer::on_attach(EventDispatcher& dispatcher) {
+  // HotReloadableScenesSystem listener
+  dispatcher.sink<ReloadSceneEvent>().connect<&RuntimeLayer::on_scene_reload>(*this);
+  load_scene();
+}
 
-    dispatcher.sink<ReloadSceneEvent>().connect<&RuntimeLayer::on_scene_reload>(*this);
-    load_scene();
-  }
+void RuntimeLayer::on_detach() { }
 
-  void RuntimeLayer::on_detach() { }
+void RuntimeLayer::on_update(const Timestep& deltaTime) {
+  scene->on_runtime_update(deltaTime);
+}
 
-  void RuntimeLayer::on_update(const Timestep& deltaTime) {
-    scene->on_runtime_update(deltaTime);
-  }
+void RuntimeLayer::on_imgui_render() {
+  scene->on_imgui_render(Application::get_timestep());
+  OxUI::draw_framerate_overlay(ImGui::GetMainViewport()->WorkPos, {}, {-200, 10});
+}
 
-  void RuntimeLayer::on_imgui_render() {
-    scene->on_imgui_render(Application::get_timestep());
+void RuntimeLayer::load_scene() {
+  // Instead of leaving the constructor empty we pass our own custom render pipeline.
+  // If left empty the scene will use the DefaultRenderPipeline.
+  Ref<CustomRenderPipeline> custom_rp = create_ref<CustomRenderPipeline>();
+  scene = create_ref<Scene>(custom_rp);
 
-    constexpr ImGuiWindowFlags window_flags = ImGuiWindowFlags_NoDecoration | ImGuiWindowFlags_NoDocking |
-                                              ImGuiWindowFlags_AlwaysAutoResize | ImGuiWindowFlags_NoSavedSettings |
-                                              ImGuiWindowFlags_NoFocusOnAppearing | ImGuiWindowFlags_NoNav | ImGuiWindowFlags_NoMove;
-    constexpr float PAD = 10.0f;
-    const ImGuiViewport* viewport = ImGui::GetMainViewport();
-    const ImVec2 work_pos = viewport->WorkPos; // Use work area to avoid menu-bar/task-bar, if any!
-    ImVec2 window_pos;
-    window_pos.x = (work_pos.x + PAD);
-    window_pos.y = work_pos.y + PAD;
-    ImGui::SetNextWindowPos(window_pos, ImGuiCond_Always);
-    ImGui::SetNextWindowBgAlpha(0.35f);
-    if (ImGui::Begin("Performance Overlay", nullptr, window_flags)) {
-      ImGui::Text("%.3f ms/frame (%.1f FPS)", 1000.0f / (float)ImGui::GetIO().Framerate, (float)ImGui::GetIO().Framerate);
-      ImGui::End();
-    }
-  }
+  const SceneSerializer serializer(scene);
+  serializer.deserialize(get_assets_path("Scenes/TestScene2.oxscene"));
 
-  void RuntimeLayer::load_scene() {
-    scene = create_ref<Scene>();
-    const SceneSerializer serializer(scene);
-    serializer.deserialize(get_assets_path("Scenes/Main.oxscene"));
+  scene->on_runtime_start();
 
-    scene->on_runtime_start();
+  scene->add_system<FreeCamera>();
+}
 
-    //m_Scene->add_system<CharacterSystem>();
-    scene->add_system<FreeCamera>();
-  }
-
-  bool RuntimeLayer::on_scene_reload(ReloadSceneEvent&) {
-    load_scene();
-    OX_CORE_INFO("Scene reloaded.");
-    return true;
-  }
+bool RuntimeLayer::on_scene_reload(ReloadSceneEvent&) {
+  load_scene();
+  OX_CORE_INFO("Scene reloaded.");
+  return true;
+}
 }
