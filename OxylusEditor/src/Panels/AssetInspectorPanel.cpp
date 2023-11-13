@@ -12,9 +12,9 @@ namespace Oxylus {
 
   void AssetInspectorPanel::on_imgui_render() {
     if (on_begin()) {
-      if (EditorContextType::Asset == EditorLayer::get()->get_context().GetType()) {
-        if (EditorLayer::get()->get_context().GetAssetExtension() == ".oxmat") {
-          DrawMaterialAsset(EditorLayer::get()->get_context().As<std::string>());
+      if (EditorContextType::Asset == EditorLayer::get()->get_context().get_type()) {
+        if (EditorLayer::get()->get_context().get_asset_extension() == ".oxmat") {
+          DrawMaterialAsset(EditorLayer::get()->get_context().as<std::string>());
         }
       }
       on_end();

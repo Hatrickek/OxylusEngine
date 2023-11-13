@@ -56,11 +56,11 @@ public:
 
   static EditorLayer* get() { return s_instance; }
 
-  void set_context(EditorContextType type, const char* data, size_t size) { m_editor_context.Set(type, data, size); }
-  void set_context_as_asset_with_path(const std::string& path) { m_editor_context.Set(EditorContextType::Asset, path.c_str(), sizeof(char) * (path.length() + 1)); }
-  void set_context_as_file_with_path(const std::string& path) { m_editor_context.Set(EditorContextType::File, path.c_str(), sizeof(char) * (path.length() + 1)); }
+  void set_context(EditorContextType type, const char* data, size_t size) { m_editor_context.set(type, data, size); }
+  void set_context_as_asset_with_path(const std::string& path) { m_editor_context.set(EditorContextType::Asset, path.c_str(), sizeof(char) * (path.length() + 1)); }
+  void set_context_as_file_with_path(const std::string& path) { m_editor_context.set(EditorContextType::File, path.c_str(), sizeof(char) * (path.length() + 1)); }
 
-  void reset_context() { m_editor_context.Reset(); }
+  void reset_context() { m_editor_context.reset(); }
   const EditorContext& get_context() const { return m_editor_context; }
 
   void editor_shortcuts();

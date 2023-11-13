@@ -5,6 +5,7 @@
 #include <vector>
 
 #include <imgui.h>
+#include <mutex>
 #include <unordered_map>
 
 #include "EditorPanel.h"
@@ -71,6 +72,7 @@ enum class FileType {
     std::filesystem::path m_current_directory;
     std::stack<std::filesystem::path> m_back_stack;
     std::vector<File> m_directory_entries;
+    std::mutex m_directory_mutex;
     uint32_t m_currently_visible_items_tree_view = 0;
     float m_thumbnail_size = 128.0f;
     ImGuiTextFilter m_filter;

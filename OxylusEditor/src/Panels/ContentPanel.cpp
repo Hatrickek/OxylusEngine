@@ -108,7 +108,7 @@ static const std::unordered_map<FileType, const char8_t*> s_FileTypesToIcon =
   {FileType::Audio, ICON_MDI_MICROPHONE},
 };
 
-static bool DragDropTarget(const std::filesystem::path& dropPath) {
+static bool drag_drop_target(const std::filesystem::path& dropPath) {
   if (ImGui::BeginDragDropTarget()) {
     if (const ImGuiPayload* payload = ImGui::AcceptDragDropPayload("Entity")) {
       const Entity entity = *static_cast<Entity*>(payload->Data);
@@ -123,7 +123,7 @@ static bool DragDropTarget(const std::filesystem::path& dropPath) {
   return false;
 }
 
-static void DragDropFrom(const std::filesystem::path& filepath) {
+static void drag_drop_from(const std::filesystem::path& filepath) {
   if (ImGui::BeginDragDropSource()) {
     const std::string pathStr = filepath.string();
     ImGui::SetDragDropPayload("CONTENT_BROWSER_ITEM", pathStr.c_str(), pathStr.length() + 1);
@@ -210,8 +210,8 @@ std::pair<bool, uint32_t> ContentPanel::directory_tree_view_recursive(const std:
     const std::string filepath = entryPath.string();
 
     if (!entryIsFile)
-      DragDropTarget(entryPath);
-    DragDropFrom(entryPath);
+      drag_drop_target(entryPath);
+    drag_drop_from(entryPath);
 
     auto name = FileSystem::get_name_with_extension(filepath);
 
@@ -591,8 +591,8 @@ void ContentPanel::render_body(bool grid) {
 
         bool highlight = false;
         const EditorContext& context = EditorLayer::get()->get_context();
-        if (context.IsValid(EditorContextType::File)) {
-          highlight = file.file_path == context.As<char>();
+        if (context.is_valid(EditorContextType::File)) {
+          highlight = file.file_path == context.as<char>();
         }
 
         // Background button
@@ -620,9 +620,9 @@ void ContentPanel::render_body(bool grid) {
         ImGui::PopStyleVar();
 
         if (is_dir)
-          DragDropTarget(file.file_path.c_str());
+          drag_drop_target(file.file_path.c_str());
 
-        DragDropFrom(file.file_path);
+        drag_drop_from(file.file_path);
 
         if (ImGui::IsItemHovered())
           any_item_hovered = true;
@@ -679,7 +679,7 @@ void ContentPanel::render_body(bool grid) {
         if (is_dir && ImGui::IsItemHovered() && ImGui::IsMouseDoubleClicked(0))
           directory_to_open = path;
 
-        DragDropFrom(file.file_path.c_str());
+        drag_drop_from(file.file_path.c_str());
 
         ImGui::SameLine();
         ImGui::SetCursorPosX(ImGui::GetCursorPosX() - lineHeight);
@@ -744,6 +744,7 @@ void ContentPanel::render_body(bool grid) {
 
 void ContentPanel::update_directory_entries(const std::filesystem::path& directory) {
   OX_SCOPED_ZONE;
+  std::lock_guard lock(m_directory_mutex);
   m_current_directory = directory;
   m_directory_entries.clear();
 
@@ -753,7 +754,7 @@ void ContentPanel::update_directory_entries(const std::filesystem::path& directo
   const auto directoryIt = std::filesystem::directory_iterator(directory);
   for (auto& directoryEntry : directoryIt) {
     const auto& path = directoryEntry.path();
-    const auto relativePath = std::filesystem::relative(path, m_assets_directory);
+    const auto relativePath = relative(path, m_assets_directory);
     const std::string filename = relativePath.filename().string();
     const std::string extension = relativePath.extension().string();
 
