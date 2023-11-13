@@ -29,7 +29,7 @@ void main() {
     vec3 normal = texture(in_NormalMap, scaled_uv).rgb;
     normal = in_WorldTangent * normalize(normal * 2.0 - 1.0);
     normal = mix(normalize(in_Normal), normal, normal_map_strenght);
-    normal = normalize(transpose(inverse(mat3(view))) * normal);
+    normal = normalize((inverse(mat3(view))) * normal);
     
     float inv_roughness = 0.0;
     if (mat.UsePhysicalMap) {

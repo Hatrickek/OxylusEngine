@@ -772,10 +772,12 @@ void ContentPanel::update_directory_entries(const std::filesystem::path& directo
     if (fileTypeColorIt != s_TypeColors.end())
       fileTypeColor = fileTypeColorIt->second;
 
-    m_directory_entries.push_back({
+    File entry = {
       filename, path.string(), extension, directoryEntry, nullptr, directoryEntry.is_directory(),
       fileType, fileTypeString, fileTypeColor
-    });
+    };
+
+    m_directory_entries.push_back(entry);
   }
 
   m_elapsed_time = 0.0f;

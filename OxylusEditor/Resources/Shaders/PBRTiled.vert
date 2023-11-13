@@ -21,7 +21,6 @@ layout(binding = 0) uniform UBO {
 #define MAX_NUM_JOINTS 128
 
 layout (set = 3, binding = 0) uniform Node {
-	mat4 matrix;
 	mat4 joint_matrix[MAX_NUM_JOINTS];
 	float joint_count;
 } node;
@@ -44,11 +43,11 @@ void main() {
 						in_Weight.z * node.joint_matrix[int(in_Joint.z)] +
 						in_Weight.w * node.joint_matrix[int(in_Joint.w)];
 
-		locPos = ModelMatrix * node.matrix * skin_mat * vec4(in_Pos, 1.0);
-		out_Normal = normalize(transpose(inverse(mat3(ModelMatrix * node.matrix * skin_mat))) * in_Normal);
+		locPos = ModelMatrix * skin_mat * vec4(in_Pos, 1.0);
+		out_Normal = normalize(transpose(inverse(mat3(ModelMatrix * skin_mat))) * in_Normal);
 	} else {
-		locPos = ModelMatrix * node.matrix * vec4(in_Pos, 1.0);
-		out_Normal = normalize(transpose(inverse(mat3(ModelMatrix * node.matrix))) * in_Normal);
+		locPos = ModelMatrix * vec4(in_Pos, 1.0);
+		out_Normal = normalize(transpose(inverse(mat3(ModelMatrix))) * in_Normal);
 	}
 
 	//vec4 locPos = ModelMatrix * vec4(in_Pos, 1.0);

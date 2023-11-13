@@ -438,9 +438,7 @@ void Mesh::update_animation(uint32_t index, const float time) {
   }
 }
 
-Mesh::MeshData::MeshData(const glm::mat4& matrix): bb(), aabb() {
-  uniform_block.matrix = matrix;
-
+Mesh::MeshData::MeshData(): bb(), aabb() {
   node_buffer = *vuk::allocate_buffer(*VulkanContext::get()->superframe_allocator, {vuk::MemoryUsage::eCPUtoGPU, sizeof(uniform_block), 1});
 
   //auto [node_buff, noder_buffer_fut] = create_buffer(*VulkanContext::get()->superframe_allocator, vuk::MemoryUsage::eCPUtoGPU, vuk::DomainFlagBits::eTransferOnGraphics, std::span(&uniform_block, 1));
@@ -520,7 +518,6 @@ void Mesh::Node::update() const {
   if (mesh_data) {
     const glm::mat4 m = get_matrix();
     if (skin) {
-      mesh_data->uniform_block.matrix = m;
       // Update join matrices
       const glm::mat4 inverse_transform = glm::inverse(m);
       size_t num_joints = std::min((uint32_t)skin->joints.size(), MAX_NUM_JOINTS);
@@ -589,7 +586,7 @@ void Mesh::load_node(Node* parent,
   // Node contains mesh data
   if (node.mesh > -1) {
     const tinygltf::Mesh mesh = model.meshes[node.mesh];
-    auto newMesh = new MeshData(newNode->matrix);
+    auto newMesh = new MeshData();
     newNode->mesh_index = node.mesh;
     for (size_t j = 0; j < mesh.primitives.size(); j++) {
       const tinygltf::Primitive& primitive = mesh.primitives[j];

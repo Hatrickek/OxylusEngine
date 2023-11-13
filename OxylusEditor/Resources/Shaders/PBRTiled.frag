@@ -262,6 +262,8 @@ void main() {
 		// color += emissive;
 	}
 
+	color += vec3(mat.Emissive) * mat.Emissive.a;
+
 	// Directional shadows
 	uint cascadeIndex = GetCascadeIndex(u_ShadowUbo.cascadeSplits, in_ViewPos, SHADOW_MAP_CASCADE_COUNT);
 	vec4 shadowCoord = GetShadowCoord(u_ShadowUbo.cascadeViewProjMat, inWorldPos, cascadeIndex);

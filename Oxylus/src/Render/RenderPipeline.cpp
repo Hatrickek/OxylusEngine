@@ -10,9 +10,9 @@ void RenderPipeline::enqueue_future(vuk::Future&& fut) {
   futures.emplace_back(std::move(fut));
 }
 
-void RenderPipeline::wait_for_futures(VulkanContext* vkContext) {
+void RenderPipeline::wait_for_futures(vuk::Allocator& allocator) {
   vuk::Compiler compiler;
-  wait_for_futures_explicit(*vkContext->superframe_allocator, compiler, futures);
+  wait_for_futures_explicit(allocator, compiler, futures);
   futures.clear();
 }
 

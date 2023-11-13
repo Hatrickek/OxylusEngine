@@ -20,6 +20,8 @@
 
 #include "Render/SceneRendererEvents.h"
 
+#include "Scene/SceneRenderer.h"
+
 namespace Oxylus {
 static bool s_RenameEntity = false;
 
@@ -368,10 +370,9 @@ void InspectorPanel::draw_components(Entity entity) const {
   draw_component<SkyLightComponent>(ICON_MDI_WEATHER_SUNNY " Sky Light Component",
     entity,
     [this](SkyLightComponent& component) {
-      auto file_name = FileSystem::get_file_name(component.cubemap->get_path());
-      const char* name = component.cubemap
-                           ? file_name.c_str()
-                           : "Drop a hdr file";
+      const std::string name = component.cubemap
+                                 ? FileSystem::get_file_name(component.cubemap->get_path())
+                                 : "Drop a hdr file";
       auto loadCubeMap = [](Scene* scene, const std::string& path, SkyLightComponent& comp) {
         if (path.empty())
           return;
@@ -383,7 +384,7 @@ void InspectorPanel::draw_components(Entity entity) const {
       };
       const float x = ImGui::GetContentRegionAvail().x;
       const float y = ImGui::GetFrameHeight();
-      if (ImGui::Button(name, {x, y})) {
+      if (ImGui::Button(name.c_str(), {x, y})) {
         const std::string filePath = FileDialogs::open_file({{"HDR File", "hdr"}});
         loadCubeMap(m_Scene, filePath, component);
       }

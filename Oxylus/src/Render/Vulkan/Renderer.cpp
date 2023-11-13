@@ -123,8 +123,8 @@ void Renderer::draw(VulkanContext* context, ImGuiLayer* imgui_layer, LayerStack&
 void Renderer::render_node(const Mesh::Node* node, vuk::CommandBuffer& command_buffer, const std::function<bool(Mesh::Primitive* prim, Mesh::MeshData* mesh_data)>& per_mesh_func) {
   if (node->mesh_data) {
     for (const auto& part : node->mesh_data->primitives) {
-      if (!per_mesh_func(part, node->mesh_data))
-        continue;
+        if (per_mesh_func && !per_mesh_func(part, node->mesh_data))
+          continue;
 
       command_buffer.draw_indexed(part->index_count, 1, part->first_index, 0, 0);
     }

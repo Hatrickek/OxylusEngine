@@ -4,7 +4,7 @@
 
 struct Material {
 	vec4 Color;	
-	vec4 Emmisive;
+	vec4 Emissive;
 	float Roughness;
 	float Metallic;
 	float Specular;

@@ -10,6 +10,8 @@
 #include <unordered_map>
 #include <glm/gtc/type_ptr.hpp>
 
+#include "SceneRenderer.h"
+
 #include "Jolt/Physics/Character/Character.h"
 #include "Jolt/Physics/Collision/Shape/CapsuleShape.h"
 #include "Jolt/Physics/Collision/Shape/CylinderShape.h"
@@ -26,7 +28,13 @@ Scene::Scene() {
   init();
 }
 
-Scene::Scene(std::string name) : scene_name(std::move(name)) { }
+Scene::Scene(std::string name) : scene_name(std::move(name)) {
+  init();
+}
+
+Scene::Scene(const Ref<RenderPipeline>& render_pipeline) {
+  init(render_pipeline);
+}
 
 Scene::~Scene() {
   if (is_running)
@@ -40,10 +48,11 @@ Scene::Scene(const Scene& scene) {
   this->m_registry.storage<entt::entity>().push(pack, pack + packSize);
 }
 
-void Scene::init() {
+void Scene::init(const Ref<RenderPipeline>& render_pipeline) {
   // Renderer
   scene_renderer = create_ref<SceneRenderer>(this);
 
+  scene_renderer->set_render_pipeline(render_pipeline);
   scene_renderer->init();
 
   // Systems
@@ -173,8 +182,9 @@ void Scene::iterate_over_mesh_node(const Ref<Mesh>& mesh, const std::vector<Mesh
       const auto it = std::find(mesh->linear_nodes.begin(), mesh->linear_nodes.end(), child);
       const auto index = std::distance(mesh->linear_nodes.begin(), it);
 
-      entity.add_component_internal<MeshRendererComponent>(mesh).submesh_index = index;
+      entity.add_component_internal<MeshRendererComponent>(mesh).submesh_index = (uint32_t)index;
       entity.get_component<MaterialComponent>().materials = mesh->get_materials_as_ref();
+      entity.get_component<TransformComponent>().set_from_matrix(child->matrix);
     }
     iterate_over_mesh_node(mesh, child->children, entity);
   }
@@ -186,6 +196,7 @@ void Scene::create_entity_with_mesh(const Ref<Mesh>& mesh_asset) {
     if (node->mesh_data) {
       entity.add_component_internal<MeshRendererComponent>(mesh_asset).submesh_index = node->index;
       entity.get_component<MaterialComponent>().materials = mesh_asset->get_materials_as_ref();
+      entity.get_component<TransformComponent>().set_from_matrix(node->matrix);
     }
     iterate_over_mesh_node(mesh_asset, node->children, entity);
   }
@@ -378,7 +389,7 @@ void Scene::on_contact_added(const JPH::Body& body1, const JPH::Body& body2, con
     system->on_contact_added(this, body1, body2, manifold, settings);
 }
 
-void Scene::on_contact_persisted(const JPH::Body& body1, const JPH::Body& body2, const JPH::ContactManifold& manifold, JPH::ContactSettings& settings) {
+void Scene::on_contact_persisted(const JPH::Body& body1, const JPH::Body& body2, const JPH::ContactManifold& manifold, const JPH::ContactSettings& settings) {
   for (const auto& system : systems)
     system->on_contact_persisted(this, body1, body2, manifold, settings);
 }

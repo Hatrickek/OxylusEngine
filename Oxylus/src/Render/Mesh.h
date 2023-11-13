@@ -58,12 +58,11 @@ public:
     vuk::Unique<vuk::Buffer> node_buffer;
 
     struct UniformBlock {
-      glm::mat4 matrix = glm::identity<glm::mat4>();
       glm::mat4 joint_matrix[MAX_NUM_JOINTS]{};
       float jointcount = 0.0f;
     } uniform_block;
 
-    MeshData(const glm::mat4& matrix);
+    MeshData();
     ~MeshData();
     void set_bounding_box(glm::vec3 min, glm::vec3 max);
   };

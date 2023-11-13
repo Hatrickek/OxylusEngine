@@ -14,6 +14,8 @@
 #include "Render/Vulkan/Renderer.h"
 #include "Render/Vulkan/VulkanContext.h"
 
+#include "Scene/SceneRenderer.h"
+
 #include "UI/OxUI.h"
 
 #include "Utils/FileUtils.h"

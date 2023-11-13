@@ -16,17 +16,7 @@ std::pair<std::vector<Name>, std::vector<Name>> diverge_image_mips(const std::sh
 
     output_names.emplace_back(div_name.append("+"));
   }
-
   return {diverged_names, output_names};
-}
-
-void converge_image_mips(const std::shared_ptr<RenderGraph>& rg, const std::vector<Name>& input_names, const std::string_view output_name) {
-  std::vector<Name> converged_names;
-  converged_names.reserve(input_names.size());
-  for (auto& name : input_names) {
-    converged_names.emplace_back(name.append("+"));
-  }
-  rg->converge_image_explicit(converged_names, output_name);
 }
 
 std::pair<std::vector<Name>, std::vector<Name>> diverge_image_layers(const std::shared_ptr<RenderGraph>& rg, const std::string_view input_name, uint32_t layer_count) {

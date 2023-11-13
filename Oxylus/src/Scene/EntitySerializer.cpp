@@ -2,6 +2,8 @@
 
 #include <fstream>
 
+#include "SceneRenderer.h"
+
 #include "Assets/AssetManager.h"
 #include "Assets/MaterialSerializer.h"
 

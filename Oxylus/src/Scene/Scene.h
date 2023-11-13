@@ -1,7 +1,6 @@
 #pragma once
 
 #include "EntitySerializer.h"
-#include "SceneRenderer.h"
 #include "Core/Components.h"
 
 #include "Core/UUID.h"
@@ -15,6 +14,8 @@
 #include "Core/Keycodes.h"
 
 namespace Oxylus {
+class RenderPipeline;
+class SceneRenderer;
 class Entity;
 
 class Scene {
@@ -24,11 +25,11 @@ public:
   std::unordered_map<UUID, entt::entity> entity_map;
 
   Scene();
-
   Scene(std::string name);
+  Scene(const Ref<RenderPipeline>& render_pipeline);
+  Scene(const Scene&);
 
   ~Scene();
-  Scene(const Scene&);
 
   Entity create_entity(const std::string& name = "New Entity");
   Entity create_entity_with_uuid(UUID uuid, const std::string& name = std::string());
@@ -57,13 +58,15 @@ public:
 
   // Physics interfaces
   void on_contact_added(const JPH::Body& body1, const JPH::Body& body2, const JPH::ContactManifold& manifold, const JPH::ContactSettings& settings);
-  void on_contact_persisted(const JPH::Body& body1, const JPH::Body& body2, const JPH::ContactManifold& manifold, JPH::ContactSettings& settings);
+  void on_contact_persisted(const JPH::Body& body1, const JPH::Body& body2, const JPH::ContactManifold& manifold, const JPH::ContactSettings& settings);
 
   // Input interfaces
   void on_key_pressed(KeyCode key) const;
   void on_key_released(KeyCode key) const;
 
   Entity get_entity_by_uuid(UUID uuid);
+
+  // Renderer
   Ref<SceneRenderer> get_renderer() { return scene_renderer; }
 
   entt::registry& get_registry() { return m_registry;}
@@ -83,7 +86,7 @@ private:
   Physics3DBodyActivationListener* body_activation_listener_3d = nullptr;
   float physics_frame_accumulator = 0.0f;
 
-  void init();
+  void init(const Ref<RenderPipeline>& render_pipeline = nullptr);
 
   // Physics
   void update_physics(const Timestep& delta_time);

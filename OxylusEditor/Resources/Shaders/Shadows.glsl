@@ -2,9 +2,9 @@
 
 float textureProj(sampler2DArray shadowMap, vec4 shadowCoord, vec2 offset, uint cascadeIndex, float ambient) {
   float shadow = 1.0;
-  float bias = 0.005;
+  float bias = 0.01;
 
-  if (shadowCoord.z > -1.0 && shadowCoord.z < 1.0) {
+  if (shadowCoord.z > 0.0 && shadowCoord.z < 1.0) {
     float dist = texture(shadowMap, vec3(shadowCoord.st + offset, cascadeIndex)).r;
     if (shadowCoord.w > 0 && dist < shadowCoord.z - bias) {
       shadow = ambient;

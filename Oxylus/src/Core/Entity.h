@@ -95,7 +95,7 @@ public:
     return rc.parent != 0 ? m_Scene->get_entity_by_uuid(rc.parent) : Entity{};
   }
 
-  Entity GetChild(uint32_t index = 0) const {
+  Entity get_child(uint32_t index = 0) const {
     const auto& rc = get_component<RelationshipComponent>();
     return get_scene()->get_entity_by_uuid(rc.children[index]);
   }

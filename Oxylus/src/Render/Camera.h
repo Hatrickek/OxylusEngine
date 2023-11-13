@@ -9,7 +9,7 @@ struct VkExtent2D;
 
 namespace Oxylus {
 constexpr float FOV = 60.0f;
-constexpr float NEARCLIP = 0.1f;
+constexpr float NEARCLIP = 0.01f;
 constexpr float FARCLIP = 1000.0f;
 
 /**

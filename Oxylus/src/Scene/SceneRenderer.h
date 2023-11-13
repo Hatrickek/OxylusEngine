@@ -17,6 +17,7 @@ public:
   void update() const;
 
   Ref<RenderPipeline> get_render_pipeline() const { return m_render_pipeline; }
+  void set_render_pipeline(const Ref<RenderPipeline>& render_pipeline) { m_render_pipeline = render_pipeline;}
 
 private:
   Scene* m_scene;

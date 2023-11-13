@@ -21,6 +21,8 @@
 #include "Render/Window.h"
 #include "Render/Vulkan/Renderer.h"
 
+#include "Scene/SceneRenderer.h"
+
 #include "UI/OxUI.h"
 #include "Utils/EditorConfig.h"
 #include "Utils/ImGuiScoped.h"
@@ -393,7 +395,6 @@ void EditorLayer::on_scene_stop() {
   set_scene_state(SceneState::Edit);
   m_active_scene->on_runtime_stop();
   m_active_scene = nullptr;
-  m_editor_scene->get_renderer()->init();
   set_editor_context(m_editor_scene);
 }
 

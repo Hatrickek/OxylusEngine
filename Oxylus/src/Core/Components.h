@@ -59,10 +59,15 @@ struct TransformComponent {
   Vec3 scale = Vec3(1);
 
   TransformComponent() = default;
-
   TransformComponent(const TransformComponent&) = default;
-
   TransformComponent(const Vec3& translation) : position(translation) { }
+  TransformComponent(const Mat4& transform_matrix) {
+    Math::decompose_transform(transform_matrix, position, rotation, scale);
+  }
+
+  void set_from_matrix(const Mat4& transform_matrix) {
+    Math::decompose_transform(transform_matrix, position, rotation, scale);
+  }
 };
 
 // Rendering

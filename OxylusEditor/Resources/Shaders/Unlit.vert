@@ -15,17 +15,16 @@ struct Buffer {
   vec4 color;
 };
 
-layout(std140, set = 0, binding = 0) readonly buffer MaterialBuffer {
+layout(std140, set = 0, binding = 0) readonly buffer MeshBuffers {
 	Buffer u_buffers[];
 };
 
-layout(push_constant) uniform BufferIndex { 
-	mat4 node_matrix;
-	int buffer_index; 
+layout(push_constant) uniform NodeBuffer { 
+	int buffer_index;
 };
 
 void main() {
-	vec4 local_pos = u_buffers[buffer_index].model_matrix * node_matrix * vec4(in_Position, 1.0);
+	vec4 local_pos = u_buffers[buffer_index].model_matrix * vec4(in_Position, 1.0);
 
 	vec3 world_pos = local_pos.xyz / local_pos.w;
 

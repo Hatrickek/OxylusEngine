@@ -23,10 +23,10 @@ public:
 
   virtual ~RenderPipeline() = default;
 
-  virtual void init() = 0;
+  virtual void init(vuk::Allocator& allocator) = 0;
   virtual void shutdown() = 0;
 
-  virtual Scope<vuk::Future> on_render(vuk::Allocator& frameAllocator, const vuk::Future& target, vuk::Dimension3D dim) = 0;
+  virtual Scope<vuk::Future> on_render(vuk::Allocator& frame_allocator, const vuk::Future& target, vuk::Dimension3D dim) = 0;
 
   virtual void on_dispatcher_events(EventDispatcher& dispatcher) { }
 
@@ -35,7 +35,7 @@ public:
   virtual void on_register_camera(Camera* camera) { }
 
   virtual void enqueue_future(vuk::Future&& fut);
-  virtual void wait_for_futures(VulkanContext* vkContext);
+  virtual void wait_for_futures(vuk::Allocator& allocator);
 
   virtual void detach_swapchain(vuk::Dimension3D dim);
   virtual bool is_swapchain_attached() { return attach_swapchain; }

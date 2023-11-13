@@ -10,12 +10,14 @@
 
 #include "Render/DefaultRenderPipeline.h"
 #include "Render/Vulkan/Renderer.h"
+#include "Render/Vulkan/VulkanContext.h"
 
 namespace Oxylus {
 void SceneRenderer::init() {
-  m_render_pipeline = create_ref<DefaultRenderPipeline>("DefaultRenderPipeline");
+  if (!m_render_pipeline)
+    m_render_pipeline = create_ref<DefaultRenderPipeline>("DefaultRenderPipeline");
   Renderer::renderer_context.render_pipeline = m_render_pipeline;
-  m_render_pipeline->init();
+  m_render_pipeline->init(*VulkanContext::get()->superframe_allocator);
   m_render_pipeline->on_dispatcher_events(dispatcher);
 }
 

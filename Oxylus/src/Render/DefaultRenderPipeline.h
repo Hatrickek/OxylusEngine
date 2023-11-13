@@ -23,7 +23,7 @@ public:
 
   ~DefaultRenderPipeline() override = default;
 
-  void init() override;
+  void init(vuk::Allocator& allocator) override;
   void shutdown() override;
 
   Scope<vuk::Future> on_render(vuk::Allocator& frame_allocator, const vuk::Future& target, vuk::Dimension3D dim) override;
@@ -89,7 +89,6 @@ private:
   std::vector<LightingData> spot_lights_data = {};
   EventDispatcher light_buffer_dispatcher;
 
-  void init_render_graph();
   void update_skybox(const SkyboxLoadEvent& e);
   void generate_prefilter();
   void update_parameters(ProbeChangeEvent& e);

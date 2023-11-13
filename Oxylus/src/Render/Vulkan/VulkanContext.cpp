@@ -180,6 +180,7 @@ void VulkanContext::create_context(const AppSpec& spec) {
   VkPhysicalDeviceFeatures2 vk10features{.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_FEATURES_2_KHR};
   vk10features.features.shaderInt64 = true;
   vk10features.features.shaderStorageImageWriteWithoutFormat = true;
+  vk10features.features.depthClamp = true;
   VkPhysicalDeviceSynchronization2FeaturesKHR sync_feat{
     .sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SYNCHRONIZATION_2_FEATURES_KHR,
     .synchronization2 = true

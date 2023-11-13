@@ -1,6 +1,5 @@
 #pragma once
 
-#define GLM_FORCE_DEPTH_ZERO_TO_ONE
 #define GLM_ENABLE_EXPERIMENTAL
 
 #include <glm/glm.hpp>
@@ -36,7 +35,7 @@ public:
 
   // Drawing
   static void draw(VulkanContext* context, ImGuiLayer* imgui_layer, LayerStack& layer_stack, const Ref<SystemManager>& system_manager);
-  static void render_node(const Mesh::Node* node, vuk::CommandBuffer& command_buffer, const std::function<bool(Mesh::Primitive* prim, Mesh::MeshData* mesh_data)>& per_mesh_func);
+  static void render_node(const Mesh::Node* node, vuk::CommandBuffer& command_buffer, const std::function<bool(Mesh::Primitive* prim, Mesh::MeshData* mesh_data)>& per_mesh_func = nullptr);
   static void render_mesh(const MeshData& mesh, vuk::CommandBuffer& command_buffer, const std::function<bool(Mesh::Primitive* prim, Mesh::MeshData* mesh_data)>& per_mesh_func);
 
   static UVec2 get_viewport_size() { return renderer_context.viewport_size; }
