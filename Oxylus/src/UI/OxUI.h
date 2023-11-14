@@ -36,7 +36,7 @@ public:
   static bool property(const char* label, bool* flag, const char* tooltip = nullptr);
 
   // InputField
-  static bool property(const char* label, std::string* text, ImGuiInputFlags flags, const char* tooltip = nullptr);
+  static bool property(const char* label, std::string* text, ImGuiInputFlags flags = 0, const char* tooltip = nullptr);
 
   // Dropdown
   static bool property(const char* label,
@@ -186,6 +186,8 @@ public:
                            const ImVec2& align,
                            const ImRect* clip_rect,
                            float wrap_width);
+
+  static void spacing(uint32_t count = 1);
 
   static std::filesystem::path get_path_from_imgui_payload(const ImGuiPayload* payload);
 

@@ -353,6 +353,11 @@ void OxUI::clipped_text(ImDrawList* draw_list, const ImVec2& pos_min, const ImVe
   draw_list->AddText(nullptr, 0.0f, pos, ImGui::GetColorU32(ImGuiCol_Text), text, text_display_end, wrap_width, &fine_clip_rect);
 }
 
+void OxUI::spacing(uint32_t count) {
+  for (uint32_t i = 0; i < count; i++)
+    ImGui::Spacing();
+}
+
 std::filesystem::path OxUI::get_path_from_imgui_payload(const ImGuiPayload* payload) {
   return std::string(static_cast<const char*>(payload->Data));
 }

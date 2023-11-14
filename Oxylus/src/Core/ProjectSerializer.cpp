@@ -8,16 +8,18 @@
 
 
 namespace Oxylus {
-ProjectSerializer::ProjectSerializer(Ref<Project> project) : m_Project(std::move(project)) { }
+ProjectSerializer::ProjectSerializer(Ref<Project> project) : m_project(std::move(project)) { }
 
-bool ProjectSerializer::Serialize(const std::filesystem::path& filePath) const {
-  const auto& config = m_Project->get_config();
+bool ProjectSerializer::serialize(const std::filesystem::path& file_path) const {
+  const auto& config = m_project->get_config();
 
   ryml::Tree tree;
 
-  ryml::NodeRef root = tree.rootref();
-  root |= ryml::MAP;
-  auto node = root["Project"];
+  ryml::NodeRef nodeRoot = tree.rootref();
+  nodeRoot |= ryml::MAP;
+
+  auto node = nodeRoot["Project"];
+  node |= ryml::MAP;
 
   node["Name"] << config.name;
   node["StartScene"] << config.start_scene;
@@ -25,18 +27,20 @@ bool ProjectSerializer::Serialize(const std::filesystem::path& filePath) const {
 
   std::stringstream ss;
   ss << tree;
-  std::ofstream filestream(filePath);
+  std::ofstream filestream(file_path);
   filestream << ss.str();
+
+  m_project->set_project_file_path(file_path.string());
 
   return true;
 }
 
-bool ProjectSerializer::Deserialize(const std::filesystem::path& filePath) const {
-  auto& [Name, StartScene, AssetDirectory] = m_Project->get_config();
+bool ProjectSerializer::deserialize(const std::filesystem::path& file_path) const {
+  auto& [Name, StartScene, AssetDirectory] = m_project->get_config();
 
-  const auto& content = FileUtils::read_file(filePath.string());
+  const auto& content = FileUtils::read_file(file_path.string());
   if (content.empty()) {
-    OX_CORE_ASSERT(!content.empty(), fmt::format("Couldn't load project file: {0}", filePath.string()).c_str());
+    OX_CORE_ASSERT(!content.empty(), fmt::format("Couldn't load project file: {0}", file_path.string()).c_str());
     return false;
   }
 
@@ -52,6 +56,8 @@ bool ProjectSerializer::Deserialize(const std::filesystem::path& filePath) const
   nodeRoot["Name"] >> Name;
   nodeRoot["StartScene"] >> StartScene;
   nodeRoot["AssetDirectory"] >> AssetDirectory;
+
+  m_project->set_project_file_path(file_path.string());
 
   return true;
 }

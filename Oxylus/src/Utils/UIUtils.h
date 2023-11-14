@@ -17,6 +17,8 @@ public:
   /// Returns empty strings if cancelled
   static std::string save_file(const std::vector<nfdfilteritem_t>& filter, const char* defaultName);
 
+  static std::string open_dir();
+
   static void open_folder_and_select_item(const char* path);
   static void open_file_with_program(const char* filepath);
 };

@@ -28,26 +28,37 @@ void FileDialogs::open_file_with_program(const char* filepath) {
 }
 
 std::string FileDialogs::open_file(const std::vector<nfdfilteritem_t>& filter) {
-  nfdchar_t* outPath;
-  const nfdresult_t result = NFD_OpenDialog(&outPath, filter.data(), (uint32_t)filter.size(), nullptr);
+  nfdchar_t* out_path;
+  const nfdresult_t result = NFD_OpenDialog(&out_path, filter.data(), (uint32_t)filter.size(), nullptr);
   if (result == NFD_OKAY) {
-    return outPath;
+    return out_path;
   }
   return {};
 }
 
 std::string FileDialogs::save_file(const std::vector<nfdfilteritem_t>& filter, const char* defaultName) {
-  nfdchar_t* outPath;
-  const nfdresult_t result = NFD_SaveDialog(&outPath, filter.data(), (uint32_t)filter.size(), nullptr, defaultName);
+  nfdchar_t* out_path;
+  const nfdresult_t result = NFD_SaveDialog(&out_path, filter.data(), (uint32_t)filter.size(), nullptr, defaultName);
   if (result == NFD_OKAY) {
-    return outPath;
+    return out_path;
+  }
+  return {};
+}
+
+std::string FileDialogs::open_dir() {
+  nfdchar_t* out_path;
+  const nfdchar_t* default_dir = Application::get()->get_specification().working_directory.c_str();
+  const nfdresult_t result = NFD_PickFolder(&out_path, default_dir);
+  if (result == NFD_OKAY) {
+    return out_path;
   }
   return {};
 }
 
 void FileDialogs::open_folder_and_select_item(const char* path) {
 #ifdef OX_PLATFORM_WINDOWS
-  const _bstr_t widePath(path);
+  const auto preferred = FileSystem::preferred_path(path);
+  const _bstr_t widePath(preferred.c_str());
   if (const auto pidl = ILCreateFromPath(widePath)) {
     SHOpenFolderAndSelectItems(pidl, 0, nullptr, 0);
     ILFree(pidl);

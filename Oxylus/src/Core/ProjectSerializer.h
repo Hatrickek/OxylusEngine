@@ -8,10 +8,10 @@ class ProjectSerializer {
 public:
   ProjectSerializer(Ref<Project> project);
 
-  bool Serialize(const std::filesystem::path& filePath) const;
-  bool Deserialize(const std::filesystem::path& filePath) const;
+  bool serialize(const std::filesystem::path& file_path) const;
+  bool deserialize(const std::filesystem::path& file_path) const;
 
 private:
-  Ref<Project> m_Project;
+  Ref<Project> m_project;
 };
 }

@@ -5,22 +5,24 @@
 #include <vector>
 
 namespace Oxylus {
-  class EditorConfig {
+class Project;
+
+class EditorConfig {
   public:
     EditorConfig();
     ~EditorConfig() = default;
 
-    static EditorConfig* Get() { return s_Instace; }
+    static EditorConfig* get() { return instance; }
 
-    void LoadConfig();
-    void SaveConfig() const;
+    void load_config();
+    void save_config() const;
 
-    void AddRecentProject(const std::string& path);
+    void add_recent_project(const Project* path);
 
-    const std::vector<std::string>& GetRecentProjects() const { return m_RecentProjects; }
+    const std::vector<std::string>& get_recent_projects() const { return recent_projects; }
 
   private:
-    std::vector<std::string> m_RecentProjects{};
-    static EditorConfig* s_Instace;
+    std::vector<std::string> recent_projects{};
+    static EditorConfig* instance;
   };
 }

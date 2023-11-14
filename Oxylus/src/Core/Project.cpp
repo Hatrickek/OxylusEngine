@@ -14,7 +14,7 @@ Ref<Project> Project::load(const std::filesystem::path& path) {
   const Ref<Project> project = create_ref<Project>();
 
   const ProjectSerializer serializer(project);
-  if (serializer.Deserialize(path)) {
+  if (serializer.deserialize(path)) {
     project->m_project_directory = path.parent_path();
     s_active_project = project;
     OX_CORE_INFO("Project loaded: {0}", project->get_config().name);
@@ -26,7 +26,7 @@ Ref<Project> Project::load(const std::filesystem::path& path) {
 
 bool Project::save_active(const std::filesystem::path& path) {
   const ProjectSerializer serializer(s_active_project);
-  if (serializer.Serialize(path)) {
+  if (serializer.serialize(path)) {
     s_active_project->m_project_directory = path.parent_path();
     return true;
   }

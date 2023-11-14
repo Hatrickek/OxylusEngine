@@ -47,7 +47,7 @@ EditorLayer::EditorLayer() : Layer("Editor Layer") {
 }
 
 void EditorLayer::on_attach(EventDispatcher& dispatcher) {
-  m_editor_config.LoadConfig();
+  m_editor_config.load_config();
   Resources::init_editor_resources();
 
   crosshair_cursor = Input::LoadCursorIconStandard(GLFW_CROSSHAIR_CURSOR);
@@ -75,7 +75,7 @@ void EditorLayer::on_attach(EventDispatcher& dispatcher) {
 
 void EditorLayer::on_detach() {
   Input::DestroyCursor(crosshair_cursor);
-  m_editor_config.SaveConfig();
+  m_editor_config.save_config();
 }
 
 void EditorLayer::on_update(const Timestep& deltaTime) {
@@ -198,6 +198,9 @@ void EditorLayer::on_imgui_render() {
           ImGui::EndMenu();
         }
         if (ImGui::BeginMenu("Window")) {
+          if (ImGui::MenuItem("Projects", nullptr)) {
+            m_editor_panels["ProjectPanel"]->Visible = true;
+          }
           if (ImGui::MenuItem("Add viewport", nullptr)) {
             m_viewport_panels.emplace_back(create_scope<ViewportPanel>())->set_context(m_editor_scene, m_scene_hierarchy_panel);
           }

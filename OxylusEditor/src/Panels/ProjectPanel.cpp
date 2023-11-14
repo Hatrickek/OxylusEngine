@@ -2,11 +2,13 @@
 
 #include <icons/IconsMaterialDesignIcons.h>
 #include <imgui.h>
+#include <misc/cpp/imgui_stdlib.h>
 
 #include "EditorLayer.h"
 #include "Assets/AssetManager.h"
 #include "Core/Project.h"
-#include "UI/OxUI.h"
+#include "Core/ProjectSerializer.h"
+
 #include "UI/OxUI.h"
 #include "Utils/EditorConfig.h"
 #include "Utils/StringUtils.h"
@@ -17,48 +19,112 @@ ProjectPanel::ProjectPanel() : EditorPanel("Projects", ICON_MDI_ACCOUNT_BADGE, t
 
 void ProjectPanel::on_update() { }
 
-void ProjectPanel::LoadProjectForEditor(const std::string& filepath) {
+void ProjectPanel::load_project_for_editor(const std::string& filepath) {
   if (Project::load(filepath)) {
     const auto startScene = AssetManager::get_asset_file_system_path(Project::get_active()->get_config().start_scene);
     EditorLayer::get()->open_scene(startScene);
-    EditorConfig::Get()->AddRecentProject(filepath);
+    EditorConfig::get()->add_recent_project(Project::get_active().get());
     Visible = false;
   }
+}
+
+void ProjectPanel::new_project(const std::string& project_dir, const std::string& project_name, const std::string& project_asset_dir) {
+  const auto project = create_ref<Project>();
+  project->get_config().name = project_name;
+  project->get_config().asset_directory = project_asset_dir;
+
+  project->set_project_dir(project_dir);
+
+  if (project_dir.empty())
+    return;
+
+  std::filesystem::create_directory(project_dir);
+
+  const auto asset_folder_dir = FileSystem::append_paths(project_dir, project_asset_dir);
+  std::filesystem::create_directory(asset_folder_dir);
+
+  const ProjectSerializer serializer(project);
+  serializer.serialize(FileSystem::append_paths(project_dir, project_name + ".oxproj"));
+
+  Project::set_active(project);
+
+  EditorConfig::get()->add_recent_project(project.get());
 }
 
 void ProjectPanel::on_imgui_render() {
   if (Visible && !ImGui::IsPopupOpen("ProjectSelector"))
     ImGui::OpenPopup("ProjectSelector");
-  ImGui::SetNextWindowSize(ImVec2(480, 320), ImGuiCond_FirstUseEver);
-  OxUI::center_next_window();
-  constexpr auto flags = ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoSavedSettings
+  constexpr auto flags = ImGuiWindowFlags_AlwaysAutoResize | ImGuiWindowFlags_NoSavedSettings
                          | ImGuiWindowFlags_NoDecoration | ImGuiWindowFlags_NoDocking;
+  static bool draw_new_project_panel = false;
+
+  OxUI::center_next_window();
   if (ImGui::BeginPopupModal("ProjectSelector", nullptr, flags)) {
     const float x = ImGui::GetContentRegionAvail().x;
     const float y = ImGui::GetFrameHeight();
 
-    OxUI::image(EditorLayer::get()->engine_banner->get_texture(), {x, 111});
+    const auto banner_size = EditorLayer::get()->engine_banner->get_texture().extent;
 
-    ImGui::Text("Recent Projects");
-    for (auto& project : EditorConfig::Get()->GetRecentProjects()) {
-      if (ImGui::Button(std::filesystem::path(project).filename().string().c_str(), {x, y})) {
-        LoadProjectForEditor(project);
+    OxUI::image(EditorLayer::get()->engine_banner->get_texture(), {(float)banner_size.width, (float)banner_size.height});
+    OxUI::spacing(2);
+    ImGui::SeparatorText("Projects");
+    OxUI::spacing(2);
+
+    if (draw_new_project_panel) {
+      static std::string project_dir = {};
+      static std::string project_name = "New Project";
+      static std::string project_asset_dir = "Assets";
+      OxUI::begin_properties();
+      {
+        OxUI::begin_property_grid("Directory", nullptr, false);
+        ImGui::SetNextItemWidth(ImGui::GetContentRegionAvail().x * 0.8f);
+        ImGui::InputText("##Directory", &project_dir, flags);
+        ImGui::SameLine();
+        if (ImGui::Button(StringUtils::from_char8_t(ICON_MDI_FOLDER), {ImGui::GetContentRegionAvail().x, 0})) {
+          project_dir = FileDialogs::open_dir();
+          project_dir = FileSystem::append_paths(project_dir, project_name);
+        }
+        OxUI::end_property_grid();
+      }
+      OxUI::property("Name", &project_name);
+      OxUI::property("Asset Directory", &project_asset_dir);
+      OxUI::end_properties();
+      ImGui::Separator();
+      ImGui::SetNextItemWidth(-1);
+      if (ImGui::Button("Create", ImVec2(120, 0))) {
+        new_project(project_dir, project_name, project_asset_dir);
+        Visible = false;
+        ImGui::CloseCurrentPopup();
+      }
+      ImGui::SetItemDefaultFocus();
+      ImGui::SameLine();
+      if (ImGui::Button("Cancel", ImVec2(120, 0))) {
+        draw_new_project_panel = false;
       }
     }
+    else {
+      const auto projects = EditorConfig::get()->get_recent_projects(); // since we are modifying it inside the for loop
+      for (auto& project : projects) {
+        auto project_name = FileSystem::get_file_name(project);
+        if (ImGui::Button(project_name.c_str(), {x, y})) {
+          load_project_for_editor(project);
+        }
+      }
 
-    ImGui::Separator();
-    if (ImGui::Button(StringUtils::from_char8_t(ICON_MDI_FILE_DOCUMENT " New Project"), {x, y})) {
-      Project::create_new();
-      Visible = false;
-    }
-    ImGui::SetNextItemWidth(x);
-    if (ImGui::Button(StringUtils::from_char8_t(ICON_MDI_UPLOAD " Load Project"), {x, y})) {
-      const std::string filepath = FileDialogs::open_file({{"Oxylus Project", "oxproj"}});
-      if (!filepath.empty()) {
-        LoadProjectForEditor(filepath);
+      ImGui::Separator();
+      if (ImGui::Button(StringUtils::from_char8_t(ICON_MDI_FILE_DOCUMENT " New Project"), {x, y})) {
+        draw_new_project_panel = true;
+      }
+      ImGui::SetNextItemWidth(x);
+      if (ImGui::Button(StringUtils::from_char8_t(ICON_MDI_UPLOAD " Load Project"), {x, y})) {
+        const std::string filepath = FileDialogs::open_file({{"Oxylus Project", "oxproj"}});
+        if (!filepath.empty()) {
+          load_project_for_editor(filepath);
+        }
       }
     }
+    OxUI::spacing(4);
+    ImGui::EndPopup();
   }
-  ImGui::EndPopup();
 }
 }
