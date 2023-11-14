@@ -139,8 +139,8 @@ void VulkanContext::create_context(const AppSpec& spec) {
   selector.set_surface(surface)
           .set_minimum_version(1, 0)
           .add_required_extension(VK_KHR_SYNCHRONIZATION_2_EXTENSION_NAME)
-          //.add_required_extension(VK_KHR_ACCELERATION_STRUCTURE_EXTENSION_NAME)
-          //.add_required_extension(VK_KHR_RAY_TRACING_PIPELINE_EXTENSION_NAME)
+           //.add_required_extension(VK_KHR_ACCELERATION_STRUCTURE_EXTENSION_NAME)
+           //.add_required_extension(VK_KHR_RAY_TRACING_PIPELINE_EXTENSION_NAME)
           .add_required_extension(VK_KHR_DEFERRED_HOST_OPERATIONS_EXTENSION_NAME);
   auto phys_ret = selector.select();
   vkb::PhysicalDevice vkbphysical_device;
@@ -193,9 +193,9 @@ void VulkanContext::create_context(const AppSpec& spec) {
     .sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_RAY_TRACING_PIPELINE_FEATURES_KHR,
     .rayTracingPipeline = true
   };
-  device_builder = device_builder.add_pNext(&vk12features).add_pNext(&vk11features).add_pNext(&sync_feat).add_pNext(&accelFeature).add_pNext(&vk10features);
+  device_builder = device_builder.add_pNext(&vk12features).add_pNext(&vk11features).add_pNext(&sync_feat).add_pNext(&vk10features);
   if (has_rt) {
-    device_builder = device_builder.add_pNext(&rtPipelineFeature);
+    device_builder = device_builder.add_pNext(&rtPipelineFeature).add_pNext(&accelFeature);
   }
   auto dev_ret = device_builder.build();
   if (!dev_ret) {
