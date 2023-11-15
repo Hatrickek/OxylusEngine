@@ -34,7 +34,7 @@ std::string FileSystem::preferred_path(const std::string_view path) {
   std::string new_path(path);
 #ifdef OX_PLATFORM_WINDOWS
   StringUtils::replace_string(new_path, "/", "\\");
-#elif 
+#else
   StringUtils::replace_string(new_path, "\\", "/");
 #endif
   return new_path;
