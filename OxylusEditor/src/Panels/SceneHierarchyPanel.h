@@ -18,22 +18,21 @@ namespace Oxylus {
     void clear_selection_context();
     Entity get_selected_entity() const;
     Ref<Scene> get_scene() const { return m_Context; }
-    void set_selected_entity(Entity entity);
 
     void drag_drop_target() const;
 
   private:
+    Ref<Scene> m_Context = nullptr;
+    ImGuiTextFilter m_Filter;
     bool m_TableHovered = false;
     bool m_WindowHovered = false;
-    Entity m_SelectedEntity;
+    std::vector<Entity> m_selected_entity_entities;
     Entity m_RenamingEntity;
     Entity m_DraggedEntity;
     Entity m_DraggedEntityTarget;
     Entity m_DeletedEntity;
+
     void draw_context_menu();
-
-    Ref<Scene> m_Context = nullptr;
-
-    ImGuiTextFilter m_Filter;
+    Entity get_selected_entity_front() const;
   };
 }

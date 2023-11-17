@@ -356,10 +356,6 @@ bool EditorLayer::open_scene(const std::filesystem::path& path) {
   return true;
 }
 
-void EditorLayer::set_selected_entity(const Entity& entity) {
-  m_scene_hierarchy_panel.set_selected_entity(entity);
-}
-
 void EditorLayer::clear_selected_entity() {
   m_scene_hierarchy_panel.clear_selection_context();
 }

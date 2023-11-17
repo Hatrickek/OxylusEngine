@@ -30,7 +30,7 @@ public:
 
   virtual void on_dispatcher_events(EventDispatcher& dispatcher) { }
 
-  virtual void on_register_render_object(const MeshData& render_object) { }
+  virtual void on_register_render_object(const MeshComponent& render_object) { }
   virtual void on_register_light(const LightingData& lighting_data, LightComponent::LightType light_type) { }
   virtual void on_register_camera(Camera* camera) { }
 

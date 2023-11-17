@@ -33,7 +33,8 @@ public:
 
   Entity create_entity(const std::string& name = "New Entity");
   Entity create_entity_with_uuid(UUID uuid, const std::string& name = std::string());
-  void create_entity_with_mesh(const Ref<Mesh>& mesh_asset);
+
+  void load_mesh(const Ref<Mesh>& mesh);
 
   template <typename T, typename... Args>
   Scene* add_system(Args&&... args) {
@@ -95,9 +96,6 @@ private:
 
   template <typename T>
   void on_component_added(Entity entity, T& component);
-
-  void iterate_over_mesh_node(const Ref<Mesh>& mesh, const std::vector<Mesh::Node*>& node, Entity parent);
-
 
   friend class Entity;
   friend class SceneSerializer;

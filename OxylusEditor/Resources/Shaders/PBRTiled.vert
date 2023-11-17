@@ -18,12 +18,13 @@ layout(binding = 0) uniform UBO {
 	vec3 camPos;
 } u_Ubo;
 
+#ifdef ANIMATIONS
 #define MAX_NUM_JOINTS 128
-
 layout (set = 3, binding = 0) uniform Node {
 	mat4 joint_matrix[MAX_NUM_JOINTS];
 	float joint_count;
 } node;
+#endif
 
 layout(push_constant) uniform ModelConst { mat4 ModelMatrix; };
 
@@ -35,7 +36,7 @@ layout(location = 3) out vec3 out_ViewPos;
 out gl_PerVertex { vec4 gl_Position; };
 
 void main() {
-	vec4 locPos;
+#ifdef ANIMATIONS // TODO: move to a new shader
 	if (node.joint_count > 0.0) {
 		// Mesh is skinned
 		mat4 skin_mat = in_Weight.x * node.joint_matrix[int(in_Joint.x)] +
@@ -45,10 +46,11 @@ void main() {
 
 		locPos = ModelMatrix * skin_mat * vec4(in_Pos, 1.0);
 		out_Normal = normalize(transpose(inverse(mat3(ModelMatrix * skin_mat))) * in_Normal);
-	} else {
-		locPos = ModelMatrix * vec4(in_Pos, 1.0);
-		out_Normal = normalize(transpose(inverse(mat3(ModelMatrix))) * in_Normal);
-	}
+	} 
+	else 
+#endif
+	vec4 locPos = ModelMatrix * vec4(in_Pos, 1.0);
+	out_Normal = normalize(transpose(inverse(mat3(ModelMatrix))) * in_Normal);
 
 	//vec4 locPos = ModelMatrix * vec4(in_Pos, 1.0);
 	out_WorldPos = locPos.xyz / locPos.w;

@@ -255,7 +255,7 @@ void InspectorPanel::draw_components(Entity entity) const {
     ImGui::OpenPopup("Add Component");
   }
   if (ImGui::BeginPopup("Add Component")) {
-    draw_add_component<MeshRendererComponent>(m_SelectedEntity, "Mesh Renderer");
+    draw_add_component<MeshComponent>(m_SelectedEntity, "Mesh Renderer");
     draw_add_component<MaterialComponent>(m_SelectedEntity, "Material");
     draw_add_component<AudioSourceComponent>(m_SelectedEntity, "Audio Source");
     draw_add_component<LightComponent>(m_SelectedEntity, "Light");
@@ -288,16 +288,17 @@ void InspectorPanel::draw_components(Entity entity) const {
       OxUI::end_properties();
     });
 
-  draw_component<MeshRendererComponent>(ICON_MDI_VECTOR_SQUARE " Mesh Renderer Component",
+  draw_component<MeshComponent>(ICON_MDI_VECTOR_SQUARE " Mesh Renderer Component",
     entity,
-    [](const MeshRendererComponent& component) {
-      if (!component.mesh_geometry)
+    [](const MeshComponent& component) {
+      if (!component.original_mesh)
         return;
-      const char* fileName = component.mesh_geometry->name.empty()
+      const char* fileName = component.original_mesh->name.empty()
                                ? "Empty"
-                               : component.mesh_geometry->name.c_str();
+                               : component.original_mesh->name.c_str();
       ImGui::Text("Loaded Mesh: %s", fileName);
-      ImGui::Text("Material Count: %d", (uint32_t)component.mesh_geometry->get_materials_as_ref().size());
+      ImGui::Text("Primitive Count: %d", (uint32_t)component.subsets.size());
+      ImGui::Text("Material Count: %d", (uint32_t)component.original_mesh->get_materials_as_ref().size());
     });
 
   draw_component<MaterialComponent>(ICON_MDI_SPRAY " Material Component",

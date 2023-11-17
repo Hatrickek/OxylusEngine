@@ -25,41 +25,31 @@ void SceneRenderer::update() const {
   OX_SCOPED_ZONE;
 
   // Mesh system
-  const auto mesh_view = m_scene->m_registry.view<TransformComponent, MeshRendererComponent, MaterialComponent, TagComponent>();
+  const auto mesh_view = m_scene->m_registry.view<TransformComponent, MeshComponent, MaterialComponent, TagComponent>();
   auto mesh_system_task = std::async(std::launch::async,
     [&] {
       OX_SCOPED_ZONE_N("Mesh System");
-      for (const auto&& [entity, transform, meshrenderer, material, tag] : mesh_view.each()) {
-        auto e = Entity(entity, m_scene);
-        auto parent = e.get_parent();
-        bool parentEnabled = true;
-        if (parent)
-          parentEnabled = parent.get_component<TagComponent>().enabled;
-        if (tag.enabled && parentEnabled && !material.materials.empty()) {
-          m_render_pipeline->on_register_render_object(MeshData{
-            .index_count = (uint32_t)meshrenderer.mesh_geometry->indices.size(),
-            .vertex_count = (uint32_t)meshrenderer.mesh_geometry->vertices.size(),
-            .mesh_geometry = meshrenderer.mesh_geometry.get(),
-            .materials = material.materials,
-            .transform = e.get_world_transform(),
-            .submesh_index = meshrenderer.submesh_index
-          });
+      for (const auto&& [entity, transform, mesh_component, material, tag] : mesh_view.each()) {
+        if (tag.enabled && !material.materials.empty()) {
+          auto e = Entity(entity, m_scene);
+          mesh_component.transform = e.get_world_transform();
+          m_render_pipeline->on_register_render_object(mesh_component);
         }
       }
     });
 
   // Animated Mesh System
-  const auto animation_view = m_scene->m_registry.view<TransformComponent, MeshRendererComponent, AnimationComponent, TagComponent>();
+  const auto animation_view = m_scene->m_registry.view<TransformComponent, MeshComponent, AnimationComponent, TagComponent>();
   auto animation_system_task = std::async(std::launch::async,
     [&] {
       OX_SCOPED_ZONE_N("Animated Mesh System");
       for (const auto&& [entity, transform, mesh_renderer, animation, tag] : animation_view.each()) {
         if (!animation.animations.empty()) {
           animation.animation_timer += Application::get_timestep() * animation.animation_speed;
-          if (animation.animation_timer > mesh_renderer.mesh_geometry->animations[animation.current_animation_index]->end) {
-            animation.animation_timer -= mesh_renderer.mesh_geometry->animations[animation.current_animation_index]->end;
+          if (animation.animation_timer > mesh_renderer.original_mesh->animations[animation.current_animation_index]->end) {
+            animation.animation_timer -= mesh_renderer.original_mesh->animations[animation.current_animation_index]->end;
           }
-          mesh_renderer.mesh_geometry->update_animation(animation.current_animation_index, animation.animation_timer);
+          mesh_renderer.original_mesh->update_animation(animation.current_animation_index, animation.animation_timer);
         }
       }
     });

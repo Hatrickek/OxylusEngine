@@ -60,12 +60,11 @@ void EntitySerializer::SerializeEntity(Scene* scene, ryml::NodeRef& entities, En
     glm::write(&scale, tc.scale);
   }
 
-  if (entity.has_component<MeshRendererComponent>()) {
-    const auto& mrc = entity.get_component<MeshRendererComponent>();
+  if (entity.has_component<MeshComponent>()) {
+    const auto& mrc = entity.get_component<MeshComponent>();
     auto node = entityNode["MeshRendererComponent"];
     node |= ryml::MAP;
-    node["Mesh"] << mrc.mesh_geometry->path;
-    node["SubmeshIndex"] << mrc.submesh_index;
+    node["Mesh"] << mrc.original_mesh->path;
   }
 
   if (entity.has_component<MaterialComponent>()) {
@@ -310,8 +309,6 @@ UUID EntitySerializer::DeserializeEntity(ryml::ConstNodeRef entityNode, Scene* s
     uint32_t submeshIndex = 0;
     node["Mesh"] >> meshPath;
     node["SubmeshIndex"] >> submeshIndex;
-
-    deserializedEntity.add_component<MeshRendererComponent>(AssetManager::get_mesh_asset(meshPath)).submesh_index = submeshIndex;
   }
 
   if (entityNode.has_child("MaterialComponent")) {

@@ -17,7 +17,7 @@ uint8_t* Texture::load_stb_image(const std::string& filename, uint32_t* width, u
   constexpr int size_of_channel = 8;
 
   const auto pixels = stbi_load(filename.c_str(), &tex_width, &tex_height, &tex_channels, STBI_rgb_alpha);
-
+  
   if (tex_channels != 4)
     tex_channels = 4;
 

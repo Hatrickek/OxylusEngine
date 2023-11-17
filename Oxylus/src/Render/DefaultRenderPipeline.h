@@ -29,7 +29,7 @@ public:
   Scope<vuk::Future> on_render(vuk::Allocator& frame_allocator, const vuk::Future& target, vuk::Dimension3D dim) override;
 
   void on_dispatcher_events(EventDispatcher& dispatcher) override;
-  void on_register_render_object(const MeshData& render_object) override;
+  void on_register_render_object(const MeshComponent& render_object) override;
   void on_register_light(const LightingData& lighting_data, LightComponent::LightType light_type) override;
   void on_register_camera(Camera* camera) override;
 
@@ -72,12 +72,11 @@ private:
   vuk::Unique<vuk::Image> prefiltered_image;
 
   // Mesh
-  std::vector<MeshData> mesh_draw_list;
-  std::vector<uint32_t> transparent_mesh_draw_list;
+  std::vector<MeshComponent> mesh_draw_list;
   bool m_should_merge_render_objects = false;
   vuk::Buffer m_merged_index_buffer;
   vuk::Buffer m_merged_vertex_buffer;
-  Ref<Mesh> m_quad;
+  Ref<Mesh> m_quad = nullptr;
   Ref<Mesh> m_cube = nullptr;
   Ref<Camera> default_camera;
 
@@ -90,7 +89,7 @@ private:
   EventDispatcher light_buffer_dispatcher;
 
   void update_skybox(const SkyboxLoadEvent& e);
-  void generate_prefilter();
+  void generate_prefilter(vuk::Allocator& allocator);
   void update_parameters(ProbeChangeEvent& e);
 
   void depth_pre_pass(const Ref<vuk::RenderGraph>& rg, vuk::Buffer& vs_buffer, const std::unordered_map<uint32_t, uint32_t>&, vuk::Buffer& mat_buffer);
@@ -98,7 +97,7 @@ private:
   vuk::Future apply_fxaa(vuk::Future source, vuk::Future dst, vuk::Buffer& fxaa_buffer);
   void cascaded_shadow_pass(const Ref<vuk::RenderGraph>& rg, vuk::Buffer& shadow_buffer);
   void gtao_pass(vuk::Allocator& frame_allocator, const Ref<vuk::RenderGraph>& rg);
-  void ssr_pass(vuk::Allocator& frame_allocator, const Ref<vuk::RenderGraph>& rg, VulkanContext* vk_context, vuk::Buffer& vs_buffer) const;
+  void ssr_pass(vuk::Allocator& frame_allocator, const Ref<vuk::RenderGraph>& rg, const VulkanContext* vk_context, vuk::Buffer& vs_buffer) const;
   void bloom_pass(const Ref<vuk::RenderGraph>& rg, const VulkanContext* vk_context);
   void apply_grid(vuk::RenderGraph* rg, vuk::Name dst, vuk::Name depth_image, vuk::Allocator& frame_allocator) const;
   void debug_pass(const Ref<vuk::RenderGraph>& rg, vuk::Name dst, const char* depth, vuk::Allocator& frame_allocator) const;

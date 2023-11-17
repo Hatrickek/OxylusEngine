@@ -68,7 +68,6 @@ public:
   void set_editor_context(const Ref<Scene>& scene);
   bool open_scene(const std::filesystem::path& path);
 
-  void set_selected_entity(const Entity& entity);
   Entity get_selected_entity() const { return m_scene_hierarchy_panel.get_selected_entity(); }
   Ref<Scene> get_selected_scene() const { return m_scene_hierarchy_panel.get_scene(); }
   void clear_selected_entity();

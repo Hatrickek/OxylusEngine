@@ -20,7 +20,6 @@
 namespace Oxylus {
 class TextureAsset;
 class Material;
-class Mesh;
 
 struct IDComponent {
   UUID ID;
@@ -61,6 +60,7 @@ struct TransformComponent {
   TransformComponent() = default;
   TransformComponent(const TransformComponent&) = default;
   TransformComponent(const Vec3& translation) : position(translation) { }
+
   TransformComponent(const Mat4& transform_matrix) {
     Math::decompose_transform(transform_matrix, position, rotation, scale);
   }
@@ -76,23 +76,31 @@ struct MaterialComponent {
   bool using_material_asset = false;
 };
 
+struct MeshComponent {
+  struct MeshSubset {
+    uint32_t index_count = 0;
+    uint32_t first_index = 0;
+    Ref<Material> material = nullptr;
+    int32_t material_index = 0;
+  };
+
+  Ref<Mesh> original_mesh = nullptr;
+  std::vector<MeshSubset> subsets = {};
+  Mat4 transform = {};
+
+  MeshComponent() = default;
+
+  MeshComponent(const Ref<Mesh>& model) : original_mesh(model) { }
+
+  ~MeshComponent() {
+    original_mesh.reset();
+  }
+};
+
 struct CameraComponent {
   Ref<Camera> system;
 
   CameraComponent() : system(create_ref<Camera>()) { }
-};
-
-struct MeshRendererComponent {
-  Ref<Mesh> mesh_geometry = nullptr;
-  uint32_t submesh_index = 0;
-
-  MeshRendererComponent() = default;
-
-  MeshRendererComponent(const Ref<Mesh>& model) : mesh_geometry(model) { }
-
-  ~MeshRendererComponent() {
-    mesh_geometry.reset();
-  }
 };
 
 struct AnimationComponent {
@@ -310,7 +318,7 @@ struct ComponentGroup { };
 using AllComponents = ComponentGroup<TransformComponent, RelationshipComponent, PrefabComponent, CameraComponent,
 
                                      // Render
-                                     LightComponent, MeshRendererComponent, SkyLightComponent, ParticleSystemComponent, MaterialComponent,
+                                     LightComponent, MeshComponent, SkyLightComponent, ParticleSystemComponent, MaterialComponent,
 
                                      //  Physics
                                      RigidbodyComponent,

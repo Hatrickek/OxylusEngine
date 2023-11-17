@@ -44,6 +44,7 @@ public:
     BoundingBox bb = {};
 
     int32_t material_index = 0;
+    uint32_t parent_node_index = 0;
 
     void set_bounding_box(glm::vec3 min, glm::vec3 max);
     Primitive(uint32_t firstIndex, uint32_t indexCount, uint32_t vertex_count, uint32_t first_vertex) : first_index(firstIndex), index_count(indexCount), first_vertex(first_vertex), vertex_count(vertex_count) { }
@@ -52,7 +53,7 @@ public:
   static constexpr auto MAX_NUM_JOINTS = 128u;
 
   struct MeshData {
-    std::vector<Primitive*> primitives;
+    std::vector<Primitive*> primitives = {};
     BoundingBox bb;
     BoundingBox aabb;
     vuk::Unique<vuk::Buffer> node_buffer;
@@ -77,14 +78,17 @@ public:
     MeshData* mesh_data;
     Skin* skin;
     int32_t skin_index = -1;
-    Mat4 matrix;
+    Mat4 transform = glm::identity<Mat4>();
     std::string name;
-    Vec3 translation{};
-    Vec3 scale{1.0f};
-    Quat rotation{};
+    Vec3 translation = {};
+    Vec3 scale = Vec3(1.0f);
+    Quat rotation = {};
+
     BoundingBox bvh;
     BoundingBox aabb;
+
     ~Node();
+
     Mat4 local_matrix() const;
     Mat4 get_matrix() const;
     void update() const;
@@ -134,6 +138,7 @@ public:
   std::vector<Ref<Animation>> animations = {};
 
   std::vector<Ref<TextureAsset>> m_textures;
+  std::vector<Ref<Material>> materials;
   std::vector<Node*> nodes;
   std::vector<Node*> linear_nodes;
 
@@ -164,7 +169,7 @@ public:
   void bind_index_buffer(vuk::CommandBuffer& command_buffer) const;
   void draw_node(const Node* node, vuk::CommandBuffer& commandBuffer) const;
   void draw(vuk::CommandBuffer& command_buffer) const;
-  void update_animation(uint32_t index, float time);
+  void update_animation(uint32_t index, float time) const;
   void destroy();
 
   /// Export a mesh file as glb file.
@@ -172,6 +177,7 @@ public:
 
   Ref<Material> get_material(uint32_t index) const;
   std::vector<Ref<Material>> get_materials_as_ref() const;
+  uint32_t get_material_count() const { return (uint32_t)materials.size(); }
   size_t get_node_count() const { return nodes.size(); }
   void set_scale(const glm::vec3& mesh_scale);
 
@@ -180,7 +186,6 @@ public:
   }
 
 private:
-  std::vector<Ref<Material>> materials;
 
   Vec3 scale{1.0f};
   Vec3 center{0.0f};

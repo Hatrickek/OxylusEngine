@@ -222,10 +222,10 @@ void ViewportPanel::on_update() {
   // entity highlighting
   if (scene_hierarchy_panel) {
     auto entity = scene_hierarchy_panel->get_selected_entity();
-    if (entity && entity.has_component<MeshRendererComponent>()) {
+    if (entity && entity.has_component<MeshComponent>()) {
       auto scaled_matrix = glm::scale(entity.get_world_transform(), Vec3(1.02f));
       DebugRenderer::draw_mesh(
-        entity.get_component<MeshRendererComponent>().mesh_geometry,
+        entity.get_component<MeshComponent>().original_mesh,
         scaled_matrix,
         Vec4(0, 1, 0, 1)
       );

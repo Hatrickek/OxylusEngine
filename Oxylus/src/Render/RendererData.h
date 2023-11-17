@@ -2,6 +2,7 @@
 #include <vector>
 
 #include "Core/Base.h"
+#include "Core/Components.h"
 #include "Core/Types.h"
 #include "Render/Mesh.h"
 
