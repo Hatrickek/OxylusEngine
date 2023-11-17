@@ -93,15 +93,18 @@ Scope<vuk::Future> CustomRenderPipeline::on_render(vuk::Allocator& frame_allocat
                     .bind_buffer(0, 0, buffer)
                     .bind_graphics_pipeline("unlit_pipeline");
 
-      for (uint32_t i = 0; i < (uint32_t)draw_list.size(); i++) {
-        draw_list[i].mesh_geometry->bind_vertex_buffer(command_buffer);
-        draw_list[i].mesh_geometry->bind_index_buffer(command_buffer);
-        for (const auto* node : draw_list[i].mesh_geometry->nodes) {
+      // PBR pipeline
+      for (uint32_t i = 0; i < draw_list.size(); i++) {
+        auto& mesh = draw_list[i];
+        mesh.original_mesh->bind_vertex_buffer(command_buffer);
+        mesh.original_mesh->bind_index_buffer(command_buffer);
+
+        for (auto& subset : mesh.subsets) {
           const struct PushConst {
             uint32_t buffer_index;
           } pc = {i};
           command_buffer.push_constants(vuk::ShaderStageFlagBits::eVertex, 0, pc);
-          Renderer::render_node(node, command_buffer);
+          command_buffer.draw_indexed(subset.index_count, 1, subset.first_index, 0, 0);
         }
       }
 
@@ -132,7 +135,7 @@ Scope<vuk::Future> CustomRenderPipeline::on_render(vuk::Allocator& frame_allocat
   return create_scope<vuk::Future>(std::move(rg), "final_output");
 }
 
-void CustomRenderPipeline::on_register_render_object(const MeshData& render_object) {
+void CustomRenderPipeline::on_register_render_object(const MeshComponent& render_object) {
   draw_list.emplace_back(render_object);
 }
 
