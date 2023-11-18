@@ -68,7 +68,6 @@ set_target_properties(${PROJECT_NAME} PROPERTIES
 target_include_directories(${PROJECT_NAME} PUBLIC
   "${CMAKE_CURRENT_SOURCE_DIR}/src"
   "${CMAKE_CURRENT_SOURCE_DIR}/vendor"
-  "${CMAKE_CURRENT_SOURCE_DIR}/vendor/GLFW/include"
   "${CMAKE_CURRENT_SOURCE_DIR}/vendor/glm"
   "${CMAKE_CURRENT_SOURCE_DIR}/vendor/ImGuizmo"
   "${CMAKE_CURRENT_SOURCE_DIR}/vendor/miniaudio"
@@ -192,11 +191,11 @@ target_link_libraries(${PROJECT_NAME} PUBLIC EnTT)
 set_targets_static_and_folder(EnTT)
 
 # tinygltf
-set(TINYGLTF_NO_INCLUDE_JSON ON)
-set(TINYGLTF_USE_RAPIDJSON ON)
-set(TINYGLTF_USE_CPP14 ON)
-set(TINYGLTF_BUILD_LOADER_EXAMPLE OFF)
-set(TINYGLTF_HEADER_ONLY ON)
+set(TINYGLTF_NO_INCLUDE_JSON ON CACHE BOOL "" FORCE)
+set(TINYGLTF_USE_RAPIDJSON ON CACHE BOOL "" FORCE)
+set(TINYGLTF_USE_CPP14 ON CACHE BOOL "" FORCE)
+set(TINYGLTF_BUILD_LOADER_EXAMPLE OFF CACHE BOOL "" FORCE)
+set(TINYGLTF_HEADER_ONLY ON CACHE BOOL "" FORCE)
 FetchContent_Declare(
     tinygltf
     GIT_REPOSITORY "https://github.com/syoyo/tinygltf"
@@ -221,8 +220,8 @@ target_link_libraries(${PROJECT_NAME} PUBLIC fmt)
 set_targets_static_and_folder(fmt)
 
 # spdlog
-set(SPDLOG_FMT_EXTERNAL TRUE)
-add_definitions(-DSPDLOG_LEVEL_NAMES={\"TRACE\",\"DEBUG\",\"INFO\",\"WARN\",\"ERROR\",\"CRITICAL\",\"OFF\"})
+set(SPDLOG_FMT_EXTERNAL TRUE CACHE BOOL "" FORCE)
+#add_definitions(-DSPDLOG_LEVEL_NAMES={\"TRACE\",\"DEBUG\",\"INFO\",\"WARN\",\"ERROR\",\"CRITICAL\",\"OFF\"})
 FetchContent_Declare(
     spdlog
     GIT_REPOSITORY "https://github.com/gabime/spdlog.git"
@@ -247,9 +246,9 @@ target_link_libraries(${PROJECT_NAME} PUBLIC vk-bootstrap)
 set_targets_static_and_folder(vk-bootstrap)
 
 # vuk
-set(VUK_LINK_TO_LOADER OFF)
-set(VUK_FAIL_FAST ON)
-set(VUK_USE_DXC ON)
+set(VUK_LINK_TO_LOADER OFF CACHE BOOL "" FORCE)
+set(VUK_FAIL_FAST ON CACHE BOOL "" FORCE)
+set(VUK_USE_DXC ON CACHE BOOL "" FORCE)
 FetchContent_Declare(
     vuk
     GIT_REPOSITORY "https://github.com/martty/vuk.git"
@@ -279,10 +278,17 @@ set_targets_static_and_folder(nfd)
 set(GLFW_BUILD_DOCS OFF CACHE BOOL "" FORCE)
 set(GLFW_BUILD_TESTS OFF CACHE BOOL "" FORCE)
 set(GLFW_BUILD_EXAMPLES OFF CACHE BOOL "" FORCE)
-add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/vendor/glfw)
+set(GLFW_INSTALL OFF CACHE BOOL "" FORCE)
+FetchContent_Declare(
+    glfw
+    GIT_REPOSITORY "https://github.com/glfw/glfw.git"
+    GIT_TAG "3.3.8"
+    GIT_SHALLOW    TRUE
+    GIT_PROGRESS   TRUE
+)
+FetchContent_MakeAvailable(glfw)
 target_link_libraries(${PROJECT_NAME} PUBLIC glfw)
 set_targets_static_and_folder(glfw)
-FOLDER_DIR_TARGETS(uninstall)
 disable_ipo_target(glfw)
 
 # RYML
@@ -313,13 +319,13 @@ set(RapidJSON_DIR "${FETCHCONTENT_BASE_DIR}/rapidjson-src")
 target_include_directories(${PROJECT_NAME} PUBLIC ${RapidJSON_DIR}/include)
 
 # Jolt
-set(COMPILE_AS_SHARED_LIBRARY OFF)
-set(ENABLE_ALL_WARNINGS OFF)
+set(COMPILE_AS_SHARED_LIBRARY OFF CACHE BOOL "" FORCE)
+set(ENABLE_ALL_WARNINGS OFF CACHE BOOL "" FORCE)
 set(INTERPROCEDURAL_OPTIMIZATION ON)
 FetchContent_Declare(
     JoltPhysics
     GIT_REPOSITORY "https://github.com/jrouwe/JoltPhysics"
-    GIT_TAG "v4.0.0"
+    GIT_TAG "v4.0.1"
     SOURCE_SUBDIR "Build"
     GIT_SHALLOW    TRUE
     GIT_PROGRESS   TRUE
@@ -330,8 +336,9 @@ target_include_directories(${PROJECT_NAME} PUBLIC ${JoltPhysics_SOURCE_DIR}/..)
 FOLDER_DIR_TARGETS(Jolt)
 
 # tracy
-set(TRACY_STATIC ON)
-set(TRACY_VK_USE_SYMBOL_TABLE ON)
+set(TRACY_STATIC ON CACHE BOOL "" FORCE)
+set(TRACY_VK_USE_SYMBOL_TABLE ON CACHE BOOL "" FORCE)
+set(TRACY_NO_FRAME_IMAGE ON CACHE BOOL "" FORCE)
 FetchContent_Declare(
     Tracy
     GIT_REPOSITORY "https://github.com/wolfpld/tracy.git"
@@ -344,8 +351,8 @@ target_link_libraries(${PROJECT_NAME} PUBLIC Tracy::TracyClient)
 set_targets_static_and_folder(TracyClient)
 
 # lua
-set(LUA_ENABLE_SHARED OFF)
-set(LUA_ENABLE_TESTING OFF)
+set(LUA_ENABLE_SHARED OFF CACHE BOOL "" FORCE)
+set(LUA_ENABLE_TESTING OFF CACHE BOOL "" FORCE)
 FetchContent_Declare(
     lua
     GIT_REPOSITORY "https://github.com/walterschell/Lua"
@@ -358,7 +365,8 @@ target_link_libraries(${PROJECT_NAME} PUBLIC lua_static)
 set_targets_static_and_folder(lua_static)
 
 # sol
-set(SOL2_LUA_VERSION 5.4.6)
+set(SOL2_LUA_VERSION 5.4.6 CACHE BOOL "" FORCE)
+set(SOL2_ENABLE_INSTALL OFF CACHE BOOL "" FORCE)
 FetchContent_Declare(
     sol
     GIT_REPOSITORY "https://github.com/ThePhD/sol2"

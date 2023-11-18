@@ -7,9 +7,6 @@
 [submodule "Oxylus/vendor/ImGuizmo"]
 	path = Oxylus/vendor/ImGuizmo
 	url = https://github.com/CedricGuillemet/ImGuizmo.git
-[submodule "Oxylus/vendor/glfw"]
-	path = Oxylus/vendor/glfw
-	url = https://github.com/glfw/glfw
 [submodule "Oxylus/vendor/CMake-Utils"]
 	path = Oxylus/vendor/CMake-Utils
 	url = https://github.com/Hatrickek/CMake-Utils.git
