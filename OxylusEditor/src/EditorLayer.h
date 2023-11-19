@@ -43,7 +43,7 @@ public:
   void on_attach(EventDispatcher& dispatcher) override;
   void on_detach() override;
 
-  void on_update(const Timestep& deltaTime) override;
+  void on_update(const Timestep& delta_time) override;
   void on_imgui_render() override;
 
   void new_scene();

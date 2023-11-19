@@ -78,7 +78,7 @@ void EditorLayer::on_detach() {
   m_editor_config.save_config();
 }
 
-void EditorLayer::on_update(const Timestep& deltaTime) {
+void EditorLayer::on_update(const Timestep& delta_time) {
   for (const auto& [name, panel] : m_editor_panels) {
     if (!panel->Visible)
       continue;
@@ -100,15 +100,15 @@ void EditorLayer::on_update(const Timestep& deltaTime) {
 
   switch (scene_state) {
     case SceneState::Edit: {
-      m_editor_scene->on_editor_update(deltaTime, m_viewport_panels[0]->m_camera);
+      m_editor_scene->on_editor_update(delta_time, m_viewport_panels[0]->m_camera);
       break;
     }
     case SceneState::Play: {
-      m_active_scene->on_runtime_update(deltaTime);
+      m_active_scene->on_runtime_update(delta_time);
       break;
     }
     case SceneState::Simulate: {
-      m_active_scene->on_editor_update(deltaTime, m_viewport_panels[0]->m_camera);
+      m_active_scene->on_editor_update(delta_time, m_viewport_panels[0]->m_camera);
       break;
     }
   }
@@ -147,16 +147,16 @@ void EditorLayer::on_imgui_render() {
       ImGui::DockSpace(dockspace_id, ImVec2(0.0f, 0.0f), dockspace_flags);
     }
 
-    const float frameHeight = ImGui::GetFrameHeight();
+    const float frame_height = ImGui::GetFrameHeight();
 
     constexpr ImGuiWindowFlags menu_flags = ImGuiWindowFlags_NoScrollbar | ImGuiWindowFlags_NoSavedSettings |
                                             ImGuiWindowFlags_MenuBar | ImGuiWindowFlags_NoNavFocus;
 
-    ImVec2 framePadding = ImGui::GetStyle().FramePadding;
+    ImVec2 frame_padding = ImGui::GetStyle().FramePadding;
     draw_window_title();
-    ImGui::PushStyleVar(ImGuiStyleVar_FramePadding, {framePadding.x, 4.0f});
+    ImGui::PushStyleVar(ImGuiStyleVar_FramePadding, {frame_padding.x, 4.0f});
 
-    if (ImGui::BeginViewportSideBar("##PrimaryMenuBar", viewport, ImGuiDir_Up, frameHeight, menu_flags)) {
+    if (ImGui::BeginViewportSideBar("##PrimaryMenuBar", viewport, ImGuiDir_Up, frame_height, menu_flags)) {
       if (ImGui::BeginMenuBar()) {
         if (ImGui::BeginMenu("File")) {
           if (ImGui::MenuItem("New Scene", "Ctrl + N")) {
@@ -227,11 +227,11 @@ void EditorLayer::on_imgui_render() {
           }
           ImGui::EndMenu();
         }
-        static bool renderAssetManager = false;
+        static bool render_asset_manager = false;
 
         if (ImGui::BeginMenu("Assets")) {
           if (ImGui::MenuItem("Asset Manager")) {
-            renderAssetManager = true;
+            render_asset_manager = true;
           }
           ImGui::EndMenu();
         }
@@ -284,8 +284,8 @@ void EditorLayer::on_imgui_render() {
             (float)Window::get_width() - 10 -
             ImGui::CalcTextSize(Project::get_active()->get_config().name.c_str()).x,
             0));
-          ImGuiScoped::StyleColor bColor1(ImGuiCol_Button, ImVec4(0.2f, 0.2f, 0.2f, 0.7f));
-          ImGuiScoped::StyleColor bColor2(ImGuiCol_ButtonHovered, ImVec4(0.2f, 0.2f, 0.2f, 0.7f));
+          ImGuiScoped::StyleColor b_color1(ImGuiCol_Button, ImVec4(0.2f, 0.2f, 0.2f, 0.7f));
+          ImGuiScoped::StyleColor b_color2(ImGuiCol_ButtonHovered, ImVec4(0.2f, 0.2f, 0.2f, 0.7f));
           ImGui::Button(Project::get_active()->get_config().name.c_str());
         }
 
@@ -325,9 +325,9 @@ void EditorLayer::editor_shortcuts() {
 }
 
 void EditorLayer::new_scene() {
-  const Ref<Scene> newScene = create_ref<Scene>();
-  m_editor_scene = newScene;
-  set_editor_context(newScene);
+  const Ref<Scene> new_scene = create_ref<Scene>();
+  m_editor_scene = new_scene;
+  set_editor_context(new_scene);
   m_last_save_scene_path.clear();
 }
 
@@ -427,9 +427,9 @@ void EditorLayer::draw_window_title() {
   ImGui::SameLine();
 
   const ImVec2 region = ImGui::GetContentRegionMax();
-  const ImVec2 buttonSize = {region.y * 1.6f, region.y};
+  const ImVec2 button_size = {region.y * 1.6f, region.y};
 
-  const float buttonStartRegion = region.x - 3.0f * buttonSize.x + ImGui::GetStyle().WindowPadding.x;
+  const float button_start_region = region.x - 3.0f * button_size.x + ImGui::GetStyle().WindowPadding.x;
   // Minimize/Maximize/Close buttons
   ImGui::PushStyleVar(ImGuiStyleVar_FramePadding, {0.0f, 0.0f});
   ImGui::PushStyleVar(ImGuiStyleVar_ItemSpacing, {0.0f, 0.0f});
@@ -437,16 +437,16 @@ void EditorLayer::draw_window_title() {
   ImGui::PushStyleVar(ImGuiStyleVar_FrameBorderSize, 0.0f);
   ImGui::PushStyleColor(ImGuiCol_Button, {0.0f, 0.0f, 0.0f, 0.0f});
 
-  ImGui::SetCursorPosX(buttonStartRegion);
-  const bool isNormalCursor = ImGui::GetMouseCursor() == ImGuiMouseCursor_Arrow;
+  ImGui::SetCursorPosX(button_start_region);
+  const bool is_normal_cursor = ImGui::GetMouseCursor() == ImGuiMouseCursor_Arrow;
 
   // Minimize Button
-  if (ImGui::Button(StringUtils::from_char8_t(ICON_MDI_MINUS), buttonSize) && isNormalCursor)
+  if (ImGui::Button(StringUtils::from_char8_t(ICON_MDI_MINUS), button_size) && is_normal_cursor)
     Window::minimize();
   ImGui::SameLine();
 
   // Maximize Button
-  if (ImGui::Button(StringUtils::from_char8_t(ICON_MDI_WINDOW_MAXIMIZE), buttonSize) && isNormalCursor) {
+  if (ImGui::Button(StringUtils::from_char8_t(ICON_MDI_WINDOW_MAXIMIZE), button_size) && is_normal_cursor) {
     if (Window::is_maximized())
       Window::restore();
     else
@@ -457,7 +457,7 @@ void EditorLayer::draw_window_title() {
   ImGui::PushStyleColor(ImGuiCol_ButtonHovered, {0.909f, 0.066f, 0.137f, 1.0f});
   ImGui::PushStyleColor(ImGuiCol_ButtonActive, {0.920f, 0.066f, 0.120f, 1.0f});
   // Close Button
-  if (ImGui::Button(StringUtils::from_char8_t(ICON_MDI_WINDOW_CLOSE), buttonSize) && isNormalCursor)
+  if (ImGui::Button(StringUtils::from_char8_t(ICON_MDI_WINDOW_CLOSE), button_size) && is_normal_cursor)
     Application::get()->close();
   ImGui::PopStyleColor(2);
 
@@ -466,21 +466,21 @@ void EditorLayer::draw_window_title() {
 }
 
 void EditorLayer::draw_panels() {
-  static EditorPanel* fullscreenViewportPanel = nullptr;
+  static EditorPanel* fullscreen_viewport_panel = nullptr;
 
   for (const auto& panel : m_viewport_panels) {
-    if (panel->Visible && !panel->FullscreenViewport) {
+    if (panel->Visible && !panel->fullscreen_viewport) {
       panel->on_imgui_render();
-      if (panel->FullscreenViewport) {
-        fullscreenViewportPanel = panel.get();
+      if (panel->fullscreen_viewport) {
+        fullscreen_viewport_panel = panel.get();
         break;
       }
-      fullscreenViewportPanel = nullptr;
+      fullscreen_viewport_panel = nullptr;
     }
   }
 
-  if (fullscreenViewportPanel) {
-    fullscreenViewportPanel->on_imgui_render();
+  if (fullscreen_viewport_panel) {
+    fullscreen_viewport_panel->on_imgui_render();
     return;
   }
 
@@ -525,9 +525,9 @@ void EditorLayer::set_docking_layout(EditorLayout layout) {
   ImGui::DockBuilderSetNodeSize(dockspace_id, size);
 
   if (layout == EditorLayout::BigViewport) {
-    ImGuiID right_dock = ImGui::DockBuilderSplitNode(dockspace_id, ImGuiDir_Right, 0.8f, nullptr, &dockspace_id);
+    const ImGuiID right_dock = ImGui::DockBuilderSplitNode(dockspace_id, ImGuiDir_Right, 0.8f, nullptr, &dockspace_id);
     ImGuiID left_dock = ImGui::DockBuilderSplitNode(dockspace_id, ImGuiDir_Left, 0.2f, nullptr, &dockspace_id);
-    ImGuiID left_split_dock = ImGui::DockBuilderSplitNode(left_dock, ImGuiDir_Down, 0.4f, nullptr, &left_dock);
+    const ImGuiID left_split_dock = ImGui::DockBuilderSplitNode(left_dock, ImGuiDir_Down, 0.4f, nullptr, &left_dock);
 
     ImGui::DockBuilderDockWindow(m_viewport_panels[0]->get_id(), right_dock);
     ImGui::DockBuilderDockWindow(m_scene_hierarchy_panel.get_id(), left_dock);
@@ -537,11 +537,11 @@ void EditorLayer::set_docking_layout(EditorLayout layout) {
     ImGui::DockBuilderDockWindow(m_inspector_panel.get_id(), left_dock);
   }
   else if (layout == EditorLayout::Classic) {
-    ImGuiID right_dock = ImGui::DockBuilderSplitNode(dockspace_id, ImGuiDir_Right, 0.2f, nullptr, &dockspace_id);
+    const ImGuiID right_dock = ImGui::DockBuilderSplitNode(dockspace_id, ImGuiDir_Right, 0.2f, nullptr, &dockspace_id);
     ImGuiID left_dock = ImGui::DockBuilderSplitNode(dockspace_id, ImGuiDir_Left, 0.2f, nullptr, &dockspace_id);
     ImGuiID left_split_vertical_dock = ImGui::DockBuilderSplitNode(left_dock, ImGuiDir_Right, 0.8f, nullptr, &left_dock);
-    ImGuiID bottom_dock = ImGui::DockBuilderSplitNode(left_split_vertical_dock, ImGuiDir_Down, 0.3f, nullptr, &left_split_vertical_dock);
-    ImGuiID left_split_dock = ImGui::DockBuilderSplitNode(left_dock, ImGuiDir_Down, 0.4f, nullptr, &left_dock);
+    const ImGuiID bottom_dock = ImGui::DockBuilderSplitNode(left_split_vertical_dock, ImGuiDir_Down, 0.3f, nullptr, &left_split_vertical_dock);
+    const ImGuiID left_split_dock = ImGui::DockBuilderSplitNode(left_dock, ImGuiDir_Down, 0.4f, nullptr, &left_dock);
 
     ImGui::DockBuilderDockWindow(m_scene_hierarchy_panel.get_id(), left_dock);
     ImGui::DockBuilderDockWindow(m_editor_panels["RenderSettings"]->get_id(), left_split_dock);
@@ -562,8 +562,8 @@ void EditorLayer::open_project(const std::filesystem::path& path) {
   if (path.empty())
     return;
   if (Project::load(path)) {
-    const auto& startScene = AssetManager::get_asset_file_system_path(Project::get_active()->get_config().start_scene);
-    open_scene(startScene);
+    const auto& start_scene = AssetManager::get_asset_file_system_path(Project::get_active()->get_config().start_scene);
+    open_scene(start_scene);
   }
 }
 
