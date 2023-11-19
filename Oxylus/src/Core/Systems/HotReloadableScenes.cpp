@@ -18,7 +18,7 @@ void HotReloadableScenes::on_update() {
   if (last_write_time(m_ScenePath).time_since_epoch().count()
       != m_LastWriteTime.time_since_epoch().count()) {
     //File changed event
-    m_Dispatcher->trigger<ReloadSceneEvent>();
+    m_dispatcher->trigger<ReloadSceneEvent>();
     m_LastWriteTime = last_write_time(m_ScenePath);
   }
 }

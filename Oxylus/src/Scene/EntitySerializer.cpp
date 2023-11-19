@@ -16,20 +16,20 @@
 
 namespace Oxylus {
 template <typename T>
-void SetEnum(const ryml::ConstNodeRef& node, T& data) {
+void set_enum(const ryml::ConstNodeRef& node, T& data) {
   int type = 0;
   node >> type;
   data = (T)type;
 }
 
-void EntitySerializer::SerializeEntity(Scene* scene, ryml::NodeRef& entities, Entity entity) {
-  ryml::NodeRef entityNode = entities.append_child({ryml::MAP});
+void EntitySerializer::serialize_entity(Scene* scene, ryml::NodeRef& entities, Entity entity) {
+  ryml::NodeRef entity_node = entities.append_child({ryml::MAP});
 
   if (entity.has_component<TagComponent>()) {
     const auto& tag = entity.get_component<TagComponent>();
 
-    entityNode["Entity"] << entity.get_uuid();
-    auto node = entityNode["TagComponent"];
+    entity_node["Entity"] << entity.get_uuid();
+    auto node = entity_node["TagComponent"];
     node |= ryml::MAP;
     node["Tag"] << tag.tag;
   }
@@ -37,20 +37,20 @@ void EntitySerializer::SerializeEntity(Scene* scene, ryml::NodeRef& entities, En
   if (entity.has_component<RelationshipComponent>()) {
     const auto& [Parent, Children] = entity.get_component<RelationshipComponent>();
 
-    auto node = entityNode["RelationshipComponent"];
+    auto node = entity_node["RelationshipComponent"];
     node |= ryml::MAP;
     node["Parent"] << Parent;
     node["ChildCount"] << (uint32_t)Children.size();
-    auto childrenNode = node["Children"];
-    childrenNode |= ryml::SEQ;
+    auto children_node = node["Children"];
+    children_node |= ryml::SEQ;
     for (size_t i = 0; i < Children.size(); i++) {
-      childrenNode.append_child() << Children[i];
+      children_node.append_child() << Children[i];
     }
   }
 
   if (entity.has_component<TransformComponent>()) {
     const auto& tc = entity.get_component<TransformComponent>();
-    auto node = entityNode["TransformComponent"];
+    auto node = entity_node["TransformComponent"];
     node |= ryml::MAP;
     auto translation = node["Translation"];
     auto rotation = node["Rotation"];
@@ -62,14 +62,14 @@ void EntitySerializer::SerializeEntity(Scene* scene, ryml::NodeRef& entities, En
 
   if (entity.has_component<MeshComponent>()) {
     const auto& mrc = entity.get_component<MeshComponent>();
-    auto node = entityNode["MeshRendererComponent"];
+    auto node = entity_node["MeshRendererComponent"];
     node |= ryml::MAP;
     node["Mesh"] << mrc.original_mesh->path;
   }
 
   if (entity.has_component<MaterialComponent>()) {
     const auto& mc = entity.get_component<MaterialComponent>();
-    auto node = entityNode["MaterialComponent"];
+    auto node = entity_node["MaterialComponent"];
     node |= ryml::MAP;
     if (mc.using_material_asset)
       node["Path"] << mc.materials[0]->path;
@@ -77,13 +77,13 @@ void EntitySerializer::SerializeEntity(Scene* scene, ryml::NodeRef& entities, En
 
   if (entity.has_component<LightComponent>()) {
     const auto& light = entity.get_component<LightComponent>();
-    auto node = entityNode["LightComponent"];
+    auto node = entity_node["LightComponent"];
     node |= ryml::MAP;
-    auto colorNode = node["Color"];
+    auto color_node = node["Color"];
     node["Type"] << (int)light.type;
     node["UseColorTemperatureMode"] << light.use_color_temperature_mode;
     node["Temperature"] << light.temperature;
-    glm::write(&colorNode, light.color);
+    glm::write(&color_node, light.color);
     node["Intensity"] << light.intensity;
     node["Range"] << light.range;
     node["CutOffAngle"] << light.cut_off_angle;
@@ -93,7 +93,7 @@ void EntitySerializer::SerializeEntity(Scene* scene, ryml::NodeRef& entities, En
 
   if (entity.has_component<SkyLightComponent>()) {
     const auto& light = entity.get_component<SkyLightComponent>();
-    auto node = entityNode["SkyLightComponent"];
+    auto node = entity_node["SkyLightComponent"];
     node |= ryml::MAP;
     std::string path = light.cubemap ? light.cubemap->get_path() : "";
     node["ImagePath"] << path;
@@ -101,7 +101,7 @@ void EntitySerializer::SerializeEntity(Scene* scene, ryml::NodeRef& entities, En
 
   if (entity.has_component<PostProcessProbe>()) {
     const auto& probe = entity.get_component<PostProcessProbe>();
-    auto node = entityNode["PostProcessProbe"];
+    auto node = entity_node["PostProcessProbe"];
     node |= ryml::MAP;
     node["VignetteEnabled"] << probe.vignette_enabled;
     node["VignetteIntensity"] << probe.vignette_intensity;
@@ -118,7 +118,7 @@ void EntitySerializer::SerializeEntity(Scene* scene, ryml::NodeRef& entities, En
 
   if (entity.has_component<CameraComponent>()) {
     const auto& camera = entity.get_component<CameraComponent>();
-    auto node = entityNode["CameraComponent"];
+    auto node = entity_node["CameraComponent"];
     node |= ryml::MAP;
     node["FOV"] << camera.system->Fov;
     node["NearClip"] << camera.system->near_clip;
@@ -127,7 +127,7 @@ void EntitySerializer::SerializeEntity(Scene* scene, ryml::NodeRef& entities, En
 
   // Physics
   if (entity.has_component<RigidbodyComponent>()) {
-    auto node = entityNode["RigidbodyComponent"];
+    auto node = entity_node["RigidbodyComponent"];
     node |= ryml::MAP;
 
     const auto& rb = entity.get_component<RigidbodyComponent>();
@@ -144,7 +144,7 @@ void EntitySerializer::SerializeEntity(Scene* scene, ryml::NodeRef& entities, En
   }
 
   if (entity.has_component<BoxColliderComponent>()) {
-    auto node = entityNode["BoxColliderComponent"];
+    auto node = entity_node["BoxColliderComponent"];
     node |= ryml::MAP;
 
     const auto& bc = entity.get_component<BoxColliderComponent>();
@@ -156,7 +156,7 @@ void EntitySerializer::SerializeEntity(Scene* scene, ryml::NodeRef& entities, En
   }
 
   if (entity.has_component<SphereColliderComponent>()) {
-    auto node = entityNode["SphereColliderComponent"];
+    auto node = entity_node["SphereColliderComponent"];
     node |= ryml::MAP;
 
     const auto& sc = entity.get_component<SphereColliderComponent>();
@@ -168,7 +168,7 @@ void EntitySerializer::SerializeEntity(Scene* scene, ryml::NodeRef& entities, En
   }
 
   if (entity.has_component<CapsuleColliderComponent>()) {
-    auto node = entityNode["CapsuleColliderComponent"];
+    auto node = entity_node["CapsuleColliderComponent"];
     node |= ryml::MAP;
 
     const auto& cc = entity.get_component<CapsuleColliderComponent>();
@@ -181,7 +181,7 @@ void EntitySerializer::SerializeEntity(Scene* scene, ryml::NodeRef& entities, En
   }
 
   if (entity.has_component<TaperedCapsuleColliderComponent>()) {
-    auto node = entityNode["TaperedCapsuleColliderComponent"];
+    auto node = entity_node["TaperedCapsuleColliderComponent"];
     node |= ryml::MAP;
 
     const auto& tcc = entity.get_component<TaperedCapsuleColliderComponent>();
@@ -195,7 +195,7 @@ void EntitySerializer::SerializeEntity(Scene* scene, ryml::NodeRef& entities, En
   }
 
   if (entity.has_component<CylinderColliderComponent>()) {
-    auto node = entityNode["CylinderColliderComponent"];
+    auto node = entity_node["CylinderColliderComponent"];
     node |= ryml::MAP;
 
     const auto& cc = entity.get_component<CapsuleColliderComponent>();
@@ -208,7 +208,7 @@ void EntitySerializer::SerializeEntity(Scene* scene, ryml::NodeRef& entities, En
   }
 
   if (entity.has_component<CharacterControllerComponent>()) {
-    auto node = entityNode["CharacterControllerComponent"];
+    auto node = entity_node["CharacterControllerComponent"];
     node |= ryml::MAP;
 
     const auto& component = entity.get_component<CharacterControllerComponent>();
@@ -228,7 +228,7 @@ void EntitySerializer::SerializeEntity(Scene* scene, ryml::NodeRef& entities, En
   }
 
   if (entity.has_component<LuaScriptComponent>()) {
-    auto node = entityNode["LuaScriptComponent"];
+    auto node = entity_node["LuaScriptComponent"];
     node |= ryml::MAP;
 
     const auto& component = entity.get_component<LuaScriptComponent>();
@@ -238,103 +238,103 @@ void EntitySerializer::SerializeEntity(Scene* scene, ryml::NodeRef& entities, En
   }
 
   if (entity.has_component<CustomComponent>()) {
-    auto node = entityNode["CustomComponent"];
+    auto node = entity_node["CustomComponent"];
     node |= ryml::MAP;
 
     const auto& component = entity.get_component<CustomComponent>();
 
     node["Name"] << component.name;
-    auto fieldsNode = node["Fields"];
-    fieldsNode |= ryml::MAP;
+    auto fields_node = node["Fields"];
+    fields_node |= ryml::MAP;
     for (const auto& field : component.fields) {
-      auto fieldNode = fieldsNode[field.name.c_str()];
-      fieldNode |= ryml::MAP;
-      fieldNode["Type"] << (int)field.type;
-      fieldNode["Value"] << field.value;
+      auto field_node = fields_node[field.name.c_str()];
+      field_node |= ryml::MAP;
+      field_node["Type"] << (int)field.type;
+      field_node["Value"] << field.value;
     }
   }
 }
 
-UUID EntitySerializer::DeserializeEntity(ryml::ConstNodeRef entityNode, Scene* scene, bool preserveUUID) {
-  const auto st = std::string(entityNode["Entity"].val().data());
+UUID EntitySerializer::deserialize_entity(ryml::ConstNodeRef entity_node, Scene* scene, bool preserve_uuid) {
+  const auto st = std::string(entity_node["Entity"].val().data());
   const uint64_t uuid = std::stoull(st.substr(0, st.find('\n')));
 
   std::string name;
-  if (entityNode.has_child("TagComponent"))
-    entityNode["TagComponent"]["Tag"] >> name;
+  if (entity_node.has_child("TagComponent"))
+    entity_node["TagComponent"]["Tag"] >> name;
 
-  Entity deserializedEntity;
-  if (preserveUUID)
-    deserializedEntity = scene->create_entity_with_uuid(uuid, name);
+  Entity deserialized_entity;
+  if (preserve_uuid)
+    deserialized_entity = scene->create_entity_with_uuid(uuid, name);
   else
-    deserializedEntity = scene->create_entity(name);
+    deserialized_entity = scene->create_entity(name);
 
-  if (entityNode.has_child("TransformComponent")) {
-    auto& tc = deserializedEntity.get_component<TransformComponent>();
-    const auto& node = entityNode["TransformComponent"];
+  if (entity_node.has_child("TransformComponent")) {
+    auto& tc = deserialized_entity.get_component<TransformComponent>();
+    const auto& node = entity_node["TransformComponent"];
 
     glm::read(node["Translation"], &tc.position);
     glm::read(node["Rotation"], &tc.rotation);
     glm::read(node["Scale"], &tc.scale);
   }
 
-  if (entityNode.has_child("RelationshipComponent")) {
-    auto& rc = deserializedEntity.get_component<RelationshipComponent>();
-    const auto node = entityNode["RelationshipComponent"];
-    uint64_t parentID = 0;
-    node["Parent"] >> parentID;
-    rc.parent = parentID;
+  if (entity_node.has_child("RelationshipComponent")) {
+    auto& rc = deserialized_entity.get_component<RelationshipComponent>();
+    const auto node = entity_node["RelationshipComponent"];
+    uint64_t parent_id = 0;
+    node["Parent"] >> parent_id;
+    rc.parent = parent_id;
 
-    size_t childCount = 0;
-    node["ChildCount"] >> childCount;
+    size_t child_count = 0;
+    node["ChildCount"] >> child_count;
     rc.children.clear();
-    rc.children.reserve(childCount);
+    rc.children.reserve(child_count);
     const auto children = node["Children"];
 
-    if (children.num_children() == childCount) {
-      for (size_t i = 0; i < childCount; i++) {
-        uint64_t childID = 0;
-        children[i] >> childID;
-        UUID child = childID;
+    if (children.num_children() == child_count) {
+      for (size_t i = 0; i < child_count; i++) {
+        uint64_t child_id = 0;
+        children[i] >> child_id;
+        UUID child = child_id;
         if (child)
           rc.children.push_back(child);
       }
     }
   }
 
-  if (entityNode.has_child("MeshRendererComponent")) {
-    const auto& node = entityNode["MeshRendererComponent"];
+  if (entity_node.has_child("MeshRendererComponent")) {
+    const auto& node = entity_node["MeshRendererComponent"];
 
-    std::string meshPath;
-    uint32_t submeshIndex = 0;
-    node["Mesh"] >> meshPath;
-    node["SubmeshIndex"] >> submeshIndex;
+    std::string mesh_path;
+    uint32_t submesh_index = 0;
+    node["Mesh"] >> mesh_path;
+    node["SubmeshIndex"] >> submesh_index;
   }
 
-  if (entityNode.has_child("MaterialComponent")) {
-    auto& mc = deserializedEntity.add_component_internal<MaterialComponent>();
+  if (entity_node.has_child("MaterialComponent")) {
+    auto& mc = deserialized_entity.add_component_internal<MaterialComponent>();
 
-    const auto& node = entityNode["MaterialComponent"];
+    const auto& node = entity_node["MaterialComponent"];
 
-    std::string assetPath;
+    std::string asset_path;
     if (node.has_child("Path"))
-      node["Path"] >> assetPath;
+      node["Path"] >> asset_path;
 
-    if (!assetPath.empty()) {
+    if (!asset_path.empty()) {
       mc.materials.clear();
       auto mat = mc.materials.emplace_back(create_ref<Material>());
       mat->create();
       MaterialSerializer serializer(mat);
-      serializer.Deserialize(assetPath);
+      serializer.Deserialize(asset_path);
       mc.using_material_asset = true;
     }
   }
 
-  if (entityNode.has_child("LightComponent")) {
-    auto& light = deserializedEntity.add_component_internal<LightComponent>();
-    const auto& node = entityNode["LightComponent"];
+  if (entity_node.has_child("LightComponent")) {
+    auto& light = deserialized_entity.add_component_internal<LightComponent>();
+    const auto& node = entity_node["LightComponent"];
 
-    SetEnum(node["Type"], light.type);
+    set_enum(node["Type"], light.type);
     node["UseColorTemperatureMode"] >> light.use_color_temperature_mode;
     node["Temperature"] >> light.temperature;
     node["Intensity"] >> light.intensity;
@@ -342,12 +342,12 @@ UUID EntitySerializer::DeserializeEntity(ryml::ConstNodeRef entityNode, Scene* s
     node["Range"] >> light.range;
     node["CutOffAngle"] >> light.cut_off_angle;
     node["OuterCutOffAngle"] >> light.outer_cut_off_angle;
-    SetEnum(node["ShadowQuality"], light.shadow_quality);
+    set_enum(node["ShadowQuality"], light.shadow_quality);
   }
 
-  if (entityNode.has_child("SkyLightComponent")) {
-    auto& light = deserializedEntity.add_component_internal<SkyLightComponent>();
-    const auto& node = entityNode["SkyLightComponent"];
+  if (entity_node.has_child("SkyLightComponent")) {
+    auto& light = deserialized_entity.add_component_internal<SkyLightComponent>();
+    const auto& node = entity_node["SkyLightComponent"];
 
     std::string path{};
     node["ImagePath"] >> path;
@@ -357,9 +357,9 @@ UUID EntitySerializer::DeserializeEntity(ryml::ConstNodeRef entityNode, Scene* s
     }
   }
 
-  if (entityNode.has_child("PostProcessProbe")) {
-    auto& probe = deserializedEntity.add_component_internal<PostProcessProbe>();
-    const auto& node = entityNode["PostProcessProbe"];
+  if (entity_node.has_child("PostProcessProbe")) {
+    auto& probe = deserialized_entity.add_component_internal<PostProcessProbe>();
+    const auto& node = entity_node["PostProcessProbe"];
 
     node["VignetteEnabled"] >> probe.vignette_enabled;
     node["VignetteIntensity"] >> probe.vignette_intensity;
@@ -374,9 +374,9 @@ UUID EntitySerializer::DeserializeEntity(ryml::ConstNodeRef entityNode, Scene* s
     node["SharpenIntensity"] >> probe.sharpen_intensity;
   }
 
-  if (entityNode.has_child("CameraComponent")) {
-    auto& camera = deserializedEntity.add_component_internal<CameraComponent>();
-    const auto& node = entityNode["CameraComponent"];
+  if (entity_node.has_child("CameraComponent")) {
+    auto& camera = deserialized_entity.add_component_internal<CameraComponent>();
+    const auto& node = entity_node["CameraComponent"];
 
     float fov = 0;
     float nearclip = 0;
@@ -390,11 +390,11 @@ UUID EntitySerializer::DeserializeEntity(ryml::ConstNodeRef entityNode, Scene* s
     camera.system->set_far(farclip);
   }
 
-  if (entityNode.has_child("RigidbodyComponent")) {
-    auto& rb = deserializedEntity.add_component_internal<RigidbodyComponent>();
-    const auto node = entityNode["RigidbodyComponent"];
+  if (entity_node.has_child("RigidbodyComponent")) {
+    auto& rb = deserialized_entity.add_component_internal<RigidbodyComponent>();
+    const auto node = entity_node["RigidbodyComponent"];
 
-    SetEnum(node["Type"], rb.type);
+    set_enum(node["Type"], rb.type);
     node["Mass"] >> rb.mass;
     node["LinearDrag"] >> rb.linear_drag;
     node["AngularDrag"] >> rb.angular_drag;
@@ -406,9 +406,9 @@ UUID EntitySerializer::DeserializeEntity(ryml::ConstNodeRef entityNode, Scene* s
     node["IsSensor"] >> rb.is_sensor;
   }
 
-  if (entityNode.has_child("BoxColliderComponent")) {
-    const auto node = entityNode["BoxColliderComponent"];
-    auto& bc = deserializedEntity.add_component_internal<BoxColliderComponent>();
+  if (entity_node.has_child("BoxColliderComponent")) {
+    const auto node = entity_node["BoxColliderComponent"];
+    auto& bc = deserialized_entity.add_component_internal<BoxColliderComponent>();
 
     node["Size"] >> bc.size;
     glm::read(node["Offset"], &bc.offset);
@@ -417,10 +417,10 @@ UUID EntitySerializer::DeserializeEntity(ryml::ConstNodeRef entityNode, Scene* s
     node["Restitution"] >> bc.restitution;
   }
 
-  if (entityNode.has_child("SphereColliderComponent")) {
-    auto node = entityNode["SphereColliderComponent"];
+  if (entity_node.has_child("SphereColliderComponent")) {
+    auto node = entity_node["SphereColliderComponent"];
 
-    auto& sc = deserializedEntity.add_component_internal<SphereColliderComponent>();
+    auto& sc = deserialized_entity.add_component_internal<SphereColliderComponent>();
     node["Radius"] >> sc.radius;
     glm::read(node["Offset"], &sc.offset);
     node["Offset"] >> sc.offset;
@@ -429,10 +429,10 @@ UUID EntitySerializer::DeserializeEntity(ryml::ConstNodeRef entityNode, Scene* s
     node["Restitution"] >> sc.restitution;
   }
 
-  if (entityNode.has_child("CapsuleColliderComponent")) {
-    auto node = entityNode["CapsuleColliderComponent"];
+  if (entity_node.has_child("CapsuleColliderComponent")) {
+    auto node = entity_node["CapsuleColliderComponent"];
 
-    auto& cc = deserializedEntity.add_component_internal<CapsuleColliderComponent>();
+    auto& cc = deserialized_entity.add_component_internal<CapsuleColliderComponent>();
     node["Height"] >> cc.height;
     node["Radius"] >> cc.radius;
     glm::read(node["Offset"], &cc.offset);
@@ -441,10 +441,10 @@ UUID EntitySerializer::DeserializeEntity(ryml::ConstNodeRef entityNode, Scene* s
     node["Restitution"] >> cc.restitution;
   }
 
-  if (entityNode.has_child("TaperedCapsuleColliderComponent")) {
-    const auto node = entityNode["TaperedCapsuleColliderComponent"];
+  if (entity_node.has_child("TaperedCapsuleColliderComponent")) {
+    const auto node = entity_node["TaperedCapsuleColliderComponent"];
 
-    auto& tcc = deserializedEntity.add_component_internal<TaperedCapsuleColliderComponent>();
+    auto& tcc = deserialized_entity.add_component_internal<TaperedCapsuleColliderComponent>();
     node["Height"] >> tcc.height;
     node["TopRadius"] >> tcc.top_radius;
     node["BottomRadius"] >> tcc.bottom_radius;
@@ -454,10 +454,10 @@ UUID EntitySerializer::DeserializeEntity(ryml::ConstNodeRef entityNode, Scene* s
     node["Restitution"] >> tcc.restitution;
   }
 
-  if (entityNode.has_child("CylinderColliderComponent")) {
-    auto node = entityNode["CylinderColliderComponent"];
+  if (entity_node.has_child("CylinderColliderComponent")) {
+    auto node = entity_node["CylinderColliderComponent"];
 
-    auto& cc = deserializedEntity.add_component_internal<CapsuleColliderComponent>();
+    auto& cc = deserialized_entity.add_component_internal<CapsuleColliderComponent>();
     node["Height"] >> cc.height;
     node["Radius"] >> cc.radius;
     glm::read(node["Offset"], &cc.offset);
@@ -466,9 +466,9 @@ UUID EntitySerializer::DeserializeEntity(ryml::ConstNodeRef entityNode, Scene* s
     node["Restitution"] >> cc.restitution;
   }
 
-  if (entityNode.has_child("CharacterControllerComponent")) {
-    auto& component = deserializedEntity.add_component_internal<CharacterControllerComponent>();
-    const auto& node = entityNode["CharacterControllerComponent"];
+  if (entity_node.has_child("CharacterControllerComponent")) {
+    auto& component = deserialized_entity.add_component_internal<CharacterControllerComponent>();
+    const auto& node = entity_node["CharacterControllerComponent"];
 
     // Size
     node["CharacterHeightStanding"] >> component.character_height_standing;
@@ -484,9 +484,9 @@ UUID EntitySerializer::DeserializeEntity(ryml::ConstNodeRef entityNode, Scene* s
     node["CollisionTolerance"] >> component.collision_tolerance;
   }
 
-  if (entityNode.has_child("LuaScriptComponent")) {
-    auto& component = deserializedEntity.add_component_internal<LuaScriptComponent>();
-    const auto& node = entityNode["LuaScriptComponent"];
+  if (entity_node.has_child("LuaScriptComponent")) {
+    auto& component = deserialized_entity.add_component_internal<LuaScriptComponent>();
+    const auto& node = entity_node["LuaScriptComponent"];
 
     // Size
     std::string path = {};
@@ -497,26 +497,26 @@ UUID EntitySerializer::DeserializeEntity(ryml::ConstNodeRef entityNode, Scene* s
     }
   }
 
-  if (entityNode.has_child("CustomComponent")) {
-    auto& component = deserializedEntity.add_component_internal<CustomComponent>();
-    const auto& node = entityNode["CustomComponent"];
+  if (entity_node.has_child("CustomComponent")) {
+    auto& component = deserialized_entity.add_component_internal<CustomComponent>();
+    const auto& node = entity_node["CustomComponent"];
 
     node["Name"] >> component.name;
-    auto fieldsNode = node["Fields"];
-    for (size_t i = 0; i < fieldsNode.num_children(); i++) {
+    auto fields_node = node["Fields"];
+    for (size_t i = 0; i < fields_node.num_children(); i++) {
       CustomComponent::ComponentField field;
-      auto key = std::string(fieldsNode[i].get()->m_key.scalar.data());
+      auto key = std::string(fields_node[i].get()->m_key.scalar.data());
       field.name = key.substr(0, key.find(':'));
-      SetEnum(fieldsNode[i]["Type"], field.type);
-      fieldsNode[i]["Value"] >> field.value;
+      set_enum(fields_node[i]["Type"], field.type);
+      fields_node[i]["Value"] >> field.value;
       component.fields.emplace_back(field);
     }
   }
 
-  return deserializedEntity.get_uuid();
+  return deserialized_entity.get_uuid();
 }
 
-void EntitySerializer::SerializeEntityAsPrefab(const char* filepath, Entity entity) {
+void EntitySerializer::serialize_entity_as_prefab(const char* filepath, Entity entity) {
   if (entity.has_component<PrefabComponent>()) {
     OX_CORE_ERROR("Entity already has a prefab component!");
     return;
@@ -524,13 +524,13 @@ void EntitySerializer::SerializeEntityAsPrefab(const char* filepath, Entity enti
 
   ryml::Tree tree;
 
-  ryml::NodeRef nodeRoot = tree.rootref();
-  nodeRoot |= ryml::MAP;
+  ryml::NodeRef node_root = tree.rootref();
+  node_root |= ryml::MAP;
 
-  nodeRoot["Prefab"] << entity.add_component_internal<PrefabComponent>().id;
+  node_root["Prefab"] << entity.add_component_internal<PrefabComponent>().id;
 
-  ryml::NodeRef entitiesNode = nodeRoot["Entities"];
-  entitiesNode |= ryml::SEQ;
+  ryml::NodeRef entities_node = node_root["Entities"];
+  entities_node |= ryml::SEQ;
 
   std::vector<Entity> entities;
   entities.push_back(entity);
@@ -538,7 +538,7 @@ void EntitySerializer::SerializeEntityAsPrefab(const char* filepath, Entity enti
 
   for (const auto& child : entities) {
     if (child)
-      SerializeEntity(entity.get_scene(), entitiesNode, child);
+      serialize_entity(entity.get_scene(), entities_node, child);
   }
 
   std::stringstream ss;
@@ -547,7 +547,7 @@ void EntitySerializer::SerializeEntityAsPrefab(const char* filepath, Entity enti
   filestream << ss.str();
 }
 
-Entity EntitySerializer::DeserializeEntityAsPrefab(const char* filepath, Scene* scene) {
+Entity EntitySerializer::deserialize_entity_as_prefab(const char* filepath, Scene* scene) {
   auto content = FileUtils::read_file(filepath);
   if (content.empty()) {
     OX_CORE_ERROR(fmt::format("Couldn't read prefab file: {0}", filepath).c_str());
@@ -574,43 +574,43 @@ Entity EntitySerializer::DeserializeEntityAsPrefab(const char* filepath, Scene* 
     return {};
   }
 
-  const UUID prefabID = (uint64_t)root["Prefab"].val().data();
+  const UUID prefab_id = (uint64_t)root["Prefab"].val().data();
 
-  if (!prefabID) {
+  if (!prefab_id) {
     OX_CORE_ERROR("Invalid prefab ID {0}", FileSystem::get_file_name(filepath));
     return {};
   }
 
   if (root.has_child("Entities")) {
-    const ryml::ConstNodeRef entitiesNode = root["Entities"];
+    const ryml::ConstNodeRef entities_node = root["Entities"];
 
-    Entity rootEntity = {};
-    std::unordered_map<UUID, UUID> oldNewIdMap;
-    for (const auto& entity : entitiesNode) {
-      uint64_t oldUUID;
-      entity["Entity"] >> oldUUID;
-      UUID newUUID = DeserializeEntity(entity, scene, false);
-      oldNewIdMap.emplace(oldUUID, newUUID);
+    Entity root_entity = {};
+    std::unordered_map<UUID, UUID> old_new_id_map;
+    for (const auto& entity : entities_node) {
+      uint64_t old_uuid;
+      entity["Entity"] >> old_uuid;
+      UUID new_uuid = deserialize_entity(entity, scene, false);
+      old_new_id_map.emplace(old_uuid, new_uuid);
 
-      if (!rootEntity)
-        rootEntity = scene->get_entity_by_uuid(newUUID);
+      if (!root_entity)
+        root_entity = scene->get_entity_by_uuid(new_uuid);
     }
 
-    rootEntity.add_component_internal<PrefabComponent>().id = prefabID;
+    root_entity.add_component_internal<PrefabComponent>().id = prefab_id;
 
     // Fix parent/children UUIDs
-    for (const auto& [_, newId] : oldNewIdMap) {
-      auto& relationshipComponent = scene->get_entity_by_uuid(newId).get_relationship();
-      UUID parent = relationshipComponent.parent;
+    for (const auto& [_, newId] : old_new_id_map) {
+      auto& relationship_component = scene->get_entity_by_uuid(newId).get_relationship();
+      UUID parent = relationship_component.parent;
       if (parent)
-        relationshipComponent.parent = oldNewIdMap.at(parent);
+        relationship_component.parent = old_new_id_map.at(parent);
 
-      auto& children = relationshipComponent.children;
+      auto& children = relationship_component.children;
       for (auto& id : children)
-        id = oldNewIdMap.at(id);
+        id = old_new_id_map.at(id);
     }
 
-    return rootEntity;
+    return root_entity;
   }
 
   OX_CORE_ERROR("There are not entities in the prefab to deserialize! {0}", FileSystem::get_file_name(filepath));

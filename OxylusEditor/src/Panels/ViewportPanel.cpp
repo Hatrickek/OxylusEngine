@@ -30,31 +30,31 @@ ViewportPanel::ViewportPanel() : EditorPanel("Viewport", ICON_MDI_TERRAIN, true)
 void ViewportPanel::on_imgui_render() {
   draw_performance_overlay();
 
-  bool viewportSettingsPopup = false;
+  bool viewport_settings_popup = false;
   constexpr ImGuiWindowFlags flags = ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_MenuBar;
   ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2{0, 0});
 
   if (on_begin(flags)) {
-    ImVec2 startCursorPos = ImGui::GetCursorPos();
+    ImVec2 start_cursor_pos = ImGui::GetCursorPos();
 
-    const auto popupItemSpacing = ImGuiLayer::PopupItemSpacing;
-    ImGui::PushStyleVar(ImGuiStyleVar_ItemSpacing, popupItemSpacing);
+    const auto popup_item_spacing = ImGuiLayer::PopupItemSpacing;
+    ImGui::PushStyleVar(ImGuiStyleVar_ItemSpacing, popup_item_spacing);
     if (ImGui::BeginPopupContextItem("RightClick")) {
       if (ImGui::MenuItem("Fullscreen"))
-        FullscreenViewport = !FullscreenViewport;
+        fullscreen_viewport = !fullscreen_viewport;
       ImGui::EndPopup();
     }
     ImGui::PopStyleVar();
 
     if (ImGui::BeginMenuBar()) {
       if (ImGui::MenuItem(StringUtils::from_char8_t(ICON_MDI_COGS))) {
-        viewportSettingsPopup = true;
+        viewport_settings_popup = true;
       }
       ImGui::EndMenuBar();
     }
     ImGui::PopStyleVar();
 
-    if (viewportSettingsPopup)
+    if (viewport_settings_popup)
       ImGui::OpenPopup("ViewportSettings");
 
     ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2(10, 10));
@@ -65,190 +65,102 @@ void ViewportPanel::on_imgui_render() {
         VulkanContext::get()->rebuild_swapchain();
         RendererCVar::cvar_vsync.set(vsync);
       }
-      OxUI::property<float>("Camera sensitivity", &m_MouseSensitivity, 0.1f, 20.0f);
-      OxUI::property<float>("Movement speed", &m_MovementSpeed, 5, 100.0f);
-      OxUI::property("Smooth camera", &m_SmoothCamera);
+      OxUI::property<float>("Camera sensitivity", &m_mouse_sensitivity, 0.1f, 20.0f);
+      OxUI::property<float>("Movement speed", &m_movement_speed, 5, 100.0f);
+      OxUI::property("Smooth camera", &m_smooth_camera);
       OxUI::end_properties();
       ImGui::EndPopup();
     }
 
-    const auto viewportMinRegion = ImGui::GetWindowContentRegionMin();
-    const auto viewportMaxRegion = ImGui::GetWindowContentRegionMax();
-    viewport_offset = ImGui::GetWindowPos();
-    m_ViewportBounds[0] = {viewportMinRegion.x + viewport_offset.x, viewportMinRegion.y + viewport_offset.y};
-    m_ViewportBounds[1] = {viewportMaxRegion.x + viewport_offset.x, viewportMaxRegion.y + viewport_offset.y};
+    const auto viewport_min_region = ImGui::GetWindowContentRegionMin();
+    const auto viewport_max_region = ImGui::GetWindowContentRegionMax();
+    viewport_offset = Vec2(ImGui::GetWindowPos().x, ImGui::GetWindowPos().y);
+    m_viewport_bounds[0] = {viewport_min_region.x + viewport_offset.x, viewport_min_region.y + viewport_offset.y};
+    m_viewport_bounds[1] = {viewport_max_region.x + viewport_offset.x, viewport_max_region.y + viewport_offset.y};
 
-    m_ViewportFocused = ImGui::IsWindowFocused();
-    m_ViewportHovered = ImGui::IsWindowHovered();
+    m_viewport_focused = ImGui::IsWindowFocused();
+    m_viewport_hovered = ImGui::IsWindowHovered();
 
-    viewport_panel_size = ImGui::GetContentRegionAvail();
-    if ((int)m_ViewportSize.x != (int)viewport_panel_size.x || (int)m_ViewportSize.y != (int)viewport_panel_size.y) {
-      m_ViewportSize = {viewport_panel_size.x, viewport_panel_size.y};
+    viewport_panel_size = Vec2(ImGui::GetContentRegionAvail().x, ImGui::GetContentRegionAvail().y);
+    if ((int)m_viewport_size.x != (int)viewport_panel_size.x || (int)m_viewport_size.y != (int)viewport_panel_size.y) {
+      m_viewport_size = {viewport_panel_size.x, viewport_panel_size.y};
     }
 
-    constexpr auto sixteenNineAR = 1.7777777f;
-    const auto fixedWidth = m_ViewportSize.y * sixteenNineAR;
-    ImGui::SetCursorPosX((viewport_panel_size.x - fixedWidth) * 0.5f);
+    constexpr auto sixteen_nine_ar = 1.7777777f;
+    const auto fixed_width = m_viewport_size.y * sixteen_nine_ar;
+    ImGui::SetCursorPosX((viewport_panel_size.x - fixed_width) * 0.5f);
 
-    const auto dim = vuk::Dimension3D::absolute((uint32_t)fixedWidth, (uint32_t)viewport_panel_size.y);
+    const auto dim = vuk::Dimension3D::absolute((uint32_t)fixed_width, (uint32_t)viewport_panel_size.y);
     const auto rp = m_scene->get_renderer()->get_render_pipeline();
     rp->detach_swapchain(dim);
     const auto final_image = rp->get_final_image();
 
     if (final_image) {
-      OxUI::image(*final_image, ImVec2{fixedWidth, m_ViewportSize.y});
+      OxUI::image(*final_image, ImVec2{fixed_width, viewport_panel_size.y});
 
-      struct SceneMesh {
-        uint32_t entity_id = 0;
-        MeshComponent mesh_component = {};
-      };
-
-      std::vector<SceneMesh> scene_meshes = {};
-
-      const auto mesh_view = m_scene->m_registry.view<TransformComponent, MeshComponent, MaterialComponent, TagComponent>();
-      for (const auto&& [entity, transform, mesh_component, material, tag] : mesh_view.each()) {
-        if (tag.enabled && !material.materials.empty()) {
-          auto e = Entity(entity, m_scene.get());
-          mesh_component.transform = e.get_world_transform();
-          scene_meshes.emplace_back((uint32_t)entity, mesh_component);
-        }
-      }
-
-      auto rg = create_ref<vuk::RenderGraph>("id_render_graph");
-
-      auto& superframe_allocator = VulkanContext::get()->superframe_allocator;
-      if (!superframe_allocator->get_context().is_pipeline_available("id_pipeline")) {
-        vuk::PipelineBaseCreateInfo pci;
-        pci.add_glsl(FileUtils::read_shader_file("Editor_IDPass.vert"), "Editor_IDPass.vert");
-        pci.add_glsl(FileUtils::read_shader_file("Editor_IDPass.frag"), "Editor_IDPass.frag");
-        superframe_allocator->get_context().create_named_pipeline("id_pipeline", pci);
-      }
-
-      struct VSUbo {
-        Mat4 projection_view;
-      } vs_ubo;
-
-      vs_ubo.projection_view = m_camera.get_projection_matrix_flipped() * m_camera.get_view_matrix();
-      auto [vs_buff, vs_buffer_fut] = create_buffer(*rp->get_frame_allocator(), vuk::MemoryUsage::eCPUtoGPU, vuk::DomainFlagBits::eTransferOnGraphics, std::span(&vs_ubo, 1));
-      auto& vs_buffer = *vs_buff;
-
-      auto attachment = vuk::ImageAttachment{
-        .extent = dim,
-        .format = vuk::Format::eR8Uint,
-        .sample_count = vuk::SampleCountFlagBits::e1,
-        .level_count = 1,
-        .layer_count = 1
-      };
-
-      rg->attach_and_clear_image("id_buffer_image", attachment , vuk::Black<float>);
-
-      rg->add_pass({
-        .name = "id_buffer_pass",
-        .resources = {
-          "id_buffer_image"_image >> vuk::eColorRW >> "id_buffer_output",
-        },
-        .execute = [scene_meshes, vs_buffer](vuk::CommandBuffer& command_buffer) {
-          command_buffer.set_dynamic_state(vuk::DynamicStateFlagBits::eScissor | vuk::DynamicStateFlagBits::eViewport)
-                        .set_viewport(0, vuk::Rect2D::framebuffer())
-                        .set_scissor(0, vuk::Rect2D::framebuffer())
-                        .broadcast_color_blend(vuk::BlendPreset::eOff)
-                        .set_rasterization({.cullMode = vuk::CullModeFlagBits::eBack})
-                        .set_depth_stencil(vuk::PipelineDepthStencilStateCreateInfo{
-                           .depthTestEnable = true,
-                           .depthWriteEnable = true,
-                           .depthCompareOp = vuk::CompareOp::eLessOrEqual,
-                         })
-                        .bind_graphics_pipeline("id_pipeline")
-                        .bind_buffer(0, 0, vs_buffer);
-
-          for (auto& mesh : scene_meshes) {
-            mesh.mesh_component.original_mesh->bind_vertex_buffer(command_buffer);
-            mesh.mesh_component.original_mesh->bind_index_buffer(command_buffer);
-
-            for (const auto& subset : mesh.mesh_component.subsets) {
-              if (subset.material->parameters.alpha_mode == (uint32_t)Material::AlphaMode::Mask
-                  || subset.material->parameters.alpha_mode == (uint32_t)Material::AlphaMode::Blend) {
-                continue;
-              }
-
-              struct PushConstant {
-                Mat4 model_matrix;
-                uint32_t entity_id;
-              } pc;
-
-              pc.model_matrix = mesh.mesh_component.transform;
-              pc.entity_id = mesh.entity_id;
-
-              command_buffer.push_constants(vuk::ShaderStageFlagBits::eVertex, 0, pc)
-                            .draw_indexed(subset.index_count, 1, subset.first_index, 0, 0);
-            }
-          }
-        }
-      });
-
-      rp->submit_rg_future(vuk::Future{std::move(rg), "id_buffer_output"});
+      mouse_picking_pass(rp, dim, fixed_width);
     }
     else {
-      const auto textWidth = ImGui::CalcTextSize("No render target!").x;
-      ImGui::SetCursorPosX((m_ViewportSize.x - textWidth) * 0.5f);
-      ImGui::SetCursorPosY(m_ViewportSize.y * 0.5f);
+      const auto text_width = ImGui::CalcTextSize("No render target!").x;
+      ImGui::SetCursorPosX((m_viewport_size.x - text_width) * 0.5f);
+      ImGui::SetCursorPosY(m_viewport_size.y * 0.5f);
       ImGui::Text("No render target!");
     }
 
 
-    if (scene_hierarchy_panel)
-      scene_hierarchy_panel->drag_drop_target();
+    if (m_scene_hierarchy_panel)
+      m_scene_hierarchy_panel->drag_drop_target();
 
     draw_gizmos();
 
     {
       // Transform Gizmos Button Group
-      const float frameHeight = 1.3f * ImGui::GetFrameHeight();
-      const ImVec2 framePadding = ImGui::GetStyle().FramePadding;
-      const ImVec2 buttonSize = {frameHeight, frameHeight};
-      constexpr float buttonCount = 7.0f;
-      const ImVec2 gizmoPosition = {m_ViewportBounds[0].x + m_GizmoPosition.x, m_ViewportBounds[0].y + m_GizmoPosition.y};
-      const ImRect bb(gizmoPosition.x, gizmoPosition.y, gizmoPosition.x + buttonSize.x + 8, gizmoPosition.y + (buttonSize.y + 2) * (buttonCount + 0.5f));
-      ImVec4 frameColor = ImGui::GetStyleColorVec4(ImGuiCol_Tab);
-      frameColor.w = 0.5f;
-      ImGui::RenderFrame(bb.Min, bb.Max, ImGui::GetColorU32(frameColor), false, ImGui::GetStyle().FrameRounding);
-      const ImVec2 tempGizmoPosition = m_GizmoPosition;
+      const float frame_height = 1.3f * ImGui::GetFrameHeight();
+      const ImVec2 frame_padding = ImGui::GetStyle().FramePadding;
+      const ImVec2 button_size = {frame_height, frame_height};
+      constexpr float button_count = 7.0f;
+      const ImVec2 gizmo_position = {m_viewport_bounds[0].x + m_gizmo_position.x, m_viewport_bounds[0].y + m_gizmo_position.y};
+      const ImRect bb(gizmo_position.x, gizmo_position.y, gizmo_position.x + button_size.x + 8, gizmo_position.y + (button_size.y + 2) * (button_count + 0.5f));
+      ImVec4 frame_color = ImGui::GetStyleColorVec4(ImGuiCol_Tab);
+      frame_color.w = 0.5f;
+      ImGui::RenderFrame(bb.Min, bb.Max, ImGui::GetColorU32(frame_color), false, ImGui::GetStyle().FrameRounding);
+      const Vec2 temp_gizmo_position = m_gizmo_position;
 
-      ImGui::SetCursorPos({startCursorPos.x + tempGizmoPosition.x + framePadding.x, startCursorPos.y + tempGizmoPosition.y});
+      ImGui::SetCursorPos({start_cursor_pos.x + temp_gizmo_position.x + frame_padding.x, start_cursor_pos.y + temp_gizmo_position.y});
       ImGui::BeginGroup();
       {
         ImGui::PushStyleVar(ImGuiStyleVar_FrameBorderSize, 0.0f);
         ImGui::PushStyleVar(ImGuiStyleVar_ItemSpacing, {1, 1});
 
-        const ImVec2 draggerCursorPos = ImGui::GetCursorPos();
-        ImGui::SetCursorPosX(draggerCursorPos.x + framePadding.x);
+        const ImVec2 dragger_cursor_pos = ImGui::GetCursorPos();
+        ImGui::SetCursorPosX(dragger_cursor_pos.x + frame_padding.x);
         ImGui::TextUnformatted(StringUtils::from_char8_t(ICON_MDI_DOTS_HORIZONTAL));
-        ImVec2 draggerSize = ImGui::CalcTextSize(StringUtils::from_char8_t(ICON_MDI_DOTS_HORIZONTAL));
-        draggerSize.x *= 2.0f;
-        ImGui::SetCursorPos(draggerCursorPos);
-        ImGui::InvisibleButton("GizmoDragger", draggerSize);
-        static ImVec2 lastMousePosition = ImGui::GetMousePos();
-        const ImVec2 mousePos = ImGui::GetMousePos();
+        ImVec2 dragger_size = ImGui::CalcTextSize(StringUtils::from_char8_t(ICON_MDI_DOTS_HORIZONTAL));
+        dragger_size.x *= 2.0f;
+        ImGui::SetCursorPos(dragger_cursor_pos);
+        ImGui::InvisibleButton("GizmoDragger", dragger_size);
+        static ImVec2 last_mouse_position = ImGui::GetMousePos();
+        const ImVec2 mouse_pos = ImGui::GetMousePos();
         if (ImGui::IsItemActive()) {
-          m_GizmoPosition.x += mousePos.x - lastMousePosition.x;
-          m_GizmoPosition.y += mousePos.y - lastMousePosition.y;
+          m_gizmo_position.x += mouse_pos.x - last_mouse_position.x;
+          m_gizmo_position.y += mouse_pos.y - last_mouse_position.y;
         }
-        lastMousePosition = mousePos;
+        last_mouse_position = mouse_pos;
 
         constexpr float alpha = 0.6f;
-        if (OxUI::toggle_button(StringUtils::from_char8_t(ICON_MDI_AXIS_ARROW), m_GizmoType == ImGuizmo::TRANSLATE, buttonSize, alpha, alpha))
-          m_GizmoType = ImGuizmo::TRANSLATE;
-        if (OxUI::toggle_button(StringUtils::from_char8_t(ICON_MDI_ROTATE_3D), m_GizmoType == ImGuizmo::ROTATE, buttonSize, alpha, alpha))
-          m_GizmoType = ImGuizmo::ROTATE;
-        if (OxUI::toggle_button(StringUtils::from_char8_t(ICON_MDI_ARROW_EXPAND), m_GizmoType == ImGuizmo::SCALE, buttonSize, alpha, alpha))
-          m_GizmoType = ImGuizmo::SCALE;
-        if (OxUI::toggle_button(StringUtils::from_char8_t(ICON_MDI_VECTOR_SQUARE), m_GizmoType == ImGuizmo::BOUNDS, buttonSize, alpha, alpha))
-          m_GizmoType = ImGuizmo::BOUNDS;
-        if (OxUI::toggle_button(StringUtils::from_char8_t(ICON_MDI_ARROW_EXPAND_ALL), m_GizmoType == ImGuizmo::UNIVERSAL, buttonSize, alpha, alpha))
-          m_GizmoType = ImGuizmo::UNIVERSAL;
-        if (OxUI::toggle_button(m_GizmoMode == ImGuizmo::WORLD ? StringUtils::from_char8_t(ICON_MDI_EARTH) : StringUtils::from_char8_t(ICON_MDI_EARTH_OFF), m_GizmoMode == ImGuizmo::WORLD, buttonSize, alpha, alpha))
-          m_GizmoMode = m_GizmoMode == ImGuizmo::LOCAL ? ImGuizmo::WORLD : ImGuizmo::LOCAL;
-        if (OxUI::toggle_button(StringUtils::from_char8_t(ICON_MDI_GRID), RendererCVar::cvar_draw_grid.get(), buttonSize, alpha, alpha))
+        if (OxUI::toggle_button(StringUtils::from_char8_t(ICON_MDI_AXIS_ARROW), m_gizmo_type == ImGuizmo::TRANSLATE, button_size, alpha, alpha))
+          m_gizmo_type = ImGuizmo::TRANSLATE;
+        if (OxUI::toggle_button(StringUtils::from_char8_t(ICON_MDI_ROTATE_3D), m_gizmo_type == ImGuizmo::ROTATE, button_size, alpha, alpha))
+          m_gizmo_type = ImGuizmo::ROTATE;
+        if (OxUI::toggle_button(StringUtils::from_char8_t(ICON_MDI_ARROW_EXPAND), m_gizmo_type == ImGuizmo::SCALE, button_size, alpha, alpha))
+          m_gizmo_type = ImGuizmo::SCALE;
+        if (OxUI::toggle_button(StringUtils::from_char8_t(ICON_MDI_VECTOR_SQUARE), m_gizmo_type == ImGuizmo::BOUNDS, button_size, alpha, alpha))
+          m_gizmo_type = ImGuizmo::BOUNDS;
+        if (OxUI::toggle_button(StringUtils::from_char8_t(ICON_MDI_ARROW_EXPAND_ALL), m_gizmo_type == ImGuizmo::UNIVERSAL, button_size, alpha, alpha))
+          m_gizmo_type = ImGuizmo::UNIVERSAL;
+        if (OxUI::toggle_button(m_gizmo_mode == ImGuizmo::WORLD ? StringUtils::from_char8_t(ICON_MDI_EARTH) : StringUtils::from_char8_t(ICON_MDI_EARTH_OFF), m_gizmo_mode == ImGuizmo::WORLD, button_size, alpha, alpha))
+          m_gizmo_mode = m_gizmo_mode == ImGuizmo::LOCAL ? ImGuizmo::WORLD : ImGuizmo::LOCAL;
+        if (OxUI::toggle_button(StringUtils::from_char8_t(ICON_MDI_GRID), RendererCVar::cvar_draw_grid.get(), button_size, alpha, alpha))
           RendererCVar::cvar_draw_grid.toggle();
 
         ImGui::PopStyleVar(2);
@@ -258,26 +170,26 @@ void ViewportPanel::on_imgui_render() {
 
     {
       // Scene Button Group
-      const float frameHeight = 1.0f * ImGui::GetFrameHeight();
-      const ImVec2 buttonSize = {frameHeight, frameHeight};
-      constexpr float buttonCount = 3.0f;
-      const ImVec2 gizmoPosition = {m_ViewportBounds[0].x + startCursorPos.x + m_ViewportSize.x * 0.5f - 8.0f, m_ViewportBounds[0].y + 8.0f};
-      const auto width = gizmoPosition.x + (buttonSize.x + 12) * (buttonCount + 0.5f);
-      const ImRect bb(gizmoPosition.x, gizmoPosition.y, width, gizmoPosition.y + buttonSize.y + 8);
-      ImVec4 frameColor = ImGui::GetStyleColorVec4(ImGuiCol_Tab);
-      frameColor.w = 0.5f;
-      ImGui::RenderFrame(bb.Min, bb.Max, ImGui::GetColorU32(frameColor), false, 3.0f);
+      const float frame_height = 1.0f * ImGui::GetFrameHeight();
+      const ImVec2 button_size = {frame_height, frame_height};
+      constexpr float button_count = 3.0f;
+      const ImVec2 gizmo_position = {m_viewport_bounds[0].x + start_cursor_pos.x + m_viewport_size.x * 0.5f - 8.0f, m_viewport_bounds[0].y + 8.0f};
+      const auto width = gizmo_position.x + (button_size.x + 12) * (button_count + 0.5f);
+      const ImRect bb(gizmo_position.x, gizmo_position.y, width, gizmo_position.y + button_size.y + 8);
+      ImVec4 frame_color = ImGui::GetStyleColorVec4(ImGuiCol_Tab);
+      frame_color.w = 0.5f;
+      ImGui::RenderFrame(bb.Min, bb.Max, ImGui::GetColorU32(frame_color), false, 3.0f);
 
-      ImGui::SetCursorPos({startCursorPos.x + m_ViewportSize.x * 0.5f, startCursorPos.y + ImGui::GetStyle().FramePadding.y + 8.0f});
+      ImGui::SetCursorPos({start_cursor_pos.x + m_viewport_size.x * 0.5f, start_cursor_pos.y + ImGui::GetStyle().FramePadding.y + 8.0f});
       ImGui::BeginGroup();
       {
         ImGui::PushStyleVar(ImGuiStyleVar_FrameBorderSize, 0.0f);
         ImGui::PushStyleVar(ImGuiStyleVar_ItemSpacing, {1, 1});
 
-        const ImVec2 buttonSize2 = {frameHeight * 1.5f, frameHeight};
+        const ImVec2 button_size2 = {frame_height * 1.5f, frame_height};
         const bool highlight = EditorLayer::get()->scene_state == EditorLayer::SceneState::Play;
         const char8_t* icon = EditorLayer::get()->scene_state == EditorLayer::SceneState::Edit ? ICON_MDI_PLAY : ICON_MDI_STOP;
-        if (OxUI::toggle_button(StringUtils::from_char8_t(icon), highlight, buttonSize2)) {
+        if (OxUI::toggle_button(StringUtils::from_char8_t(icon), highlight, button_size2)) {
           if (EditorLayer::get()->scene_state == EditorLayer::SceneState::Edit)
             EditorLayer::get()->on_scene_play();
           else if (EditorLayer::get()->scene_state == EditorLayer::SceneState::Play)
@@ -285,12 +197,12 @@ void ViewportPanel::on_imgui_render() {
         }
         ImGui::SameLine();
         ImGui::PushStyleColor(ImGuiCol_Button, ImVec4(0.2f, 0.2f, 0.2f, 0.4f));
-        if (ImGui::Button(StringUtils::from_char8_t(ICON_MDI_PAUSE), buttonSize2)) {
+        if (ImGui::Button(StringUtils::from_char8_t(ICON_MDI_PAUSE), button_size2)) {
           if (EditorLayer::get()->scene_state == EditorLayer::SceneState::Play)
             EditorLayer::get()->on_scene_stop();
         }
         ImGui::SameLine();
-        if (ImGui::Button(StringUtils::from_char8_t(ICON_MDI_STEP_FORWARD), buttonSize2)) {
+        if (ImGui::Button(StringUtils::from_char8_t(ICON_MDI_STEP_FORWARD), button_size2)) {
           EditorLayer::get()->on_scene_simulate();
         }
         ImGui::PopStyleColor();
@@ -305,15 +217,166 @@ void ViewportPanel::on_imgui_render() {
   }
 }
 
-void ViewportPanel::set_context(const Ref<Scene>& scene, SceneHierarchyPanel& sceneHierarchyPanel) {
-  scene_hierarchy_panel = &sceneHierarchyPanel;
+void ViewportPanel::mouse_picking_pass(const Ref<RenderPipeline>& rp, const vuk::Dimension3D& dim, const float fixed_width) {
+  struct SceneMesh {
+    uint32_t entity_id = 0;
+    MeshComponent mesh_component = {};
+  };
+
+  std::vector<SceneMesh> scene_meshes = {};
+
+  const auto mesh_view = m_scene->m_registry.view<TransformComponent, MeshComponent, MaterialComponent, TagComponent>();
+  for (const auto&& [entity, transform, mesh_component, material, tag] : mesh_view.each()) {
+    if (tag.enabled && !material.materials.empty()) {
+      auto e = Entity(entity, m_scene.get());
+      mesh_component.transform = e.get_world_transform();
+      scene_meshes.emplace_back((uint32_t)entity, mesh_component);
+    }
+  }
+
+  auto rg = create_ref<vuk::RenderGraph>("id_render_graph");
+
+  auto& superframe_allocator = VulkanContext::get()->superframe_allocator;
+  if (!superframe_allocator->get_context().is_pipeline_available("id_pipeline")) {
+    vuk::PipelineBaseCreateInfo pci;
+    pci.add_glsl(FileUtils::read_shader_file("Editor_IDPass.vert"), "Editor_IDPass.vert");
+    pci.add_glsl(FileUtils::read_shader_file("Editor_IDPass.frag"), "Editor_IDPass.frag");
+    superframe_allocator->get_context().create_named_pipeline("id_pipeline", pci);
+  }
+
+  struct VsUbo {
+    Mat4 projection_view;
+  } vs_ubo;
+
+  vs_ubo.projection_view = m_camera.get_projection_matrix_flipped() * m_camera.get_view_matrix();
+  auto [vs_buff, vs_buffer_fut] = create_buffer(*rp->get_frame_allocator(), vuk::MemoryUsage::eCPUtoGPU, vuk::DomainFlagBits::eTransferOnGraphics, std::span(&vs_ubo, 1));
+  auto& vs_buffer = *vs_buff;
+
+  auto attachment = vuk::ImageAttachment{
+    .extent = dim,
+    .format = vuk::Format::eR8Uint,
+    .sample_count = vuk::SampleCountFlagBits::e1,
+    .level_count = 1,
+    .layer_count = 1
+  };
+
+  rg->attach_and_clear_image("id_buffer_image", attachment, vuk::Black<float>);
+  attachment.format = vuk::Format::eD32Sfloat;
+  rg->attach_and_clear_image("id_buffer_depth", attachment, vuk::DepthOne);
+
+  // TODO: use depth from RenderPipeline if available.
+  rg->add_pass({
+    .name = "id_buffer_pass",
+    .resources = {
+      "id_buffer_image"_image >> vuk::eColorRW >> "id_buffer_image_output",
+      "id_buffer_depth"_image >> vuk::eDepthStencilRW
+    },
+    .execute = [scene_meshes, vs_buffer, dim](vuk::CommandBuffer& command_buffer) {
+      const auto rect = vuk::Viewport{0, (float)dim.extent.height, (float)dim.extent.width, -(float)dim.extent.height, 0.0, 1.0};
+      command_buffer.set_dynamic_state(vuk::DynamicStateFlagBits::eScissor | vuk::DynamicStateFlagBits::eViewport)
+                    .set_viewport(0, rect)
+                    .set_scissor(0, vuk::Rect2D::framebuffer())
+                    .broadcast_color_blend(vuk::BlendPreset::eOff)
+                    .set_rasterization({.cullMode = vuk::CullModeFlagBits::eBack})
+                    .set_depth_stencil(vuk::PipelineDepthStencilStateCreateInfo{
+                       .depthTestEnable = true,
+                       .depthWriteEnable = true,
+                       .depthCompareOp = vuk::CompareOp::eLessOrEqual,
+                     })
+                    .bind_graphics_pipeline("id_pipeline")
+                    .bind_buffer(0, 0, vs_buffer);
+
+      for (auto& mesh : scene_meshes) {
+        mesh.mesh_component.original_mesh->bind_vertex_buffer(command_buffer);
+        mesh.mesh_component.original_mesh->bind_index_buffer(command_buffer);
+
+        for (const auto& subset : mesh.mesh_component.subsets) {
+          if (subset.material->parameters.alpha_mode == (uint32_t)Material::AlphaMode::Mask
+              || subset.material->parameters.alpha_mode == (uint32_t)Material::AlphaMode::Blend) {
+            continue;
+          }
+
+          struct PushConstant {
+            Mat4 model_matrix;
+            uint32_t entity_id;
+          } pc;
+
+          pc.model_matrix = mesh.mesh_component.transform;
+          pc.entity_id = mesh.entity_id;
+
+          command_buffer.push_constants(vuk::ShaderStageFlagBits::eVertex, 0, pc)
+                        .draw_indexed(subset.index_count, 1, subset.first_index, 0, 0);
+        }
+      }
+    }
+  });
+
+  auto id_buffer = *vuk::allocate_buffer(*rp->get_frame_allocator(), {vuk::MemoryUsage::eGPUtoCPU, dim.extent.width * dim.extent.height * 4, 1});
+
+  rg->attach_buffer("id_buffer_buffer", id_buffer.get());
+
+  auto [mx, my] = ImGui::GetMousePos();
+  auto off = (viewport_panel_size.x - fixed_width) * 0.5f; // add offset since we render image with fixed aspect ratio
+  mx -= m_viewport_bounds[0].x + off;
+  my -= m_viewport_bounds[0].y;
+  Vec2 viewport_size = m_viewport_bounds[1] - m_viewport_bounds[0];
+  my = viewport_size.y - my;
+  int32_t mouse_x = glm::max(0, (int32_t)mx);
+  int32_t mouse_y = glm::max(0, (int32_t)my);
+
+  rg->add_pass({
+    .name = "id_copy_pass",
+    .resources = {
+      "id_buffer_image_output"_image >> vuk::eTransferRead,
+      "id_buffer_buffer"_buffer >> vuk::eTransferWrite >> "id_buffer_final"
+    },
+    .execute = [dim](vuk::CommandBuffer& command_buffer) {
+      const auto params = vuk::BufferImageCopy{
+        .bufferOffset = 0,
+        .bufferRowLength = 0,
+        .bufferImageHeight = 0,
+        .imageSubresource = {.aspectMask = vuk::ImageAspectFlagBits::eColor},
+        .imageOffset = {.x = 0, .y = 0, .z = 0},
+        .imageExtent = dim.extent,
+      };
+
+      command_buffer.copy_image_to_buffer("id_buffer_image_output", "id_buffer_buffer", params);
+    }
+  });
+
+  rg->add_pass({
+    .name = "id_compare_pass",
+    .resources = {
+      "id_buffer_final"_buffer >> vuk::eMemoryRead
+    },
+    .execute = [mouse_x, mouse_y, dim, this](const vuk::CommandBuffer& command_buffer) {
+      const auto buf_pos = mouse_y * dim.extent.width + mouse_x;
+
+      auto buffer = command_buffer.get_resource_buffer("id_buffer_final");
+
+      const auto id = (uint32_t)buffer->mapped_ptr[buf_pos];
+
+      m_hovered_entity = id == 0 ? Entity() : Entity((entt::entity)id, m_scene.get());
+
+      if (m_hovered_entity && ImGui::IsMouseClicked(ImGuiMouseButton_Left) && m_viewport_hovered)
+        m_scene_hierarchy_panel->set_selected_entity(m_hovered_entity);
+      else if (ImGui::IsMouseClicked(ImGuiMouseButton_Left) && m_viewport_hovered)
+        m_scene_hierarchy_panel->set_selected_entity({});
+    }
+  });
+
+  rp->submit_rg_future(vuk::Future{std::move(rg), "id_buffer_final"});
+}
+
+void ViewportPanel::set_context(const Ref<Scene>& scene, SceneHierarchyPanel& scene_hierarchy_panel) {
+  m_scene_hierarchy_panel = &scene_hierarchy_panel;
   m_scene = scene;
 }
 
 void ViewportPanel::on_update() {
   // entity highlighting
-  if (scene_hierarchy_panel) {
-    auto entity = scene_hierarchy_panel->get_selected_entity();
+  if (m_scene_hierarchy_panel) {
+    auto entity = m_scene_hierarchy_panel->get_selected_entity();
     if (entity && entity.has_component<MeshComponent>()) {
       auto scaled_matrix = glm::scale(entity.get_world_transform(), Vec3(1.02f));
       DebugRenderer::draw_mesh(
@@ -324,83 +387,83 @@ void ViewportPanel::on_update() {
     }
   }
 
-  if (m_ViewportFocused && !m_SimulationRunning && m_UseEditorCamera) {
+  if (m_viewport_focused && !m_simulation_running && m_use_editor_camera) {
     const Vec3& position = m_camera.get_position();
-    const glm::vec2 yawPitch = glm::vec2(m_camera.get_yaw(), m_camera.get_pitch());
-    Vec3 finalPosition = position;
-    glm::vec2 finalYawPitch = yawPitch;
+    const glm::vec2 yaw_pitch = glm::vec2(m_camera.get_yaw(), m_camera.get_pitch());
+    Vec3 final_position = position;
+    glm::vec2 final_yaw_pitch = yaw_pitch;
 
     if (ImGui::IsMouseDown(ImGuiMouseButton_Right)) {
-      const glm::vec2 newMousePosition = Input::GetMousePosition();
+      const glm::vec2 new_mouse_position = Input::GetMousePosition();
 
-      if (!m_UsingEditorCamera) {
-        m_UsingEditorCamera = true;
-        m_LockedMousePosition = newMousePosition;
+      if (!m_using_editor_camera) {
+        m_using_editor_camera = true;
+        m_locked_mouse_position = new_mouse_position;
       }
 
-      Input::SetCursorPosition(m_LockedMousePosition.x, m_LockedMousePosition.y);
+      Input::SetCursorPosition(m_locked_mouse_position.x, m_locked_mouse_position.y);
       //Input::SetCursorIcon(EditorLayer::Get()->m_CrosshairCursor);
 
-      const glm::vec2 change = (newMousePosition - m_LockedMousePosition) * m_MouseSensitivity;
-      finalYawPitch.x += change.x;
-      finalYawPitch.y = glm::clamp(finalYawPitch.y - change.y, glm::radians(-89.9f), glm::radians(89.9f));
+      const glm::vec2 change = (new_mouse_position - m_locked_mouse_position) * m_mouse_sensitivity;
+      final_yaw_pitch.x += change.x;
+      final_yaw_pitch.y = glm::clamp(final_yaw_pitch.y - change.y, glm::radians(-89.9f), glm::radians(89.9f));
 
-      const float maxMoveSpeed = m_MovementSpeed * (ImGui::IsKeyDown(ImGuiKey_LeftShift) ? 3.0f : 1.0f);
+      const float max_move_speed = m_movement_speed * (ImGui::IsKeyDown(ImGuiKey_LeftShift) ? 3.0f : 1.0f);
       if (ImGui::IsKeyDown(ImGuiKey_W))
-        finalPosition += m_camera.get_front() * maxMoveSpeed;
+        final_position += m_camera.get_front() * max_move_speed;
       else if (ImGui::IsKeyDown(ImGuiKey_S))
-        finalPosition -= m_camera.get_front() * maxMoveSpeed;
+        final_position -= m_camera.get_front() * max_move_speed;
       if (ImGui::IsKeyDown(ImGuiKey_D))
-        finalPosition += m_camera.get_right() * maxMoveSpeed;
+        final_position += m_camera.get_right() * max_move_speed;
       else if (ImGui::IsKeyDown(ImGuiKey_A))
-        finalPosition -= m_camera.get_right() * maxMoveSpeed;
+        final_position -= m_camera.get_right() * max_move_speed;
 
       if (ImGui::IsKeyDown(ImGuiKey_Q)) {
-        finalPosition.y -= maxMoveSpeed;
+        final_position.y -= max_move_speed;
       }
       else if (ImGui::IsKeyDown(ImGuiKey_E)) {
-        finalPosition.y += maxMoveSpeed;
+        final_position.y += max_move_speed;
       }
     }
     // Panning
     else if (ImGui::IsMouseDown(ImGuiMouseButton_Middle)) {
-      const glm::vec2 newMousePosition = Input::GetMousePosition();
+      const glm::vec2 new_mouse_position = Input::GetMousePosition();
 
-      if (!m_UsingEditorCamera) {
-        m_UsingEditorCamera = true;
-        m_LockedMousePosition = newMousePosition;
+      if (!m_using_editor_camera) {
+        m_using_editor_camera = true;
+        m_locked_mouse_position = new_mouse_position;
       }
 
-      Input::SetCursorPosition(m_LockedMousePosition.x, m_LockedMousePosition.y);
+      Input::SetCursorPosition(m_locked_mouse_position.x, m_locked_mouse_position.y);
       //Input::SetCursorIcon(EditorLayer::Get()->m_CrosshairCursor);
 
-      const glm::vec2 change = (newMousePosition - m_LockedMousePosition) * m_MouseSensitivity;
+      const glm::vec2 change = (new_mouse_position - m_locked_mouse_position) * m_mouse_sensitivity;
 
-      const float maxMoveSpeed = m_MovementSpeed * (ImGui::IsKeyDown(ImGuiKey_LeftShift) ? 3.0f : 1.0f);
-      finalPosition += m_camera.get_front() * change.y * maxMoveSpeed;
-      finalPosition += m_camera.get_right() * change.x * maxMoveSpeed;
+      const float max_move_speed = m_movement_speed * (ImGui::IsKeyDown(ImGuiKey_LeftShift) ? 3.0f : 1.0f);
+      final_position += m_camera.get_front() * change.y * max_move_speed;
+      final_position += m_camera.get_right() * change.x * max_move_speed;
     }
     else {
       //Input::SetCursorIconDefault();
-      m_UsingEditorCamera = false;
+      m_using_editor_camera = false;
     }
 
-    const Vec3 dampedPosition = Math::smooth_damp(position,
-      finalPosition,
-      m_TranslationVelocity,
-      m_TranslationDampening,
+    const Vec3 damped_position = Math::smooth_damp(position,
+      final_position,
+      m_translation_velocity,
+      m_translation_dampening,
       10000.0f,
-      Application::get_timestep().get_seconds());
-    const glm::vec2 dampedYawPitch = Math::smooth_damp(yawPitch,
-      finalYawPitch,
-      m_RotationVelocity,
-      m_RotationDampening,
+      (float)Application::get_timestep().get_seconds());
+    const glm::vec2 damped_yaw_pitch = Math::smooth_damp(yaw_pitch,
+      final_yaw_pitch,
+      m_rotation_velocity,
+      m_rotation_dampening,
       1000.0f,
-      Application::get_timestep().get_seconds());
+      (float)Application::get_timestep().get_seconds());
 
-    m_camera.set_position(m_SmoothCamera ? dampedPosition : finalPosition);
-    m_camera.set_yaw(m_SmoothCamera ? dampedYawPitch.x : finalYawPitch.x);
-    m_camera.set_pitch(m_SmoothCamera ? dampedYawPitch.y : finalYawPitch.y);
+    m_camera.set_position(m_smooth_camera ? damped_position : final_position);
+    m_camera.set_yaw(m_smooth_camera ? damped_yaw_pitch.x : final_yaw_pitch.x);
+    m_camera.set_pitch(m_smooth_camera ? damped_yaw_pitch.y : final_yaw_pitch.y);
 
     m_camera.update();
   }
@@ -409,50 +472,50 @@ void ViewportPanel::on_update() {
 void ViewportPanel::draw_performance_overlay() {
   if (!performance_overlay_visible)
     return;
-  OxUI::draw_framerate_overlay(viewport_offset, viewport_panel_size, {15, 55}, &performance_overlay_visible);
+  OxUI::draw_framerate_overlay(ImVec2(viewport_offset.x, viewport_offset.y), ImVec2(viewport_panel_size.x, viewport_panel_size.y), {15, 55}, &performance_overlay_visible);
 }
 
 void ViewportPanel::draw_gizmos() {
-  const Entity selectedEntity = scene_hierarchy_panel->get_selected_entity();
-  if (selectedEntity && m_GizmoType != -1) {
+  const Entity selected_entity = m_scene_hierarchy_panel->get_selected_entity();
+  if (selected_entity && m_gizmo_type != -1) {
     ImGuizmo::SetOrthographic(false);
     ImGuizmo::SetDrawlist();
-    ImGuizmo::SetRect(m_ViewportBounds[0].x,
-      m_ViewportBounds[0].y,
-      m_ViewportBounds[1].x - m_ViewportBounds[0].x,
-      m_ViewportBounds[1].y - m_ViewportBounds[0].y);
+    ImGuizmo::SetRect(m_viewport_bounds[0].x,
+      m_viewport_bounds[0].y,
+      m_viewport_bounds[1].x - m_viewport_bounds[0].x,
+      m_viewport_bounds[1].y - m_viewport_bounds[0].y);
 
-    const glm::mat4& cameraProjection = m_camera.get_projection_matrix();
-    const glm::mat4& cameraView = m_camera.get_view_matrix();
+    const glm::mat4& camera_projection = m_camera.get_projection_matrix();
+    const glm::mat4& camera_view = m_camera.get_view_matrix();
 
-    auto& tc = selectedEntity.get_component<TransformComponent>();
-    glm::mat4 transform = selectedEntity.get_world_transform();
+    auto& tc = selected_entity.get_component<TransformComponent>();
+    glm::mat4 transform = selected_entity.get_world_transform();
 
     // Snapping
     const bool snap = Input::GetKey(Key::LeftControl);
-    float snapValue = 0.5f; // Snap to 0.5m for translation/scale
+    float snap_value = 0.5f; // Snap to 0.5m for translation/scale
     // Snap to 45 degrees for rotation
-    if (m_GizmoType == ImGuizmo::OPERATION::ROTATE)
-      snapValue = 45.0f;
+    if (m_gizmo_type == ImGuizmo::OPERATION::ROTATE)
+      snap_value = 45.0f;
 
-    const float snapValues[3] = {snapValue, snapValue, snapValue};
+    const float snap_values[3] = {snap_value, snap_value, snap_value};
 
-    ImGuizmo::Manipulate(glm::value_ptr(cameraView),
-      glm::value_ptr(cameraProjection),
-      static_cast<ImGuizmo::OPERATION>(m_GizmoType),
-      static_cast<ImGuizmo::MODE>(m_GizmoMode),
+    ImGuizmo::Manipulate(glm::value_ptr(camera_view),
+      glm::value_ptr(camera_projection),
+      static_cast<ImGuizmo::OPERATION>(m_gizmo_type),
+      static_cast<ImGuizmo::MODE>(m_gizmo_mode),
       glm::value_ptr(transform),
       nullptr,
-      snap ? snapValues : nullptr);
+      snap ? snap_values : nullptr);
 
     if (ImGuizmo::IsUsing()) {
-      const Entity parent = selectedEntity.get_parent();
-      const glm::mat4& parentWorldTransform = parent ? parent.get_world_transform() : glm::mat4(1.0f);
+      const Entity parent = selected_entity.get_parent();
+      const glm::mat4& parent_world_transform = parent ? parent.get_world_transform() : glm::mat4(1.0f);
       Vec3 translation, rotation, scale;
-      if (Math::decompose_transform(glm::inverse(parentWorldTransform) * transform, translation, rotation, scale)) {
+      if (Math::decompose_transform(glm::inverse(parent_world_transform) * transform, translation, rotation, scale)) {
         tc.position = translation;
-        const Vec3 deltaRotation = rotation - tc.rotation;
-        tc.rotation += deltaRotation;
+        const Vec3 delta_rotation = rotation - tc.rotation;
+        tc.rotation += delta_rotation;
         tc.scale = scale;
       }
     }
@@ -460,19 +523,19 @@ void ViewportPanel::draw_gizmos() {
   if (Input::GetKey(Key::LeftControl)) {
     if (Input::GetKeyDown(Key::Q)) {
       if (!ImGuizmo::IsUsing())
-        m_GizmoType = -1;
+        m_gizmo_type = -1;
     }
     if (Input::GetKeyDown(Key::W)) {
       if (!ImGuizmo::IsUsing())
-        m_GizmoType = ImGuizmo::OPERATION::TRANSLATE;
+        m_gizmo_type = ImGuizmo::OPERATION::TRANSLATE;
     }
     if (Input::GetKeyDown(Key::E)) {
       if (!ImGuizmo::IsUsing())
-        m_GizmoType = ImGuizmo::OPERATION::ROTATE;
+        m_gizmo_type = ImGuizmo::OPERATION::ROTATE;
     }
     if (Input::GetKeyDown(Key::R)) {
       if (!ImGuizmo::IsUsing())
-        m_GizmoType = ImGuizmo::OPERATION::SCALE;
+        m_gizmo_type = ImGuizmo::OPERATION::SCALE;
     }
   }
 }

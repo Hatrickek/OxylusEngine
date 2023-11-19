@@ -3,9 +3,9 @@
 #include "Core/Project.h"
 
 namespace Oxylus {
-  class MavreasEditor : public Application {
+  class OxylusEditor : public Application {
   public:
-    MavreasEditor(const AppSpec& spec) : Application(spec) { }
+    OxylusEditor(const AppSpec& spec) : Application(spec) { }
   };
 
   Application* create_application(ApplicationCommandLineArgs args) {
@@ -23,7 +23,7 @@ namespace Oxylus {
     spec.command_line_args = args;
     spec.custom_window_title = false;
 
-    const auto app = new MavreasEditor(spec);
+    const auto app = new OxylusEditor(spec);
 
     app->push_layer(new EditorLayer());
 

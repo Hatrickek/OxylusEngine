@@ -17,6 +17,7 @@ namespace Oxylus {
 
     void clear_selection_context();
     Entity get_selected_entity() const;
+    void set_selected_entity(Entity entity);
     Ref<Scene> get_scene() const { return m_Context; }
 
     void drag_drop_target() const;

@@ -14,6 +14,7 @@
 
 namespace Oxylus {
 void SceneRenderer::init() {
+  OX_SCOPED_ZONE;
   if (!m_render_pipeline)
     m_render_pipeline = create_ref<DefaultRenderPipeline>("DefaultRenderPipeline");
   Renderer::renderer_context.render_pipeline = m_render_pipeline;

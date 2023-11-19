@@ -66,6 +66,7 @@ Entity Scene::create_entity(const std::string& name) {
 }
 
 Entity Scene::create_entity_with_uuid(UUID uuid, const std::string& name) {
+  OX_SCOPED_ZONE;
   Entity entity = {m_registry.create(), this};
   entity_map.emplace(uuid, entity);
   entity.add_component_internal<IDComponent>(uuid);
@@ -76,6 +77,7 @@ Entity Scene::create_entity_with_uuid(UUID uuid, const std::string& name) {
 }
 
 void Scene::load_mesh(const Ref<Mesh>& mesh) {
+  OX_SCOPED_ZONE;
   const auto root_entity = create_entity(mesh->name);
 
   for (const auto& node : mesh->linear_nodes) {
@@ -200,6 +202,7 @@ void Scene::update_physics(const Timestep& delta_time) {
 }
 
 void Scene::destroy_entity(const Entity entity) {
+  OX_SCOPED_ZONE;
   entity.deparent();
   const auto children = entity.get_component<RelationshipComponent>().children;
 
@@ -382,21 +385,25 @@ Ref<Scene> Scene::copy(const Ref<Scene>& other) {
 }
 
 void Scene::on_contact_added(const JPH::Body& body1, const JPH::Body& body2, const JPH::ContactManifold& manifold, const JPH::ContactSettings& settings) {
+  OX_SCOPED_ZONE;
   for (const auto& system : systems)
     system->on_contact_added(this, body1, body2, manifold, settings);
 }
 
 void Scene::on_contact_persisted(const JPH::Body& body1, const JPH::Body& body2, const JPH::ContactManifold& manifold, const JPH::ContactSettings& settings) {
+  OX_SCOPED_ZONE;
   for (const auto& system : systems)
     system->on_contact_persisted(this, body1, body2, manifold, settings);
 }
 
 void Scene::on_key_pressed(const KeyCode key) const {
+  OX_SCOPED_ZONE;
   for (const auto& system : systems)
     system->on_key_pressed(key);
 }
 
 void Scene::on_key_released(const KeyCode key) const {
+  OX_SCOPED_ZONE;
   for (const auto& system : systems)
     system->on_key_released(key);
 }
@@ -505,6 +512,7 @@ void Scene::create_rigidbody(Entity entity, const TransformComponent& transform,
 }
 
 void Scene::create_character_controller(const TransformComponent& transform, CharacterControllerComponent& component) const {
+  OX_SCOPED_ZONE;
   if (!is_running)
     return;
   const auto position = JPH::Vec3(transform.position.x, transform.position.y, transform.position.z);
@@ -556,6 +564,7 @@ void Scene::on_runtime_update(const Timestep& delta_time) {
 
   // Scripting
   {
+    OX_SCOPED_ZONE_N("Lua Scripting Systems");
     const auto script_view = m_registry.view<LuaScriptComponent>();
     for (auto&& [e, script_component] : script_view.each()) {
       if (script_component.lua_system)
@@ -565,6 +574,7 @@ void Scene::on_runtime_update(const Timestep& delta_time) {
 
   // Audio
   {
+    OX_SCOPED_ZONE_N("Audio Systems");
     const auto listener_view = m_registry.group<AudioListenerComponent>(entt::get<TransformComponent>);
     for (auto&& [e, ac, tc] : listener_view.each()) {
       ac.listener = create_ref<AudioListener>();
@@ -594,11 +604,13 @@ void Scene::on_runtime_update(const Timestep& delta_time) {
 }
 
 void Scene::on_imgui_render(const Timestep& delta_time) {
+  OX_SCOPED_ZONE;
   for (const auto& system : systems)
     system->on_imgui_render(this, delta_time);
 }
 
 void Scene::on_editor_update(const Timestep& delta_time, Camera& camera) {
+  OX_SCOPED_ZONE;
   scene_renderer->get_render_pipeline()->on_register_camera(&camera);
   scene_renderer->update();
 
