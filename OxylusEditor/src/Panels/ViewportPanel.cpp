@@ -2,6 +2,7 @@
 
 #include <icons/IconsMaterialDesignIcons.h>
 #include <vuk/CommandBuffer.hpp>
+#include <vuk/Partials.hpp>
 #include <vuk/RenderGraph.hpp>
 
 #include "EditorLayer.h"
@@ -90,12 +91,102 @@ void ViewportPanel::on_imgui_render() {
     ImGui::SetCursorPosX((viewport_panel_size.x - fixedWidth) * 0.5f);
 
     const auto dim = vuk::Dimension3D::absolute((uint32_t)fixedWidth, (uint32_t)viewport_panel_size.y);
-    const auto rp = m_Scene->get_renderer()->get_render_pipeline();
+    const auto rp = m_scene->get_renderer()->get_render_pipeline();
     rp->detach_swapchain(dim);
     const auto final_image = rp->get_final_image();
 
     if (final_image) {
       OxUI::image(*final_image, ImVec2{fixedWidth, m_ViewportSize.y});
+
+      struct SceneMesh {
+        uint32_t entity_id = 0;
+        MeshComponent mesh_component = {};
+      };
+
+      std::vector<SceneMesh> scene_meshes = {};
+
+      const auto mesh_view = m_scene->m_registry.view<TransformComponent, MeshComponent, MaterialComponent, TagComponent>();
+      for (const auto&& [entity, transform, mesh_component, material, tag] : mesh_view.each()) {
+        if (tag.enabled && !material.materials.empty()) {
+          auto e = Entity(entity, m_scene.get());
+          mesh_component.transform = e.get_world_transform();
+          scene_meshes.emplace_back((uint32_t)entity, mesh_component);
+        }
+      }
+
+      auto rg = create_ref<vuk::RenderGraph>("id_render_graph");
+
+      auto& superframe_allocator = VulkanContext::get()->superframe_allocator;
+      if (!superframe_allocator->get_context().is_pipeline_available("id_pipeline")) {
+        vuk::PipelineBaseCreateInfo pci;
+        pci.add_glsl(FileUtils::read_shader_file("Editor_IDPass.vert"), "Editor_IDPass.vert");
+        pci.add_glsl(FileUtils::read_shader_file("Editor_IDPass.frag"), "Editor_IDPass.frag");
+        superframe_allocator->get_context().create_named_pipeline("id_pipeline", pci);
+      }
+
+      struct VSUbo {
+        Mat4 projection_view;
+      } vs_ubo;
+
+      vs_ubo.projection_view = m_camera.get_projection_matrix_flipped() * m_camera.get_view_matrix();
+      auto [vs_buff, vs_buffer_fut] = create_buffer(*rp->get_frame_allocator(), vuk::MemoryUsage::eCPUtoGPU, vuk::DomainFlagBits::eTransferOnGraphics, std::span(&vs_ubo, 1));
+      auto& vs_buffer = *vs_buff;
+
+      auto attachment = vuk::ImageAttachment{
+        .extent = dim,
+        .format = vuk::Format::eR8Uint,
+        .sample_count = vuk::SampleCountFlagBits::e1,
+        .level_count = 1,
+        .layer_count = 1
+      };
+
+      rg->attach_and_clear_image("id_buffer_image", attachment , vuk::Black<float>);
+
+      rg->add_pass({
+        .name = "id_buffer_pass",
+        .resources = {
+          "id_buffer_image"_image >> vuk::eColorRW >> "id_buffer_output",
+        },
+        .execute = [scene_meshes, vs_buffer](vuk::CommandBuffer& command_buffer) {
+          command_buffer.set_dynamic_state(vuk::DynamicStateFlagBits::eScissor | vuk::DynamicStateFlagBits::eViewport)
+                        .set_viewport(0, vuk::Rect2D::framebuffer())
+                        .set_scissor(0, vuk::Rect2D::framebuffer())
+                        .broadcast_color_blend(vuk::BlendPreset::eOff)
+                        .set_rasterization({.cullMode = vuk::CullModeFlagBits::eBack})
+                        .set_depth_stencil(vuk::PipelineDepthStencilStateCreateInfo{
+                           .depthTestEnable = true,
+                           .depthWriteEnable = true,
+                           .depthCompareOp = vuk::CompareOp::eLessOrEqual,
+                         })
+                        .bind_graphics_pipeline("id_pipeline")
+                        .bind_buffer(0, 0, vs_buffer);
+
+          for (auto& mesh : scene_meshes) {
+            mesh.mesh_component.original_mesh->bind_vertex_buffer(command_buffer);
+            mesh.mesh_component.original_mesh->bind_index_buffer(command_buffer);
+
+            for (const auto& subset : mesh.mesh_component.subsets) {
+              if (subset.material->parameters.alpha_mode == (uint32_t)Material::AlphaMode::Mask
+                  || subset.material->parameters.alpha_mode == (uint32_t)Material::AlphaMode::Blend) {
+                continue;
+              }
+
+              struct PushConstant {
+                Mat4 model_matrix;
+                uint32_t entity_id;
+              } pc;
+
+              pc.model_matrix = mesh.mesh_component.transform;
+              pc.entity_id = mesh.entity_id;
+
+              command_buffer.push_constants(vuk::ShaderStageFlagBits::eVertex, 0, pc)
+                            .draw_indexed(subset.index_count, 1, subset.first_index, 0, 0);
+            }
+          }
+        }
+      });
+
+      rp->submit_rg_future(vuk::Future{std::move(rg), "id_buffer_output"});
     }
     else {
       const auto textWidth = ImGui::CalcTextSize("No render target!").x;
@@ -103,6 +194,7 @@ void ViewportPanel::on_imgui_render() {
       ImGui::SetCursorPosY(m_ViewportSize.y * 0.5f);
       ImGui::Text("No render target!");
     }
+
 
     if (scene_hierarchy_panel)
       scene_hierarchy_panel->drag_drop_target();
@@ -215,7 +307,7 @@ void ViewportPanel::on_imgui_render() {
 
 void ViewportPanel::set_context(const Ref<Scene>& scene, SceneHierarchyPanel& sceneHierarchyPanel) {
   scene_hierarchy_panel = &sceneHierarchyPanel;
-  m_Scene = scene;
+  m_scene = scene;
 }
 
 void ViewportPanel::on_update() {

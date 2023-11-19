@@ -52,6 +52,10 @@ public:
   virtual const std::string& get_name() { return m_name; }
   virtual vuk::Dimension3D get_dimension() { return dimension; }
 
+  virtual void submit_rg_future(vuk::Future&& future) { rg_futures.emplace_back(future); }
+  virtual std::vector<vuk::Future>& get_rg_futures() { return rg_futures; }
+  virtual void clear_rg_futures() { rg_futures.clear(); }
+
 protected:
   std::string m_name = {};
   bool attach_swapchain = false;
@@ -61,5 +65,6 @@ protected:
   vuk::Allocator* m_frame_allocator;
   std::mutex setup_lock;
   std::vector<vuk::Future> futures;
+  std::vector<vuk::Future> rg_futures;
 };
 }

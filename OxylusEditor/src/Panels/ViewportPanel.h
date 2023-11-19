@@ -24,7 +24,7 @@ private:
   void draw_performance_overlay();
   void draw_gizmos();
 
-  Ref<Scene> m_Scene;
+  Ref<Scene> m_scene;
   SceneHierarchyPanel* scene_hierarchy_panel = nullptr;
 
   ImVec2 m_ViewportSize;

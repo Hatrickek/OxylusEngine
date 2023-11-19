@@ -309,12 +309,12 @@ Scope<vuk::Future> DefaultRenderPipeline::on_render(vuk::Allocator& frame_alloca
   auto [matBuff, matBufferFut] = create_buffer(frame_allocator, vuk::MemoryUsage::eCPUtoGPU, vuk::DomainFlagBits::eTransferOnGraphics, std::span(materials));
   auto& mat_buffer = *matBuff;
 
-  depth_pre_pass(rg, vs_buffer, material_map, mat_buffer);
-
   rg->attach_and_clear_image("normal_image", {.format = vuk::Format::eR16G16B16A16Sfloat, .sample_count = vuk::SampleCountFlagBits::e1}, vuk::Black<float>);
   rg->attach_and_clear_image("depth_image", {.format = vuk::Format::eD32Sfloat, .sample_count = vuk::SampleCountFlagBits::e1}, vuk::DepthOne);
   rg->inference_rule("normal_image", vuk::same_shape_as("final_image"));
   rg->inference_rule("depth_image", vuk::same_shape_as("final_image"));
+
+  depth_pre_pass(rg, vs_buffer, material_map, mat_buffer);
 
   if (RendererCVar::cvar_gtao_enable.get())
     gtao_pass(frame_allocator, rg);
