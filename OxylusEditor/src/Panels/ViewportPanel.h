@@ -10,45 +10,47 @@ class ViewportPanel : public EditorPanel {
 public:
   Camera m_camera;
   bool performance_overlay_visible = true;
-  bool FullscreenViewport = false;
+  bool fullscreen_viewport = false;
 
   ViewportPanel();
 
   void on_imgui_render() override;
 
-  void set_context(const Ref<Scene>& scene, SceneHierarchyPanel& sceneHierarchyPanel);
+  void set_context(const Ref<Scene>& scene, SceneHierarchyPanel& scene_hierarchy_panel);
 
   void on_update() override;
 
 private:
   void draw_performance_overlay();
   void draw_gizmos();
+  void mouse_picking_pass(const Ref<RenderPipeline>& rp, const vuk::Dimension3D& dim, float fixed_width);
 
-  Ref<Scene> m_Scene;
-  SceneHierarchyPanel* scene_hierarchy_panel = nullptr;
+  Ref<Scene> m_scene = {};
+  Entity m_hovered_entity = {};
+  SceneHierarchyPanel* m_scene_hierarchy_panel = nullptr;
 
-  ImVec2 m_ViewportSize;
-  ImVec2 m_ViewportBounds[2];
-  ImVec2 viewport_panel_size = ImVec2();
-  ImVec2 viewport_offset;
-  ImVec2 m_GizmoPosition = ImVec2(1.0f, 1.0f);
-  bool m_ViewportFocused{};
-  bool m_ViewportHovered{};
-  bool m_SimulationRunning = false;
-  int m_GizmoType = -1;
-  int m_GizmoMode = 0;
+  Vec2 m_viewport_size = {};
+  Vec2 m_viewport_bounds[2] = {};
+  Vec2 viewport_panel_size = {};
+  Vec2 viewport_offset = {};
+  Vec2 m_gizmo_position = Vec2(1.0f, 1.0f);
+  bool m_viewport_focused = {};
+  bool m_viewport_hovered = {};
+  bool m_simulation_running = false;
+  int m_gizmo_type = -1;
+  int m_gizmo_mode = 0;
 
   //Camera
-  bool m_LockAspectRatio = true;
-  float m_TranslationDampening = 0.6f;
-  float m_RotationDampening = 0.3f;
-  bool m_SmoothCamera = true;
-  float m_MouseSensitivity = 0.1f;
-  float m_MovementSpeed = 5.0f;
-  bool m_UseEditorCamera = true;
-  bool m_UsingEditorCamera = false;
-  glm::vec2 m_LockedMousePosition = glm::vec2(0.0f);
-  Vec3 m_TranslationVelocity = Vec3(0);
-  glm::vec2 m_RotationVelocity = glm::vec2(0);
+  bool m_lock_aspect_ratio = true;
+  float m_translation_dampening = 0.6f;
+  float m_rotation_dampening = 0.3f;
+  bool m_smooth_camera = true;
+  float m_mouse_sensitivity = 0.1f;
+  float m_movement_speed = 5.0f;
+  bool m_use_editor_camera = true;
+  bool m_using_editor_camera = false;
+  glm::vec2 m_locked_mouse_position = glm::vec2(0.0f);
+  Vec3 m_translation_velocity = Vec3(0);
+  glm::vec2 m_rotation_velocity = glm::vec2(0);
 };
 }

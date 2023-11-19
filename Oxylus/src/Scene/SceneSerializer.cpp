@@ -30,7 +30,7 @@ void SceneSerializer::serialize(const std::string& filePath) const {
     if (!entity)
       return;
 
-    EntitySerializer::SerializeEntity(m_Scene.get(), entities, entity);
+    EntitySerializer::serialize_entity(m_Scene.get(), entities, entity);
   }
 
   std::stringstream ss;
@@ -75,7 +75,7 @@ bool SceneSerializer::deserialize(const std::string& filePath) const {
     const ryml::ConstNodeRef entities = root["Entities"];
 
     for (const auto entity : entities) {
-      EntitySerializer::DeserializeEntity(entity, m_Scene.get(), true);
+      EntitySerializer::deserialize_entity(entity, m_Scene.get(), true);
     }
 
     timer.Stop();

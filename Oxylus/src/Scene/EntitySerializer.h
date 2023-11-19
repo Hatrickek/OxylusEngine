@@ -11,12 +11,12 @@ class Scene;
 
 class EntitySerializer {
 public:
-  static void SerializeEntity(Scene* scene, ryml::NodeRef& entities, Entity entity);
+  static void serialize_entity(Scene* scene, ryml::NodeRef& entities, Entity entity);
 
-  static UUID DeserializeEntity(ryml::ConstNodeRef entityNode, Scene* scene, bool preserveUUID);
+  static UUID deserialize_entity(ryml::ConstNodeRef entity_node, Scene* scene, bool preserve_uuid);
 
-  static void SerializeEntityAsPrefab(const char* filepath, Entity entity);
+  static void serialize_entity_as_prefab(const char* filepath, Entity entity);
 
-  static Entity DeserializeEntityAsPrefab(const char* filepath, Scene* scene);
+  static Entity deserialize_entity_as_prefab(const char* filepath, Scene* scene);
 };
 }

@@ -34,7 +34,7 @@
 #endif
 
 namespace Oxylus {
-static const std::unordered_map<FileType, const char*> s_FileTypesToString =
+static const std::unordered_map<FileType, const char*> FILE_TYPES_TO_STRING =
 {
   {FileType::Unknown, "Unknown"},
 
@@ -50,7 +50,7 @@ static const std::unordered_map<FileType, const char*> s_FileTypesToString =
   {FileType::Audio, "Audio"},
 };
 
-static const std::unordered_map<std::string, FileType> s_FileTypes =
+static const std::unordered_map<std::string, FileType> FILE_TYPES =
 {
   {".oxscene", FileType::Scene},
   {".oxprefab", FileType::Prefab},
@@ -78,7 +78,7 @@ static const std::unordered_map<std::string, FileType> s_FileTypes =
   {".ogg", FileType::Audio},
 };
 
-static const std::unordered_map<FileType, ImVec4> s_TypeColors =
+static const std::unordered_map<FileType, ImVec4> TYPE_COLORS =
 {
   {FileType::Scene, {0.75f, 0.35f, 0.20f, 1.00f}},
   {FileType::Prefab, {0.10f, 0.50f, 0.80f, 1.00f}},
@@ -92,7 +92,7 @@ static const std::unordered_map<FileType, ImVec4> s_TypeColors =
   {FileType::Audio, {0.20f, 0.80f, 0.50f, 1.00f}},
 };
 
-static const std::unordered_map<FileType, const char8_t*> s_FileTypesToIcon =
+static const std::unordered_map<FileType, const char8_t*> FILE_TYPES_TO_ICON =
 {
   {FileType::Unknown, ICON_MDI_FILE},
 
@@ -108,12 +108,12 @@ static const std::unordered_map<FileType, const char8_t*> s_FileTypesToIcon =
   {FileType::Audio, ICON_MDI_MICROPHONE},
 };
 
-static bool drag_drop_target(const std::filesystem::path& dropPath) {
+static bool drag_drop_target(const std::filesystem::path& drop_path) {
   if (ImGui::BeginDragDropTarget()) {
     if (const ImGuiPayload* payload = ImGui::AcceptDragDropPayload("Entity")) {
       const Entity entity = *static_cast<Entity*>(payload->Data);
-      const std::filesystem::path path = dropPath / std::string(entity.get_component<TagComponent>().tag + ".oxprefab");
-      EntitySerializer::SerializeEntityAsPrefab(path.string().c_str(), entity);
+      const std::filesystem::path path = drop_path / std::string(entity.get_component<TagComponent>().tag + ".oxprefab");
+      EntitySerializer::serialize_entity_as_prefab(path.string().c_str(), entity);
       return true;
     }
 
@@ -125,21 +125,21 @@ static bool drag_drop_target(const std::filesystem::path& dropPath) {
 
 static void drag_drop_from(const std::filesystem::path& filepath) {
   if (ImGui::BeginDragDropSource()) {
-    const std::string pathStr = filepath.string();
-    ImGui::SetDragDropPayload("CONTENT_BROWSER_ITEM", pathStr.c_str(), pathStr.length() + 1);
+    const std::string path_str = filepath.string();
+    ImGui::SetDragDropPayload("CONTENT_BROWSER_ITEM", path_str.c_str(), path_str.length() + 1);
     ImGui::TextUnformatted(filepath.filename().string().c_str());
     ImGui::EndDragDropSource();
   }
 }
 
 static void open_file(const std::filesystem::path& path) {
-  const std::string filepathString = path.string();
-  const char* filepath = filepathString.c_str();
+  const std::string filepath_string = path.string();
+  const char* filepath = filepath_string.c_str();
   const std::string ext = path.extension().string();
-  const auto& fileTypeIt = s_FileTypes.find(ext);
-  if (fileTypeIt != s_FileTypes.end()) {
-    const FileType fileType = fileTypeIt->second;
-    switch (fileType) {
+  const auto& file_type_it = FILE_TYPES.find(ext);
+  if (file_type_it != FILE_TYPES.end()) {
+    const FileType file_type = file_type_it->second;
+    switch (file_type) {
       case FileType::Scene: {
         EditorLayer::get()->open_scene(filepath);
         break;
@@ -218,12 +218,12 @@ std::pair<bool, uint32_t> ContentPanel::directory_tree_view_recursive(const std:
     const char8_t* folderIcon = ICON_MDI_FILE;
     if (entryIsFile) {
       auto fileType = FileType::Unknown;
-      const auto& fileTypeIt = s_FileTypes.find(entryPath.extension().string());
-      if (fileTypeIt != s_FileTypes.end())
+      const auto& fileTypeIt = FILE_TYPES.find(entryPath.extension().string());
+      if (fileTypeIt != FILE_TYPES.end())
         fileType = fileTypeIt->second;
 
-      const auto& fileTypeIconIt = s_FileTypesToIcon.find(fileType);
-      if (fileTypeIconIt != s_FileTypesToIcon.end())
+      const auto& fileTypeIconIt = FILE_TYPES_TO_ICON.find(fileType);
+      if (fileTypeIconIt != FILE_TYPES_TO_ICON.end())
         folderIcon = fileTypeIconIt->second;
     }
     else {
@@ -759,18 +759,18 @@ void ContentPanel::update_directory_entries(const std::filesystem::path& directo
     const std::string extension = relativePath.extension().string();
 
     auto fileType = FileType::Unknown;
-    const auto& fileTypeIt = s_FileTypes.find(extension);
-    if (fileTypeIt != s_FileTypes.end())
+    const auto& fileTypeIt = FILE_TYPES.find(extension);
+    if (fileTypeIt != FILE_TYPES.end())
       fileType = fileTypeIt->second;
 
-    std::string_view fileTypeString = s_FileTypesToString.at(FileType::Unknown);
-    const auto& fileStringTypeIt = s_FileTypesToString.find(fileType);
-    if (fileStringTypeIt != s_FileTypesToString.end())
+    std::string_view fileTypeString = FILE_TYPES_TO_STRING.at(FileType::Unknown);
+    const auto& fileStringTypeIt = FILE_TYPES_TO_STRING.find(fileType);
+    if (fileStringTypeIt != FILE_TYPES_TO_STRING.end())
       fileTypeString = fileStringTypeIt->second;
 
     ImVec4 fileTypeColor = {1.0f, 1.0f, 1.0f, 1.0f};
-    const auto& fileTypeColorIt = s_TypeColors.find(fileType);
-    if (fileTypeColorIt != s_TypeColors.end())
+    const auto& fileTypeColorIt = TYPE_COLORS.find(fileType);
+    if (fileTypeColorIt != TYPE_COLORS.end())
       fileTypeColor = fileTypeColorIt->second;
 
     File entry = {

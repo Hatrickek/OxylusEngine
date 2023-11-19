@@ -28,6 +28,11 @@ Entity SceneHierarchyPanel::get_selected_entity() const {
   return get_selected_entity_front();
 }
 
+void SceneHierarchyPanel::set_selected_entity(Entity entity) {
+  m_selected_entity_entities.clear();
+  m_selected_entity_entities.emplace_back(entity);
+}
+
 void SceneHierarchyPanel::set_context(const Ref<Scene>& scene) {
   m_Context = scene;
   clear_selection_context();
@@ -138,7 +143,7 @@ ImRect SceneHierarchyPanel::draw_entity_node(Entity entity, uint32_t depth, bool
         std::filesystem::path path = std::filesystem::path((const char*)payload->Data);
         path = AssetManager::get_asset_file_system_path(path);
         if (path.extension() == ".oxprefab") {
-          m_DraggedEntity = EntitySerializer::DeserializeEntityAsPrefab(path.string().c_str(), m_Context.get());
+          m_DraggedEntity = EntitySerializer::deserialize_entity_as_prefab(path.string().c_str(), m_Context.get());
           m_DraggedEntity = entity;
         }
       }
@@ -270,7 +275,7 @@ void SceneHierarchyPanel::drag_drop_target() const {
         m_Context->load_mesh(AssetManager::get_mesh_asset(path.string()));
       }
       if (path.extension() == ".oxprefab") {
-        EntitySerializer::DeserializeEntityAsPrefab(path.string().c_str(), m_Context.get());
+        EntitySerializer::deserialize_entity_as_prefab(path.string().c_str(), m_Context.get());
       }
     }
 
