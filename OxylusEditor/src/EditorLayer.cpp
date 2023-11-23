@@ -50,12 +50,12 @@ void EditorLayer::on_attach(EventDispatcher& dispatcher) {
   m_editor_config.load_config();
   Resources::init_editor_resources();
 
-  crosshair_cursor = Input::LoadCursorIconStandard(GLFW_CROSSHAIR_CURSOR);
+  crosshair_cursor = Input::load_cursor_icon_standard(GLFW_CROSSHAIR_CURSOR);
 
   engine_banner = create_ref<TextureAsset>();
   engine_banner->create_texture(EngineBannerWidth, EngineBannerHeight, EngineBanner);
 
-  Input::SetCursorState(Input::CursorState::NORMAL, Window::get_glfw_window());
+  Input::set_cursor_state(Input::CursorState::Normal, Window::get_glfw_window());
 
   m_editor_scene = create_ref<Scene>();
   set_editor_context(m_editor_scene);
@@ -74,7 +74,7 @@ void EditorLayer::on_attach(EventDispatcher& dispatcher) {
 }
 
 void EditorLayer::on_detach() {
-  Input::DestroyCursor(crosshair_cursor);
+  Input::destroy_cursor(crosshair_cursor);
   m_editor_config.save_config();
 }
 
@@ -395,6 +395,8 @@ void EditorLayer::on_scene_stop() {
   m_active_scene->on_runtime_stop();
   m_active_scene = nullptr;
   set_editor_context(m_editor_scene);
+  // initalize the renderer again manually since this scene was already alive...
+  m_editor_scene->get_renderer()->init();
 }
 
 void EditorLayer::on_scene_simulate() {

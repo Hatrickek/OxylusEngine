@@ -396,14 +396,14 @@ void ViewportPanel::on_update() {
     glm::vec2 final_yaw_pitch = yaw_pitch;
 
     if (ImGui::IsMouseDown(ImGuiMouseButton_Right)) {
-      const glm::vec2 new_mouse_position = Input::GetMousePosition();
+      const glm::vec2 new_mouse_position = Input::get_mouse_position();
 
       if (!m_using_editor_camera) {
         m_using_editor_camera = true;
         m_locked_mouse_position = new_mouse_position;
       }
 
-      Input::SetCursorPosition(m_locked_mouse_position.x, m_locked_mouse_position.y);
+      Input::set_cursor_position(m_locked_mouse_position.x, m_locked_mouse_position.y);
       //Input::SetCursorIcon(EditorLayer::Get()->m_CrosshairCursor);
 
       const glm::vec2 change = (new_mouse_position - m_locked_mouse_position) * m_mouse_sensitivity;
@@ -429,14 +429,14 @@ void ViewportPanel::on_update() {
     }
     // Panning
     else if (ImGui::IsMouseDown(ImGuiMouseButton_Middle)) {
-      const glm::vec2 new_mouse_position = Input::GetMousePosition();
+      const glm::vec2 new_mouse_position = Input::get_mouse_position();
 
       if (!m_using_editor_camera) {
         m_using_editor_camera = true;
         m_locked_mouse_position = new_mouse_position;
       }
 
-      Input::SetCursorPosition(m_locked_mouse_position.x, m_locked_mouse_position.y);
+      Input::set_cursor_position(m_locked_mouse_position.x, m_locked_mouse_position.y);
       //Input::SetCursorIcon(EditorLayer::Get()->m_CrosshairCursor);
 
       const glm::vec2 change = (new_mouse_position - m_locked_mouse_position) * m_mouse_sensitivity;
@@ -494,7 +494,7 @@ void ViewportPanel::draw_gizmos() {
     glm::mat4 transform = selected_entity.get_world_transform();
 
     // Snapping
-    const bool snap = Input::GetKey(Key::LeftControl);
+    const bool snap = Input::get_key_held(KeyCode::LeftControl);
     float snap_value = 0.5f; // Snap to 0.5m for translation/scale
     // Snap to 45 degrees for rotation
     if (m_gizmo_type == ImGuizmo::OPERATION::ROTATE)
@@ -524,20 +524,20 @@ void ViewportPanel::draw_gizmos() {
       }
     }
   }
-  if (Input::GetKey(Key::LeftControl)) {
-    if (Input::GetKeyDown(Key::Q)) {
+  if (Input::get_key_held(KeyCode::LeftControl)) {
+    if (Input::get_key_pressed(KeyCode::Q)) {
       if (!ImGuizmo::IsUsing())
         m_gizmo_type = -1;
     }
-    if (Input::GetKeyDown(Key::W)) {
+    if (Input::get_key_pressed(KeyCode::W)) {
       if (!ImGuizmo::IsUsing())
         m_gizmo_type = ImGuizmo::OPERATION::TRANSLATE;
     }
-    if (Input::GetKeyDown(Key::E)) {
+    if (Input::get_key_pressed(KeyCode::E)) {
       if (!ImGuizmo::IsUsing())
         m_gizmo_type = ImGuizmo::OPERATION::ROTATE;
     }
-    if (Input::GetKeyDown(Key::R)) {
+    if (Input::get_key_pressed(KeyCode::R)) {
       if (!ImGuizmo::IsUsing())
         m_gizmo_type = ImGuizmo::OPERATION::SCALE;
     }

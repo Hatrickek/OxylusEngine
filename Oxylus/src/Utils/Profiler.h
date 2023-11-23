@@ -3,8 +3,8 @@
 #include <vuk/Types.hpp>
 
 // Profilers 
-#define GPU_PROFILER_ENABLED 0
-#define CPU_PROFILER_ENABLED 0
+#define GPU_PROFILER_ENABLED 1
+#define CPU_PROFILER_ENABLED 1
 #define MEMORY_PROFILER_ENABLED 0
 
 #define TRACY_VK_USE_SYMBOL_TABLE

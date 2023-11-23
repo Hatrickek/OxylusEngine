@@ -3,6 +3,9 @@
 #include <imgui.h>
 #include <plf_colony.h>
 #include <backends/imgui_impl_glfw.h>
+
+#include <glm/common.hpp>
+
 #include <icons/IconsMaterialDesignIcons.h>
 #include <icons/MaterialDesign.inl>
 #include <vuk/Pipeline.hpp>

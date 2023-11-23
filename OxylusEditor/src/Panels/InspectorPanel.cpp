@@ -733,7 +733,7 @@ void InspectorPanel::draw_components(Entity entity) const {
       OxUI::end_properties();
     });
 
-  draw_component<LuaScriptComponent>(ICON_MDI_CAMERA "Lua Script Component",
+  draw_component<LuaScriptComponent>(ICON_MDI_FILE_DOCUMENT "Lua Script Component",
     entity,
     [](LuaScriptComponent& component) {
       const std::string name = component.lua_system

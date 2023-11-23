@@ -167,13 +167,13 @@ public:
 
   void bind_vertex_buffer(vuk::CommandBuffer& command_buffer) const;
   void bind_index_buffer(vuk::CommandBuffer& command_buffer) const;
-  void draw_node(const Node* node, vuk::CommandBuffer& commandBuffer) const;
+  void draw_node(const Node* node, vuk::CommandBuffer& command_buffer) const;
   void draw(vuk::CommandBuffer& command_buffer) const;
   void update_animation(uint32_t index, float time) const;
   void destroy();
 
   /// Export a mesh file as glb file.
-  static bool export_as_binary(const std::string& inPath, const std::string& outPath);
+  static bool export_as_binary(const std::string& in_path, const std::string& out_path);
 
   Ref<Material> get_material(uint32_t index) const;
   std::vector<Ref<Material>> get_materials_as_ref() const;
@@ -204,7 +204,7 @@ private:
                  float globalscale);
   void load_animations(tinygltf::Model& gltf_model);
   void load_skins(tinygltf::Model& gltf_model);
-  void calculate_bounding_box(Node* node, Node* parent);
+  void calculate_bounding_box(Node* node, const Node* parent);
   void get_scene_dimensions();
   Node* find_node(Node* parent, uint32_t index);
   Node* node_from_index(uint32_t index);

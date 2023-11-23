@@ -77,8 +77,6 @@ struct PBRInfo {
   float NdotH;                  // cos angle between normal and half vector
   float LdotH;                  // cos angle between light direction and half vector
   float VdotH;                  // cos angle between view direction and half vector
-  float perceptualRoughness;    // roughness value, as authored by the model creator (input to shader)
-  float metalness;              // metallic value at the surface
   vec3 reflectance0;            // full reflectance color (normal incidence angle)
   vec3 reflectance90;           // reflectance color at grazing angle
   float alphaRoughness;         // roughness mapped to a more linear change in the roughness (proposed by [2])
@@ -224,8 +222,6 @@ void main() {
 			NdotH,
 			LdotH,
 			VdotH,
-			perceptualRoughness,
-			metallic,
 			specularEnvironmentR0,
 			specularEnvironmentR90,
 			alphaRoughness,
@@ -243,7 +239,7 @@ void main() {
 		vec3 specContrib = F * G * D / (4.0 * NdotL * NdotV);
 		specContrib *= current_light.position.w;
 		// Obtain final intensity as reflectance (BRDF) scaled by the energy of the light (cosine law)
-		color = NdotL * current_light.color.rgb * (diffuseContrib + specContrib);
+		color += NdotL * current_light.color.rgb * (diffuseContrib + specContrib);
 	}
 
 	// Calculate lighting contribution from image based lighting source (IBL)

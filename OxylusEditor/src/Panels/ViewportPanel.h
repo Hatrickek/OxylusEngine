@@ -39,6 +39,7 @@ private:
   bool m_simulation_running = false;
   int m_gizmo_type = -1;
   int m_gizmo_mode = 0;
+  bool m_using_gizmo = false;
 
   //Camera
   bool m_lock_aspect_ratio = true;

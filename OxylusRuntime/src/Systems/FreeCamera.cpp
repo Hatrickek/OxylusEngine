@@ -25,14 +25,14 @@ namespace OxylusRuntime {
 
       if (ImGui::IsMouseDown(ImGuiMouseButton_Right)) {
         ImGui::SetMouseCursor(ImGuiMouseCursor_None);
-        const glm::vec2 newMousePosition = Input::GetMousePosition();
+        const glm::vec2 newMousePosition = Input::get_mouse_position();
 
         if (!m_UsingEditorCamera) {
           m_UsingEditorCamera = true;
           m_LockedMousePosition = newMousePosition;
         }
 
-        Input::SetCursorPosition(m_LockedMousePosition.x, m_LockedMousePosition.y);
+        Input::set_cursor_position(m_LockedMousePosition.x, m_LockedMousePosition.y);
 
         const glm::vec2 change = (newMousePosition - m_LockedMousePosition) * m_MouseSensitivity;
         finalYawPitch.x += change.x;

@@ -6,26 +6,26 @@
 
 namespace Oxylus {
 void HotReloadableScenes::on_init() {
-  if (!std::filesystem::exists(m_ScenePath)) {
-    OX_CORE_ERROR("System HotReloadableScene: Scene path doesn't exist: {0}", m_ScenePath);
+  if (!std::filesystem::exists(m_scene_path)) {
+    OX_CORE_ERROR("System HotReloadableScene: Scene path doesn't exist: {0}", m_scene_path);
     return;
   }
-  m_LastWriteTime = std::filesystem::last_write_time(m_ScenePath);
+  m_last_write_time = std::filesystem::last_write_time(m_scene_path);
 }
 
 void HotReloadableScenes::on_update() {
   using namespace std::filesystem;
-  if (last_write_time(m_ScenePath).time_since_epoch().count()
-      != m_LastWriteTime.time_since_epoch().count()) {
+  if (last_write_time(m_scene_path).time_since_epoch().count()
+      != m_last_write_time.time_since_epoch().count()) {
     //File changed event
     m_dispatcher->trigger<ReloadSceneEvent>();
-    m_LastWriteTime = last_write_time(m_ScenePath);
+    m_last_write_time = last_write_time(m_scene_path);
   }
 }
 
 void HotReloadableScenes::on_shutdown() { }
 
-void HotReloadableScenes::SetScenePath(const std::string& path) {
-  m_ScenePath = path;
+void HotReloadableScenes::set_scene_path(const std::string& path) {
+  m_scene_path = path;
 }
 }

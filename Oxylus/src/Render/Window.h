@@ -1,7 +1,6 @@
 #pragma once
 #include "Core/Input.h"
 #include "Core/Application.h"
-#include "Core/Types.h"
 
 namespace Oxylus {
 class Window {
@@ -25,9 +24,11 @@ public:
 
   static void wait_for_events();
 
+  static void set_dispatcher(EventDispatcher* dispatcher) { s_window_data.dispatcher = dispatcher; }
+
 private:
   static struct WindowData {
-    bool is_over_title_bar = false;
+    EventDispatcher* dispatcher;
   } s_window_data;
 
   static void init_vulkan_window(const AppSpec& spec);

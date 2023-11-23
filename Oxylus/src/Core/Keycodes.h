@@ -3,10 +3,8 @@
 #include <cstdint>
 
 namespace Oxylus {
-using KeyCode = uint16_t;
 
-namespace Key {
-enum : KeyCode {
+enum class KeyCode : uint16_t {
   Space      = 32,
   Apostrophe = 39,
   /* ' */
@@ -159,12 +157,8 @@ enum : KeyCode {
   RightSuper   = 347,
   Menu         = 348
 };
-}
 
-using MouseCode = uint16_t;
-
-namespace Mouse {
-enum : MouseCode {
+enum class MouseCode : uint16_t{
   // From glfw3.h
   Button0      = 0,
   Button1      = 1,
@@ -179,5 +173,4 @@ enum : MouseCode {
   ButtonRight  = Button1,
   ButtonMiddle = Button2
 };
-}
 }

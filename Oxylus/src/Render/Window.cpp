@@ -5,6 +5,8 @@
 
 #include "stb_image.h"
 
+#include "Core/ApplicationEvents.h"
+
 #include "Utils/Profiler.h"
 
 namespace Oxylus {
@@ -30,7 +32,7 @@ void Window::init_vulkan_window(const AppSpec& spec) {
   int32_t monitor_width = 0, monitor_height = 0;
   int32_t monitor_posx = 0, monitor_posy = 0;
   glfwGetMonitorWorkarea(glfwGetPrimaryMonitor(), &monitor_posx, &monitor_posy, &monitor_width, &monitor_height);
-  auto video_mode = glfwGetVideoMode(glfwGetPrimaryMonitor());
+  const auto video_mode = glfwGetVideoMode(glfwGetPrimaryMonitor());
   glfwSetWindowPos(s_window_handle,
     monitor_posx + (video_mode->width - window_width) / 2,
     monitor_posy + (video_mode->height - window_height) / 2);
@@ -38,16 +40,49 @@ void Window::init_vulkan_window(const AppSpec& spec) {
   //Load file icon
   {
     int width, height, channels;
-    const auto imageData = stbi_load_from_memory(EngineLogo, (int)EngineLogoLen, &width, &height, &channels, 4);
-    const GLFWimage windowIcon{.width = 40, .height = 40, .pixels = imageData,};
-    glfwSetWindowIcon(s_window_handle, 1, &windowIcon);
-    stbi_image_free(imageData);
+    const auto image_data = stbi_load_from_memory(EngineLogo, (int)EngineLogoLen, &width, &height, &channels, 4);
+    const GLFWimage window_icon{.width = 40, .height = 40, .pixels = image_data,};
+    glfwSetWindowIcon(s_window_handle, 1, &window_icon);
+    stbi_image_free(image_data);
   }
   if (s_window_handle == nullptr) {
     OX_CORE_FATAL("Failed to create GLFW WindowHandle");
     glfwTerminate();
   }
+
   glfwSetWindowCloseCallback(s_window_handle, close_window);
+
+  glfwSetKeyCallback(get_glfw_window(),
+    [](GLFWwindow*, const int key, int, const int action, int) {
+      switch (action) {
+        case GLFW_PRESS: {
+          s_window_data.dispatcher->trigger(KeyPressedEvent((KeyCode)key, 0));
+          break;
+        }
+        case GLFW_RELEASE: {
+          s_window_data.dispatcher->trigger(KeyReleasedEvent((KeyCode)key));
+          break;
+        }
+        case GLFW_REPEAT: {
+          s_window_data.dispatcher->trigger(KeyPressedEvent((KeyCode)key, 1));
+          break;
+        }
+      }
+    });
+
+  glfwSetMouseButtonCallback(get_glfw_window(),
+    [](GLFWwindow*, int button, int action, int) {
+      switch (action) {
+        case GLFW_PRESS: {
+          s_window_data.dispatcher->trigger(MouseButtonPressedEvent((MouseCode)button));
+          break;
+        }
+        case GLFW_RELEASE: {
+          s_window_data.dispatcher->trigger(MouseButtonReleasedEvent((MouseCode)button));
+          break;
+        }
+      }
+    });
 }
 
 void Window::poll_events() {

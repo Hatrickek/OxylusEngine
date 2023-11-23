@@ -396,18 +396,6 @@ void Scene::on_contact_persisted(const JPH::Body& body1, const JPH::Body& body2,
     system->on_contact_persisted(this, body1, body2, manifold, settings);
 }
 
-void Scene::on_key_pressed(const KeyCode key) const {
-  OX_SCOPED_ZONE;
-  for (const auto& system : systems)
-    system->on_key_pressed(key);
-}
-
-void Scene::on_key_released(const KeyCode key) const {
-  OX_SCOPED_ZONE;
-  for (const auto& system : systems)
-    system->on_key_released(key);
-}
-
 void Scene::create_rigidbody(Entity entity, const TransformComponent& transform, RigidbodyComponent& component) const {
   OX_SCOPED_ZONE;
   if (!is_running)

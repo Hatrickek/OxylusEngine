@@ -40,19 +40,8 @@ Application::Application(AppSpec spec) : m_spec(std::move(spec)), system_manager
   if (!core.init(m_spec))
     return;
 
-  glfwSetKeyCallback(Window::get_glfw_window(),
-    [](GLFWwindow* window, int key, int scancode, int action, int mods) {
-      const auto app = get();
-
-      if (action == GLFW_PRESS) {
-        for (const auto& layer : app->layer_stack)
-          layer->on_key_pressed((KeyCode)key);
-      }
-      else if (action == GLFW_RELEASE) {
-        for (const auto& layer : app->layer_stack)
-          layer->on_key_released((KeyCode)key);
-      }
-    });
+  Window::set_dispatcher(&dispatcher);
+  Input::set_dispatcher_events(dispatcher);
 
   imgui_layer = new ImGuiLayer();
   push_overlay(imgui_layer);
@@ -92,6 +81,8 @@ void Application::run() {
     system_manager->on_update();
 
     update_renderer();
+
+    Input::reset_pressed();
 
     Window::poll_events();
     while (VulkanContext::get()->suspend) {

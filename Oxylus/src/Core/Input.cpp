@@ -1,116 +1,133 @@
 #include "Input.h"
 #include "Render/Window.h"
 #include "stb_image.h"
+#include "Types.h"
 
 namespace Oxylus {
-void ScrollCallback(GLFWwindow* window, double xoffset, double yoffset);
-
-static float s_MouseOffsetX;
-static float s_MouseOffsetY;
-static float s_MouseScrollOffsetY;
-static glm::vec2 s_MousePos;
-Input::CursorState cursorState = Input::CursorState::DISABLED;
+Input::CursorState Input::cursor_state = CursorState::Disabled;
+Input::InputData Input::input_data = {};
 
 void Input::init() {
-  glfwSetCursorPosCallback(Window::get_glfw_window(), MouseCallback);
-  glfwSetScrollCallback(Window::get_glfw_window(), ScrollCallback);
+  glfwSetCursorPosCallback(Window::get_glfw_window(), cursor_pos_callback);
+  glfwSetScrollCallback(Window::get_glfw_window(), scroll_callback);
 }
 
-bool Input::GetKey(const KeyCode key) {
-  const auto state = glfwGetKey(Window::get_glfw_window(), key);
-  return state == GLFW_PRESS || state == GLFW_REPEAT;
+void Input::reset_pressed() {
+  memset(input_data.key_pressed, 0, MAX_KEYS);
+  memset(input_data.m_mouse_clicked, 0, MAX_BUTTONS);
+  input_data.scroll_offset_y = 0;
 }
 
-bool Input::GetKeyDown(const KeyCode key) {
-  return glfwGetKey(Window::get_glfw_window(), key) == GLFW_PRESS;
+void Input::reset() {
+  memset(input_data.key_held, 0, MAX_KEYS);
+  memset(input_data.key_pressed, 0, MAX_KEYS);
+  memset(input_data.m_mouse_clicked, 0, MAX_BUTTONS);
+  memset(input_data.m_mouse_held, 0, MAX_BUTTONS);
+
+  input_data.scroll_offset_y = 0;
 }
 
-bool Input::GetKeyUp(const KeyCode key) {
-  const auto state = glfwGetKey(Window::get_glfw_window(), key);
-  return state == GLFW_RELEASE;
+void Input::set_dispatcher_events(EventDispatcher& event_dispatcher) {
+  event_dispatcher.sink<KeyPressedEvent>().connect<&Input::on_key_pressed_event>();
+  event_dispatcher.sink<KeyReleasedEvent>().connect<&Input::on_key_released_event>();
+  event_dispatcher.sink<MouseButtonPressedEvent>().connect<&Input::on_mouse_pressed_event>();
+  event_dispatcher.sink<MouseButtonReleasedEvent>().connect<&Input::on_mouse_button_released_event>();
 }
 
-bool Input::IsMouseDoubleClicked(const MouseCode button) {
-  return ImGui::IsMouseDoubleClicked(button);
+void Input::on_key_pressed_event(const KeyPressedEvent& event) {
+  set_key_pressed(event.get_key_code(), event.get_repeat_count() < 1);
+  set_key_released(event.get_key_code(), false);
+  set_key_held(event.get_key_code(), true);
 }
 
-bool Input::GetMouseButtonDown(const MouseCode button) {
-  const auto state = glfwGetMouseButton(Window::get_glfw_window(), button);
-  return state == GLFW_PRESS;
+void Input::on_key_released_event(const KeyReleasedEvent& event) {
+  set_key_pressed(event.get_key_code(), false);
+  set_key_released(event.get_key_code(), true);
+  set_key_held(event.get_key_code(), false);
 }
 
-glm::vec2 Input::GetMousePosition() {
-  return s_MousePos;
+void Input::on_mouse_pressed_event(const MouseButtonPressedEvent& event) {
+  set_mouse_clicked(event.get_mouse_button(), true);
+  set_mouse_held(event.get_mouse_button(), true);
 }
 
-float Input::GetMouseOffsetX() {
-  return s_MouseOffsetX;
+void Input::on_mouse_button_released_event(const MouseButtonReleasedEvent& event) {
+  set_mouse_clicked(event.get_mouse_button(), false);
+  set_mouse_held(event.get_mouse_button(), false);
 }
 
-float Input::GetMouseOffsetY() {
-  return s_MouseOffsetY;
+Vec2 Input::get_mouse_position() {
+  return input_data.mouse_pos;
 }
 
-float Input::GetMouseScrollOffsetY() {
-  return s_MouseScrollOffsetY;
+float Input::get_mouse_offset_x() {
+  return input_data.mouse_offset_x;
 }
 
-void Input::SetCursorPosition(const float X, const float Y) {
+float Input::get_mouse_offset_y() {
+  return input_data.mouse_offset_y;
+}
+
+float Input::get_mouse_scroll_offset_y() {
+  return input_data.scroll_offset_y;
+}
+
+void Input::set_cursor_position(const float x, const float y) {
   GLFWwindow* window = Window::get_glfw_window();
-  glfwSetCursorPos(window, X, Y);
+  glfwSetCursorPos(window, x, y);
 }
 
-Input::CursorState Input::GetCursorState() {
-  return cursorState;
+Input::CursorState Input::get_cursor_state() {
+  return cursor_state;
 }
 
-GLFWcursor* Input::LoadCursorIcon(const char* imagePath) {
+GLFWcursor* Input::load_cursor_icon(const char* image_path) {
   int width, height, channels = 4;
-  const auto imageData = stbi_load(imagePath, &width, &height, &channels, STBI_rgb_alpha);
-  const GLFWimage* cursorImage = new GLFWimage{.width = width, .height = height, .pixels = imageData};
-  const auto cursor = glfwCreateCursor(cursorImage, 0, 0);
-  stbi_image_free(imageData);
+  const auto image_data = stbi_load(image_path, &width, &height, &channels, STBI_rgb_alpha);
+  const GLFWimage* cursor_image = new GLFWimage{.width = width, .height = height, .pixels = image_data};
+  const auto cursor = glfwCreateCursor(cursor_image, 0, 0);
+  stbi_image_free(image_data);
 
   return cursor;
 }
 
-GLFWcursor* Input::LoadCursorIconStandard(const int cursor) {
+GLFWcursor* Input::load_cursor_icon_standard(const int cursor) {
   return glfwCreateStandardCursor(cursor);
 }
 
-void Input::SetCursorIcon(GLFWcursor* cursor) {
+void Input::set_cursor_icon(GLFWcursor* cursor) {
   glfwSetCursor(Window::get_glfw_window(), cursor);
 }
 
-void Input::SetCursorIconDefault() {
+void Input::set_cursor_icon_default() {
   glfwSetCursor(Window::get_glfw_window(), nullptr);
 }
 
-void Input::SetCursorState(const CursorState state, GLFWwindow* window) {
+void Input::set_cursor_state(const CursorState state, GLFWwindow* window) {
   switch (state) {
-    case CursorState::DISABLED: cursorState = CursorState::DISABLED;
+    case CursorState::Disabled: cursor_state = CursorState::Disabled;
       glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
       break;
-    case CursorState::NORMAL: cursorState = CursorState::NORMAL;
+    case CursorState::Normal: cursor_state = CursorState::Normal;
       glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_NORMAL);
       break;
-    case CursorState::HIDDEN: cursorState = CursorState::HIDDEN;
+    case CursorState::Hidden: cursor_state = CursorState::Hidden;
       glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_HIDDEN);
       break;
   }
 }
 
-void Input::DestroyCursor(GLFWcursor* cursor) {
+void Input::destroy_cursor(GLFWcursor* cursor) {
   glfwDestroyCursor(cursor);
 }
 
-void Input::MouseCallback(GLFWwindow* window, const double xposIn, const double yposIn) {
-  s_MouseOffsetX = s_MousePos.x - static_cast<float>(xposIn);
-  s_MouseOffsetY = s_MousePos.y - static_cast<float>(yposIn);
-  s_MousePos = glm::vec2{static_cast<float>(xposIn), static_cast<float>(yposIn)};
+void Input::cursor_pos_callback(GLFWwindow* window, const double xpos_in, const double ypos_in) {
+  input_data.mouse_offset_x = input_data.mouse_pos.x - static_cast<float>(xpos_in);
+  input_data.mouse_offset_y = input_data.mouse_pos.y - static_cast<float>(ypos_in);
+  input_data.mouse_pos = glm::vec2{static_cast<float>(xpos_in), static_cast<float>(ypos_in)};
 }
 
-void ScrollCallback(GLFWwindow* window, double xoffset, double yoffset) {
-  s_MouseScrollOffsetY = (float)yoffset;
+void Input::scroll_callback(GLFWwindow* window, double xoffset, double yoffset) {
+  input_data.scroll_offset_y = (float)yoffset;
 }
 }

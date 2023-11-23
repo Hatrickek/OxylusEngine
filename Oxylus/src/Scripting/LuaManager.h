@@ -24,5 +24,6 @@ private:
   void bind_log() const;
   void bind_ecs();
   void bind_math();
+  void bind_input() const;
 };
 }

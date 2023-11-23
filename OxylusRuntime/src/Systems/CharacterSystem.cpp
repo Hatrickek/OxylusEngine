@@ -34,13 +34,13 @@ namespace OxylusRuntime {
 
         JPH::Vec3 wishDir = {};
         JPH::Vec3 movementDir = {};
-        if (Input::GetKeyDown(Key::W))
+        if (Input::get_key_held(KeyCode::W))
           movementDir.SetX(1);
-        if (Input::GetKeyDown(Key::A))
+        if (Input::get_key_held(KeyCode::A))
           movementDir.SetZ(-1);
-        if (Input::GetKeyDown(Key::S))
+        if (Input::get_key_held(KeyCode::S))
           movementDir.SetX(-1);
-        if (Input::GetKeyDown(Key::D))
+        if (Input::get_key_held(KeyCode::D))
           movementDir.SetZ(1);
 
         wishDir = movementDir;
@@ -86,14 +86,14 @@ namespace OxylusRuntime {
 
         if (s_LockCamera) {
           ImGui::SetMouseCursor(ImGuiMouseCursor_None);
-          const Vec2 newMousePosition = Input::GetMousePosition();
+          const Vec2 newMousePosition = Input::get_mouse_position();
 
           if (!s_UsingCamera) {
             s_UsingCamera = true;
             s_LockedMousePosition = newMousePosition;
           }
 
-          Input::SetCursorPosition(s_LockedMousePosition.x, s_LockedMousePosition.y);
+          Input::set_cursor_position(s_LockedMousePosition.x, s_LockedMousePosition.y);
 
           const Vec2 change = (newMousePosition - s_LockedMousePosition) * (s_MouseSensitivity / 1000.0f);
           finalYawPitch.x += change.x;
@@ -197,14 +197,14 @@ namespace OxylusRuntime {
   bool CharacterSystem::QueueJump(const bool autoBunnyHop) {
     bool jumpQueued = false;
     if (autoBunnyHop) {
-      jumpQueued = Input::GetKeyDown(Key::Space);
+      jumpQueued = Input::get_key_held(KeyCode::Space);
     }
 
-    if (ImGui::IsKeyPressed(ImGuiKey_Space, false) && !jumpQueued) {
+    if (Input::get_key_pressed(KeyCode::Space) && !jumpQueued) {
       jumpQueued = true;
     }
 
-    if (ImGui::IsKeyReleased(ImGuiKey_Space)) {
+    if (Input::get_key_released(KeyCode::Space)) {
       jumpQueued = false;
     }
 
