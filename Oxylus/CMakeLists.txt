@@ -321,10 +321,11 @@ target_include_directories(${PROJECT_NAME} PUBLIC ${RapidJSON_DIR}/include)
 set(COMPILE_AS_SHARED_LIBRARY OFF)
 set(ENABLE_ALL_WARNINGS OFF)
 set(INTERPROCEDURAL_OPTIMIZATION ON)
+set(USE_STATIC_MSVC_RUNTIME_LIBRARY ON)
 FetchContent_Declare(
     JoltPhysics
     GIT_REPOSITORY "https://github.com/jrouwe/JoltPhysics"
-    GIT_TAG "v4.0.1"
+    GIT_TAG "master"
     SOURCE_SUBDIR "Build"
     GIT_SHALLOW    TRUE
     GIT_PROGRESS   TRUE
@@ -332,7 +333,7 @@ FetchContent_Declare(
 FetchContent_MakeAvailable(JoltPhysics)
 target_link_libraries(${PROJECT_NAME} PUBLIC Jolt)
 target_include_directories(${PROJECT_NAME} PUBLIC ${JoltPhysics_SOURCE_DIR}/..)
-FOLDER_DIR_TARGETS(Jolt)
+set_targets_static_and_folder(Jolt)
 
 # tracy
 set(TRACY_STATIC ON)
