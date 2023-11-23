@@ -230,7 +230,7 @@ void ViewportPanel::mouse_picking_pass(const Ref<RenderPipeline>& rp, const vuk:
     if (tag.enabled && !material.materials.empty()) {
       auto e = Entity(entity, m_scene.get());
       mesh_component.transform = e.get_world_transform();
-      scene_meshes.emplace_back((uint32_t)entity, mesh_component);
+      scene_meshes.emplace_back((uint32_t)entity + 1, mesh_component); // increment entity id by one so black color and the first entity doesn't get mixed
     }
   }
 
@@ -260,7 +260,7 @@ void ViewportPanel::mouse_picking_pass(const Ref<RenderPipeline>& rp, const vuk:
     .layer_count = 1
   };
 
-  rg->attach_and_clear_image("id_buffer_image", attachment, vuk::Black<float>);
+  rg->attach_and_clear_image("id_buffer_image", attachment, vuk::Black<unsigned>);
   attachment.format = vuk::Format::eD32Sfloat;
   rg->attach_and_clear_image("id_buffer_depth", attachment, vuk::DepthOne);
 
@@ -356,7 +356,7 @@ void ViewportPanel::mouse_picking_pass(const Ref<RenderPipeline>& rp, const vuk:
 
       const auto id = (uint32_t)buffer->mapped_ptr[buf_pos];
 
-      m_hovered_entity = id == 0 ? Entity() : Entity((entt::entity)id, m_scene.get());
+      m_hovered_entity = id <= 0 ? Entity() : Entity((entt::entity)(id - 1), m_scene.get());
 
       if (!m_using_gizmo) {
         if (m_hovered_entity && ImGui::IsMouseClicked(ImGuiMouseButton_Left) && m_viewport_hovered)

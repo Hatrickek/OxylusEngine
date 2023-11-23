@@ -1008,7 +1008,7 @@ void DefaultRenderPipeline::cascaded_shadow_pass(const Ref<vuk::RenderGraph>& rg
       .resources = {
         vuk::Resource(d_cascade_names[cascade_index], vuk::Resource::Type::eImage, vuk::Access::eDepthStencilRW, d_cascade_name_outputs[cascade_index])
       },
-      .execute = [this, shadow_buffer](vuk::CommandBuffer& command_buffer) {
+      .execute = [this, shadow_buffer, cascade_index](vuk::CommandBuffer& command_buffer) {
         command_buffer.bind_graphics_pipeline("shadow_pipeline")
                       .set_dynamic_state(vuk::DynamicStateFlagBits::eScissor | vuk::DynamicStateFlagBits::eViewport)
                       .broadcast_color_blend({})
@@ -1021,6 +1021,25 @@ void DefaultRenderPipeline::cascaded_shadow_pass(const Ref<vuk::RenderGraph>& rg
                       .set_viewport(0, vuk::Rect2D::framebuffer())
                       .set_scissor(0, vuk::Rect2D::framebuffer())
                       .bind_buffer(0, 0, shadow_buffer);
+
+        for (uint32_t i = 0; i < mesh_draw_list.size(); i++) {
+          auto& mesh = mesh_draw_list[i];
+          mesh.original_mesh->bind_vertex_buffer(command_buffer);
+          mesh.original_mesh->bind_index_buffer(command_buffer);
+
+          struct PushConst {
+            Mat4 model;
+            uint32_t cascade_index = 0;
+          } push_const;
+
+          push_const.model = mesh.transform;
+          push_const.cascade_index = cascade_index;
+
+          for (const auto& subset : mesh.subsets) {
+            command_buffer.push_constants(vuk::ShaderStageFlagBits::eVertex, 0, push_const)
+                          .draw_indexed(subset.index_count, 1, subset.first_index, 0, 0);
+          }
+        }
 
         dir_lights_data.clear();
       }

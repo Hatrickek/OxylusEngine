@@ -24,6 +24,8 @@
 #include "Vulkan/VulkanContext.h"
 
 namespace Oxylus {
+RendererCommon::MeshLib RendererCommon::mesh_lib = {};
+
 std::pair<vuk::Unique<vuk::Image>, vuk::Future> RendererCommon::generate_cubemap_from_equirectangular(const vuk::Texture& cubemap) {
   auto& allocator = *VulkanContext::get()->superframe_allocator;
 
@@ -203,6 +205,9 @@ std::pair<vuk::Buffer, vuk::Buffer> RendererCommon::merge_render_objects(std::ve
 }
 
 Ref<Mesh> RendererCommon::generate_quad() {
+  if (mesh_lib.quad)
+    return mesh_lib.quad;
+
   std::vector<Mesh::Vertex> vertices(4);
   vertices[0].position = Vec3{-1.0f, -1.0f, 0.0f};
   vertices[0].uv = {};
@@ -218,10 +223,15 @@ Ref<Mesh> RendererCommon::generate_quad() {
 
   const auto indices = std::vector<uint32_t>{0, 1, 2, 2, 3, 0};
 
-  return create_ref<Mesh>(vertices, indices);
+  mesh_lib.quad = create_ref<Mesh>(vertices, indices);
+
+  return mesh_lib.quad;
 }
 
 Ref<Mesh> RendererCommon::generate_cube() {
+  if (mesh_lib.cube)
+    return mesh_lib.cube;
+
   std::vector<Mesh::Vertex> vertices(24);
 
   vertices[0].position = Vec3(0.5f, 0.5f, 0.5f);
@@ -318,10 +328,15 @@ Ref<Mesh> RendererCommon::generate_cube() {
     20, 22, 23
   };
 
-  return create_ref<Mesh>(vertices, indices);
+  mesh_lib.cube = create_ref<Mesh>(vertices, indices);;
+
+  return mesh_lib.cube;
 }
 
 Ref<Mesh> RendererCommon::generate_sphere() {
+  if (mesh_lib.sphere)
+    return mesh_lib.sphere;
+
   std::vector<Mesh::Vertex> vertices;
   std::vector<uint32_t> indices;
 
@@ -368,7 +383,9 @@ Ref<Mesh> RendererCommon::generate_sphere() {
     }
   }
 
-  return create_ref<Mesh>(vertices, indices);
+  mesh_lib.sphere = create_ref<Mesh>(vertices, indices);
+
+  return mesh_lib.sphere;
 }
 
 void RendererCommon::apply_blur(const std::shared_ptr<vuk::RenderGraph>& render_graph, vuk::Name src_attachment, const vuk::Name attachment_name, const vuk::Name attachment_name_output) {

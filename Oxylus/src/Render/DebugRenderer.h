@@ -65,10 +65,10 @@ private:
   static DebugRenderer* instance;
 
   struct DebugDrawList {
-    std::vector<LineInfo> debug_lines;
-    std::vector<PointInfo> debug_points;
-    std::vector<LineInfo> debug_thick_lines;
-    std::vector<ShapeInfo> debug_shapes;
+    std::vector<LineInfo> debug_lines = {};
+    std::vector<PointInfo> debug_points = {};
+    std::vector<LineInfo> debug_thick_lines = {};
+    std::vector<ShapeInfo> debug_shapes = {};
   };
 
   struct DebugDrawData {

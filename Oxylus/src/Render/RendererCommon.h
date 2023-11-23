@@ -18,5 +18,12 @@ public:
   static Ref<Mesh> generate_quad();
   static Ref<Mesh> generate_cube();
   static Ref<Mesh> generate_sphere();
+
+private:
+  static struct MeshLib {
+    Ref<Mesh> quad = {};
+    Ref<Mesh> cube = {};
+    Ref<Mesh> sphere = {};
+  } mesh_lib;
 };
 }

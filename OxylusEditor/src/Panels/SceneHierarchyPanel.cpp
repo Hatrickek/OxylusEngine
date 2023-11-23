@@ -8,6 +8,9 @@
 #include <misc/cpp/imgui_stdlib.h>
 
 #include "EditorLayer.h"
+
+#include "Render/RendererCommon.h"
+
 #include "Scene/EntitySerializer.h"
 #include "UI/OxUI.h"
 #include "Utils/ImGuiScoped.h"
@@ -306,7 +309,7 @@ void SceneHierarchyPanel::draw_context_menu() {
         m_Context->load_mesh(AssetManager::get_mesh_asset("Resources/Objects/plane.glb"));
       }
       if (ImGui::MenuItem("Sphere")) {
-        m_Context->load_mesh(AssetManager::get_mesh_asset("Resources/Objects/sphere.gltf"));
+        m_Context->load_mesh(AssetManager::get_mesh_asset("Resources/Objects/sphere.glb"));
       }
       ImGui::EndMenu();
     }

@@ -78,12 +78,15 @@ Entity Scene::create_entity_with_uuid(UUID uuid, const std::string& name) {
 
 void Scene::load_mesh(const Ref<Mesh>& mesh) {
   OX_SCOPED_ZONE;
-  const auto root_entity = create_entity(mesh->name);
+  Entity root_entity = {};
+  if ((uint32_t)mesh->linear_nodes.size() > 1)
+    root_entity = create_entity(mesh->name);
 
   for (const auto& node : mesh->linear_nodes) {
     auto node_entity = create_entity(node->name);
     node_entity.get_transform().set_from_matrix(node->get_matrix());
-    node_entity.set_parent(root_entity);
+    if (root_entity)
+      node_entity.set_parent(root_entity);
     auto& mesh_component = node_entity.add_component<MeshComponent>(mesh);
     auto& material_component = node_entity.add_component<MaterialComponent>();
     material_component.materials = mesh->materials;
@@ -217,8 +220,8 @@ void Scene::destroy_entity(const Entity entity) {
 
 template <typename... Component>
 static void copy_component(entt::registry& dst,
-                          entt::registry& src,
-                          const std::unordered_map<UUID, entt::entity>& entt_map) {
+                           entt::registry& src,
+                           const std::unordered_map<UUID, entt::entity>& entt_map) {
   ([&] {
     auto view = src.view<Component>();
     for (auto src_entity : view) {
@@ -232,9 +235,9 @@ static void copy_component(entt::registry& dst,
 
 template <typename... Component>
 static void copy_component(ComponentGroup<Component...>,
-                          entt::registry& dst,
-                          entt::registry& src,
-                          const std::unordered_map<UUID, entt::entity>& entt_map) {
+                           entt::registry& dst,
+                           entt::registry& src,
+                           const std::unordered_map<UUID, entt::entity>& entt_map) {
   copy_component<Component...>(dst, src, entt_map);
 }
 
@@ -248,8 +251,8 @@ static void copy_component_if_exists(Entity dst, Entity src) {
 
 template <typename... Component>
 static void copy_component_if_exists(ComponentGroup<Component...>,
-                                  Entity dst,
-                                  Entity src) {
+                                     Entity dst,
+                                     Entity src) {
   copy_component_if_exists<Component...>(dst, src);
 }
 
