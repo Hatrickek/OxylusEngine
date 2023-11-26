@@ -43,7 +43,6 @@ private:
   bool m_using_gizmo = false;
 
   std::vector<vuk::Unique<vuk::Buffer>> id_buffers = {};
-  float selection_outline_width = 0.02f;
 
   //Camera
   bool m_lock_aspect_ratio = true;
@@ -54,8 +53,8 @@ private:
   float m_movement_speed = 5.0f;
   bool m_use_editor_camera = true;
   bool m_using_editor_camera = false;
-  glm::vec2 m_locked_mouse_position = glm::vec2(0.0f);
+  Vec2 m_locked_mouse_position = Vec2(0.0f);
   Vec3 m_translation_velocity = Vec3(0);
-  glm::vec2 m_rotation_velocity = glm::vec2(0);
+  Vec2 m_rotation_velocity = Vec2(0);
 };
 }

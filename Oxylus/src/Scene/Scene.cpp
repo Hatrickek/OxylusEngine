@@ -111,7 +111,7 @@ void Scene::update_physics(const Timestep& delta_time) {
   constexpr float physics_ts = 1.0f / physics_step_rate;
 
   bool stepped = false;
-  physics_frame_accumulator += delta_time;
+  physics_frame_accumulator += (float)delta_time.get_seconds();
 
   while (physics_frame_accumulator >= physics_ts) {
     Physics::step(physics_ts);

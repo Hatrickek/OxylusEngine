@@ -10,14 +10,15 @@ layout(binding = 0) uniform UBO {
 
 layout(push_constant) uniform ModelConst { 
 	mat4 model_matrix;
+	vec4 color;
 };
 
-layout(location = 0) out vec3 out_Color;
+layout(location = 0) out vec4 out_Color;
 
 out gl_PerVertex { vec4 gl_Position; };
 
 void main() {
-	out_Color = vec3(0, 1, 0);
+	out_Color = color;
 
 	vec4 pos = vec4(in_Pos.xyz, 1.0);
 	gl_Position = projection_view * model_matrix * pos;

@@ -26,18 +26,11 @@
 #include "Utils/Timestep.h"
 
 namespace Oxylus {
-ViewportPanel::ViewportPanel() : EditorPanel("Viewport", ICON_MDI_TERRAIN, true) {
-  //id_buffers.resize(VulkanContext::get()->num_inflight_frames);
-}
+ViewportPanel::ViewportPanel() : EditorPanel("Viewport", ICON_MDI_TERRAIN, true) {}
 
 bool ViewportPanel::outline_pass(const Ref<RenderPipeline>& rp, const vuk::Dimension3D& dim) const {
   auto& superframe_allocator = VulkanContext::get()->superframe_allocator;
   if (!superframe_allocator->get_context().is_pipeline_available("outline_pipeline")) {
-    vuk::PipelineBaseCreateInfo pci_outline;
-    pci_outline.add_glsl(FileUtils::read_shader_file("Editor/Editor_OutlinePass.vert"), "Editor_OutlinePass.vert");
-    pci_outline.add_glsl(FileUtils::read_shader_file("Editor/Editor_OutlinePass.frag"), "Editor_OutlinePass.frag");
-    superframe_allocator->get_context().create_named_pipeline("outline_pipeline", pci_outline);
-
     vuk::PipelineBaseCreateInfo pci_stencil;
     pci_stencil.add_glsl(FileUtils::read_shader_file("Editor/Editor_StencilPass.vert"), "Editor_StencilPass.vert");
     pci_stencil.add_glsl(FileUtils::read_shader_file("Editor/Editor_StencilPass.frag"), "Editor_StencilPass.frag");
@@ -79,7 +72,6 @@ bool ViewportPanel::outline_pass(const Ref<RenderPipeline>& rp, const vuk::Dimen
       attachment.format = vuk::Format::eD32SfloatS8Uint;
       rg->attach_and_clear_image("outline_depth", attachment, vuk::ClearDepthStencil{1.0f, 0});
 
-
       rg->add_pass({
         .name = "outline_stencil_pass",
         .resources = {
@@ -111,6 +103,7 @@ bool ViewportPanel::outline_pass(const Ref<RenderPipeline>& rp, const vuk::Dimen
                            .back = stencil_state
                          })
                         .bind_graphics_pipeline("stencil_pipeline")
+                        .specialize_constants(0, 0)
                         .bind_buffer(0, 0, vs_buffer);
 
           mesh.original_mesh->bind_vertex_buffer(command_buffer);
@@ -119,9 +112,11 @@ bool ViewportPanel::outline_pass(const Ref<RenderPipeline>& rp, const vuk::Dimen
           for (const auto& subset : mesh.subsets) {
             struct PushConstant {
               Mat4 model_matrix;
+              Vec4 color;
             } pc;
 
             pc.model_matrix = model_matrix;
+            pc.color = Vec4(0.f);
 
             command_buffer.push_constants(vuk::ShaderStageFlagBits::eVertex, 0, pc)
                           .draw_indexed(subset.index_count, 1, subset.first_index, 0, 0);
@@ -150,7 +145,7 @@ bool ViewportPanel::outline_pass(const Ref<RenderPipeline>& rp, const vuk::Dimen
                            .front = stencil_state2,
                            .back = stencil_state2
                          })
-                        .bind_graphics_pipeline("outline_pipeline")
+                        .bind_graphics_pipeline("stencil_pipeline")
                         .bind_buffer(0, 0, vs_buffer);
 
           mesh.original_mesh->bind_vertex_buffer(command_buffer);
@@ -159,11 +154,11 @@ bool ViewportPanel::outline_pass(const Ref<RenderPipeline>& rp, const vuk::Dimen
           for (const auto& subset : mesh.subsets) {
             struct PushConstant {
               Mat4 model_matrix;
-              float outline_width;
+              Vec4 color;
             } pc;
 
             pc.model_matrix = scale(model_matrix, Vec3(1.02f));
-            pc.outline_width = selection_outline_width;
+            pc.color = Vec4(1.f, 0.45f, 0.f, 1.f);
 
             command_buffer.push_constants(vuk::ShaderStageFlagBits::eVertex, 0, pc)
                           .draw_indexed(subset.index_count, 1, subset.first_index, 0, 0);
@@ -244,7 +239,6 @@ void ViewportPanel::on_imgui_render() {
       OxUI::property<float>("Camera sensitivity", &m_mouse_sensitivity, 0.1f, 20.0f);
       OxUI::property<float>("Movement speed", &m_movement_speed, 5, 100.0f);
       OxUI::property("Smooth camera", &m_smooth_camera);
-      OxUI::property<float>("Selection Outline Width", &selection_outline_width);
       OxUI::end_properties();
       ImGui::EndPopup();
     }
