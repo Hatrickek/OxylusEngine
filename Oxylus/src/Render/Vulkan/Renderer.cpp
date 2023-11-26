@@ -104,8 +104,9 @@ void Renderer::draw(VulkanContext* context, ImGuiLayer* imgui_layer, LayerStack&
 
     auto si = create_ref<vuk::SampledImage>(make_sampled_image(vuk::NameReference{rg.get(), vuk::QualifiedName({}, attachment_name_out)}, {}));
     rp->set_final_image(si);
-    rp->set_frame_render_graph(rg);
+    rp->set_frame_render_graph(rp_rg);
     rp->set_frame_allocator(&frame_allocator);
+    rp->set_final_attachment_name(attachment_name_out);
 
     rg->attach_in(rp->get_rg_futures());
     rp->get_rg_futures().clear();
