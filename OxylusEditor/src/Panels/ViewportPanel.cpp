@@ -412,7 +412,6 @@ void ViewportPanel::mouse_picking_pass(const Ref<RenderPipeline>& rp, const vuk:
       mesh_component.transform = e.get_world_transform();
       const auto id = (uint32_t)entity + 1u; // increment entity id by one so black color and the first entity doesn't get mixed
       scene_meshes.emplace_back(id, mesh_component);
-      OX_CORE_INFO(id);
     }
   }
 
@@ -501,7 +500,7 @@ void ViewportPanel::mouse_picking_pass(const Ref<RenderPipeline>& rp, const vuk:
   if (VulkanContext::get()->num_frames < VulkanContext::get()->num_inflight_frames)
     return;
 
-  rg->attach_buffer("entity_id_buffer_to_copy", *id_buffers[VulkanContext::get()->current_frame == 0 ? 0 : VulkanContext::get()->current_frame]); // current frame buffer
+  rg->attach_buffer("entity_id_buffer_to_copy", *id_buffers[VulkanContext::get()->current_frame]); // current frame buffer
 
   auto [mx, my] = ImGui::GetMousePos();
   auto off = (viewport_panel_size.x - fixed_width) * 0.5f; // add offset since we render image with fixed aspect ratio
@@ -532,30 +531,20 @@ void ViewportPanel::mouse_picking_pass(const Ref<RenderPipeline>& rp, const vuk:
     }
   });
 
-  rg->attach_buffer("entity_id_buffer_to_read", *id_buffers[VulkanContext::get()->num_inflight_frames - VulkanContext::get()->current_frame - 1]); // previous frame buffer
+  auto& buffer = id_buffers[VulkanContext::get()->current_frame];
+  const auto buf_pos = (mouse_y * dim.extent.width + mouse_x) * 4;
+  static auto* id_ptr = new uint32_t;
+  memcpy(id_ptr, &buffer->mapped_ptr[buf_pos], sizeof(uint32_t));
+  const auto id = *id_ptr;
 
-  rg->add_pass({
-    .name = "id_compare_pass",
-    .resources = {
-      "entity_id_buffer_to_read"_buffer >> vuk::eMemoryRead
-    },
-    .execute = [mouse_x, mouse_y, dim, this](const vuk::CommandBuffer& command_buffer) {
-      const auto buf_pos = (mouse_y * dim.extent.width + mouse_x) * 4;
+  m_hovered_entity = id <= 0 ? Entity() : Entity(entt::entity{id - 1u}, m_scene.get());
 
-      auto buffer = command_buffer.get_resource_buffer("entity_id_buffer_to_read");
-
-      const auto id = (uint32_t)buffer->mapped_ptr[buf_pos];
-
-      m_hovered_entity = id <= 0 ? Entity() : Entity(entt::entity{id - 1u}, m_scene.get());
-
-      if (!m_using_gizmo) {
-        if (m_hovered_entity && ImGui::IsMouseClicked(ImGuiMouseButton_Left) && m_viewport_hovered)
-          m_scene_hierarchy_panel->set_selected_entity(m_hovered_entity);
-        else if (ImGui::IsMouseClicked(ImGuiMouseButton_Left) && m_viewport_hovered)
-          m_scene_hierarchy_panel->set_selected_entity({});
-      }
-    }
-  });
+  if (!m_using_gizmo) {
+    if (m_hovered_entity && ImGui::IsMouseClicked(ImGuiMouseButton_Left) && m_viewport_hovered)
+      m_scene_hierarchy_panel->set_selected_entity(m_hovered_entity);
+    else if (ImGui::IsMouseClicked(ImGuiMouseButton_Left) && m_viewport_hovered)
+      m_scene_hierarchy_panel->set_selected_entity({});
+  }
 }
 
 void ViewportPanel::set_context(const Ref<Scene>& scene, SceneHierarchyPanel& scene_hierarchy_panel) {
