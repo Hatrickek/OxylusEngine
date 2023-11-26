@@ -72,6 +72,14 @@ void RendererConfig::save_config(const char* path) const {
     node["UsePCF"] << RendererCVar::cvar_shadows_pcf.get();
   }
 
+  //FXAA
+  {
+    auto node = node_root["FXAA"];
+    node |= ryml::MAP;
+
+    node["Enabled"] << RendererCVar::cvar_fxaa_enable.get();
+  }
+
   std::stringstream ss;
   ss << tree;
   std::ofstream filestream(path);
@@ -99,7 +107,7 @@ bool RendererConfig::load_config(const char* path) {
   {
     const ryml::ConstNodeRef node = nodeRoot["Color"];
     int tonemapper;
-    float exposure,gamma;
+    float exposure, gamma;
     node["Tonemapper"] >> tonemapper;
     node["Exposure"] >> exposure;
     node["Gamma"] >> gamma;
@@ -130,7 +138,7 @@ bool RendererConfig::load_config(const char* path) {
   //SSR
   {
     const ryml::ConstNodeRef node = nodeRoot["SSR"];
-    int enabled; 
+    int enabled;
     node["Enabled"] >> enabled;
     RendererCVar::cvar_ssr_enable.set(enabled);
   }
@@ -141,6 +149,14 @@ bool RendererConfig::load_config(const char* path) {
     int use_pcf;
     node["UsePCF"] >> use_pcf;
     RendererCVar::cvar_shadows_pcf.set(use_pcf);
+  }
+
+  //FXAA
+  {
+    const ryml::ConstNodeRef node = nodeRoot["FXAA"];
+    int enabled;
+    node["Enabled"] >> enabled;
+    RendererCVar::cvar_fxaa_enable.set(enabled);
   }
 
   return true;

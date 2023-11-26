@@ -37,23 +37,23 @@ void SceneHierarchyPanel::set_selected_entity(Entity entity) {
 }
 
 void SceneHierarchyPanel::set_context(const Ref<Scene>& scene) {
-  m_Context = scene;
+  m_context = scene;
   clear_selection_context();
 }
 
-ImRect SceneHierarchyPanel::draw_entity_node(Entity entity, uint32_t depth, bool forceExpandTree, bool isPartOfPrefab) {
+ImRect SceneHierarchyPanel::draw_entity_node(Entity entity, uint32_t depth, bool force_expand_tree, bool is_part_of_prefab) {
   ImGui::TableNextRow();
   ImGui::TableNextColumn();
 
   const auto& rc = entity.get_relationship();
-  const size_t childrenSize = rc.children.size();
+  const size_t children_size = rc.children.size();
 
-  auto& tagComponent = entity.get_component<TagComponent>();
-  auto& tag = tagComponent.tag;
+  auto& tag_component = entity.get_component<TagComponent>();
+  auto& tag = tag_component.tag;
 
-  if (m_Filter.IsActive() && !m_Filter.PassFilter(tag.c_str())) {
-    for (const auto& childId : rc.children) {
-      draw_entity_node(m_Context->get_entity_by_uuid(childId));
+  if (m_filter.IsActive() && !m_filter.PassFilter(tag.c_str())) {
+    for (const auto& child_id : rc.children) {
+      draw_entity_node(m_context->get_entity_by_uuid(child_id));
     }
     return {0, 0, 0, 0};
   }
@@ -65,27 +65,27 @@ ImRect SceneHierarchyPanel::draw_entity_node(Entity entity, uint32_t depth, bool
   flags |= ImGuiTreeNodeFlags_SpanFullWidth;
   flags |= ImGuiTreeNodeFlags_FramePadding;
 
-  if (childrenSize == 0) {
+  if (children_size == 0) {
     flags |= ImGuiTreeNodeFlags_Leaf | ImGuiTreeNodeFlags_NoTreePushOnOpen;
   }
 
   const bool highlight = is_selected;
-  const auto headerSelectedColor = ImGuiLayer::HeaderSelectedColor;
-  const auto popupItemSpacing = ImGuiLayer::PopupItemSpacing;
+  const auto header_selected_color = ImGuiLayer::HeaderSelectedColor;
+  const auto popup_item_spacing = ImGuiLayer::PopupItemSpacing;
   if (highlight) {
-    ImGui::TableSetBgColor(ImGuiTableBgTarget_RowBg0, ImGui::GetColorU32(headerSelectedColor));
-    ImGui::PushStyleColor(ImGuiCol_Header, headerSelectedColor);
-    ImGui::PushStyleColor(ImGuiCol_HeaderHovered, headerSelectedColor);
+    ImGui::TableSetBgColor(ImGuiTableBgTarget_RowBg0, ImGui::GetColorU32(header_selected_color));
+    ImGui::PushStyleColor(ImGuiCol_Header, header_selected_color);
+    ImGui::PushStyleColor(ImGuiCol_HeaderHovered, header_selected_color);
   }
 
-  if (forceExpandTree)
+  if (force_expand_tree)
     ImGui::SetNextItemOpen(true);
 
-  if (!isPartOfPrefab)
-    isPartOfPrefab = entity.has_component<PrefabComponent>();
-  const bool prefabColorApplied = isPartOfPrefab && !is_selected;
-  if (prefabColorApplied)
-    ImGui::PushStyleColor(ImGuiCol_Text, headerSelectedColor);
+  if (!is_part_of_prefab)
+    is_part_of_prefab = entity.has_component<PrefabComponent>();
+  const bool prefab_color_applied = is_part_of_prefab && !is_selected;
+  if (prefab_color_applied)
+    ImGui::PushStyleColor(ImGuiCol_Text, header_selected_color);
 
   const bool opened = ImGui::TreeNodeEx(reinterpret_cast<void*>(static_cast<uint64_t>(entity.get_uuid())),
     flags,
@@ -100,28 +100,28 @@ ImRect SceneHierarchyPanel::draw_entity_node(Entity entity, uint32_t depth, bool
   if (!ImGui::IsItemToggledOpen() && (ImGui::IsItemClicked(ImGuiMouseButton_Left) ||
                                       ImGui::IsItemClicked(ImGuiMouseButton_Middle) || ImGui::IsItemClicked(
                                         ImGuiMouseButton_Right))) {
-    if (!ImGui::IsKeyDown(ImGuiKey_LeftCtrl)) 
+    if (!ImGui::IsKeyDown(ImGuiKey_LeftCtrl))
       m_selected_entity_entities = {};
     m_selected_entity_entities.emplace_back(entity);
   }
 
   // Expand recursively
   if (ImGui::IsItemToggledOpen() && (ImGui::IsKeyDown(ImGuiKey_LeftAlt) || ImGui::IsKeyDown(ImGuiKey_RightAlt)))
-    forceExpandTree = opened;
+    force_expand_tree = opened;
 
-  bool entityDeleted = false;
+  bool entity_deleted = false;
 
-  ImGui::PushStyleVar(ImGuiStyleVar_ItemSpacing, popupItemSpacing);
+  ImGui::PushStyleVar(ImGuiStyleVar_ItemSpacing, popup_item_spacing);
   if (ImGui::BeginPopupContextItem()) {
     if (get_selected_entity_front() != entity)
       m_selected_entity_entities.emplace_back(entity);
 
     if (ImGui::MenuItem("Rename", "F2"))
-      m_RenamingEntity = entity;
+      m_renaming_entity = entity;
     if (ImGui::MenuItem("Duplicate", "Ctrl+D"))
-      m_Context->duplicate_entity(entity);
+      m_context->duplicate_entity(entity);
     if (ImGui::MenuItem("Delete", "Del"))
-      entityDeleted = true;
+      entity_deleted = true;
 
     ImGui::Separator();
 
@@ -131,23 +131,23 @@ ImRect SceneHierarchyPanel::draw_entity_node(Entity entity, uint32_t depth, bool
   }
   ImGui::PopStyleVar();
 
-  ImVec2 verticalLineStart = ImGui::GetCursorScreenPos();
-  verticalLineStart.x -= 0.5f;
-  verticalLineStart.y -= ImGui::GetFrameHeight() * 0.5f;
+  ImVec2 vertical_line_start = ImGui::GetCursorScreenPos();
+  vertical_line_start.x -= 0.5f;
+  vertical_line_start.y -= ImGui::GetFrameHeight() * 0.5f;
 
   // Drag Drop
   {
     if (ImGui::BeginDragDropTarget()) {
-      if (const ImGuiPayload* entityPayload = ImGui::AcceptDragDropPayload("Entity")) {
-        m_DraggedEntity = *static_cast<Entity*>(entityPayload->Data);
-        m_DraggedEntityTarget = entity;
+      if (const ImGuiPayload* entity_payload = ImGui::AcceptDragDropPayload("Entity")) {
+        m_dragged_entity = *static_cast<Entity*>(entity_payload->Data);
+        m_dragged_entity_target = entity;
       }
       else if (const ImGuiPayload* payload = ImGui::AcceptDragDropPayload("CONTENT_BROWSER_ITEM")) {
         std::filesystem::path path = std::filesystem::path((const char*)payload->Data);
         path = AssetManager::get_asset_file_system_path(path);
         if (path.extension() == ".oxprefab") {
-          m_DraggedEntity = EntitySerializer::deserialize_entity_as_prefab(path.string().c_str(), m_Context.get());
-          m_DraggedEntity = entity;
+          m_dragged_entity = EntitySerializer::deserialize_entity_as_prefab(path.string().c_str(), m_context.get());
+          m_dragged_entity = entity;
         }
       }
 
@@ -161,7 +161,7 @@ ImRect SceneHierarchyPanel::draw_entity_node(Entity entity, uint32_t depth, bool
     }
   }
 
-  if (entity == m_RenamingEntity) {
+  if (entity == m_renaming_entity) {
     static bool renaming = false;
     if (!renaming) {
       renaming = true;
@@ -172,7 +172,7 @@ ImRect SceneHierarchyPanel::draw_entity_node(Entity entity, uint32_t depth, bool
 
     if (ImGui::IsItemDeactivated()) {
       renaming = false;
-      m_RenamingEntity = {};
+      m_renaming_entity = {};
     }
   }
 
@@ -182,9 +182,9 @@ ImRect SceneHierarchyPanel::draw_entity_node(Entity entity, uint32_t depth, bool
   ImGui::PushStyleColor(ImGuiCol_ButtonHovered, {0, 0, 0, 0});
   ImGui::PushStyleColor(ImGuiCol_ButtonActive, {0, 0, 0, 0});
 
-  const float buttonSizeX = ImGui::GetContentRegionAvail().x;
-  const float frameHeight = ImGui::GetFrameHeight();
-  ImGui::Button(isPartOfPrefab ? "Prefab" : "Entity", {buttonSizeX, frameHeight});
+  const float button_size_x = ImGui::GetContentRegionAvail().x;
+  const float frame_height = ImGui::GetFrameHeight();
+  ImGui::Button(is_part_of_prefab ? "Prefab" : "Entity", {button_size_x, frame_height});
   // Select
   if (ImGui::IsItemDeactivated() && ImGui::IsItemHovered() && !ImGui::IsItemToggledOpen()) {
     if (!ImGui::IsKeyDown(ImGuiKey_LeftCtrl))
@@ -197,74 +197,74 @@ ImRect SceneHierarchyPanel::draw_entity_node(Entity entity, uint32_t depth, bool
   // Visibility Toggle
   {
     ImGui::Text("  %s",
-      reinterpret_cast<const char*>(tagComponent.enabled
+      reinterpret_cast<const char*>(tag_component.enabled
                                       ? ICON_MDI_EYE_OUTLINE
                                       : ICON_MDI_EYE_OFF_OUTLINE));
 
     if (!ImGui::IsItemHovered())
-      tagComponent.handled = false;
+      tag_component.handled = false;
 
-    if (ImGui::IsItemHovered() && ((!tagComponent.handled && ImGui::IsMouseDragging(0)) || ImGui::IsItemClicked())) {
-      tagComponent.handled = true;
-      tagComponent.enabled = !tagComponent.enabled;
+    if (ImGui::IsItemHovered() && ((!tag_component.handled && ImGui::IsMouseDragging(0)) || ImGui::IsItemClicked())) {
+      tag_component.handled = true;
+      tag_component.enabled = !tag_component.enabled;
     }
   }
 
   ImGui::PopStyleColor(3);
 
-  if (prefabColorApplied)
+  if (prefab_color_applied)
     ImGui::PopStyleColor();
 
   // Open
-  const ImRect nodeRect = ImRect(ImGui::GetItemRectMin(), ImGui::GetItemRectMax());
+  const ImRect node_rect = ImRect(ImGui::GetItemRectMin(), ImGui::GetItemRectMax());
   {
-    if (opened && !entityDeleted) {
-      ImColor treeLineColor;
+    if (opened && !entity_deleted) {
+      ImColor tree_line_color;
       depth %= 4;
       switch (depth) {
-        case 0: treeLineColor = ImColor(254, 112, 246);
+        case 0: tree_line_color = ImColor(254, 112, 246);
           break;
-        case 1: treeLineColor = ImColor(142, 112, 254);
+        case 1: tree_line_color = ImColor(142, 112, 254);
           break;
-        case 2: treeLineColor = ImColor(112, 180, 254);
+        case 2: tree_line_color = ImColor(112, 180, 254);
           break;
-        case 3: treeLineColor = ImColor(48, 134, 198);
+        case 3: tree_line_color = ImColor(48, 134, 198);
           break;
-        default: treeLineColor = ImColor(255, 255, 255);
+        default: tree_line_color = ImColor(255, 255, 255);
           break;
       }
 
-      ImDrawList* drawList = ImGui::GetWindowDrawList();
+      ImDrawList* draw_list = ImGui::GetWindowDrawList();
 
-      ImVec2 verticalLineEnd = verticalLineStart;
-      constexpr float lineThickness = 1.5f;
+      ImVec2 vertical_line_end = vertical_line_start;
+      constexpr float line_thickness = 1.5f;
 
-      for (const auto& childId : rc.children) {
-        Entity child = m_Context->get_entity_by_uuid(childId);
-        const float HorizontalTreeLineSize = child.get_relationship().children.empty() ? 18.0f : 9.0f;
+      for (const auto& child_id : rc.children) {
+        Entity child = m_context->get_entity_by_uuid(child_id);
+        const float horizontal_tree_line_size = child.get_relationship().children.empty() ? 18.0f : 9.0f;
         // chosen arbitrarily
-        const ImRect childRect = draw_entity_node(child, depth + 1, forceExpandTree, isPartOfPrefab);
+        const ImRect child_rect = draw_entity_node(child, depth + 1, force_expand_tree, is_part_of_prefab);
 
-        const float midpoint = (childRect.Min.y + childRect.Max.y) / 2.0f;
-        drawList->AddLine(ImVec2(verticalLineStart.x, midpoint),
-          ImVec2(verticalLineStart.x + HorizontalTreeLineSize, midpoint),
-          treeLineColor,
-          lineThickness);
-        verticalLineEnd.y = midpoint;
+        const float midpoint = (child_rect.Min.y + child_rect.Max.y) / 2.0f;
+        draw_list->AddLine(ImVec2(vertical_line_start.x, midpoint),
+          ImVec2(vertical_line_start.x + horizontal_tree_line_size, midpoint),
+          tree_line_color,
+          line_thickness);
+        vertical_line_end.y = midpoint;
       }
 
-      drawList->AddLine(verticalLineStart, verticalLineEnd, treeLineColor, lineThickness);
+      draw_list->AddLine(vertical_line_start, vertical_line_end, tree_line_color, line_thickness);
     }
 
-    if (opened && childrenSize > 0)
+    if (opened && children_size > 0)
       ImGui::TreePop();
   }
 
   // PostProcess Actions
-  if (entityDeleted)
-    m_DeletedEntity = entity;
+  if (entity_deleted)
+    m_deleted_entity = entity;
 
-  return nodeRect;
+  return node_rect;
 }
 
 void SceneHierarchyPanel::drag_drop_target() const {
@@ -276,10 +276,10 @@ void SceneHierarchyPanel::drag_drop_target() const {
       }
       if (path.extension() == ".gltf" || path.extension() == ".glb") {
         const auto mesh = AssetManager::get_mesh_asset(path.string());
-        m_Context->load_mesh(mesh);
+        m_context->load_mesh(mesh);
       }
       if (path.extension() == ".oxprefab") {
-        EntitySerializer::deserialize_entity_as_prefab(path.string().c_str(), m_Context.get());
+        EntitySerializer::deserialize_entity_as_prefab(path.string().c_str(), m_context.get());
       }
     }
 
@@ -288,45 +288,50 @@ void SceneHierarchyPanel::drag_drop_target() const {
 }
 
 void SceneHierarchyPanel::draw_context_menu() {
-  const bool hasContext = get_selected_entity_front();
+  const bool has_context = get_selected_entity_front();
 
-  if (!hasContext)
+  if (!has_context)
     m_selected_entity_entities = {};
 
-  Entity toSelect = {};
+  Entity to_select = {};
   ImGuiScoped::StyleVar styleVar1(ImGuiStyleVar_ItemInnerSpacing, {0, 5});
   ImGuiScoped::StyleVar styleVar2(ImGuiStyleVar_ItemSpacing, {1, 5});
   if (ImGui::BeginMenu("Create")) {
     if (ImGui::MenuItem("Empty Entity")) {
-      toSelect = m_Context->create_entity("New Entity");
+      to_select = m_context->create_entity("New Entity");
     }
 
     if (ImGui::BeginMenu("Primitives")) {
       if (ImGui::MenuItem("Cube")) {
-        m_Context->load_mesh(AssetManager::get_mesh_asset("Resources/Objects/cube.glb"));
+        m_context->load_mesh(AssetManager::get_mesh_asset("Resources/Objects/cube.glb"));
       }
       if (ImGui::MenuItem("Plane")) {
-        m_Context->load_mesh(AssetManager::get_mesh_asset("Resources/Objects/plane.glb"));
+        m_context->load_mesh(AssetManager::get_mesh_asset("Resources/Objects/plane.glb"));
       }
       if (ImGui::MenuItem("Sphere")) {
-        m_Context->load_mesh(AssetManager::get_mesh_asset("Resources/Objects/sphere.glb"));
+        m_context->load_mesh(AssetManager::get_mesh_asset("Resources/Objects/sphere.glb"));
       }
       ImGui::EndMenu();
     }
 
     if (ImGui::MenuItem("Camera")) {
-      toSelect = m_Context->create_entity("Camera");
-      toSelect.add_component_internal<CameraComponent>();
+      to_select = m_context->create_entity("Camera");
+      to_select.add_component_internal<CameraComponent>();
+    }
+
+    if (ImGui::MenuItem("Lua Script")) {
+      to_select = m_context->create_entity("Script");
+      to_select.add_component_internal<LuaScriptComponent>();
     }
 
     if (ImGui::BeginMenu("Light")) {
       if (ImGui::MenuItem("Sky Light")) {
-        toSelect = m_Context->create_entity("Sky Light");
-        toSelect.add_component_internal<SkyLightComponent>();
+        to_select = m_context->create_entity("Sky Light");
+        to_select.add_component_internal<SkyLightComponent>();
       }
       if (ImGui::MenuItem("Light")) {
-        toSelect = m_Context->create_entity("Light");
-        toSelect.add_component_internal<LightComponent>();
+        to_select = m_context->create_entity("Light");
+        to_select.add_component_internal<LightComponent>();
       }
 
       ImGui::EndMenu();
@@ -336,23 +341,23 @@ void SceneHierarchyPanel::draw_context_menu() {
       using namespace JPH;
 
       if (ImGui::MenuItem("Sphere")) {
-        toSelect = m_Context->create_entity("Sphere");
-        toSelect.add_component_internal<RigidbodyComponent>();
-        toSelect.add_component_internal<SphereColliderComponent>();
-        toSelect.add_component_internal<MeshComponent>(AssetManager::get_mesh_asset("Resources/Objects/sphere.gltf"));
+        to_select = m_context->create_entity("Sphere");
+        to_select.add_component_internal<RigidbodyComponent>();
+        to_select.add_component_internal<SphereColliderComponent>();
+        to_select.add_component_internal<MeshComponent>(AssetManager::get_mesh_asset("Resources/Objects/sphere.gltf"));
       }
 
       if (ImGui::MenuItem("Cube")) {
-        toSelect = m_Context->create_entity("Cube");
-        toSelect.add_component_internal<RigidbodyComponent>();
-        toSelect.add_component_internal<BoxColliderComponent>();
-        toSelect.add_component_internal<MeshComponent>(AssetManager::get_mesh_asset("Resources/Objects/cube.glb"));
+        to_select = m_context->create_entity("Cube");
+        to_select.add_component_internal<RigidbodyComponent>();
+        to_select.add_component_internal<BoxColliderComponent>();
+        to_select.add_component_internal<MeshComponent>(AssetManager::get_mesh_asset("Resources/Objects/cube.glb"));
       }
 
       if (ImGui::MenuItem("Character Controller")) {
-        toSelect = m_Context->create_entity("Character Controller");
-        toSelect.add_component_internal<CharacterControllerComponent>();
-        toSelect.add_component_internal<MeshComponent>(AssetManager::get_mesh_asset("Resources/Objects/capsule.glb"));
+        to_select = m_context->create_entity("Character Controller");
+        to_select.add_component_internal<CharacterControllerComponent>();
+        to_select.add_component_internal<MeshComponent>(AssetManager::get_mesh_asset("Resources/Objects/capsule.glb"));
       }
 
       ImGui::EndMenu();
@@ -360,13 +365,13 @@ void SceneHierarchyPanel::draw_context_menu() {
 
     if (ImGui::BeginMenu("Audio")) {
       if (ImGui::MenuItem("Audio Source")) {
-        toSelect = m_Context->create_entity("AudioSource");
-        toSelect.add_component_internal<AudioSourceComponent>();
+        to_select = m_context->create_entity("AudioSource");
+        to_select.add_component_internal<AudioSourceComponent>();
         ImGui::CloseCurrentPopup();
       }
       if (ImGui::MenuItem("Audio Listener")) {
-        toSelect = m_Context->create_entity("AudioListener");
-        toSelect.add_component_internal<AudioListenerComponent>();
+        to_select = m_context->create_entity("AudioListener");
+        to_select.add_component_internal<AudioListenerComponent>();
         ImGui::CloseCurrentPopup();
       }
       ImGui::EndMenu();
@@ -374,12 +379,12 @@ void SceneHierarchyPanel::draw_context_menu() {
 
     if (ImGui::BeginMenu("Effects")) {
       if (ImGui::MenuItem("PostProcess Probe")) {
-        toSelect = m_Context->create_entity("PostProcess Probe");
-        toSelect.add_component_internal<PostProcessProbe>();
+        to_select = m_context->create_entity("PostProcess Probe");
+        to_select.add_component_internal<PostProcessProbe>();
       }
       if (ImGui::MenuItem("Particle System")) {
-        toSelect = m_Context->create_entity("Particle System");
-        toSelect.add_component_internal<ParticleSystemComponent>();
+        to_select = m_context->create_entity("Particle System");
+        to_select.add_component_internal<ParticleSystemComponent>();
       }
       ImGui::EndMenu();
     }
@@ -387,11 +392,11 @@ void SceneHierarchyPanel::draw_context_menu() {
     ImGui::EndMenu();
   }
 
-  if (hasContext && toSelect)
-    toSelect.set_parent(m_selected_entity_entities.front());
+  if (has_context && to_select)
+    to_select.set_parent(m_selected_entity_entities.front());
 
-  if (toSelect)
-    m_selected_entity_entities.emplace_back(toSelect);
+  if (to_select)
+    m_selected_entity_entities.emplace_back(to_select);
 }
 
 SceneHierarchyPanel::SceneHierarchyPanel() : EditorPanel("Scene Hierarchy", ICON_MDI_VIEW_LIST, true) { }
@@ -401,23 +406,23 @@ void SceneHierarchyPanel::on_update() {
   if (!m_selected_entity_entities.empty()) {
     if (ImGui::IsKeyDown(ImGuiKey_LeftCtrl) && ImGui::IsKeyPressed(ImGuiKey_D)) {
       for (const auto& e : m_selected_entity_entities)
-        m_Context->duplicate_entity(e);
+        m_context->duplicate_entity(e);
     }
-    if (ImGui::IsKeyPressed(ImGuiKey_Delete) && m_TableHovered) {
+    if (ImGui::IsKeyPressed(ImGuiKey_Delete) && m_table_hovered) {
       for (const auto& e : m_selected_entity_entities)
-        m_Context->destroy_entity(e);
+        m_context->destroy_entity(e);
       clear_selection_context();
     }
     if (ImGui::IsKeyPressed(ImGuiKey_F2)) {
-      m_RenamingEntity = get_selected_entity_front();
+      m_renaming_entity = get_selected_entity_front();
     }
   }
-  if (m_DeletedEntity) {
-    if (get_selected_entity_front() == m_DeletedEntity)
+  if (m_deleted_entity) {
+    if (get_selected_entity_front() == m_deleted_entity)
       clear_selection_context();
 
-    m_Context->destroy_entity(m_DeletedEntity);
-    m_DeletedEntity = {};
+    m_context->destroy_entity(m_deleted_entity);
+    m_deleted_entity = {};
   }
 }
 
@@ -425,14 +430,14 @@ void SceneHierarchyPanel::on_imgui_render() {
   ImGuiScoped::StyleVar cellpad(ImGuiStyleVar_CellPadding, {0, 0});
 
   if (on_begin(ImGuiWindowFlags_NoScrollWithMouse | ImGuiWindowFlags_NoScrollbar)) {
-    const float lineHeight = ImGui::GetTextLineHeight();
+    const float line_height = ImGui::GetTextLineHeight();
 
     const ImVec2 padding = ImGui::GetStyle().FramePadding;
-    constexpr ImGuiTableFlags tableFlags = ImGuiTableFlags_RowBg | ImGuiTableFlags_ContextMenuInBody |
+    constexpr ImGuiTableFlags table_flags = ImGuiTableFlags_RowBg | ImGuiTableFlags_ContextMenuInBody |
                                            ImGuiTableFlags_BordersInner | ImGuiTableFlags_ScrollY;
 
-    const float filterCursorPosX = ImGui::GetCursorPosX();
-    m_Filter.Draw("###HierarchyFilter",
+    const float filter_cursor_pos_x = ImGui::GetCursorPosX();
+    m_filter.Draw("###HierarchyFilter",
       ImGui::GetContentRegionAvail().x -
       (OxUI::get_icon_button_size(ICON_MDI_PLUS, "").x + 2.0f * padding.x));
     ImGui::SameLine();
@@ -448,25 +453,25 @@ void SceneHierarchyPanel::on_imgui_render() {
     }
     ImGui::PopStyleVar();
 
-    if (!m_Filter.IsActive()) {
+    if (!m_filter.IsActive()) {
       ImGui::SameLine();
-      ImGui::SetCursorPosX(filterCursorPosX + ImGui::GetFontSize() * 0.5f);
+      ImGui::SetCursorPosX(filter_cursor_pos_x + ImGui::GetFontSize() * 0.5f);
       ImGui::TextUnformatted(StringUtils::from_char8_t(ICON_MDI_MAGNIFY " Search..."));
     }
 
-    const ImVec2 cursorPos = ImGui::GetCursorPos();
+    const ImVec2 cursor_pos = ImGui::GetCursorPos();
     const ImVec2 region = ImGui::GetContentRegionAvail();
     if (region.x != 0.0f && region.y != 0.0f)
       ImGui::InvisibleButton("##DragDropTargetBehindTable", region);
     drag_drop_target();
 
-    ImGui::SetCursorPos(cursorPos);
-    if (ImGui::BeginTable("HierarchyTable", 3, tableFlags)) {
+    ImGui::SetCursorPos(cursor_pos);
+    if (ImGui::BeginTable("HierarchyTable", 3, table_flags)) {
       ImGui::TableSetupColumn("  Label", ImGuiTableColumnFlags_NoHide | ImGuiTableColumnFlags_NoClip);
-      ImGui::TableSetupColumn("  Type", ImGuiTableColumnFlags_WidthFixed, lineHeight * 3.0f);
+      ImGui::TableSetupColumn("  Type", ImGuiTableColumnFlags_WidthFixed, line_height * 3.0f);
       ImGui::TableSetupColumn(StringUtils::from_char8_t("  " ICON_MDI_EYE_OUTLINE),
         ImGuiTableColumnFlags_WidthFixed,
-        lineHeight * 2.0f);
+        line_height * 2.0f);
 
       ImGui::TableSetupScrollFreeze(0, 1);
 
@@ -482,16 +487,16 @@ void SceneHierarchyPanel::on_imgui_render() {
       }
 
       ImGui::PushStyleVar(ImGuiStyleVar_FrameBorderSize, 0.0f);
-      const auto view = m_Context->m_registry.view<IDComponent>();
+      const auto view = m_context->m_registry.view<IDComponent>();
       for (const auto e : view) {
-        const Entity entity = {e, m_Context.get()};
+        const Entity entity = {e, m_context.get()};
         if (entity && !entity.get_parent())
           draw_entity_node(entity);
       }
       ImGui::PopStyleVar();
 
-      const auto popItemSpacing = ImGuiLayer::PopupItemSpacing;
-      ImGui::PushStyleVar(ImGuiStyleVar_ItemSpacing, popItemSpacing);
+      const auto pop_item_spacing = ImGuiLayer::PopupItemSpacing;
+      ImGui::PushStyleVar(ImGuiStyleVar_ItemSpacing, pop_item_spacing);
       if (ImGui::BeginPopupContextWindow("SceneHierarchyContextWindow",
         ImGuiPopupFlags_MouseButtonRight | ImGuiPopupFlags_NoOpenOverItems)) {
         clear_selection_context();
@@ -502,20 +507,20 @@ void SceneHierarchyPanel::on_imgui_render() {
 
       ImGui::EndTable();
 
-      m_TableHovered = ImGui::IsItemHovered();
+      m_table_hovered = ImGui::IsItemHovered();
 
       if (ImGui::IsItemClicked())
         clear_selection_context();
     }
-    m_WindowHovered = ImGui::IsWindowHovered();
+    m_window_hovered = ImGui::IsWindowHovered();
 
-    if (ImGui::IsMouseDown(0) && m_WindowHovered)
+    if (ImGui::IsMouseDown(0) && m_window_hovered)
       clear_selection_context();
 
-    if (m_DraggedEntity && m_DraggedEntityTarget) {
-      m_DraggedEntity.set_parent(m_DraggedEntityTarget);
-      m_DraggedEntity = {};
-      m_DraggedEntityTarget = {};
+    if (m_dragged_entity && m_dragged_entity_target) {
+      m_dragged_entity.set_parent(m_dragged_entity_target);
+      m_dragged_entity = {};
+      m_dragged_entity_target = {};
     }
 
     //OxUI::draw_gradient_shadow_bottom();

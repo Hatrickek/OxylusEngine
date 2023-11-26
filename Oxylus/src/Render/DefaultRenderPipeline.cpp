@@ -449,8 +449,6 @@ Scope<vuk::Future> DefaultRenderPipeline::on_render(vuk::Allocator& frame_alloca
     }
   }
 
-  auto final_image_fut = vuk::Future{rg, final_image_name};
-
   if (RendererCVar::cvar_fxaa_enable.get()) {
     struct FXAAData {
       Vec2 inverse_screen_size;
@@ -459,10 +457,15 @@ Scope<vuk::Future> DefaultRenderPipeline::on_render(vuk::Allocator& frame_alloca
     fxaa_data.inverse_screen_size = 1.0f / glm::vec2(Renderer::get_viewport_width(), Renderer::get_viewport_height());
     auto [fxaa_buff, fxaa_buffer_fut] = create_buffer(frame_allocator, vuk::MemoryUsage::eCPUtoGPU, vuk::DomainFlagBits::eTransferOnGraphics, std::span(&fxaa_data, 1));
     auto& fxaa_buffer = *fxaa_buff;
-    final_image_fut = apply_fxaa(final_image_fut, target, fxaa_buffer);
+
+    rg->attach_and_clear_image("fxaa_image", {.format = vk_context->swapchain->format, .sample_count = vuk::Samples::e1}, vuk::Black<float>);
+    rg->inference_rule("fxaa_image", vuk::same_shape_as("final_image"));
+
+    apply_fxaa(rg.get(), final_image_name, "fxaa_image", fxaa_buffer);
+    final_image_name = "fxaa_image+";
   }
 
-  return create_scope<vuk::Future>(std::move(final_image_fut));
+  return create_scope<vuk::Future>(rg, final_image_name);
 }
 
 void DefaultRenderPipeline::update_skybox(const SkyboxLoadEvent& e) {
@@ -471,7 +474,7 @@ void DefaultRenderPipeline::update_skybox(const SkyboxLoadEvent& e) {
   generate_prefilter(*VulkanContext::get()->superframe_allocator);
 }
 
-void DefaultRenderPipeline::depth_pre_pass(const Ref<vuk::RenderGraph>& rg, vuk::Buffer& vs_buffer, const std::unordered_map<uint32_t, uint32_t>& material_map, vuk::Buffer& mat_buffer) {
+void DefaultRenderPipeline::depth_pre_pass(const Ref<vuk::RenderGraph>& rg, vuk::Buffer& vs_buffer, const std::unordered_map<uint32_t, uint32_t>& material_map, vuk::Buffer& mat_buffer) const {
   rg->add_pass({
     .name = "depth_pre_pass",
     .resources = {
@@ -920,29 +923,26 @@ void DefaultRenderPipeline::ssr_pass(vuk::Allocator& frame_allocator, const Ref<
   rg->inference_rule("ssr_image", vuk::same_shape_as("final_image"));
 }
 
-vuk::Future DefaultRenderPipeline::apply_fxaa(vuk::Future source, vuk::Future dst, vuk::Buffer& fxaa_buffer) {
-  std::unique_ptr<vuk::RenderGraph> rgp = std::make_unique<vuk::RenderGraph>("fxaa");
-  rgp->attach_in("jagged", std::move(source));
-  rgp->attach_in("smooth", std::move(dst));
-  rgp->add_pass({
+void DefaultRenderPipeline::apply_fxaa(vuk::RenderGraph* rg, const vuk::Name src, vuk::Name dst, vuk::Buffer& fxaa_buffer) {
+  rg->add_pass({
     .name = "fxaa",
-    .resources = {"jagged"_image >> vuk::eFragmentSampled, "smooth"_image >> vuk::eColorWrite},
-    .execute = [fxaa_buffer](vuk::CommandBuffer& command_buffer) {
+    .resources = {
+      vuk::Resource(dst, vuk::Resource::Type::eImage, vuk::eColorRW, dst.append("+")),
+      vuk::Resource(src, vuk::Resource::Type::eImage, vuk::eFragmentSampled),
+    },
+    .execute = [fxaa_buffer, src](vuk::CommandBuffer& command_buffer) {
       command_buffer.bind_graphics_pipeline("fxaa_pipeline")
                     .set_dynamic_state(vuk::DynamicStateFlagBits::eScissor | vuk::DynamicStateFlagBits::eViewport)
                     .set_viewport(0, vuk::Rect2D::framebuffer())
                     .set_scissor(0, vuk::Rect2D::framebuffer())
                     .broadcast_color_blend(vuk::BlendPreset::eOff)
                     .set_rasterization({.cullMode = vuk::CullModeFlagBits::eNone})
-                    .bind_image(0, 0, "jagged")
+                    .bind_image(0, 0, src)
                     .bind_sampler(0, 0, vuk::LinearSamplerClamped)
                     .bind_buffer(0, 1, fxaa_buffer)
                     .draw(3, 1, 0, 0);
     }
   });
-  rgp->inference_rule("jagged", vuk::same_shape_as("smooth"));
-  rgp->inference_rule("smooth", vuk::same_shape_as("jagged"));
-  return {std::move(rgp), "smooth+"};
 }
 
 void DefaultRenderPipeline::apply_grid(vuk::RenderGraph* rg, const vuk::Name dst, const vuk::Name depth_image, vuk::Allocator& frame_allocator) const {
@@ -971,6 +971,7 @@ void DefaultRenderPipeline::apply_grid(vuk::RenderGraph* rg, const vuk::Name dst
 
   auto [fgrid_buff, fgrid_buff_fut] = create_buffer(frame_allocator, vuk::MemoryUsage::eCPUtoGPU, vuk::DomainFlagBits::eTransferOnGraphics, std::span(&grid_fragment_data, 1));
   auto& grid_fragment_buffer = *fgrid_buff;
+
   rg->add_pass({
     .name = "grid",
     .resources = {

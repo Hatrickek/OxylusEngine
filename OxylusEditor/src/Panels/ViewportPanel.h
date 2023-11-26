@@ -24,6 +24,7 @@ private:
   void draw_performance_overlay();
   void draw_gizmos();
   void mouse_picking_pass(const Ref<RenderPipeline>& rp, const vuk::Dimension3D& dim, float fixed_width);
+  bool outline_pass(const Ref<RenderPipeline>& rp, const vuk::Dimension3D& dim) const;
 
   Ref<Scene> m_scene = {};
   Entity m_hovered_entity = {};
@@ -40,6 +41,9 @@ private:
   int m_gizmo_type = -1;
   int m_gizmo_mode = 0;
   bool m_using_gizmo = false;
+
+  std::vector<vuk::Unique<vuk::Buffer>> id_buffers = {};
+  float selection_outline_width = 0.02f;
 
   //Camera
   bool m_lock_aspect_ratio = true;

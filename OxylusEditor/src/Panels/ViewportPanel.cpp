@@ -13,6 +13,7 @@
 #include "Render/RendererConfig.h"
 #include "Render/RenderPipeline.h"
 #include "Render/Vulkan/Renderer.h"
+#include "Render/Vulkan/VukUtils.h"
 #include "Render/Vulkan/VulkanContext.h"
 
 #include "Scene/SceneRenderer.h"
@@ -25,7 +26,184 @@
 #include "Utils/Timestep.h"
 
 namespace Oxylus {
-ViewportPanel::ViewportPanel() : EditorPanel("Viewport", ICON_MDI_TERRAIN, true) {}
+ViewportPanel::ViewportPanel() : EditorPanel("Viewport", ICON_MDI_TERRAIN, true) {
+  //id_buffers.resize(VulkanContext::get()->num_inflight_frames);
+}
+
+bool ViewportPanel::outline_pass(const Ref<RenderPipeline>& rp, const vuk::Dimension3D& dim) const {
+  auto& superframe_allocator = VulkanContext::get()->superframe_allocator;
+  if (!superframe_allocator->get_context().is_pipeline_available("outline_pipeline")) {
+    vuk::PipelineBaseCreateInfo pci_outline;
+    pci_outline.add_glsl(FileUtils::read_shader_file("Editor/Editor_OutlinePass.vert"), "Editor_OutlinePass.vert");
+    pci_outline.add_glsl(FileUtils::read_shader_file("Editor/Editor_OutlinePass.frag"), "Editor_OutlinePass.frag");
+    superframe_allocator->get_context().create_named_pipeline("outline_pipeline", pci_outline);
+
+    vuk::PipelineBaseCreateInfo pci_stencil;
+    pci_stencil.add_glsl(FileUtils::read_shader_file("Editor/Editor_StencilPass.vert"), "Editor_StencilPass.vert");
+    pci_stencil.add_glsl(FileUtils::read_shader_file("Editor/Editor_StencilPass.frag"), "Editor_StencilPass.frag");
+    superframe_allocator->get_context().create_named_pipeline("stencil_pipeline", pci_stencil);
+
+    vuk::PipelineBaseCreateInfo pci_fullscreen;
+    pci_fullscreen.add_glsl(FileUtils::read_shader_file("FullscreenPass.vert"), "FullscreenPass.vert");
+    pci_fullscreen.add_glsl(FileUtils::read_shader_file("FullscreenComposite.frag"), "FullscreenComposite.frag");
+    superframe_allocator->get_context().create_named_pipeline("fullscreen_pipeline", pci_fullscreen);
+  }
+
+  auto rg = rp->get_frame_render_graph();
+
+  struct VsUbo {
+    Mat4 projection_view;
+  } vs_ubo;
+
+  vs_ubo.projection_view = m_camera.get_projection_matrix_flipped() * m_camera.get_view_matrix();
+  auto [vs_buff, vs_buffer_fut] = create_buffer(*rp->get_frame_allocator(), vuk::MemoryUsage::eCPUtoGPU, vuk::DomainFlagBits::eTransferOnGraphics, std::span(&vs_ubo, 1));
+  auto& vs_buffer = *vs_buff;
+
+  bool render_outline = false;
+
+  if (m_scene_hierarchy_panel) {
+    const auto entity = m_scene_hierarchy_panel->get_selected_entity();
+    if (entity && entity.has_component<MeshComponent>()) {
+      const auto& mesh = entity.get_component<MeshComponent>();
+      const auto model_matrix = entity.get_world_transform();
+
+      auto attachment = vuk::ImageAttachment{
+        .extent = dim,
+        .format = vuk::Format::eR8G8B8A8Unorm,
+        .sample_count = vuk::SampleCountFlagBits::e1,
+        .level_count = 1,
+        .layer_count = 1
+      };
+
+      rg->attach_and_clear_image("outline_image", attachment, vuk::Black<float>);
+      attachment.format = vuk::Format::eD32SfloatS8Uint;
+      rg->attach_and_clear_image("outline_depth", attachment, vuk::ClearDepthStencil{1.0f, 0});
+
+
+      rg->add_pass({
+        .name = "outline_stencil_pass",
+        .resources = {
+          "outline_image"_image >> vuk::eColorRW >> "outline_image+",
+          "outline_depth"_image >> vuk::eDepthStencilRW
+        },
+        .execute = [this, mesh, model_matrix, vs_buffer](vuk::CommandBuffer& command_buffer) {
+          constexpr auto stencil_state = vuk::StencilOpState{
+            .failOp = vuk::StencilOp::eReplace,
+            .passOp = vuk::StencilOp::eReplace,
+            .depthFailOp = vuk::StencilOp::eReplace,
+            .compareOp = vuk::CompareOp::eAlways,
+            .compareMask = 0xFF,
+            .writeMask = 0xFF,
+            .reference = 1
+          };
+
+          command_buffer.set_dynamic_state(vuk::DynamicStateFlagBits::eScissor | vuk::DynamicStateFlagBits::eViewport)
+                        .set_viewport(0, vuk::Rect2D::framebuffer())
+                        .set_scissor(0, vuk::Rect2D::framebuffer())
+                        .broadcast_color_blend(vuk::BlendPreset::eOff)
+                        .set_rasterization({.cullMode = vuk::CullModeFlagBits::eNone})
+                        .set_depth_stencil(vuk::PipelineDepthStencilStateCreateInfo{
+                           .depthTestEnable = true,
+                           .depthWriteEnable = true,
+                           .depthCompareOp = vuk::CompareOp::eLessOrEqual,
+                           .stencilTestEnable = true,
+                           .front = stencil_state,
+                           .back = stencil_state
+                         })
+                        .bind_graphics_pipeline("stencil_pipeline")
+                        .bind_buffer(0, 0, vs_buffer);
+
+          mesh.original_mesh->bind_vertex_buffer(command_buffer);
+          mesh.original_mesh->bind_index_buffer(command_buffer);
+
+          for (const auto& subset : mesh.subsets) {
+            struct PushConstant {
+              Mat4 model_matrix;
+            } pc;
+
+            pc.model_matrix = model_matrix;
+
+            command_buffer.push_constants(vuk::ShaderStageFlagBits::eVertex, 0, pc)
+                          .draw_indexed(subset.index_count, 1, subset.first_index, 0, 0);
+          }
+
+          constexpr auto stencil_state2 = vuk::StencilOpState{
+            .failOp = vuk::StencilOp::eKeep,
+            .passOp = vuk::StencilOp::eReplace,
+            .depthFailOp = vuk::StencilOp::eKeep,
+            .compareOp = vuk::CompareOp::eNotEqual,
+            .compareMask = 0xFF,
+            .writeMask = 0xFF,
+            .reference = 1
+          };
+
+          command_buffer.set_dynamic_state(vuk::DynamicStateFlagBits::eScissor | vuk::DynamicStateFlagBits::eViewport)
+                        .set_viewport(0, vuk::Rect2D::framebuffer())
+                        .set_scissor(0, vuk::Rect2D::framebuffer())
+                        .broadcast_color_blend(vuk::BlendPreset::eOff)
+                        .set_rasterization({.cullMode = vuk::CullModeFlagBits::eNone})
+                        .set_depth_stencil(vuk::PipelineDepthStencilStateCreateInfo{
+                           .depthTestEnable = false,
+                           .depthWriteEnable = true,
+                           .depthCompareOp = vuk::CompareOp::eLessOrEqual,
+                           .stencilTestEnable = true,
+                           .front = stencil_state2,
+                           .back = stencil_state2
+                         })
+                        .bind_graphics_pipeline("outline_pipeline")
+                        .bind_buffer(0, 0, vs_buffer);
+
+          mesh.original_mesh->bind_vertex_buffer(command_buffer);
+          mesh.original_mesh->bind_index_buffer(command_buffer);
+
+          for (const auto& subset : mesh.subsets) {
+            struct PushConstant {
+              Mat4 model_matrix;
+              float outline_width;
+            } pc;
+
+            pc.model_matrix = scale(model_matrix, Vec3(1.02f));
+            pc.outline_width = selection_outline_width;
+
+            command_buffer.push_constants(vuk::ShaderStageFlagBits::eVertex, 0, pc)
+                          .draw_indexed(subset.index_count, 1, subset.first_index, 0, 0);
+          }
+        }
+      });
+
+      attachment.format = vuk::Format::eR8G8B8A8Unorm;
+      rg->attach_and_clear_image("final_outlined_image", attachment, vuk::Black<float>);
+
+      auto final_name = rp->get_final_attachment_name();
+
+      rg->add_pass({
+        .name = "apply_outline",
+        .resources = {
+          "final_outlined_image"_image >> vuk::eColorRW,
+          vuk::Resource(final_name, vuk::Resource::Type::eImage, vuk::eFragmentSampled),
+          "outline_image+"_image >> vuk::eFragmentSampled
+        },
+        .execute = [this, final_name](vuk::CommandBuffer& command_buffer) {
+          command_buffer.bind_graphics_pipeline("fullscreen_pipeline")
+                        .set_dynamic_state(vuk::DynamicStateFlagBits::eScissor | vuk::DynamicStateFlagBits::eViewport)
+                        .set_viewport(0, vuk::Rect2D::framebuffer())
+                        .set_scissor(0, vuk::Rect2D::framebuffer())
+                        .broadcast_color_blend(vuk::BlendPreset::eOff)
+                        .set_rasterization({.cullMode = vuk::CullModeFlagBits::eNone})
+                        .bind_image(0, 0, final_name)
+                        .bind_sampler(0, 0, vuk::LinearSamplerClamped)
+                        .bind_image(0, 1, "outline_image+")
+                        .bind_sampler(0, 1, vuk::LinearSamplerClamped)
+                        .draw(3, 1, 0, 0);
+        }
+      });
+
+      render_outline = true;
+    }
+  }
+
+  return render_outline;
+}
 
 void ViewportPanel::on_imgui_render() {
   draw_performance_overlay();
@@ -52,13 +230,11 @@ void ViewportPanel::on_imgui_render() {
       }
       ImGui::EndMenuBar();
     }
-    ImGui::PopStyleVar();
 
     if (viewport_settings_popup)
       ImGui::OpenPopup("ViewportSettings");
 
-    ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2(10, 10));
-    if (ImGui::BeginPopup("ViewportSettings")) {
+    if (ImGui::BeginPopup("ViewportSettings", ImGuiWindowFlags_AlwaysAutoResize)) {
       OxUI::begin_properties();
       static bool vsync = VulkanContext::get()->present_mode == vuk::PresentModeKHR::eFifo ? true : false;
       if (OxUI::property("VSync", &vsync)) {
@@ -68,6 +244,7 @@ void ViewportPanel::on_imgui_render() {
       OxUI::property<float>("Camera sensitivity", &m_mouse_sensitivity, 0.1f, 20.0f);
       OxUI::property<float>("Movement speed", &m_movement_speed, 5, 100.0f);
       OxUI::property("Smooth camera", &m_smooth_camera);
+      OxUI::property<float>("Selection Outline Width", &selection_outline_width);
       OxUI::end_properties();
       ImGui::EndPopup();
     }
@@ -93,12 +270,16 @@ void ViewportPanel::on_imgui_render() {
     const auto dim = vuk::Dimension3D::absolute((uint32_t)fixed_width, (uint32_t)viewport_panel_size.y);
     const auto rp = m_scene->get_renderer()->get_render_pipeline();
     rp->detach_swapchain(dim);
-    const auto final_image = rp->get_final_image();
+    auto final_image = rp->get_final_image();
 
     if (final_image) {
-      OxUI::image(*final_image, ImVec2{fixed_width, viewport_panel_size.y});
-
       mouse_picking_pass(rp, dim, fixed_width);
+      if (outline_pass(rp, dim)) {
+        final_image = create_ref<vuk::SampledImage>(
+          make_sampled_image(vuk::NameReference{rp->get_frame_render_graph().get(), vuk::QualifiedName({}, "final_outlined_image+")}, {}));
+      }
+
+      OxUI::image(*final_image, ImVec2{fixed_width, viewport_panel_size.y});
     }
     else {
       const auto text_width = ImGui::CalcTextSize("No render target!").x;
@@ -106,7 +287,6 @@ void ViewportPanel::on_imgui_render() {
       ImGui::SetCursorPosY(m_viewport_size.y * 0.5f);
       ImGui::Text("No render target!");
     }
-
 
     if (m_scene_hierarchy_panel)
       m_scene_hierarchy_panel->drag_drop_target();
@@ -230,17 +410,18 @@ void ViewportPanel::mouse_picking_pass(const Ref<RenderPipeline>& rp, const vuk:
     if (tag.enabled && !material.materials.empty()) {
       auto e = Entity(entity, m_scene.get());
       mesh_component.transform = e.get_world_transform();
-      scene_meshes.emplace_back((uint32_t)entity + 1, mesh_component); // increment entity id by one so black color and the first entity doesn't get mixed
+      const auto id = (uint32_t)entity + 1u; // increment entity id by one so black color and the first entity doesn't get mixed
+      scene_meshes.emplace_back(id, mesh_component);
     }
   }
 
-  auto rg = create_ref<vuk::RenderGraph>("id_render_graph");
+  auto rg = rp->get_frame_render_graph();
 
   auto& superframe_allocator = VulkanContext::get()->superframe_allocator;
   if (!superframe_allocator->get_context().is_pipeline_available("id_pipeline")) {
     vuk::PipelineBaseCreateInfo pci;
-    pci.add_glsl(FileUtils::read_shader_file("Editor_IDPass.vert"), "Editor_IDPass.vert");
-    pci.add_glsl(FileUtils::read_shader_file("Editor_IDPass.frag"), "Editor_IDPass.frag");
+    pci.add_glsl(FileUtils::read_shader_file("Editor/Editor_IDPass.vert"), "Editor_IDPass.vert");
+    pci.add_glsl(FileUtils::read_shader_file("Editor/Editor_IDPass.frag"), "Editor_IDPass.frag");
     superframe_allocator->get_context().create_named_pipeline("id_pipeline", pci);
   }
 
@@ -254,7 +435,7 @@ void ViewportPanel::mouse_picking_pass(const Ref<RenderPipeline>& rp, const vuk:
 
   auto attachment = vuk::ImageAttachment{
     .extent = dim,
-    .format = vuk::Format::eR8Uint,
+    .format = vuk::Format::eR32Uint,
     .sample_count = vuk::SampleCountFlagBits::e1,
     .level_count = 1,
     .layer_count = 1
@@ -264,7 +445,6 @@ void ViewportPanel::mouse_picking_pass(const Ref<RenderPipeline>& rp, const vuk:
   attachment.format = vuk::Format::eD32Sfloat;
   rg->attach_and_clear_image("id_buffer_depth", attachment, vuk::DepthOne);
 
-  // TODO: use depth from RenderPipeline if available.
   rg->add_pass({
     .name = "id_buffer_pass",
     .resources = {
@@ -311,9 +491,16 @@ void ViewportPanel::mouse_picking_pass(const Ref<RenderPipeline>& rp, const vuk:
     }
   });
 
-  auto id_buffer = *vuk::allocate_buffer(*rp->get_frame_allocator(), {vuk::MemoryUsage::eGPUtoCPU, dim.extent.width * dim.extent.height * 4, 1});
+  if (id_buffers.empty()) {
+    id_buffers.reserve(VulkanContext::get()->num_inflight_frames);
+    for (uint32_t i = 0; i < VulkanContext::get()->num_inflight_frames; i++)
+      id_buffers.emplace_back(*allocate_buffer(*VulkanContext::get()->superframe_allocator, {vuk::MemoryUsage::eGPUtoCPU, (uint64_t)(dim.extent.width * dim.extent.height * 4u), 1}));
+  }
 
-  rg->attach_buffer("id_buffer_buffer", id_buffer.get());
+  if (VulkanContext::get()->num_frames < VulkanContext::get()->num_inflight_frames)
+    return;
+
+  rg->attach_buffer("entity_id_buffer_to_copy", *id_buffers[VulkanContext::get()->current_frame]); // current frame buffer
 
   auto [mx, my] = ImGui::GetMousePos();
   auto off = (viewport_panel_size.x - fixed_width) * 0.5f; // add offset since we render image with fixed aspect ratio
@@ -328,7 +515,7 @@ void ViewportPanel::mouse_picking_pass(const Ref<RenderPipeline>& rp, const vuk:
     .name = "id_copy_pass",
     .resources = {
       "id_buffer_image_output"_image >> vuk::eTransferRead,
-      "id_buffer_buffer"_buffer >> vuk::eTransferWrite >> "id_buffer_final"
+      "entity_id_buffer_to_copy"_buffer >> vuk::eTransferWrite >> "id_buffer_final"
     },
     .execute = [dim](vuk::CommandBuffer& command_buffer) {
       const auto params = vuk::BufferImageCopy{
@@ -340,34 +527,24 @@ void ViewportPanel::mouse_picking_pass(const Ref<RenderPipeline>& rp, const vuk:
         .imageExtent = dim.extent,
       };
 
-      command_buffer.copy_image_to_buffer("id_buffer_image_output", "id_buffer_buffer", params);
+      command_buffer.copy_image_to_buffer("id_buffer_image_output", "entity_id_buffer_to_copy", params);
     }
   });
 
-  rg->add_pass({
-    .name = "id_compare_pass",
-    .resources = {
-      "id_buffer_final"_buffer >> vuk::eMemoryRead
-    },
-    .execute = [mouse_x, mouse_y, dim, this](const vuk::CommandBuffer& command_buffer) {
-      const auto buf_pos = mouse_y * dim.extent.width + mouse_x;
+  auto& buffer = id_buffers[VulkanContext::get()->current_frame];
+  const auto buf_pos = (mouse_y * dim.extent.width + mouse_x) * 4;
+  static auto* id_ptr = new uint32_t;
+  memcpy(id_ptr, &buffer->mapped_ptr[buf_pos], sizeof(uint32_t));
+  const auto id = *id_ptr;
 
-      auto buffer = command_buffer.get_resource_buffer("id_buffer_final");
+  m_hovered_entity = id <= 0 ? Entity() : Entity(entt::entity{id - 1u}, m_scene.get());
 
-      const auto id = (uint32_t)buffer->mapped_ptr[buf_pos];
-
-      m_hovered_entity = id <= 0 ? Entity() : Entity((entt::entity)(id - 1), m_scene.get());
-
-      if (!m_using_gizmo) {
-        if (m_hovered_entity && ImGui::IsMouseClicked(ImGuiMouseButton_Left) && m_viewport_hovered)
-          m_scene_hierarchy_panel->set_selected_entity(m_hovered_entity);
-        else if (ImGui::IsMouseClicked(ImGuiMouseButton_Left) && m_viewport_hovered)
-          m_scene_hierarchy_panel->set_selected_entity({});
-      }
-    }
-  });
-
-  rp->submit_rg_future(vuk::Future{std::move(rg), "id_buffer_final"});
+  if (!m_using_gizmo) {
+    if (m_hovered_entity && ImGui::IsMouseClicked(ImGuiMouseButton_Left) && m_viewport_hovered)
+      m_scene_hierarchy_panel->set_selected_entity(m_hovered_entity);
+    else if (ImGui::IsMouseClicked(ImGuiMouseButton_Left) && m_viewport_hovered)
+      m_scene_hierarchy_panel->set_selected_entity({});
+  }
 }
 
 void ViewportPanel::set_context(const Ref<Scene>& scene, SceneHierarchyPanel& scene_hierarchy_panel) {
@@ -376,19 +553,6 @@ void ViewportPanel::set_context(const Ref<Scene>& scene, SceneHierarchyPanel& sc
 }
 
 void ViewportPanel::on_update() {
-  // entity highlighting
-  if (m_scene_hierarchy_panel) {
-    auto entity = m_scene_hierarchy_panel->get_selected_entity();
-    if (entity && entity.has_component<MeshComponent>()) {
-      auto scaled_matrix = glm::scale(entity.get_world_transform(), Vec3(1.02f));
-      DebugRenderer::draw_mesh(
-        entity.get_component<MeshComponent>().original_mesh,
-        scaled_matrix,
-        Vec4(0, 1, 0, 1)
-      );
-    }
-  }
-
   if (m_viewport_focused && !m_simulation_running && m_use_editor_camera) {
     const Vec3& position = m_camera.get_position();
     const glm::vec2 yaw_pitch = glm::vec2(m_camera.get_yaw(), m_camera.get_pitch());
@@ -479,7 +643,7 @@ void ViewportPanel::draw_performance_overlay() {
 
 void ViewportPanel::draw_gizmos() {
   const Entity selected_entity = m_scene_hierarchy_panel->get_selected_entity();
-  if (selected_entity && m_gizmo_type != -1) {
+  if (selected_entity && m_gizmo_type != -1 && selected_entity.has_component<TransformComponent>()) {
     ImGuizmo::SetOrthographic(false);
     ImGuizmo::SetDrawlist();
     ImGuizmo::SetRect(m_viewport_bounds[0].x,

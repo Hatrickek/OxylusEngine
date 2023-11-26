@@ -222,7 +222,6 @@ void VulkanContext::create_context(const AppSpec& spec) {
     transfer_queue_family_index,
     fps
   });
-  constexpr unsigned num_inflight_frames = 3;
   superframe_resource.emplace(*context, num_inflight_frames);
   superframe_allocator.emplace(*superframe_resource);
   auto sw = make_swapchain(this, {}, present_mode);
@@ -314,5 +313,8 @@ void VulkanContext::end(const vuk::Future& src, vuk::Allocator frame_allocator) 
   m_bundle = *acquire_one(*context, swapchain, (*present_ready)[context->get_frame_count() % 3], (*render_complete)[context->get_frame_count() % 3]);
   auto result = *execute_submit(frame_allocator, std::move(erg), std::move(m_bundle));
   present_to_one(*context, std::move(result));
+
+  current_frame = (current_frame + 1) % num_inflight_frames;
+  num_frames = context->get_frame_count();
 }
 }

@@ -49,6 +49,9 @@ public:
   virtual vuk::Allocator* get_frame_allocator() { return m_frame_allocator; }
   virtual void set_frame_allocator(vuk::Allocator* allocator) { m_frame_allocator = allocator; }
 
+  virtual vuk::Name get_final_attachment_name() { return final_attachment_name; }
+  virtual void set_final_attachment_name(const vuk::Name name) { final_attachment_name = name; }
+
   virtual const std::string& get_name() { return m_name; }
   virtual vuk::Dimension3D get_dimension() { return dimension; }
 
@@ -62,6 +65,7 @@ protected:
   vuk::Dimension3D dimension = {};
   Ref<vuk::SampledImage> final_image = nullptr;
   Ref<vuk::RenderGraph> frame_render_graph = nullptr;
+  vuk::Name final_attachment_name;
   vuk::Allocator* m_frame_allocator;
   std::mutex setup_lock;
   std::vector<vuk::Future> futures;
