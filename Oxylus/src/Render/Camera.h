@@ -8,25 +8,31 @@
 struct VkExtent2D;
 
 namespace Oxylus {
-constexpr float FOV = 60.0f;
-constexpr float NEARCLIP = 0.01f;
-constexpr float FARCLIP = 1000.0f;
+struct Plane {
+  glm::vec3 normal = {0.f, 1.f, 0.f}; // unit vector
+  float distance = 0.f;               // Distance with origin
 
-/**
- * \brief Camera class only to be used for the Editor. For Runtime `Camera Component` must be used.
- */
+  Plane() = default;
+
+  Plane(const glm::vec3& p1, const glm::vec3& norm) : normal(normalize(norm)),
+                                                      distance(dot(normal, p1)) {}
+
+  float get_signed_distance_to_plane(const glm::vec3& point) const { return dot(normal, point) - distance; }
+};
+
+struct Frustum {
+  Plane top_face;
+  Plane bottom_face;
+
+  Plane right_face;
+  Plane left_face;
+
+  Plane far_face;
+  Plane near_face;
+};
+
 class Camera {
 public:
-  Mat4 skybox_view;
-
-  float Fov = FOV;
-  float Aspect;
-  uint32_t AspectRatioW = 1;
-  uint32_t AspectRatioH = 1;
-  float far_clip = FARCLIP;
-  float near_clip = NEARCLIP;
-  bool constrain_pitch = true;
-
   Camera(Vec3 position = Vec3(0.0f, 0.0f, 0.0f));
 
   void update();
@@ -37,20 +43,20 @@ public:
   Mat4 get_view_matrix() const;
   Mat4 get_world_matrix() const;
 
-  void set_yaw(const float value) { m_Yaw = value; }
-  void set_pitch(const float value) { m_Pitch = value; }
+  void set_yaw(const float value) { m_yaw = value; }
+  void set_pitch(const float value) { m_pitch = value; }
 
-  float get_yaw() const { return m_Yaw; }
-  float get_pitch() const { return m_Pitch; }
-  float get_tilt() const { return m_Tilt; }
+  float get_yaw() const { return m_yaw; }
+  float get_pitch() const { return m_pitch; }
+  float get_tilt() const { return m_tilt; }
 
-  void set_near(float newNear);
-  float get_near() const { return near_clip; }
-  void set_far(float newFar);
-  float get_far() const { return far_clip; }
+  void set_near(float new_near);
+  float get_near() const { return m_near_clip; }
+  void set_far(float new_far);
+  float get_far() const { return m_far_clip; }
 
-  float get_fov() const { return FOV; }
-  float get_aspect() const { return Aspect; }
+  float get_fov() const { return m_fov; }
+  float get_aspect() const { return m_aspect; }
 
   void dolly(float z);
   void set_position(Vec3 pos);
@@ -64,17 +70,27 @@ public:
   const Vec3& get_position() const;
 
   void update_view_matrix();
-  static Mat4 generate_view_matrix(const Vec3& position, const Vec3& viewDir, const Vec3& up);
+  static Mat4 generate_view_matrix(const Vec3& position, const Vec3& view_dir, const Vec3& up);
+
+  Frustum get_frustum();
 
 private:
-  Mat4 m_Perspective;
-  Vec3 m_Position;
-  Vec3 m_Forward;
-  Vec3 m_Right;
-  Vec3 m_Up;
-  Mat4 m_ViewMatrix;
-  float m_Yaw = 0;
-  float m_Pitch = 0;
-  float m_Tilt = 0;
+  float m_fov = 60.0f;
+  float m_aspect;
+  float m_far_clip = 1000.0f;
+  float m_near_clip = 0.01f;
+
+  uint32_t aspect_ratio_w = 1;
+  uint32_t aspect_ratio_h = 1;
+
+  Mat4 m_perspective;
+  Vec3 m_position;
+  Vec3 m_forward;
+  Vec3 m_right;
+  Vec3 m_up;
+  Mat4 m_view_matrix;
+  float m_yaw = 0;
+  float m_pitch = 0;
+  float m_tilt = 0;
 };
 }

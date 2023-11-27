@@ -658,7 +658,10 @@ void DefaultRenderPipeline::geomerty_pass(const Ref<vuk::RenderGraph>& rg,
         float lod_bias;
       } skybox_push_constant = {};
 
-      skybox_push_constant.view = m_renderer_context.current_camera->skybox_view;
+      auto view_mat = m_renderer_context.current_camera->get_view_matrix();
+      view_mat[3] = glm::vec4(0, 0, 0, 1);
+
+      skybox_push_constant.view = view_mat;
 
       command_buffer.bind_graphics_pipeline("skybox_pipeline")
                     .set_dynamic_state(vuk::DynamicStateFlagBits::eScissor | vuk::DynamicStateFlagBits::eViewport)
