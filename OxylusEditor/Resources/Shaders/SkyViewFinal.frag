@@ -11,10 +11,10 @@ layout(binding = 0) uniform sampler2D sky_view_lut;
 layout(set = 0, binding = 1) uniform SunInfo {
     vec3 sun_dir;
     float sun_radius;
-    vec3 FrustumX;
-    vec3 FrustumY;
-    vec3 FrustumZ;
-    vec3 FrustumW;
+    vec4 FrustumX;
+    vec4 FrustumY;
+    vec4 FrustumZ;
+    vec4 FrustumW;
 };
 
 vec3 GetSun(vec3 rayDir, vec3 sunDir) 
@@ -31,7 +31,7 @@ vec3 GetSun(vec3 rayDir, vec3 sunDir)
 
 void main()
 {
-    vec3 direction = normalize(
+    vec4 direction = normalize(
         mix(
             mix(FrustumX, FrustumY, inUV.x),
             mix(FrustumZ, FrustumW, inUV.x),
@@ -43,6 +43,6 @@ void main()
     float v = 0.5 - 0.5 * sign(l) * sqrt(abs(l) / (0.5 * PI));
 
     vec3 color = texture(sky_view_lut, vec2(u, v)).rgb;
-    color += GetSun(direction, sun_dir);
+    color += GetSun(direction.xyz, sun_dir);
     result = vec4(color, 1.0);
 }

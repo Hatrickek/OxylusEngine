@@ -1183,21 +1183,19 @@ void DefaultRenderPipeline::atmosphere_pass(vuk::Allocator& frame_allocator,
   });
 
   auto &camera = m_renderer_context.current_camera;
-  auto projection = glm::inverse(camera->get_projection_matrix());
-  auto view = camera->get_view_matrix();
 
-  glm::vec4 ndc[] = {
-    glm::vec4(-1.0f, -1.0f, 1.0f, 1.0f),  // bottom-left
-    glm::vec4(1.0f, -1.0f, 1.0f, 1.0f),   // bottom-right
-    glm::vec4(-1.0f, 1.0f, 1.0f, 1.0f),   // top-left
-    glm::vec4(1.0f, 1.0f, 1.0f, 1.0f)     // top-right
+  Mat4 inv_cam = inverse(camera->get_projection_matrix_flipped() * camera->get_view_matrix());
+
+  Vec4 ndc[] = {
+    Vec4(-1.0f, -1.0f, 1.0f, 1.0f),  // bottom-left
+    Vec4(1.0f, -1.0f, 1.0f, 1.0f),   // bottom-right
+    Vec4(-1.0f, 1.0f, 1.0f, 1.0f),   // top-left
+    Vec4(1.0f, 1.0f, 1.0f, 1.0f)     // top-right
   };
 
   for (int i = 0; i < 4; ++i) {
-    ndc[i] = projection * ndc[i];
-    ndc[i] /= ndc[i].w;
-
-    m_renderer_data.sun_data.frustum[i] = view * ndc[i];
+    Vec4 inv_corner = inv_cam * ndc[i];
+    m_renderer_data.sun_data.frustum[i] = inv_corner / inv_corner.w;
   }
 
   m_renderer_data.sun_data.sun_dir = m_renderer_data.eye_view_data.sun_direction;
