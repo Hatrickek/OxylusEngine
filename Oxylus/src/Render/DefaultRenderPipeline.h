@@ -86,7 +86,7 @@ private:
     struct EyeViewData {
       glm::vec3 eye_position = {0.0, 6368000.0, 0.0};
       float step_count = 100.f;
-      glm::vec3 sun_direction = {-3.00E-8, 0.7775, 0.7775};
+      glm::vec3 sun_direction = { -3.09086E-08, 0.70711, 0.70711 };
       float sun_intensity = 10.f;
     } eye_view_data;
 
