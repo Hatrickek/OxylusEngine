@@ -1182,43 +1182,36 @@ void DefaultRenderPipeline::atmosphere_pass(vuk::Allocator& frame_allocator,
     }
   });
 
+  auto &camera = m_renderer_context.current_camera;
+  auto projection = glm::inverse(camera->get_projection_matrix());
+  auto view = camera->get_view_matrix();
+
+  glm::vec4 ndc[] = {
+    glm::vec4(-1.0f, -1.0f, 1.0f, 1.0f),  // bottom-left
+    glm::vec4(1.0f, -1.0f, 1.0f, 1.0f),   // bottom-right
+    glm::vec4(-1.0f, 1.0f, 1.0f, 1.0f),   // top-left
+    glm::vec4(1.0f, 1.0f, 1.0f, 1.0f)     // top-right
+  };
+
+  for (int i = 0; i < 4; ++i) {
+    ndc[i] = projection * ndc[i];
+    ndc[i] /= ndc[i].w;
+
+    m_renderer_data.sun_data.frustum[i] = view * ndc[i];
+  }
+
+  m_renderer_data.sun_data.sun_dir = m_renderer_data.eye_view_data.sun_direction;
   auto [sun_const_buff, sun_const_buff_fut] = create_buffer(frame_allocator, vuk::MemoryUsage::eCPUtoGPU, vuk::DomainFlagBits::eTransferOnGraphics, std::span(&m_renderer_data.sun_data, 1));
   auto& sun_const_buffer = *sun_const_buff;
 
-  struct Plane {
-    Vec3 normal;
-    float dist;
-  };
-
-  struct ViewFrustumData {
-    Plane top_face;
-    Plane bottom_face;
-    Plane right_face;
-    Plane left_face;
-    Plane far_face;
-    Plane near_face;
-  };
-
-  ViewFrustumData view_frustum_data = {
-    //  .top_face = ,
-    //  .bottom_face = ,
-    //  .right_face = ,
-    //  .left_face = ,
-    //  .far_face = ,
-    //  .near_face = 
-  };
-
-  auto [frustum_const_buff, frustum_const_buff_fut] = create_buffer(frame_allocator, vuk::MemoryUsage::eCPUtoGPU, vuk::DomainFlagBits::eTransferOnGraphics, std::span(&view_frustum_data, 1));
-  auto& frustum_const_buffer = *frustum_const_buff;
-
   rg->add_pass({
-    .name = "sky_view_pass",
+    .name = "sky_view_final_pass",
     .resources = {
       "pbr_output"_image >> vuk::eColorWrite,
       "sky_view_lut+"_image >> vuk::eFragmentSampled,
       "depth_output"_image >> vuk::eDepthStencilRead
     },
-    .execute = [this, sun_const_buffer, frustum_const_buffer](vuk::CommandBuffer& command_buffer) {
+    .execute = [this, sun_const_buffer](vuk::CommandBuffer& command_buffer) {
       command_buffer.set_dynamic_state(vuk::DynamicStateFlagBits::eScissor | vuk::DynamicStateFlagBits::eViewport)
                     .set_viewport(0, vuk::Rect2D::framebuffer())
                     .set_scissor(0, vuk::Rect2D::framebuffer())
@@ -1232,8 +1225,7 @@ void DefaultRenderPipeline::atmosphere_pass(vuk::Allocator& frame_allocator,
                     .bind_graphics_pipeline("sky_view_final_pipeline")
                     .bind_image(0, 0, "sky_view_lut+")
                     .bind_sampler(0, 0, {})
-                    .bind_buffer(0, 1, frustum_const_buffer)
-                    .bind_buffer(0, 2, sun_const_buffer)
+                    .bind_buffer(0, 1, sun_const_buffer)
                     .draw(3, 1, 0, 0);
     }
   });

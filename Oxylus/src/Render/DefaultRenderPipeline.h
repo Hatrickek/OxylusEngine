@@ -84,7 +84,7 @@ private:
     } m_atmosphere;
 
     struct EyeViewData {
-      glm::vec3 eye_position = {0.0, 6368000.0, 0.0};
+      glm::vec3 eye_position = {0.0, 6360010.0, 0.0};
       float step_count = 100.f;
       glm::vec3 sun_direction = { -3.09086E-08, 0.70711, 0.70711 };
       float sun_intensity = 10.f;
@@ -92,8 +92,8 @@ private:
 
     struct SunData {
       glm::vec3 sun_dir = {};
-      float sun_radius = {};
-      float sun_intensity = {};
+      float sun_radius = 3.0;
+      glm::vec3 frustum[4] = {};
     } sun_data;
   } m_renderer_data = {};
 
