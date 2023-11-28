@@ -73,6 +73,15 @@ void SceneRenderer::update() const {
       }
     });
 
+  const auto sky_light_view = m_scene->m_registry.view<TransformComponent, SkyLightComponent>();
+  {
+    OX_SCOPED_ZONE_N("Sky Light System");
+    for (auto&& [e,tc, lc] : sky_light_view.each()) {
+      m_render_pipeline->on_register_sky(lc);
+    }
+  }
+
+
   // TODO: (very outdated, currently not working)
   // Particle system 
   const auto particle_system_view = m_scene->m_registry.view<TransformComponent, ParticleSystemComponent>();
