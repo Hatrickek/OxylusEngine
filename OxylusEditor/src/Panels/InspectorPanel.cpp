@@ -371,10 +371,14 @@ void InspectorPanel::draw_components(Entity entity) const {
   draw_component<SkyLightComponent>(ICON_MDI_WEATHER_SUNNY " Sky Light Component",
     entity,
     [this](SkyLightComponent& component) {
+      OxUI::begin_properties();
+      OxUI::property_vector<Vec2>("Sun Direction", component.sun_rotation, false, false);
+      OxUI::end_properties();
+
       const std::string name = component.cubemap
                                  ? FileSystem::get_file_name(component.cubemap->get_path())
                                  : "Drop a hdr file";
-      auto loadCubeMap = [](Scene* scene, const std::string& path, SkyLightComponent& comp) {
+      auto load_cube_map = [](Scene* scene, const std::string& path, SkyLightComponent& comp) {
         if (path.empty())
           return;
         const auto ext = std::filesystem::path(path).extension().string();
@@ -386,20 +390,17 @@ void InspectorPanel::draw_components(Entity entity) const {
       const float x = ImGui::GetContentRegionAvail().x;
       const float y = ImGui::GetFrameHeight();
       if (ImGui::Button(name.c_str(), {x, y})) {
-        const std::string filePath = FileDialogs::open_file({{"HDR File", "hdr"}});
-        loadCubeMap(m_Scene, filePath, component);
+        const std::string file_path = FileDialogs::open_file({{"HDR File", "hdr"}});
+        load_cube_map(m_Scene, file_path, component);
       }
       if (ImGui::BeginDragDropTarget()) {
         if (const ImGuiPayload* payload = ImGui::AcceptDragDropPayload("CONTENT_BROWSER_ITEM")) {
           const auto path = OxUI::get_path_from_imgui_payload(payload).string();
-          loadCubeMap(m_Scene, path, component);
+          load_cube_map(m_Scene, path, component);
         }
         ImGui::EndDragDropTarget();
       }
       ImGui::Spacing();
-      OxUI::begin_properties();
-      OxUI::property("Lod Bias", &component.lod_bias);
-      OxUI::end_properties();
     });
 
   draw_component<PostProcessProbe>(ICON_MDI_SPRAY " PostProcess Probe Component",

@@ -31,6 +31,7 @@ public:
   void on_dispatcher_events(EventDispatcher& dispatcher) override;
   void on_register_render_object(const MeshComponent& render_object) override;
   void on_register_light(const LightingData& lighting_data, LightComponent::LightType light_type) override;
+  void on_register_sky(const SkyLightComponent& lighting_data) override;
   void on_register_camera(Camera* camera) override;
 
 private:
@@ -122,6 +123,7 @@ private:
   std::vector<LightingData> point_lights_data = {};
   std::vector<LightingData> dir_lights_data = {};
   std::vector<LightingData> spot_lights_data = {};
+  SkyLightComponent m_sky_lighting_data;
   EventDispatcher light_buffer_dispatcher;
 
   void compute_sky_transmittance(vuk::Allocator& allocator);
@@ -130,9 +132,9 @@ private:
   void generate_prefilter(vuk::Allocator& allocator);
   void update_parameters(ProbeChangeEvent& e);
 
-  void atmosphere_pass(vuk::Allocator& frame_allocator, const VulkanContext* vk_context, const Ref<vuk::RenderGraph>& rg);
+  void sky_view_lut_pass(vuk::Allocator& frame_allocator, const VulkanContext* vk_context, const Ref<vuk::RenderGraph>& rg);
   void depth_pre_pass(const Ref<vuk::RenderGraph>& rg, vuk::Buffer& vs_buffer, const std::unordered_map<uint32_t, uint32_t>&, vuk::Buffer& mat_buffer) const;
-  void geomerty_pass(const Ref<vuk::RenderGraph>& rg, vuk::Buffer& vs_buffer, const std::unordered_map<uint32_t, uint32_t>&, vuk::Buffer& mat_buffer, vuk::Buffer& shadow_buffer, vuk::Buffer& point_lights_buffer, vuk::Buffer pbr_buffer);
+  void geomerty_pass(const Ref<vuk::RenderGraph>& rg, vuk::Allocator& frame_allocator,vuk::Buffer& vs_buffer, const std::unordered_map<uint32_t, uint32_t>&, vuk::Buffer& mat_buffer, vuk::Buffer& shadow_buffer, vuk::Buffer& point_lights_buffer, vuk::Buffer pbr_buffer);
   void apply_fxaa(vuk::RenderGraph* rg,vuk::Name src, vuk::Name dst, vuk::Buffer& fxaa_buffer);
   void cascaded_shadow_pass(const Ref<vuk::RenderGraph>& rg, vuk::Buffer& shadow_buffer);
   void gtao_pass(vuk::Allocator& frame_allocator, const Ref<vuk::RenderGraph>& rg);
