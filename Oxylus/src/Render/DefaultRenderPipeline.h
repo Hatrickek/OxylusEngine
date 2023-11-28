@@ -93,7 +93,7 @@ private:
     struct SunData {
       glm::vec3 sun_dir = {};
       float sun_radius = 3.0;
-      glm::vec3 frustum[4] = {};
+      glm::vec4 frustum[4] = {};
     } sun_data;
   } m_renderer_data = {};
 
