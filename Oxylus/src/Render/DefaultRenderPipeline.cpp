@@ -1222,7 +1222,7 @@ void DefaultRenderPipeline::atmosphere_pass(vuk::Allocator& frame_allocator,
                     .set_rasterization({.cullMode = vuk::CullModeFlagBits::eNone})
                     .bind_graphics_pipeline("sky_view_final_pipeline")
                     .bind_image(0, 0, "sky_view_lut+")
-                    .bind_sampler(0, 0, {})
+                    .bind_sampler(0, 0, vuk::LinearSamplerRepeated)
                     .bind_buffer(0, 1, sun_const_buffer)
                     .draw(3, 1, 0, 0);
     }
