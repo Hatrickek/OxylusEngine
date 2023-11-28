@@ -550,7 +550,7 @@ void EntitySerializer::serialize_entity_as_prefab(const char* filepath, Entity e
 Entity EntitySerializer::deserialize_entity_as_prefab(const char* filepath, Scene* scene) {
   auto content = FileUtils::read_file(filepath);
   if (content.empty()) {
-    OX_CORE_ERROR(fmt::format("Couldn't read prefab file: {0}", filepath).c_str());
+    OX_CORE_ERROR("Couldn't read prefab file: {0}", filepath);
 
     // Try to read it again from assets path
     content = FileUtils::read_file(AssetManager::get_asset_file_system_path(filepath).string());

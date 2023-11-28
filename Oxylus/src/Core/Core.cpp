@@ -24,7 +24,7 @@ namespace Oxylus {
 bool Core::init(const AppSpec& spec) {
   OX_SCOPED_ZONE;
   if (!Resources::resources_path_exists()) {
-    OX_CORE_FATAL("Resources path doesn't exists. Make sure the working directory is correct!");
+    OX_CORE_ERROR("Resources path doesn't exists. Make sure the working directory is correct!");
     Application::get()->close();
     return false;
   }

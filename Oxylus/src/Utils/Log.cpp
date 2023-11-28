@@ -1,27 +1,29 @@
 #include "Log.h"
-#include <UI/ExternalConsoleSink.h>
 #include <spdlog/sinks/stdout_color_sinks.h>
-#include <spdlog/sinks/basic_file_sink.h>
-#include <spdlog/spdlog.h>
 
 namespace Oxylus {
-std::shared_ptr<spdlog::logger> Log::s_core_logger;
+std::vector<std::shared_ptr<ExternalSink>> Log::external_sinks = {};
 
 void Log::init() {
-  std::vector<spdlog::sink_ptr> log_sinks;
-  log_sinks.emplace_back(std::make_shared<spdlog::sinks::stdout_color_sink_mt>())
-         ->set_pattern("%^[%T] [%l]%$ %n: %v");
-  log_sinks.emplace_back(std::make_shared<ExternalConsoleSink>(true))
-         ->set_pattern("%^[%T] [%l]%$ %n: %v");
-  log_sinks.emplace_back(std::make_shared<spdlog::sinks::basic_file_sink_st>("logs/oxylus_log.txt", true))
-         ->set_pattern("[%T] [%l] %n: %v");
+  fmtlog::setLogCB(logcb, fmtlog::DBG);
+  fmtlog::setLogFile("logs/oxylus_log.txt", true);
+  fmtlog::setHeaderPattern("{HMS} | {l} | {s:<16} | ");
+  fmtlog::flushOn(fmtlog::DBG);
+  fmtlog::setThreadName("MAIN");
+  fmtlog::startPollingThread(1);
+}
 
-  s_core_logger = std::make_shared<spdlog::logger>("Oxylus", log_sinks.begin(), log_sinks.end());
-  s_core_logger->set_level(spdlog::level::trace);
-  spdlog::register_logger(s_core_logger);
+void Log::logcb(int64_t ns,
+                fmtlog::LogLevel level,
+                fmt::string_view location,
+                size_t base_pos,
+                fmt::string_view thread_name,
+                fmt::string_view msg,
+                size_t body_pos,
+                size_t log_file_pos) {
+  fmt::print("{}\n", msg);
 
-  spdlog::set_error_handler([](const std::string& msg) {
-    OX_CORE_ERROR(msg);
-  });
+  for (const auto& interface : external_sinks)
+    interface->log(ns, level, location, base_pos, thread_name, msg, body_pos, log_file_pos);
 }
 }

@@ -20,9 +20,6 @@
 #include "Texture.h"
 #include "Assets/AssetManager.h"
 
-#include <spdlog/stopwatch.h>
-#include <spdlog/fmt/chrono.h>
-
 #include "Core/Components.h"
 #include "Core/Entity.h"
 
@@ -30,6 +27,8 @@
 
 #include "Utils/Log.h"
 #include "Utils/Profiler.h"
+#include "Utils/Timer.h"
+
 #include "Vulkan/VulkanContext.h"
 
 namespace Oxylus {
@@ -84,7 +83,7 @@ bool Mesh::export_as_binary(const std::string& in_path, const std::string& out_p
 
 void Mesh::load_from_file(const std::string& file_path, int file_loading_flags, const float scale) {
   OX_SCOPED_ZONE;
-  spdlog::stopwatch sw;
+  Timer timer;
 
   path = file_path;
   loading_flags = file_loading_flags;
@@ -139,6 +138,8 @@ void Mesh::load_from_file(const std::string& file_path, int file_loading_flags, 
     }
   }
 
+  get_scene_dimensions();
+
   auto context = VulkanContext::get();
   auto compiler = vuk::Compiler{};
 
@@ -154,7 +155,7 @@ void Mesh::load_from_file(const std::string& file_path, int file_loading_flags, 
 
   m_textures.clear();
 
-  OX_CORE_INFO("Mesh file loaded: ({}) {}, {} materials, {} animations", duration_cast<std::chrono::milliseconds>(sw.elapsed()), name.c_str(), gltf_model.materials.size(), animations.size());
+  OX_CORE_INFO("Mesh file loaded: ({}) {}, {} materials, {} animations", timer.get_elapsed_ms(), name.c_str(), gltf_model.materials.size(), animations.size());
 }
 
 void Mesh::bind_vertex_buffer(vuk::CommandBuffer& command_buffer) const {

@@ -65,7 +65,7 @@ void MaterialSerializer::Deserialize(const std::string& path) const {
 
   auto content = FileUtils::read_file(path);
   if (content.empty()) {
-    OX_CORE_ERROR(fmt::format("Couldn't read material file: {0}", path).c_str());
+    OX_CORE_ERROR("Couldn't read material file: {0}", path);
 
     // Try to read it again from assets path
     content = FileUtils::read_file(AssetManager::get_asset_file_system_path(path).string());

@@ -324,7 +324,7 @@ void DefaultRenderPipeline::atmosphere_pass(vuk::Allocator& frame_allocator, con
 
 Scope<vuk::Future> DefaultRenderPipeline::on_render(vuk::Allocator& frame_allocator, const vuk::Future& target, vuk::Dimension3D dim) {
   if (!m_renderer_context.current_camera) {
-    OX_CORE_FATAL("No camera is set for rendering!");
+    OX_CORE_ERROR("No camera is set for rendering!");
     // set a temporary one
     if (!default_camera)
       default_camera = create_ref<Camera>();
