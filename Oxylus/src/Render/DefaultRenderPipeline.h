@@ -31,6 +31,7 @@ public:
   void on_dispatcher_events(EventDispatcher& dispatcher) override;
   void on_register_render_object(const MeshComponent& render_object) override;
   void on_register_light(const LightingData& lighting_data, LightComponent::LightType light_type) override;
+  void on_register_sky(const SkyLightComponent& lighting_data) override;
   void on_register_camera(Camera* camera) override;
 
 private:
@@ -60,6 +61,41 @@ private:
       Vec2 chromatic_aberration = {};                          // x: enable, y: amount
       Vec2 sharpen = {};                                      // x: enable, y: amount
     } final_pass_data;
+
+    struct Atmosphere {
+      constexpr static float kuM = 1e-6f;
+      constexpr static float kKM = 1e3f;
+
+      glm::vec3 rayleigh_scatter_val = {5.802 * kuM, 13.558 * kuM, 33.1 * kuM};
+      float rayleigh_density = 8 * kKM;
+
+      float planet_radius = 6360.f * kKM;
+      float atmos_radius = 6460.f * kKM;
+
+      float mie_scatter_val = 3.996f * kuM;
+      float mie_absorption_val = 4.4f * kuM;
+      float mie_density = 1.2 * kKM;
+      float mie_asymmetry = 0.8f;
+
+      float ozone_height = 25 * kKM;
+      float ozone_thickness = 15 * kKM;
+      glm::vec3 ozone_absorption = {0.650 * kuM, 1.881 * kuM, 0.085 * kuM};
+
+      float _padding;
+    } m_atmosphere;
+
+    struct EyeViewData {
+      glm::vec3 eye_position = {0.0, 6360010.0, 0.0};
+      float step_count = 100.f;
+      glm::vec3 sun_direction = { -3.09086E-08, 0.70711, 0.70711 };
+      float sun_intensity = 10.f;
+    } eye_view_data;
+
+    struct SunData {
+      glm::vec3 sun_dir = {};
+      float sun_radius = 0.3;
+      glm::vec4 frustum[4] = {};
+    } sun_data;
   } m_renderer_data = {};
 
   XeGTAO::GTAOConstants gtao_constants = {};
@@ -70,6 +106,7 @@ private:
   vuk::Unique<vuk::Image> brdf_image;
   vuk::Unique<vuk::Image> irradiance_image;
   vuk::Unique<vuk::Image> prefiltered_image;
+  vuk::Unique<vuk::Image> sky_transmittance_lut_image;
 
   // Mesh
   std::vector<MeshComponent> mesh_draw_list;
@@ -86,14 +123,18 @@ private:
   std::vector<LightingData> point_lights_data = {};
   std::vector<LightingData> dir_lights_data = {};
   std::vector<LightingData> spot_lights_data = {};
+  SkyLightComponent m_sky_lighting_data;
   EventDispatcher light_buffer_dispatcher;
+
+  void compute_sky_transmittance(vuk::Allocator& allocator);
 
   void update_skybox(const SkyboxLoadEvent& e);
   void generate_prefilter(vuk::Allocator& allocator);
   void update_parameters(ProbeChangeEvent& e);
 
+  void sky_view_lut_pass(vuk::Allocator& frame_allocator, const VulkanContext* vk_context, const Ref<vuk::RenderGraph>& rg);
   void depth_pre_pass(const Ref<vuk::RenderGraph>& rg, vuk::Buffer& vs_buffer, const std::unordered_map<uint32_t, uint32_t>&, vuk::Buffer& mat_buffer) const;
-  void geomerty_pass(const Ref<vuk::RenderGraph>& rg, vuk::Buffer& vs_buffer, const std::unordered_map<uint32_t, uint32_t>&, vuk::Buffer& mat_buffer, vuk::Buffer& shadow_buffer, vuk::Buffer& point_lights_buffer, vuk::Buffer pbr_buffer);
+  void geomerty_pass(const Ref<vuk::RenderGraph>& rg, vuk::Allocator& frame_allocator,vuk::Buffer& vs_buffer, const std::unordered_map<uint32_t, uint32_t>&, vuk::Buffer& mat_buffer, vuk::Buffer& shadow_buffer, vuk::Buffer& point_lights_buffer, vuk::Buffer pbr_buffer);
   void apply_fxaa(vuk::RenderGraph* rg,vuk::Name src, vuk::Name dst, vuk::Buffer& fxaa_buffer);
   void cascaded_shadow_pass(const Ref<vuk::RenderGraph>& rg, vuk::Buffer& shadow_buffer);
   void gtao_pass(vuk::Allocator& frame_allocator, const Ref<vuk::RenderGraph>& rg);

@@ -142,8 +142,22 @@ void DefaultRenderPipeline::init(vuk::Allocator& allocator) {
     pci.add_glsl(FileUtils::read_shader_file("Unlit.frag"), FileUtils::get_shader_path("Unlit.frag"));
     allocator.get_context().create_named_pipeline("unlit_pipeline", pci);
   }
+  {
+    vuk::PipelineBaseCreateInfo pci;
+    pci.add_glsl(FileUtils::read_shader_file("FullscreenPass.vert"), FileUtils::get_shader_path("FullscreenPass.vert"));
+    pci.add_glsl(FileUtils::read_shader_file("SkyView.frag"), FileUtils::get_shader_path("SkyView.frag"));
+    allocator.get_context().create_named_pipeline("sky_view_pipeline", pci);
+  }
+  {
+    vuk::PipelineBaseCreateInfo pci;
+    pci.add_glsl(FileUtils::read_shader_file("FullscreenPass.vert"), FileUtils::get_shader_path("FullscreenPass.vert"));
+    pci.add_glsl(FileUtils::read_shader_file("SkyViewFinal.frag"), FileUtils::get_shader_path("SkyViewFinal.frag"));
+    allocator.get_context().create_named_pipeline("sky_view_final_pipeline", pci);
+  }
 
   wait_for_futures(allocator);
+
+  compute_sky_transmittance(allocator);
 }
 
 void DefaultRenderPipeline::on_dispatcher_events(EventDispatcher& dispatcher) {
@@ -172,6 +186,10 @@ void DefaultRenderPipeline::on_register_light(const LightingData& lighting_data,
   }
 
   light_buffer_dispatcher.trigger(LightChangeEvent{});
+}
+
+void DefaultRenderPipeline::on_register_sky(const SkyLightComponent& lighting_data) {
+  m_sky_lighting_data = lighting_data;
 }
 
 void DefaultRenderPipeline::on_register_camera(Camera* camera) {
@@ -368,10 +386,12 @@ Scope<vuk::Future> DefaultRenderPipeline::on_render(vuk::Allocator& frame_alloca
   auto [pbr_buf, pbr_buffer_fut] = create_buffer(frame_allocator, vuk::MemoryUsage::eCPUtoGPU, vuk::DomainFlagBits::eTransferOnGraphics, std::span(&pbr_pass_params, 1));
   auto& pbr_buffer = *pbr_buf;
 
-  geomerty_pass(rg, vs_buffer, material_map, mat_buffer, shadow_buffer, point_lights_buffer, pbr_buffer);
+  geomerty_pass(rg, frame_allocator, vs_buffer, material_map, mat_buffer, shadow_buffer, point_lights_buffer, pbr_buffer);
 
   rg->attach_and_clear_image("pbr_image", {.format = vk_context->swapchain->format, .sample_count = vuk::SampleCountFlagBits::e1}, vuk::Black<float>);
   rg->inference_rule("pbr_image", vuk::same_shape_as("final_image"));
+
+  sky_view_lut_pass(frame_allocator, vk_context, rg);
 
   if (RendererCVar::cvar_ssr_enable.get())
     ssr_pass(frame_allocator, rg, vk_context, vs_buffer);
@@ -468,6 +488,59 @@ Scope<vuk::Future> DefaultRenderPipeline::on_render(vuk::Allocator& frame_alloca
   return create_scope<vuk::Future>(rg, final_image_name);
 }
 
+void DefaultRenderPipeline::compute_sky_transmittance(vuk::Allocator& allocator) {
+  vuk::PipelineBaseCreateInfo pci;
+  pci.add_glsl(FileUtils::read_shader_file("SkyTransmittance.comp"), FileUtils::get_shader_path("SkyTransmittance.comp"));
+  allocator.get_context().create_named_pipeline("sky_transmittance_pipeline", pci);
+
+  vuk::Unique<vuk::Image> lut_image;
+
+  IVec2 lut_size = {256, 64};
+
+  vuk::ImageAttachment attachment = {
+    .image = *lut_image,
+    .image_type = vuk::ImageType::e2D,
+    .usage = vuk::ImageUsageFlagBits::eStorage,
+    .extent = vuk::Dimension3D::absolute(lut_size.x, lut_size.y, 1),
+    .format = vuk::Format::eR32G32B32A32Sfloat,
+    .sample_count = vuk::Samples::e1,
+    .view_type = vuk::ImageViewType::e2D,
+    .base_level = 0,
+    .level_count = 1,
+    .base_layer = 0,
+    .layer_count = 1
+  };
+
+  lut_image = *allocate_image(allocator, attachment);
+  attachment.image = *lut_image;
+
+  const Ref<vuk::RenderGraph> rg = create_ref<vuk::RenderGraph>("gen_transmittance");
+
+  auto [atmos_buff, atmos_buff_fut] = create_buffer(allocator, vuk::MemoryUsage::eCPUtoGPU, vuk::DomainFlagBits::eTransferOnGraphics, std::span(&m_renderer_data.m_atmosphere, 1));
+  auto& atmos_const_buff = *atmos_buff;
+
+  rg->attach_image("sky_transmittance_lut", attachment);
+
+  rg->add_pass({
+    .name = "generate_transmittance",
+    .resources = {
+      "sky_transmittance_lut"_image >> vuk::eComputeRW
+    },
+    .execute = [lut_size, atmos_const_buff](vuk::CommandBuffer& command_buffer) {
+      command_buffer.bind_compute_pipeline("sky_transmittance_pipeline")
+                    .bind_image(0, 0, "sky_transmittance_lut")
+                    .bind_buffer(0, 1, atmos_const_buff)
+                    .dispatch((lut_size.x + 8 - 1) / 8, (lut_size.y + 8 - 1) / 8);
+    }
+  });
+
+  vuk::Compiler compiler{};
+  auto fut = transition(vuk::Future{rg, "sky_transmittance_lut+"}, vuk::eFragmentSampled);
+  fut.wait(allocator, compiler);
+
+  sky_transmittance_lut_image = std::move(lut_image);
+}
+
 void DefaultRenderPipeline::update_skybox(const SkyboxLoadEvent& e) {
   cube_map = e.cube_map;
 
@@ -522,47 +595,62 @@ void DefaultRenderPipeline::depth_pre_pass(const Ref<vuk::RenderGraph>& rg, vuk:
 }
 
 void DefaultRenderPipeline::geomerty_pass(const Ref<vuk::RenderGraph>& rg,
+                                          vuk::Allocator& frame_allocator,
                                           vuk::Buffer& vs_buffer,
                                           const std::unordered_map<uint32_t, uint32_t>& material_map,
                                           vuk::Buffer& mat_buffer,
                                           vuk::Buffer& shadow_buffer,
                                           vuk::Buffer& point_lights_buffer,
                                           vuk::Buffer pbr_buffer) {
+  const Mat4 inv_cam = inverse(m_renderer_context.current_camera->get_projection_matrix_flipped() * m_renderer_context.current_camera->get_view_matrix());
+
+  constexpr Vec4 ndc[] = {
+    Vec4(-1.0f, -1.0f, 1.0f, 1.0f), // bottom-left
+    Vec4(1.0f, -1.0f, 1.0f, 1.0f),  // bottom-right
+    Vec4(-1.0f, 1.0f, 1.0f, 1.0f),  // top-left
+    Vec4(1.0f, 1.0f, 1.0f, 1.0f)    // top-right
+  };
+
+  for (int i = 0; i < 4; ++i) {
+    Vec4 inv_corner = inv_cam * ndc[i];
+    m_renderer_data.sun_data.frustum[i] = inv_corner / inv_corner.w;
+  }
+
+  m_renderer_data.sun_data.sun_dir = m_renderer_data.eye_view_data.sun_direction;
+  auto [sun_const_buff, sun_const_buff_fut] = create_buffer(frame_allocator, vuk::MemoryUsage::eCPUtoGPU, vuk::DomainFlagBits::eTransferOnGraphics, std::span(&m_renderer_data.sun_data, 1));
+  auto& sun_const_buffer = *sun_const_buff;
+
   rg->add_pass({
     .name = "geomerty_pass",
     .resources = {
       "pbr_image"_image >> vuk::eColorRW >> "pbr_output",
       "depth_output"_image >> vuk::eDepthStencilRead,
       "shadow_array_output"_image >> vuk::eFragmentSampled,
+      "sky_view_lut+"_image >> vuk::eFragmentSampled,
     },
-    .execute = [this, vs_buffer, point_lights_buffer, shadow_buffer, pbr_buffer, mat_buffer, material_map](vuk::CommandBuffer& command_buffer) {
-      // Skybox pass
-      struct SkyboxPushConstant {
-        Mat4 view;
-        float lod_bias;
-      } skybox_push_constant = {};
-
-      skybox_push_constant.view = m_renderer_context.current_camera->skybox_view;
-
-      command_buffer.bind_graphics_pipeline("skybox_pipeline")
-                    .set_dynamic_state(vuk::DynamicStateFlagBits::eScissor | vuk::DynamicStateFlagBits::eViewport)
+    .execute = [this, vs_buffer, point_lights_buffer, shadow_buffer, pbr_buffer, mat_buffer, material_map, sun_const_buffer](vuk::CommandBuffer& command_buffer) {
+      auto sampler = vuk::SamplerCreateInfo{
+        .magFilter = vuk::Filter::eLinear,
+        .minFilter = vuk::Filter::eLinear,
+        .addressModeU = vuk::SamplerAddressMode::eRepeat,
+        .addressModeV = vuk::SamplerAddressMode::eClampToEdge,
+        .addressModeW = vuk::SamplerAddressMode::eClampToEdge
+      };
+      command_buffer.set_dynamic_state(vuk::DynamicStateFlagBits::eScissor | vuk::DynamicStateFlagBits::eViewport)
                     .set_viewport(0, vuk::Rect2D::framebuffer())
                     .set_scissor(0, vuk::Rect2D::framebuffer())
-                    .broadcast_color_blend({})
-                    .set_rasterization({.cullMode = vuk::CullModeFlagBits::eNone})
-                    .set_depth_stencil(vuk::PipelineDepthStencilStateCreateInfo{
+                    .broadcast_color_blend(vuk::BlendPreset::eOff)
+                    .set_depth_stencil({
                        .depthTestEnable = false,
                        .depthWriteEnable = false,
-                       .depthCompareOp = vuk::CompareOp::eLessOrEqual,
+                       .depthCompareOp = vuk::CompareOp::eLessOrEqual
                      })
-                    .bind_buffer(0, 0, vs_buffer)
-                    .bind_sampler(0, 1, vuk::LinearSamplerRepeated)
-                    .bind_image(0, 1, cube_map->as_attachment())
-                    .push_constants(vuk::ShaderStageFlagBits::eVertex | vuk::ShaderStageFlagBits::eFragment, 0, skybox_push_constant);
-
-      m_cube->bind_index_buffer(command_buffer);
-      m_cube->bind_vertex_buffer(command_buffer);
-      command_buffer.draw_indexed(m_cube->indices.size(), 1, 0, 0, 0);
+                    .set_rasterization({.cullMode = vuk::CullModeFlagBits::eNone})
+                    .bind_graphics_pipeline("sky_view_final_pipeline")
+                    .bind_image(0, 0, "sky_view_lut+")
+                    .bind_sampler(0, 0, sampler)
+                    .bind_buffer(0, 1, sun_const_buffer)
+                    .draw(3, 1, 0, 0);
 
       auto irradiance_att = vuk::ImageAttachment{
         .image = *irradiance_image,
@@ -1085,5 +1173,64 @@ void DefaultRenderPipeline::update_parameters(ProbeChangeEvent& e) {
   ubo.film_grain = {component.film_grain_enabled, component.film_grain_intensity};
   ubo.vignette_offset.w = component.vignette_enabled;
   ubo.vignette_color.a = component.vignette_intensity;
+}
+
+void DefaultRenderPipeline::sky_view_lut_pass(vuk::Allocator& frame_allocator,
+                                              const VulkanContext* vk_context,
+                                              const Ref<vuk::RenderGraph>& rg) {
+  Vec2 sun_dir = glm::radians(m_sky_lighting_data.sun_rotation);
+
+  auto [atmos_const_buff, atmos_const_buff_fut] = create_buffer(frame_allocator, vuk::MemoryUsage::eCPUtoGPU, vuk::DomainFlagBits::eTransferOnGraphics, std::span(&m_renderer_data.m_atmosphere, 1));
+  auto& atmos_const_buffer = *atmos_const_buff;
+
+  m_renderer_data.eye_view_data.eye_position.y = m_renderer_context.current_camera->get_position().y + m_renderer_data.m_atmosphere.planet_radius;
+  m_renderer_data.eye_view_data.sun_direction = glm::normalize(glm::vec3(cos(sun_dir.x) * cos(sun_dir.y), sin(sun_dir.y), sin(sun_dir.x) * cos(sun_dir.y)));
+  auto [eye_const_buff, eye_const_buff_fut] = create_buffer(frame_allocator, vuk::MemoryUsage::eCPUtoGPU, vuk::DomainFlagBits::eTransferOnGraphics, std::span(&m_renderer_data.eye_view_data, 1));
+  auto& eye_const_buffer = *eye_const_buff;
+
+  const auto attachment = vuk::ImageAttachment{
+    .extent = vuk::Dimension3D::absolute(400, 200, 1),
+    .format = vk_context->swapchain->format,
+    .sample_count = vuk::SampleCountFlagBits::e1,
+    .base_level = 0,
+    .level_count = 1,
+    .base_layer = 0,
+    .layer_count = 1
+  };
+
+  rg->attach_and_clear_image("sky_view_lut", attachment, vuk::Black<float>);
+
+  rg->add_pass({
+    .name = "sky_view_pass",
+    .resources = {
+      "sky_view_lut"_image >> vuk::eColorRW,
+    },
+    .execute = [this, atmos_const_buffer, eye_const_buffer](vuk::CommandBuffer& command_buffer) {
+      const auto sky_transmittance_lut = vuk::ImageAttachment{
+        .image = *sky_transmittance_lut_image,
+        .usage = vuk::ImageUsageFlagBits::eSampled | vuk::ImageUsageFlagBits::eColorAttachment,
+        .extent = vuk::Dimension3D::absolute(512, 512, 1),
+        .format = vuk::Format::eR32G32B32A32Sfloat,
+        .sample_count = vuk::Samples::e1,
+        .view_type = vuk::ImageViewType::e2D,
+        .base_level = 0,
+        .level_count = 1,
+        .base_layer = 0,
+        .layer_count = 1
+      };
+
+      command_buffer.set_dynamic_state(vuk::DynamicStateFlagBits::eScissor | vuk::DynamicStateFlagBits::eViewport)
+                    .set_viewport(0, vuk::Rect2D::framebuffer())
+                    .set_scissor(0, vuk::Rect2D::framebuffer())
+                    .broadcast_color_blend(vuk::BlendPreset::eOff)
+                    .set_rasterization({.cullMode = vuk::CullModeFlagBits::eNone})
+                    .bind_graphics_pipeline("sky_view_pipeline")
+                    .bind_image(0, 0, sky_transmittance_lut)
+                    .bind_sampler(0, 0, {vuk::LinearSamplerClamped})
+                    .bind_buffer(0, 1, atmos_const_buffer)
+                    .bind_buffer(0, 2, eye_const_buffer)
+                    .draw(3, 1, 0, 0);
+    }
+  });
 }
 }
