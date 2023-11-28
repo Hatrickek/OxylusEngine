@@ -148,6 +148,12 @@ void DefaultRenderPipeline::init(vuk::Allocator& allocator) {
     pci.add_glsl(FileUtils::read_shader_file("SkyView.frag"), FileUtils::get_shader_path("SkyView.frag"));
     allocator.get_context().create_named_pipeline("sky_view_pipeline", pci);
   }
+  {
+    vuk::PipelineBaseCreateInfo pci;
+    pci.add_glsl(FileUtils::read_shader_file("FullscreenPass.vert"), FileUtils::get_shader_path("FullscreenPass.vert"));
+    pci.add_glsl(FileUtils::read_shader_file("SkyViewFinal.frag"), FileUtils::get_shader_path("SkyViewFinal.frag"));
+    allocator.get_context().create_named_pipeline("sky_view_final_pipeline", pci);
+  }
 
   wait_for_futures(allocator);
 
@@ -303,8 +309,6 @@ Scope<vuk::Future> DefaultRenderPipeline::on_render(vuk::Allocator& frame_alloca
   rg->attach_and_clear_image("black_image_uint", {.format = vuk::Format::eR8Uint, .sample_count = vuk::SampleCountFlagBits::e1}, vuk::Black<float>);
   rg->inference_rule("black_image_uint", vuk::same_shape_as("final_image"));
 
-  atmosphere_pass(frame_allocator, vk_context, rg);
-
   std::vector<Material::Parameters> materials = {};
 
   std::unordered_map<uint32_t, uint32_t> material_map; //mesh, material
@@ -383,6 +387,8 @@ Scope<vuk::Future> DefaultRenderPipeline::on_render(vuk::Allocator& frame_alloca
   rg->attach_and_clear_image("pbr_image", {.format = vk_context->swapchain->format, .sample_count = vuk::SampleCountFlagBits::e1}, vuk::Black<float>);
   rg->inference_rule("pbr_image", vuk::same_shape_as("final_image"));
 
+  atmosphere_pass(frame_allocator, vk_context, rg);
+
   if (RendererCVar::cvar_ssr_enable.get())
     ssr_pass(frame_allocator, rg, vk_context, vs_buffer);
 
@@ -405,7 +411,7 @@ Scope<vuk::Future> DefaultRenderPipeline::on_render(vuk::Allocator& frame_alloca
 
   std::vector<vuk::Resource> final_resources = {
     "final_image"_image >> vuk::eColorRW >> "final_output",
-    "pbr_output"_image >> vuk::eFragmentSampled,
+    "pbr_output+"_image >> vuk::eFragmentSampled,
     ssr_resouce,
     gtao_resouce,
     bloom_resource,
@@ -433,7 +439,7 @@ Scope<vuk::Future> DefaultRenderPipeline::on_render(vuk::Allocator& frame_alloca
                     .broadcast_color_blend(vuk::BlendPreset::eOff)
                     .set_rasterization({.cullMode = vuk::CullModeFlagBits::eNone})
                     .bind_sampler(0, 0, vuk::LinearSamplerClamped)
-                    .bind_image(0, 0, "pbr_output")
+                    .bind_image(0, 0, "pbr_output+")
                     .bind_sampler(0, 3, vuk::LinearSamplerClamped)
                     .bind_image(0, 3, ssr_name)
                     .bind_sampler(0, 4, {})
@@ -599,34 +605,6 @@ void DefaultRenderPipeline::geomerty_pass(const Ref<vuk::RenderGraph>& rg,
       "shadow_array_output"_image >> vuk::eFragmentSampled,
     },
     .execute = [this, vs_buffer, point_lights_buffer, shadow_buffer, pbr_buffer, mat_buffer, material_map](vuk::CommandBuffer& command_buffer) {
-      // Skybox pass
-      struct SkyboxPushConstant {
-        Mat4 view;
-        float lod_bias;
-      } skybox_push_constant = {};
-
-      skybox_push_constant.view = m_renderer_context.current_camera->skybox_view;
-
-      command_buffer.bind_graphics_pipeline("skybox_pipeline")
-                    .set_dynamic_state(vuk::DynamicStateFlagBits::eScissor | vuk::DynamicStateFlagBits::eViewport)
-                    .set_viewport(0, vuk::Rect2D::framebuffer())
-                    .set_scissor(0, vuk::Rect2D::framebuffer())
-                    .broadcast_color_blend({})
-                    .set_rasterization({.cullMode = vuk::CullModeFlagBits::eNone})
-                    .set_depth_stencil(vuk::PipelineDepthStencilStateCreateInfo{
-                       .depthTestEnable = false,
-                       .depthWriteEnable = false,
-                       .depthCompareOp = vuk::CompareOp::eLessOrEqual,
-                     })
-                    .bind_buffer(0, 0, vs_buffer)
-                    .bind_sampler(0, 1, vuk::LinearSamplerRepeated)
-                    .bind_image(0, 1, cube_map->as_attachment())
-                    .push_constants(vuk::ShaderStageFlagBits::eVertex | vuk::ShaderStageFlagBits::eFragment, 0, skybox_push_constant);
-
-      m_cube->bind_index_buffer(command_buffer);
-      m_cube->bind_vertex_buffer(command_buffer);
-      command_buffer.draw_indexed(m_cube->indices.size(), 1, 0, 0, 0);
-
       auto irradiance_att = vuk::ImageAttachment{
         .image = *irradiance_image,
         .image_flags = vuk::ImageCreateFlagBits::eCubeCompatible,
@@ -750,14 +728,14 @@ void DefaultRenderPipeline::bloom_pass(const Ref<vuk::RenderGraph>& rg, const Vu
     .name = "bloom_prefilter",
     .resources = {
       vuk::Resource(down_input_names[0], vuk::Resource::Type::eImage, vuk::eComputeRW, down_output_names[0]),
-      "pbr_output"_image >> vuk::eComputeSampled
+      "pbr_output+"_image >> vuk::eComputeSampled
     },
     .execute = [bloom_push_const, down_input_names](vuk::CommandBuffer& command_buffer) {
       command_buffer.bind_compute_pipeline("bloom_prefilter_pipeline")
                     .push_constants(vuk::ShaderStageFlagBits::eCompute, 0, bloom_push_const)
                     .bind_image(0, 0, down_input_names[0])
                     .bind_sampler(0, 0, vuk::NearestMagLinearMinSamplerClamped)
-                    .bind_image(0, 1, "pbr_output")
+                    .bind_image(0, 1, "pbr_output+")
                     .bind_sampler(0, 1, vuk::NearestMagLinearMinSamplerClamped)
                     .dispatch((Renderer::get_viewport_width() + 8 - 1) / 8, (Renderer::get_viewport_height() + 8 - 1) / 8, 1);
     }
@@ -960,7 +938,7 @@ void DefaultRenderPipeline::ssr_pass(vuk::Allocator& frame_allocator, const Ref<
     .name = "ssr_pass",
     .resources = {
       "ssr_image"_image >> vuk::eComputeRW >> "ssr_output",
-      "pbr_output"_image >> vuk::eComputeSampled,
+      "pbr_output+"_image >> vuk::eComputeSampled,
       "depth_output"_image >> vuk::eComputeSampled,
       "normal_output"_image >> vuk::eComputeSampled
     },
@@ -969,7 +947,7 @@ void DefaultRenderPipeline::ssr_pass(vuk::Allocator& frame_allocator, const Ref<
                     .bind_sampler(0, 0, vuk::LinearSamplerClamped)
                     .bind_image(0, 0, "ssr_image")
                     .bind_sampler(0, 1, vuk::LinearSamplerClamped)
-                    .bind_image(0, 1, "pbr_output")
+                    .bind_image(0, 1, "pbr_output+")
                     .bind_sampler(0, 2, vuk::LinearSamplerClamped)
                     .bind_image(0, 2, "depth_output")
                     .bind_sampler(0, 3, vuk::LinearSamplerClamped)
@@ -1150,8 +1128,9 @@ void DefaultRenderPipeline::update_parameters(ProbeChangeEvent& e) {
   ubo.vignette_color.a = component.vignette_intensity;
 }
 
-void DefaultRenderPipeline::atmosphere_pass(vuk::Allocator& frame_allocator, const VulkanContext* vk_context,
-  const Ref<vuk::RenderGraph>& rg) {
+void DefaultRenderPipeline::atmosphere_pass(vuk::Allocator& frame_allocator,
+                                            const VulkanContext* vk_context,
+                                            const Ref<vuk::RenderGraph>& rg) {
   auto [atmos_const_buff, atmos_const_buff_fut] = create_buffer(frame_allocator, vuk::MemoryUsage::eCPUtoGPU, vuk::DomainFlagBits::eTransferOnGraphics, std::span(&m_renderer_data.m_atmosphere, 1));
   auto& atmos_const_buffer = *atmos_const_buff;
 
@@ -1199,6 +1178,62 @@ void DefaultRenderPipeline::atmosphere_pass(vuk::Allocator& frame_allocator, con
                     .bind_sampler(0, 0, {})
                     .bind_buffer(0, 1, atmos_const_buffer)
                     .bind_buffer(0, 2, eye_const_buffer)
+                    .draw(3, 1, 0, 0);
+    }
+  });
+
+  auto [sun_const_buff, sun_const_buff_fut] = create_buffer(frame_allocator, vuk::MemoryUsage::eCPUtoGPU, vuk::DomainFlagBits::eTransferOnGraphics, std::span(&m_renderer_data.sun_data, 1));
+  auto& sun_const_buffer = *sun_const_buff;
+
+  struct Plane {
+    Vec3 normal;
+    float dist;
+  };
+
+  struct ViewFrustumData {
+    Plane top_face;
+    Plane bottom_face;
+    Plane right_face;
+    Plane left_face;
+    Plane far_face;
+    Plane near_face;
+  };
+
+  ViewFrustumData view_frustum_data = {
+    //  .top_face = ,
+    //  .bottom_face = ,
+    //  .right_face = ,
+    //  .left_face = ,
+    //  .far_face = ,
+    //  .near_face = 
+  };
+
+  auto [frustum_const_buff, frustum_const_buff_fut] = create_buffer(frame_allocator, vuk::MemoryUsage::eCPUtoGPU, vuk::DomainFlagBits::eTransferOnGraphics, std::span(&view_frustum_data, 1));
+  auto& frustum_const_buffer = *frustum_const_buff;
+
+  rg->add_pass({
+    .name = "sky_view_pass",
+    .resources = {
+      "pbr_output"_image >> vuk::eColorWrite,
+      "sky_view_lut+"_image >> vuk::eFragmentSampled,
+      "depth_output"_image >> vuk::eDepthStencilRead
+    },
+    .execute = [this, sun_const_buffer, frustum_const_buffer](vuk::CommandBuffer& command_buffer) {
+      command_buffer.set_dynamic_state(vuk::DynamicStateFlagBits::eScissor | vuk::DynamicStateFlagBits::eViewport)
+                    .set_viewport(0, vuk::Rect2D::framebuffer())
+                    .set_scissor(0, vuk::Rect2D::framebuffer())
+                    .broadcast_color_blend(vuk::BlendPreset::eOff)
+                    .set_depth_stencil({
+                       .depthTestEnable = true,
+                       .depthWriteEnable = false,
+                       .depthCompareOp = vuk::CompareOp::eLessOrEqual
+                     })
+                    .set_rasterization({.cullMode = vuk::CullModeFlagBits::eNone})
+                    .bind_graphics_pipeline("sky_view_final_pipeline")
+                    .bind_image(0, 0, "sky_view_lut+")
+                    .bind_sampler(0, 0, {})
+                    .bind_buffer(0, 1, frustum_const_buffer)
+                    .bind_buffer(0, 2, sun_const_buffer)
                     .draw(3, 1, 0, 0);
     }
   });
