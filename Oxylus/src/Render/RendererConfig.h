@@ -36,6 +36,9 @@ inline AutoCVar_Int cvar_shadows_pcf("rr.shadows_pcf", "use pcf in cascaded shad
 
 inline AutoCVar_Int cvar_draw_grid("ui.draw_grid", "draw editor scene grid", 1);
 inline AutoCVar_Int cvar_enable_debug_renderer("ui.debug_renderer", "draw debug shapes", 1);
+
+  inline AutoCVar_Float cvar_sunx("sky.sunx", "sun x", 0);
+  inline AutoCVar_Float cvar_suny("sky.suny", "sun y", 60);
 }
 
 class RendererConfig {

@@ -31,6 +31,13 @@ void RendererSettingsPanel::on_imgui_render() {
     ImGui::Text("FPS: %lf / (ms): %lf", static_cast<double>(avg), fps);
     ImGui::Text("GPU: %s", VulkanContext::get()->device_name.c_str());
 
+    ImGui::Text("Atmosphere");
+    if (OxUI::begin_properties()) {
+      OxUI::property<float>("Sun X", RendererCVar::cvar_sunx.get_ptr(), 0, 360, "%.2f");
+      OxUI::property<float>("Sun Y", RendererCVar::cvar_suny.get_ptr(), -20, 90, "%.2f");
+      OxUI::end_properties();
+    }
+
     ImGui::Text("Environment");
     if (OxUI::begin_properties()) {
       const char* tonemaps[4] = {"ACES", "Uncharted2", "Filmic", "Reinhard"};

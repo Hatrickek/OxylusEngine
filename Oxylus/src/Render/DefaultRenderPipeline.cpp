@@ -1131,9 +1131,14 @@ void DefaultRenderPipeline::update_parameters(ProbeChangeEvent& e) {
 void DefaultRenderPipeline::atmosphere_pass(vuk::Allocator& frame_allocator,
                                             const VulkanContext* vk_context,
                                             const Ref<vuk::RenderGraph>& rg) {
+  glm::vec2 sun_dir(RendererCVar::cvar_sunx.get(), RendererCVar::cvar_suny.get());
+  sun_dir = glm::radians(sun_dir);
+
   auto [atmos_const_buff, atmos_const_buff_fut] = create_buffer(frame_allocator, vuk::MemoryUsage::eCPUtoGPU, vuk::DomainFlagBits::eTransferOnGraphics, std::span(&m_renderer_data.m_atmosphere, 1));
   auto& atmos_const_buffer = *atmos_const_buff;
 
+  m_renderer_data.eye_view_data.eye_position.y = m_renderer_context.current_camera->get_position().y + m_renderer_data.m_atmosphere.planet_radius;
+  m_renderer_data.eye_view_data.sun_direction = glm::normalize(glm::vec3(cos(sun_dir.x) * cos(sun_dir.y), sin(sun_dir.y), sin(sun_dir.x) * cos(sun_dir.y)));
   auto [eye_const_buff, eye_const_buff_fut] = create_buffer(frame_allocator, vuk::MemoryUsage::eCPUtoGPU, vuk::DomainFlagBits::eTransferOnGraphics, std::span(&m_renderer_data.eye_view_data, 1));
   auto& eye_const_buffer = *eye_const_buff;
 
@@ -1175,7 +1180,7 @@ void DefaultRenderPipeline::atmosphere_pass(vuk::Allocator& frame_allocator,
                     .set_rasterization({.cullMode = vuk::CullModeFlagBits::eNone})
                     .bind_graphics_pipeline("sky_view_pipeline")
                     .bind_image(0, 0, sky_transmittance_lut)
-                    .bind_sampler(0, 0, {})
+                    .bind_sampler(0, 0, {vuk::LinearSamplerClamped})
                     .bind_buffer(0, 1, atmos_const_buffer)
                     .bind_buffer(0, 2, eye_const_buffer)
                     .draw(3, 1, 0, 0);
@@ -1222,7 +1227,12 @@ void DefaultRenderPipeline::atmosphere_pass(vuk::Allocator& frame_allocator,
                     .set_rasterization({.cullMode = vuk::CullModeFlagBits::eNone})
                     .bind_graphics_pipeline("sky_view_final_pipeline")
                     .bind_image(0, 0, "sky_view_lut+")
-                    .bind_sampler(0, 0, {})
+                    .bind_sampler(0, 0, {
+                      .magFilter = vuk::Filter::eLinear,
+                      .minFilter = vuk::Filter::eLinear,
+                      .addressModeU = vuk::SamplerAddressMode::eRepeat,
+                      .addressModeV = vuk::SamplerAddressMode::eClampToEdge,
+                      .addressModeW = vuk::SamplerAddressMode::eClampToEdge })
                     .bind_buffer(0, 1, sun_const_buffer)
                     .draw(3, 1, 0, 0);
     }
