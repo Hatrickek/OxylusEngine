@@ -8,6 +8,7 @@
 #include "Core/Application.h"
 #include "Core/Entity.h"
 
+#include "Render/DebugRenderer.h"
 #include "Render/DefaultRenderPipeline.h"
 #include "Render/Vulkan/Renderer.h"
 #include "Render/Vulkan/VulkanContext.h"
@@ -35,6 +36,12 @@ void SceneRenderer::update() const {
           auto e = Entity(entity, m_scene);
           mesh_component.transform = e.get_world_transform();
           m_render_pipeline->on_register_render_object(mesh_component);
+
+          if (RendererCVar::cvar_draw_bounding_boxes.get()) {
+            for (const auto* node : mesh_component.original_mesh->linear_nodes)
+              if (node->mesh_data)
+                DebugRenderer::draw_bb(node->aabb);
+          }
         }
       }
     });

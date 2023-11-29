@@ -35,6 +35,7 @@ inline AutoCVar_Int cvar_shadows_size("rr.shadows_size", "cascaded shadow map si
 inline AutoCVar_Int cvar_shadows_pcf("rr.shadows_pcf", "use pcf in cascaded shadows", 1);
 
 inline AutoCVar_Int cvar_draw_grid("ui.draw_grid", "draw editor scene grid", 1);
+inline AutoCVar_Int cvar_draw_bounding_boxes("ui.draw_bounding_boxes", "draw mesh bounding boxes", 1);
 inline AutoCVar_Int cvar_enable_debug_renderer("ui.debug_renderer", "draw debug shapes", 1);
 }
 

@@ -133,16 +133,27 @@ Mat4 Camera::generate_view_matrix(const Vec3& position, const Vec3& view_dir, co
 Frustum Camera::get_frustum() {
   const float half_v_side = get_far() * tanf(glm::radians(m_fov) * .5f);
   const float half_h_side = half_v_side * get_aspect();
-  const Vec3 front_mult_far = get_far() * m_forward;
+  const Vec3 forward_far = get_far() * m_forward;
 
   Frustum frustum = {
-    .top_face = {m_position, cross(m_right, front_mult_far - m_up * half_v_side)},
-    .bottom_face = {m_position, cross(front_mult_far + m_up * half_v_side, m_right)},
-    .right_face = {m_position, cross(front_mult_far - m_right * half_h_side, m_up)},
-    .left_face = {m_position, cross(m_up, front_mult_far + m_right * half_h_side)},
-    .far_face = {m_position + front_mult_far, -m_forward},
+    .top_face = {m_position, cross(m_right, forward_far - m_up * half_v_side)},
+    .bottom_face = {m_position, cross(forward_far + m_up * half_v_side, m_right)},
+    .right_face = {m_position, cross(forward_far - m_right * half_h_side, m_up)},
+    .left_face = {m_position, cross(m_up, forward_far + m_right * half_h_side)},
+    .far_face = {m_position + forward_far, -m_forward},
     .near_face = {m_position + get_near() * m_forward, m_forward}
   };
+
+#if 0
+  Frustum frustum = {
+    .top_face = {m_forward * m_near_clip + m_position, m_forward},
+    .bottom_face = {m_position + forward_far, m_forward * -1.0f},
+    .right_face = {m_position, cross(m_up, forward_far + m_right * half_h_side)},
+    .left_face = {m_position, cross(forward_far - m_right * half_h_side, m_up)},
+    .far_face = {m_position, cross(m_right, forward_far - m_up * half_v_side)},
+    .near_face = {m_position, cross(forward_far + m_up * half_v_side, m_right)}
+  };
+#endif
 
   return frustum;
 }

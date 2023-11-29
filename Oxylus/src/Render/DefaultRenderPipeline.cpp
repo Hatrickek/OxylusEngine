@@ -1190,7 +1190,7 @@ void DefaultRenderPipeline::sky_view_lut_pass(vuk::Allocator& frame_allocator,
 
   const auto attachment = vuk::ImageAttachment{
     .extent = vuk::Dimension3D::absolute(400, 200, 1),
-    .format = vk_context->swapchain->format,
+    .format = vuk::Format::eR32G32B32A32Sfloat,
     .sample_count = vuk::SampleCountFlagBits::e1,
     .base_level = 0,
     .level_count = 1,

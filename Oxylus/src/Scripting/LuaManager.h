@@ -1,7 +1,6 @@
 #pragma once
 #include <string_view>
 #include <vector>
-
 #include "Core/Base.h"
 
 namespace sol {

@@ -4,6 +4,11 @@
 #include "Core/Types.h"
 
 namespace Oxylus {
+struct LineVertexData {
+  Vec3 position = {};
+  Vec4 color = {};
+};
+
 struct LineInfo {
   Vec3 p1 = {};
   Vec3 p2 = {};
@@ -35,15 +40,15 @@ public:
 
   static void init();
   static void release();
-  static void reset(bool clearNDT = true);
+  static void reset(bool clear_ndt = true);
 
   /// Note: 'NDT' parameter: No Depth Testing.
 
   /// Draw Point (circle)
-  static void draw_point(const Vec3& pos, float pointRadius, const Vec4& color = Vec4(1.0f, 1.0f, 1.0f, 1.0f), bool ndt = false);
+  static void draw_point(const Vec3& pos, float point_radius, const Vec4& color = Vec4(1.0f, 1.0f, 1.0f, 1.0f), bool ndt = false);
 
   /// Draw Line with a given thickness
-  static void draw_thick_line(const Vec3& start, const Vec3& end, float lineWidth, const Vec4& color = Vec4(1), bool ndt = false);
+  static void draw_thick_line(const Vec3& start, const Vec3& end, float line_width, const Vec4& color = Vec4(1), bool ndt = false);
 
   /// Draw line with thickness of 1 screen pixel regardless of distance from camera
   static void draw_hair_line(const Vec3& start, const Vec3& end, const Vec4& color = Vec4(1.0f, 1.0f, 1.0f, 1.0f), bool ndt = false);
@@ -54,6 +59,7 @@ public:
   static void draw_capsule(const Vec3& pos, const Vec3& scale, const Vec4& color = Vec4(1.0f, 1.0f, 1.0f, 1.0f), const Vec3& rotation = Vec3(0), bool ndt = false);
   static void draw_mesh(const Ref<Mesh>& mesh, const Vec3& pos, const Vec3& scale, const Vec4& color = Vec4(1.0f, 1.0f, 1.0f, 1.0f), const Vec3& rotation = Vec3(0), bool ndt = false);
   static void draw_mesh(const Ref<Mesh>& mesh, const Mat4& model_matrix, const Vec4& color = Vec4(1.0f, 1.0f, 1.0f, 1.0f), bool ndt = false);
+  static void draw_bb(const Mesh::BoundingBox& bb, const Vec4& color = Vec4(1.0f), bool corners_only = false, float width = 1.0f);
 
   static DebugRenderer* get_instance() { return instance; }
   const std::vector<LineInfo>& get_lines(bool depth_tested = true) const { return depth_tested ? draw_list.debug_lines : draw_list_ndt.debug_lines; }
