@@ -157,6 +157,9 @@ void RuntimeConsole::ConsoleText::render() const {
   flags |= ImGuiTreeNodeFlags_FramePadding;
   flags |= ImGuiTreeNodeFlags_Leaf | ImGuiTreeNodeFlags_NoTreePushOnOpen;
 
+  if (text.empty())
+    return;
+
   ImGui::PushID(text.c_str());
   ImGui::PushStyleColor(ImGuiCol_Text, get_color(level));
   const auto level_icon = get_level_icon(level);

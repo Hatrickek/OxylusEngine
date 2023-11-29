@@ -23,7 +23,7 @@
 #include "Scene/SceneRenderer.h"
 
 namespace Oxylus {
-static bool s_RenameEntity = false;
+static bool s_rename_entity = false;
 
 InspectorPanel::InspectorPanel() : EditorPanel("Inspector", ICON_MDI_INFORMATION, true) { }
 
@@ -44,35 +44,35 @@ void InspectorPanel::on_imgui_render() {
 template <typename T, typename UIFunction>
 static void draw_component(const char8_t* name,
                            Entity entity,
-                           UIFunction uiFunction,
+                           UIFunction ui_function,
                            const bool removable = true) {
   if (entity.has_component<T>()) {
-    static constexpr ImGuiTreeNodeFlags treeFlags = ImGuiTreeNodeFlags_DefaultOpen
-                                                    | ImGuiTreeNodeFlags_SpanAvailWidth |
-                                                    ImGuiTreeNodeFlags_AllowItemOverlap | ImGuiTreeNodeFlags_Framed |
-                                                    ImGuiTreeNodeFlags_FramePadding;
+    static constexpr ImGuiTreeNodeFlags TREE_FLAGS = ImGuiTreeNodeFlags_DefaultOpen
+                                                     | ImGuiTreeNodeFlags_SpanAvailWidth |
+                                                     ImGuiTreeNodeFlags_AllowItemOverlap | ImGuiTreeNodeFlags_Framed |
+                                                     ImGuiTreeNodeFlags_FramePadding;
 
     auto& component = entity.get_component<T>();
 
-    const float lineHeight = GImGui->Font->FontSize + GImGui->Style.FramePadding.y * 2.0f;
+    const float line_height = GImGui->Font->FontSize + GImGui->Style.FramePadding.y * 2.0f;
 
-    ImGui::SetCursorPosY(ImGui::GetCursorPosY() + lineHeight * 0.25f);
+    ImGui::SetCursorPosY(ImGui::GetCursorPosY() + line_height * 0.25f);
 
     const size_t id = entt::type_id<T>().hash();
-    const bool open = ImGui::TreeNodeEx(reinterpret_cast<void*>(id), treeFlags, "%s", name);
+    const bool open = ImGui::TreeNodeEx(reinterpret_cast<void*>(id), TREE_FLAGS, "%s", name);
 
-    bool removeComponent = false;
+    bool remove_component = false;
     if (removable) {
       ImGui::PushID((int)id);
 
-      const float frameHeight = ImGui::GetFrameHeight();
-      ImGui::SameLine(ImGui::GetContentRegionMax().x - frameHeight * 1.2f);
-      if (ImGui::Button(StringUtils::from_char8_t(ICON_MDI_SETTINGS), ImVec2{frameHeight * 1.2f, frameHeight}))
+      const float frame_height = ImGui::GetFrameHeight();
+      ImGui::SameLine(ImGui::GetContentRegionMax().x - frame_height * 1.2f);
+      if (ImGui::Button(StringUtils::from_char8_t(ICON_MDI_SETTINGS), ImVec2{frame_height * 1.2f, frame_height}))
         ImGui::OpenPopup("ComponentSettings");
 
       if (ImGui::BeginPopup("ComponentSettings")) {
         if (ImGui::MenuItem("Remove Component"))
-          removeComponent = true;
+          remove_component = true;
 
         ImGui::EndPopup();
       }
@@ -81,21 +81,21 @@ static void draw_component(const char8_t* name,
     }
 
     if (open) {
-      uiFunction(component);
+      ui_function(component);
       ImGui::TreePop();
     }
 
-    if (removeComponent)
+    if (remove_component)
       entity.remove_component<T>();
   }
 }
 
-bool InspectorPanel::draw_material_properties(Ref<Material>& material, bool saveToCurrentPath) {
-  bool loadAsset = false;
+bool InspectorPanel::draw_material_properties(Ref<Material>& material, const bool save_to_current_path) {
+  bool load_asset = false;
 
   if (ImGui::Button("Save")) {
     std::string path;
-    if (saveToCurrentPath)
+    if (save_to_current_path)
       path = FileDialogs::save_file({{"Material file", "oxmat"}}, "NewMaterial");
     else
       path = material->path;
@@ -119,11 +119,11 @@ bool InspectorPanel::draw_material_properties(Ref<Material>& material, bool save
   ImGui::Button("Drop a material file", {x, y});
   if (ImGui::BeginDragDropTarget()) {
     if (const ImGuiPayload* payload = ImGui::AcceptDragDropPayload("CONTENT_BROWSER_ITEM")) {
-      std::filesystem::path path = OxUI::get_path_from_imgui_payload(payload);
+      const std::filesystem::path path = OxUI::get_path_from_imgui_payload(payload);
       const std::string ext = path.extension().string();
       if (ext == ".oxmat") {
         MaterialSerializer(material).Deserialize(path.string());
-        loadAsset = true;
+        load_asset = true;
       }
     }
     ImGui::EndDragDropTarget();
@@ -154,35 +154,35 @@ bool InspectorPanel::draw_material_properties(Ref<Material>& material, bool save
 
   OxUI::end_properties();
 
-  return loadAsset;
+  return load_asset;
 }
 
 template <typename T>
-static void DrawParticleOverLifetimeModule(std::string_view moduleName,
-                                           OverLifetimeModule<T>& propertyModule,
-                                           bool color = false,
-                                           bool rotation = false) {
-  static constexpr ImGuiTreeNodeFlags treeFlags = ImGuiTreeNodeFlags_DefaultOpen
-                                                  | ImGuiTreeNodeFlags_SpanAvailWidth |
-                                                  ImGuiTreeNodeFlags_AllowItemOverlap | ImGuiTreeNodeFlags_Framed |
-                                                  ImGuiTreeNodeFlags_FramePadding;
+static void draw_particle_over_lifetime_module(const std::string_view module_name,
+                                               OverLifetimeModule<T>& property_module,
+                                               bool color = false,
+                                               bool rotation = false) {
+  static constexpr ImGuiTreeNodeFlags TREE_FLAGS = ImGuiTreeNodeFlags_DefaultOpen
+                                                   | ImGuiTreeNodeFlags_SpanAvailWidth |
+                                                   ImGuiTreeNodeFlags_AllowItemOverlap | ImGuiTreeNodeFlags_Framed |
+                                                   ImGuiTreeNodeFlags_FramePadding;
 
-  if (ImGui::TreeNodeEx(moduleName.data(), treeFlags, "%s", moduleName.data())) {
+  if (ImGui::TreeNodeEx(module_name.data(), TREE_FLAGS, "%s", module_name.data())) {
     OxUI::begin_properties();
-    OxUI::property("Enabled", &propertyModule.enabled);
+    OxUI::property("Enabled", &property_module.enabled);
 
     if (rotation) {
-      T degrees = glm::degrees(propertyModule.start);
+      T degrees = glm::degrees(property_module.start);
       if (OxUI::property_vector("Start", degrees))
-        propertyModule.start = glm::radians(degrees);
+        property_module.start = glm::radians(degrees);
 
-      degrees = glm::degrees(propertyModule.end);
+      degrees = glm::degrees(property_module.end);
       if (OxUI::property_vector("End", degrees))
-        propertyModule.end = glm::radians(degrees);
+        property_module.end = glm::radians(degrees);
     }
     else {
-      OxUI::property_vector("Start", propertyModule.start, color);
-      OxUI::property_vector("End", propertyModule.end, color);
+      OxUI::property_vector("Start", property_module.start, color);
+      OxUI::property_vector("End", property_module.end, color);
     }
 
     OxUI::end_properties();
@@ -192,35 +192,35 @@ static void DrawParticleOverLifetimeModule(std::string_view moduleName,
 }
 
 template <typename T>
-static void DrawParticleBySpeedModule(std::string_view moduleName,
-                                      BySpeedModule<T>& propertyModule,
-                                      bool color = false,
-                                      bool rotation = false) {
-  static constexpr ImGuiTreeNodeFlags treeFlags = ImGuiTreeNodeFlags_DefaultOpen
-                                                  | ImGuiTreeNodeFlags_SpanAvailWidth |
-                                                  ImGuiTreeNodeFlags_AllowItemOverlap | ImGuiTreeNodeFlags_Framed |
-                                                  ImGuiTreeNodeFlags_FramePadding;
+static void draw_particle_by_speed_module(const std::string_view module_name,
+                                          BySpeedModule<T>& property_module,
+                                          bool color = false,
+                                          bool rotation = false) {
+  static constexpr ImGuiTreeNodeFlags TREE_FLAGS = ImGuiTreeNodeFlags_DefaultOpen
+                                                   | ImGuiTreeNodeFlags_SpanAvailWidth |
+                                                   ImGuiTreeNodeFlags_AllowItemOverlap | ImGuiTreeNodeFlags_Framed |
+                                                   ImGuiTreeNodeFlags_FramePadding;
 
-  if (ImGui::TreeNodeEx(moduleName.data(), treeFlags, "%s", moduleName.data())) {
+  if (ImGui::TreeNodeEx(module_name.data(), TREE_FLAGS, "%s", module_name.data())) {
     OxUI::begin_properties();
-    OxUI::property("Enabled", &propertyModule.enabled);
+    OxUI::property("Enabled", &property_module.enabled);
 
     if (rotation) {
-      T degrees = glm::degrees(propertyModule.start);
+      T degrees = glm::degrees(property_module.start);
       if (OxUI::property_vector("Start", degrees))
-        propertyModule.start = glm::radians(degrees);
+        property_module.start = glm::radians(degrees);
 
-      degrees = glm::degrees(propertyModule.end);
+      degrees = glm::degrees(property_module.end);
       if (OxUI::property_vector("End", degrees))
-        propertyModule.end = glm::radians(degrees);
+        property_module.end = glm::radians(degrees);
     }
     else {
-      OxUI::property_vector("Start", propertyModule.start, color);
-      OxUI::property_vector("End", propertyModule.end, color);
+      OxUI::property_vector("Start", property_module.start, color);
+      OxUI::property_vector("End", property_module.end, color);
     }
 
-    OxUI::property("Min Speed", &propertyModule.min_speed);
-    OxUI::property("Max Speed", &propertyModule.max_speed);
+    OxUI::property("Min Speed", &property_module.min_speed);
+    OxUI::property("Max Speed", &property_module.max_speed);
     OxUI::end_properties();
     ImGui::TreePop();
   }
@@ -242,7 +242,7 @@ void InspectorPanel::draw_components(Entity entity) const {
     auto& tag = entity.get_component<TagComponent>().tag;
     char buffer[256] = {};
     tag.copy(buffer, sizeof buffer);
-    if (s_RenameEntity)
+    if (s_rename_entity)
       ImGui::SetKeyboardFocusHere();
     if (ImGui::InputText("##Tag", buffer, sizeof(buffer), ImGuiInputTextFlags_EnterReturnsTrue)) {
       tag = std::string(buffer);
@@ -276,7 +276,8 @@ void InspectorPanel::draw_components(Entity entity) const {
   }
   ImGui::PopItemWidth();
 
-  draw_component<TransformComponent>(ICON_MDI_VECTOR_LINE " Transform Component",
+  draw_component<TransformComponent>(
+    ICON_MDI_VECTOR_LINE " Transform Component",
     entity,
     [](TransformComponent& component) {
       OxUI::begin_properties();
@@ -288,20 +289,22 @@ void InspectorPanel::draw_components(Entity entity) const {
       OxUI::end_properties();
     });
 
-  draw_component<MeshComponent>(ICON_MDI_VECTOR_SQUARE " Mesh Renderer Component",
+  draw_component<MeshComponent>(
+    ICON_MDI_VECTOR_SQUARE " Mesh Renderer Component",
     entity,
     [](const MeshComponent& component) {
       if (!component.original_mesh)
         return;
-      const char* fileName = component.original_mesh->name.empty()
+      const char* file_name = component.original_mesh->name.empty()
                                ? "Empty"
                                : component.original_mesh->name.c_str();
-      ImGui::Text("Loaded Mesh: %s", fileName);
+      ImGui::Text("Loaded Mesh: %s", file_name);
       ImGui::Text("Primitive Count: %d", (uint32_t)component.subsets.size());
       ImGui::Text("Material Count: %d", (uint32_t)component.original_mesh->get_materials_as_ref().size());
     });
 
-  draw_component<MaterialComponent>(ICON_MDI_SPRAY " Material Component",
+  draw_component<MaterialComponent>(
+    ICON_MDI_SPRAY " Material Component",
     entity,
     [](MaterialComponent& component) {
       if (component.materials.empty())
@@ -325,10 +328,10 @@ void InspectorPanel::draw_components(Entity entity) const {
       for (auto& material : component.materials) {
         if (name_filter.PassFilter(material->name.c_str())) {
           if (ImGui::TreeNodeEx(material->name.c_str(),
-            flags,
-            "%s %s",
-            StringUtils::from_char8_t(ICON_MDI_CIRCLE),
-            material->name.c_str())) {
+                                flags,
+                                "%s %s",
+                                StringUtils::from_char8_t(ICON_MDI_CIRCLE),
+                                material->name.c_str())) {
             if (draw_material_properties(material)) {
               component.using_material_asset = true;
             }
@@ -338,7 +341,8 @@ void InspectorPanel::draw_components(Entity entity) const {
       }
     });
 
-  draw_component<AnimationComponent>(ICON_MDI_ANIMATION " Animation Component",
+  draw_component<AnimationComponent>(
+    ICON_MDI_ANIMATION " Animation Component",
     entity,
     [](AnimationComponent& component) {
       constexpr ImGuiTreeNodeFlags flags = ImGuiTreeNodeFlags_OpenOnArrow | ImGuiTreeNodeFlags_SpanFullWidth |
@@ -356,7 +360,7 @@ void InspectorPanel::draw_components(Entity entity) const {
       }
 
       for (uint32_t index = 0; index < (uint32_t)component.animations.size(); index++) {
-        auto& animation = component.animations[index];
+        const auto& animation = component.animations[index];
         if (name_filter.PassFilter(animation->name.c_str())) {
           if (ImGui::TreeNodeEx(animation->name.c_str(), flags, "%s %s", StringUtils::from_char8_t(ICON_MDI_CIRCLE), animation->name.c_str())) {
             if (ImGui::Button("Play", {ImGui::GetContentRegionAvail().x, ImGui::GetFrameHeight()})) {
@@ -368,7 +372,8 @@ void InspectorPanel::draw_components(Entity entity) const {
       }
     });
 
-  draw_component<SkyLightComponent>(ICON_MDI_WEATHER_SUNNY " Sky Light Component",
+  draw_component<SkyLightComponent>(
+    ICON_MDI_WEATHER_SUNNY " Sky Light Component",
     entity,
     [this](SkyLightComponent& component) {
       OxUI::begin_properties();
@@ -403,7 +408,8 @@ void InspectorPanel::draw_components(Entity entity) const {
       ImGui::Spacing();
     });
 
-  draw_component<PostProcessProbe>(ICON_MDI_SPRAY " PostProcess Probe Component",
+  draw_component<PostProcessProbe>(
+    ICON_MDI_SPRAY " PostProcess Probe Component",
     entity,
     [this](PostProcessProbe& component) {
       ImGui::Text("Vignette");
@@ -435,7 +441,8 @@ void InspectorPanel::draw_components(Entity entity) const {
       ImGui::Separator();
     });
 
-  draw_component<AudioSourceComponent>(ICON_MDI_VOLUME_MEDIUM " Audio Source Component",
+  draw_component<AudioSourceComponent>(
+    ICON_MDI_VOLUME_MEDIUM " Audio Source Component",
     entity,
     [&entity](AudioSourceComponent& component) {
       auto& config = component.config;
@@ -483,15 +490,15 @@ void InspectorPanel::draw_components(Entity entity) const {
 
       if (config.Spatialization) {
         ImGui::Indent();
-        const char* attenuationTypeStrings[] = {
+        const char* attenuation_type_strings[] = {
           "None",
           "Inverse",
           "Linear",
           "Exponential"
         };
-        int attenuationType = static_cast<int>(config.AttenuationModel);
-        if (OxUI::property("Attenuation Model", &attenuationType, attenuationTypeStrings, 4))
-          config.AttenuationModel = static_cast<AttenuationModelType>(attenuationType);
+        int attenuation_type = static_cast<int>(config.AttenuationModel);
+        if (OxUI::property("Attenuation Model", &attenuation_type, attenuation_type_strings, 4))
+          config.AttenuationModel = static_cast<AttenuationModelType>(attenuation_type);
         OxUI::property("Roll Off", &config.RollOff);
         OxUI::property("Min Gain", &config.MinGain);
         OxUI::property("Max Gain", &config.MaxGain);
@@ -518,7 +525,8 @@ void InspectorPanel::draw_components(Entity entity) const {
       }
     });
 
-  draw_component<AudioListenerComponent>(ICON_MDI_CIRCLE_SLICE_8 " Audio Listener Component",
+  draw_component<AudioListenerComponent>(
+    ICON_MDI_CIRCLE_SLICE_8 " Audio Listener Component",
     entity,
     [](AudioListenerComponent& component) {
       auto& config = component.config;
@@ -534,14 +542,15 @@ void InspectorPanel::draw_components(Entity entity) const {
       OxUI::end_properties();
     });
 
-  draw_component<LightComponent>(ICON_MDI_LAMP " Light Component",
+  draw_component<LightComponent>(
+    ICON_MDI_LAMP " Light Component",
     entity,
     [](LightComponent& component) {
       OxUI::begin_properties();
-      const char* lightTypeStrings[] = {"Directional", "Point", "Spot"};
-      int lightType = static_cast<int>(component.type);
-      if (OxUI::property("Light Type", &lightType, lightTypeStrings, 3))
-        component.type = static_cast<LightComponent::LightType>(lightType);
+      const char* light_type_strings[] = {"Directional", "Point", "Spot"};
+      int light_type = static_cast<int>(component.type);
+      if (OxUI::property("Light Type", &light_type, light_type_strings, 3))
+        component.type = static_cast<LightComponent::LightType>(light_type);
 
       if (OxUI::property("Use color temperature mode", &component.use_color_temperature_mode) && component.use_color_temperature_mode) {
         ColorUtils::TempratureToColor(component.temperature, component.color);
@@ -549,9 +558,9 @@ void InspectorPanel::draw_components(Entity entity) const {
 
       if (component.use_color_temperature_mode) {
         if (OxUI::property<uint32_t>("Temperature (K)",
-          &component.temperature,
-          1000,
-          40000))
+                                     &component.temperature,
+                                     1000,
+                                     40000))
           ColorUtils::TempratureToColor(component.temperature, component.color);
       }
       else {
@@ -585,25 +594,26 @@ void InspectorPanel::draw_components(Entity entity) const {
           component.outer_cut_off_angle = component.cut_off_angle;
       }
       else if (component.type == LightComponent::LightType::Directional) {
-        const char* shadowQualityTypeStrings[] = {"Hard", "Soft", "Ultra Soft"};
-        int shadowQualityType = static_cast<int>(component.shadow_quality);
+        const char* shadow_quality_type_strings[] = {"Hard", "Soft", "Ultra Soft"};
+        int shadow_quality_type = static_cast<int>(component.shadow_quality);
 
-        if (OxUI::property("Shadow Quality Type", &shadowQualityType, shadowQualityTypeStrings, 3))
-          component.shadow_quality = static_cast<LightComponent::ShadowQualityType>(shadowQualityType);
+        if (OxUI::property("Shadow Quality Type", &shadow_quality_type, shadow_quality_type_strings, 3))
+          component.shadow_quality = static_cast<LightComponent::ShadowQualityType>(shadow_quality_type);
       }
 
       OxUI::end_properties();
     });
 
-  draw_component<RigidbodyComponent>(ICON_MDI_SOCCER " Rigidbody Component",
+  draw_component<RigidbodyComponent>(
+    ICON_MDI_SOCCER " Rigidbody Component",
     entity,
     [this](RigidbodyComponent& component) {
       OxUI::begin_properties();
 
-      const char* bodyTypeStrings[] = {"Static", "Kinematic", "Dynamic"};
-      int bodyType = static_cast<int>(component.type);
-      if (OxUI::property("Body Type", &bodyType, bodyTypeStrings, 3))
-        component.type = static_cast<RigidbodyComponent::BodyType>(bodyType);
+      const char* body_type_strings[] = {"Static", "Kinematic", "Dynamic"};
+      int body_type = static_cast<int>(component.type);
+      if (OxUI::property("Body Type", &body_type, body_type_strings, 3))
+        component.type = static_cast<RigidbodyComponent::BodyType>(body_type);
 
       if (component.type == RigidbodyComponent::BodyType::Dynamic) {
         OxUI::property("Mass", &component.mass, 0.01f, 10000.0f);
@@ -623,7 +633,8 @@ void InspectorPanel::draw_components(Entity entity) const {
       OxUI::end_properties();
     });
 
-  draw_component<BoxColliderComponent>(ICON_MDI_CHECKBOX_BLANK_OUTLINE " Box Collider",
+  draw_component<BoxColliderComponent>(
+    ICON_MDI_CHECKBOX_BLANK_OUTLINE " Box Collider",
     entity,
     [](BoxColliderComponent& component) {
       OxUI::begin_properties();
@@ -637,7 +648,8 @@ void InspectorPanel::draw_components(Entity entity) const {
       component.density = glm::max(component.density, 0.001f);
     });
 
-  draw_component<SphereColliderComponent>(ICON_MDI_CIRCLE_OUTLINE " Sphere Collider",
+  draw_component<SphereColliderComponent>(
+    ICON_MDI_CIRCLE_OUTLINE " Sphere Collider",
     entity,
     [](SphereColliderComponent& component) {
       OxUI::begin_properties();
@@ -651,7 +663,8 @@ void InspectorPanel::draw_components(Entity entity) const {
       component.density = glm::max(component.density, 0.001f);
     });
 
-  draw_component<CapsuleColliderComponent>(ICON_MDI_CIRCLE_OUTLINE " Capsule Collider",
+  draw_component<CapsuleColliderComponent>(
+    ICON_MDI_CIRCLE_OUTLINE " Capsule Collider",
     entity,
     [](CapsuleColliderComponent& component) {
       OxUI::begin_properties();
@@ -666,7 +679,8 @@ void InspectorPanel::draw_components(Entity entity) const {
       component.density = glm::max(component.density, 0.001f);
     });
 
-  draw_component<TaperedCapsuleColliderComponent>(ICON_MDI_CIRCLE_OUTLINE " Tapered Capsule Collider",
+  draw_component<TaperedCapsuleColliderComponent>(
+    ICON_MDI_CIRCLE_OUTLINE " Tapered Capsule Collider",
     entity,
     [](TaperedCapsuleColliderComponent& component) {
       OxUI::begin_properties();
@@ -682,7 +696,8 @@ void InspectorPanel::draw_components(Entity entity) const {
       component.density = glm::max(component.density, 0.001f);
     });
 
-  draw_component<CylinderColliderComponent>(ICON_MDI_CIRCLE_OUTLINE " Cylinder Collider",
+  draw_component<CylinderColliderComponent>(
+    ICON_MDI_CIRCLE_OUTLINE " Cylinder Collider",
     entity,
     [](CylinderColliderComponent& component) {
       OxUI::begin_properties();
@@ -697,7 +712,8 @@ void InspectorPanel::draw_components(Entity entity) const {
       component.density = glm::max(component.density, 0.001f);
     });
 
-  draw_component<CharacterControllerComponent>(ICON_MDI_CIRCLE_OUTLINE " Character Controller",
+  draw_component<CharacterControllerComponent>(
+    ICON_MDI_CIRCLE_OUTLINE " Character Controller",
     entity,
     [](CharacterControllerComponent& component) {
       OxUI::begin_properties();
@@ -715,7 +731,8 @@ void InspectorPanel::draw_components(Entity entity) const {
       OxUI::end_properties();
     });
 
-  draw_component<CameraComponent>(ICON_MDI_CAMERA "Camera Component",
+  draw_component<CameraComponent>(
+    ICON_MDI_CAMERA "Camera Component",
     entity,
     [](const CameraComponent& component) {
       OxUI::begin_properties();
@@ -723,18 +740,19 @@ void InspectorPanel::draw_components(Entity entity) const {
       if (OxUI::property("FOV", &fov)) {
         component.system->set_fov(fov);
       }
-      static float nearClip = component.system->get_near();
-      if (OxUI::property("Near Clip", &nearClip)) {
-        component.system->set_near(nearClip);
+      static float near_clip = component.system->get_near();
+      if (OxUI::property("Near Clip", &near_clip)) {
+        component.system->set_near(near_clip);
       }
-      static float farClip = component.system->get_far();
-      if (OxUI::property("Far Clip", &farClip)) {
-        component.system->set_far(farClip);
+      static float far_clip = component.system->get_far();
+      if (OxUI::property("Far Clip", &far_clip)) {
+        component.system->set_far(far_clip);
       }
       OxUI::end_properties();
     });
 
-  draw_component<LuaScriptComponent>(ICON_MDI_FILE_DOCUMENT "Lua Script Component",
+  draw_component<LuaScriptComponent>(
+    ICON_MDI_FILE_DOCUMENT "Lua Script Component",
     entity,
     [](LuaScriptComponent& component) {
       const std::string name = component.lua_system
@@ -751,8 +769,8 @@ void InspectorPanel::draw_components(Entity entity) const {
       const float x = ImGui::GetContentRegionAvail().x;
       const float y = ImGui::GetFrameHeight();
       if (ImGui::Button(name.c_str(), {x, y})) {
-        const std::string filePath = FileDialogs::open_file({{"Lua file", "lua"}});
-        load_script(filePath, component);
+        const std::string file_path = FileDialogs::open_file({{"Lua file", "lua"}});
+        load_script(file_path, component);
       }
       if (ImGui::BeginDragDropTarget()) {
         if (const ImGuiPayload* payload = ImGui::AcceptDragDropPayload("CONTENT_BROWSER_ITEM")) {
@@ -768,13 +786,14 @@ void InspectorPanel::draw_components(Entity entity) const {
     });
 
 
-  draw_component<ParticleSystemComponent>(ICON_MDI_LAMP "Particle System Component",
+  draw_component<ParticleSystemComponent>(
+    ICON_MDI_LAMP "Particle System Component",
     entity,
     [](const ParticleSystemComponent& component) {
       auto& props = component.system->get_properties();
 
       ImGui::Text("Active Particles Count: %u",
-        component.system->get_active_particle_count());
+                  component.system->get_active_particle_count());
       ImGui::BeginDisabled(props.looping);
       if (ImGui::Button(StringUtils::from_char8_t(ICON_MDI_PLAY)))
         component.system->play();
@@ -815,20 +834,21 @@ void InspectorPanel::draw_components(Entity entity) const {
       //OxUI::Property("Texture", props.Texture); //TODO:
       OxUI::end_properties();
 
-      DrawParticleOverLifetimeModule("Velocity Over Lifetime", props.velocity_over_lifetime);
-      DrawParticleOverLifetimeModule("Force Over Lifetime", props.force_over_lifetime);
-      DrawParticleOverLifetimeModule("Color Over Lifetime", props.color_over_lifetime, true);
-      DrawParticleBySpeedModule("Color By Speed", props.color_by_speed, true);
-      DrawParticleOverLifetimeModule("Size Over Lifetime", props.size_over_lifetime);
-      DrawParticleBySpeedModule("Size By Speed", props.size_by_speed);
-      DrawParticleOverLifetimeModule("Rotation Over Lifetime", props.rotation_over_lifetime, false, true);
-      DrawParticleBySpeedModule("Rotation By Speed", props.rotation_by_speed, false, true);
+      draw_particle_over_lifetime_module("Velocity Over Lifetime", props.velocity_over_lifetime);
+      draw_particle_over_lifetime_module("Force Over Lifetime", props.force_over_lifetime);
+      draw_particle_over_lifetime_module("Color Over Lifetime", props.color_over_lifetime, true);
+      draw_particle_by_speed_module("Color By Speed", props.color_by_speed, true);
+      draw_particle_over_lifetime_module("Size Over Lifetime", props.size_over_lifetime);
+      draw_particle_by_speed_module("Size By Speed", props.size_by_speed);
+      draw_particle_over_lifetime_module("Rotation Over Lifetime", props.rotation_over_lifetime, false, true);
+      draw_particle_by_speed_module("Rotation By Speed", props.rotation_by_speed, false, true);
     });
 
   if (entity.has_component<CustomComponent>()) {
     const auto n = entity.get_component<CustomComponent>().name;
     const auto* n2 = (const char8_t*)n.c_str();
-    draw_component<CustomComponent>(n2,
+    draw_component<CustomComponent>(
+      n2,
       entity,
       [](CustomComponent& component) {
         OxUI::begin_properties();
@@ -837,15 +857,15 @@ void InspectorPanel::draw_components(Entity entity) const {
 
         ImGui::Text("Fields");
         ImGui::BeginTable("FieldTable",
-          3,
-          ImGuiTableFlags_Resizable | ImGuiTableFlags_SizingStretchSame |
-          ImGuiTableFlags_BordersInner | ImGuiTableFlags_BordersOuterH);
+                          3,
+                          ImGuiTableFlags_Resizable | ImGuiTableFlags_SizingStretchSame |
+                          ImGuiTableFlags_BordersInner | ImGuiTableFlags_BordersOuterH);
         ImGui::TableSetupColumn("Name", ImGuiTableColumnFlags_WidthStretch, 100.0f);
         ImGui::TableSetupColumn("Type", ImGuiTableColumnFlags_WidthStretch, 70.0f);
         ImGui::TableSetupColumn("Value", ImGuiTableColumnFlags_WidthStretch, 100.0f);
         ImGui::TableHeadersRow();
         for (int i = 0; i < (int)component.fields.size(); i++) {
-          auto inputFlags = ImGuiInputTextFlags_EnterReturnsTrue |
+          auto input_flags = ImGuiInputTextFlags_EnterReturnsTrue |
                             ImGuiInputTextFlags_CallbackHistory | ImGuiInputTextFlags_EscapeClearsAll;
           ImGui::TableNextRow();
           ImGui::TableNextColumn();
@@ -858,14 +878,14 @@ void InspectorPanel::draw_components(Entity entity) const {
 
           ImGui::PushID("FieldName");
           ImGui::SetNextItemWidth(-1);
-          ImGui::InputText("##", &field.name, inputFlags);
+          ImGui::InputText("##", &field.name, input_flags);
           ImGui::PopID();
 
           ImGui::TableNextColumn();
-          const char* fieldTypes[] = {"INT", "FLOAT", "STRING", "BOOL"};
+          const char* field_types[] = {"INT", "FLOAT", "STRING", "BOOL"};
           int type = field.type;
           ImGui::SetNextItemWidth(-1);
-          if (ImGui::Combo("##", &type, fieldTypes, 4))
+          if (ImGui::Combo("##", &type, field_types, 4))
             field.type = (CustomComponent::FieldType)type;
 
           ImGui::PushID("FieldValue");
@@ -874,9 +894,9 @@ void InspectorPanel::draw_components(Entity entity) const {
           if (field.type == CustomComponent::FieldType::INT
               || field.type == CustomComponent::FieldType::BOOL
               || field.type == CustomComponent::FieldType::FLOAT) {
-            inputFlags |= ImGuiInputTextFlags_CharsDecimal;
+            input_flags |= ImGuiInputTextFlags_CharsDecimal;
           }
-          ImGui::InputText("##", &field.value, inputFlags);
+          ImGui::InputText("##", &field.value, input_flags);
           ImGui::PopID();
 
           ImGui::PopID();

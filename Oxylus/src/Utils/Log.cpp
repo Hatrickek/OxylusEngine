@@ -1,12 +1,14 @@
 #include "Log.h"
 
+#include <fmt/color.h>
+
 namespace Oxylus {
 std::vector<std::shared_ptr<ExternalSink>> Log::external_sinks = {};
 
 void Log::init() {
   fmtlog::setLogCB(logcb, fmtlog::DBG);
   fmtlog::setLogFile("logs/oxylus_log.txt", true);
-  fmtlog::setHeaderPattern("{HMS} | {l} | {s:<16} | ");
+  fmtlog::setHeaderPattern("{HMS} | {s:<16} | {l} ");
   fmtlog::flushOn(fmtlog::DBG);
   fmtlog::setThreadName("MAIN");
   fmtlog::startPollingThread(1);
@@ -20,7 +22,28 @@ void Log::logcb(int64_t ns,
                 fmt::string_view msg,
                 size_t body_pos,
                 size_t log_file_pos) {
-  fmt::print("{}\n", msg);
+  auto color = fg(fmt::color::white);
+
+  switch (level) {
+    case fmtlog::LogLevel::DBG: {
+      color = fg(fmt::color::white);
+      break;
+    }
+    case fmtlog::LogLevel::INF: {
+      color = fg(fmt::color::green);
+      break;
+    }
+    case fmtlog::LogLevel::WRN: {
+      color = fg(fmt::color::orange);
+      break;
+    }
+    case fmtlog::LogLevel::ERR: {
+      color = fg(fmt::color::red);
+      break;
+    }
+    case fmtlog::LogLevel::OFF: break;
+  }
+  fmt::print(color, "{}\n", msg);
 
   for (const auto& interface : external_sinks)
     interface->log(ns, level, location, base_pos, thread_name, msg, body_pos, log_file_pos);
