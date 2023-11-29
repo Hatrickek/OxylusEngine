@@ -129,6 +129,7 @@ set_target_properties(${PROJECT_NAME} PROPERTIES MSVC_RUNTIME_LIBRARY ${MSVC_RUN
 # Dependencies
 #-------------
 include(${CMAKE_CURRENT_SOURCE_DIR}/vendor/CMake-Utils/CMakeUtils.cmake)
+include(${CMAKE_CURRENT_SOURCE_DIR}/vendor/CPM.cmake)
 
 # Suppress all warnings from dependencies.
 if(MSVC)
@@ -150,231 +151,194 @@ target_link_libraries(${PROJECT_NAME} PUBLIC Vulkan::Vulkan)
 target_include_directories(${PROJECT_NAME} PUBLIC ${Vulkan_INCLUDE_DIRS})
 
 # dear imgui
-FetchContent_Declare(
-    ImGui
-    GIT_REPOSITORY "https://github.com/ocornut/imgui.git"
-    GIT_TAG "docking"
-    GIT_SHALLOW    TRUE
-    GIT_PROGRESS   TRUE
-)
-set(IMGUI_DIR "${FETCHCONTENT_BASE_DIR}/imgui-src")
-FetchContent_MakeAvailable(ImGui)
-target_include_directories(${PROJECT_NAME} PUBLIC ${IMGUI_DIR})
+CPMAddPackage("gh:ocornut/imgui#docking")
+target_include_directories(${PROJECT_NAME} PUBLIC ${imgui_SOURCE_DIR})
 
-file(GLOB ImGuiFiles "${IMGUI_DIR}/*.h" "${IMGUI_DIR}/*.cpp")
+file(GLOB ImGuiFiles "${imgui_SOURCE_DIR}/*.h" "${imgui_SOURCE_DIR}/*.cpp")
 target_sources(${PROJECT_NAME} PUBLIC "${ImGuiFiles}")
 source_group("vendor/ImGui" FILES ${ImGuiFiles})
 
 set(ImGui_Backends
-    "${IMGUI_DIR}/backends/imgui_impl_glfw.cpp"
-    "${IMGUI_DIR}/backends/imgui_impl_glfw.h"
-    "${IMGUI_DIR}/backends/imgui_impl_vulkan.cpp"
-    "${IMGUI_DIR}/backends/imgui_impl_vulkan.h"
+    "${imgui_SOURCE_DIR}/backends/imgui_impl_glfw.cpp"
+    "${imgui_SOURCE_DIR}/backends/imgui_impl_glfw.h"
+    "${imgui_SOURCE_DIR}/backends/imgui_impl_vulkan.cpp"
+    "${imgui_SOURCE_DIR}/backends/imgui_impl_vulkan.h"
 )
 target_sources(${PROJECT_NAME} PUBLIC "${ImGui_Backends}")
 source_group("vendor/ImGui" FILES ${ImGui_Backends})
 
-set(ImGui_Misc "${IMGUI_DIR}/misc/cpp/imgui_stdlib.cpp" "${IMGUI_DIR}/misc/cpp/imgui_stdlib.h")
+set(ImGui_Misc "${imgui_SOURCE_DIR}/misc/cpp/imgui_stdlib.cpp" "${imgui_SOURCE_DIR}/misc/cpp/imgui_stdlib.h")
 target_sources(${PROJECT_NAME} PUBLIC "${ImGui_Misc}")
 source_group("vendor/ImGui" FILES ${ImGui_Misc})
 
 # entt
-FetchContent_Declare(
-    EnTT
-    GIT_REPOSITORY "https://github.com/skypjack/entt.git"
-    GIT_TAG "master"
-    GIT_SHALLOW    TRUE
-    GIT_PROGRESS   TRUE
+CPMAddPackage(
+  NAME EnTT
+  GIT_TAG master
+  GITHUB_REPOSITORY skypjack/entt
+  DOWNLOAD_ONLY True
 )
-FetchContent_MakeAvailable(EnTT)
-target_link_libraries(${PROJECT_NAME} PUBLIC EnTT)
-set_targets_static_and_folder(EnTT)
+if (EnTT_ADDED)
+    add_library(EnTT INTERFACE)
+    target_include_directories(EnTT INTERFACE ${EnTT_SOURCE_DIR}/src)
+    target_link_libraries(${PROJECT_NAME} PUBLIC EnTT)
+endif()
 
 # tinygltf
-set(TINYGLTF_NO_INCLUDE_JSON ON)
-set(TINYGLTF_USE_RAPIDJSON ON)
-set(TINYGLTF_USE_CPP14 ON)
-set(TINYGLTF_BUILD_LOADER_EXAMPLE OFF)
-set(TINYGLTF_HEADER_ONLY ON)
-FetchContent_Declare(
-    tinygltf
-    GIT_REPOSITORY "https://github.com/syoyo/tinygltf"
-    GIT_TAG "release"
-    GIT_SHALLOW    TRUE
-    GIT_PROGRESS   TRUE
+CPMAddPackage(
+    NAME tinygltf
+    GIT_TAG release
+    GITHUB_REPOSITORY syoyo/tinygltf
+    OPTIONS
+        "TINYGLTF_NO_INCLUDE_JSON ON"
+        "TINYGLTF_USE_RAPIDJSON ON"
+        "TINYGLTF_USE_CPP14 ON"
+        "TINYGLTF_BUILD_LOADER_EXAMPLE OFF"
 )
-FetchContent_MakeAvailable(tinygltf)
-target_link_libraries(${PROJECT_NAME} PUBLIC tinygltf)
 set_targets_static_and_folder(tinygltf)
+target_link_libraries(${PROJECT_NAME} PUBLIC tinygltf)
 
 # FMT
-FetchContent_Declare(
-    fmt
-    GIT_REPOSITORY https://github.com/fmtlib/fmt.git
-    GIT_TAG "10.1.1"
-    GIT_SHALLOW    TRUE
-    GIT_PROGRESS   TRUE
+CPMAddPackage(
+  NAME fmt
+  GIT_TAG 10.1.1
+  GITHUB_REPOSITORY fmtlib/fmt
 )
-FetchContent_MakeAvailable(fmt)
-target_link_libraries(${PROJECT_NAME} PUBLIC fmt)
 set_targets_static_and_folder(fmt)
+target_link_libraries(${PROJECT_NAME} PUBLIC fmt)
 
 # fmtlog
-FetchContent_Declare(
-    fmtlog
-    GIT_REPOSITORY "https://github.com/Hatrickek/fmtlog"
-    GIT_TAG "main"
-    GIT_SHALLOW    TRUE
-    GIT_PROGRESS   TRUE
+CPMAddPackage(
+    NAME fmtlog
+    GITHUB_REPOSITORY Hatrickek/fmtlog
+    GIT_TAG main
     GIT_SUBMODULES ""
 )
-FetchContent_MakeAvailable(fmtlog)
 target_link_libraries(${PROJECT_NAME} PUBLIC fmtlog-static)
 set_targets_static_and_folder(fmtlog-static)
 
 # vk-bootstrap
-FetchContent_Declare(
-    vk-bootstrap 
-    GIT_REPOSITORY https://github.com/charles-lunarg/vk-bootstrap
-    GIT_TAG        8e61b2d81c3f5f84339735085ff5651f71bbe1e7
-    GIT_SHALLOW    TRUE
-    GIT_PROGRESS   TRUE
+CPMAddPackage(
+    NAME vk-bootstrap
+    GITHUB_REPOSITORY charles-lunarg/vk-bootstrap
+    GIT_TAG 8e61b2d81c3f5f84339735085ff5651f71bbe1e7
 )
-FetchContent_MakeAvailable(vk-bootstrap)
 target_link_libraries(${PROJECT_NAME} PUBLIC vk-bootstrap)
 set_targets_static_and_folder(vk-bootstrap)
 
 # vuk
-set(VUK_LINK_TO_LOADER OFF)
-set(VUK_FAIL_FAST ON)
-set(VUK_USE_DXC ON)
-FetchContent_Declare(
-    vuk
-    GIT_REPOSITORY "https://github.com/martty/vuk.git"
-    GIT_TAG "dev"
-    GIT_SHALLOW    TRUE
-    GIT_PROGRESS   TRUE
+CPMAddPackage(
+    NAME vuk
+    GITHUB_REPOSITORY martty/vuk
+    GIT_TAG master
+    OPTIONS
+        "VUK_LINK_TO_LOADER OFF"
+        "VUK_FAIL_FAST ON"
+        "VUK_USE_DXC ON"
 )
-FetchContent_MakeAvailable(vuk)
 target_link_libraries(${PROJECT_NAME} PUBLIC vuk)
 set_targets_static_and_folder(vuk)
 
 # NFD
-FetchContent_Declare(
-    nfd
-    GIT_REPOSITORY "https://github.com/btzy/nativefiledialog-extended.git"
-    GIT_TAG "master"
-    GIT_SHALLOW    TRUE
-    GIT_PROGRESS   TRUE
+CPMAddPackage(
+    NAME NFD
+    GITHUB_REPOSITORY btzy/nativefiledialog-extended
+    GIT_TAG master
 )
-FetchContent_MakeAvailable(nfd)
 target_link_libraries(${PROJECT_NAME} PUBLIC nfd)
-get_target_property(NFD_DIR nfd SOURCE_DIR)
-target_include_directories(${PROJECT_NAME} PUBLIC ${NFD_DIR}/include)
+target_include_directories(${PROJECT_NAME} PUBLIC ${NFD_SOURCE_DIR}/src/include)
 set_targets_static_and_folder(nfd)
 
 # GLFW
-set(GLFW_BUILD_DOCS OFF)
-set(GLFW_BUILD_TESTS OFF)
-set(GLFW_BUILD_EXAMPLES OFF)
-set(GLFW_INSTALL OFF)
-FetchContent_Declare(
-    glfw
-    GIT_REPOSITORY "https://github.com/glfw/glfw.git"
-    GIT_TAG "3.3.8"
-    GIT_SHALLOW    TRUE
-    GIT_PROGRESS   TRUE
+CPMAddPackage(
+    NAME GLFW
+    GITHUB_REPOSITORY glfw/glfw
+    GIT_TAG 3.3.8
+    OPTIONS
+        "GLFW_BUILD_TESTS OFF"
+        "GLFW_BUILD_EXAMPLES OFF"
+        "GLFW_BULID_DOCS OFF"
+        "GLFW_INSTALL OFF"
 )
-FetchContent_MakeAvailable(glfw)
 target_link_libraries(${PROJECT_NAME} PUBLIC glfw)
 set_targets_static_and_folder(glfw)
-disable_ipo_target(glfw)
+set_property(TARGET ${glfw} PROPERTY INTERPROCEDURAL_OPTIMIZATION OFF)
 
 # RYML
-FetchContent_Declare(
-    ryml
-    GIT_REPOSITORY "https://github.com/biojppm/rapidyaml.git"
-    GIT_TAG "master"
-    GIT_SHALLOW    TRUE
-    GIT_PROGRESS   TRUE
+CPMAddPackage(
+    NAME ryml
+    GITHUB_REPOSITORY biojppm/rapidyaml
+    GIT_TAG master
 )
-FetchContent_MakeAvailable(ryml)
-target_link_libraries(${PROJECT_NAME} PUBLIC ryml::ryml)
+target_link_libraries(${PROJECT_NAME} PUBLIC ryml)
 target_link_libraries(${PROJECT_NAME} PUBLIC c4core)
 set_targets_static_and_folder(ryml)
 
 # RapidJSON
-FetchContent_Declare(
-    RapidJSON
-    GIT_REPOSITORY https://github.com/Tencent/rapidjson
-    GIT_TAG "master"
-    GIT_SHALLOW    TRUE
-    GIT_PROGRESS   TRUE
-    CONFIGURE_COMMAND ""
-    BUILD_COMMAND ""
+CPMAddPackage(
+    NAME rapidjson
+    GITHUB_REPOSITORY Tencent/rapidjson
+    GIT_TAG master
+    DOWNLOAD_ONLY YES
 )
-FetchContent_Populate(RapidJSON)
-set(RapidJSON_DIR "${FETCHCONTENT_BASE_DIR}/rapidjson-src")
-target_include_directories(${PROJECT_NAME} PUBLIC ${RapidJSON_DIR}/include)
+target_include_directories(${PROJECT_NAME} PUBLIC ${rapidjson_SOURCE_DIR}/include)
 
 # Jolt
-set(COMPILE_AS_SHARED_LIBRARY OFF)
-set(ENABLE_ALL_WARNINGS OFF)
-set(INTERPROCEDURAL_OPTIMIZATION ON)
-set(USE_STATIC_MSVC_RUNTIME_LIBRARY ON)
-FetchContent_Declare(
-    JoltPhysics
-    GIT_REPOSITORY "https://github.com/jrouwe/JoltPhysics"
-    GIT_TAG "master"
-    SOURCE_SUBDIR "Build"
-    GIT_SHALLOW    TRUE
-    GIT_PROGRESS   TRUE
+CPMAddPackage(
+    NAME JoltPhysics
+    GITHUB_REPOSITORY jrouwe/JoltPhysics
+    GIT_TAG master
+    SOURCE_SUBDIR Build
+    OPTIONS
+        "COMPILE_AS_SHARED_LIBRARY OFF"
+        "ENABLE_ALL_WARNINGS OFF"
+        "INTERPROCEDURAL_OPTIMIZATION ON"
+        "USE_STATIC_MSVC_RUNTIME_LIBRARY ON"
 )
-FetchContent_MakeAvailable(JoltPhysics)
 target_link_libraries(${PROJECT_NAME} PUBLIC Jolt)
 target_include_directories(${PROJECT_NAME} PUBLIC ${JoltPhysics_SOURCE_DIR}/..)
 set_targets_static_and_folder(Jolt)
 
 # tracy
-set(TRACY_STATIC ON)
-set(TRACY_VK_USE_SYMBOL_TABLE ON)
-set(TRACY_NO_FRAME_IMAGE ON)
-set(TRACY_ON_DEMAND ON)
-FetchContent_Declare(
-    Tracy
-    GIT_REPOSITORY "https://github.com/wolfpld/tracy.git"
-    GIT_TAG v0.10
-    GIT_SHALLOW    TRUE
-    GIT_PROGRESS   TRUE
+CPMAddPackage(
+    NAME Tracy
+    GITHUB_REPOSITORY wolfpld/tracy
+    VERSION 0.10
+    OPTIONS
+        "TRACY_STATIC ON"
+        "TRACY_VK_USE_SYMBOL_TABLE ON"
+        "TRACY_NO_FRAME_IMAGE ON"
+        "TRACY_ON_DEMAND ON"
 )
-FetchContent_MakeAvailable(Tracy)
-target_link_libraries(${PROJECT_NAME} PUBLIC Tracy::TracyClient)
+target_link_libraries(${PROJECT_NAME} PUBLIC TracyClient)
 set_targets_static_and_folder(TracyClient)
 
 # lua
-set(LUA_ENABLE_SHARED OFF)
-set(LUA_ENABLE_TESTING OFF)
-FetchContent_Declare(
-    lua
-    GIT_REPOSITORY "https://github.com/walterschell/Lua"
-    GIT_TAG master
-    GIT_SHALLOW    TRUE
-    GIT_PROGRESS   TRUE
+CPMAddPackage(
+    NAME lua
+    GIT_REPOSITORY https://github.com/lua/lua.git
+    VERSION 5.4.6
+    DOWNLOAD_ONLY YES
 )
-FetchContent_MakeAvailable(lua)
-target_link_libraries(${PROJECT_NAME} PUBLIC lua_static)
-set_targets_static_and_folder(lua_static)
+if (lua_ADDED)
+    FILE(GLOB lua_sources ${lua_SOURCE_DIR}/*.c)
+    list(REMOVE_ITEM lua_sources "${lua_SOURCE_DIR}/lua.c" "${lua_SOURCE_DIR}/luac.c" "${lua_SOURCE_DIR}/luac.c" "${lua_SOURCE_DIR}/onelua.c")
+    add_library(lua STATIC ${lua_sources})
+    target_include_directories(lua SYSTEM PUBLIC ${lua_SOURCE_DIR})
+    target_include_directories(${PROJECT_NAME} PUBLIC ${lua_SOURCE_DIR})
+    target_link_libraries(${PROJECT_NAME} PRIVATE lua)
+endif()
+set_targets_static(lua)
+set_target_properties(lua PROPERTIES FOLDER "Vendor/lua")
 
 # sol
-set(SOL2_LUA_VERSION 5.4.6)
-set(SOL2_ENABLE_INSTALL OFF)
-FetchContent_Declare(
-    sol
-    GIT_REPOSITORY "https://github.com/ThePhD/sol2"
+CPMAddPackage(
+    NAME sol2
+    GITHUB_REPOSITORY ThePhD/sol2
     GIT_TAG v3.3.0
-    GIT_SHALLOW    TRUE
-    GIT_PROGRESS   TRUE
+    OPTIONS
+        "SOL2_LUA_VERSION 5.4.6"
+        "SOL2_ENABLE_INSTALL OFF"
 )
-FetchContent_MakeAvailable(sol)
 target_link_libraries(${PROJECT_NAME} PUBLIC sol2)
 set_targets_static_and_folder(sol2)
