@@ -53,11 +53,10 @@ LuaManager* LuaManager::get() {
 void LuaManager::bind_log() const {
   auto log = m_state->create_table("Log");
 
-  log.set_function("trace", [&](sol::this_state s, const std::string_view message) { OX_CORE_TRACE(message); });
-  log.set_function("info", [&](sol::this_state s, const std::string_view message) { OX_CORE_INFO(message); });
-  log.set_function("warn", [&](sol::this_state s, const std::string_view message) { OX_CORE_WARN(message); });
-  log.set_function("error", [&](sol::this_state s, const std::string_view message) { OX_CORE_ERROR(message); });
-  log.set_function("fatal", [&](sol::this_state s, const std::string_view message) { OX_CORE_FATAL(message); });
+  log.set_function("trace", [&](sol::this_state s, const std::string_view message) { OX_CORE_TRACE("{}", message); });
+  log.set_function("info", [&](sol::this_state s, const std::string_view message) { OX_CORE_INFO("{}", message); });
+  log.set_function("warn", [&](sol::this_state s, const std::string_view message) { OX_CORE_WARN("{}", message); });
+  log.set_function("error", [&](sol::this_state s, const std::string_view message) { OX_CORE_ERROR("{}", message); });
 }
 
 void LuaManager::bind_ecs() {

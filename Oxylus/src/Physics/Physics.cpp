@@ -29,12 +29,12 @@ static void TraceImpl(const char* inFMT, ...) {
   vsnprintf(buffer, sizeof(buffer), inFMT, list);
   va_end(list);
 
-  OX_CORE_TRACE(buffer);
+  OX_CORE_TRACE("{}", buffer);
 }
 
 #ifdef JPH_ENABLE_ASSERTS
   static bool AssertFailedImpl(const char* inExpression, const char* inMessage, const char* inFile, JPH::uint inLine) {
-    OX_CORE_FATAL("{0}:{1}:{2} {3}", inFile, inLine, inExpression, inMessage != nullptr ? inMessage : "");
+    OX_CORE_ERROR("{0}:{1}:{2} {3}", inFile, inLine, inExpression, inMessage != nullptr ? inMessage : "");
     return true;
   };
 #endif

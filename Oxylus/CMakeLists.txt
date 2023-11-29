@@ -211,7 +211,7 @@ set_targets_static_and_folder(tinygltf)
 FetchContent_Declare(
     fmt
     GIT_REPOSITORY https://github.com/fmtlib/fmt.git
-    GIT_TAG "10.0.0"
+    GIT_TAG "10.1.1"
     GIT_SHALLOW    TRUE
     GIT_PROGRESS   TRUE
 )
@@ -219,18 +219,18 @@ FetchContent_MakeAvailable(fmt)
 target_link_libraries(${PROJECT_NAME} PUBLIC fmt)
 set_targets_static_and_folder(fmt)
 
-# spdlog
-set(SPDLOG_FMT_EXTERNAL TRUE)
+# fmtlog
 FetchContent_Declare(
-    spdlog
-    GIT_REPOSITORY "https://github.com/gabime/spdlog.git"
-    GIT_TAG "v1.x"
+    fmtlog
+    GIT_REPOSITORY "https://github.com/Hatrickek/fmtlog"
+    GIT_TAG "main"
     GIT_SHALLOW    TRUE
     GIT_PROGRESS   TRUE
+    GIT_SUBMODULES ""
 )
-FetchContent_MakeAvailable(spdlog)
-target_link_libraries(${PROJECT_NAME} PUBLIC spdlog)
-set_targets_static_and_folder(spdlog)
+FetchContent_MakeAvailable(fmtlog)
+target_link_libraries(${PROJECT_NAME} PUBLIC fmtlog-static)
+set_targets_static_and_folder(fmtlog-static)
 
 # vk-bootstrap
 FetchContent_Declare(
@@ -339,6 +339,7 @@ set_targets_static_and_folder(Jolt)
 set(TRACY_STATIC ON)
 set(TRACY_VK_USE_SYMBOL_TABLE ON)
 set(TRACY_NO_FRAME_IMAGE ON)
+set(TRACY_ON_DEMAND ON)
 FetchContent_Declare(
     Tracy
     GIT_REPOSITORY "https://github.com/wolfpld/tracy.git"

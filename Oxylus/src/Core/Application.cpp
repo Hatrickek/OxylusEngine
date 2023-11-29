@@ -73,7 +73,6 @@ Application& Application::push_overlay(Layer* layer) {
 }
 
 void Application::run() {
-  std::chrono::steady_clock::time_point begin = std::chrono::steady_clock::now();
   while (is_running) {
     update_timestep();
 

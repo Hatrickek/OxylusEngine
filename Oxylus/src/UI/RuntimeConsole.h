@@ -5,10 +5,25 @@
 #include <optional>
 #include <charconv>
 
+#include "Core/Base.h"
+
 #include "Utils/Log.h"
 
 namespace Oxylus {
-using LevelEnum = spdlog::level::level_enum;
+class RuntimeConsoleLogSink : public ExternalSink {
+public:
+  explicit RuntimeConsoleLogSink(void* user_data)
+    : ExternalSink(user_data) {}
+
+  void log(int64_t ns,
+           fmtlog::LogLevel level,
+           fmt::string_view location,
+           size_t base_pos,
+           fmt::string_view thread_name,
+           fmt::string_view msg,
+           size_t body_pos,
+           size_t log_file_pos) override;
+};
 
 class RuntimeConsole {
 public:
@@ -40,7 +55,7 @@ public:
   void register_command(const std::string& command, const std::string& on_succes_log, std::string* value);
   void register_command(const std::string& command, const std::string& on_succes_log, bool* value);
 
-  void add_log(const char* fmt, spdlog::level::level_enum level);
+  void add_log(const char* fmt, fmtlog::LogLevel level);
   void clear_log();
 
   void on_imgui_render(ImGuiWindowFlags window_flags = ImGuiWindowFlags_NoNavInputs | ImGuiWindowFlags_MenuBar | ImGuiWindowFlags_NoCollapse);
@@ -48,7 +63,7 @@ public:
 private:
   struct ConsoleText {
     std::string text = {};
-    spdlog::level::level_enum level = {};
+    fmtlog::LogLevel level = {};
 
     void render() const;
   };
@@ -60,6 +75,9 @@ private:
     std::function<void()> action = nullptr;
     std::string on_succes_log = {};
   };
+
+  // Sink
+  Ref<RuntimeConsoleLogSink> runtime_console_log_sink;
 
   // Commands
   std::unordered_map<std::string, ConsoleCommand> m_command_map;

@@ -1,29 +1,62 @@
 #pragma once
 
+#include <fmtlog.h>
 #include <memory>
-#include <spdlog/logger.h>
 
 #include "Core/PlatformDetection.h"
+
 #include "Utils/FileSystem.h"
 
 namespace Oxylus {
+class ExternalSink {
+public:
+  void* user_data = nullptr;
+
+  ExternalSink(void* user_data) { this->user_data = user_data; }
+  virtual ~ExternalSink() = default;
+  ExternalSink(const ExternalSink&) = delete;
+
+  ExternalSink& operator=(const ExternalSink&) = delete;
+
+  virtual void log(int64_t ns,
+                   fmtlog::LogLevel level,
+                   fmt::string_view location,
+                   size_t base_pos,
+                   fmt::string_view thread_name,
+                   fmt::string_view msg,
+                   size_t body_pos,
+                   size_t log_file_pos) = 0;
+
+};
+
 class Log {
 public:
   static void init();
 
-  static std::shared_ptr<spdlog::logger>& get_core_logger() { return s_core_logger; }
+  template<typename T>
+  static void register_sink(void* user_data) {
+    external_sinks.emplace_back(std::make_shared<T>(user_data));
+  }
 
 private:
-  static std::shared_ptr<spdlog::logger> s_core_logger;
+  static void logcb(int64_t ns,
+                    fmtlog::LogLevel level,
+                    fmt::string_view location,
+                    size_t base_pos,
+                    fmt::string_view thread_name,
+                    fmt::string_view msg,
+                    size_t body_pos,
+                    size_t log_file_pos);
+
+  static std::vector<std::shared_ptr<ExternalSink>> external_sinks;
 };
 }
 
 // log macros
-#define OX_CORE_TRACE(...) ::Oxylus::Log::get_core_logger()->trace(__VA_ARGS__)
-#define OX_CORE_INFO(...) ::Oxylus::Log::get_core_logger()->info(__VA_ARGS__)
-#define OX_CORE_WARN(...) ::Oxylus::Log::get_core_logger()->warn(__VA_ARGS__)
-#define OX_CORE_ERROR(...) ::Oxylus::Log::get_core_logger()->error(__VA_ARGS__)
-#define OX_CORE_FATAL(...) ::Oxylus::Log::get_core_logger()->critical(__VA_ARGS__)
+#define OX_CORE_TRACE(...) FMTLOG(fmtlog::DBG, __VA_ARGS__)
+#define OX_CORE_INFO(...) FMTLOG(fmtlog::INF, __VA_ARGS__)
+#define OX_CORE_WARN(...) FMTLOG(fmtlog::WRN, __VA_ARGS__)
+#define OX_CORE_ERROR(...) FMTLOG(fmtlog::ERR, __VA_ARGS__)
 
 #define OX_DISABLE_DEBUG_BREAKS
 

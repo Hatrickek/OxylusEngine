@@ -1,5 +1,7 @@
 #include "VulkanContext.h"
 
+#include <sstream>
+
 #include "Render/Window.h"
 #include "Utils/Log.h"
 #include "Utils/Profiler.h"
@@ -31,21 +33,21 @@ static VkBool32 DebugCallback(const VkDebugUtilsMessageSeverityFlagBitsEXT messa
     prefix = "VULKAN ERROR: ";
   }
 
-  std::stringstream debugMessage;
-  debugMessage << prefix << "[" << pCallbackData->messageIdNumber << "][" << pCallbackData->pMessageIdName << "] : " << pCallbackData->pMessage;
+  std::stringstream debug_message;
+  debug_message << prefix << "[" << pCallbackData->messageIdNumber << "][" << pCallbackData->pMessageIdName << "] : " << pCallbackData->pMessage;
 
   if (messageSeverity & VK_DEBUG_UTILS_MESSAGE_SEVERITY_VERBOSE_BIT_EXT) {
-    OX_CORE_WARN(debugMessage.str());
+    OX_CORE_WARN("{}", debug_message.str());
   }
   else if (messageSeverity & VK_DEBUG_UTILS_MESSAGE_SEVERITY_INFO_BIT_EXT) {
-    OX_CORE_INFO(debugMessage.str());
+    OX_CORE_INFO("{}", debug_message.str());
   }
   else if (messageSeverity & VK_DEBUG_UTILS_MESSAGE_SEVERITY_WARNING_BIT_EXT) {
-    OX_CORE_WARN(debugMessage.str());
+    OX_CORE_WARN("{}", debug_message.str());
     OX_DEBUGBREAK();
   }
   else if (messageSeverity & VK_DEBUG_UTILS_MESSAGE_SEVERITY_ERROR_BIT_EXT) {
-    OX_CORE_ERROR(debugMessage.str());
+    OX_CORE_ERROR("{}", debug_message.str());
     OX_DEBUGBREAK();
   }
   return VK_FALSE;
@@ -253,7 +255,7 @@ void VulkanContext::create_context(const AppSpec& spec) {
       }
     });
 
-  OX_CORE_INFO("Vulkan context initialized using device: {}", properties.deviceName);
+  OX_CORE_INFO("Vulkan context initialized using device: {}", device_name);
 }
 
 void VulkanContext::rebuild_swapchain() {

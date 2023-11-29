@@ -281,7 +281,7 @@ static uint32_t get_material_index(const std::unordered_map<uint32_t, uint32_t>&
 
 Scope<vuk::Future> DefaultRenderPipeline::on_render(vuk::Allocator& frame_allocator, const vuk::Future& target, vuk::Dimension3D dim) {
   if (!m_renderer_context.current_camera) {
-    OX_CORE_FATAL("No camera is set for rendering!");
+    OX_CORE_ERROR("No camera is set for rendering!");
     // set a temporary one
     if (!default_camera)
       default_camera = create_ref<Camera>();
@@ -386,12 +386,12 @@ Scope<vuk::Future> DefaultRenderPipeline::on_render(vuk::Allocator& frame_alloca
   auto [pbr_buf, pbr_buffer_fut] = create_buffer(frame_allocator, vuk::MemoryUsage::eCPUtoGPU, vuk::DomainFlagBits::eTransferOnGraphics, std::span(&pbr_pass_params, 1));
   auto& pbr_buffer = *pbr_buf;
 
+  sky_view_lut_pass(frame_allocator, vk_context, rg);
+
   geomerty_pass(rg, frame_allocator, vs_buffer, material_map, mat_buffer, shadow_buffer, point_lights_buffer, pbr_buffer);
 
   rg->attach_and_clear_image("pbr_image", {.format = vk_context->swapchain->format, .sample_count = vuk::SampleCountFlagBits::e1}, vuk::Black<float>);
   rg->inference_rule("pbr_image", vuk::same_shape_as("final_image"));
-
-  sky_view_lut_pass(frame_allocator, vk_context, rg);
 
   if (RendererCVar::cvar_ssr_enable.get())
     ssr_pass(frame_allocator, rg, vk_context, vs_buffer);
@@ -1226,7 +1226,7 @@ void DefaultRenderPipeline::sky_view_lut_pass(vuk::Allocator& frame_allocator,
                     .set_rasterization({.cullMode = vuk::CullModeFlagBits::eNone})
                     .bind_graphics_pipeline("sky_view_pipeline")
                     .bind_image(0, 0, sky_transmittance_lut)
-                    .bind_sampler(0, 0, {vuk::LinearSamplerClamped})
+                    .bind_sampler(0, 0, vuk::LinearSamplerClamped)
                     .bind_buffer(0, 1, atmos_const_buffer)
                     .bind_buffer(0, 2, eye_const_buffer)
                     .draw(3, 1, 0, 0);

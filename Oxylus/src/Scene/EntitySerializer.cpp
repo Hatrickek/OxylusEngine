@@ -120,9 +120,9 @@ void EntitySerializer::serialize_entity(Scene* scene, ryml::NodeRef& entities, E
     const auto& camera = entity.get_component<CameraComponent>();
     auto node = entity_node["CameraComponent"];
     node |= ryml::MAP;
-    node["FOV"] << camera.system->Fov;
-    node["NearClip"] << camera.system->near_clip;
-    node["FarClip"] << camera.system->far_clip;
+    node["FOV"] << camera.system->get_fov();
+    node["NearClip"] << camera.system->get_near();
+    node["FarClip"] << camera.system->get_far();
   }
 
   // Physics
@@ -550,7 +550,7 @@ void EntitySerializer::serialize_entity_as_prefab(const char* filepath, Entity e
 Entity EntitySerializer::deserialize_entity_as_prefab(const char* filepath, Scene* scene) {
   auto content = FileUtils::read_file(filepath);
   if (content.empty()) {
-    OX_CORE_ERROR(fmt::format("Couldn't read prefab file: {0}", filepath).c_str());
+    OX_CORE_ERROR("Couldn't read prefab file: {0}", filepath);
 
     // Try to read it again from assets path
     content = FileUtils::read_file(AssetManager::get_asset_file_system_path(filepath).string());
