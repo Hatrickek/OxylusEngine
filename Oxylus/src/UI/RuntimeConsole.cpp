@@ -72,6 +72,7 @@ void RuntimeConsole::register_command(const std::string& command, const std::str
 }
 
 void RuntimeConsole::add_log(const char* fmt, fmtlog::LogLevel level) {
+  std::lock_guard lock(log_mutex);
   if ((int32_t)m_text_buffer.size() >= MAX_TEXT_BUFFER_SIZE)
     m_text_buffer.erase(m_text_buffer.begin());
   m_text_buffer.emplace_back(ConsoleText{fmt, level});
@@ -156,9 +157,6 @@ void RuntimeConsole::ConsoleText::render() const {
   flags |= ImGuiTreeNodeFlags_SpanFullWidth;
   flags |= ImGuiTreeNodeFlags_FramePadding;
   flags |= ImGuiTreeNodeFlags_Leaf | ImGuiTreeNodeFlags_NoTreePushOnOpen;
-
-  if (text.empty())
-    return;
 
   ImGui::PushID(text.c_str());
   ImGui::PushStyleColor(ImGuiCol_Text, get_color(level));

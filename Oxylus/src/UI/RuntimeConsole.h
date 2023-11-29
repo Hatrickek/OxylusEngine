@@ -4,6 +4,7 @@
 #include <functional>
 #include <optional>
 #include <charconv>
+#include <mutex>
 
 #include "Core/Base.h"
 
@@ -78,6 +79,7 @@ private:
 
   // Sink
   Ref<RuntimeConsoleLogSink> runtime_console_log_sink;
+  std::mutex log_mutex;
 
   // Commands
   std::unordered_map<std::string, ConsoleCommand> m_command_map;
@@ -89,7 +91,7 @@ private:
   std::string parse_command(const std::string& command);
 
   // Input field
-  const int32_t MAX_TEXT_BUFFER_SIZE = 32;
+  static constexpr int32_t MAX_TEXT_BUFFER_SIZE = 32;
   int32_t m_history_position = 0;
   std::vector<ConsoleText> m_text_buffer = {};
   std::vector<char*> m_input_log = {};

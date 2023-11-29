@@ -8,7 +8,7 @@ std::vector<std::shared_ptr<ExternalSink>> Log::external_sinks = {};
 void Log::init() {
   fmtlog::setLogCB(logcb, fmtlog::DBG);
   fmtlog::setLogFile("logs/oxylus_log.txt", true);
-  fmtlog::setHeaderPattern("{HMS} | {s:<16} | {l} ");
+  fmtlog::setHeaderPattern("{HMS} | {l} | {s:<16} |");
   fmtlog::flushOn(fmtlog::DBG);
   fmtlog::setThreadName("MAIN");
   fmtlog::startPollingThread(1);
@@ -43,9 +43,14 @@ void Log::logcb(int64_t ns,
     }
     case fmtlog::LogLevel::OFF: break;
   }
+
   fmt::print(color, "{}\n", msg);
 
-  for (const auto& interface : external_sinks)
-    interface->log(ns, level, location, base_pos, thread_name, msg, body_pos, log_file_pos);
+  for (uint32_t i = 0; i < (uint32_t)external_sinks.size(); i++) {
+    if (external_sinks[i]->user_data)
+      external_sinks[i]->log(ns, level, location, base_pos, thread_name, msg, body_pos, log_file_pos);
+    else
+      external_sinks.erase(external_sinks.begin() + i);
+  }
 }
 }

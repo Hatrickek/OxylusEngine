@@ -390,7 +390,7 @@ Scope<vuk::Future> DefaultRenderPipeline::on_render(vuk::Allocator& frame_alloca
 
   geomerty_pass(rg, frame_allocator, vs_buffer, material_map, mat_buffer, shadow_buffer, point_lights_buffer, pbr_buffer);
 
-  rg->attach_and_clear_image("pbr_image", {.format = vk_context->swapchain->format, .sample_count = vuk::SampleCountFlagBits::e1}, vuk::Black<float>);
+  rg->attach_and_clear_image("pbr_image", {.format = vuk::Format::eR32G32B32A32Sfloat, .sample_count = vuk::SampleCountFlagBits::e1}, vuk::Black<float>);
   rg->inference_rule("pbr_image", vuk::same_shape_as("final_image"));
 
   if (RendererCVar::cvar_ssr_enable.get())
@@ -423,7 +423,7 @@ Scope<vuk::Future> DefaultRenderPipeline::on_render(vuk::Allocator& frame_alloca
 
   auto final_image_attachment = vuk::ImageAttachment{
     .extent = dim,
-    .format = vk_context->swapchain->format,
+    .format = vuk::Format::eR32G32B32A32Sfloat,
     .sample_count = vuk::Samples::e1,
     .level_count = 1,
     .layer_count = 1
@@ -478,7 +478,7 @@ Scope<vuk::Future> DefaultRenderPipeline::on_render(vuk::Allocator& frame_alloca
     auto [fxaa_buff, fxaa_buffer_fut] = create_buffer(frame_allocator, vuk::MemoryUsage::eCPUtoGPU, vuk::DomainFlagBits::eTransferOnGraphics, std::span(&fxaa_data, 1));
     auto& fxaa_buffer = *fxaa_buff;
 
-    rg->attach_and_clear_image("fxaa_image", {.format = vk_context->swapchain->format, .sample_count = vuk::Samples::e1}, vuk::Black<float>);
+    rg->attach_and_clear_image("fxaa_image", {.format = vuk::Format::eR32G32B32A32Sfloat, .sample_count = vuk::Samples::e1}, vuk::Black<float>);
     rg->inference_rule("fxaa_image", vuk::same_shape_as("final_image"));
 
     apply_fxaa(rg.get(), final_image_name, "fxaa_image", fxaa_buffer);
@@ -766,7 +766,7 @@ void DefaultRenderPipeline::bloom_pass(const Ref<vuk::RenderGraph>& rg, const Vu
 
   constexpr uint32_t bloom_mip_count = 8;
 
-  rg->attach_and_clear_image("bloom_image", {.format = vk_context->swapchain->format, .sample_count = vuk::SampleCountFlagBits::e1, .level_count = bloom_mip_count, .layer_count = 1}, vuk::Black<float>);
+  rg->attach_and_clear_image("bloom_image", {.format = vuk::Format::eR32G32B32A32Sfloat, .sample_count = vuk::SampleCountFlagBits::e1, .level_count = bloom_mip_count, .layer_count = 1}, vuk::Black<float>);
   rg->inference_rule("bloom_image", vuk::same_extent_as("final_image"));
 
   auto [down_input_names, down_output_names] = diverge_image_mips(rg, "bloom_image", bloom_mip_count);
@@ -812,7 +812,7 @@ void DefaultRenderPipeline::bloom_pass(const Ref<vuk::RenderGraph>& rg, const Vu
   // Upsampling
   // https://www.froyok.fr/blog/2021-12-ue4-custom-bloom/resources/code/bloom_down_up_demo.jpg
 
-  rg->attach_and_clear_image("bloom_upsample_image", {.format = vk_context->swapchain->format, .sample_count = vuk::SampleCountFlagBits::e1, .level_count = bloom_mip_count - 1, .layer_count = 1}, vuk::Black<float>);
+  rg->attach_and_clear_image("bloom_upsample_image", {.format = vuk::Format::eR32G32B32A32Sfloat, .sample_count = vuk::SampleCountFlagBits::e1, .level_count = bloom_mip_count - 1, .layer_count = 1}, vuk::Black<float>);
   rg->inference_rule("bloom_upsample_image", vuk::same_extent_as("final_image"));
 
   auto [up_diverged_names, up_output_names] = diverge_image_mips(rg, "bloom_upsample_image", bloom_mip_count - 1);
@@ -1007,7 +1007,7 @@ void DefaultRenderPipeline::ssr_pass(vuk::Allocator& frame_allocator, const Ref<
     }
   });
 
-  rg->attach_and_clear_image("ssr_image", {.format = vk_context->swapchain->format, .sample_count = vuk::SampleCountFlagBits::e1}, vuk::Black<float>);
+  rg->attach_and_clear_image("ssr_image", {.format = vuk::Format::eR32G32B32A32Sfloat, .sample_count = vuk::SampleCountFlagBits::e1}, vuk::Black<float>);
   rg->inference_rule("ssr_image", vuk::same_shape_as("final_image"));
 }
 
