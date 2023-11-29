@@ -1,5 +1,4 @@
 #include "Log.h"
-#include <spdlog/sinks/stdout_color_sinks.h>
 
 namespace Oxylus {
 std::vector<std::shared_ptr<ExternalSink>> Log::external_sinks = {};

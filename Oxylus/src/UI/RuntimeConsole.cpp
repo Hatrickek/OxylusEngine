@@ -2,7 +2,6 @@
 
 #include <icons/IconsMaterialDesignIcons.h>
 
-#include "ExternalConsoleSink.h"
 #include "Core/Application.h"
 
 #include "Utils/CVars.h"

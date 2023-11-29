@@ -23,11 +23,9 @@ public:
 
   ~DefaultRenderPipeline() override = default;
 
-  void compute_sky_transmittance(vuk::Allocator& allocator);
   void init(vuk::Allocator& allocator) override;
   void shutdown() override;
 
-  void atmosphere_pass(vuk::Allocator& frame_allocator, const VulkanContext* vk_context, const Ref<vuk::RenderGraph>& rg);
   Scope<vuk::Future> on_render(vuk::Allocator& frame_allocator, const vuk::Future& target, vuk::Dimension3D dim) override;
 
   void on_dispatcher_events(EventDispatcher& dispatcher) override;
@@ -128,13 +126,12 @@ private:
   SkyLightComponent m_sky_lighting_data;
   EventDispatcher light_buffer_dispatcher;
 
-  void compute_sky_transmittance(vuk::Allocator& allocator);
-
   void update_skybox(const SkyboxLoadEvent& e);
   void generate_prefilter(vuk::Allocator& allocator);
   void update_parameters(ProbeChangeEvent& e);
 
   void sky_view_lut_pass(vuk::Allocator& frame_allocator, const VulkanContext* vk_context, const Ref<vuk::RenderGraph>& rg);
+  void compute_sky_transmittance(vuk::Allocator& allocator);
   void depth_pre_pass(const Ref<vuk::RenderGraph>& rg, vuk::Buffer& vs_buffer, const std::unordered_map<uint32_t, uint32_t>&, vuk::Buffer& mat_buffer) const;
   void geomerty_pass(const Ref<vuk::RenderGraph>& rg, vuk::Allocator& frame_allocator,vuk::Buffer& vs_buffer, const std::unordered_map<uint32_t, uint32_t>&, vuk::Buffer& mat_buffer, vuk::Buffer& shadow_buffer, vuk::Buffer& point_lights_buffer, vuk::Buffer pbr_buffer);
   void apply_fxaa(vuk::RenderGraph* rg,vuk::Name src, vuk::Name dst, vuk::Buffer& fxaa_buffer);
