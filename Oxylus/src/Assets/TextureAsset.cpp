@@ -19,28 +19,28 @@ TextureAsset::TextureAsset(const std::string& file_path) {
 
 TextureAsset::TextureAsset(const TextureLoadInfo& info) {
   if (!info.path.empty())
-    load(info.path, info.format);
+    load(info.path, info.format, info.generate_cubemap_from_hdr, info.generate_mips);
   else
     create_texture(info.width, info.height, info.data, info.format);
 }
 
 TextureAsset::~TextureAsset() = default;
 
-void TextureAsset::create_texture(const uint32_t x, const uint32_t y, void* data, const vuk::Format format) {
-  auto [tex, tex_fut] = vuk::create_texture(*VulkanContext::get()->superframe_allocator, format, vuk::Extent3D{x, y, 1u}, data, true);
+void TextureAsset::create_texture(const uint32_t x, const uint32_t y, void* data, const vuk::Format format, bool generate_mips) {
+  auto [tex, tex_fut] = vuk::create_texture(*VulkanContext::get()->superframe_allocator, format, vuk::Extent3D{x, y, 1u}, data, generate_mips);
   texture = std::move(tex);
 
   vuk::Compiler compiler;
   tex_fut.wait(*VulkanContext::get()->superframe_allocator, compiler);
 }
 
-void TextureAsset::load(const std::string& file_path, const vuk::Format format, const bool generate_cubemap_from_hdr) {
+void TextureAsset::load(const std::string& file_path, const vuk::Format format, const bool generate_cubemap_from_hdr, bool generate_mips) {
   path = file_path;
 
   uint32_t x, y, chans;
   uint8_t* data = Texture::load_stb_image(path, &x, &y, &chans);
 
-  create_texture(x, y, data, format);
+  create_texture(x, y, data, format, generate_mips);
 
   if (FileSystem::get_file_extension(path) == "hdr" && generate_cubemap_from_hdr) {
     auto [image, future] = RendererCommon::generate_cubemap_from_equirectangular(texture);
@@ -83,13 +83,13 @@ vuk::ImageAttachment TextureAsset::as_attachment() const {
 
 void TextureAsset::create_blank_texture() {
   s_purple_texture = create_ref<TextureAsset>();
-  s_purple_texture->create_texture(MissingTextureWidth, MissingTextureHeight, MissingTexture);
+  s_purple_texture->create_texture(MissingTextureWidth, MissingTextureHeight, MissingTexture, vuk::Format::eR8G8B8A8Unorm, false);
 }
 
 void TextureAsset::create_white_texture() {
   s_white_texture = create_ref<TextureAsset>();
   char white_texture_data[16 * 16 * 4];
   memset(white_texture_data, 0xff, 16 * 16 * 4);
-  s_white_texture->create_texture(16, 16, white_texture_data);
+  s_white_texture->create_texture(16, 16, white_texture_data, vuk::Format::eR8G8B8A8Unorm, false);
 }
 }

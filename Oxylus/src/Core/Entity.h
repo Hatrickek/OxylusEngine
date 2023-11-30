@@ -113,12 +113,12 @@ public:
     return entities;
   }
 
-  static void get_all_children(Entity parent, std::vector<Entity>& outEntities) {
+  static void get_all_children(Entity parent, std::vector<Entity>& out_entities) {
     const std::vector<UUID> children = parent.get_component<RelationshipComponent>().children;
     for (const auto& child : children) {
       Entity entity = parent.get_scene()->get_entity_by_uuid(child);
-      outEntities.push_back(entity);
-      get_all_children(entity, outEntities);
+      out_entities.push_back(entity);
+      get_all_children(entity, out_entities);
     }
   }
 
@@ -136,12 +136,12 @@ public:
   void deparent() const {
     auto& transform = get_relationship();
     const UUID uuid = get_uuid();
-    const Entity parentEntity = get_parent();
+    const Entity parent_entity = get_parent();
 
-    if (!parentEntity)
+    if (!parent_entity)
       return;
 
-    auto& parent = parentEntity.get_relationship();
+    auto& parent = parent_entity.get_relationship();
     for (auto it = parent.children.begin(); it != parent.children.end(); ++it) {
       if (*it == uuid) {
         parent.children.erase(it);
@@ -157,8 +157,8 @@ public:
     const auto& transform = get_transform();
     const auto& rc = get_relationship();
     const Entity parent = m_Scene->get_entity_by_uuid(rc.parent);
-    const glm::mat4 parentTransform = parent ? parent.get_world_transform() : glm::mat4(1.0f);
-    return parentTransform * glm::translate(glm::mat4(1.0f), transform.position) *
+    const glm::mat4 parent_transform = parent ? parent.get_world_transform() : glm::mat4(1.0f);
+    return parent_transform * glm::translate(glm::mat4(1.0f), transform.position) *
            glm::toMat4(glm::quat(transform.rotation)) * glm::scale(glm::mat4(1.0f), transform.scale);
   }
 

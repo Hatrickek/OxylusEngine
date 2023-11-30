@@ -12,6 +12,8 @@ struct TextureLoadInfo {
   uint32_t height = 0;
   void* data = nullptr;
   vuk::Format format = vuk::Format::eR8G8B8A8Unorm;
+  bool generate_mips = true;
+  bool generate_cubemap_from_hdr = true;
 };
 
 class TextureAsset {
@@ -21,8 +23,15 @@ public:
   TextureAsset(const TextureLoadInfo& info);
   ~TextureAsset();
 
-  void create_texture(uint32_t x, uint32_t y, void* data, vuk::Format format = vuk::Format::eR8G8B8A8Unorm);
-  void load(const std::string& file_path, vuk::Format format = vuk::Format::eR8G8B8A8Unorm, bool generate_cubemap_from_hdr = true);
+  void create_texture(uint32_t x,
+                      uint32_t y,
+                      void* data,
+                      vuk::Format format = vuk::Format::eR8G8B8A8Unorm,
+                      bool generate_mips = true);
+  void load(const std::string& file_path,
+            vuk::Format format = vuk::Format::eR8G8B8A8Unorm,
+            bool generate_cubemap_from_hdr = true,
+            bool generate_mips = true);
   void load_from_memory(void* initial_data, size_t size);
   vuk::ImageAttachment as_attachment() const;
 
