@@ -25,7 +25,7 @@
 namespace Oxylus {
 static bool s_rename_entity = false;
 
-InspectorPanel::InspectorPanel() : EditorPanel("Inspector", ICON_MDI_INFORMATION, true) { }
+InspectorPanel::InspectorPanel() : EditorPanel("Inspector", ICON_MDI_INFORMATION, true), m_Scene(nullptr) { }
 
 void InspectorPanel::on_imgui_render() {
   m_SelectedEntity = EditorLayer::get()->get_selected_entity();
@@ -42,7 +42,7 @@ void InspectorPanel::on_imgui_render() {
 }
 
 template <typename T, typename UIFunction>
-static void draw_component(const char8_t* name,
+static void draw_component(const char* name,
                            Entity entity,
                            UIFunction ui_function,
                            const bool removable = true) {
@@ -59,7 +59,9 @@ static void draw_component(const char8_t* name,
     ImGui::SetCursorPosY(ImGui::GetCursorPosY() + line_height * 0.25f);
 
     const size_t id = entt::type_id<T>().hash();
-    const bool open = ImGui::TreeNodeEx(reinterpret_cast<void*>(id), TREE_FLAGS, "%s", name);
+    std::string name_str = StringUtils::from_char8_t(EditorLayer::component_icon_map[typeid(T).hash_code()]);
+    name_str = name_str.append(name);
+    const bool open = ImGui::TreeNodeEx(reinterpret_cast<void*>(id), TREE_FLAGS, "%s", name_str.c_str());
 
     bool remove_component = false;
     if (removable) {
@@ -269,7 +271,6 @@ void InspectorPanel::draw_components(Entity entity) const {
     draw_add_component<TaperedCapsuleColliderComponent>(entity, "Tapered Capsule Collider");
     draw_add_component<CylinderColliderComponent>(entity, "Cylinder Collider");
     draw_add_component<CharacterControllerComponent>(entity, "Character Controller");
-    draw_add_component<CustomComponent>(entity, "Custom Component");
     draw_add_component<LuaScriptComponent>(entity, "Lua Script Component");
 
     ImGui::EndPopup();
@@ -277,7 +278,7 @@ void InspectorPanel::draw_components(Entity entity) const {
   ImGui::PopItemWidth();
 
   draw_component<TransformComponent>(
-    ICON_MDI_VECTOR_LINE " Transform Component",
+    " Transform Component",
     entity,
     [](TransformComponent& component) {
       OxUI::begin_properties();
@@ -290,7 +291,7 @@ void InspectorPanel::draw_components(Entity entity) const {
     });
 
   draw_component<MeshComponent>(
-    ICON_MDI_VECTOR_SQUARE " Mesh Renderer Component",
+    " Mesh Renderer Component",
     entity,
     [](const MeshComponent& component) {
       if (!component.original_mesh)
@@ -304,7 +305,7 @@ void InspectorPanel::draw_components(Entity entity) const {
     });
 
   draw_component<MaterialComponent>(
-    ICON_MDI_SPRAY " Material Component",
+    " Material Component",
     entity,
     [](MaterialComponent& component) {
       if (component.materials.empty())
@@ -342,7 +343,7 @@ void InspectorPanel::draw_components(Entity entity) const {
     });
 
   draw_component<AnimationComponent>(
-    ICON_MDI_ANIMATION " Animation Component",
+    " Animation Component",
     entity,
     [](AnimationComponent& component) {
       constexpr ImGuiTreeNodeFlags flags = ImGuiTreeNodeFlags_OpenOnArrow | ImGuiTreeNodeFlags_SpanFullWidth |
@@ -373,7 +374,7 @@ void InspectorPanel::draw_components(Entity entity) const {
     });
 
   draw_component<SkyLightComponent>(
-    ICON_MDI_WEATHER_SUNNY " Sky Light Component",
+    " Sky Light Component",
     entity,
     [this](SkyLightComponent& component) {
       OxUI::begin_properties();
@@ -409,7 +410,7 @@ void InspectorPanel::draw_components(Entity entity) const {
     });
 
   draw_component<PostProcessProbe>(
-    ICON_MDI_SPRAY " PostProcess Probe Component",
+    " PostProcess Probe Component",
     entity,
     [this](PostProcessProbe& component) {
       ImGui::Text("Vignette");
@@ -442,7 +443,7 @@ void InspectorPanel::draw_components(Entity entity) const {
     });
 
   draw_component<AudioSourceComponent>(
-    ICON_MDI_VOLUME_MEDIUM " Audio Source Component",
+    " Audio Source Component",
     entity,
     [&entity](AudioSourceComponent& component) {
       auto& config = component.config;
@@ -526,7 +527,7 @@ void InspectorPanel::draw_components(Entity entity) const {
     });
 
   draw_component<AudioListenerComponent>(
-    ICON_MDI_CIRCLE_SLICE_8 " Audio Listener Component",
+    " Audio Listener Component",
     entity,
     [](AudioListenerComponent& component) {
       auto& config = component.config;
@@ -543,7 +544,7 @@ void InspectorPanel::draw_components(Entity entity) const {
     });
 
   draw_component<LightComponent>(
-    ICON_MDI_LAMP " Light Component",
+    " Light Component",
     entity,
     [](LightComponent& component) {
       OxUI::begin_properties();
@@ -605,7 +606,7 @@ void InspectorPanel::draw_components(Entity entity) const {
     });
 
   draw_component<RigidbodyComponent>(
-    ICON_MDI_SOCCER " Rigidbody Component",
+    " Rigidbody Component",
     entity,
     [this](RigidbodyComponent& component) {
       OxUI::begin_properties();
@@ -634,7 +635,7 @@ void InspectorPanel::draw_components(Entity entity) const {
     });
 
   draw_component<BoxColliderComponent>(
-    ICON_MDI_CHECKBOX_BLANK_OUTLINE " Box Collider",
+    " Box Collider",
     entity,
     [](BoxColliderComponent& component) {
       OxUI::begin_properties();
@@ -649,7 +650,7 @@ void InspectorPanel::draw_components(Entity entity) const {
     });
 
   draw_component<SphereColliderComponent>(
-    ICON_MDI_CIRCLE_OUTLINE " Sphere Collider",
+    " Sphere Collider",
     entity,
     [](SphereColliderComponent& component) {
       OxUI::begin_properties();
@@ -664,7 +665,7 @@ void InspectorPanel::draw_components(Entity entity) const {
     });
 
   draw_component<CapsuleColliderComponent>(
-    ICON_MDI_CIRCLE_OUTLINE " Capsule Collider",
+    " Capsule Collider",
     entity,
     [](CapsuleColliderComponent& component) {
       OxUI::begin_properties();
@@ -680,7 +681,7 @@ void InspectorPanel::draw_components(Entity entity) const {
     });
 
   draw_component<TaperedCapsuleColliderComponent>(
-    ICON_MDI_CIRCLE_OUTLINE " Tapered Capsule Collider",
+    " Tapered Capsule Collider",
     entity,
     [](TaperedCapsuleColliderComponent& component) {
       OxUI::begin_properties();
@@ -697,7 +698,7 @@ void InspectorPanel::draw_components(Entity entity) const {
     });
 
   draw_component<CylinderColliderComponent>(
-    ICON_MDI_CIRCLE_OUTLINE " Cylinder Collider",
+    " Cylinder Collider",
     entity,
     [](CylinderColliderComponent& component) {
       OxUI::begin_properties();
@@ -713,7 +714,7 @@ void InspectorPanel::draw_components(Entity entity) const {
     });
 
   draw_component<CharacterControllerComponent>(
-    ICON_MDI_CIRCLE_OUTLINE " Character Controller",
+    " Character Controller",
     entity,
     [](CharacterControllerComponent& component) {
       OxUI::begin_properties();
@@ -732,7 +733,7 @@ void InspectorPanel::draw_components(Entity entity) const {
     });
 
   draw_component<CameraComponent>(
-    ICON_MDI_CAMERA "Camera Component",
+    "Camera Component",
     entity,
     [](const CameraComponent& component) {
       OxUI::begin_properties();
@@ -752,7 +753,7 @@ void InspectorPanel::draw_components(Entity entity) const {
     });
 
   draw_component<LuaScriptComponent>(
-    ICON_MDI_FILE_DOCUMENT "Lua Script Component",
+    "Lua Script Component",
     entity,
     [](LuaScriptComponent& component) {
       const std::string name = component.lua_system
@@ -787,7 +788,7 @@ void InspectorPanel::draw_components(Entity entity) const {
 
 
   draw_component<ParticleSystemComponent>(
-    ICON_MDI_LAMP "Particle System Component",
+    "Particle System Component",
     entity,
     [](const ParticleSystemComponent& component) {
       auto& props = component.system->get_properties();
@@ -843,73 +844,6 @@ void InspectorPanel::draw_components(Entity entity) const {
       draw_particle_over_lifetime_module("Rotation Over Lifetime", props.rotation_over_lifetime, false, true);
       draw_particle_by_speed_module("Rotation By Speed", props.rotation_by_speed, false, true);
     });
-
-  if (entity.has_component<CustomComponent>()) {
-    const auto n = entity.get_component<CustomComponent>().name;
-    const auto* n2 = (const char8_t*)n.c_str();
-    draw_component<CustomComponent>(
-      n2,
-      entity,
-      [](CustomComponent& component) {
-        OxUI::begin_properties();
-        OxUI::property("Component Name", &component.name, ImGuiInputTextFlags_EnterReturnsTrue);
-        OxUI::end_properties();
-
-        ImGui::Text("Fields");
-        ImGui::BeginTable("FieldTable",
-                          3,
-                          ImGuiTableFlags_Resizable | ImGuiTableFlags_SizingStretchSame |
-                          ImGuiTableFlags_BordersInner | ImGuiTableFlags_BordersOuterH);
-        ImGui::TableSetupColumn("Name", ImGuiTableColumnFlags_WidthStretch, 100.0f);
-        ImGui::TableSetupColumn("Type", ImGuiTableColumnFlags_WidthStretch, 70.0f);
-        ImGui::TableSetupColumn("Value", ImGuiTableColumnFlags_WidthStretch, 100.0f);
-        ImGui::TableHeadersRow();
-        for (int i = 0; i < (int)component.fields.size(); i++) {
-          auto input_flags = ImGuiInputTextFlags_EnterReturnsTrue |
-                            ImGuiInputTextFlags_CallbackHistory | ImGuiInputTextFlags_EscapeClearsAll;
-          ImGui::TableNextRow();
-          ImGui::TableNextColumn();
-
-          auto& field = component.fields[i];
-          auto id = fmt::format("{0}_{1}", field.name, i);
-
-          ImGui::PushID(id.c_str());
-          ImGui::SetCursorPosY(ImGui::GetCursorPosY() + ImGui::GetStyle().FramePadding.y * 0.5f);
-
-          ImGui::PushID("FieldName");
-          ImGui::SetNextItemWidth(-1);
-          ImGui::InputText("##", &field.name, input_flags);
-          ImGui::PopID();
-
-          ImGui::TableNextColumn();
-          const char* field_types[] = {"INT", "FLOAT", "STRING", "BOOL"};
-          int type = field.type;
-          ImGui::SetNextItemWidth(-1);
-          if (ImGui::Combo("##", &type, field_types, 4))
-            field.type = (CustomComponent::FieldType)type;
-
-          ImGui::PushID("FieldValue");
-          ImGui::TableNextColumn();
-          ImGui::SetNextItemWidth(-1);
-          if (field.type == CustomComponent::FieldType::INT
-              || field.type == CustomComponent::FieldType::BOOL
-              || field.type == CustomComponent::FieldType::FLOAT) {
-            input_flags |= ImGuiInputTextFlags_CharsDecimal;
-          }
-          ImGui::InputText("##", &field.value, input_flags);
-          ImGui::PopID();
-
-          ImGui::PopID();
-        }
-        ImGui::EndTable();
-
-        const float x = ImGui::GetContentRegionAvail().x;
-        const float y = ImGui::GetFrameHeight();
-        if (ImGui::Button("+ Add Field", {x, y})) {
-          component.fields.emplace_back();
-        }
-      });
-  }
 }
 
 void InspectorPanel::pp_probe_property(const bool value, const PostProcessProbe& component) const {

@@ -42,6 +42,8 @@ private:
   int m_gizmo_mode = 0;
   bool m_using_gizmo = false;
 
+  std::unordered_map<size_t, bool> m_show_gizmo_map;
+
   std::vector<vuk::Unique<vuk::Buffer>> id_buffers = {};
 
   //Camera

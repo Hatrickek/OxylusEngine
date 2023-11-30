@@ -38,6 +38,8 @@ public:
   ImGuiID dockspace_id;
   EditorLayout current_layout = EditorLayout::Classic;
 
+  static std::unordered_map<size_t, const char8_t*> component_icon_map;
+
   EditorLayer();
   ~EditorLayer() override = default;
   void on_attach(EventDispatcher& dispatcher) override;

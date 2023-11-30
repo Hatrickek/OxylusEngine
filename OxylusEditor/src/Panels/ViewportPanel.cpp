@@ -26,10 +26,19 @@
 #include "Utils/Timestep.h"
 
 namespace Oxylus {
-ViewportPanel::ViewportPanel() : EditorPanel("Viewport", ICON_MDI_TERRAIN, true) {}
+ViewportPanel::ViewportPanel() : EditorPanel("Viewport", ICON_MDI_TERRAIN, true) {
+  m_show_gizmo_map[typeid(LightComponent).hash_code()] = true;
+  m_show_gizmo_map[typeid(SkyLightComponent).hash_code()] = true;
+  m_show_gizmo_map[typeid(CameraComponent).hash_code()] = true;
+  m_show_gizmo_map[typeid(AudioSourceComponent).hash_code()] = true;
 
-bool ViewportPanel::outline_pass(const Ref<RenderPipeline>& rp, const vuk::Dimension3D& dim) const {
   auto& superframe_allocator = VulkanContext::get()->superframe_allocator;
+  if (!superframe_allocator->get_context().is_pipeline_available("id_pipeline")) {
+    vuk::PipelineBaseCreateInfo pci;
+    pci.add_glsl(FileUtils::read_shader_file("Editor/Editor_IDPass.vert"), "Editor_IDPass.vert");
+    pci.add_glsl(FileUtils::read_shader_file("Editor/Editor_IDPass.frag"), "Editor_IDPass.frag");
+    superframe_allocator->get_context().create_named_pipeline("id_pipeline", pci);
+  }
   if (!superframe_allocator->get_context().is_pipeline_available("outline_pipeline")) {
     vuk::PipelineBaseCreateInfo pci_stencil;
     pci_stencil.add_glsl(FileUtils::read_shader_file("Editor/Editor_StencilPass.vert"), "Editor_StencilPass.vert");
@@ -41,7 +50,9 @@ bool ViewportPanel::outline_pass(const Ref<RenderPipeline>& rp, const vuk::Dimen
     pci_fullscreen.add_glsl(FileUtils::read_shader_file("FullscreenComposite.frag"), "FullscreenComposite.frag");
     superframe_allocator->get_context().create_named_pipeline("fullscreen_pipeline", pci_fullscreen);
   }
+}
 
+bool ViewportPanel::outline_pass(const Ref<RenderPipeline>& rp, const vuk::Dimension3D& dim) const {
   auto rg = rp->get_frame_render_graph();
 
   struct VsUbo {
@@ -411,14 +422,6 @@ void ViewportPanel::mouse_picking_pass(const Ref<RenderPipeline>& rp, const vuk:
 
   auto rg = rp->get_frame_render_graph();
 
-  auto& superframe_allocator = VulkanContext::get()->superframe_allocator;
-  if (!superframe_allocator->get_context().is_pipeline_available("id_pipeline")) {
-    vuk::PipelineBaseCreateInfo pci;
-    pci.add_glsl(FileUtils::read_shader_file("Editor/Editor_IDPass.vert"), "Editor_IDPass.vert");
-    pci.add_glsl(FileUtils::read_shader_file("Editor/Editor_IDPass.frag"), "Editor_IDPass.frag");
-    superframe_allocator->get_context().create_named_pipeline("id_pipeline", pci);
-  }
-
   struct VsUbo {
     Mat4 projection_view;
   } vs_ubo;
@@ -609,17 +612,17 @@ void ViewportPanel::on_update() {
     }
 
     const Vec3 damped_position = Math::smooth_damp(position,
-      final_position,
-      m_translation_velocity,
-      m_translation_dampening,
-      10000.0f,
-      (float)Application::get_timestep().get_seconds());
+                                                   final_position,
+                                                   m_translation_velocity,
+                                                   m_translation_dampening,
+                                                   10000.0f,
+                                                   (float)Application::get_timestep().get_seconds());
     const glm::vec2 damped_yaw_pitch = Math::smooth_damp(yaw_pitch,
-      final_yaw_pitch,
-      m_rotation_velocity,
-      m_rotation_dampening,
-      1000.0f,
-      (float)Application::get_timestep().get_seconds());
+                                                         final_yaw_pitch,
+                                                         m_rotation_velocity,
+                                                         m_rotation_dampening,
+                                                         1000.0f,
+                                                         (float)Application::get_timestep().get_seconds());
 
     m_camera.set_position(m_smooth_camera ? damped_position : final_position);
     m_camera.set_yaw(m_smooth_camera ? damped_yaw_pitch.x : final_yaw_pitch.x);
@@ -641,9 +644,9 @@ void ViewportPanel::draw_gizmos() {
     ImGuizmo::SetOrthographic(false);
     ImGuizmo::SetDrawlist();
     ImGuizmo::SetRect(m_viewport_bounds[0].x,
-      m_viewport_bounds[0].y,
-      m_viewport_bounds[1].x - m_viewport_bounds[0].x,
-      m_viewport_bounds[1].y - m_viewport_bounds[0].y);
+                      m_viewport_bounds[0].y,
+                      m_viewport_bounds[1].x - m_viewport_bounds[0].x,
+                      m_viewport_bounds[1].y - m_viewport_bounds[0].y);
 
     const glm::mat4& camera_projection = m_camera.get_projection_matrix();
     const glm::mat4& camera_view = m_camera.get_view_matrix();
@@ -661,12 +664,12 @@ void ViewportPanel::draw_gizmos() {
     const float snap_values[3] = {snap_value, snap_value, snap_value};
 
     ImGuizmo::Manipulate(glm::value_ptr(camera_view),
-      glm::value_ptr(camera_projection),
-      static_cast<ImGuizmo::OPERATION>(m_gizmo_type),
-      static_cast<ImGuizmo::MODE>(m_gizmo_mode),
-      glm::value_ptr(transform),
-      nullptr,
-      snap ? snap_values : nullptr);
+                         glm::value_ptr(camera_projection),
+                         static_cast<ImGuizmo::OPERATION>(m_gizmo_type),
+                         static_cast<ImGuizmo::MODE>(m_gizmo_mode),
+                         glm::value_ptr(transform),
+                         nullptr,
+                         snap ? snap_values : nullptr);
 
     m_using_gizmo = ImGuizmo::IsUsing();
 
