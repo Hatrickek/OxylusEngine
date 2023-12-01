@@ -86,6 +86,18 @@ bool OxUI::property(const char* label, int* value, const char** dropdownStrings,
   return modified;
 }
 
+void OxUI::tooltip(const char* text) {
+  ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2(2, 5));
+
+  if (ImGui::IsItemHovered()) {
+    ImGui::BeginTooltip();
+    ImGui::TextUnformatted(text);
+    ImGui::EndTooltip();
+  }
+
+  ImGui::PopStyleVar();
+}
+
 bool OxUI::property(const char* label, Ref<TextureAsset>& texture, uint64_t overrideTextureID, const char* tooltip) {
   begin_property_grid(label, tooltip);
   bool changed = false;
@@ -149,21 +161,35 @@ bool OxUI::property(const char* label, Ref<TextureAsset>& texture, uint64_t over
   return changed;
 }
 
-void OxUI::image(const vuk::Texture& texture, ImVec2 size, const ImVec2& uv0, const ImVec2& uv1, const ImVec4& tintCol, const ImVec4& borderCol) {
+void OxUI::image(const vuk::Texture& texture, ImVec2 size, const ImVec2& uv0, const ImVec2& uv1, const ImVec4& tint_col, const ImVec4& border_col) {
   vuk::SamplerCreateInfo sci;
   sci.minFilter = sci.magFilter = vuk::Filter::eLinear;
   sci.mipmapMode = vuk::SamplerMipmapMode::eLinear;
   sci.addressModeU = sci.addressModeV = sci.addressModeW = vuk::SamplerAddressMode::eRepeat;
-  vuk::SampledImage sampledImage(vuk::SampledImage::Global{.iv = *texture.view, .sci = sci, .image_layout = vuk::ImageLayout::eShaderReadOnlyOptimal});
+  const vuk::SampledImage sampled_image(vuk::SampledImage::Global{.iv = *texture.view, .sci = sci, .image_layout = vuk::ImageLayout::eShaderReadOnlyOptimal});
 
-  ImGui::Image(Application::get()->get_imgui_layer()->add_sampled_image(sampledImage), size, uv0, uv1, tintCol, borderCol);
+  ImGui::Image(Application::get()->get_imgui_layer()->add_sampled_image(sampled_image), size, uv0, uv1, tint_col, border_col);
 }
 
-void OxUI::image(vuk::SampledImage& texture, ImVec2 size, const ImVec2& uv0, const ImVec2& uv1, const ImVec4& tintCol, const ImVec4& borderCol) {
-  ImGui::Image(Application::get()->get_imgui_layer()->add_sampled_image(texture), size, uv0, uv1, tintCol, borderCol);
+void OxUI::image(const vuk::SampledImage& texture, ImVec2 size, const ImVec2& uv0, const ImVec2& uv1, const ImVec4& tint_col, const ImVec4& border_col) {
+  ImGui::Image(Application::get()->get_imgui_layer()->add_sampled_image(texture), size, uv0, uv1, tint_col, border_col);
 }
 
-bool OxUI::draw_vec3_control(const char* label, glm::vec3& values, const char* tooltip, float resetValue) {
+bool OxUI::image_button(const char* id, const vuk::Texture& texture, ImVec2 size, const ImVec2& uv0, const ImVec2& uv1, const ImVec4& tint_col, const ImVec4& bg_col) {
+  vuk::SamplerCreateInfo sci;
+  sci.minFilter = sci.magFilter = vuk::Filter::eLinear;
+  sci.mipmapMode = vuk::SamplerMipmapMode::eLinear;
+  sci.addressModeU = sci.addressModeV = sci.addressModeW = vuk::SamplerAddressMode::eRepeat;
+  const vuk::SampledImage sampled_image(vuk::SampledImage::Global{.iv = *texture.view, .sci = sci, .image_layout = vuk::ImageLayout::eShaderReadOnlyOptimal});
+
+  return ImGui::ImageButton(id, Application::get()->get_imgui_layer()->add_sampled_image(sampled_image), size, uv0, uv1, bg_col, tint_col);
+}
+
+bool OxUI::image_button(const char* id, const vuk::SampledImage& texture, ImVec2 size, const ImVec2& uv0, const ImVec2& uv1, const ImVec4& tint_col, const ImVec4& bg_col) {
+  return ImGui::ImageButton(id, Application::get()->get_imgui_layer()->add_sampled_image(texture), size, uv0, uv1, bg_col, tint_col);
+}
+
+bool OxUI::draw_vec3_control(const char* label, glm::vec3& values, const char* tooltip, float reset_value) {
   bool changed = false;
 
   begin_property_grid(label, tooltip, false);
@@ -188,7 +214,7 @@ bool OxUI::draw_vec3_control(const char* label, glm::vec3& values, const char* t
     ImGui::PushStyleColor(ImGuiCol_ButtonActive, ImVec4{0.8f, 0.1f, 0.15f, 1.0f});
     ImGui::PushFont(boldFont);
     if (ImGui::Button("X", buttonSize)) {
-      values.x = resetValue;
+      values.x = reset_value;
     }
     ImGui::PopFont();
     ImGui::PopStyleColor(4);
@@ -212,7 +238,7 @@ bool OxUI::draw_vec3_control(const char* label, glm::vec3& values, const char* t
     ImGui::PushStyleColor(ImGuiCol_ButtonActive, ImVec4{0.2f, 0.7f, 0.2f, 1.0f});
     ImGui::PushFont(boldFont);
     if (ImGui::Button("Y", buttonSize)) {
-      values.y = resetValue;
+      values.y = reset_value;
     }
     ImGui::PopFont();
     ImGui::PopStyleColor(4);
@@ -236,7 +262,7 @@ bool OxUI::draw_vec3_control(const char* label, glm::vec3& values, const char* t
     ImGui::PushStyleColor(ImGuiCol_ButtonActive, ImVec4{0.1f, 0.25f, 0.8f, 1.0f});
     ImGui::PushFont(boldFont);
     if (ImGui::Button("Z", buttonSize)) {
-      values.z = resetValue;
+      values.z = reset_value;
     }
     ImGui::PopFont();
     ImGui::PopStyleColor(4);
@@ -430,7 +456,7 @@ void OxUI::draw_framerate_overlay(const ImVec2 work_pos, const ImVec2 work_size,
     const ImGuiViewport* viewport = ImGui::GetMainViewport();
     ImVec2 window_pos, window_pos_pivot;
     window_pos.x = corner & 1 ? work_pos.x + work_size.x - padding.x : work_pos.x + padding.x;
-    window_pos.y = corner & 2 ? work_pos.y + work_size.y - padding.y: work_pos.y + padding.y ;
+    window_pos.y = corner & 2 ? work_pos.y + work_size.y - padding.y : work_pos.y + padding.y;
     window_pos_pivot.x = corner & 1 ? 1.0f : 0.0f;
     window_pos_pivot.y = corner & 2 ? 1.0f : 0.0f;
     ImGui::SetNextWindowPos(window_pos, ImGuiCond_Always, window_pos_pivot);

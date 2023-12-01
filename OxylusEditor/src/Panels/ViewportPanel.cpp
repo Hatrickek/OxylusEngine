@@ -27,10 +27,9 @@
 
 namespace Oxylus {
 ViewportPanel::ViewportPanel() : EditorPanel("Viewport", ICON_MDI_TERRAIN, true) {
-  m_show_gizmo_map[typeid(LightComponent).hash_code()] = true;
-  m_show_gizmo_map[typeid(SkyLightComponent).hash_code()] = true;
-  m_show_gizmo_map[typeid(CameraComponent).hash_code()] = true;
-  m_show_gizmo_map[typeid(AudioSourceComponent).hash_code()] = true;
+  m_show_gizmo_image_map[typeid(LightComponent).hash_code()] = create_ref<TextureAsset>(TextureLoadInfo{.path ="Resources/Icons/PointLightIcon.png", .generate_mips = false});
+  m_show_gizmo_image_map[typeid(SkyLightComponent).hash_code()] = create_ref<TextureAsset>(TextureLoadInfo{.path = "Resources/Icons/SkyIcon.png", .generate_mips = false});
+  m_show_gizmo_image_map[typeid(CameraComponent).hash_code()] = create_ref<TextureAsset>(TextureLoadInfo{.path = "Resources/Icons/CameraIcon.png", .generate_mips = false});
 
   auto& superframe_allocator = VulkanContext::get()->superframe_allocator;
   if (!superframe_allocator->get_context().is_pipeline_available("id_pipeline")) {
@@ -53,13 +52,13 @@ ViewportPanel::ViewportPanel() : EditorPanel("Viewport", ICON_MDI_TERRAIN, true)
 }
 
 bool ViewportPanel::outline_pass(const Ref<RenderPipeline>& rp, const vuk::Dimension3D& dim) const {
-  auto rg = rp->get_frame_render_graph();
+  const auto rg = rp->get_frame_render_graph();
 
   struct VsUbo {
     Mat4 projection_view;
   } vs_ubo;
 
-  vs_ubo.projection_view = m_camera.get_projection_matrix_flipped() * m_camera.get_view_matrix();
+  vs_ubo.projection_view = m_camera.get_projection_matrix() * m_camera.get_view_matrix();
   auto [vs_buff, vs_buffer_fut] = create_buffer(*rp->get_frame_allocator(), vuk::MemoryUsage::eCPUtoGPU, vuk::DomainFlagBits::eTransferOnGraphics, std::span(&vs_ubo, 1));
   auto& vs_buffer = *vs_buff;
 
@@ -214,14 +213,14 @@ bool ViewportPanel::outline_pass(const Ref<RenderPipeline>& rp, const vuk::Dimen
 void ViewportPanel::on_imgui_render() {
   draw_performance_overlay();
 
-  bool viewport_settings_popup = false;
   constexpr ImGuiWindowFlags flags = ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_MenuBar;
   ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2{0, 0});
 
   if (on_begin(flags)) {
+    bool viewport_settings_popup = false;
     ImVec2 start_cursor_pos = ImGui::GetCursorPos();
 
-    const auto popup_item_spacing = ImGuiLayer::PopupItemSpacing;
+    const auto popup_item_spacing = ImGuiLayer::popup_item_spacing;
     ImGui::PushStyleVar(ImGuiStyleVar_ItemSpacing, popup_item_spacing);
     if (ImGui::BeginPopupContextItem("RightClick")) {
       if (ImGui::MenuItem("Fullscreen"))
@@ -295,6 +294,15 @@ void ViewportPanel::on_imgui_render() {
 
     if (m_scene_hierarchy_panel)
       m_scene_hierarchy_panel->drag_drop_target();
+
+    Mat4 view_proj = m_camera.get_projection_matrix_flipped() * m_camera.get_view_matrix();
+    const Frustum& frustum = m_camera.get_frustum();
+
+    show_component_gizmo<LightComponent>(fixed_width, viewport_panel_size.y, 0, 0, view_proj, frustum, m_scene.get());
+    show_component_gizmo<SkyLightComponent>(fixed_width, viewport_panel_size.y, 0, 0, view_proj, frustum, m_scene.get());
+    show_component_gizmo<AudioSourceComponent>(fixed_width, viewport_panel_size.y, 0, 0, view_proj, frustum, m_scene.get());
+    show_component_gizmo<AudioListenerComponent>(fixed_width, viewport_panel_size.y, 0, 0, view_proj, frustum, m_scene.get());
+    show_component_gizmo<CameraComponent>(fixed_width, viewport_panel_size.y, 0, 0, view_proj, frustum, m_scene.get());
 
     draw_gizmos();
 
@@ -426,7 +434,7 @@ void ViewportPanel::mouse_picking_pass(const Ref<RenderPipeline>& rp, const vuk:
     Mat4 projection_view;
   } vs_ubo;
 
-  vs_ubo.projection_view = m_camera.get_projection_matrix_flipped() * m_camera.get_view_matrix();
+  vs_ubo.projection_view = m_camera.get_projection_matrix() * m_camera.get_view_matrix();
   auto [vs_buff, vs_buffer_fut] = create_buffer(*rp->get_frame_allocator(), vuk::MemoryUsage::eCPUtoGPU, vuk::DomainFlagBits::eTransferOnGraphics, std::span(&vs_ubo, 1));
   auto& vs_buffer = *vs_buff;
 
@@ -550,7 +558,7 @@ void ViewportPanel::set_context(const Ref<Scene>& scene, SceneHierarchyPanel& sc
 }
 
 void ViewportPanel::on_update() {
-  if (m_viewport_focused && !m_simulation_running && m_use_editor_camera) {
+  if (m_viewport_hovered && !m_simulation_running && m_use_editor_camera) {
     const Vec3& position = m_camera.get_position();
     const glm::vec2 yaw_pitch = glm::vec2(m_camera.get_yaw(), m_camera.get_pitch());
     Vec3 final_position = position;
@@ -648,11 +656,11 @@ void ViewportPanel::draw_gizmos() {
                       m_viewport_bounds[1].x - m_viewport_bounds[0].x,
                       m_viewport_bounds[1].y - m_viewport_bounds[0].y);
 
-    const glm::mat4& camera_projection = m_camera.get_projection_matrix();
-    const glm::mat4& camera_view = m_camera.get_view_matrix();
+    const Mat4& camera_projection = m_camera.get_projection_matrix_flipped();
+    const Mat4& camera_view = m_camera.get_view_matrix();
 
     auto& tc = selected_entity.get_component<TransformComponent>();
-    glm::mat4 transform = selected_entity.get_world_transform();
+    Mat4 transform = selected_entity.get_world_transform();
 
     // Snapping
     const bool snap = Input::get_key_held(KeyCode::LeftControl);
@@ -675,7 +683,7 @@ void ViewportPanel::draw_gizmos() {
 
     if (ImGuizmo::IsUsing()) {
       const Entity parent = selected_entity.get_parent();
-      const glm::mat4& parent_world_transform = parent ? parent.get_world_transform() : glm::mat4(1.0f);
+      const Mat4& parent_world_transform = parent ? parent.get_world_transform() : Mat4(1.0f);
       Vec3 translation, rotation, scale;
       if (Math::decompose_transform(glm::inverse(parent_world_transform) * transform, translation, rotation, scale)) {
         tc.position = translation;

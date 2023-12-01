@@ -73,9 +73,9 @@ void RuntimeConsole::register_command(const std::string& command, const std::str
 
 void RuntimeConsole::add_log(const char* fmt, fmtlog::LogLevel level) {
   std::lock_guard lock(log_mutex);
-  if ((int32_t)m_text_buffer.size() >= MAX_TEXT_BUFFER_SIZE)
+  if ((uint32_t)m_text_buffer.size() >= MAX_TEXT_BUFFER_SIZE)
     m_text_buffer.erase(m_text_buffer.begin());
-  m_text_buffer.emplace_back(ConsoleText{fmt, level});
+  m_text_buffer.emplace_back(fmt, level);
   m_request_scroll_to_bottom = true;
 }
 
@@ -106,10 +106,11 @@ void RuntimeConsole::on_imgui_render(ImGuiWindowFlags window_flags) {
       ImGui::PushStyleVar(ImGuiStyleVar_CellPadding, {1, 1});
       if (ImGui::BeginTable("ScrollRegionTable", 1, table_flags)) {
         width = ImGui::GetWindowSize().x;
-        ImGui::PushFont(ImGuiLayer::BoldFont);
-        for (auto& text : m_text_buffer) {
-          text.render();
+        ImGui::PushFont(ImGuiLayer::bold_font);
+        for (uint32_t i = 0; i < (uint32_t)m_text_buffer.size(); i++) {
+          render_console_text(m_text_buffer[i].text, m_text_buffer[i].level);
         }
+
         ImGui::PopFont();
         if (m_request_scroll_to_bottom) {
           ImGui::SetScrollY(ImGui::GetScrollMaxY() * 10);
@@ -127,7 +128,7 @@ void RuntimeConsole::on_imgui_render(ImGuiWindowFlags window_flags) {
                                                 ImGuiInputTextFlags_CallbackHistory |
                                                 ImGuiInputTextFlags_EscapeClearsAll;
     static char s_input_buf[256];
-    ImGui::PushFont(ImGuiLayer::BoldFont);
+    ImGui::PushFont(ImGuiLayer::bold_font);
     if (set_focus_to_keyboard_always)
       ImGui::SetKeyboardFocusHere();
 
@@ -148,7 +149,7 @@ void RuntimeConsole::on_imgui_render(ImGuiWindowFlags window_flags) {
   ImGui::End();
 }
 
-void RuntimeConsole::ConsoleText::render() const {
+void RuntimeConsole::render_console_text(std::string text, fmtlog::LogLevel level) {
   ImGui::TableNextRow();
   ImGui::TableNextColumn();
 

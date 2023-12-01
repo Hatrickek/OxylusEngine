@@ -1,9 +1,16 @@
 #pragma once
 
 #include "EditorPanel.h"
+#include "EditorTheme.h"
+
 #include "Render/Camera.h"
 #include "Scene/Scene.h"
 #include "SceneHierarchyPanel.h"
+
+#include "UI/ImGuiLayer.h"
+#include "UI/OxUI.h"
+
+#include "Utils/StringUtils.h"
 
 namespace Oxylus {
 class ViewportPanel : public EditorPanel {
@@ -26,6 +33,44 @@ private:
   void mouse_picking_pass(const Ref<RenderPipeline>& rp, const vuk::Dimension3D& dim, float fixed_width);
   bool outline_pass(const Ref<RenderPipeline>& rp, const vuk::Dimension3D& dim) const;
 
+  template <typename T>
+  void show_component_gizmo(const float width,
+                            const float height,
+                            const float xpos,
+                            const float ypos,
+                            const Mat4& view_proj,
+                            const Frustum& frustum,
+                            Scene* scene) {
+    if (m_show_gizmo_image_map[typeid(T).hash_code()]) {
+      auto view = scene->m_registry.view<TransformComponent, T>();
+
+      for (const auto&& [entity, transform, component] : view.each()) {
+        Vec3 pos = Entity(entity, scene).get_world_transform()[3];
+
+        const auto inside = frustum.is_inside(pos);
+
+        if (inside == (uint32_t)Intersection::Outside)
+          continue;
+
+        const Vec2 screen_pos = Math::world_to_screen(pos, view_proj, width, height, xpos, ypos);
+        ImGui::SetCursorPos({screen_pos.x - ImGui::GetFontSize() * 0.5f, screen_pos.y - ImGui::GetFontSize() * 0.5f});
+        ImGui::PushStyleColor(ImGuiCol_Button, ImVec4(0.7f, 0.7f, 0.7f, 0.0f));
+        ImGui::PushStyleColor(ImGuiCol_ButtonHovered, ImVec4(0.7f, 0.7f, 0.7f, 0.0f));
+
+        if (OxUI::image_button("##", m_show_gizmo_image_map[typeid(T).hash_code()]->get_texture(), {40.f, 40.f})) {
+          m_scene_hierarchy_panel->set_selected_entity(Entity(entity, scene));
+        }
+
+        ImGui::PopStyleColor(2);
+
+        std::string name_s = typeid(T).name();
+        auto demangled_name = name_s.substr(name_s.find(' '));
+
+        OxUI::tooltip(demangled_name.c_str());
+      }
+    }
+  }
+
   Ref<Scene> m_scene = {};
   Entity m_hovered_entity = {};
   SceneHierarchyPanel* m_scene_hierarchy_panel = nullptr;
@@ -42,7 +87,7 @@ private:
   int m_gizmo_mode = 0;
   bool m_using_gizmo = false;
 
-  std::unordered_map<size_t, bool> m_show_gizmo_map;
+  std::unordered_map<size_t, Ref<TextureAsset>> m_show_gizmo_image_map;
 
   std::vector<vuk::Unique<vuk::Buffer>> id_buffers = {};
 

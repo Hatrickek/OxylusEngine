@@ -70,8 +70,8 @@ ImRect SceneHierarchyPanel::draw_entity_node(Entity entity, uint32_t depth, bool
   }
 
   const bool highlight = is_selected;
-  const auto header_selected_color = ImGuiLayer::HeaderSelectedColor;
-  const auto popup_item_spacing = ImGuiLayer::PopupItemSpacing;
+  const auto header_selected_color = ImGuiLayer::header_selected_color;
+  const auto popup_item_spacing = ImGuiLayer::popup_item_spacing;
   if (highlight) {
     ImGui::TableSetBgColor(ImGuiTableBgTarget_RowBg0, ImGui::GetColorU32(header_selected_color));
     ImGui::PushStyleColor(ImGuiCol_Header, header_selected_color);
@@ -495,7 +495,7 @@ void SceneHierarchyPanel::on_imgui_render() {
       }
       ImGui::PopStyleVar();
 
-      const auto pop_item_spacing = ImGuiLayer::PopupItemSpacing;
+      const auto pop_item_spacing = ImGuiLayer::popup_item_spacing;
       ImGui::PushStyleVar(ImGuiStyleVar_ItemSpacing, pop_item_spacing);
       if (ImGui::BeginPopupContextWindow("SceneHierarchyContextWindow",
         ImGuiPopupFlags_MouseButtonRight | ImGuiPopupFlags_NoOpenOverItems)) {

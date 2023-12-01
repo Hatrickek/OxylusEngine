@@ -225,7 +225,7 @@ void DefaultRenderPipeline::debug_pass(const Ref<vuk::RenderGraph>& rg, const vu
   auto& shapes = DebugRenderer::get_instance()->get_shapes();
   for (auto& shape : shapes) {
     DebugPassData data;
-    data.vp = camera->get_projection_matrix_flipped() * camera->get_view_matrix();
+    data.vp = camera->get_projection_matrix() * camera->get_view_matrix();
     data.model = shape.model_matrix;
     data.color = Vec4(0, 1, 0, 1);
 
@@ -303,7 +303,7 @@ Scope<vuk::Future> DefaultRenderPipeline::on_render(vuk::Allocator& frame_alloca
 
   m_renderer_data.ubo_vs.view = m_renderer_context.current_camera->get_view_matrix();
   m_renderer_data.ubo_vs.cam_pos = m_renderer_context.current_camera->get_position();
-  m_renderer_data.ubo_vs.projection = m_renderer_context.current_camera->get_projection_matrix_flipped();
+  m_renderer_data.ubo_vs.projection = m_renderer_context.current_camera->get_projection_matrix();
   auto [vs_buff, vs_buffer_fut] = create_buffer(frame_allocator, vuk::MemoryUsage::eCPUtoGPU, vuk::DomainFlagBits::eTransferOnGraphics, std::span(&m_renderer_data.ubo_vs, 1));
   auto& vs_buffer = *vs_buff;
 
@@ -602,7 +602,7 @@ void DefaultRenderPipeline::geomerty_pass(const Ref<vuk::RenderGraph>& rg,
                                           vuk::Buffer& shadow_buffer,
                                           vuk::Buffer& point_lights_buffer,
                                           vuk::Buffer pbr_buffer) {
-  const Mat4 inv_cam = inverse(m_renderer_context.current_camera->get_projection_matrix_flipped() * m_renderer_context.current_camera->get_view_matrix());
+  const Mat4 inv_cam = inverse(m_renderer_context.current_camera->get_projection_matrix() * m_renderer_context.current_camera->get_view_matrix());
 
   constexpr Vec4 ndc[] = {
     Vec4(-1.0f, -1.0f, 1.0f, 1.0f), // bottom-left
@@ -1040,7 +1040,7 @@ void DefaultRenderPipeline::apply_grid(vuk::RenderGraph* rg, const vuk::Name dst
   } grid_vertex_data;
 
   grid_vertex_data.view = m_renderer_context.current_camera->get_view_matrix();
-  grid_vertex_data.proj = m_renderer_context.current_camera->get_projection_matrix_flipped();
+  grid_vertex_data.proj = m_renderer_context.current_camera->get_projection_matrix();
 
   auto [vgrid_buff, vgrid_buff_fut] = create_buffer(frame_allocator, vuk::MemoryUsage::eCPUtoGPU, vuk::DomainFlagBits::eTransferOnGraphics, std::span(&grid_vertex_data, 1));
   auto& grid_vertex_buffer = *vgrid_buff;

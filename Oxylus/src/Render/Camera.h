@@ -1,13 +1,22 @@
 #pragma once
 
+#include <vector>
+
 #include "Core/Types.h"
 
 #include <glm/glm.hpp>
 #include <glm/gtc/matrix_transform.hpp>
 
+
 struct VkExtent2D;
 
 namespace Oxylus {
+enum class Intersection : uint32_t {
+  Outside    = 0,
+  Intersects = 1,
+  Inside     = 2
+};
+
 struct Plane {
   glm::vec3 normal = {0.f, 1.f, 0.f}; // unit vector
   float distance = 0.f;               // Distance with origin
@@ -17,7 +26,7 @@ struct Plane {
   Plane(const glm::vec3& p1, const glm::vec3& norm) : normal(normalize(norm)),
                                                       distance(dot(normal, p1)) {}
 
-  float get_signed_distance_to_plane(const glm::vec3& point) const { return dot(normal, point) - distance; }
+  float get_distance(const glm::vec3& point) const { return dot(normal, point) - distance; }
 };
 
 struct Frustum {
@@ -29,6 +38,18 @@ struct Frustum {
 
   Plane far_face;
   Plane near_face;
+
+  Plane* planes[6] = {};
+
+  bool is_inside(const glm::vec3& point) const {
+    for (int i = 0; i < 6; i++) {
+      if (planes[i]->get_distance(point) < 0.0f) {
+        return false;
+      }
+    }
+
+    return true;
+  }
 };
 
 class Camera {
@@ -38,8 +59,8 @@ public:
   void update();
   void update(const Vec3& pos, const Vec3& rotation);
 
-  Mat4 get_projection_matrix_flipped() const;
   Mat4 get_projection_matrix() const;
+  Mat4 get_projection_matrix_flipped() const;
   Mat4 get_view_matrix() const;
   Mat4 get_world_matrix() const;
 

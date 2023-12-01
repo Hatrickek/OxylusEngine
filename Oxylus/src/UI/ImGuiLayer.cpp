@@ -1,5 +1,4 @@
 #include "ImGuiLayer.h"
-#include <ImGuizmo/ImGuizmo.h>
 #include <imgui.h>
 #include <plf_colony.h>
 #include <backends/imgui_impl_glfw.h>
@@ -22,12 +21,12 @@
 #include "Utils/Profiler.h"
 
 namespace Oxylus {
-static ImVec4 Darken(ImVec4 c, float p) { return {glm::max(0.f, c.x - 1.0f * p), glm::max(0.f, c.y - 1.0f * p), glm::max(0.f, c.z - 1.0f * p), c.w}; }
-static ImVec4 Lighten(ImVec4 c, float p) { return {glm::max(0.f, c.x + 1.0f * p), glm::max(0.f, c.y + 1.0f * p), glm::max(0.f, c.z + 1.0f * p), c.w}; }
+static ImVec4 darken(ImVec4 c, float p) { return {glm::max(0.f, c.x - 1.0f * p), glm::max(0.f, c.y - 1.0f * p), glm::max(0.f, c.z - 1.0f * p), c.w}; }
+static ImVec4 lighten(ImVec4 c, float p) { return {glm::max(0.f, c.x + 1.0f * p), glm::max(0.f, c.y + 1.0f * p), glm::max(0.f, c.z + 1.0f * p), c.w}; }
 
-ImFont* ImGuiLayer::RegularFont = nullptr;
-ImFont* ImGuiLayer::SmallFont = nullptr;
-ImFont* ImGuiLayer::BoldFont = nullptr;
+ImFont* ImGuiLayer::regular_font = nullptr;
+ImFont* ImGuiLayer::small_font = nullptr;
+ImFont* ImGuiLayer::bold_font = nullptr;
 
 ImGuiLayer::ImGuiLayer() : Layer("ImGuiLayer") { }
 
@@ -45,29 +44,29 @@ void ImGuiLayer::on_attach(EventDispatcher&) {
   apply_theme();
   set_style();
 
-  InitForVulkan();
+  init_for_vulkan();
 }
 
-void ImGuiLayer::AddIconFont(float fontSize) {
+void ImGuiLayer::add_icon_font(float font_size) {
   const ImGuiIO& io = ImGui::GetIO();
-  static constexpr ImWchar icons_ranges[] = {ICON_MIN_MDI, ICON_MAX_MDI, 0};
-  ImFontConfig iconsConfig;
+  static constexpr ImWchar ICONS_RANGES[] = {ICON_MIN_MDI, ICON_MAX_MDI, 0};
+  ImFontConfig icons_config;
   // merge in icons from Font Awesome
-  iconsConfig.MergeMode = true;
-  iconsConfig.PixelSnapH = true;
-  iconsConfig.GlyphOffset.y = 1.0f;
-  iconsConfig.OversampleH = iconsConfig.OversampleV = 1;
-  iconsConfig.GlyphMinAdvanceX = 4.0f;
-  iconsConfig.SizePixels = 12.0f;
+  icons_config.MergeMode = true;
+  icons_config.PixelSnapH = true;
+  icons_config.GlyphOffset.y = 1.0f;
+  icons_config.OversampleH = icons_config.OversampleV = 1;
+  icons_config.GlyphMinAdvanceX = 4.0f;
+  icons_config.SizePixels = 12.0f;
 
   io.Fonts->AddFontFromMemoryCompressedTTF(MaterialDesign_compressed_data,
-    MaterialDesign_compressed_size,
-    fontSize,
-    &iconsConfig,
-    icons_ranges);
+                                           MaterialDesign_compressed_size,
+                                           font_size,
+                                           &icons_config,
+                                           ICONS_RANGES);
 }
 
-ImGuiLayer::ImGuiData ImGuiLayer::ImGui_ImplVuk_Init(vuk::Allocator& allocator) const {
+ImGuiLayer::ImGuiData ImGuiLayer::imgui_impl_vuk_init(vuk::Allocator& allocator) const {
   vuk::Context& ctx = allocator.get_context();
   auto& io = ImGui::GetIO();
   io.BackendRendererName = "oxylus";
@@ -100,35 +99,35 @@ ImGuiLayer::ImGuiData ImGuiLayer::ImGui_ImplVuk_Init(vuk::Allocator& allocator) 
 }
 
 
-void ImGuiLayer::InitForVulkan() {
+void ImGuiLayer::init_for_vulkan() {
   ImGui_ImplGlfw_InitForVulkan(Window::get_glfw_window(), true);
 
   // Upload Fonts
-  const auto regularFontPath = Resources::get_resources_path("Fonts/jetbrains-mono/JetBrainsMono-Regular.ttf");
-  const auto boldFontPath = Resources::get_resources_path("Fonts/jetbrains-mono/JetBrainsMono-Bold.ttf");
+  const auto regular_font_path = Resources::get_resources_path("Fonts/jetbrains-mono/JetBrainsMono-Regular.ttf");
+  const auto bold_font_path = Resources::get_resources_path("Fonts/jetbrains-mono/JetBrainsMono-Bold.ttf");
 
   const ImGuiIO& io = ImGui::GetIO();
-  constexpr float fontSize = 16.0f;
-  constexpr float fontSizeSmall = 12.0f;
+  constexpr float font_size = 16.0f;
+  constexpr float font_size_small = 12.0f;
 
-  ImFontConfig iconsConfig;
-  iconsConfig.MergeMode = false;
-  iconsConfig.PixelSnapH = true;
-  iconsConfig.OversampleH = iconsConfig.OversampleV = 1;
-  iconsConfig.GlyphMinAdvanceX = 4.0f;
-  iconsConfig.SizePixels = 12.0f;
+  ImFontConfig icons_config;
+  icons_config.MergeMode = false;
+  icons_config.PixelSnapH = true;
+  icons_config.OversampleH = icons_config.OversampleV = 1;
+  icons_config.GlyphMinAdvanceX = 4.0f;
+  icons_config.SizePixels = 12.0f;
 
-  RegularFont = io.Fonts->AddFontFromFileTTF(regularFontPath.c_str(), fontSize, &iconsConfig);
-  AddIconFont(fontSize);
-  SmallFont = io.Fonts->AddFontFromFileTTF(regularFontPath.c_str(), fontSizeSmall, &iconsConfig);
-  AddIconFont(fontSizeSmall);
-  BoldFont = io.Fonts->AddFontFromFileTTF(boldFontPath.c_str(), fontSize, &iconsConfig);
-  AddIconFont(fontSize);
+  regular_font = io.Fonts->AddFontFromFileTTF(regular_font_path.c_str(), font_size, &icons_config);
+  add_icon_font(font_size);
+  small_font = io.Fonts->AddFontFromFileTTF(regular_font_path.c_str(), font_size_small, &icons_config);
+  add_icon_font(font_size_small);
+  bold_font = io.Fonts->AddFontFromFileTTF(bold_font_path.c_str(), font_size, &icons_config);
+  add_icon_font(font_size);
 
   io.Fonts->TexGlyphPadding = 1;
   for (int n = 0; n < io.Fonts->ConfigData.Size; n++) {
-    ImFontConfig* fontConfig = &io.Fonts->ConfigData[n];
-    fontConfig->RasterizerMultiply = 1.0f;
+    ImFontConfig* font_config = &io.Fonts->ConfigData[n];
+    font_config->RasterizerMultiply = 1.0f;
   }
   io.Fonts->Build();
 
@@ -139,7 +138,7 @@ void ImGuiLayer::InitForVulkan() {
   int32_t width, height;
   io.Fonts->GetTexDataAsRGBA32(&pixels, &width, &height);
 
-  imgui_data = ImGui_ImplVuk_Init(*VulkanContext::get()->superframe_allocator);
+  imgui_data = imgui_impl_vuk_init(*VulkanContext::get()->superframe_allocator);
 }
 
 void ImGuiLayer::on_detach() {
@@ -154,9 +153,9 @@ void ImGuiLayer::begin() {
   sampled_images.clear();
 }
 
-vuk::Future ImGuiLayer::render_draw_data(vuk::Allocator& allocator, vuk::Future target, ImDrawData* drawData) const {
+vuk::Future ImGuiLayer::render_draw_data(vuk::Allocator& allocator, vuk::Future target, ImDrawData* im_draw_data) const {
   OX_SCOPED_ZONE;
-  auto reset_render_state = [](const ImGuiData& data, vuk::CommandBuffer& command_buffer, ImDrawData* draw_data, vuk::Buffer vertex, vuk::Buffer index) {
+  auto reset_render_state = [](const ImGuiData& data, vuk::CommandBuffer& command_buffer, const ImDrawData* draw_data, const vuk::Buffer& vertex, const vuk::Buffer& index) {
     command_buffer.bind_image(0, 0, *data.font_texture.view).bind_sampler(0, 0, data.font_sci);
     if (index.size > 0) {
       command_buffer.bind_index_buffer(index, sizeof(ImDrawIdx) == 2 ? vuk::IndexType::eUint16 : vuk::IndexType::eUint32);
@@ -175,17 +174,17 @@ vuk::Future ImGuiLayer::render_draw_data(vuk::Allocator& allocator, vuk::Future 
     command_buffer.push_constants(vuk::ShaderStageFlagBits::eVertex, 0, pc);
   };
 
-  size_t vertex_size = drawData->TotalVtxCount * sizeof(ImDrawVert);
-  size_t index_size = drawData->TotalIdxCount * sizeof(ImDrawIdx);
+  const size_t vertex_size = im_draw_data->TotalVtxCount * sizeof(ImDrawVert);
+  const size_t index_size = im_draw_data->TotalIdxCount * sizeof(ImDrawIdx);
   auto imvert = *allocate_buffer(allocator, {vuk::MemoryUsage::eCPUtoGPU, vertex_size, 1});
   auto imind = *allocate_buffer(allocator, {vuk::MemoryUsage::eCPUtoGPU, index_size, 1});
 
   size_t vtx_dst = 0, idx_dst = 0;
   vuk::Compiler comp;
-  for (int n = 0; n < drawData->CmdListsCount; n++) {
-    const ImDrawList* cmd_list = drawData->CmdLists[n];
-    auto imverto = imvert->add_offset(vtx_dst * sizeof(ImDrawVert));
-    auto imindo = imind->add_offset(idx_dst * sizeof(ImDrawIdx));
+  for (int n = 0; n < im_draw_data->CmdListsCount; n++) {
+    const ImDrawList* cmd_list = im_draw_data->CmdLists[n];
+    const auto imverto = imvert->add_offset(vtx_dst * sizeof(ImDrawVert));
+    const auto imindo = imind->add_offset(idx_dst * sizeof(ImDrawIdx));
 
     // TODO:
     vuk::host_data_to_buffer(allocator, vuk::DomainFlagBits{}, imverto, std::span(cmd_list->VtxBuffer.Data, cmd_list->VtxBuffer.Size)).wait(allocator, comp);
@@ -207,28 +206,28 @@ vuk::Future ImGuiLayer::render_draw_data(vuk::Allocator& allocator, vuk::Future 
   vuk::Pass pass{
     .name = "imgui",
     .resources = std::move(resources),
-    .execute = [this, &allocator, verts = imvert.get(), inds = imind.get(), reset_render_state, drawData](vuk::CommandBuffer& command_buffer) {
+    .execute = [this, &allocator, verts = imvert.get(), inds = imind.get(), reset_render_state, im_draw_data](vuk::CommandBuffer& command_buffer) {
       command_buffer.set_dynamic_state(vuk::DynamicStateFlagBits::eViewport | vuk::DynamicStateFlagBits::eScissor);
       command_buffer.set_rasterization(vuk::PipelineRasterizationStateCreateInfo{});
       command_buffer.set_color_blend("target", vuk::BlendPreset::eAlphaBlend);
-      reset_render_state(imgui_data, command_buffer, drawData, verts, inds);
+      reset_render_state(imgui_data, command_buffer, im_draw_data, verts, inds);
       // Will project scissor/clipping rectangles into framebuffer space
-      ImVec2 clip_off = drawData->DisplayPos;         // (0,0) unless using multi-viewports
-      ImVec2 clip_scale = drawData->FramebufferScale; // (1,1) unless using retina display which are often (2,2)
+      const ImVec2 clip_off = im_draw_data->DisplayPos;         // (0,0) unless using multi-viewports
+      const ImVec2 clip_scale = im_draw_data->FramebufferScale; // (1,1) unless using retina display which are often (2,2)
 
       // Render command lists
       // (Because we merged all buffers into a single one, we maintain our own offset into them)
       int global_vtx_offset = 0;
       int global_idx_offset = 0;
-      for (int n = 0; n < drawData->CmdListsCount; n++) {
-        const ImDrawList* cmd_list = drawData->CmdLists[n];
+      for (int n = 0; n < im_draw_data->CmdListsCount; n++) {
+        const ImDrawList* cmd_list = im_draw_data->CmdLists[n];
         for (int cmd_i = 0; cmd_i < cmd_list->CmdBuffer.Size; cmd_i++) {
           const ImDrawCmd* pcmd = &cmd_list->CmdBuffer[cmd_i];
           if (pcmd->UserCallback != nullptr) {
             // User callback, registered via ImDrawList::AddCallback()
             // (ImDrawCallback_ResetRenderState is a special callback value used by the user to request the renderer to reset render state.)
             if (pcmd->UserCallback == ImDrawCallback_ResetRenderState)
-              reset_render_state(imgui_data, command_buffer, drawData, verts, inds);
+              reset_render_state(imgui_data, command_buffer, im_draw_data, verts, inds);
             else
               pcmd->UserCallback(cmd_list, pcmd);
           }
@@ -240,8 +239,8 @@ vuk::Future ImGuiLayer::render_draw_data(vuk::Allocator& allocator, vuk::Future 
             clip_rect.z = (pcmd->ClipRect.z - clip_off.x) * clip_scale.x;
             clip_rect.w = (pcmd->ClipRect.w - clip_off.y) * clip_scale.y;
 
-            auto fb_width = command_buffer.get_ongoing_render_pass().extent.width;
-            auto fb_height = command_buffer.get_ongoing_render_pass().extent.height;
+            const auto fb_width = command_buffer.get_ongoing_render_pass().extent.width;
+            const auto fb_height = command_buffer.get_ongoing_render_pass().extent.height;
             if (clip_rect.x < fb_width && clip_rect.y < fb_height && clip_rect.z >= 0.0f && clip_rect.w >= 0.0f) {
               // Negative offsets are illegal for vkCmdSetScissor
               if (clip_rect.x < 0.0f)
@@ -266,7 +265,7 @@ vuk::Future ImGuiLayer::render_draw_data(vuk::Allocator& allocator, vuk::Future 
                 else {
                   if (si.rg_attachment.ivci) {
                     auto ivci = *si.rg_attachment.ivci;
-                    auto res_img = command_buffer.get_resource_image_attachment(si.rg_attachment.reference)->image;
+                    const auto res_img = command_buffer.get_resource_image_attachment(si.rg_attachment.reference)->image;
                     ivci.image = res_img.image;
                     auto iv = vuk::allocate_image_view(allocator, ivci);
                     command_buffer.bind_image(0, 0, **iv).bind_sampler(0, 0, si.rg_attachment.sci);
@@ -274,9 +273,9 @@ vuk::Future ImGuiLayer::render_draw_data(vuk::Allocator& allocator, vuk::Future 
                   else {
                     command_buffer
                      .bind_image(0,
-                        0,
-                        *command_buffer.get_resource_image_attachment(si.rg_attachment.reference),
-                        vuk::ImageLayout::eShaderReadOnlyOptimal)
+                                 0,
+                                 *command_buffer.get_resource_image_attachment(si.rg_attachment.reference),
+                                 vuk::ImageLayout::eShaderReadOnlyOptimal)
                      .bind_sampler(0, 0, si.rg_attachment.sci);
                   }
                 }
@@ -375,13 +374,13 @@ void ImGuiLayer::apply_theme(bool dark) {
     colors[ImGuiCol_NavWindowingDimBg] = ImVec4(0.80f, 0.80f, 0.80f, 0.20f);
     colors[ImGuiCol_ModalWindowDimBg] = ImVec4(0.20f, 0.20f, 0.20f, 0.35f);
 
-    HeaderSelectedColor = ImVec4(1.00f, 0.56f, 0.00f, 0.50f);
-    HeaderHoveredColor = Lighten(colors[ImGuiCol_HeaderActive], 0.1f);
-    WindowBgColor = colors[ImGuiCol_WindowBg];
-    WindowBgAlternativeColor = ImVec4(0.1f, 0.1f, 0.1f, 1.0f);
-    AssetIconColor = Lighten(HeaderSelectedColor, 0.9f);
-    TextColor = colors[ImGuiCol_Text];
-    TextDisabledColor = colors[ImGuiCol_TextDisabled];
+    header_selected_color = ImVec4(1.00f, 0.56f, 0.00f, 0.50f);
+    header_hovered_color = lighten(colors[ImGuiCol_HeaderActive], 0.1f);
+    window_bg_color = colors[ImGuiCol_WindowBg];
+    window_bg_alternative_color = ImVec4(0.1f, 0.1f, 0.1f, 1.0f);
+    asset_icon_color = lighten(header_selected_color, 0.9f);
+    text_color = colors[ImGuiCol_Text];
+    text_disabled_color = colors[ImGuiCol_TextDisabled];
   }
   else {
     colors[ImGuiCol_Text] = ImVec4(0.00f, 0.00f, 0.00f, 1.00f);
@@ -440,13 +439,13 @@ void ImGuiLayer::apply_theme(bool dark) {
     colors[ImGuiCol_NavWindowingDimBg] = ImVec4(0.20f, 0.20f, 0.20f, 0.20f);
     colors[ImGuiCol_ModalWindowDimBg] = ImVec4(0.20f, 0.20f, 0.20f, 0.35f);
 
-    HeaderSelectedColor = ImVec4(0.26f, 0.59f, 0.98f, 0.65f);
-    HeaderHoveredColor = Darken(colors[ImGuiCol_HeaderActive], 0.1f);
-    WindowBgColor = colors[ImGuiCol_WindowBg];
-    WindowBgAlternativeColor = Darken(WindowBgColor, 0.04f);
-    AssetIconColor = Darken(HeaderSelectedColor, 0.9f);
-    TextColor = colors[ImGuiCol_Text];
-    TextDisabledColor = colors[ImGuiCol_TextDisabled];
+    header_selected_color = ImVec4(0.26f, 0.59f, 0.98f, 0.65f);
+    header_hovered_color = darken(colors[ImGuiCol_HeaderActive], 0.1f);
+    window_bg_color = colors[ImGuiCol_WindowBg];
+    window_bg_alternative_color = darken(window_bg_color, 0.04f);
+    asset_icon_color = darken(header_selected_color, 0.9f);
+    text_color = colors[ImGuiCol_Text];
+    text_disabled_color = colors[ImGuiCol_TextDisabled];
   }
 }
 
@@ -491,15 +490,15 @@ void ImGuiLayer::set_style() {
   style->SelectableTextAlign = ImVec2(0.0f, 0.0f);
   style->DisplaySafeAreaPadding = ImVec2(8.0f, 8.0f);
 
-  UIFramePadding = ImVec2(4.0f, 2.0f);
-  PopupItemSpacing = ImVec2(6.0f, 8.0f);
+  ui_frame_padding = ImVec2(4.0f, 2.0f);
+  popup_item_spacing = ImVec2(6.0f, 8.0f);
 
-  ImGuiColorEditFlags colorEditFlags = ImGuiColorEditFlags_AlphaBar
-                                       | ImGuiColorEditFlags_AlphaPreviewHalf
-                                       | ImGuiColorEditFlags_DisplayRGB
-                                       | ImGuiColorEditFlags_InputRGB
-                                       | ImGuiColorEditFlags_PickerHueBar
-                                       | ImGuiColorEditFlags_Uint8;
-  ImGui::SetColorEditOptions(colorEditFlags);
+  constexpr ImGuiColorEditFlags color_edit_flags = ImGuiColorEditFlags_AlphaBar
+                                                   | ImGuiColorEditFlags_AlphaPreviewHalf
+                                                   | ImGuiColorEditFlags_DisplayRGB
+                                                   | ImGuiColorEditFlags_InputRGB
+                                                   | ImGuiColorEditFlags_PickerHueBar
+                                                   | ImGuiColorEditFlags_Uint8;
+  ImGui::SetColorEditOptions(color_edit_flags);
 }
 }

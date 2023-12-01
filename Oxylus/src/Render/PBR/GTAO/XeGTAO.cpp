@@ -31,7 +31,7 @@ void gtao_update_constants(GTAOConstants& consts, int viewportWidth, int viewpor
   float depth_linearize_mul = camera->get_far() * camera->get_near() / (camera->get_far() - camera->get_near());
   float depth_linearize_add = camera->get_far() / (camera->get_far() - camera->get_near());
 
-  auto projMatrix = value_ptr(camera->get_projection_matrix_flipped());
+  auto projMatrix = value_ptr(camera->get_projection_matrix());
 
   //float depth_linearize_mul = -projMatrix[3 + 2 * 4];     // float depthLinearizeMul = ( clipFar * clipNear ) / ( clipFar - clipNear );
   //float depth_linearize_add = projMatrix[2 + 2 * 4];     // float depthLinearizeAdd = clipFar / ( clipFar - clipNear );

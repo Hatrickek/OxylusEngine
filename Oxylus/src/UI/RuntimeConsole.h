@@ -65,9 +65,9 @@ private:
   struct ConsoleText {
     std::string text = {};
     fmtlog::LogLevel level = {};
-
-    void render() const;
   };
+
+  void render_console_text(std::string text, fmtlog::LogLevel level);
 
   struct ConsoleCommand {
     int32_t* int_value = nullptr;
@@ -91,7 +91,7 @@ private:
   std::string parse_command(const std::string& command);
 
   // Input field
-  static constexpr int32_t MAX_TEXT_BUFFER_SIZE = 32;
+  static constexpr uint32_t MAX_TEXT_BUFFER_SIZE = 32;
   int32_t m_history_position = 0;
   std::vector<ConsoleText> m_text_buffer = {};
   std::vector<char*> m_input_log = {};

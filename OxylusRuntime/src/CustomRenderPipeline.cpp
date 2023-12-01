@@ -54,7 +54,7 @@ Scope<vuk::Future> CustomRenderPipeline::on_render(vuk::Allocator& frame_allocat
   uint32_t color_index = 0;
   for (const auto& mesh : draw_list) {
     UnlitPassData data = {
-      .vp = current_camera->get_projection_matrix_flipped() * current_camera->get_view_matrix(),
+      .vp = current_camera->get_projection_matrix() * current_camera->get_view_matrix(),
       .model = mesh.transform,
       .color = color_list[color_index]
     };

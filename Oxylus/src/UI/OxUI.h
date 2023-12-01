@@ -133,6 +133,8 @@ public:
     return modified;
   }
 
+  static void tooltip(const char* text);
+
   // Texture
   static bool property(const char* label,
                        Ref<TextureAsset>& texture,
@@ -143,21 +145,38 @@ public:
                     ImVec2 size,
                     const ImVec2& uv0 = ImVec2(0, 0),
                     const ImVec2& uv1 = ImVec2(1, 1),
-                    const ImVec4& tintCol = ImVec4(1, 1, 1, 1),
-                    const ImVec4& borderCol = ImVec4(0, 0, 0, 0));
+                    const ImVec4& tint_col = ImVec4(1, 1, 1, 1),
+                    const ImVec4& border_col = ImVec4(0, 0, 0, 0));
 
-  static void image(vuk::SampledImage& texture,
+  static void image(const vuk::SampledImage& texture,
                     ImVec2 size,
                     const ImVec2& uv0 = ImVec2(0, 0),
                     const ImVec2& uv1 = ImVec2(1, 1),
-                    const ImVec4& tintCol = ImVec4(1, 1, 1, 1),
-                    const ImVec4& borderCol = ImVec4(0, 0, 0, 0));
+                    const ImVec4& tint_col = ImVec4(1, 1, 1, 1),
+                    const ImVec4& border_col = ImVec4(0, 0, 0, 0));
+
+  // Draw vuk::Texture
+  static bool image_button(const char* id,
+                           const vuk::Texture& texture,
+                           ImVec2 size,
+                           const ImVec2& uv0 = ImVec2(0, 0),
+                           const ImVec2& uv1 = ImVec2(1, 1),
+                           const ImVec4& tint_col = ImVec4(1, 1, 1, 1),
+                           const ImVec4& bg_col = ImVec4(0, 0, 0, 0));
+
+  static bool image_button(const char* id,
+                           const vuk::SampledImage& texture,
+                           ImVec2 size,
+                           const ImVec2& uv0 = ImVec2(0, 0),
+                           const ImVec2& uv1 = ImVec2(1, 1),
+                           const ImVec4& tint_col = ImVec4(1, 1, 1, 1),
+                           const ImVec4& bg_col = ImVec4(0, 0, 0, 0));
 
   // Vec3 with reset button
   static bool draw_vec3_control(const char* label,
                                 glm::vec3& values,
                                 const char* tooltip = nullptr,
-                                float resetValue = 0.0f);
+                                float reset_value = 0.0f);
 
   static bool toggle_button(const char* label,
                             bool state,

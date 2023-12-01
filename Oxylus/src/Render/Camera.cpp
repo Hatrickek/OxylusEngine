@@ -12,15 +12,14 @@ Camera::Camera(glm::vec3 position) {
   update_view_matrix();
 }
 
-glm::mat4 Camera::get_projection_matrix_flipped() const {
+glm::mat4 Camera::get_projection_matrix() const {
   OX_SCOPED_ZONE;
   auto projection = glm::perspective(glm::radians(m_fov), m_aspect, m_near_clip, m_far_clip);
   projection[1][1] *= -1.0f;
   return projection;
 }
 
-glm::mat4 Camera::get_projection_matrix() const {
-  OX_SCOPED_ZONE;
+Mat4 Camera::get_projection_matrix_flipped() const {
   return glm::perspective(glm::radians(m_fov), m_aspect, m_near_clip, m_far_clip);
 }
 
@@ -59,9 +58,9 @@ void Camera::set_perspective(float fov, float aspect, float znear, float zfar) {
 void Camera::set_fov(const float fov) {
   this->m_fov = fov;
   m_perspective = glm::perspective(glm::radians(fov),
-    static_cast<float>(Renderer::get_viewport_width()) / static_cast<float>(Renderer::get_viewport_height()),
-    m_near_clip,
-    m_far_clip);
+                                   static_cast<float>(Renderer::get_viewport_width()) / static_cast<float>(Renderer::get_viewport_height()),
+                                   m_near_clip,
+                                   m_far_clip);
 }
 
 void Camera::update_aspect_ratio(const float aspect) {
@@ -135,14 +134,16 @@ Frustum Camera::get_frustum() {
   const float half_h_side = half_v_side * get_aspect();
   const Vec3 forward_far = get_far() * m_forward;
 
+#if 1
   Frustum frustum = {
     .top_face = {m_position, cross(m_right, forward_far - m_up * half_v_side)},
     .bottom_face = {m_position, cross(forward_far + m_up * half_v_side, m_right)},
     .right_face = {m_position, cross(forward_far - m_right * half_h_side, m_up)},
     .left_face = {m_position, cross(m_up, forward_far + m_right * half_h_side)},
     .far_face = {m_position + forward_far, -m_forward},
-    .near_face = {m_position + get_near() * m_forward, m_forward}
+    .near_face = {m_position + get_near() * m_forward, m_forward},
   };
+#endif
 
 #if 0
   Frustum frustum = {
@@ -154,6 +155,13 @@ Frustum Camera::get_frustum() {
     .near_face = {m_position, cross(forward_far + m_up * half_v_side, m_right)}
   };
 #endif
+
+  frustum.planes[0] = &frustum.top_face;
+  frustum.planes[1] = &frustum.bottom_face;
+  frustum.planes[2] = &frustum.right_face;
+  frustum.planes[3] = &frustum.left_face;
+  frustum.planes[4] = &frustum.far_face;
+  frustum.planes[5] = &frustum.near_face;
 
   return frustum;
 }

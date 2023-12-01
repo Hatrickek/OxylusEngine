@@ -9,6 +9,7 @@
 #include "Panels/InspectorPanel.h"
 #include "Panels/SceneHierarchyPanel.h"
 #include "Panels/ViewportPanel.h"
+
 #include "Utils/EditorConfig.h"
 #include "Render/Window.h"
 
@@ -37,8 +38,6 @@ public:
   // Layout
   ImGuiID dockspace_id;
   EditorLayout current_layout = EditorLayout::Classic;
-
-  static std::unordered_map<size_t, const char8_t*> component_icon_map;
 
   EditorLayer();
   ~EditorLayer() override = default;

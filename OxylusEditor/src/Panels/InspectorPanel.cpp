@@ -59,7 +59,7 @@ static void draw_component(const char* name,
     ImGui::SetCursorPosY(ImGui::GetCursorPosY() + line_height * 0.25f);
 
     const size_t id = entt::type_id<T>().hash();
-    std::string name_str = StringUtils::from_char8_t(EditorLayer::component_icon_map[typeid(T).hash_code()]);
+    std::string name_str = StringUtils::from_char8_t(EditorTheme::component_icon_map[typeid(T).hash_code()]);
     name_str = name_str.append(name);
     const bool open = ImGui::TreeNodeEx(reinterpret_cast<void*>(id), TREE_FLAGS, "%s", name_str.c_str());
 

@@ -188,11 +188,11 @@ std::pair<bool, uint32_t> ContentPanel::directory_tree_view_recursive(const std:
     const bool selected = (*selectionMask & BIT(*count)) != 0;
     if (selected) {
       nodeFlags |= ImGuiTreeNodeFlags_Selected;
-      ImGui::PushStyleColor(ImGuiCol_Header, ImGuiLayer::HeaderSelectedColor);
-      ImGui::PushStyleColor(ImGuiCol_HeaderHovered, ImGuiLayer::HeaderSelectedColor);
+      ImGui::PushStyleColor(ImGuiCol_Header, ImGuiLayer::header_selected_color);
+      ImGui::PushStyleColor(ImGuiCol_HeaderHovered, ImGuiLayer::header_selected_color);
     }
     else {
-      ImGui::PushStyleColor(ImGuiCol_HeaderHovered, ImGuiLayer::HeaderHoveredColor);
+      ImGui::PushStyleColor(ImGuiCol_HeaderHovered, ImGuiLayer::header_hovered_color);
     }
 
     const uint64_t id = *count;
@@ -231,7 +231,7 @@ std::pair<bool, uint32_t> ContentPanel::directory_tree_view_recursive(const std:
     }
 
     ImGui::SameLine();
-    ImGui::PushStyleColor(ImGuiCol_Text, ImGuiLayer::AssetIconColor);
+    ImGui::PushStyleColor(ImGuiCol_Text, ImGuiLayer::asset_icon_color);
     ImGui::TextUnformatted(StringUtils::from_char8_t(folderIcon));
     ImGui::PopStyleColor();
     ImGui::SameLine();
@@ -452,11 +452,11 @@ void ContentPanel::render_side_view() {
     const bool selected = m_current_directory == m_assets_directory && selectionMask == 0;
     if (selected) {
       nodeFlags |= ImGuiTreeNodeFlags_Selected;
-      ImGui::PushStyleColor(ImGuiCol_Header, ImGuiLayer::HeaderSelectedColor);
-      ImGui::PushStyleColor(ImGuiCol_HeaderHovered, ImGuiLayer::HeaderSelectedColor);
+      ImGui::PushStyleColor(ImGuiCol_Header, ImGuiLayer::header_selected_color);
+      ImGui::PushStyleColor(ImGuiCol_HeaderHovered, ImGuiLayer::header_selected_color);
     }
     else {
-      ImGui::PushStyleColor(ImGuiCol_HeaderHovered, ImGuiLayer::HeaderHoveredColor);
+      ImGui::PushStyleColor(ImGuiCol_HeaderHovered, ImGuiLayer::header_hovered_color);
     }
 
     const bool opened = ImGui::TreeNodeEx(m_assets_directory.string().c_str(), nodeFlags, "");
@@ -471,7 +471,7 @@ void ContentPanel::render_side_view() {
     }
     const char8_t* folderIcon = opened ? ICON_MDI_FOLDER_OPEN : ICON_MDI_FOLDER;
     ImGui::SameLine();
-    ImGui::PushStyleColor(ImGuiCol_Text, ImGuiLayer::AssetIconColor);
+    ImGui::PushStyleColor(ImGuiCol_Text, ImGuiLayer::asset_icon_color);
     ImGui::TextUnformatted(StringUtils::from_char8_t(folderIcon));
     ImGui::PopStyleColor();
     ImGui::SameLine();
@@ -602,7 +602,7 @@ void ContentPanel::render_body(bool grid) {
         if (m_elapsed_time > 0.25f && clicked) {
           EditorLayer::get()->set_context_as_file_with_path(strPath);
         }
-        ImGui::PushStyleVar(ImGuiStyleVar_ItemSpacing, ImGuiLayer::PopupItemSpacing);
+        ImGui::PushStyleVar(ImGuiStyleVar_ItemSpacing, ImGuiLayer::popup_item_spacing);
         if (ImGui::BeginPopupContextItem()) {
           if (ImGui::MenuItem("Delete")) {
             m_directory_to_delete = path;
@@ -638,7 +638,7 @@ void ContentPanel::render_body(bool grid) {
         // Foreground Image
         ImGui::SetCursorPos({cursor_pos.x + padding, cursor_pos.y + padding});
         ImGui::SetItemAllowOverlap();
-        OxUI::image(m_white_texture->get_texture(), {background_thumbnail_size.x - padding * 2.0f, background_thumbnail_size.y - padding * 2.0f}, {}, {}, ImGuiLayer::WindowBgAlternativeColor);
+        OxUI::image(m_white_texture->get_texture(), {background_thumbnail_size.x - padding * 2.0f, background_thumbnail_size.y - padding * 2.0f}, {}, {}, ImGuiLayer::window_bg_alternative_color);
 
         // Thumbnail Image
         ImGui::SetCursorPos({cursor_pos.x + thumbnail_padding * 0.75f, cursor_pos.y + thumbnail_padding});
@@ -654,13 +654,13 @@ void ContentPanel::render_body(bool grid) {
         const ImVec2 rect_min = ImGui::GetItemRectMin();
         const ImVec2 rect_size = ImGui::GetItemRectSize();
         const ImRect clip_rect = ImRect({rect_min.x + padding * 1.0f, rect_min.y + padding * 2.0f},
-          {rect_min.x + rect_size.x, rect_min.y + scaled_thumbnail_size_x - ImGuiLayer::SmallFont->FontSize - padding * 2.0f});
+          {rect_min.x + rect_size.x, rect_min.y + scaled_thumbnail_size_x - ImGuiLayer::small_font->FontSize - padding * 2.0f});
         OxUI::clipped_text(clip_rect.Min, clip_rect.Max, filename, nullptr, nullptr, {0, 0}, nullptr, clip_rect.GetSize().x);
 
         if (!is_dir) {
-          ImGui::SetCursorPos({cursor_pos.x + padding * 2.0f, cursor_pos.y + background_thumbnail_size.y - ImGuiLayer::SmallFont->FontSize - padding * 2.0f});
+          ImGui::SetCursorPos({cursor_pos.x + padding * 2.0f, cursor_pos.y + background_thumbnail_size.y - ImGuiLayer::small_font->FontSize - padding * 2.0f});
           ImGui::BeginDisabled();
-          ImGui::PushFont(ImGuiLayer::SmallFont);
+          ImGui::PushFont(ImGuiLayer::small_font);
           ImGui::TextUnformatted(file.file_type_string.data());
           ImGui::PopFont();
           ImGui::EndDisabled();
@@ -696,7 +696,7 @@ void ContentPanel::render_body(bool grid) {
       ++i;
     }
 
-    ImGui::PushStyleVar(ImGuiStyleVar_ItemSpacing, ImGuiLayer::PopupItemSpacing);
+    ImGui::PushStyleVar(ImGuiStyleVar_ItemSpacing, ImGuiLayer::popup_item_spacing);
     if (ImGui::BeginPopupContextWindow("AssetPanelHierarchyContextWindow", ImGuiPopupFlags_MouseButtonRight | ImGuiPopupFlags_NoOpenOverItems)) {
       EditorLayer::get()->reset_context();
       draw_context_menu_items(m_current_directory, true);
