@@ -10,10 +10,9 @@ namespace Oxylus {
 class Material;
 
 struct LightingData {
-  Vec4 position_and_intensity = {};
-  Vec4 color_and_radius = {};
-  Vec4 rotation = {};
-  Vec4 _pad = {};
+  Vec4 position_intensity = {};
+  Vec4 color_radius = {};
+  Vec4 rotation_type = {};
 };
 
 struct MeshData {

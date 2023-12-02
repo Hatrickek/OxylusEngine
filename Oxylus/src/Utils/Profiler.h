@@ -2,9 +2,9 @@
 
 #include <vuk/Types.hpp>
 
-// Profilers 
-#define GPU_PROFILER_ENABLED 1
-#define CPU_PROFILER_ENABLED 1
+// Profilers
+#define GPU_PROFILER_ENABLED 0
+#define CPU_PROFILER_ENABLED 0
 #define MEMORY_PROFILER_ENABLED 0
 
 #define TRACY_VK_USE_SYMBOL_TABLE
@@ -53,6 +53,7 @@
 namespace Oxylus {
 class VulkanContext;
 
+#ifdef TRACY_ENABLE
 class TracyProfiler {
 public:
 
@@ -72,27 +73,5 @@ private:
   vuk::Unique<vuk::CommandPool> tracy_cpool;
   vuk::Unique<vuk::CommandBufferAllocation> tracy_cbufai;
 };
-
-using FloatingPointMicroseconds = std::chrono::duration<double, std::micro>;
-
-class ProfilerTimer {
-public:
-  ProfilerTimer(const char* name = "");
-
-  ~ProfilerTimer();
-
-  double ElapsedMilliSeconds() const;
-
-  double ElapsedMicroSeconds() const;
-
-  void Stop();
-
-  void Reset();
-
-  void Print(std::string_view arg = "");
-
-private:
-  const char* m_Name;
-  bool m_Stopped;
-};
+#endif
 }

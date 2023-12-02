@@ -4,21 +4,34 @@
 #extension GL_ARB_separate_shader_objects : enable
 #extension GL_ARB_shading_language_420pack : enable
 
+#include "PBR.glsl"
 #include "Shadows.glsl"
 
 #define PI 3.1415926535897932384626433832795
-#define MAX_NUM_LIGHTS_PER_TILE 128
-#define PIXELS_PER_TILE 16
 
-struct Frustum {
-  vec4 planes[4];
-};
+#define NUM_PCF_SAMPLES 8
+
+#define DIRECTIONAL_LIGHT 0
+#define POINT_LIGHT 1
 
 struct Light {
-  vec4 position;  // w: intensity
-  vec4 color;     // w: radius
-  vec4 rotation;  // w: type
-  vec4 _pad;
+    vec4 Position; // w: intensity
+    vec4 Color;    // w: radius
+    vec4 Rotation; // w: type
+};
+
+struct MaterialData {
+    vec4 Albedo;
+    float Metallic;
+    float Roughness;
+    float PerceptualRoughness;
+    float Reflectance;
+    vec3 Emissive;
+    vec3 Normal;
+    float AO;
+    vec3 View;
+    float NDotV;
+    vec3 F0;
 };
 
 layout(location = 0) in vec3 inWorldPos;
@@ -27,247 +40,297 @@ layout(location = 2) in vec2 inUV;
 layout(location = 3) in vec3 in_ViewPos;
 
 layout(binding = 0) uniform UBO {
-  mat4 projection;
-  mat4 view;
-  vec3 camPos;
-}
-u_Ubo;
+    mat4 Projection;
+    mat4 View;
+    vec3 CamPos;
+    float PlanetRadius;
+};
 
 layout(binding = 1) uniform UBOParams {
-  int numLights;
-  ivec2 numThreads;
-  ivec2 screenDimensions;
-}
-u_UboParams;
+    ivec2 ScreenDimensions;
+    int NumLights;
+    int EnableGTAO;
+};
 
 layout(binding = 2) buffer Lights { Light lights[]; };
-// layout(binding = 3) buffer Frustums { Frustum frustums[]; };
-//layout(binding = 3) buffer LighIndex { int lightIndices[]; };
-// layout(binding = 4) buffer LightGrid { int lightGrid[]; };
-
-// IBL
-layout(binding = 4) uniform samplerCube samplerIrradiance;
-layout(binding = 5) uniform sampler2D samplerBRDFLUT;
-layout(binding = 6) uniform samplerCube prefilteredMap;
 
 // Shadows
-layout(binding = 7) uniform sampler2DArray in_DirectShadows;
+layout(binding = 3) uniform sampler2DArray in_DirectShadows;
 
-layout(binding = 8) uniform ShadowUBO {
-  mat4 cascadeViewProjMat[SHADOW_MAP_CASCADE_COUNT];
-  vec4 cascadeSplits;
-}
-u_ShadowUbo;
+layout(binding = 4) uniform ShadowUBO {
+    mat4 CascadeViewProjMat[SHADOW_MAP_CASCADE_COUNT];
+    vec4 CascadeSplits;
+};
+
+layout(binding = 5) uniform sampler2D u_TransmittanceLut;
+layout(binding = 6) uniform usampler2D u_GTAO;
+
+#include "SkyCommon.glsl"
 
 // Material
 layout(set = 1, binding = 0) uniform sampler2D albedoMap;
 layout(set = 1, binding = 1) uniform sampler2D normalMap;
 layout(set = 1, binding = 2) uniform sampler2D aoMap;
 layout(set = 1, binding = 3) uniform sampler2D physicalMap;
+layout(set = 1, binding = 4) uniform sampler2D emissiveMap;
 
 layout(location = 0) out vec4 outColor;
 
 #include "Material.glsl"
-//#define MANUAL_SRGB 1 // we have to tonemap some inputs to make this viable
+// #define MANUAL_SRGB 1 // we have to tonemap some inputs to make this viable
 #include "Conversions.glsl"
 
-struct PBRInfo {
-  float NdotL;                  // cos angle between normal and light direction
-  float NdotV;                  // cos angle between normal and view direction
-  float NdotH;                  // cos angle between normal and half vector
-  float LdotH;                  // cos angle between light direction and half vector
-  float VdotH;                  // cos angle between view direction and half vector
-  vec3 reflectance0;            // full reflectance color (normal incidence angle)
-  vec3 reflectance90;           // reflectance color at grazing angle
-  float alphaRoughness;         // roughness mapped to a more linear change in the roughness (proposed by [2])
-  vec3 diffuseColor;            // color contribution from diffuse lighting
-  vec3 specularColor;           // color contribution from specular lighting
-};
+float ShadowFade = 1.0;
 
-// Basic Lambertian diffuse
-// Implementation from Lambert's Photometria https://archive.org/details/lambertsphotome00lambgoog
-vec3 diffuse(PBRInfo pbrInputs) {
-	return pbrInputs.diffuseColor / PI;
+vec3 GetNormal(Material mat, vec2 uv) {
+    if (!mat.UseNormal)
+        return normalize(inNormal);
+
+    vec3 tangentNormal = texture(normalMap, uv).xyz * 2.0 - 1.0;
+
+    vec3 q1 = dFdx(inWorldPos);
+    vec3 q2 = dFdy(inWorldPos);
+    vec2 st1 = dFdx(uv);
+    vec2 st2 = dFdy(uv);
+
+    vec3 N = normalize(inNormal);
+    vec3 T = normalize(q1 * st2.t - q2 * st1.t);
+    vec3 B = -normalize(cross(N, T));
+    mat3 TBN = mat3(T, B, N);
+
+    return normalize(TBN * tangentNormal);
 }
 
-vec3 SpecularReflection(PBRInfo pbrInputs) {
-	return pbrInputs.reflectance0 + (pbrInputs.reflectance90 - pbrInputs.reflectance0) * pow(clamp(1.0 - pbrInputs.VdotH, 0.0, 1.0), 5.0);
+vec2 VogelDiskSample(int sampleIndex, int samplesCount, float phi) {
+    float GoldenAngle = 2.4f;
+
+    float r = sqrt(sampleIndex + 0.5f) / sqrt(samplesCount);
+    float theta = sampleIndex * GoldenAngle + phi;
+
+    float sine = sin(theta);
+    float cosine = cos(theta);
+
+    return vec2(r * cosine, r * sine);
 }
 
-float MicrofacetDistribution(PBRInfo pbrInputs) {
-	float roughnessSq = pbrInputs.alphaRoughness * pbrInputs.alphaRoughness;
-	float f = (pbrInputs.NdotH * roughnessSq - pbrInputs.NdotH) * pbrInputs.NdotH + 1.0;
-	return roughnessSq / (PI * f * f);
+float GetShadowBias(vec3 lightDirection, vec3 normal, int shadowIndex) {
+    float minBias = 0.0023f;
+    float bias = max(minBias * (1.0 - dot(normal, lightDirection)), minBias);
+    return bias;
 }
 
-float GeometricOcclusion(PBRInfo pbrInputs) {
-	float NdotL = pbrInputs.NdotL;
-	float NdotV = pbrInputs.NdotV;
-	float r = pbrInputs.alphaRoughness;
+float Noise(vec2 co) { return fract(sin(dot(co, vec2(12.9898, 78.233))) * 43758.5453); }
 
-	float attenuationL = 2.0 * NdotL / (NdotL + sqrt(r * r + (1.0 - r * r) * (NdotL * NdotL)));
-	float attenuationV = 2.0 * NdotV / (NdotV + sqrt(r * r + (1.0 - r * r) * (NdotV * NdotV)));
-	return attenuationL * attenuationV;
+float PCFShadowDirectionalLight(sampler2DArray shadowMap, vec4 shadowCoords, float uvRadius, vec3 lightDirection, vec3 normal, vec3 wsPos, int cascadeIndex) {
+    float bias = GetShadowBias(lightDirection, normal, cascadeIndex);
+    float sum = 0;
+    float noise = Noise(wsPos.xy);
+
+    for (int i = 0; i < NUM_PCF_SAMPLES; i++) {
+        vec2 offset = VogelDiskSample(i, NUM_PCF_SAMPLES, noise) / 700.0f;
+
+        float z = texture(shadowMap, vec3(shadowCoords.xy + offset, cascadeIndex)).r;
+        sum += step(shadowCoords.z - bias, z);
+    }
+
+    return sum / NUM_PCF_SAMPLES;
 }
 
-vec3 GetNormal(vec2 uv) {
-  vec3 tangentNormal = texture(normalMap, uv).xyz * 2.0 - 1.0;
+mat4 BiasMatrix = mat4(0.5, 0.0, 0.0, 0.0, 0.0, 0.5, 0.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.5, 0.5, 0.0, 1.0);
 
-  vec3 q1 = dFdx(inWorldPos);
-  vec3 q2 = dFdy(inWorldPos);
-  vec2 st1 = dFdx(uv);
-  vec2 st2 = dFdy(uv);
+float CalculateShadow(vec3 wsPos, int cascadeIndex, vec3 lightDirection, vec3 normal) {
+    vec4 shadowCoord = BiasMatrix * CascadeViewProjMat[cascadeIndex] * vec4(wsPos, 1.0);
+    shadowCoord = shadowCoord * (1.0 / shadowCoord.w);
+    float NEAR = 0.01;
+    const float lightSize = 1.5;
+    float uvRadius = lightSize * NEAR / shadowCoord.z;
+    uvRadius = min(uvRadius, 0.002f);
+    vec4 viewPos = View * vec4(wsPos, 1.0);
 
-  vec3 N = normalize(inNormal);
-  vec3 T = normalize(q1 * st2.t - q2 * st1.t);
-  vec3 B = -normalize(cross(N, T));
-  mat3 TBN = mat3(T, B, N);
+    float shadowAmount = PCFShadowDirectionalLight(in_DirectShadows, shadowCoord, uvRadius, lightDirection, normal, wsPos, cascadeIndex);
 
-  return normalize(TBN * tangentNormal);
+    const float CascadeFade = 3.0;
+
+    float cascadeFade = smoothstep(CascadeSplits[cascadeIndex].x + CascadeFade, CascadeSplits[cascadeIndex].x, viewPos.z);
+    int cascadeNext = cascadeIndex + 1;
+    if (cascadeFade > 0.0 && cascadeNext < SHADOW_MAP_CASCADE_COUNT) {
+        shadowCoord = BiasMatrix * CascadeViewProjMat[cascadeNext] * vec4(wsPos, 1.0);
+        float shadowAmount1 = PCFShadowDirectionalLight(in_DirectShadows, shadowCoord, uvRadius, lightDirection, normal, wsPos, cascadeNext);
+
+        shadowAmount = mix(shadowAmount, shadowAmount1, cascadeFade);
+    }
+
+    return 1.0 - ((1.0 - shadowAmount) * ShadowFade);
 }
 
-vec3 GetIBLContribution(float NdotV, float perceptualRoughness, vec3 diffuseColor, vec3 specularColor, vec3 n, vec3 reflection) {
-	float lod = (perceptualRoughness /* * uboParams.prefilteredCubeMipLevels*/);
-	// retrieve a scale and bias to F0. See [1], Figure 3
-	vec3 brdf = (texture(samplerBRDFLUT, vec2(NdotV, 1.0 - perceptualRoughness))).rgb;
-	vec3 diffuseLight = SRGBtoLINEAR(texture(samplerIrradiance, n)).rgb;
+vec3 IsotropicLobe(MaterialData material, const vec3 h, float NoV, float NoL, float NoH, float LoH) {
+    float D = distribution(material.Roughness, NoH, material.Normal, h);
+    float V = visibility(material.Roughness, NoV, NoL);
+    vec3 F = fresnel(material.F0, LoH);
+    return (D * V) * F;
+}
 
-	vec3 specularLight = SRGBtoLINEAR(textureLod(prefilteredMap, reflection, lod)).rgb;
+vec3 DiffuseLobe(MaterialData material, float NoV, float NoL, float LoH) {
+    float diff = Diffuse(material.Roughness, NoV, NoL, LoH);
+    return material.Albedo.rgb * diff;
+}
 
-	vec3 diffuse = diffuseLight * diffuseColor;
-	vec3 specular = specularLight * (specularColor * brdf.x + brdf.y);
+vec3 SpecularLobe(MaterialData material, const vec3 h, float NoV, float NoL, float NoH, float LoH) {
+    vec3 spec = IsotropicLobe(material, h, NoV, NoL, NoH, LoH);
+    return spec;
+}
 
-	return diffuse + specular;
+vec3 Lighting(vec3 F0, vec3 wsPos, MaterialData material) {
+    vec3 result = vec3(0);
+
+    for (int i = 0; i < NumLights; i++) {
+        Light currentLight = lights[i];
+
+        float value = 0.0;
+
+        if (currentLight.Rotation.w == POINT_LIGHT) {
+            // Vector to light
+            vec3 L = currentLight.Position.xyz - inWorldPos;
+            // Distance from light to fragment position
+            float dist = length(L);
+
+            // Light to fragment
+            L = normalize(L);
+
+            float radius = currentLight.Color.w;
+
+            // Attenuation
+            float atten = radius / (pow(dist, 2.0) + 1.0);
+            float attenuation = clamp(1.0 - (dist * dist) / (radius * radius), 0.0, 1.0);
+
+            value = attenuation;
+
+            currentLight.Rotation = vec4(L, 1.0);
+        } else if (currentLight.Rotation.w == DIRECTIONAL_LIGHT) {
+            int cascadeIndex = GetCascadeIndex(CascadeSplits, in_ViewPos, SHADOW_MAP_CASCADE_COUNT);
+            value = CalculateShadow(wsPos, cascadeIndex, currentLight.Rotation.xyz, material.Normal);
+        }
+
+        vec3 Li = currentLight.Rotation.xyz;
+        vec3 Lradiance = currentLight.Color.xyz * currentLight.Position.w; // intensity is w of position;
+        vec3 Lh = normalize(Li + material.View);
+
+        float lightNoL = saturate(dot(material.Normal, Li));
+        vec3 h = normalize(material.View + Li);
+
+        float shading_NoV = clampNoV(dot(material.Normal, material.View));
+        float NoV = shading_NoV;
+        float NoL = saturate(lightNoL);
+        float NoH = saturate(dot(material.Normal, h));
+        float LoH = saturate(dot(Li, h));
+
+        vec3 Fd = DiffuseLobe(material, NoV, NoL, LoH);
+        vec3 Fr = SpecularLobe(material, h, NoV, NoL, NoH, LoH);
+
+        vec3 colour = Fd + Fr;
+
+        result += (colour * Lradiance.rgb) * (value * NoL * ComputeMicroShadowing(NoL, material.AO));
+
+        // add sky lut to the color
+        vec3 transmittance_lut = SampleLUT(u_TransmittanceLut, PlanetRadius, lightNoL, 0.0, PlanetRadius);
+        result += transmittance_lut;
+    }
+
+    return result;
 }
 
 void main() {
-	ivec2 tileID = ivec2(gl_FragCoord.x, u_UboParams.screenDimensions.y - gl_FragCoord.y) / PIXELS_PER_TILE;
-	int tileIndex = tileID.y * u_UboParams.numThreads.x + tileID.x;
+    Material mat = Materials[MaterialIndex];
+    vec2 scaledUV = inUV;
+    scaledUV *= mat.UVScale;
 
-	Material mat = Materials[MaterialIndex];
-	vec2 scaledUV = inUV;
-	scaledUV *= mat.UVScale;
+    float perceptualRoughness;
+    vec4 baseColor;
 
-	float perceptualRoughness;
-	float metallic;
-	vec3 diffuseColor;
-	vec4 baseColor;
+    if (mat.UseAlbedo) {
+        baseColor = SRGBtoLINEAR(texture(albedoMap, scaledUV)) * mat.Color;
+    } else {
+        baseColor = mat.Color;
+    }
+    if (baseColor.a < mat.AlphaCutoff && mat.AlphaMode == ALPHA_MODE_MASK) {
+        discard;
+    }
 
-	if (mat.UseAlbedo) {
-		baseColor = SRGBtoLINEAR(texture(albedoMap, scaledUV)) * mat.Color;
-	} else {
-		baseColor = mat.Color;
-	}
-	if (baseColor.a < mat.AlphaCutoff && mat.AlphaMode == ALPHA_MODE_MASK) {
-		discard;
-	}
+    const float c_MinRoughness = 0.04;
+    perceptualRoughness = mat.Roughness;
+    float metallic = mat.Metallic;
+    if (mat.UsePhysicalMap) {
+        // Roughness is stored in the 'g' channel, metallic is stored in the 'b' channel.
+        // This layout intentionally reserves the 'r' channel for (optional) occlusion map data
+        vec4 mrSample = texture(physicalMap, scaledUV);
+        perceptualRoughness = mrSample.g * perceptualRoughness;
+        metallic = mrSample.b * metallic;
+    } else {
+        perceptualRoughness = clamp(perceptualRoughness, c_MinRoughness, 1.0);
+        metallic = clamp(metallic, 0.0, 1.0);
+    }
 
-	vec3 f0 = vec3(0.04);
+    const float u_EmissiveFactor = 1.0f;
+    vec3 emmisive = vec3(0);
+    if (mat.UseEmissive) {
+        vec3 value = SRGBtoLINEAR(texture(emissiveMap, scaledUV)).rgb * u_EmissiveFactor;
+        emmisive += value;
+    } else {
+        emmisive += vec3(mat.Emissive) * mat.Emissive.a;
+    }
 
-	// Metallic and Roughness material properties are packed together
-	const float c_MinRoughness = 0.04;
-	perceptualRoughness = mat.Roughness;
-	metallic = mat.Metallic;
-	if (mat.UsePhysicalMap) {
-		// Roughness is stored in the 'g' channel, metallic is stored in the 'b' channel.
-		// This layout intentionally reserves the 'r' channel for (optional) occlusion map data
-		vec4 mrSample = texture(physicalMap, scaledUV);
-		perceptualRoughness = mrSample.g * perceptualRoughness;
-		metallic = mrSample.b * metallic;
-	} else {
-		perceptualRoughness = clamp(perceptualRoughness, c_MinRoughness, 1.0);
-		metallic = clamp(metallic, 0.0, 1.0);
-	}
+    float ao = mat.UseAO ? texture(aoMap, scaledUV).r : 1.0;
 
-	diffuseColor = baseColor.rgb * (vec3(1.0) - f0);
-	diffuseColor *= 1.0 - metallic;
-		
-	float alphaRoughness = perceptualRoughness * perceptualRoughness;
+    MaterialData material;
+    material.Albedo = baseColor;
+    material.Metallic = metallic;
+    material.Roughness = perceptualRoughnessToRoughness(perceptualRoughness);
+    material.PerceptualRoughness = perceptualRoughness;
+    material.Reflectance = 0.0;
+    material.Emissive = emmisive;
+    material.Normal = GetNormal(mat, scaledUV);
+    material.AO = ao;
+    material.View = normalize(CamPos.xyz - inWorldPos);
+    material.NDotV = max(dot(material.Normal, material.View), 1e-4);
+    const float reflectance = 0.0;
+    material.F0 = computeF0(material.Albedo, material.Metallic.x, reflectance);
 
-	vec3 specularColor = mix(f0, baseColor.rgb, metallic);
+    // Specular anti-aliasing
+    {
+        const float strength = 1.0f;
+        const float maxRoughnessGain = 0.02f;
+        float roughness2 = perceptualRoughness * perceptualRoughness;
+        vec3 dndu = dFdx(material.Normal);
+        vec3 dndv = dFdy(material.Normal);
+        float variance = (dot(dndu, dndu) + dot(dndv, dndv));
+        float kernelRoughness2 = min(variance * strength, maxRoughnessGain);
+        float filteredRoughness2 = saturate(roughness2 + kernelRoughness2);
+        material.Roughness = sqrt(filteredRoughness2);
+    }
 
-	// Compute reflectance.
-	float reflectance = max(max(specularColor.r, specularColor.g), specularColor.b);
+    // Apply GTAO
+    if (EnableGTAO == 1) {
+        vec2 uv = gl_FragCoord.xy / vec2(ScreenDimensions.x, ScreenDimensions.y);
+        float aoVisibility = 1.0;
+        uint value = texture(u_GTAO, uv).r;
+        aoVisibility = value / 255.0;
+        material.Albedo *= aoVisibility;
+    }
 
-	// For typical incident reflectance range (between 4% to 100%) set the grazing reflectance to 100% for typical fresnel effect.
-	// For very low reflectance range on highly diffuse objects (below 4%), incrementally reduce grazing reflecance to 0%.
-	float reflectance90 = clamp(reflectance * 25.0, 0.0, 1.0);
-	vec3 specularEnvironmentR0 = specularColor.rgb;
-	vec3 specularEnvironmentR90 = vec3(1.0, 1.0, 1.0) * reflectance90;
+    float shadowDistance = 500;
+    float transitionDistance = 40;
 
-	uint lightIndexBegin = tileIndex * MAX_NUM_LIGHTS_PER_TILE;
-	// uint lightNum = lightGrid[tileIndex];
-	vec3 color = vec3(0);
+    vec4 viewPos = View * vec4(inWorldPos, 1.0);
 
-	// Point lights
-	vec3 n = mat.UseNormal ? GetNormal(scaledUV) : normalize(inNormal);
-	vec3 v = normalize(u_Ubo.camPos - inWorldPos);		// Vector from surface point to camera
-	float NdotV = clamp(abs(dot(n, v)), 0.001, 1.0);
-	vec3 reflection = -normalize(reflect(v, n));
-	for (int i = 0; i < u_UboParams.numLights; i++) {
-		int lightIndex = i;//lightIndices[i + lightIndexBegin];
+    float distance = length(viewPos);
+    ShadowFade = distance - (shadowDistance - transitionDistance);
+    ShadowFade /= transitionDistance;
+    ShadowFade = clamp(1.0 - ShadowFade, 0.0, 1.0);
 
-		Light current_light = lights[lightIndex];
-		vec3 l = normalize(current_light.position.xyz - inWorldPos);
-		vec3 h = normalize(l+v);							// Half vector between both l and v
+    vec3 Lr = 2.0 * material.NDotV * material.Normal - material.View;
+    vec3 lightContribution = Lighting(material.F0, inWorldPos, material);
 
-		float NdotL = clamp(dot(n, l), 0.001, 1.0);
-		float NdotH = clamp(dot(n, h), 0.0, 1.0);
-		float LdotH = clamp(dot(l, h), 0.0, 1.0);
-		float VdotH = clamp(dot(v, h), 0.0, 1.0);
+    vec3 finalColour = lightContribution + material.Emissive;
 
-		PBRInfo pbrInputs = PBRInfo(
-			NdotL,
-			NdotV,
-			NdotH,
-			LdotH,
-			VdotH,
-			specularEnvironmentR0,
-			specularEnvironmentR90,
-			alphaRoughness,
-			diffuseColor,
-			specularColor
-		);
-
-		// Calculate the shading terms for the microfacet specular shading model
-		vec3 F = SpecularReflection(pbrInputs);
-		float G = GeometricOcclusion(pbrInputs);
-		float D = MicrofacetDistribution(pbrInputs);
-
-		// Calculation of analytical lighting contribution
-		vec3 diffuseContrib = (1.0 - F) * diffuse(pbrInputs);
-		vec3 specContrib = F * G * D / (4.0 * NdotL * NdotV);
-		specContrib *= current_light.position.w;
-		// Obtain final intensity as reflectance (BRDF) scaled by the energy of the light (cosine law)
-		color += NdotL * current_light.color.rgb * (diffuseContrib + specContrib);
-	}
-
-	// Calculate lighting contribution from image based lighting source (IBL)
-	color += GetIBLContribution(NdotV, perceptualRoughness, diffuseColor, specularColor, n, reflection);
-
-	const float u_OcclusionStrength = 1.0f;
-	// Apply optional PBR terms for additional (optional) shading
-	if (mat.UseAO) {
-		float ao = texture(aoMap, scaledUV).r;
-		color = mix(color, color * ao, u_OcclusionStrength);
-	}
-
-	const float u_EmissiveFactor = 1.0f;
-	if (mat.UseEmissive) {
-		// TODO: vec3 emissive = SRGBtoLINEAR(texture(emissiveMap, scaledUV).rgb * u_EmissiveFactor;
-		// color += emissive;
-	}
-
-	color += vec3(mat.Emissive) * mat.Emissive.a;
-
-	// Directional shadows
-	uint cascadeIndex = GetCascadeIndex(u_ShadowUbo.cascadeSplits, in_ViewPos, SHADOW_MAP_CASCADE_COUNT);
-	vec4 shadowCoord = GetShadowCoord(u_ShadowUbo.cascadeViewProjMat, inWorldPos, cascadeIndex);
-	float shadow = FilterPCF(in_DirectShadows, shadowCoord / shadowCoord.w, cascadeIndex, color.r);
-	color.rgb *= shadow;
-
-	// Cascade debug
-	// color *= ColorCascades(cascadeIndex);
-	
-	outColor = vec4(color, baseColor.a);
+    outColor = vec4(finalColour, material.Albedo.a);
 }

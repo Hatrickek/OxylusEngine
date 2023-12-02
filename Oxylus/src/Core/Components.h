@@ -117,8 +117,6 @@ struct ParticleSystemComponent {
 };
 
 struct SkyLightComponent {
-  Vec2 sun_rotation = {0.f, 60.f};
-
   Ref<TextureAsset> cubemap = nullptr;
   float intensity = 0.7f;
   float rotation = 0.0f;

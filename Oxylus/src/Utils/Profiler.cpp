@@ -5,6 +5,7 @@
 #include "Core/PlatformDetection.h"
 
 namespace Oxylus {
+#ifdef TRACY_ENABLE
 TracyProfiler::~TracyProfiler() {
 #if GPU_PROFILER_ENABLED
   destroy_context();
@@ -38,26 +39,5 @@ void TracyProfiler::collect(tracy::VkCtx* ctx, const VkCommandBuffer& command_bu
 #endif
 }
 
-ProfilerTimer::ProfilerTimer(const char* name) : m_Name(name), m_Stopped(false) {
-}
-
-ProfilerTimer::~ProfilerTimer() {
-}
-
-double ProfilerTimer::ElapsedMilliSeconds() const {
-  return 0.0f;
-}
-
-double ProfilerTimer::ElapsedMicroSeconds() const {
-  return 0.0f;
-}
-
-void ProfilerTimer::Stop() {
-}
-
-void ProfilerTimer::Reset() {
-}
-
-void ProfilerTimer::Print(const std::string_view arg) {
-}
+#endif
 }

@@ -5,15 +5,14 @@ struct Parameters {
   int Tonemapper;			// 0- Aces 1- Uncharted 2-Filmic 3- Reinhard
   float Exposure;
   float Gamma;
-  bool EnableSSAO;
   bool EnableBloom;
   bool EnableSSR;
-  vec2 _pad;
   vec4 VignetteColor;        // rgb: color, a: intensity
   vec4 VignetteOffset;       // xy: offset, z: useMask, w: enable/disable effect
   vec2 FilmGrain;            // x: enable, y: amount
   vec2 ChromaticAberration;  // x: enable, y: amount
   vec2 Sharpen;              // x: enable, y: amount
+  vec2 _pad;
 };
 
 #include "PostProcessing.glsl"
@@ -21,10 +20,9 @@ struct Parameters {
 
 layout(binding = 0) uniform sampler2D in_Color;
 layout(binding = 3) uniform sampler2D in_SSR;
-layout(binding = 4) uniform usampler2D in_SSAO;
-layout(binding = 5) uniform sampler2D in_Bloom;
+layout(binding = 4) uniform sampler2D in_Bloom;
 
-layout(binding = 6) uniform UBO_Parameters { Parameters u_Parameters; };
+layout(binding = 5) uniform UBO_Parameters { Parameters u_Parameters; };
 
 layout(location = 0) out vec4 out_Color;
 
@@ -33,24 +31,11 @@ layout(location = 0) in vec2 in_UV;
 void main() {
     vec4 finalImage = texture(in_Color, in_UV).rgba;
     
-    float aoVisibility = 1.0;
-    uint value = texture(in_SSAO, in_UV).r;
-    aoVisibility = value / 255.0;
-
-    // NOTE: currently bent normals are not used but will be...
-    // vec3 bentNormal = vec3(0);
-    // DecodeVisibilityBentNormal( value, aoVisibility, bentNormal );
-    // viewspace to worldspace - makes sense to precalculate
-    // bentNormal = mul( (float3x3)g_globals.ViewInv, bentNormal );
-
     vec4 ssr = texture(in_SSR, in_UV).rgba;
     vec4 bloom = texture(in_Bloom, in_UV);
 
     if (u_Parameters.EnableSSR) {
       finalImage += ssr;
-    }
-    if (u_Parameters.EnableSSAO) {
-      finalImage *= aoVisibility;
     }
     if (u_Parameters.EnableBloom) {
       finalImage += bloom;

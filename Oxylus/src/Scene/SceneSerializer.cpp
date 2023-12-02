@@ -42,8 +42,6 @@ void SceneSerializer::serialize(const std::string& filePath) const {
 }
 
 bool SceneSerializer::deserialize(const std::string& filePath) const {
-  ProfilerTimer timer("Scene serializer");
-
   auto content = FileUtils::read_file(filePath);
   if (content.empty()) {
     OX_CORE_ASSERT(!content.empty(), fmt::format("Couldn't read scene file: {0}", filePath).c_str());
@@ -78,8 +76,7 @@ bool SceneSerializer::deserialize(const std::string& filePath) const {
       EntitySerializer::deserialize_entity(entity, m_Scene.get(), true);
     }
 
-    timer.Stop();
-    OX_CORE_INFO("Scene loaded : {0}, {1} ms", FileSystem::get_file_name(m_Scene->scene_name), timer.ElapsedMilliSeconds());
+    OX_CORE_INFO("Scene loaded : {0}", FileSystem::get_file_name(m_Scene->scene_name));
     return true;
   }
 

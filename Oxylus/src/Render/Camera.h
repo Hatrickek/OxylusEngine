@@ -1,56 +1,16 @@
 #pragma once
 
-#include <vector>
-
 #include "Core/Types.h"
 
 #include <glm/glm.hpp>
 #include <glm/gtc/matrix_transform.hpp>
 
+#include "Frustum.h"
+
 
 struct VkExtent2D;
 
 namespace Oxylus {
-enum class Intersection : uint32_t {
-  Outside    = 0,
-  Intersects = 1,
-  Inside     = 2
-};
-
-struct Plane {
-  glm::vec3 normal = {0.f, 1.f, 0.f}; // unit vector
-  float distance = 0.f;               // Distance with origin
-
-  Plane() = default;
-
-  Plane(const glm::vec3& p1, const glm::vec3& norm) : normal(normalize(norm)),
-                                                      distance(dot(normal, p1)) {}
-
-  float get_distance(const glm::vec3& point) const { return dot(normal, point) - distance; }
-};
-
-struct Frustum {
-  Plane top_face;
-  Plane bottom_face;
-
-  Plane right_face;
-  Plane left_face;
-
-  Plane far_face;
-  Plane near_face;
-
-  Plane* planes[6] = {};
-
-  bool is_inside(const glm::vec3& point) const {
-    for (int i = 0; i < 6; i++) {
-      if (planes[i]->get_distance(point) < 0.0f) {
-        return false;
-      }
-    }
-
-    return true;
-  }
-};
 
 class Camera {
 public:

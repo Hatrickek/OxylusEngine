@@ -377,10 +377,6 @@ void InspectorPanel::draw_components(Entity entity) const {
     " Sky Light Component",
     entity,
     [this](SkyLightComponent& component) {
-      OxUI::begin_properties();
-      OxUI::property_vector<Vec2>("Sun Direction", component.sun_rotation, false, false);
-      OxUI::end_properties();
-
       const std::string name = component.cubemap
                                  ? FileSystem::get_file_name(component.cubemap->get_path())
                                  : "Drop a hdr file";

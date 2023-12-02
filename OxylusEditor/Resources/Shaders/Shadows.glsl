@@ -32,9 +32,9 @@ float FilterPCF(sampler2DArray shadowMap, vec4 shadowCoord, uint cascadeIndex, f
   return shadowFactor / count;
 }
 
-uint GetCascadeIndex(vec4 cascadeSplits, vec3 viewPosition, int cascadeCount) {
-  uint cascadeIndex = 0;
-  for (uint i = 0; i < cascadeCount - 1; ++i) {
+int GetCascadeIndex(vec4 cascadeSplits, vec3 viewPosition, int cascadeCount) {
+  int cascadeIndex = 0;
+  for (int i = 0; i < cascadeCount - 1; ++i) {
     if (viewPosition.z < cascadeSplits[i]) {
       cascadeIndex = i + 1;
     }

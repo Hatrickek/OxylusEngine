@@ -240,8 +240,10 @@ void VulkanContext::create_context(const AppSpec& spec) {
   device_name = properties.deviceName;
   driver_version = properties.driverVersion;
 
+#ifdef TRACY_ENABLE
   tracy_profiler = create_ref<TracyProfiler>();
   tracy_profiler->init_tracy_for_vulkan(this);
+#endif
 
   Window::set_window_user_data(this);
   glfwSetWindowSizeCallback(Window::get_glfw_window(),

@@ -29,11 +29,7 @@ layout(set = 0, binding = 2) uniform EyeView {
     float SunIntensity;
 };
 
-vec3 SampleLUT(float altitude, float theta)
-{
-    vec2 uv = vec2(0.5 + 0.5 * theta, max(0.0, min(altitude / (AtmosRadius - PlanetRadius), 1.0)));
-    return texture(transmittanceLUT, uv).xyz;
-}
+#include "SkyCommon.glsl"
 
 vec3 GetExtinctionSum(float altitude)
 {
@@ -159,7 +155,7 @@ void main()
         
         // Shadowing factor
         float sunTheta = dot(SunDirection, stepPosition / h);
-        vec3 sunTrans = SampleLUT(altitude, sunTheta);
+        vec3 sunTrans = SampleLUT(transmittanceLUT, altitude, sunTheta, AtmosRadius, PlanetRadius);
         
         // Get scattering coefficient
         vec3 rayleighScat;

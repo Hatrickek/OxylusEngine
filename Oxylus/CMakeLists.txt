@@ -174,7 +174,7 @@ source_group("vendor/ImGui" FILES ${ImGui_Misc})
 # entt
 CPMAddPackage(
   NAME EnTT
-  GIT_TAG master
+  VERSION 3.12.2
   GITHUB_REPOSITORY skypjack/entt
   DOWNLOAD_ONLY True
 )
@@ -305,6 +305,7 @@ CPMAddPackage(
     GITHUB_REPOSITORY wolfpld/tracy
     VERSION 0.10
     OPTIONS
+        "TRACY_ENABLE OFF"
         "TRACY_STATIC ON"
         "TRACY_VK_USE_SYMBOL_TABLE ON"
         "TRACY_NO_FRAME_IMAGE ON"

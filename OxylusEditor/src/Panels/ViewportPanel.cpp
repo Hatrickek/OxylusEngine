@@ -544,7 +544,7 @@ void ViewportPanel::mouse_picking_pass(const Ref<RenderPipeline>& rp, const vuk:
 
   m_hovered_entity = id <= 0 ? Entity() : Entity(entt::entity{id - 1u}, m_scene.get());
 
-  if (!m_using_gizmo) {
+  if (!ImGuizmo::IsUsing() && !ImGuizmo::IsOver()) {
     if (m_hovered_entity && ImGui::IsMouseClicked(ImGuiMouseButton_Left) && m_viewport_hovered)
       m_scene_hierarchy_panel->set_selected_entity(m_hovered_entity);
     else if (ImGui::IsMouseClicked(ImGuiMouseButton_Left) && m_viewport_hovered)
@@ -678,8 +678,6 @@ void ViewportPanel::draw_gizmos() {
                          glm::value_ptr(transform),
                          nullptr,
                          snap ? snap_values : nullptr);
-
-    m_using_gizmo = ImGuizmo::IsUsing();
 
     if (ImGuizmo::IsUsing()) {
       const Entity parent = selected_entity.get_parent();
