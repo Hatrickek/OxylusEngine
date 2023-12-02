@@ -13,6 +13,7 @@
 
 #define DIRECTIONAL_LIGHT 0
 #define POINT_LIGHT 1
+#define SPOT_LIGHT 2
 
 struct Light {
     vec4 Position; // w: intensity
@@ -86,7 +87,7 @@ vec3 GetNormal(Material mat, vec2 uv) {
     if (!mat.UseNormal)
         return normalize(inNormal);
 
-    vec3 tangentNormal = texture(normalMap, uv).xyz * 2.0 - 1.0;
+    vec3 tangentNormal = normalize(texture(normalMap, uv).xyz * 2.0 - 1.0);
 
     vec3 q1 = dFdx(inWorldPos);
     vec3 q2 = dFdy(inWorldPos);
@@ -206,6 +207,17 @@ vec3 Lighting(vec3 F0, vec3 wsPos, MaterialData material) {
             value = attenuation;
 
             currentLight.Rotation = vec4(L, 1.0);
+        } else if (currentLight.Rotation.w == SPOT_LIGHT) {
+            vec3 L = currentLight.Position.xyz - wsPos;
+            float cutoffAngle = 0.5f; //- light.angle;
+            float dist = length(L);
+            L = normalize(L);
+            float theta = dot(L.xyz, currentLight.Rotation.xyz);
+            float epsilon = cutoffAngle - cutoffAngle * 0.9f;
+            float attenuation = ((theta - cutoffAngle) / epsilon); // atteunate when approaching the outer cone
+            attenuation *= currentLight.Color.w / (pow(dist, 2.0) + 1.0);  // saturate(1.0f - dist / light.range);
+
+            value = clamp(attenuation, 0.0, 1.0);
         } else if (currentLight.Rotation.w == DIRECTIONAL_LIGHT) {
             int cascadeIndex = GetCascadeIndex(CascadeSplits, in_ViewPos, SHADOW_MAP_CASCADE_COUNT);
             value = CalculateShadow(wsPos, cascadeIndex, currentLight.Rotation.xyz, material.Normal);
@@ -227,13 +239,15 @@ vec3 Lighting(vec3 F0, vec3 wsPos, MaterialData material) {
         vec3 Fd = DiffuseLobe(material, NoV, NoL, LoH);
         vec3 Fr = SpecularLobe(material, h, NoV, NoL, NoH, LoH);
 
-        vec3 colour = Fd + Fr;
+        vec3 color = Fd + Fr;
 
-        result += (colour * Lradiance.rgb) * (value * NoL * ComputeMicroShadowing(NoL, material.AO));
-
-        // add sky lut to the color
+        float shadowing = ComputeMicroShadowing(NoL, material.AO);
+        vec3 sun_radiance = color * max(0, dot(Li, material.Normal));
         vec3 transmittance_lut = SampleLUT(u_TransmittanceLut, PlanetRadius, lightNoL, 0.0, PlanetRadius);
-        result += transmittance_lut;
+
+        result += currentLight.Position.w * (sun_radiance * transmittance_lut);
+
+        result += (color * Lradiance.rgb) * (value * NoL * ComputeMicroShadowing(NoL, material.AO));
     }
 
     return result;
@@ -292,7 +306,7 @@ void main() {
     material.AO = ao;
     material.View = normalize(CamPos.xyz - inWorldPos);
     material.NDotV = max(dot(material.Normal, material.View), 1e-4);
-    const float reflectance = 0.0;
+    float reflectance = 0.0; // TODO: computeDielectricF0(mat.Reflectance);
     material.F0 = computeF0(material.Albedo, material.Metallic.x, reflectance);
 
     // Specular anti-aliasing
@@ -327,10 +341,10 @@ void main() {
     ShadowFade /= transitionDistance;
     ShadowFade = clamp(1.0 - ShadowFade, 0.0, 1.0);
 
-    vec3 Lr = 2.0 * material.NDotV * material.Normal - material.View;
+    // vec3 Lr = 2.0 * material.NDotV * material.Normal - material.View; for IBL
     vec3 lightContribution = Lighting(material.F0, inWorldPos, material);
 
-    vec3 finalColour = lightContribution + material.Emissive;
+    vec3 finalColor = lightContribution + material.Emissive;
 
-    outColor = vec4(finalColour, material.Albedo.a);
+    outColor = vec4(finalColor, material.Albedo.a);
 }

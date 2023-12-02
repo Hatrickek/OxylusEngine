@@ -320,12 +320,20 @@ Scope<vuk::Future> DefaultRenderPipeline::on_render(vuk::Allocator& frame_alloca
 
   LightingData* dir_light_data = nullptr;
 
+  Vec3 sun_direction = {};
+
   for (auto& light : scene_lights_data)
     if ((uint32_t)light.rotation_type.w == (uint32_t)(LightComponent::LightType::Directional))
       dir_light_data = &light;
 
   if (dir_light_data)
-    DirectShadowPass::update_cascades(dir_light_data->rotation_type, m_renderer_context.current_camera, &direct_shadow_ub);
+    sun_direction = normalize(glm::vec3(cos(dir_light_data->rotation_type.x)
+                                        * cos(dir_light_data->rotation_type.y),
+                                        sin(dir_light_data->rotation_type.y),
+                                        sin(dir_light_data->rotation_type.x) * cos(dir_light_data->rotation_type.y)));
+
+  if (dir_light_data)
+    DirectShadowPass::update_cascades(sun_direction, m_renderer_context.current_camera, &direct_shadow_ub);
 
   auto [buffer, buffer_fut] = create_buffer(frame_allocator, vuk::MemoryUsage::eCPUtoGPU, vuk::DomainFlagBits::eTransferOnGraphics, std::span(&direct_shadow_ub, 1));
   auto& shadow_buffer = *buffer;
@@ -355,7 +363,7 @@ Scope<vuk::Future> DefaultRenderPipeline::on_render(vuk::Allocator& frame_alloca
   auto [point_lights_buf, point_lights_buffer_fut] = create_buffer(frame_allocator, vuk::MemoryUsage::eCPUtoGPU, vuk::DomainFlagBits::eTransferOnGraphics, std::span(scene_lights_data));
   auto& point_lights_buffer = *point_lights_buf;
 
-  sky_view_lut_pass(frame_allocator, rg, dir_light_data);
+  sky_view_lut_pass(frame_allocator, rg, sun_direction);
 
   geomerty_pass(rg, frame_allocator, vs_buffer, material_map, mat_buffer, shadow_buffer, point_lights_buffer);
 
@@ -690,6 +698,7 @@ void DefaultRenderPipeline::geomerty_pass(const Ref<vuk::RenderGraph>& rg,
           command_buffer.draw_indexed(subset.index_count, 1, subset.first_index, 0, 0);
         }
 
+#if 0
         // Transparency pass
         command_buffer.bind_graphics_pipeline("pbr_pipeline").broadcast_color_blend(vuk::BlendPreset::eAlphaBlend);
 
@@ -701,6 +710,7 @@ void DefaultRenderPipeline::geomerty_pass(const Ref<vuk::RenderGraph>& rg,
 
           command_buffer.draw_indexed(subset.index_count, 1, subset.first_index, 0, 0);
         }
+#endif
       }
     }
   });
@@ -1124,14 +1134,12 @@ void DefaultRenderPipeline::update_parameters(ProbeChangeEvent& e) {
 
 void DefaultRenderPipeline::sky_view_lut_pass(vuk::Allocator& frame_allocator,
                                               const Ref<vuk::RenderGraph>& rg,
-                                              LightingData* directional_light_data) {
-  Vec2 sun_dir = directional_light_data ? Vec2(directional_light_data->rotation_type) : radians(Vec2{0.f, 60.f});
-
+                                              const Vec3& sun_direction) {
   auto [atmos_const_buff, atmos_const_buff_fut] = create_buffer(frame_allocator, vuk::MemoryUsage::eCPUtoGPU, vuk::DomainFlagBits::eTransferOnGraphics, std::span(&m_renderer_data.m_atmosphere, 1));
   auto& atmos_const_buffer = *atmos_const_buff;
 
   m_renderer_data.eye_view_data.eye_position.y = m_renderer_context.current_camera->get_position().y + m_renderer_data.m_atmosphere.planet_radius;
-  m_renderer_data.eye_view_data.sun_direction = normalize(glm::vec3(cos(sun_dir.x) * cos(sun_dir.y), sin(sun_dir.y), sin(sun_dir.x) * cos(sun_dir.y)));
+  m_renderer_data.eye_view_data.sun_direction = sun_direction;
   auto [eye_const_buff, eye_const_buff_fut] = create_buffer(frame_allocator, vuk::MemoryUsage::eCPUtoGPU, vuk::DomainFlagBits::eTransferOnGraphics, std::span(&m_renderer_data.eye_view_data, 1));
   auto& eye_const_buffer = *eye_const_buff;
 

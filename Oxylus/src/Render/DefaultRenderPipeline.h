@@ -48,16 +48,16 @@ private:
     } ubo_vs;
 
     struct FinalPassData {
-      int tonemapper = RendererConfig::TONEMAP_ACES;          // 0- Aces 1- Uncharted 2-Filmic 3- Reinhard
+      int tonemapper = RendererConfig::TONEMAP_ACES; // 0- Aces 1- Uncharted 2-Filmic 3- Reinhard
       float exposure = 1.0f;
       float gamma = 2.5f;
       int enable_bloom = 1;
       int enable_ssr = 1;
-      Vec4 vignette_color = Vec4(0.0f, 0.0f, 0.0f, 0.25f);     // rgb: color, a: intensity
-      Vec4 vignette_offset = Vec4(0.0f, 0.0f, 0.0f, 0.0f);     // xy: offset, z: useMask, w: enable effect
-      Vec2 film_grain = {};                                    // x: enable, y: amount
-      Vec2 chromatic_aberration = {};                          // x: enable, y: amount
-      Vec2 sharpen = {};                                      // x: enable, y: amount
+      Vec4 vignette_color = Vec4(0.0f, 0.0f, 0.0f, 0.25f); // rgb: color, a: intensity
+      Vec4 vignette_offset = Vec4(0.0f, 0.0f, 0.0f, 0.0f); // xy: offset, z: useMask, w: enable effect
+      Vec2 film_grain = {};                                // x: enable, y: amount
+      Vec2 chromatic_aberration = {};                      // x: enable, y: amount
+      Vec2 sharpen = {};                                   // x: enable, y: amount
       Vec2 _pad;
     } final_pass_data;
 
@@ -86,7 +86,7 @@ private:
     struct EyeViewData {
       Vec3 eye_position = {0.0, 6360010.0, 0.0};
       float step_count = 100.f;
-      Vec3 sun_direction = { -3.09086E-08, 0.70711, 0.70711 };
+      Vec3 sun_direction = {-3.09086E-08, 0.70711, 0.70711};
       float sun_intensity = 10.f;
     } eye_view_data;
 
@@ -126,11 +126,11 @@ private:
   void generate_prefilter(vuk::Allocator& allocator);
   void update_parameters(ProbeChangeEvent& e);
 
-  void sky_view_lut_pass(vuk::Allocator& frame_allocator, const Ref<vuk::RenderGraph>& rg, LightingData* directional_light_data);
+  void sky_view_lut_pass(vuk::Allocator& frame_allocator, const Ref<vuk::RenderGraph>& rg, const Vec3& sun_direction);
   void compute_sky_transmittance(vuk::Allocator& allocator);
   void depth_pre_pass(const Ref<vuk::RenderGraph>& rg, vuk::Buffer& vs_buffer, const std::unordered_map<uint32_t, uint32_t>&, vuk::Buffer& mat_buffer) const;
-  void geomerty_pass(const Ref<vuk::RenderGraph>& rg, vuk::Allocator& frame_allocator,vuk::Buffer& vs_buffer, const std::unordered_map<uint32_t, uint32_t>&, vuk::Buffer& mat_buffer, vuk::Buffer& shadow_buffer, vuk::Buffer& scene_lights_buffer);
-  void apply_fxaa(vuk::RenderGraph* rg,vuk::Name src, vuk::Name dst, vuk::Buffer& fxaa_buffer);
+  void geomerty_pass(const Ref<vuk::RenderGraph>& rg, vuk::Allocator& frame_allocator, vuk::Buffer& vs_buffer, const std::unordered_map<uint32_t, uint32_t>&, vuk::Buffer& mat_buffer, vuk::Buffer& shadow_buffer, vuk::Buffer& scene_lights_buffer);
+  void apply_fxaa(vuk::RenderGraph* rg, vuk::Name src, vuk::Name dst, vuk::Buffer& fxaa_buffer);
   void cascaded_shadow_pass(const Ref<vuk::RenderGraph>& rg, vuk::Buffer& shadow_buffer) const;
   void gtao_pass(vuk::Allocator& frame_allocator, const Ref<vuk::RenderGraph>& rg);
   void ssr_pass(vuk::Allocator& frame_allocator, const Ref<vuk::RenderGraph>& rg, vuk::Buffer& vs_buffer) const;

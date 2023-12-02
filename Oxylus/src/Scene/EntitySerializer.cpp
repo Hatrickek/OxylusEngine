@@ -306,9 +306,7 @@ UUID EntitySerializer::deserialize_entity(ryml::ConstNodeRef entity_node, Scene*
     const auto& node = entity_node["MeshRendererComponent"];
 
     std::string mesh_path;
-    uint32_t submesh_index = 0;
     node["Mesh"] >> mesh_path;
-    node["SubmeshIndex"] >> submesh_index;
   }
 
   if (entity_node.has_child("MaterialComponent")) {
