@@ -194,6 +194,7 @@ CPMAddPackage(
         "TINYGLTF_USE_RAPIDJSON ON"
         "TINYGLTF_USE_CPP14 ON"
         "TINYGLTF_BUILD_LOADER_EXAMPLE OFF"
+        "TINYGLTF_HEADER_ONLY ON"
 )
 set_targets_static_and_folder(tinygltf)
 target_link_libraries(${PROJECT_NAME} PUBLIC tinygltf)

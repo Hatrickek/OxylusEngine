@@ -1,11 +1,15 @@
 #include "Log.h"
 
+#include <filesystem>
+
 #include <fmt/color.h>
 
 namespace Oxylus {
 std::vector<std::shared_ptr<ExternalSink>> Log::external_sinks = {};
 
 void Log::init() {
+  if (!std::filesystem::exists("logs"))
+    std::filesystem::create_directory("logs");
   fmtlog::setLogCB(logcb, fmtlog::DBG);
   fmtlog::setLogFile("logs/oxylus_log.txt", true);
   fmtlog::setHeaderPattern("{HMS} | {l} | {s:<16} |");
