@@ -4,7 +4,7 @@
 #include <functional>
 #include <optional>
 #include <charconv>
-#include <mutex>
+#include <shared_mutex>
 
 #include "Core/Base.h"
 
@@ -79,7 +79,7 @@ private:
 
   // Sink
   Ref<RuntimeConsoleLogSink> runtime_console_log_sink;
-  std::mutex log_mutex;
+  std::shared_mutex log_mutex;
 
   // Commands
   std::unordered_map<std::string, ConsoleCommand> m_command_map;

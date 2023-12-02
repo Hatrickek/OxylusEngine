@@ -328,6 +328,7 @@ void InspectorPanel::draw_components(Entity entity) const {
 
       for (auto& material : component.materials) {
         if (name_filter.PassFilter(material->name.c_str())) {
+          ImGui::PushID(UUID());
           if (ImGui::TreeNodeEx(material->name.c_str(),
                                 flags,
                                 "%s %s",
@@ -338,6 +339,7 @@ void InspectorPanel::draw_components(Entity entity) const {
             }
             ImGui::TreePop();
           }
+          ImGui::PopID();
         }
       }
     });

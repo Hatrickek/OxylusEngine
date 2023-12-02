@@ -147,7 +147,7 @@ protected:
 };
 
 struct AutoCVar_Float : AutoCVar<float> {
-  AutoCVar_Float(const char* name, const char* description, float defaultValue, CVarFlags flags = CVarFlags::None);
+  AutoCVar_Float(const char* name, const char* description, float default_value, CVarFlags flags = CVarFlags::None);
 
   float get() const;
   float* get_ptr() const;
@@ -157,7 +157,7 @@ struct AutoCVar_Float : AutoCVar<float> {
 };
 
 struct AutoCVar_Int : AutoCVar<int32_t> {
-  AutoCVar_Int(const char* name, const char* description, int32_t defaultValue, CVarFlags flags = CVarFlags::None);
+  AutoCVar_Int(const char* name, const char* description, int32_t default_value, CVarFlags flags = CVarFlags::None);
   int32_t get() const;
   int32_t* get_ptr() const;
   void set(int32_t val) const;
@@ -166,7 +166,7 @@ struct AutoCVar_Int : AutoCVar<int32_t> {
 };
 
 struct AutoCVar_String : AutoCVar<std::string> {
-  AutoCVar_String(const char* name, const char* description, const char* defaultValue, CVarFlags flags = CVarFlags::None);
+  AutoCVar_String(const char* name, const char* description, const char* default_value, CVarFlags flags = CVarFlags::None);
 
   std::string get() const;
   void set(std::string&& val) const;

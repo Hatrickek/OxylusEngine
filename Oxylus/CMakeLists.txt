@@ -140,6 +140,10 @@ endif()
 
 include(FetchContent)
 
+if (UNIX)
+    link_libraries(pthread)
+endif()
+
 # Vulkan
 if (VULKAN_SDK)
     message("Within Oxylus CMake, setting VULKAN_SDK env var to " ${VULKAN_SDK})
@@ -176,7 +180,7 @@ CPMAddPackage(
   NAME EnTT
   VERSION 3.12.2
   GITHUB_REPOSITORY skypjack/entt
-  DOWNLOAD_ONLY True
+  DOWNLOAD_ONLY YES
 )
 if (EnTT_ADDED)
     add_library(EnTT INTERFACE)
@@ -214,9 +218,18 @@ CPMAddPackage(
     GITHUB_REPOSITORY Hatrickek/fmtlog
     GIT_TAG main
     GIT_SUBMODULES ""
+    DOWNLOAD_ONLY YES
 )
-target_link_libraries(${PROJECT_NAME} PUBLIC fmtlog-static)
-set_targets_static_and_folder(fmtlog-static)
+if (fmtlog_ADDED)
+    FILE(GLOB fmtlog_sources ${fmtlog_SOURCE_DIR}/*.cc)
+    add_library(fmtlog STATIC ${fmtlog_sources})
+    target_include_directories(fmtlog SYSTEM PUBLIC ${fmtlog_SOURCE_DIR})
+    target_include_directories(fmtlog PUBLIC ${fmt_SOURCE_DIR}/include)
+    target_include_directories(${PROJECT_NAME} PUBLIC ${fmtlog_SOURCE_DIR})
+    target_link_libraries(${PROJECT_NAME} PRIVATE fmtlog)
+endif()
+set_targets_static(fmtlog)
+set_target_properties(fmtlog PROPERTIES FOLDER "Vendor/fmtlog")
 
 # vk-bootstrap
 CPMAddPackage(

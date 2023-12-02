@@ -72,7 +72,7 @@ void RuntimeConsole::register_command(const std::string& command, const std::str
 }
 
 void RuntimeConsole::add_log(const char* fmt, fmtlog::LogLevel level) {
-  std::lock_guard lock(log_mutex);
+  std::unique_lock lock(log_mutex);
   if ((uint32_t)m_text_buffer.size() >= MAX_TEXT_BUFFER_SIZE)
     m_text_buffer.erase(m_text_buffer.begin());
   m_text_buffer.emplace_back(fmt, level);

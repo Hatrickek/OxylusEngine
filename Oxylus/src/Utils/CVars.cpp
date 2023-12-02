@@ -12,9 +12,9 @@ class CVarSystemImpl final : public CVarSystem {
 public:
   CVarParameter* get_cvar(StringUtils::StringHash hash) override;
 
-  CVarParameter* create_float_cvar(const char* name, const char* description, float defaultValue, float currentValue) override;
-  CVarParameter* create_int_cvar(const char* name, const char* description, int32_t defaultValue, int32_t currentValue) override;
-  CVarParameter* create_string_cvar(const char* name, const char* description, const char* defaultValue, const char* currentValue) override;
+  CVarParameter* create_float_cvar(const char* name, const char* description, float default_value, float current_value) override;
+  CVarParameter* create_int_cvar(const char* name, const char* description, int32_t default_value, int32_t current_value) override;
+  CVarParameter* create_string_cvar(const char* name, const char* description, const char* default_value, const char* current_value) override;
 
   float* get_float_cvar(StringUtils::StringHash hash) override;
   int32_t* get_int_cvar(StringUtils::StringHash hash) override;
@@ -72,8 +72,8 @@ const char* CVarSystemImpl::get_string_cvar(const StringUtils::StringHash hash) 
 
 
 CVarSystem* CVarSystem::get() {
-  static CVarSystemImpl cvarSys{};
-  return &cvarSys;
+  static CVarSystemImpl cvar_sys{};
+  return &cvar_sys;
 }
 
 CVarParameter* CVarSystemImpl::get_cvar(const StringUtils::StringHash hash) {
@@ -99,7 +99,7 @@ void CVarSystemImpl::set_string_cvar(const StringUtils::StringHash hash, const c
   set_cvar_current<std::string>(hash, value);
 }
 
-CVarParameter* CVarSystemImpl::create_float_cvar(const char* name, const char* description, const float defaultValue, const float currentValue) {
+CVarParameter* CVarSystemImpl::create_float_cvar(const char* name, const char* description, const float default_value, const float current_value) {
   std::unique_lock lock(mutex_);
   CVarParameter* param = init_cvar(name, description);
   if (!param)
@@ -107,12 +107,12 @@ CVarParameter* CVarSystemImpl::create_float_cvar(const char* name, const char* d
 
   param->type = CVarType::FLOAT;
 
-  get_cvar_array<float>()->add(defaultValue, currentValue, param);
+  get_cvar_array<float>()->add(default_value, current_value, param);
 
   return param;
 }
 
-CVarParameter* CVarSystemImpl::create_int_cvar(const char* name, const char* description, const int32_t defaultValue, const int32_t currentValue) {
+CVarParameter* CVarSystemImpl::create_int_cvar(const char* name, const char* description, const int32_t default_value, const int32_t current_value) {
   std::unique_lock lock(mutex_);
   CVarParameter* param = init_cvar(name, description);
   if (!param)
@@ -120,12 +120,12 @@ CVarParameter* CVarSystemImpl::create_int_cvar(const char* name, const char* des
 
   param->type = CVarType::INT;
 
-  get_cvar_array<int32_t>()->add(defaultValue, currentValue, param);
+  get_cvar_array<int32_t>()->add(default_value, current_value, param);
 
   return param;
 }
 
-CVarParameter* CVarSystemImpl::create_string_cvar(const char* name, const char* description, const char* defaultValue, const char* currentValue) {
+CVarParameter* CVarSystemImpl::create_string_cvar(const char* name, const char* description, const char* default_value, const char* current_value) {
   std::unique_lock lock(mutex_);
   CVarParameter* param = init_cvar(name, description);
   if (!param)
@@ -133,7 +133,7 @@ CVarParameter* CVarSystemImpl::create_string_cvar(const char* name, const char* 
 
   param->type = CVarType::STRING;
 
-  get_cvar_array<std::string>()->add(defaultValue, currentValue, param);
+  get_cvar_array<std::string>()->add(default_value, current_value, param);
 
   return param;
 }
@@ -142,16 +142,16 @@ CVarParameter* CVarSystemImpl::init_cvar(const char* name, const char* descripti
   const uint32_t namehash = StringUtils::StringHash{name};
   saved_cvars[namehash] = CVarParameter{};
 
-  CVarParameter& newParam = saved_cvars[namehash];
+  CVarParameter& new_param = saved_cvars[namehash];
 
-  newParam.name = name;
-  newParam.description = description;
+  new_param.name = name;
+  new_param.description = description;
 
-  return &newParam;
+  return &new_param;
 }
 
-AutoCVar_Float::AutoCVar_Float(const char* name, const char* description, const float defaultValue, const CVarFlags flags) {
-  CVarParameter* cvar = CVarSystem::get()->create_float_cvar(name, description, defaultValue, defaultValue);
+AutoCVar_Float::AutoCVar_Float(const char* name, const char* description, const float default_value, const CVarFlags flags) {
+  CVarParameter* cvar = CVarSystem::get()->create_float_cvar(name, description, default_value, default_value);
   cvar->flags = flags;
   index = cvar->arrayIndex;
 }
@@ -194,8 +194,8 @@ void AutoCVar_Float::set(const float f) const {
   set_cvar_current_by_index<CVarType>(index, f);
 }
 
-AutoCVar_Int::AutoCVar_Int(const char* name, const char* description, const int32_t defaultValue, const CVarFlags flags) {
-  CVarParameter* cvar = CVarSystem::get()->create_int_cvar(name, description, defaultValue, defaultValue);
+AutoCVar_Int::AutoCVar_Int(const char* name, const char* description, const int32_t default_value, const CVarFlags flags) {
+  CVarParameter* cvar = CVarSystem::get()->create_int_cvar(name, description, default_value, default_value);
   cvar->flags = flags;
   index = cvar->arrayIndex;
 }
@@ -218,8 +218,8 @@ void AutoCVar_Int::toggle() const {
   set(enabled ? 0 : 1);
 }
 
-AutoCVar_String::AutoCVar_String(const char* name, const char* description, const char* defaultValue, const CVarFlags flags) {
-  CVarParameter* cvar = CVarSystem::get()->create_string_cvar(name, description, defaultValue, defaultValue);
+AutoCVar_String::AutoCVar_String(const char* name, const char* description, const char* default_value, const CVarFlags flags) {
+  CVarParameter* cvar = CVarSystem::get()->create_string_cvar(name, description, default_value, default_value);
   cvar->flags = flags;
   index = cvar->arrayIndex;
 }
