@@ -176,20 +176,10 @@ void EditorLayer::on_imgui_render() {
           if (ImGui::MenuItem("Save Scene As...", "Ctrl + Shift + S")) {
             save_scene_as();
           }
-
           ImGui::Separator();
-          if (ImGui::MenuItem("New Project")) {
-            new_project();
+          if (ImGui::MenuItem("Launcher...")) {
+            m_editor_panels["ProjectPanel"]->Visible = true;
           }
-          if (ImGui::MenuItem("Open Project")) {
-            const std::string filepath = FileDialogs::open_file({{"Oxylus Project", "oxproj"}});
-            open_project(filepath);
-          }
-          if (ImGui::MenuItem("Save Project")) {
-            const std::string filepath = FileDialogs::save_file({{"Oxylus Project", "oxproj"}}, "New Project");
-            save_project(filepath);
-          }
-
           ImGui::Separator();
           if (ImGui::MenuItem("Exit")) {
             Application::get()->close();
@@ -203,9 +193,6 @@ void EditorLayer::on_imgui_render() {
           ImGui::EndMenu();
         }
         if (ImGui::BeginMenu("Window")) {
-          if (ImGui::MenuItem("Projects", nullptr)) {
-            m_editor_panels["ProjectPanel"]->Visible = true;
-          }
           if (ImGui::MenuItem("Add viewport", nullptr)) {
             m_viewport_panels.emplace_back(create_scope<ViewportPanel>())->set_context(m_editor_scene, m_scene_hierarchy_panel);
           }

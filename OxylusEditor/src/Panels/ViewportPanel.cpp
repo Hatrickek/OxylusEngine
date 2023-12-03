@@ -27,7 +27,7 @@
 
 namespace Oxylus {
 ViewportPanel::ViewportPanel() : EditorPanel("Viewport", ICON_MDI_TERRAIN, true) {
-  m_show_gizmo_image_map[typeid(LightComponent).hash_code()] = create_ref<TextureAsset>(TextureLoadInfo{.path ="Resources/Icons/PointLightIcon.png", .generate_mips = false});
+  m_show_gizmo_image_map[typeid(LightComponent).hash_code()] = create_ref<TextureAsset>(TextureLoadInfo{.path = "Resources/Icons/PointLightIcon.png", .generate_mips = false});
   m_show_gizmo_image_map[typeid(SkyLightComponent).hash_code()] = create_ref<TextureAsset>(TextureLoadInfo{.path = "Resources/Icons/SkyIcon.png", .generate_mips = false});
   m_show_gizmo_image_map[typeid(CameraComponent).hash_code()] = create_ref<TextureAsset>(TextureLoadInfo{.path = "Resources/Icons/CameraIcon.png", .generate_mips = false});
 
@@ -628,11 +628,11 @@ void ViewportPanel::on_update() {
                                                    10000.0f,
                                                    (float)Application::get_timestep().get_seconds());
     const Vec2 damped_yaw_pitch = Math::smooth_damp(yaw_pitch,
-                                                   final_yaw_pitch,
-                                                   m_rotation_velocity,
-                                                   m_rotation_dampening,
-                                                   1000.0f,
-                                                   (float)Application::get_timestep().get_seconds());
+                                                    final_yaw_pitch,
+                                                    m_rotation_velocity,
+                                                    m_rotation_dampening,
+                                                    1000.0f,
+                                                    (float)Application::get_timestep().get_seconds());
 
     m_camera.set_position(m_smooth_camera ? damped_position : final_position);
     m_camera.set_yaw(m_smooth_camera ? damped_yaw_pitch.x : final_yaw_pitch.x);
@@ -673,19 +673,19 @@ void ViewportPanel::draw_gizmos() {
 
     const float snap_values[3] = {snap_value, snap_value, snap_value};
 
-    ImGuizmo::Manipulate(glm::value_ptr(camera_view),
-                         glm::value_ptr(camera_projection),
-                         static_cast<ImGuizmo::OPERATION>(m_gizmo_type),
-                         static_cast<ImGuizmo::MODE>(m_gizmo_mode),
-                         glm::value_ptr(transform),
-                         nullptr,
-                         snap ? snap_values : nullptr);
+    Manipulate(value_ptr(camera_view),
+               value_ptr(camera_projection),
+               static_cast<ImGuizmo::OPERATION>(m_gizmo_type),
+               static_cast<ImGuizmo::MODE>(m_gizmo_mode),
+               value_ptr(transform),
+               nullptr,
+               snap ? snap_values : nullptr);
 
     if (ImGuizmo::IsUsing()) {
       const Entity parent = selected_entity.get_parent();
       const Mat4& parent_world_transform = parent ? parent.get_world_transform() : Mat4(1.0f);
       Vec3 translation, rotation, scale;
-      if (Math::decompose_transform(glm::inverse(parent_world_transform) * transform, translation, rotation, scale)) {
+      if (Math::decompose_transform(inverse(parent_world_transform) * transform, translation, rotation, scale)) {
         tc.position = translation;
         const Vec3 delta_rotation = rotation - tc.rotation;
         tc.rotation += delta_rotation;

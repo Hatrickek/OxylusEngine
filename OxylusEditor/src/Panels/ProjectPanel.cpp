@@ -29,26 +29,10 @@ void ProjectPanel::load_project_for_editor(const std::string& filepath) {
 }
 
 void ProjectPanel::new_project(const std::string& project_dir, const std::string& project_name, const std::string& project_asset_dir) {
-  const auto project = create_ref<Project>();
-  project->get_config().name = project_name;
-  project->get_config().asset_directory = project_asset_dir;
+  const auto project = Project::new_project(project_dir, project_name, project_asset_dir);
 
-  project->set_project_dir(project_dir);
-
-  if (project_dir.empty())
-    return;
-
-  std::filesystem::create_directory(project_dir);
-
-  const auto asset_folder_dir = FileSystem::append_paths(project_dir, project_asset_dir);
-  std::filesystem::create_directory(asset_folder_dir);
-
-  const ProjectSerializer serializer(project);
-  serializer.serialize(FileSystem::append_paths(project_dir, project_name + ".oxproj"));
-
-  Project::set_active(project);
-
-  EditorConfig::get()->add_recent_project(project.get());
+  if (project)
+    EditorConfig::get()->add_recent_project(project.get());
 }
 
 void ProjectPanel::on_imgui_render() {

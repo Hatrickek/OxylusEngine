@@ -344,7 +344,7 @@ void SceneHierarchyPanel::draw_context_menu() {
         to_select = m_context->create_entity("Sphere");
         to_select.add_component_internal<RigidbodyComponent>();
         to_select.add_component_internal<SphereColliderComponent>();
-        to_select.add_component_internal<MeshComponent>(AssetManager::get_mesh_asset("Resources/Objects/sphere.gltf"));
+        to_select.add_component_internal<MeshComponent>(AssetManager::get_mesh_asset("Resources/Objects/sphere.glb"));
       }
 
       if (ImGui::MenuItem("Cube")) {

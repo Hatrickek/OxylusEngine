@@ -10,6 +10,29 @@ Ref<Project> Project::create_new() {
   return s_active_project;
 }
 
+Ref<Project> Project::new_project(const std::string& project_dir, const std::string& project_name, const std::string& project_asset_dir) {
+  const auto project = create_ref<Project>();
+  project->get_config().name = project_name;
+  project->get_config().asset_directory = project_asset_dir;
+
+  project->set_project_dir(project_dir);
+
+  if (project_dir.empty())
+    return nullptr;
+
+  std::filesystem::create_directory(project_dir);
+
+  const auto asset_folder_dir = FileSystem::append_paths(project_dir, project_asset_dir);
+  std::filesystem::create_directory(asset_folder_dir);
+
+  const ProjectSerializer serializer(project);
+  serializer.serialize(FileSystem::append_paths(project_dir, project_name + ".oxproj"));
+
+  set_active(project);
+
+  return project;
+}
+
 Ref<Project> Project::load(const std::filesystem::path& path) {
   const Ref<Project> project = create_ref<Project>();
 

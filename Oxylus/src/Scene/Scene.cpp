@@ -19,7 +19,6 @@
 #include "Jolt/Physics/Collision/Shape/RotatedTranslatedShape.h"
 #include "Jolt/Physics/Collision/Shape/TaperedCapsuleShape.h"
 #include "Physics/PhysicsMaterial.h"
-#include "Physics/PhysicsUtils.h"
 
 #include "Render/RenderPipeline.h"
 
@@ -135,8 +134,6 @@ void Scene::update_physics(const Timestep& delta_time) {
     if (!rb.runtime_body)
       continue;
 
-    PhysicsUtils::DebugDraw(this, e);
-
     const auto* body = static_cast<const JPH::Body*>(rb.runtime_body);
 
     if (!body_interface.IsActive(body->GetID()))
@@ -199,7 +196,6 @@ void Scene::update_physics(const Timestep& delta_time) {
         tc.position = ch.translation;
         tc.rotation = glm::eulerAngles(ch.Rotation);
       }
-      PhysicsUtils::DebugDraw(this, e);
     }
   }
 }
@@ -604,15 +600,6 @@ void Scene::on_editor_update(const Timestep& delta_time, Camera& camera) {
   OX_SCOPED_ZONE;
   scene_renderer->get_render_pipeline()->on_register_camera(&camera);
   scene_renderer->update();
-
-  const auto rb_view = m_registry.view<RigidbodyComponent>();
-  for (auto&& [e, rb] : rb_view.each()) {
-    PhysicsUtils::DebugDraw(this, e);
-  }
-  const auto ch_view = m_registry.view<CharacterControllerComponent>();
-  for (auto&& [e, ch] : ch_view.each()) {
-    PhysicsUtils::DebugDraw(this, e);
-  }
 }
 
 template <typename T>
