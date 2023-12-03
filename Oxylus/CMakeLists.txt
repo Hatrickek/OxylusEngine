@@ -289,6 +289,7 @@ CPMAddPackage(
         "COMPILE_AS_SHARED_LIBRARY OFF"
         "ENABLE_ALL_WARNINGS OFF"
         "USE_STATIC_MSVC_RUNTIME_LIBRARY ON"
+        "INTERPROCEDURAL_OPTIMIZATION OFF"
 )
 target_link_libraries(${PROJECT_NAME} PUBLIC Jolt)
 target_include_directories(${PROJECT_NAME} PUBLIC ${JoltPhysics_SOURCE_DIR}/..)
@@ -312,23 +313,25 @@ set_targets_static_and_folder(TracyClient)
 CPMAddPackage(
     NAME lua
     GITHUB_REPOSITORY walterschell/Lua
-    VERSION 5.4.4
+    GIT_TAG 88246d621abf7b6fba9332f49229d507f020e450
     OPTIONS
-    	"LUA_SUPPORT_DL ON"
-	"LUA_BUILD_AS_CXX ON"
-	"LUA_ENABLE_SHARED OFF"
-	"LUA_ENABLE_TESTING OFF"
+        "LUA_SUPPORT_DL OFF"
+        "LUA_BUILD_AS_CXX OFF"
+        "LUA_ENABLE_SHARED OFF"
+        "LUA_ENABLE_TESTING OFF"
+        "LUA_BUILD_COMPILER OFF"
 )
-target_link_libraries(${PROJECT_NAME} PUBLIC lua)
+target_include_directories(${PROJECT_NAME} PUBLIC ${lua_SOURCE_DIR}/lua-5.4.6/include)
 
 CPMAddPackage(
     NAME sol2
     GITHUB_REPOSITORY ThePhD/sol2
     VERSION 3.3.0
     OPTIONS
-    	"SOL2_BUILD_LUA OFF"
+        "SOL2_BUILD_LUA OFF"
 )
 target_include_directories(${PROJECT_NAME} PUBLIC ${sol2_SOURCE_DIR}/include)
-target_link_libraries(sol2 INTERFACE lua)
-target_link_libraries(${PROJECT_NAME} PUBLIC sol2)
+target_link_libraries(sol2 INTERFACE $<BUILD_INTERFACE:${lua_static}>)
+target_link_libraries(${PROJECT_NAME} PUBLIC sol2 lua_static)
+set_targets_static(lua_static)
 
