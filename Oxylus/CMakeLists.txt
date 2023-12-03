@@ -138,11 +138,12 @@ else()
     set_property(DIRECTORY APPEND PROPERTY COMPILE_OPTIONS -w)
 endif()
 
-include(FetchContent)
+set(CMAKE_C_COMPILER_AR "${CMAKE_AR}")
+set(CMAKE_CXX_COMPILER_AR "${CMAKE_AR}")
+set(CMAKE_C_COMPILER_RANLIB "${CMAKE_RANLIB}")
+set(CMAKE_CXX_COMPILER_RANLIB "${CMAKE_RANLIB}")
 
-if (UNIX)
-    link_libraries(pthread)
-endif()
+include(FetchContent)
 
 # Vulkan
 if (VULKAN_SDK)
@@ -202,15 +203,9 @@ CPMAddPackage(
 )
 set_targets_static_and_folder(tinygltf)
 target_link_libraries(${PROJECT_NAME} PUBLIC tinygltf)
-
 # FMT
-CPMAddPackage(
-  NAME fmt
-  GIT_TAG 10.1.1
-  GITHUB_REPOSITORY fmtlib/fmt
-)
-set_targets_static_and_folder(fmt)
-target_link_libraries(${PROJECT_NAME} PUBLIC fmt)
+CPMAddPackage("gh:fmtlib/fmt#10.1.1")
+target_link_libraries(${PROJECT_NAME} PUBLIC fmt::fmt)
 
 # fmtlog
 CPMAddPackage(
@@ -223,20 +218,16 @@ CPMAddPackage(
 if (fmtlog_ADDED)
     FILE(GLOB fmtlog_sources ${fmtlog_SOURCE_DIR}/*.cc)
     add_library(fmtlog STATIC ${fmtlog_sources})
-    target_include_directories(fmtlog SYSTEM PUBLIC ${fmtlog_SOURCE_DIR})
+    target_include_directories(fmtlog PUBLIC ${fmtlog_SOURCE_DIR})
     target_include_directories(fmtlog PUBLIC ${fmt_SOURCE_DIR}/include)
     target_include_directories(${PROJECT_NAME} PUBLIC ${fmtlog_SOURCE_DIR})
-    target_link_libraries(${PROJECT_NAME} PRIVATE fmtlog)
+    target_link_libraries(${PROJECT_NAME} PUBLIC fmtlog)
 endif()
 set_targets_static(fmtlog)
 set_target_properties(fmtlog PROPERTIES FOLDER "Vendor/fmtlog")
 
 # vk-bootstrap
-CPMAddPackage(
-    NAME vk-bootstrap
-    GITHUB_REPOSITORY charles-lunarg/vk-bootstrap
-    GIT_TAG 8e61b2d81c3f5f84339735085ff5651f71bbe1e7
-)
+CPMAddPackage("gh:charles-lunarg/vk-bootstrap#8e61b2d81c3f5f84339735085ff5651f71bbe1e7")
 target_link_libraries(${PROJECT_NAME} PUBLIC vk-bootstrap)
 set_targets_static_and_folder(vk-bootstrap)
 
@@ -254,11 +245,7 @@ target_link_libraries(${PROJECT_NAME} PUBLIC vuk)
 set_targets_static_and_folder(vuk)
 
 # NFD
-CPMAddPackage(
-    NAME NFD
-    GITHUB_REPOSITORY btzy/nativefiledialog-extended
-    GIT_TAG master
-)
+CPMAddPackage("gh:btzy/nativefiledialog-extended#master")
 target_link_libraries(${PROJECT_NAME} PUBLIC nfd)
 target_include_directories(${PROJECT_NAME} PUBLIC ${NFD_SOURCE_DIR}/src/include)
 set_targets_static_and_folder(nfd)
@@ -272,18 +259,13 @@ CPMAddPackage(
         "GLFW_BUILD_TESTS OFF"
         "GLFW_BUILD_EXAMPLES OFF"
         "GLFW_BULID_DOCS OFF"
-        "GLFW_INSTALL OFF"
+	"GLFW_INSTALL OFF"
 )
 target_link_libraries(${PROJECT_NAME} PUBLIC glfw)
 set_targets_static_and_folder(glfw)
-set_property(TARGET ${glfw} PROPERTY INTERPROCEDURAL_OPTIMIZATION OFF)
 
 # RYML
-CPMAddPackage(
-    NAME ryml
-    GITHUB_REPOSITORY biojppm/rapidyaml
-    GIT_TAG master
-)
+CPMAddPackage("gh:biojppm/rapidyaml#master")
 target_link_libraries(${PROJECT_NAME} PUBLIC ryml)
 target_link_libraries(${PROJECT_NAME} PUBLIC c4core)
 set_targets_static_and_folder(ryml)
@@ -306,7 +288,6 @@ CPMAddPackage(
     OPTIONS
         "COMPILE_AS_SHARED_LIBRARY OFF"
         "ENABLE_ALL_WARNINGS OFF"
-        "INTERPROCEDURAL_OPTIMIZATION ON"
         "USE_STATIC_MSVC_RUNTIME_LIBRARY ON"
 )
 target_link_libraries(${PROJECT_NAME} PUBLIC Jolt)
@@ -315,7 +296,7 @@ set_targets_static_and_folder(Jolt)
 
 # tracy
 CPMAddPackage(
-    NAME Tracy
+    NAME TracyClient
     GITHUB_REPOSITORY wolfpld/tracy
     VERSION 0.10
     OPTIONS
@@ -325,35 +306,29 @@ CPMAddPackage(
         "TRACY_NO_FRAME_IMAGE ON"
         "TRACY_ON_DEMAND ON"
 )
-target_link_libraries(${PROJECT_NAME} PUBLIC TracyClient)
+target_link_libraries(${PROJECT_NAME} PUBLIC Tracy::TracyClient)
 set_targets_static_and_folder(TracyClient)
 
-# lua
 CPMAddPackage(
     NAME lua
-    GIT_REPOSITORY https://github.com/lua/lua.git
-    VERSION 5.4.6
-    DOWNLOAD_ONLY YES
+    GITHUB_REPOSITORY walterschell/Lua
+    VERSION 5.4.4
+    OPTIONS
+    	"LUA_SUPPORT_DL ON"
+	"LUA_BUILD_AS_CXX ON"
+	"LUA_ENABLE_SHARED OFF"
+	"LUA_ENABLE_TESTING OFF"
 )
-if (lua_ADDED)
-    FILE(GLOB lua_sources ${lua_SOURCE_DIR}/*.c)
-    list(REMOVE_ITEM lua_sources "${lua_SOURCE_DIR}/lua.c" "${lua_SOURCE_DIR}/luac.c" "${lua_SOURCE_DIR}/luac.c" "${lua_SOURCE_DIR}/onelua.c")
-    add_library(lua STATIC ${lua_sources})
-    target_include_directories(lua SYSTEM PUBLIC ${lua_SOURCE_DIR})
-    target_include_directories(${PROJECT_NAME} PUBLIC ${lua_SOURCE_DIR})
-    target_link_libraries(${PROJECT_NAME} PRIVATE lua)
-endif()
-set_targets_static(lua)
-set_target_properties(lua PROPERTIES FOLDER "Vendor/lua")
+target_link_libraries(${PROJECT_NAME} PUBLIC lua)
 
-# sol
 CPMAddPackage(
     NAME sol2
     GITHUB_REPOSITORY ThePhD/sol2
-    GIT_TAG v3.3.0
+    VERSION 3.3.0
     OPTIONS
-        "SOL2_LUA_VERSION 5.4.6"
-        "SOL2_ENABLE_INSTALL OFF"
+    	"SOL2_BUILD_LUA OFF"
 )
+target_include_directories(${PROJECT_NAME} PUBLIC ${sol2_SOURCE_DIR}/include)
+target_link_libraries(sol2 INTERFACE lua)
 target_link_libraries(${PROJECT_NAME} PUBLIC sol2)
-set_targets_static_and_folder(sol2)
+

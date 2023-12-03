@@ -64,9 +64,8 @@ private:
         ImGui::PopStyleColor(2);
 
         std::string name_s = typeid(T).name();
-        auto demangled_name = name_s.substr(name_s.find(' '));
 
-        OxUI::tooltip(demangled_name.c_str());
+        OxUI::tooltip(name_s.c_str());
       }
     }
   }

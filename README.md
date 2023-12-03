@@ -50,11 +50,13 @@ Sponza scene with IBL PBR, SSAO, SSR and Directional Shadows
 ## Building
 Currently supported and tested compilers are only: MSVC and Clang
 - Install [Vulkan SDK](https://vulkan.lunarg.com/sdk/home).
-- Run the root CMake script with a command like this:       
-`cmake -S . -B ./build/ -G "Visual Studio 17 2022" -A x64` to generate Visual Studio files (or with any generator you like) into `build` folder.   
-Or with `cmake -B ./build -DCMAKE_BUILD_TYPE=Release -DCMAKE_CXX_COMPILER=clang++` to generate for clang.    
+- Run the root CMake script with this command to generate for MSVC:       
+`cmake -S . -B ./build/ -G "Visual Studio 17 2022" -A x64`      
+For clang:  
+`cmake -B ./build -G Ninja -DCMAKE_CXX_COMPILER=clang++`
+- Install `directx-shader-compiler` package if required. (Only required for UNIX)
 - Then run this command to build it with CMake:   
-`cmake --build ./build --config Release`   
+`cmake --build ./build --config Release`
 
 ## Dependencies
 - [vuk](https://github.com/martty/vuk)
@@ -75,5 +77,4 @@ Or with `cmake -B ./build -DCMAKE_BUILD_TYPE=Release -DCMAKE_CXX_COMPILER=clang+
 ## Special Mentions and Thanks To
 - [Cem Yuksel](https://www.youtube.com/@cem_yuksel/videos) for his great videos about graphics programming.
 - Jason Gregory for his [Game Engine Architecture](https://www.gameenginebook.com/) book.
-- [SaschaWillems](https://github.com/SaschaWillems/Vulkan) for his Vulkan examples and help. 
-- Yan Chernikov aka [The Cherno](https://www.youtube.com/channel/UCQ-W1KE9EYfdxhL6S4twUNw) for his great video series, streams.
+- [SaschaWillems](https://github.com/SaschaWillems/Vulkan) for his Vulkan examples and help.  

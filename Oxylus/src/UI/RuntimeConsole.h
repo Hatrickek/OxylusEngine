@@ -4,6 +4,7 @@
 #include <functional>
 #include <optional>
 #include <charconv>
+#include <mutex>
 #include <shared_mutex>
 
 #include "Core/Base.h"
