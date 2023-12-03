@@ -73,8 +73,9 @@ float Input::get_mouse_scroll_offset_y() {
 }
 
 void Input::set_cursor_position(const float x, const float y) {
-  GLFWwindow* window = Window::get_glfw_window();
-  glfwSetCursorPos(window, x, y);
+  glfwSetCursorPos(Window::get_glfw_window(), x, y);
+  input_data.mouse_pos.x = x;
+  input_data.mouse_pos.y = y;
 }
 
 Input::CursorState Input::get_cursor_state() {
@@ -103,7 +104,8 @@ void Input::set_cursor_icon_default() {
   glfwSetCursor(Window::get_glfw_window(), nullptr);
 }
 
-void Input::set_cursor_state(const CursorState state, GLFWwindow* window) {
+void Input::set_cursor_state(const CursorState state) {
+  auto window = Window::get_glfw_window();
   switch (state) {
     case CursorState::Disabled: cursor_state = CursorState::Disabled;
       glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);

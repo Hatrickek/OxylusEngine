@@ -45,7 +45,7 @@ public:
 
   /// Cursor
   static CursorState get_cursor_state();
-  static void set_cursor_state(CursorState state, GLFWwindow* window);
+  static void set_cursor_state(CursorState state);
   static GLFWcursor* load_cursor_icon(const char* image_path);
   /// \param cursor https://www.glfw.org/docs/3.4/group__shapes.html
   static GLFWcursor* load_cursor_icon_standard(int cursor);

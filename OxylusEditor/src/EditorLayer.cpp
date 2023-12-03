@@ -60,7 +60,7 @@ void EditorLayer::on_attach(EventDispatcher& dispatcher) {
   engine_banner = create_ref<TextureAsset>();
   engine_banner->create_texture(EngineBannerWidth, EngineBannerHeight, EngineBanner);
 
-  Input::set_cursor_state(Input::CursorState::Normal, Window::get_glfw_window());
+  Input::set_cursor_state(Input::CursorState::Normal);
 
   m_editor_scene = create_ref<Scene>();
   set_editor_context(m_editor_scene);

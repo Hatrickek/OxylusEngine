@@ -560,22 +560,23 @@ void ViewportPanel::set_context(const Ref<Scene>& scene, SceneHierarchyPanel& sc
 void ViewportPanel::on_update() {
   if (m_viewport_hovered && !m_simulation_running && m_use_editor_camera) {
     const Vec3& position = m_camera.get_position();
-    const glm::vec2 yaw_pitch = glm::vec2(m_camera.get_yaw(), m_camera.get_pitch());
+    const Vec2 yaw_pitch = Vec2(m_camera.get_yaw(), m_camera.get_pitch());
     Vec3 final_position = position;
-    glm::vec2 final_yaw_pitch = yaw_pitch;
+    Vec2 final_yaw_pitch = yaw_pitch;
 
     if (ImGui::IsMouseDown(ImGuiMouseButton_Right)) {
-      const glm::vec2 new_mouse_position = Input::get_mouse_position();
+      const Vec2 new_mouse_position = Input::get_mouse_position();
 
       if (!m_using_editor_camera) {
         m_using_editor_camera = true;
         m_locked_mouse_position = new_mouse_position;
+        Input::set_cursor_state(Input::CursorState::Disabled);
       }
 
       Input::set_cursor_position(m_locked_mouse_position.x, m_locked_mouse_position.y);
       //Input::SetCursorIcon(EditorLayer::Get()->m_CrosshairCursor);
 
-      const glm::vec2 change = (new_mouse_position - m_locked_mouse_position) * m_mouse_sensitivity;
+      const Vec2 change = (new_mouse_position - m_locked_mouse_position) * m_mouse_sensitivity;
       final_yaw_pitch.x += change.x;
       final_yaw_pitch.y = glm::clamp(final_yaw_pitch.y - change.y, glm::radians(-89.9f), glm::radians(89.9f));
 
@@ -598,7 +599,7 @@ void ViewportPanel::on_update() {
     }
     // Panning
     else if (ImGui::IsMouseDown(ImGuiMouseButton_Middle)) {
-      const glm::vec2 new_mouse_position = Input::get_mouse_position();
+      const Vec2 new_mouse_position = Input::get_mouse_position();
 
       if (!m_using_editor_camera) {
         m_using_editor_camera = true;
@@ -608,7 +609,7 @@ void ViewportPanel::on_update() {
       Input::set_cursor_position(m_locked_mouse_position.x, m_locked_mouse_position.y);
       //Input::SetCursorIcon(EditorLayer::Get()->m_CrosshairCursor);
 
-      const glm::vec2 change = (new_mouse_position - m_locked_mouse_position) * m_mouse_sensitivity;
+      const Vec2 change = (new_mouse_position - m_locked_mouse_position) * m_mouse_sensitivity;
 
       const float max_move_speed = m_movement_speed * (ImGui::IsKeyDown(ImGuiKey_LeftShift) ? 3.0f : 1.0f);
       final_position += m_camera.get_front() * change.y * max_move_speed;
@@ -616,6 +617,7 @@ void ViewportPanel::on_update() {
     }
     else {
       //Input::SetCursorIconDefault();
+      Input::set_cursor_state(Input::CursorState::Normal);
       m_using_editor_camera = false;
     }
 
@@ -625,12 +627,12 @@ void ViewportPanel::on_update() {
                                                    m_translation_dampening,
                                                    10000.0f,
                                                    (float)Application::get_timestep().get_seconds());
-    const glm::vec2 damped_yaw_pitch = Math::smooth_damp(yaw_pitch,
-                                                         final_yaw_pitch,
-                                                         m_rotation_velocity,
-                                                         m_rotation_dampening,
-                                                         1000.0f,
-                                                         (float)Application::get_timestep().get_seconds());
+    const Vec2 damped_yaw_pitch = Math::smooth_damp(yaw_pitch,
+                                                   final_yaw_pitch,
+                                                   m_rotation_velocity,
+                                                   m_rotation_dampening,
+                                                   1000.0f,
+                                                   (float)Application::get_timestep().get_seconds());
 
     m_camera.set_position(m_smooth_camera ? damped_position : final_position);
     m_camera.set_yaw(m_smooth_camera ? damped_yaw_pitch.x : final_yaw_pitch.x);
