@@ -282,7 +282,8 @@ void ContentPanel::init() {
   m_current_directory = m_assets_directory;
   refresh();
 
-  static filewatch::FileWatch<std::string> watch(m_assets_directory.string(),
+  static filewatch::FileWatch<std::string> watch(
+    m_assets_directory.string(),
     [this](const auto&, const filewatch::Event) {
       ThreadManager::get()->asset_thread.queue_job([this] {
         refresh();
@@ -487,9 +488,9 @@ void ContentPanel::render_side_view() {
       if (isClicked) {
         // (process outside of tree loop to avoid visual inconsistencies during the clicking frame)
         if (ImGui::GetIO().KeyCtrl)
-          selectionMask ^= BIT(clickedNode);          // CTRL+click to toggle
+          selectionMask ^= BIT(clickedNode); // CTRL+click to toggle
         else
-          selectionMask = BIT(clickedNode);           // Click to single-select
+          selectionMask = BIT(clickedNode); // Click to single-select
       }
 
       ImGui::TreePop();
@@ -548,7 +549,11 @@ void ContentPanel::render_body(bool grid) {
     bool any_item_hovered = false;
 
     int i = 0;
+
     for (auto& file : m_directory_entries) {
+      if (!m_filter.PassFilter(file.name.c_str()))
+        continue;
+
       ImGui::PushID(i);
 
       const bool is_dir = file.is_directory;
@@ -654,7 +659,7 @@ void ContentPanel::render_body(bool grid) {
         const ImVec2 rect_min = ImGui::GetItemRectMin();
         const ImVec2 rect_size = ImGui::GetItemRectSize();
         const ImRect clip_rect = ImRect({rect_min.x + padding * 1.0f, rect_min.y + padding * 2.0f},
-          {rect_min.x + rect_size.x, rect_min.y + scaled_thumbnail_size_x - ImGuiLayer::small_font->FontSize - padding * 2.0f});
+                                        {rect_min.x + rect_size.x, rect_min.y + scaled_thumbnail_size_x - ImGuiLayer::small_font->FontSize - padding * 2.0f});
         OxUI::clipped_text(clip_rect.Min, clip_rect.Max, filename, nullptr, nullptr, {0, 0}, nullptr, clip_rect.GetSize().x);
 
         if (!is_dir) {
