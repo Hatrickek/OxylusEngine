@@ -4,7 +4,6 @@
 
 #include <imgui.h>
 #include <imgui_internal.h>
-#include <fmt/format.h>
 #include <misc/cpp/imgui_stdlib.h>
 
 #include <Assets/AssetManager.h>
@@ -229,7 +228,7 @@ static void draw_particle_by_speed_module(const std::string_view module_name,
 }
 
 template <typename Component>
-void InspectorPanel::draw_add_component(Entity entity, const char* name) const {
+void InspectorPanel::draw_add_component(Entity entity, const char* name) {
   if (ImGui::MenuItem(name)) {
     if (!entity.has_component<Component>())
       entity.add_component_internal<Component>();
@@ -297,8 +296,8 @@ void InspectorPanel::draw_components(Entity entity) const {
       if (!component.original_mesh)
         return;
       const char* file_name = component.original_mesh->name.empty()
-                               ? "Empty"
-                               : component.original_mesh->name.c_str();
+                                ? "Empty"
+                                : component.original_mesh->name.c_str();
       ImGui::Text("Loaded Mesh: %s", file_name);
       ImGui::Text("Primitive Count: %d", (uint32_t)component.subsets.size());
       ImGui::Text("Material Count: %d", (uint32_t)component.original_mesh->get_materials_as_ref().size());
@@ -445,19 +444,25 @@ void InspectorPanel::draw_components(Entity entity) const {
     entity,
     [&entity](AudioSourceComponent& component) {
       auto& config = component.config;
-
       const char* filepath = component.source
                                ? component.source->GetPath()
                                : "Drop an audio file";
+
+      auto load_file = [](const std::filesystem::path& path, AudioSourceComponent& comp) {
+        if (const std::string ext = path.extension().string(); ext == ".mp3" || ext == ".wav" || ext == ".flac")
+          comp.source = create_ref<AudioSource>(AssetManager::get_asset_file_system_path(path).string().c_str());
+      };
+
       const float x = ImGui::GetContentRegionAvail().x;
       const float y = ImGui::GetFrameHeight();
-      ImGui::Button(filepath, {x, y});
+      if (ImGui::Button(filepath, {x, y})) {
+        const std::string file_path = FileDialogs::open_file({{"Audio file", "mp3, wav, flac"}});
+        load_file(file_path, component);
+      }
       if (ImGui::BeginDragDropTarget()) {
         if (const ImGuiPayload* payload = ImGui::AcceptDragDropPayload("CONTENT_BROWSER_ITEM")) {
           const std::filesystem::path path = OxUI::get_path_from_imgui_payload(payload);
-          const std::string ext = path.extension().string();
-          if (ext == ".mp3" || ext == ".wav")
-            component.source = create_ref<AudioSource>(AssetManager::get_asset_file_system_path(path).string().c_str());
+          load_file(path, component);
         }
         ImGui::EndDragDropTarget();
       }
@@ -783,7 +788,6 @@ void InspectorPanel::draw_components(Entity entity) const {
           component.lua_system->reload();
       }
     });
-
 
   draw_component<ParticleSystemComponent>(
     "Particle System Component",

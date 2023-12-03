@@ -16,7 +16,7 @@ private:
   void draw_components(Entity entity) const;
 
   template <typename Component>
-  void draw_add_component(Entity entity, const char* name) const;
+  static void draw_add_component(Entity entity, const char* name);
 
   void pp_probe_property(bool value, const PostProcessProbe& component) const;
 
