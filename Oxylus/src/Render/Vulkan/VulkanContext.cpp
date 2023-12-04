@@ -54,8 +54,9 @@ static VkBool32 DebugCallback(const VkDebugUtilsMessageSeverityFlagBitsEXT messa
 }
 
 static vuk::Swapchain make_swapchain(VulkanContext* context, std::optional<VkSwapchainKHR> old_swapchain, vuk::PresentModeKHR present_mode = vuk::PresentModeKHR::eFifo) {
+  context->context->wait_idle();
   vkb::SwapchainBuilder swb(context->vkb_device, context->surface);
-  swb.add_fallback_format(vuk::SurfaceFormatKHR{vuk::Format::eR8G8B8A8Unorm, vuk::ColorSpaceKHR::eSrgbNonlinear});
+  swb.set_desired_format(vuk::SurfaceFormatKHR{vuk::Format::eR8G8B8A8Unorm, vuk::ColorSpaceKHR::eSrgbNonlinear});
   swb.add_fallback_present_mode((VkPresentModeKHR)present_mode);
   swb.set_image_usage_flags(VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT);
   if (old_swapchain) {
