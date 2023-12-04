@@ -8,45 +8,44 @@
 #include "Utils/Profiler.h"
 
 namespace Oxylus {
-void MaterialSerializer::Serialize(const std::string& path) const {
+void MaterialSerializer::serialize(const std::string& path) const {
   OX_SCOPED_ZONE;
-  m_Material->path = path;
+  m_material->path = path;
 
   ryml::Tree tree;
 
-  ryml::NodeRef nodeRoot = tree.rootref();
-  nodeRoot |= ryml::MAP;
+  ryml::NodeRef node_root = tree.rootref();
+  node_root |= ryml::MAP;
 
-  nodeRoot["Material"] << m_Material->name;
+  node_root["Material"] << m_material->name;
 
-  auto parNode = nodeRoot["Parameters"];
-  parNode |= ryml::MAP;
+  auto node_refs = node_root["Parameters"];
+  node_refs |= ryml::MAP;
 
-  const auto& Parameters = m_Material->parameters;
-  parNode["Roughness"] << Parameters.roughness;
-  parNode["Metallic"] << Parameters.metallic;
-  parNode["Specular"] << Parameters.specular;
-  parNode["Normal"] << Parameters.normal;
-  parNode["AO"] << Parameters.ao;
-  auto colorNode = parNode["Color"];
-  glm::write(&colorNode, Parameters.color);
-  parNode["UseAlbedo"] << Parameters.use_albedo;
-  parNode["UsePhysicalMap"] << Parameters.use_physical_map;
-  parNode["UseNormal"] << Parameters.use_normal;
-  parNode["UseAO"] << Parameters.use_ao;
-  parNode["UseEmissive"] << Parameters.use_ao;
-  parNode["UseSpecular"] << Parameters.use_specular;
-  parNode["DoubleSided"] << Parameters.double_sided;
-  parNode["UVScale"] << Parameters.uv_scale;
+  const auto& parameters = m_material->parameters;
+  node_refs["Roughness"] << parameters.roughness;
+  node_refs["Metallic"] << parameters.metallic;
+  node_refs["Reflectance"] << parameters.reflectance;
+  node_refs["Normal"] << parameters.normal;
+  node_refs["AO"] << parameters.ao;
+  auto colorNode = node_refs["Color"];
+  glm::write(&colorNode, parameters.color);
+  node_refs["UseAlbedo"] << parameters.use_albedo;
+  node_refs["UsePhysicalMap"] << parameters.use_physical_map;
+  node_refs["UseNormal"] << parameters.use_normal;
+  node_refs["UseAO"] << parameters.use_ao;
+  node_refs["UseEmissive"] << parameters.use_ao;
+  node_refs["DoubleSided"] << parameters.double_sided;
+  node_refs["UVScale"] << parameters.uv_scale;
 
-  auto textureNode = nodeRoot["Textures"];
-  textureNode |= ryml::MAP;
+  auto texture_node = node_root["Textures"];
+  texture_node |= ryml::MAP;
 
-  SaveIfPathExists(textureNode["Albedo"], m_Material->albedo_texture);
-  SaveIfPathExists(textureNode["Normal"], m_Material->normal_texture);
-  SaveIfPathExists(textureNode["Physical"], m_Material->metallic_roughness_texture);
-  SaveIfPathExists(textureNode["AO"], m_Material->ao_texture);
-  SaveIfPathExists(textureNode["Emissive"], m_Material->emissive_texture);
+  save_if_path_exists(texture_node["Albedo"], m_material->albedo_texture);
+  save_if_path_exists(texture_node["Normal"], m_material->normal_texture);
+  save_if_path_exists(texture_node["Physical"], m_material->metallic_roughness_texture);
+  save_if_path_exists(texture_node["AO"], m_material->ao_texture);
+  save_if_path_exists(texture_node["Emissive"], m_material->emissive_texture);
 
   std::stringstream ss;
   ss << tree;
@@ -54,14 +53,14 @@ void MaterialSerializer::Serialize(const std::string& path) const {
   filestream << ss.str();
 }
 
-void MaterialSerializer::Deserialize(const std::string& path) const {
+void MaterialSerializer::deserialize(const std::string& path) const {
   if (path.empty())
     return;
   OX_SCOPED_ZONE;
 
-  m_Material->destroy();
+  m_material->destroy();
 
-  m_Material->path = path;
+  m_material->path = path;
 
   auto content = FileUtils::read_file(path);
   if (content.empty()) {
@@ -77,46 +76,45 @@ void MaterialSerializer::Deserialize(const std::string& path) const {
 
   ryml::Tree tree = ryml::parse_in_arena(c4::to_csubstr(content));
 
-  const ryml::ConstNodeRef nodeRoot = tree.rootref();
+  const ryml::ConstNodeRef node_refs = tree.rootref();
 
-  auto& Parameters = m_Material->parameters;
+  auto& parameters = m_material->parameters;
 
-  nodeRoot["Material"] >> m_Material->name;
+  node_refs["Material"] >> m_material->name;
 
-  const auto parNode = nodeRoot["Parameters"];
-  TryLoad(parNode, "Roughness", Parameters.roughness);
-  TryLoad(parNode, "Metallic", Parameters.metallic);
-  TryLoad(parNode, "Specular", Parameters.specular);
-  TryLoad(parNode, "Normal", Parameters.normal);
-  TryLoad(parNode, "AO", Parameters.ao);
-  glm::read(parNode["Color"], &Parameters.color);
-  TryLoad(parNode, "UseAlbedo", Parameters.use_albedo);
-  TryLoad(parNode, "UsePhysicalMap", Parameters.use_physical_map);
-  TryLoad(parNode, "UseNormal", Parameters.use_normal);
-  TryLoad(parNode, "UseAO", Parameters.use_ao);
-  TryLoad(parNode, "UseEmissive", Parameters.use_ao);
-  TryLoad(parNode, "UseSpecular", Parameters.use_specular);
-  TryLoad(parNode, "DoubleSided", Parameters.double_sided);
-  TryLoad(parNode, "UVScale", Parameters.uv_scale);
+  const auto par_node = node_refs["Parameters"];
+  TryLoad(par_node, "Roughness", parameters.roughness);
+  TryLoad(par_node, "Metallic", parameters.metallic);
+  TryLoad(par_node, "Reflectance", parameters.reflectance);
+  TryLoad(par_node, "Normal", parameters.normal);
+  TryLoad(par_node, "AO", parameters.ao);
+  glm::read(par_node["Color"], &parameters.color);
+  TryLoad(par_node, "UseAlbedo", parameters.use_albedo);
+  TryLoad(par_node, "UsePhysicalMap", parameters.use_physical_map);
+  TryLoad(par_node, "UseNormal", parameters.use_normal);
+  TryLoad(par_node, "UseAO", parameters.use_ao);
+  TryLoad(par_node, "UseEmissive", parameters.use_ao);
+  TryLoad(par_node, "DoubleSided", parameters.double_sided);
+  TryLoad(par_node, "UVScale", parameters.uv_scale);
 
-  LoadIfPathExists(nodeRoot["Textures"], "Albedo", m_Material->albedo_texture);
-  LoadIfPathExists(nodeRoot["Textures"], "Normal", m_Material->normal_texture);
-  LoadIfPathExists(nodeRoot["Textures"], "Physical", m_Material->metallic_roughness_texture);
-  LoadIfPathExists(nodeRoot["Textures"], "AO", m_Material->ao_texture);
-  LoadIfPathExists(nodeRoot["Textures"], "Emmisive", m_Material->emissive_texture);
+  load_if_path_exists(node_refs["Textures"], "Albedo", m_material->albedo_texture);
+  load_if_path_exists(node_refs["Textures"], "Normal", m_material->normal_texture);
+  load_if_path_exists(node_refs["Textures"], "Physical", m_material->metallic_roughness_texture);
+  load_if_path_exists(node_refs["Textures"], "AO", m_material->ao_texture);
+  load_if_path_exists(node_refs["Textures"], "Emmisive", m_material->emissive_texture);
 }
 
-void MaterialSerializer::SaveIfPathExists(ryml::NodeRef node, const Ref<TextureAsset>& texture) const {
+void MaterialSerializer::save_if_path_exists(ryml::NodeRef node, const Ref<TextureAsset>& texture) {
   if (!texture->get_path().empty())
     node << texture->get_path();
 }
 
-void MaterialSerializer::LoadIfPathExists(ryml::ConstNodeRef parentNode,
-                                          const char* nodeName,
-                                          Ref<TextureAsset>& texture) const {
+void MaterialSerializer::load_if_path_exists(ryml::ConstNodeRef parent_node,
+                                             const char* node_name,
+                                             Ref<TextureAsset>& texture) {
   std::string path{};
-  if (parentNode.has_child(ryml::to_csubstr(nodeName))) {
-    parentNode[ryml::to_csubstr(nodeName)] >> path;
+  if (parent_node.has_child(ryml::to_csubstr(node_name))) {
+    parent_node[ryml::to_csubstr(node_name)] >> path;
     texture = AssetManager::get_texture_asset({path});
   }
 }

@@ -264,7 +264,7 @@ void Mesh::load_materials(tinygltf::Model& model) {
       material.parameters.metallic = static_cast<float>(mat.values["metallicFactor"].Factor());
     }
     if (mat.values.contains("specularFactor")) {
-      material.parameters.specular = static_cast<float>(mat.values["specularFactor"].Factor());
+      material.parameters.reflectance = static_cast<float>(mat.values["specularFactor"].Factor());
     }
     if (mat.values.contains("baseColorFactor")) {
       material.parameters.color = glm::make_vec4(mat.values["baseColorFactor"].ColorFactor().data());
@@ -298,7 +298,7 @@ void Mesh::load_materials(tinygltf::Model& model) {
       if (ext->second.Has("ior")) {
         auto factor = ext->second.Get("ior");
         const auto value = (float)factor.Get<double>();
-        material.parameters.specular = (float)std::pow((value - 1) / (value + 1), 2);
+        material.parameters.reflectance = (float)std::pow((value - 1) / (value + 1), 2);
       }
     }
 

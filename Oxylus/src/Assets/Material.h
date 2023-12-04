@@ -26,7 +26,7 @@ public:
     Vec4 emmisive = Vec4(0);
     float roughness = 1.0f;
     float metallic = 0.0f;
-    float specular = 0.0f;
+    float reflectance = 0.0f;
     float normal = 1.0f;
     float ao = 1.0f;
     GLSL_BOOL use_albedo = false;
@@ -34,12 +34,11 @@ public:
     GLSL_BOOL use_normal = false;
     GLSL_BOOL use_ao = false;
     GLSL_BOOL use_emissive = false;
-    GLSL_BOOL use_specular = false;
     float alpha_cutoff = 0.5f;
     GLSL_BOOL double_sided = false;
     uint32_t uv_scale = 1;
     uint32_t alpha_mode = (uint32_t)AlphaMode::Opaque;
-    uint32_t _pad;
+    Vec2 _pad;
   } parameters;
 
   std::string name = "Material";
@@ -50,7 +49,6 @@ public:
   Ref<TextureAsset> metallic_roughness_texture = nullptr;
   Ref<TextureAsset> ao_texture = nullptr;
   Ref<TextureAsset> emissive_texture = nullptr;
-  Ref<TextureAsset> specular_texture = nullptr;
 
   Material() = default;
   ~Material();

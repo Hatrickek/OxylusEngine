@@ -63,6 +63,7 @@ void EditorLayer::on_attach(EventDispatcher& dispatcher) {
   Input::set_cursor_state(Input::CursorState::Normal);
 
   m_editor_scene = create_ref<Scene>();
+  load_default_scene(m_editor_scene);
   set_editor_context(m_editor_scene);
 
   // Initialize panels
@@ -348,6 +349,19 @@ bool EditorLayer::open_scene(const std::filesystem::path& path) {
   return true;
 }
 
+void EditorLayer::load_default_scene(const std::shared_ptr<Scene>& scene) {
+  auto sun = scene->create_entity("Sun");
+  sun.add_component<LightComponent>().type = LightComponent::LightType::Directional;
+  sun.get_transform().rotation.y = glm::radians(60.f);
+  sun.get_transform().rotation.x = glm::radians(-140.f);
+
+  const auto plane = scene->load_mesh(AssetManager::get_mesh_asset("Resources/Objects/plane.glb"));
+  plane.get_transform().scale *= 4.f;
+
+  const auto cube = scene->load_mesh(AssetManager::get_mesh_asset("Resources/Objects/cube.glb"));
+  cube.get_transform().position.y = 0.5f;
+}
+
 void EditorLayer::clear_selected_entity() {
   m_scene_hierarchy_panel.clear_selection_context();
 }
@@ -409,9 +423,7 @@ void EditorLayer::draw_window_title() {
   ImGuiScoped::StyleVar var3(ImGuiStyleVar_WindowPadding, {0.0f, 0.0f});
   ImGuiScoped::StyleVar var4(ImGuiStyleVar_FramePadding, {ImGui::GetWindowSize().x, 7});
 
-  ImGuiScoped::MainMenuBar menubar;
-
-  {
+  ImGuiScoped::MainMenuBar menubar; {
     ImGuiScoped::StyleVar st(ImGuiStyleVar_FramePadding, {0, 8});
     OxUI::image(Resources::editor_resources.engine_icon->get_texture(), {30, 30});
     auto& name = Application::get()->get_specification().name;

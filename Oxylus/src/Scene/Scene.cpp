@@ -75,7 +75,7 @@ Entity Scene::create_entity_with_uuid(UUID uuid, const std::string& name) {
   return entity;
 }
 
-void Scene::load_mesh(const Ref<Mesh>& mesh) {
+Entity Scene::load_mesh(const Ref<Mesh>& mesh) {
   OX_SCOPED_ZONE;
   Entity root_entity = {};
   if ((uint32_t)mesh->linear_nodes.size() > 1)
@@ -86,6 +86,8 @@ void Scene::load_mesh(const Ref<Mesh>& mesh) {
     node_entity.get_transform().set_from_matrix(node->get_matrix());
     if (root_entity)
       node_entity.set_parent(root_entity);
+    else
+      root_entity = node_entity;
     auto& mesh_component = node_entity.add_component<MeshComponent>(mesh);
     auto& material_component = node_entity.add_component<MaterialComponent>();
     material_component.materials = mesh->materials;
@@ -101,6 +103,8 @@ void Scene::load_mesh(const Ref<Mesh>& mesh) {
       }
     }
   }
+
+  return root_entity;
 }
 
 void Scene::update_physics(const Timestep& delta_time) {

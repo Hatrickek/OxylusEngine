@@ -6,18 +6,18 @@
 namespace Oxylus {
 class MaterialSerializer {
 public:
-  MaterialSerializer(Material& material) : m_Material(&material) { }
-  MaterialSerializer(const Ref<Material>& material) : m_Material(material.get()) { }
+  MaterialSerializer(Material& material) : m_material(&material) { }
+  MaterialSerializer(const Ref<Material>& material) : m_material(material.get()) { }
 
-  void Serialize(const std::string& path) const;
-  void Deserialize(const std::string& path) const;
+  void serialize(const std::string& path) const;
+  void deserialize(const std::string& path) const;
 
 private:
-  void SaveIfPathExists(ryml::NodeRef node, const Ref<TextureAsset>& texture) const;
-  void LoadIfPathExists(ryml::ConstNodeRef parentNode,
-                        const char* nodeName,
-                        Ref<TextureAsset>& texture) const;
+  static void save_if_path_exists(ryml::NodeRef node, const Ref<TextureAsset>& texture);
+  static void load_if_path_exists(ryml::ConstNodeRef parent_node,
+                                  const char* node_name,
+                                  Ref<TextureAsset>& texture);
 
-  Material* m_Material;
+  Material* m_material;
 };
 }

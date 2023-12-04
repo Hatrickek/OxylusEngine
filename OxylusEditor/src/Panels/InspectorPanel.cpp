@@ -100,13 +100,13 @@ bool InspectorPanel::draw_material_properties(Ref<Material>& material, const boo
       path = FileDialogs::save_file({{"Material file", "oxmat"}}, "NewMaterial");
     else
       path = material->path;
-    MaterialSerializer(*material).Serialize(path);
+    MaterialSerializer(*material).serialize(path);
   }
   ImGui::SameLine();
   if (ImGui::Button("Load")) {
     const auto& path = FileDialogs::open_file({{"Material file", "oxmat"}});
     if (!path.empty()) {
-      MaterialSerializer(material).Deserialize(path);
+      MaterialSerializer(material).deserialize(path);
     }
   }
   ImGui::SameLine();
@@ -123,7 +123,7 @@ bool InspectorPanel::draw_material_properties(Ref<Material>& material, const boo
       const std::filesystem::path path = OxUI::get_path_from_imgui_payload(payload);
       const std::string ext = path.extension().string();
       if (ext == ".oxmat") {
-        MaterialSerializer(material).Deserialize(path.string());
+        MaterialSerializer(material).deserialize(path.string());
         load_asset = true;
       }
     }
@@ -137,7 +137,7 @@ bool InspectorPanel::draw_material_properties(Ref<Material>& material, const boo
   OxUI::property("Albedo", material->albedo_texture);
   OxUI::property_vector("Color", material->parameters.color, true, true);
 
-  OxUI::property("Specular", &material->parameters.specular);
+  OxUI::property("Specular", &material->parameters.reflectance);
   OxUI::property_vector("Emmisive", material->parameters.emmisive, true, true);
 
   OxUI::property("Use Normal", (bool*)&material->parameters.use_normal);
@@ -325,9 +325,10 @@ void InspectorPanel::draw_components(Entity entity) const {
         ImGui::TextUnformatted(StringUtils::from_char8_t(ICON_MDI_MAGNIFY " Search..."));
       }
 
-      for (auto& material : component.materials) {
+      for (auto i = 0; i < (uint32_t)component.materials.size(); i ++) {
+        auto& material = component.materials[i];
         if (name_filter.PassFilter(material->name.c_str())) {
-          ImGui::PushID(UUID());
+          ImGui::PushID(i);
           if (ImGui::TreeNodeEx(material->name.c_str(),
                                 flags,
                                 "%s %s",

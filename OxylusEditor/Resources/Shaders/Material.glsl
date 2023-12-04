@@ -7,7 +7,7 @@ struct Material {
 	vec4 Emissive;
 	float Roughness;
 	float Metallic;
-	float Specular;
+	float Reflectance;
 	float Normal;
 	float AO;
 	bool UseAlbedo;
@@ -15,12 +15,11 @@ struct Material {
 	bool UseNormal;
 	bool UseAO;
 	bool UseEmissive;
-	bool UseSpecular;
 	float AlphaCutoff;
 	bool DoubleSided;
 	uint UVScale;
 	uint AlphaMode;
-	uint _pad;
+	vec2 _pad;
 };
 
 layout(std140, set = 2, binding = 0) readonly buffer MaterialBuffer {

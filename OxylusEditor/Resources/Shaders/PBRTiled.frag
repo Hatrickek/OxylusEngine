@@ -21,7 +21,7 @@ struct Light {
     vec4 Rotation; // w: type
 };
 
-struct MaterialData {
+struct PixelData {
     vec4 Albedo;
     float Metallic;
     float Roughness;
@@ -164,24 +164,24 @@ float CalculateShadow(vec3 wsPos, int cascadeIndex, vec3 lightDirection, vec3 no
     return 1.0 - ((1.0 - shadowAmount) * ShadowFade);
 }
 
-vec3 IsotropicLobe(MaterialData material, const vec3 h, float NoV, float NoL, float NoH, float LoH) {
+vec3 IsotropicLobe(PixelData material, const vec3 h, float NoV, float NoL, float NoH, float LoH) {
     float D = distribution(material.Roughness, NoH, material.Normal, h);
     float V = visibility(material.Roughness, NoV, NoL);
     vec3 F = fresnel(material.F0, LoH);
     return (D * V) * F;
 }
 
-vec3 DiffuseLobe(MaterialData material, float NoV, float NoL, float LoH) {
+vec3 DiffuseLobe(PixelData material, float NoV, float NoL, float LoH) {
     float diff = Diffuse(material.Roughness, NoV, NoL, LoH);
     return material.Albedo.rgb * diff;
 }
 
-vec3 SpecularLobe(MaterialData material, const vec3 h, float NoV, float NoL, float NoH, float LoH) {
+vec3 SpecularLobe(PixelData material, const vec3 h, float NoV, float NoL, float NoH, float LoH) {
     vec3 spec = IsotropicLobe(material, h, NoV, NoL, NoH, LoH);
     return spec;
 }
 
-vec3 Lighting(vec3 F0, vec3 wsPos, MaterialData material) {
+vec3 Lighting(vec3 F0, vec3 wsPos, PixelData material) {
     vec3 result = vec3(0);
 
     for (int i = 0; i < NumLights; i++) {
@@ -224,6 +224,7 @@ vec3 Lighting(vec3 F0, vec3 wsPos, MaterialData material) {
         }
 
         vec3 Li = currentLight.Rotation.xyz;
+        Li.z = 0;
         vec3 Lradiance = currentLight.Color.xyz * currentLight.Position.w; // intensity is w of position;
         vec3 Lh = normalize(Li + material.View);
 
@@ -240,13 +241,6 @@ vec3 Lighting(vec3 F0, vec3 wsPos, MaterialData material) {
         vec3 Fr = SpecularLobe(material, h, NoV, NoL, NoH, LoH);
 
         vec3 color = Fd + Fr;
-
-        float shadowing = ComputeMicroShadowing(NoL, material.AO);
-        vec3 sun_radiance = color * max(0, dot(Li, material.Normal));
-        vec3 transmittance_lut = SampleLUT(u_TransmittanceLut, PlanetRadius, lightNoL, 0.0, PlanetRadius);
-
-        result += currentLight.Position.w * (sun_radiance * transmittance_lut);
-
         result += (color * Lradiance.rgb) * (value * NoL * ComputeMicroShadowing(NoL, material.AO));
     }
 
@@ -295,18 +289,18 @@ void main() {
 
     float ao = mat.UseAO ? texture(aoMap, scaledUV).r : 1.0;
 
-    MaterialData material;
+    PixelData material;
     material.Albedo = baseColor;
     material.Metallic = metallic;
     material.Roughness = perceptualRoughnessToRoughness(perceptualRoughness);
     material.PerceptualRoughness = perceptualRoughness;
-    material.Reflectance = 0.0;
+    material.Reflectance = mat.Reflectance;
     material.Emissive = emmisive;
     material.Normal = GetNormal(mat, scaledUV);
     material.AO = ao;
     material.View = normalize(CamPos.xyz - inWorldPos);
     material.NDotV = max(dot(material.Normal, material.View), 1e-4);
-    float reflectance = 0.0; // TODO: computeDielectricF0(mat.Reflectance);
+    float reflectance = computeDielectricF0(mat.Reflectance);
     material.F0 = computeF0(material.Albedo, material.Metallic.x, reflectance);
 
     // Specular anti-aliasing

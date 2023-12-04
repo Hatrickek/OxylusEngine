@@ -68,6 +68,7 @@ public:
   Ref<Scene> get_active_scene();
   void set_editor_context(const Ref<Scene>& scene);
   bool open_scene(const std::filesystem::path& path);
+  static void load_default_scene(const std::shared_ptr<Scene>& scene);
 
   Entity get_selected_entity() const { return m_scene_hierarchy_panel.get_selected_entity(); }
   Ref<Scene> get_selected_scene() const { return m_scene_hierarchy_panel.get_scene(); }

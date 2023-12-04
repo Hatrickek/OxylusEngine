@@ -323,7 +323,7 @@ UUID EntitySerializer::deserialize_entity(ryml::ConstNodeRef entity_node, Scene*
       auto mat = mc.materials.emplace_back(create_ref<Material>());
       mat->create();
       MaterialSerializer serializer(mat);
-      serializer.Deserialize(asset_path);
+      serializer.deserialize(asset_path);
       mc.using_material_asset = true;
     }
   }

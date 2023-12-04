@@ -811,7 +811,7 @@ void ContentPanel::draw_context_menu_items(const std::filesystem::path& context,
           mat->create();
           const MaterialSerializer serializer(mat);
           auto path = (context / "NewMaterial.oxmat").string();
-          serializer.Serialize(path);
+          serializer.serialize(path);
         }
         ImGui::EndMenu();
       }

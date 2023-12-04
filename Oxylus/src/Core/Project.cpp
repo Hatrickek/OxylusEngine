@@ -11,7 +11,7 @@ Ref<Project> Project::create_new() {
 }
 
 Ref<Project> Project::new_project(const std::string& project_dir, const std::string& project_name, const std::string& project_asset_dir) {
-  const auto project = create_ref<Project>();
+  auto project = create_ref<Project>();
   project->get_config().name = project_name;
   project->get_config().asset_directory = project_asset_dir;
 

@@ -8,7 +8,7 @@
 #include "Utils/Profiler.h"
 
 namespace Oxylus {
-Material::~Material() { }
+Material::~Material() = default;
 
 void Material::create(const std::string& material_name) {
   OX_SCOPED_ZONE;

@@ -71,10 +71,13 @@ target_compile_definitions(${PROJECT_NAME} PRIVATE
 # Compile and link options
 if(MSVC)
     target_compile_options(${PROJECT_NAME} PRIVATE PRIVATE /std:c++20 /permissive-)
-    add_definitions("/MP")
     target_link_options(${PROJECT_NAME} PRIVATE PRIVATE /DEBUG:FULL)
-	set(CMAKE_SHARED_LINKER_FLAGS_DISTRIBUTION ${CMAKE_SHARED_LINKER_FLAGS})
+	  set(CMAKE_SHARED_LINKER_FLAGS_DISTRIBUTION ${CMAKE_SHARED_LINKER_FLAGS})
     set(CMAKE_EXE_LINKER_FLAGS_DISTRIBUTION ${CMAKE_EXE_LINKER_FLAGS})
+endif()
+
+if (MSVC AND NOT CMAKE_CXX_COMPILER_ID STREQUAL "Clang")
+  add_definitions("/MP")
 endif()
 
 # Link with oxylus.
