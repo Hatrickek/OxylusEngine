@@ -79,9 +79,9 @@ public:
 
 private:
   // Project
-  void new_project();
+  static void new_project();
   void open_project(const std::filesystem::path& path);
-  void save_project(const std::string& path);
+  static void save_project(const std::string& path);
 
   // Scene
   std::string m_last_save_scene_path{};

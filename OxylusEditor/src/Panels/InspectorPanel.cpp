@@ -137,7 +137,7 @@ bool InspectorPanel::draw_material_properties(Ref<Material>& material, const boo
   OxUI::property("Albedo", material->albedo_texture);
   OxUI::property_vector("Color", material->parameters.color, true, true);
 
-  OxUI::property("Specular", &material->parameters.reflectance);
+  OxUI::property("Reflectance", &material->parameters.reflectance);
   OxUI::property_vector("Emmisive", material->parameters.emmisive, true, true);
 
   OxUI::property("Use Normal", (bool*)&material->parameters.use_normal);

@@ -307,8 +307,7 @@ void ContentPanel::on_imgui_render() {
     init();
   }
 
-  on_begin(windowFlags);
-  {
+  on_begin(windowFlags); {
     render_header();
     ImGui::Separator();
     const ImVec2 availableRegion = ImGui::GetContentRegionAvail();
@@ -411,7 +410,7 @@ void ContentPanel::render_header() {
   ImGui::PushStyleColor(ImGuiCol_ButtonHovered, {0.0f, 0.0f, 0.0f, 0.0f});
   std::filesystem::path current = m_assets_directory.parent_path();
   std::filesystem::path directoryToOpen;
-  const std::filesystem::path currentDirectory = std::filesystem::relative(m_current_directory, current);
+  const std::filesystem::path currentDirectory = relative(m_current_directory, current);
   for (auto& path : currentDirectory) {
     current /= path;
     ImGui::SameLine();
@@ -633,8 +632,10 @@ void ContentPanel::render_body(bool grid) {
           any_item_hovered = true;
 
         if (ImGui::IsItemHovered() && ImGui::IsMouseDoubleClicked(0)) {
-          if (is_dir)
+          if (is_dir) {
             directory_to_open = path;
+            m_filter.Clear();
+          }
           else
             open_file(path);
           EditorLayer::get()->reset_context();
@@ -681,8 +682,10 @@ void ContentPanel::render_body(bool grid) {
         if (ImGui::IsItemHovered())
           any_item_hovered = true;
 
-        if (is_dir && ImGui::IsItemHovered() && ImGui::IsMouseDoubleClicked(0))
+        if (is_dir && ImGui::IsItemHovered() && ImGui::IsMouseDoubleClicked(0)) {
           directory_to_open = path;
+          m_filter.Clear();
+        }
 
         drag_drop_from(file.file_path.c_str());
 

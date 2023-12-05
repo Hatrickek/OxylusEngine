@@ -462,7 +462,7 @@ void ViewportPanel::mouse_picking_pass(const Ref<RenderPipeline>& rp, const vuk:
                     .set_viewport(0, rect)
                     .set_scissor(0, vuk::Rect2D::framebuffer())
                     .broadcast_color_blend(vuk::BlendPreset::eOff)
-                    .set_rasterization({.cullMode = vuk::CullModeFlagBits::eBack})
+                    .set_rasterization({.cullMode = vuk::CullModeFlagBits::eNone})
                     .set_depth_stencil(vuk::PipelineDepthStencilStateCreateInfo{
                        .depthTestEnable = true,
                        .depthWriteEnable = true,

@@ -42,37 +42,31 @@ void DefaultRenderPipeline::init(vuk::Allocator& allocator) {
     pci.add_glsl(FileUtils::read_shader_file("DepthNormalPass.vert"), FileUtils::get_shader_path("DepthNormalPass.vert"));
     pci.add_glsl(FileUtils::read_shader_file("DepthNormalPass.frag"), FileUtils::get_shader_path("DepthNormalPass.frag"));
     allocator.get_context().create_named_pipeline("depth_pre_pass_pipeline", pci);
-  }
-  {
+  } {
     vuk::PipelineBaseCreateInfo pci;
     pci.add_glsl(FileUtils::read_shader_file("DirectShadowDepthPass.vert"), "DirectShadowDepthPass.vert");
     pci.add_glsl(FileUtils::read_shader_file("DirectShadowDepthPass.frag"), "DirectShadowDepthPass.frag");
     allocator.get_context().create_named_pipeline("shadow_pipeline", pci);
-  }
-  {
+  } {
     vuk::PipelineBaseCreateInfo pci;
     pci.add_glsl(FileUtils::read_shader_file("Skybox.vert"), "Skybox.vert");
     pci.add_glsl(FileUtils::read_shader_file("Skybox.frag"), "Skybox.frag");
     allocator.get_context().create_named_pipeline("skybox_pipeline", pci);
-  }
-  {
+  } {
     vuk::PipelineBaseCreateInfo pci;
     pci.add_glsl(FileUtils::read_shader_file("PBRTiled.vert"), FileUtils::get_shader_path("PBRTiled.vert"));
     pci.add_glsl(FileUtils::read_shader_file("PBRTiled.frag"), FileUtils::get_shader_path("PBRTiled.frag"));
     allocator.get_context().create_named_pipeline("pbr_pipeline", pci);
-  }
-  {
+  } {
     vuk::PipelineBaseCreateInfo pci;
     pci.add_glsl(FileUtils::read_shader_file("SSR.comp"), FileUtils::get_shader_path("SSR.comp"));
     allocator.get_context().create_named_pipeline("ssr_pipeline", pci);
-  }
-  {
+  } {
     vuk::PipelineBaseCreateInfo pci;
     pci.add_glsl(FileUtils::read_shader_file("FullscreenPass.vert"), FileUtils::get_shader_path("FullscreenPass.vert"));
     pci.add_glsl(FileUtils::read_shader_file("FinalPass.frag"), FileUtils::get_shader_path("FinalPass.frag"));
     allocator.get_context().create_named_pipeline("final_pipeline", pci);
-  }
-  {
+  } {
     vuk::PipelineBaseCreateInfo pci;
     pci.add_hlsl(FileUtils::read_shader_file("GTAO/GTAO_First.hlsl"), FileUtils::get_shader_path("GTAO/GTAO_First.hlsl"), vuk::HlslShaderStage::eCompute, "CSPrefilterDepths16x16");
     pci.define("XE_GTAO_FP32_DEPTHS", "");
@@ -80,8 +74,7 @@ void DefaultRenderPipeline::init(vuk::Allocator& allocator) {
     pci.define("XE_GTAO_USE_DEFAULT_CONSTANTS", "0");
     //pci.define("XE_GTAO_COMPUTE_BENT_NORMALS", "");
     allocator.get_context().create_named_pipeline("gtao_first_pipeline", pci);
-  }
-  {
+  } {
     vuk::PipelineBaseCreateInfo pci;
     pci.add_hlsl(FileUtils::read_shader_file("GTAO/GTAO_Main.hlsl"), FileUtils::get_shader_path("GTAO/GTAO_Main.hlsl"), vuk::HlslShaderStage::eCompute, "CSGTAOHigh");
     pci.define("XE_GTAO_FP32_DEPTHS", "");
@@ -89,8 +82,7 @@ void DefaultRenderPipeline::init(vuk::Allocator& allocator) {
     pci.define("XE_GTAO_USE_DEFAULT_CONSTANTS", "0");
     //pci.define("XE_GTAO_COMPUTE_BENT_NORMALS", "");
     allocator.get_context().create_named_pipeline("gtao_main_pipeline", pci);
-  }
-  {
+  } {
     vuk::PipelineBaseCreateInfo pci;
     pci.add_hlsl(FileUtils::read_shader_file("GTAO/GTAO_Final.hlsl"), FileUtils::get_shader_path("GTAO/GTAO_Final.hlsl"), vuk::HlslShaderStage::eCompute, "CSDenoisePass");
     pci.define("XE_GTAO_FP32_DEPTHS", "");
@@ -98,8 +90,7 @@ void DefaultRenderPipeline::init(vuk::Allocator& allocator) {
     pci.define("XE_GTAO_USE_DEFAULT_CONSTANTS", "0");
     //pci.define("XE_GTAO_COMPUTE_BENT_NORMALS", "");
     allocator.get_context().create_named_pipeline("gtao_denoise_pipeline", pci);
-  }
-  {
+  } {
     vuk::PipelineBaseCreateInfo pci;
     pci.add_hlsl(FileUtils::read_shader_file("GTAO/GTAO_Final.hlsl"), FileUtils::get_shader_path("GTAO/GTAO_Final.hlsl"), vuk::HlslShaderStage::eCompute, "CSDenoiseLastPass");
     pci.define("XE_GTAO_FP32_DEPTHS", "");
@@ -107,47 +98,39 @@ void DefaultRenderPipeline::init(vuk::Allocator& allocator) {
     pci.define("XE_GTAO_USE_DEFAULT_CONSTANTS", "0");
     //pci.define("XE_GTAO_COMPUTE_BENT_NORMALS", "");
     allocator.get_context().create_named_pipeline("gtao_final_pipeline", pci);
-  }
-  {
+  } {
     vuk::PipelineBaseCreateInfo pci;
     pci.add_glsl(FileUtils::read_shader_file("FullscreenPass.vert"), FileUtils::get_shader_path("FullscreenPass.vert"));
     pci.add_glsl(FileUtils::read_shader_file("FXAA.frag"), FileUtils::get_shader_path("FXAA.frag"));
     allocator.get_context().create_named_pipeline("fxaa_pipeline", pci);
-  }
-  {
+  } {
     vuk::PipelineBaseCreateInfo pci;
     pci.add_glsl(FileUtils::read_shader_file("BloomPrefilter.comp"), FileUtils::get_shader_path("BloomPrefilter.comp"));
     allocator.get_context().create_named_pipeline("bloom_prefilter_pipeline", pci);
-  }
-  {
+  } {
     vuk::PipelineBaseCreateInfo pci;
     pci.add_glsl(FileUtils::read_shader_file("BloomDownsample.comp"), FileUtils::get_shader_path("BloomDownsample.comp"));
     allocator.get_context().create_named_pipeline("bloom_downsample_pipeline", pci);
-  }
-  {
+  } {
     vuk::PipelineBaseCreateInfo pci;
     pci.add_glsl(FileUtils::read_shader_file("BloomUpsample.comp"), FileUtils::get_shader_path("BloomUpsample.comp"));
     allocator.get_context().create_named_pipeline("bloom_upsample_pipeline", pci);
-  }
-  {
+  } {
     vuk::PipelineBaseCreateInfo pci;
     pci.add_glsl(FileUtils::read_shader_file("Grid.vert"), FileUtils::get_shader_path("Grid.vert"));
     pci.add_glsl(FileUtils::read_shader_file("Grid.frag"), FileUtils::get_shader_path("Grid.frag"));
     allocator.get_context().create_named_pipeline("grid_pipeline", pci);
-  }
-  {
+  } {
     vuk::PipelineBaseCreateInfo pci;
     pci.add_glsl(FileUtils::read_shader_file("Unlit.vert"), FileUtils::get_shader_path("Unlit.vert"));
     pci.add_glsl(FileUtils::read_shader_file("Unlit.frag"), FileUtils::get_shader_path("Unlit.frag"));
     allocator.get_context().create_named_pipeline("unlit_pipeline", pci);
-  }
-  {
+  } {
     vuk::PipelineBaseCreateInfo pci;
     pci.add_glsl(FileUtils::read_shader_file("FullscreenPass.vert"), FileUtils::get_shader_path("FullscreenPass.vert"));
     pci.add_glsl(FileUtils::read_shader_file("SkyView.frag"), FileUtils::get_shader_path("SkyView.frag"));
     allocator.get_context().create_named_pipeline("sky_view_pipeline", pci);
-  }
-  {
+  } {
     vuk::PipelineBaseCreateInfo pci;
     pci.add_glsl(FileUtils::read_shader_file("FullscreenPass.vert"), FileUtils::get_shader_path("FullscreenPass.vert"));
     pci.add_glsl(FileUtils::read_shader_file("SkyViewFinal.frag"), FileUtils::get_shader_path("SkyViewFinal.frag"));
@@ -257,8 +240,10 @@ void DefaultRenderPipeline::debug_pass(const Ref<vuk::RenderGraph>& rg, const vu
 }
 
 static uint32_t get_material_index(const std::unordered_map<uint32_t, uint32_t>& material_map, uint32_t mesh_index, uint32_t material_index) {
-  const auto value = mesh_index == 0 ? 0 : material_map.at(mesh_index - 1);
-  return value + material_index;
+  uint32_t size = 0;
+  for (uint32_t i = 0; i < mesh_index; i++)
+    size += material_map.at(i);
+  return size + material_index;
 }
 
 Scope<vuk::Future> DefaultRenderPipeline::on_render(vuk::Allocator& frame_allocator, const vuk::Future& target, vuk::Dimension3D dim) {
@@ -299,8 +284,8 @@ Scope<vuk::Future> DefaultRenderPipeline::on_render(vuk::Allocator& frame_alloca
   std::unordered_map<uint32_t, uint32_t> material_map; //mesh, material
 
   for (uint32_t mesh_index = 0; mesh_index < mesh_draw_list.size(); mesh_index++) {
-    auto mesh_materialis = mesh_draw_list[mesh_index].original_mesh->get_materials_as_ref();
-    for (auto& mat : mesh_materialis)
+    auto mesh_materials = mesh_draw_list[mesh_index].original_mesh->get_materials_as_ref();
+    for (auto& mat : mesh_materials)
       materials.emplace_back(mat->parameters);
     material_map.emplace(mesh_index, mesh_draw_list[mesh_index].original_mesh->get_material_count());
   }
@@ -552,8 +537,10 @@ void DefaultRenderPipeline::depth_pre_pass(const Ref<vuk::RenderGraph>& rg, vuk:
             continue;
           }
 
+          const auto material_index = get_material_index(material_map, i, subset.material_index);
+
           command_buffer.push_constants(vuk::ShaderStageFlagBits::eVertex | vuk::ShaderStageFlagBits::eFragment, 0, mesh.transform)
-                        .push_constants(vuk::ShaderStageFlagBits::eFragment, sizeof(glm::mat4), get_material_index(material_map, i, subset.material_index))
+                        .push_constants(vuk::ShaderStageFlagBits::eFragment, sizeof(glm::mat4), material_index)
                         .bind_sampler(1, 0, vuk::LinearSamplerRepeated)
                         .bind_image(1, 0, *subset.material->normal_texture->get_texture().view)
                         .bind_sampler(1, 1, vuk::LinearSamplerRepeated)
@@ -690,8 +677,10 @@ void DefaultRenderPipeline::geomerty_pass(const Ref<vuk::RenderGraph>& rg,
             break;
           }
 
+          const auto material_index = get_material_index(material_map, i, subset.material_index);
+
           command_buffer.push_constants(vuk::ShaderStageFlagBits::eVertex | vuk::ShaderStageFlagBits::eFragment, 0, mesh.transform)
-                        .push_constants(vuk::ShaderStageFlagBits::eFragment, sizeof(glm::mat4), get_material_index(material_map, i, subset.material_index));
+                        .push_constants(vuk::ShaderStageFlagBits::eFragment, sizeof(glm::mat4), material_index);
 
           subset.material->bind_textures(command_buffer);
 
