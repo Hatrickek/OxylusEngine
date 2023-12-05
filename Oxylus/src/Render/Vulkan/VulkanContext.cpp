@@ -57,7 +57,7 @@ static vuk::Swapchain make_swapchain(VulkanContext* context, std::optional<VkSwa
   context->context->wait_idle();
   vkb::SwapchainBuilder swb(context->vkb_device, context->surface);
   swb.set_desired_format(vuk::SurfaceFormatKHR{vuk::Format::eR8G8B8A8Unorm, vuk::ColorSpaceKHR::eSrgbNonlinear});
-  swb.add_fallback_present_mode((VkPresentModeKHR)present_mode);
+  swb.set_desired_present_mode((VkPresentModeKHR)present_mode);
   swb.set_image_usage_flags(VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT);
   if (old_swapchain) {
     swb.set_old_swapchain(*old_swapchain);
@@ -261,7 +261,7 @@ void VulkanContext::create_context(const AppSpec& spec) {
   OX_CORE_INFO("Vulkan context initialized using device: {}", device_name);
 }
 
-void VulkanContext::rebuild_swapchain() {
+void VulkanContext::rebuild_swapchain(const vuk::PresentModeKHR present_mode) {
   context->wait_idle();
   superframe_allocator->deallocate(std::span{&swapchain->swapchain, 1});
   superframe_allocator->deallocate(swapchain->image_views);
