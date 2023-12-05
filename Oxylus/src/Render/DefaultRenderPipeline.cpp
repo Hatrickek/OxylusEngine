@@ -472,7 +472,7 @@ void DefaultRenderPipeline::compute_sky_transmittance(vuk::Allocator& allocator)
   vuk::ImageAttachment attachment = {
     .image = *lut_image,
     .image_type = vuk::ImageType::e2D,
-    .usage = vuk::ImageUsageFlagBits::eStorage,
+    .usage = vuk::ImageUsageFlagBits::eStorage | vuk::ImageUsageFlagBits::eSampled | vuk::ImageUsageFlagBits::eColorAttachment,
     .extent = vuk::Dimension3D::absolute(lut_size.x, lut_size.y, 1),
     .format = vuk::Format::eR32G32B32A32Sfloat,
     .sample_count = vuk::Samples::e1,
