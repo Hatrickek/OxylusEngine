@@ -33,10 +33,6 @@ void DefaultRenderPipeline::init(vuk::Allocator& allocator) {
   // Mesh data
   mesh_draw_list.reserve(MAX_NUM_MESHES);
 
-  //cube_map = create_ref<TextureAsset>();
-  //cube_map = AssetManager::get_texture_asset({.path = Resources::get_resources_path("HDRs/table_mountain_2_puresky_2k.hdr"), .format = vuk::Format::eR8G8B8A8Srgb});
-  //generate_prefilter(allocator);
-
   {
     vuk::PipelineBaseCreateInfo pci;
     pci.add_glsl(FileUtils::read_shader_file("DepthNormalPass.vert"), FileUtils::get_shader_path("DepthNormalPass.vert"));
@@ -655,7 +651,7 @@ void DefaultRenderPipeline::geomerty_pass(const Ref<vuk::RenderGraph>& rg,
                     .bind_buffer(0, 1, pbr_buffer)
                     .bind_buffer(0, 2, scene_lights_buffer)
                     .bind_image(0, 3, "shadow_array_output")
-                    .bind_sampler(0, 3, vuk::LinearSamplerClamped)
+                    .bind_sampler(0, 3, {})
                     .bind_buffer(0, 4, shadow_buffer)
                     .bind_image(0, 5, sky_transmittance_lut)
                     .bind_sampler(0, 5, vuk::LinearSamplerClamped)

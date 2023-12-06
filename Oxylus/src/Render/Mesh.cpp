@@ -237,7 +237,7 @@ void Mesh::load_materials(tinygltf::Model& model) {
   // Create a empty material if the mesh file doesn't have any.
   if (model.materials.empty()) {
     materials.emplace_back(create_ref<Material>());
-    const bool dont_create_materials = loading_flags & FileLoadingFlags::DontCreateMaterials;
+    const bool dont_create_materials = loading_flags & DontCreateMaterials;
     if (!dont_create_materials)
       materials[0]->create();
     return;
@@ -282,6 +282,7 @@ void Mesh::load_materials(tinygltf::Model& model) {
     }
     if (mat.additionalValues.contains("occlusionTexture")) {
       material.ao_texture = m_textures.at(model.textures[mat.additionalValues["occlusionTexture"].TextureIndex()].source);
+      material.parameters.use_ao = true;
     }
     if (mat.alphaMode == "BLEND") {
       material.parameters.alpha_mode = (uint32_t)Material::AlphaMode::Blend;
@@ -344,8 +345,8 @@ void Mesh::calculate_bounding_box(Node* node, const Node* parent) {
     }
   }
 
-  parent_bvh.min = glm::min(parent_bvh.min, node->bvh.min);
-  parent_bvh.max = glm::min(parent_bvh.max, node->bvh.max);
+  parent_bvh.min = min(parent_bvh.min, node->bvh.min);
+  parent_bvh.max = min(parent_bvh.max, node->bvh.max);
 
   for (const auto& child : node->children) {
     calculate_bounding_box(child, node);
@@ -363,8 +364,8 @@ void Mesh::get_scene_dimensions() {
 
   for (const auto node : linear_nodes) {
     if (node->bvh.valid) {
-      dimensions.min = glm::min(dimensions.min, node->bvh.min);
-      dimensions.max = glm::max(dimensions.max, node->bvh.max);
+      dimensions.min = min(dimensions.min, node->bvh.min);
+      dimensions.max = max(dimensions.max, node->bvh.max);
     }
   }
 
@@ -400,12 +401,12 @@ void Mesh::update_animation(uint32_t index, const float time) const {
         if (u <= 1.0f) {
           switch (channel.path) {
             case AnimationChannel::PathType::TRANSLATION: {
-              glm::vec4 trans = glm::mix(sampler.outputs_vec4[i], sampler.outputs_vec4[i + 1], u);
+              glm::vec4 trans = mix(sampler.outputs_vec4[i], sampler.outputs_vec4[i + 1], u);
               channel.node->translation = glm::vec3(trans);
               break;
             }
             case AnimationChannel::PathType::SCALE: {
-              glm::vec4 trans = glm::mix(sampler.outputs_vec4[i], sampler.outputs_vec4[i + 1], u);
+              glm::vec4 trans = mix(sampler.outputs_vec4[i], sampler.outputs_vec4[i + 1], u);
               channel.node->scale = glm::vec3(trans);
               break;
             }
@@ -420,7 +421,7 @@ void Mesh::update_animation(uint32_t index, const float time) const {
               q2.y = sampler.outputs_vec4[i + 1].y;
               q2.z = sampler.outputs_vec4[i + 1].z;
               q2.w = sampler.outputs_vec4[i + 1].w;
-              channel.node->rotation = glm::normalize(glm::slerp(q1, q2, u));
+              channel.node->rotation = normalize(slerp(q1, q2, u));
               break;
             }
           }
@@ -437,7 +438,7 @@ void Mesh::update_animation(uint32_t index, const float time) const {
 }
 
 Mesh::MeshData::MeshData(): bb(), aabb() {
-  node_buffer = *vuk::allocate_buffer(*VulkanContext::get()->superframe_allocator, {vuk::MemoryUsage::eCPUtoGPU, sizeof(uniform_block), 1});
+  node_buffer = *allocate_buffer(*VulkanContext::get()->superframe_allocator, {vuk::MemoryUsage::eCPUtoGPU, sizeof(uniform_block), 1});
 }
 
 Mesh::MeshData::~MeshData() {
@@ -492,7 +493,7 @@ Mesh::Node::~Node() {
 
 Mat4 Mesh::Node::local_matrix() const {
   OX_SCOPED_ZONE;
-  return glm::translate(Mat4(1.0f), translation) * Mat4(rotation) * glm::scale(Mat4(1.0f), scale) * transform;
+  return translate(Mat4(1.0f), translation) * Mat4(rotation) * glm::scale(Mat4(1.0f), scale) * transform;
 }
 
 Mat4 Mesh::Node::get_matrix() const {
@@ -511,7 +512,7 @@ void Mesh::Node::update() const {
     if (skin) {
       const glm::mat4 m = get_matrix();
       // Update join matrices
-      const glm::mat4 inverse_transform = glm::inverse(m);
+      const glm::mat4 inverse_transform = inverse(m);
       const size_t num_joints = std::min((uint32_t)skin->joints.size(), MAX_NUM_JOINTS);
       for (size_t i = 0; i < num_joints; i++) {
         const Node* joint_node = skin->joints[i];
@@ -667,12 +668,12 @@ void Mesh::load_node(Node* parent,
         for (size_t v = 0; v < pos_accessor.count; v++) {
           Vertex vert = {};
           vert.position = glm::vec4(glm::make_vec3(&buffer_pos[v * pos_byte_stride]), 1.0f);
-          vert.normal = glm::normalize(glm::vec3(buffer_normals ? glm::make_vec3(&buffer_normals[v * norm_byte_stride]) : glm::vec3(0.0f)));
+          vert.normal = normalize(glm::vec3(buffer_normals ? glm::make_vec3(&buffer_normals[v * norm_byte_stride]) : glm::vec3(0.0f)));
           vert.uv = buffer_tex_coord_set0 ? glm::make_vec2(&buffer_tex_coord_set0[v * uv0_byte_stride]) : glm::vec3(0.0f);
           vert.color = buffer_color_set0 ? glm::make_vec4(&buffer_color_set0[v * color0_byte_stride]) : glm::vec4(1.0f);
-          Vec3 c1 = glm::cross(vert.normal, Vec3(0, 0, 1));
-          Vec3 c2 = glm::cross(vert.normal, Vec3(0, 1, 0));
-          Vec3 tangent = glm::dot(c1, c1) > glm::dot(c2, c2) ? c1 : c2;
+          Vec3 c1 = cross(vert.normal, Vec3(0, 0, 1));
+          Vec3 c2 = cross(vert.normal, Vec3(0, 1, 0));
+          Vec3 tangent = dot(c1, c1) > dot(c2, c2) ? c1 : c2;
           vert.tangent = buffer_tangents ? glm::vec4(glm::make_vec4(&buffer_tangents[v * 4])) : Vec4(tangent, 0.0);
 
           if (has_skin) {
@@ -698,7 +699,7 @@ void Mesh::load_node(Node* parent,
           }
           vert.weight0 = has_skin ? glm::make_vec4(&buffer_weights[v * weight_byte_stride]) : glm::vec4(0.0f);
           // Fix for all zero weights
-          if (glm::length(vert.weight0) == 0.0f) {
+          if (length(vert.weight0) == 0.0f) {
             vert.weight0 = glm::vec4(1.0f, 0.0f, 0.0f, 0.0f);
           }
           vbuffer.emplace_back(vert);
@@ -759,8 +760,8 @@ void Mesh::load_node(Node* parent,
         new_mesh->bb = p->bb;
         new_mesh->bb.valid = true;
       }
-      new_mesh->bb.min = glm::min(new_mesh->bb.min, p->bb.min);
-      new_mesh->bb.max = glm::max(new_mesh->bb.max, p->bb.max);
+      new_mesh->bb.min = min(new_mesh->bb.min, p->bb.min);
+      new_mesh->bb.max = max(new_mesh->bb.max, p->bb.max);
     }
     new_node->mesh_data = new_mesh;
   }

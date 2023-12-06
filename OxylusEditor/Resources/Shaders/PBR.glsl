@@ -53,6 +53,8 @@ float V_SmithGGXCorrelated(float NoV, float NoL, float a) {
 float Fd_Lambert() { return 1.0 / PI; }
 
 float ComputeMicroShadowing(float NoL, float visibility) {
+    if (visibility == 1.0)
+    return 1.0;
     // Chan 2018, "Material Advances in Call of Duty: WWII"
     float aperture = inversesqrt(1.0 - min(visibility, 0.9999));
     float microShadow = saturate(NoL * aperture);
@@ -60,11 +62,11 @@ float ComputeMicroShadowing(float NoL, float visibility) {
 }
 
 float Diffuse(float roughness, float NoV, float NoL, float LoH) {
-#if QUALITY_LOW
+    #if QUALITY_LOW
     return Fd_Lambert();
-#else
+    #else
     return Fd_Burley(roughness, NoV, NoL, LoH);
-#endif
+    #endif
 }
 
 vec3 ComputeF0(const vec4 baseColor, float metallic, float reflectance) { return baseColor.rgb * metallic + (reflectance * (1.0 - metallic)); }
@@ -109,11 +111,11 @@ float f0ToIor(float f0) {
 vec3 f0ClearCoatToSurface(const vec3 f0) {
     // Approximation of iorTof0(f0ToIor(f0), 1.5)
     // This assumes that the clear coat layer has an IOR of 1.5
-#if QUALITY_LOW
+    #if QUALITY_LOW
     return saturate(f0 * (f0 * 0.526868 + 0.529324) - 0.0482256);
-#else
+    #else
     return saturate(f0 * (f0 * (0.941892 - 0.263008 * f0) + 0.346479) - 0.0285998);
-#endif
+    #endif
 }
 
 //------------------------------------------------------------------------------
@@ -123,20 +125,20 @@ vec3 f0ClearCoatToSurface(const vec3 f0) {
 float distribution(float roughness, float NoH, const vec3 h, const vec3 normal) { return D_GGX(roughness, NoH, normal, h); }
 
 float visibility(float roughness, float NoV, float NoL) {
-#if QUALITY_LOW
+    #if QUALITY_LOW
     return V_SmithGGXCorrelatedFast(roughness, NoV, NoL);
-#else
+    #else
     return V_SmithGGXCorrelated(roughness, NoV, NoL);
-#endif
+    #endif
 }
 
 vec3 fresnel(const vec3 f0, float LoH) {
-#if QUALITY_LOW
-    return F_Schlick(LoH, f0); // f90 = 1.0
-#else
+    #if QUALITY_LOW
+    return F_Schlick(LoH, f0);// f90 = 1.0
+    #else
     float f90 = saturate(dot(f0, vec3(50.0 * 0.33)));
     return F_Schlick(f0, f90, LoH);
-#endif
+    #endif
 }
 
 // OLD
@@ -160,7 +162,7 @@ float gaSchlickG1(float cosTheta, float k) { return cosTheta / (cosTheta * (1.0 
 // Schlick-GGX approximation of geometric attenuation function using Smith's method.
 float gaSchlickGGX(float cosLi, float NdotV, float roughness) {
     float r = roughness + 1.0;
-    float k = (r * r) / 8.0; // Epic suggests using this roughness remapping for analytic lights.
+    float k = (r * r) / 8.0;// Epic suggests using this roughness remapping for analytic lights.
     return gaSchlickG1(cosLi, k) * gaSchlickG1(NdotV, k);
 }
 

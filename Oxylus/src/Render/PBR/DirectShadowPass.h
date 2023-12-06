@@ -11,9 +11,12 @@ class DirectShadowPass {
 public:
   struct DirectShadowUB {
     Mat4 cascade_view_proj_mat[SHADOW_MAP_CASCADE_COUNT]{};
-    float cascade_splits[4]{};
+    Vec4 cascade_splits = {};
+    Vec4 scissor_normalized = {};
   };
 
   static void update_cascades(const Vec3& dir_light_transform, Camera* camera, DirectShadowUB* cascades_ubo);
+
+  static Vec4 get_clamp_to_edge_coords();
 };
 }

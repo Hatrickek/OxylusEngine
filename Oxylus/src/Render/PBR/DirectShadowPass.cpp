@@ -5,6 +5,8 @@
 #include "Core/Application.h"
 #include "Core/Entity.h"
 
+#include "Render/RendererConfig.h"
+
 namespace Oxylus {
 void DirectShadowPass::update_cascades(const Vec3& dir_light_transform, Camera* camera, DirectShadowUB* cascades_ubo) {
   OX_SCOPED_ZONE;
@@ -87,6 +89,20 @@ void DirectShadowPass::update_cascades(const Vec3& dir_light_transform, Camera* 
     cascades_ubo->cascade_view_proj_mat[i] = light_ortho_matrix * light_view_matrix;
 
     last_split_dist = cascade_splits[i];
+
+    cascades_ubo->scissor_normalized = get_clamp_to_edge_coords();
   }
+}
+
+Vec4 DirectShadowPass::get_clamp_to_edge_coords() {
+  constexpr float border = 0.5f;
+
+  float const texel = 1.0f / float(4 * RendererCVar::cvar_shadows_size.get());
+  auto const dim = float(RendererCVar::cvar_shadows_size.get());
+  float const l = border;
+  float const b = border;
+  float const w = dim - 2.0f * border;
+  float const h = dim - 2.0f * border;
+  return Vec4{l, b, l + w, b + h} * texel;
 }
 }
