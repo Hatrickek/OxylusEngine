@@ -31,9 +31,13 @@ vec3 F_Schlick(const vec3 f0, float f90, float VoH) {
     return f0 + (f90 - f0) * pow5(1.0 - VoH);
 }
 
-vec3 F_Schlick(float u, vec3 f0) { return f0 + (vec3(1.0) - f0) * pow(1.0 - u, 5.0); }
+vec3 F_Schlick(float u, vec3 f0) { 
+    return f0 + (vec3(1.0) - f0) * pow(1.0 - u, 5.0); 
+}
 
-float F_Schlick(float u, float f0, float f90) { return f0 + (f90 - f0) * pow(1.0 - u, 5.0); }
+float F_Schlick(float u, float f0, float f90) { 
+    return f0 + (f90 - f0) * pow(1.0 - u, 5.0); 
+}
 
 float Fd_Burley(float roughness, float NoV, float NoL, float LoH) {
     // Burley 2012, "Physically-Based Shading at Disney"
@@ -53,8 +57,6 @@ float V_SmithGGXCorrelated(float NoV, float NoL, float a) {
 float Fd_Lambert() { return 1.0 / PI; }
 
 float ComputeMicroShadowing(float NoL, float visibility) {
-    if (visibility == 1.0)
-    return 1.0;
     // Chan 2018, "Material Advances in Call of Duty: WWII"
     float aperture = inversesqrt(1.0 - min(visibility, 0.9999));
     float microShadow = saturate(NoL * aperture);
@@ -69,7 +71,9 @@ float Diffuse(float roughness, float NoV, float NoL, float LoH) {
     #endif
 }
 
-vec3 ComputeF0(const vec4 baseColor, float metallic, float reflectance) { return baseColor.rgb * metallic + (reflectance * (1.0 - metallic)); }
+vec3 ComputeF0(const vec4 baseColor, float metallic, float reflectance) {
+    return baseColor.rgb * metallic + (reflectance * (1.0 - metallic));
+}
 
 #if QUALITY_LOW
 // min roughness such that (MIN_PERCEPTUAL_ROUGHNESS^4) > 0 in fp16 (i.e. 2^(-14/4), rounded up)
@@ -87,21 +91,37 @@ float clampNoV(float NoV) {
     return max(NoV, MIN_N_DOT_V);
 }
 
-vec3 computeDiffuseColor(const vec4 baseColor, float metallic) { return baseColor.rgb * (1.0 - metallic); }
+vec3 computeDiffuseColor(const vec4 baseColor, float metallic) { 
+    return baseColor.rgb * (1.0 - metallic); 
+}
 
-vec3 computeF0(const vec4 baseColor, float metallic, float reflectance) { return baseColor.rgb * metallic + (reflectance * (1.0 - metallic)); }
+vec3 computeF0(const vec4 baseColor, float metallic, float reflectance) {
+    return baseColor.rgb * metallic + (reflectance * (1.0 - metallic));
+}
 
-float computeDielectricF0(float reflectance) { return 0.16 * reflectance * reflectance; }
+float computeDielectricF0(float reflectance) { 
+    return 0.16 * reflectance * reflectance; 
+}
 
-float computeMetallicFromSpecularColor(const vec3 specularColor) { return max3(specularColor); }
+float computeMetallicFromSpecularColor(const vec3 specularColor) { 
+    return max3(specularColor); 
+}
 
-float computeRoughnessFromGlossiness(float glossiness) { return 1.0 - glossiness; }
+float computeRoughnessFromGlossiness(float glossiness) { 
+    return 1.0 - glossiness; 
+}
 
-float perceptualRoughnessToRoughness(float perceptualRoughness) { return perceptualRoughness * perceptualRoughness; }
+float perceptualRoughnessToRoughness(float perceptualRoughness) { 
+    return perceptualRoughness * perceptualRoughness;
+}
 
-float roughnessToPerceptualRoughness(float roughness) { return sqrt(roughness); }
+float roughnessToPerceptualRoughness(float roughness) { 
+    return sqrt(roughness);
+}
 
-float iorToF0(float transmittedIor, float incidentIor) { return sq((transmittedIor - incidentIor) / (transmittedIor + incidentIor)); }
+float iorToF0(float transmittedIor, float incidentIor) { 
+    return sq((transmittedIor - incidentIor) / (transmittedIor + incidentIor));
+}
 
 float f0ToIor(float f0) {
     float r = sqrt(f0);
@@ -122,7 +142,9 @@ vec3 f0ClearCoatToSurface(const vec3 f0) {
 // Specular BRDF dispatch
 //------------------------------------------------------------------------------
 
-float distribution(float roughness, float NoH, const vec3 h, const vec3 normal) { return D_GGX(roughness, NoH, normal, h); }
+float distribution(float roughness, float NoH, const vec3 h, const vec3 normal) { 
+    return D_GGX(roughness, NoH, normal, h);
+}
 
 float visibility(float roughness, float NoV, float NoL) {
     #if QUALITY_LOW
@@ -140,33 +162,3 @@ vec3 fresnel(const vec3 f0, float LoH) {
     return F_Schlick(f0, f90, LoH);
     #endif
 }
-
-// OLD
-
-// Constant normal incidence Fresnel factor for all dielectrics.
-const vec3 Fdielectric = vec3(0.04);
-
-// GGX/Towbridge-Reitz normal distribution function.
-// Uses Disney's reparametrization of alpha = roughness^2
-float ndfGGX(float cosLh, float roughness) {
-    float alpha = roughness * roughness;
-    float alphaSq = alpha * alpha;
-
-    float denom = (cosLh * cosLh) * (alphaSq - 1.0) + 1.0;
-    return alphaSq / (PI * denom * denom);
-}
-
-// Single term for separable Schlick-GGX below.
-float gaSchlickG1(float cosTheta, float k) { return cosTheta / (cosTheta * (1.0 - k) + k); }
-
-// Schlick-GGX approximation of geometric attenuation function using Smith's method.
-float gaSchlickGGX(float cosLi, float NdotV, float roughness) {
-    float r = roughness + 1.0;
-    float k = (r * r) / 8.0;// Epic suggests using this roughness remapping for analytic lights.
-    return gaSchlickG1(cosLi, k) * gaSchlickG1(NdotV, k);
-}
-
-// Shlick's approximation of the Fresnel factor.
-vec3 fresnelSchlick(vec3 F0, float cosTheta) { return F0 + (1.0 - F0) * pow(max(1.0 - cosTheta, 0.0), 5.0); }
-
-vec3 fresnelSchlickRoughness(vec3 F0, float cosTheta, float roughness) { return F0 + (max(vec3(1.0 - roughness), F0) - F0) * pow(max(1.0 - cosTheta, 0.0), 5.0); }

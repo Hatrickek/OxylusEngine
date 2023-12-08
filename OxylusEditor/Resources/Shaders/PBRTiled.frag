@@ -23,6 +23,7 @@ struct Light {
 
 struct PixelData {
     vec4 Albedo;
+    vec3 DiffuseColor;
     float Metallic;
     float Roughness;
     float PerceptualRoughness;
@@ -34,7 +35,7 @@ struct PixelData {
     float NDotV;
     vec3 F0;
     vec3 EnergyCompensation;
-    vec3 dfg;
+    vec2 dfg;
 };
 
 layout(location = 0) in vec3 inWorldPos;
@@ -71,6 +72,10 @@ layout(binding = 4) uniform ShadowUBO {
 layout(binding = 5) uniform sampler2D u_TransmittanceLut;
 layout(binding = 6) uniform usampler2D u_GTAO;
 
+layout(binding = 7) uniform samplerCube samplerIrradiance;
+layout(binding = 8) uniform sampler2D samplerBRDFLUT;
+layout(binding = 9) uniform samplerCube prefilteredMap;
+
 #include "SkyCommon.glsl"
 
 // Material
@@ -87,8 +92,9 @@ layout(location = 0) out vec4 outColor;
 #include "Conversions.glsl"
 
 vec3 GetNormal(Material mat, vec2 uv) {
-    if (!mat.UseNormal)
-    return normalize(inNormal);
+    if (!mat.UseNormal) {
+        return normalize(inNormal);
+    }
 
     vec3 tangentNormal = normalize(texture(normalMap, uv).xyz * 2.0 - 1.0);
 
@@ -105,26 +111,39 @@ vec3 GetNormal(Material mat, vec2 uv) {
     return normalize(TBN * tangentNormal);
 }
 
-void GetEnergyCompensationPixelData(inout PixelData pixelData) {
-    pixelData.dfg = vec3(1.0); // TODO: PrefilteredDFG(pixel.perceptualRoughness, shading_NoV);
-    pixelData.EnergyCompensation = 1.0 + pixelData.F0 * (1.0 / pixelData.dfg.y - 1.0);
+vec2 PrefilteredDFG(float perceptualRoughness, float NoV) {
+    return textureLod(samplerBRDFLUT, vec2(NoV, perceptualRoughness), 0.0).rg;
 }
 
-vec3 IsotropicLobe(PixelData material, const vec3 h, float NoV, float NoL, float NoH, float LoH) {
-    float D = distribution(material.Roughness, NoH, material.Normal, h);
-    float V = visibility(material.Roughness, NoV, NoL);
-    vec3 F = fresnel(material.F0, LoH);
+void GetEnergyCompensationPixelData(inout PixelData pixelData) {
+    pixelData.dfg = PrefilteredDFG(pixelData.PerceptualRoughness, pixelData.NDotV);
+    pixelData.EnergyCompensation = 1.0 + pixelData.F0 * (1.0 / max(0.01, pixelData.dfg.y) - 1.0);
+}
+
+vec3 IsotropicLobe(PixelData pixelData, const vec3 h, float NoV, float NoL, float NoH, float VoH) {
+    float D = distribution(pixelData.Roughness, NoH, pixelData.Normal, h);
+    float V = visibility(pixelData.Roughness, NoV, NoL);
+    vec3 F = fresnel(pixelData.F0, VoH);
     return (D * V) * F;
 }
 
-vec3 DiffuseLobe(PixelData material, float NoV, float NoL, float LoH) {
-    float diff = Diffuse(material.Roughness, NoV, NoL, LoH);
-    return material.Albedo.rgb * diff;
+vec3 DiffuseLobe(PixelData pixelData, float NoV, float NoL, float LoH) {
+    return pixelData.DiffuseColor.rgb * Diffuse(pixelData.Roughness, NoV, NoL, LoH);
 }
 
-vec3 SpecularLobe(PixelData material, const vec3 h, float NoV, float NoL, float NoH, float LoH) {
-    vec3 spec = IsotropicLobe(material, h, NoV, NoL, NoH, LoH);
+vec3 SpecularLobe(PixelData pixelData, const vec3 h, float NoV, float NoL, float NoH, float VoH) {
+    vec3 spec = IsotropicLobe(pixelData, h, NoV, NoL, NoH, VoH);
     return spec;
+}
+
+float GeometricOcclusion(PixelData pixelData, float NoL) {
+    float NdotL = NoL;
+    float NdotV = pixelData.NDotV;
+    float r = pixelData.Roughness * pixelData.Roughness;
+
+    float attenuationL = 2.0 * NdotL / (NdotL + sqrt(r * r + (1.0 - r * r) * (NdotL * NdotL)));
+    float attenuationV = 2.0 * NdotV / (NdotV + sqrt(r * r + (1.0 - r * r) * (NdotV * NdotV)));
+    return attenuationL * attenuationV;
 }
 
 mat4 BiasMatrix = mat4(0.5, 0.0, 0.0, 0.0, 0.0, 0.5, 0.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.5, 0.5, 0.0, 1.0);
@@ -140,17 +159,39 @@ float GetShadowBias(const vec3 lightDirection, const vec3 normal) {
     return bias;
 }
 
+vec3 specularReflection(vec3 reflectance0, vec3 reflectance90, float VoH)
+{
+    return reflectance0 + (reflectance90 - reflectance0) * pow(clamp(1.0 - VoH, 0.0, 1.0), 5.0);
+}
+
+float geometricOcclusion(float NoL, float NoV, float alphaRoughness)
+{
+    float NdotL = NoL;
+    float NdotV = NoV;
+    float r = alphaRoughness;
+
+    float attenuationL = 2.0 * NdotL / (NdotL + sqrt(r * r + (1.0 - r * r) * (NdotL * NdotL)));
+    float attenuationV = 2.0 * NdotV / (NdotV + sqrt(r * r + (1.0 - r * r) * (NdotV * NdotV)));
+    return attenuationL * attenuationV;
+}
+
+float microfacetDistribution(float alphaRoughness, float NoH) {
+    float roughnessSq = alphaRoughness * alphaRoughness;
+    float f = (NoH * roughnessSq - NoH) * NoH + 1.0;
+    return roughnessSq / (PI * f * f);
+}
+
 vec3 Lighting(vec3 F0, vec3 wsPos, PixelData pixelData) {
     vec3 result = vec3(0);
 
     for (int i = 0; i < NumLights; i++) {
         Light currentLight = lights[i];
 
-        float visibility = 1.0;
+        float visibility = 0.0;
 
         vec3 lightDirection = currentLight.RotationType.xyz;
         lightDirection.z = 0;
-        
+
         if (currentLight.RotationType.w == POINT_LIGHT) {
             // Vector to light
             vec3 L = currentLight.PositionIntensity.xyz - inWorldPos;
@@ -161,13 +202,13 @@ vec3 Lighting(vec3 F0, vec3 wsPos, PixelData pixelData) {
             L = normalize(L);
 
             float radius = currentLight.ColorRadius.w;
-            
+
             // Attenuation
             float atten = radius / (pow(dist, 2.0) + 1.0);
             float attenuation = clamp(1.0 - (dist * dist) / (radius * radius), 0.0, 1.0);
 
             visibility = attenuation;
-            
+
             lightDirection = L;
         } else if (currentLight.RotationType.w == SPOT_LIGHT) {
             vec3 L = currentLight.PositionIntensity.xyz - wsPos;
@@ -180,7 +221,7 @@ vec3 Lighting(vec3 F0, vec3 wsPos, PixelData pixelData) {
             attenuation *= currentLight.ColorRadius.w / (pow(dist, 2.0) + 1.0);// saturate(1.0f - dist / light.range);
 
             visibility = clamp(attenuation, 0.0, 1.0);
-        } else if (currentLight.RotationType.w == DIRECTIONAL_LIGHT && saturate(dot(pixelData.Normal, lightDirection)) > 0.0) {
+        } else if (currentLight.RotationType.w == DIRECTIONAL_LIGHT) {
             int cascadeIndex = GetCascadeIndex(CascadeSplits, in_ViewPos, SHADOW_MAP_CASCADE_COUNT);
             highp vec4 shadowPosition = GetShadowPosition(inWorldPos, cascadeIndex);
             float shadowBias = GetShadowBias(lightDirection, pixelData.Normal);
@@ -195,43 +236,98 @@ vec3 Lighting(vec3 F0, vec3 wsPos, PixelData pixelData) {
             visibility = 1.0 - ((1.0 - visibility) * saturate(p.x - z * z * p.y));
         }
 
-        vec3 Lh = normalize(lightDirection + pixelData.View);
-
         float lightNoL = saturate(dot(pixelData.Normal, lightDirection));
         vec3 h = normalize(pixelData.View + lightDirection);
 
-        float shading_NoV = clampNoV(dot(pixelData.Normal, pixelData.View));
-        float NoV = shading_NoV;
         float NoL = saturate(lightNoL);
         float NoH = saturate(dot(pixelData.Normal, h));
         float LoH = saturate(dot(lightDirection, h));
+        float VoH = saturate(dot(pixelData.View, h));
 
-        vec3 Fd = DiffuseLobe(pixelData, NoV, NoL, LoH);
-        vec3 Fr = SpecularLobe(pixelData, h, NoV, NoL, NoH, LoH);
+        #if 1
+        vec3 specularColor = mix(pixelData.F0, pixelData.Albedo.rgb, pixelData.Metallic);
 
-        vec3 color = Fd + Fr * pixelData.EnergyCompensation;
+        // Compute reflectance.
+        float reflectance = max(max(specularColor.r, specularColor.g), specularColor.b);
 
-        vec3 sun_radiance = color * max(0, dot(lightDirection, pixelData.Normal));
-        vec3 transmittance_lut = SampleLUT(u_TransmittanceLut, PlanetRadius, lightNoL, PlanetRadius, 0.0);
+        float reflectance90 = clamp(reflectance * 25.0, 0.0, 1.0);
+        vec3 specularEnvironmentR0 = specularColor.rgb;
+        vec3 specularEnvironmentR90 = vec3(1.0, 1.0, 1.0) * reflectance90;
 
-        //result += currentLight.Position.w * (value * sun_radiance * ComputeMicroShadowing(NoL, material.AO)) + transmittance_lut;
+        vec3 F = specularReflection(specularEnvironmentR0, specularEnvironmentR90, VoH); //SpecularLobe(pixelData, h, pixelData.NDotV, NoL, NoH, VoH);
+        float D = microfacetDistribution(pixelData.Roughness, NoH);
+        float G = GeometricOcclusion(pixelData, NoL);
+
+        // Calculation of analytical lighting contribution
+        vec3 diffuseContrib = (1.0 - F) * DiffuseLobe(pixelData, pixelData.NDotV, NoL, LoH);
+        vec3 specContrib = F * D * G;
+        vec3 color = (diffuseContrib + specContrib); //* pixelData.EnergyCompensation;
+        // Obtain final intensity as reflectance (BRDF) scaled by the energy of the light (cosine law)
+        result += color * (NoL * visibility) * (currentLight.ColorRadius.rgb * currentLight.PositionIntensity.w);
+        #endif
+        
+        #if 0
+        vec3 Fd = DiffuseLobe(pixelData, pixelData.NDotV, NoL, LoH);
+        vec3 Fr = SpecularLobe(pixelData, h, pixelData.NDotV, NoL, NoH, VoH);
+        float G = GeometricOcclusion(pixelData, NoL);
+
+        vec3 color = (Fd + Fr) * pixelData.EnergyCompensation;
 
         visibility *= ComputeMicroShadowing(NoL, pixelData.AO);
 
         result += (color * currentLight.ColorRadius.rgb * currentLight.PositionIntensity.w) * (NoL * visibility);
+        #endif
+        
+        //vec3 sun_radiance = color * max(0, dot(lightDirection, pixelData.Normal));
+        //vec3 transmittance_lut = SampleLUT(u_TransmittanceLut, PlanetRadius, lightNoL, PlanetRadius, 0.0);
+
+        //result += currentLight.Position.w * (value * sun_radiance * ComputeMicroShadowing(NoL, material.AO)) + transmittance_lut;
     }
 
     return result;
 }
 
-vec3 EvaluateIBL(PixelData pixelData) {
-    vec3 color = vec3(0.0);
-    
-    vec3 Fr = vec3(0.0);
-    
-    
-    
-    return color;
+vec3 specularDFG(const PixelData pixel) {
+    return mix(pixel.dfg.xxx, pixel.dfg.yyy, pixel.F0);
+}
+
+vec3 getSpecularDominantDirection(const vec3 n, const vec3 r, float roughness) {
+    return mix(r, n, roughness * roughness);
+}
+
+vec3 getReflectedVector(const PixelData pixel, const vec3 n) {
+    vec3 shading_reflected = reflect(-pixel.View, pixel.Normal);
+    vec3 r = shading_reflected;
+    return getSpecularDominantDirection(n, r, pixel.Roughness);
+}
+
+float perceptualRoughnessToLod(float perceptualRoughness) {
+    return 4 * perceptualRoughness * (2.0 - perceptualRoughness);
+}
+
+vec3 prefilteredRadiance(const vec3 r, float perceptualRoughness) {
+    float lod = perceptualRoughnessToLod(perceptualRoughness);
+    return textureLod(prefilteredMap, r, lod).rgb;
+}
+
+vec3 DiffuseIrradiance(PixelData pixel) {
+    return texture(samplerIrradiance, pixel.Normal).rgb;
+}
+
+vec3 ComputeDiffuseColor(const vec4 baseColor, float metallic) {
+    return baseColor.rgb * (1.0 - metallic);
+}
+
+vec3 EvaluateIBL(PixelData pixel) {
+    vec3 E = specularDFG(pixel);
+    vec3 r = 2.0 * pixel.NDotV * pixel.Normal - pixel.View;//getReflectedVector(pixel, pixel.Normal);
+    vec3 Fr = E * prefilteredRadiance(r, pixel.PerceptualRoughness);
+
+    vec3 diffuseIrradiance = DiffuseIrradiance(pixel);
+
+    vec3 Fd = pixel.DiffuseColor.xyz * diffuseIrradiance * (1.0 - E);
+
+    return Fd + Fr;
 }
 
 void main() {
@@ -239,7 +335,6 @@ void main() {
     vec2 scaledUV = inUV;
     scaledUV *= mat.UVScale;
 
-    float perceptualRoughness;
     vec4 baseColor;
 
     if (mat.UseAlbedo) {
@@ -251,18 +346,17 @@ void main() {
         discard;
     }
 
-    const float c_MinRoughness = 0.04;
-    perceptualRoughness = mat.Roughness;
+    float roughness = 1.0 - mat.Roughness;
     float metallic = mat.Metallic;
+
+    // metallic roughness workflow
     if (mat.UsePhysicalMap) {
-        // Roughness is stored in the 'g' channel, metallic is stored in the 'b' channel.
-        // This layout intentionally reserves the 'r' channel for (optional) occlusion map data
-        vec4 mrSample = texture(physicalMap, scaledUV);
-        perceptualRoughness = mrSample.g * perceptualRoughness;
-        metallic = mrSample.b * metallic;
+        vec4 physicalMapTexture = texture(physicalMap, scaledUV);
+        roughness = physicalMapTexture.g;//* (1.0 - mat.Roughness);
+        metallic = physicalMapTexture.b; //* (1.0 - mat.Metallic);
     } else {
-        perceptualRoughness = clamp(perceptualRoughness, c_MinRoughness, 1.0);
         metallic = clamp(metallic, 0.0, 1.0);
+        roughness = clamp(roughness, MIN_ROUGHNESS, 1.0);
     }
 
     const float u_EmissiveFactor = 1.0f;
@@ -278,25 +372,24 @@ void main() {
 
     PixelData pixelData;
     pixelData.Albedo = baseColor;
+    pixelData.DiffuseColor = ComputeDiffuseColor(baseColor, metallic);
     pixelData.Metallic = metallic;
-    pixelData.Roughness = perceptualRoughnessToRoughness(perceptualRoughness);
-    pixelData.PerceptualRoughness = perceptualRoughness;
+    pixelData.PerceptualRoughness = clamp(roughness, MIN_PERCEPTUAL_ROUGHNESS, 1.0);
+    pixelData.Roughness = perceptualRoughnessToRoughness(pixelData.Roughness);
     pixelData.Reflectance = mat.Reflectance;
     pixelData.Emissive = emmisive;
     pixelData.Normal = GetNormal(mat, scaledUV);
     pixelData.AO = ao;
     pixelData.View = normalize(CamPos.xyz - inWorldPos);
-    pixelData.NDotV = max(dot(pixelData.Normal, pixelData.View), 1e-4);
+    pixelData.NDotV = clampNoV(dot(pixelData.Normal, pixelData.View));
     float reflectance = computeDielectricF0(mat.Reflectance);
-    pixelData.F0 = computeF0(pixelData.Albedo, pixelData.Metallic.x, reflectance);
+    pixelData.F0 = computeF0(pixelData.Albedo, pixelData.Metallic, reflectance);
 
-    GetEnergyCompensationPixelData(pixelData);
-    
     // Specular anti-aliasing
     {
         const float strength = 1.0f;
         const float maxRoughnessGain = 0.02f;
-        float roughness2 = perceptualRoughness * perceptualRoughness;
+        float roughness2 = roughness * roughness;
         vec3 dndu = dFdx(pixelData.Normal);
         vec3 dndv = dFdy(pixelData.Normal);
         float variance = (dot(dndu, dndu) + dot(dndv, dndv));
@@ -305,6 +398,9 @@ void main() {
         pixelData.Roughness = sqrt(filteredRoughness2);
     }
 
+    GetEnergyCompensationPixelData(pixelData);
+
+    #ifndef BLEND_MODE_BLEND
     // Apply GTAO
     if (EnableGTAO == 1) {
         vec2 uv = gl_FragCoord.xy / vec2(ScreenDimensions.x, ScreenDimensions.y);
@@ -313,14 +409,10 @@ void main() {
         aoVisibility = value / 255.0;
         pixelData.Albedo *= aoVisibility;
     }
+    #endif
 
-    float shadowDistance = 500;
-    float transitionDistance = 40;
-
-    vec4 viewPos = View * vec4(inWorldPos, 1.0);
-
-    // vec3 Lr = 2.0 * material.NDotV * material.Normal - material.View; for IBL
     vec3 lightContribution = Lighting(pixelData.F0, inWorldPos, pixelData);
+    vec3 iblContribution = EvaluateIBL(pixelData);
 
     vec3 finalColor = lightContribution + pixelData.Emissive;
 
