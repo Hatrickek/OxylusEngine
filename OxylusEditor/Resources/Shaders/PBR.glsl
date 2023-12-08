@@ -91,8 +91,8 @@ float clampNoV(float NoV) {
     return max(NoV, MIN_N_DOT_V);
 }
 
-vec3 computeDiffuseColor(const vec4 baseColor, float metallic) { 
-    return baseColor.rgb * (1.0 - metallic); 
+vec3 ComputeDiffuseColor(const vec4 baseColor, float metallic) {
+    return baseColor.rgb * (1.0 - metallic);
 }
 
 vec3 computeF0(const vec4 baseColor, float metallic, float reflectance) {

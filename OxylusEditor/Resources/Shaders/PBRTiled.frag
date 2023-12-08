@@ -36,6 +36,7 @@ struct PixelData {
     vec3 F0;
     vec3 EnergyCompensation;
     vec2 dfg;
+    vec3 TransmittanceLut;
 };
 
 layout(location = 0) in vec3 inWorldPos;
@@ -181,7 +182,7 @@ float microfacetDistribution(float alphaRoughness, float NoH) {
     return roughnessSq / (PI * f * f);
 }
 
-vec3 Lighting(vec3 F0, vec3 wsPos, PixelData pixelData) {
+vec3 Lighting(vec3 F0, vec3 wsPos, inout PixelData pixelData) {
     vec3 result = vec3(0);
 
     for (int i = 0; i < NumLights; i++) {
@@ -278,8 +279,9 @@ vec3 Lighting(vec3 F0, vec3 wsPos, PixelData pixelData) {
         result += (color * currentLight.ColorRadius.rgb * currentLight.PositionIntensity.w) * (NoL * visibility);
         #endif
         
-        //vec3 sun_radiance = color * max(0, dot(lightDirection, pixelData.Normal));
-        //vec3 transmittance_lut = SampleLUT(u_TransmittanceLut, PlanetRadius, lightNoL, PlanetRadius, 0.0);
+        vec3 sun_radiance = color * max(0, dot(lightDirection, pixelData.Normal));
+        vec3 transmittance_lut = SampleLUT(u_TransmittanceLut, PlanetRadius, lightNoL, PlanetRadius, 0.0);
+        pixelData.TransmittanceLut = transmittance_lut;
 
         //result += currentLight.Position.w * (value * sun_radiance * ComputeMicroShadowing(NoL, material.AO)) + transmittance_lut;
     }
@@ -314,9 +316,6 @@ vec3 DiffuseIrradiance(PixelData pixel) {
     return texture(samplerIrradiance, pixel.Normal).rgb;
 }
 
-vec3 ComputeDiffuseColor(const vec4 baseColor, float metallic) {
-    return baseColor.rgb * (1.0 - metallic);
-}
 
 vec3 EvaluateIBL(PixelData pixel) {
     vec3 E = specularDFG(pixel);
@@ -325,9 +324,9 @@ vec3 EvaluateIBL(PixelData pixel) {
 
     vec3 diffuseIrradiance = DiffuseIrradiance(pixel);
 
-    vec3 Fd = pixel.DiffuseColor.xyz * diffuseIrradiance * (1.0 - E);
+    vec3 Fd = pixel.DiffuseColor.xyz * diffuseIrradiance * (E);
 
-    return Fd + Fr;
+    return Fd; // + Fr;
 }
 
 void main() {
@@ -400,6 +399,11 @@ void main() {
 
     GetEnergyCompensationPixelData(pixelData);
 
+    vec3 lightContribution = Lighting(pixelData.F0, inWorldPos, pixelData);
+    vec3 iblContribution = EvaluateIBL(pixelData);
+
+    vec3 finalColor = iblContribution + lightContribution + pixelData.Emissive;
+
     #ifndef BLEND_MODE_BLEND
     // Apply GTAO
     if (EnableGTAO == 1) {
@@ -407,14 +411,10 @@ void main() {
         float aoVisibility = 1.0;
         uint value = texture(u_GTAO, uv).r;
         aoVisibility = value / 255.0;
-        pixelData.Albedo *= aoVisibility;
+        // maybe apply it to only pixelData.Albedo? 
+        finalColor *= aoVisibility;
     }
     #endif
-
-    vec3 lightContribution = Lighting(pixelData.F0, inWorldPos, pixelData);
-    vec3 iblContribution = EvaluateIBL(pixelData);
-
-    vec3 finalColor = lightContribution + pixelData.Emissive;
 
     outColor = vec4(finalColor, pixelData.Albedo.a);
 }
