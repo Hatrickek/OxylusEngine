@@ -751,6 +751,7 @@ void Mesh::load_node(Node* parent,
       if (primitive.material < 0)
         new_primitive->material_index = 0;
       new_primitive->set_bounding_box(pos_min, pos_max);
+      new_primitive->material = materials[new_primitive->material_index];
       new_primitive->parent_node_index = node_index;
       new_mesh->primitives.push_back(new_primitive);
     }

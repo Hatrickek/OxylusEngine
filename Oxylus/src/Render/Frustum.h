@@ -15,7 +15,7 @@ struct Plane {
   Plane() = default;
 
   Plane(const Vec3& p1, const Vec3& norm) : normal(normalize(norm)),
-                                            distance(dot(normal, p1)) {}
+                                            distance(dot(normal, p1)) { }
 
   float get_distance(const Vec3& point) const { return dot(normal, point) - distance; }
 };
@@ -33,8 +33,8 @@ struct Frustum {
   Plane* planes[6] = {};
 
   bool is_inside(const Vec3& point) const {
-    for (int i = 0; i < 6; i++) {
-      if (planes[i]->get_distance(point) < 0.0f) {
+    for (const auto plane : planes) {
+      if (plane->get_distance(point) < 0.0f) {
         return false;
       }
     }

@@ -26,6 +26,12 @@ void SceneRenderer::init() {
 void SceneRenderer::update() const {
   OX_SCOPED_ZONE;
 
+  if (RendererCVar::cvar_reload_render_pipeline.get()) {
+    m_render_pipeline->init(*VulkanContext::get()->superframe_allocator);
+    RendererCVar::cvar_reload_render_pipeline.toggle();
+  }
+
+  // Mesh System
   {
     const auto mesh_view = m_scene->m_registry.view<TransformComponent, MeshComponent, MaterialComponent, TagComponent>();
     OX_SCOPED_ZONE_N("Mesh System");
@@ -44,16 +50,17 @@ void SceneRenderer::update() const {
     }
   }
 
+  // Animation system
   {
     const auto animation_view = m_scene->m_registry.view<TransformComponent, MeshComponent, AnimationComponent, TagComponent>();
     OX_SCOPED_ZONE_N("Animated Mesh System");
     for (const auto&& [entity, transform, mesh_renderer, animation, tag] : animation_view.each()) {
       if (!animation.animations.empty()) {
         animation.animation_timer += Application::get_timestep() * animation.animation_speed;
-        if (animation.animation_timer > mesh_renderer.original_mesh->animations[animation.current_animation_index]->end) {
-          animation.animation_timer -= mesh_renderer.original_mesh->animations[animation.current_animation_index]->end;
+        if (animation.animation_timer > mesh_renderer.mesh_base->animations[animation.current_animation_index]->end) {
+          animation.animation_timer -= mesh_renderer.mesh_base->animations[animation.current_animation_index]->end;
         }
-        mesh_renderer.original_mesh->update_animation(animation.current_animation_index, animation.animation_timer);
+        mesh_renderer.mesh_base->update_animation(animation.current_animation_index, animation.animation_timer);
       }
     }
   }

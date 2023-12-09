@@ -116,20 +116,24 @@ bool ViewportPanel::outline_pass(const Ref<RenderPipeline>& rp, const vuk::Dimen
                         .specialize_constants(0, 0)
                         .bind_buffer(0, 0, vs_buffer);
 
-          mesh.original_mesh->bind_vertex_buffer(command_buffer);
-          mesh.original_mesh->bind_index_buffer(command_buffer);
+          mesh.mesh_base->bind_index_buffer(command_buffer);
+          mesh.mesh_base->bind_vertex_buffer(command_buffer);
 
-          for (const auto& subset : mesh.subsets) {
-            struct PushConstant {
-              Mat4 model_matrix;
-              Vec4 color;
-            } pc;
+          const auto node = mesh.mesh_base->linear_nodes[mesh.node_index];
+          if (node->mesh_data) {
+            for (const auto primitive : node->mesh_data->primitives) {
+              struct PushConstant {
+                Mat4 model_matrix;
+                Vec4 color;
+              } pc;
 
-            pc.model_matrix = model_matrix;
-            pc.color = Vec4(0.f);
+              pc.model_matrix = model_matrix;
+              pc.color = Vec4(0.f);
 
-            command_buffer.push_constants(vuk::ShaderStageFlagBits::eVertex, 0, pc)
-                          .draw_indexed(subset.index_count, 1, subset.first_index, 0, 0);
+              command_buffer.push_constants(vuk::ShaderStageFlagBits::eVertex, 0, pc);
+
+              Renderer::draw_indexed(command_buffer, primitive->index_count, 1, primitive->first_index, 0, 0);
+            }
           }
 
           constexpr auto stencil_state2 = vuk::StencilOpState{
@@ -158,20 +162,20 @@ bool ViewportPanel::outline_pass(const Ref<RenderPipeline>& rp, const vuk::Dimen
                         .bind_graphics_pipeline("stencil_pipeline")
                         .bind_buffer(0, 0, vs_buffer);
 
-          mesh.original_mesh->bind_vertex_buffer(command_buffer);
-          mesh.original_mesh->bind_index_buffer(command_buffer);
+          if (node->mesh_data) {
+            for (const auto primitive : node->mesh_data->primitives) {
+              struct PushConstant {
+                Mat4 model_matrix;
+                Vec4 color;
+              } pc;
 
-          for (const auto& subset : mesh.subsets) {
-            struct PushConstant {
-              Mat4 model_matrix;
-              Vec4 color;
-            } pc;
+              pc.model_matrix = scale(model_matrix, Vec3(1.02f));
+              pc.color = Vec4(1.f, 0.45f, 0.f, 1.f);
 
-            pc.model_matrix = scale(model_matrix, Vec3(1.02f));
-            pc.color = Vec4(1.f, 0.45f, 0.f, 1.f);
+              command_buffer.push_constants(vuk::ShaderStageFlagBits::eVertex, 0, pc);
 
-            command_buffer.push_constants(vuk::ShaderStageFlagBits::eVertex, 0, pc)
-                          .draw_indexed(subset.index_count, 1, subset.first_index, 0, 0);
+              Renderer::draw_indexed(command_buffer, primitive->index_count, 1, primitive->first_index, 0, 0);
+            }
           }
         }
       });
@@ -471,25 +475,31 @@ void ViewportPanel::mouse_picking_pass(const Ref<RenderPipeline>& rp, const vuk:
                     .bind_buffer(0, 0, vs_buffer);
 
       for (auto& mesh : scene_meshes) {
-        mesh.mesh_component.original_mesh->bind_vertex_buffer(command_buffer);
-        mesh.mesh_component.original_mesh->bind_index_buffer(command_buffer);
+        if (mesh.mesh_component.base_node) {
+          mesh.mesh_component.mesh_base->bind_index_buffer(command_buffer);
+          mesh.mesh_component.mesh_base->bind_vertex_buffer(command_buffer);
+        }
 
-        for (const auto& subset : mesh.mesh_component.subsets) {
-          if (subset.material->parameters.alpha_mode == (uint32_t)Material::AlphaMode::Mask
-              || subset.material->parameters.alpha_mode == (uint32_t)Material::AlphaMode::Blend) {
-            continue;
+        const auto node = mesh.mesh_component.mesh_base->linear_nodes[mesh.mesh_component.node_index];
+        if (node->mesh_data) {
+          for (const auto primitive : node->mesh_data->primitives) {
+            if (primitive->material->parameters.alpha_mode == (uint32_t)Material::AlphaMode::Mask
+                || primitive->material->parameters.alpha_mode == (uint32_t)Material::AlphaMode::Blend) {
+              continue;
+            }
+
+            struct PushConstant {
+              Mat4 model_matrix;
+              uint32_t entity_id;
+            } pc;
+
+            pc.model_matrix = mesh.mesh_component.transform;
+            pc.entity_id = mesh.entity_id;
+
+            command_buffer.push_constants(vuk::ShaderStageFlagBits::eVertex, 0, pc);
+
+            Renderer::draw_indexed(command_buffer, primitive->index_count, 1, primitive->first_index, 0, 0);
           }
-
-          struct PushConstant {
-            Mat4 model_matrix;
-            uint32_t entity_id;
-          } pc;
-
-          pc.model_matrix = mesh.mesh_component.transform;
-          pc.entity_id = mesh.entity_id;
-
-          command_buffer.push_constants(vuk::ShaderStageFlagBits::eVertex, 0, pc)
-                        .draw_indexed(subset.index_count, 1, subset.first_index, 0, 0);
         }
       }
     }

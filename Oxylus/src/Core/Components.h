@@ -77,24 +77,15 @@ struct MaterialComponent {
 };
 
 struct MeshComponent {
-  struct MeshSubset {
-    uint32_t index_count = 0;
-    uint32_t first_index = 0;
-    Ref<Material> material = nullptr;
-    int32_t material_index = 0;
-  };
+  Ref<Mesh> mesh_base = nullptr;
 
-  Ref<Mesh> original_mesh = nullptr;
-  std::vector<MeshSubset> subsets = {};
+  bool base_node = true;
+  uint32_t node_index = 0;
+
   Mat4 transform = {};
 
   MeshComponent() = default;
-
-  MeshComponent(const Ref<Mesh>& model) : original_mesh(model) { }
-
-  ~MeshComponent() {
-    original_mesh.reset();
-  }
+  MeshComponent(const Ref<Mesh>& mesh) : mesh_base(mesh) { }
 };
 
 struct CameraComponent {
@@ -246,7 +237,7 @@ struct CharacterControllerComponent {
     float acceleration;
     float deceleration;
 
-    MovementSettings(float maxSpeed, float accel, float decel)
+    MovementSettings(const float maxSpeed, float accel, float decel)
       : max_speed(maxSpeed), acceleration(accel), deceleration(decel) { }
   };
 
@@ -269,7 +260,7 @@ struct CharacterControllerComponent {
   Vec3 previous_translation = Vec3(0.0f);
   Quat previous_rotation = Vec3(0.0f);
   Vec3 translation = Vec3(0.0f);
-  Quat Rotation = Vec3(0.0f);
+  Quat rotation = Vec3(0.0f);
 
   CharacterControllerComponent() = default;
 };
@@ -315,24 +306,25 @@ struct CustomComponent {
 template <typename... Component>
 struct ComponentGroup { };
 
-using AllComponents = ComponentGroup<TransformComponent, RelationshipComponent, PrefabComponent, CameraComponent,
+using AllComponents =
+ComponentGroup<TransformComponent, RelationshipComponent, PrefabComponent, CameraComponent,
 
-                                     // Render
-                                     LightComponent, MeshComponent, SkyLightComponent, ParticleSystemComponent, MaterialComponent,
+               // Render
+               LightComponent, MeshComponent, SkyLightComponent, ParticleSystemComponent, MaterialComponent,
 
-                                     //  Physics
-                                     RigidbodyComponent,
-                                     BoxColliderComponent,
-                                     SphereColliderComponent,
-                                     CapsuleColliderComponent,
-                                     TaperedCapsuleColliderComponent,
-                                     CylinderColliderComponent,
+               //  Physics
+               RigidbodyComponent,
+               BoxColliderComponent,
+               SphereColliderComponent,
+               CapsuleColliderComponent,
+               TaperedCapsuleColliderComponent,
+               CylinderColliderComponent,
 
-                                     // Audio
-                                     AudioSourceComponent, AudioListenerComponent,
+               // Audio
+               AudioSourceComponent, AudioListenerComponent,
 
-                                     // Custom  
-                                     CustomComponent,
-                                     // Scripting
-                                     LuaScriptComponent>;
+               // Custom  
+               CustomComponent,
+               // Scripting
+               LuaScriptComponent>;
 }

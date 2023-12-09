@@ -43,6 +43,8 @@ public:
 
     BoundingBox bb = {};
 
+    Ref<Material> material = nullptr;
+    
     int32_t material_index = 0;
     uint32_t parent_node_index = 0;
 

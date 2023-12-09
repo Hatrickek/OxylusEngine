@@ -62,9 +62,11 @@ void EntitySerializer::serialize_entity(Scene* scene, ryml::NodeRef& entities, E
 
   if (entity.has_component<MeshComponent>()) {
     const auto& mrc = entity.get_component<MeshComponent>();
-    auto node = entity_node["MeshRendererComponent"];
+    auto node = entity_node["MeshComponent"];
     node |= ryml::MAP;
-    node["Mesh"] << mrc.original_mesh->path;
+    node["Mesh"] << mrc.mesh_base->path;
+    node["BaseNode"] << mrc.base_node;
+    node["NodeIndex"] << mrc.node_index;
   }
 
   if (entity.has_component<MaterialComponent>()) {
@@ -302,11 +304,19 @@ UUID EntitySerializer::deserialize_entity(ryml::ConstNodeRef entity_node, Scene*
     }
   }
 
-  if (entity_node.has_child("MeshRendererComponent")) {
-    const auto& node = entity_node["MeshRendererComponent"];
+  if (entity_node.has_child("MeshComponent")) {
+    const auto& node = entity_node["MeshComponent"];
 
     std::string mesh_path;
     node["Mesh"] >> mesh_path;
+    bool base_node = false;
+    node["BaseNode"] >> base_node;
+    uint32_t node_index = 0;
+    node["NodeIndex"] >> node_index;
+
+    auto component = deserialized_entity.add_component_internal<MeshComponent>(AssetManager::get_mesh_asset(mesh_path));
+    component.base_node = base_node;
+    component.node_index = node_index;
   }
 
   if (entity_node.has_child("MaterialComponent")) {

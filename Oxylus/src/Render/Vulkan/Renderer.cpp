@@ -15,6 +15,7 @@
 namespace Oxylus {
 Renderer::RendererContext Renderer::renderer_context;
 RendererConfig Renderer::renderer_config;
+Renderer::RendererStats Renderer::renderer_stats;
 
 void Renderer::init() {
   // Save/Load renderer config
@@ -82,14 +83,14 @@ void Renderer::draw(VulkanContext* context, ImGuiLayer* imgui_layer, LayerStack&
     renderer_context.viewport_size.y = dim.extent.height;
 
     rgx->attach_and_clear_image("_img",
-      vuk::ImageAttachment{
-        .extent = dim,
-        .format = context->swapchain->format,
-        .sample_count = vuk::Samples::e1,
-        .level_count = 1,
-        .layer_count = 1
-      },
-      vuk::ClearColor(0.0f, 0.0f, 0.0f, 1.f)
+                                vuk::ImageAttachment{
+                                  .extent = dim,
+                                  .format = context->swapchain->format,
+                                  .sample_count = vuk::Samples::e1,
+                                  .level_count = 1,
+                                  .layer_count = 1
+                                },
+                                vuk::ClearColor(0.0f, 0.0f, 0.0f, 1.f)
     );
 
     const auto rp_fut = rp->on_render(frame_allocator, vuk::Future{rgx, "_img"}, dim);
@@ -143,5 +144,19 @@ void Renderer::render_mesh(const MeshData& mesh,
   mesh.mesh_geometry->bind_vertex_buffer(command_buffer);
   mesh.mesh_geometry->bind_index_buffer(command_buffer);
   render_node(mesh.mesh_geometry->linear_nodes[mesh.submesh_index], command_buffer, per_mesh_func);
+}
+
+vuk::CommandBuffer& Renderer::draw_indexed(vuk::CommandBuffer& command_buffer,
+                                           const size_t index_count,
+                                           const size_t instance_count,
+                                           const size_t first_index,
+                                           const int32_t vertex_offset,
+                                           const size_t first_instance) {
+  renderer_stats.drawcall_count += 1;
+  return command_buffer.draw_indexed(index_count, instance_count, first_index, vertex_offset, first_instance);
+}
+
+void Renderer::reset_stats() {
+  renderer_stats = RendererStats{};
 }
 }

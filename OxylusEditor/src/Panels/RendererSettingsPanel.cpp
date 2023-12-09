@@ -6,6 +6,7 @@
 #include "Core/Application.h"
 
 #include "Render/RendererConfig.h"
+#include "Render/Vulkan/Renderer.h"
 #include "Render/Vulkan/VulkanContext.h"
 #include "UI/OxUI.h"
 
@@ -27,9 +28,12 @@ void RendererSettingsPanel::on_imgui_render() {
       avg += frameTime;
     }
     avg /= (float)size;
-    const double fps = (1.0 / static_cast<double>(avg)) * 1000.0;
+    const double fps = 1.0 / static_cast<double>(avg) * 1000.0;
     ImGui::Text("FPS: %lf / (ms): %lf", static_cast<double>(avg), fps);
     ImGui::Text("GPU: %s", VulkanContext::get()->device_name.c_str());
+    ImGui::Text("Internal Render Size: [ %d, %d ]", Renderer::get_viewport_width(), Renderer::get_viewport_height());
+    ImGui::Text("Total Draw Calls: %d", Renderer::get_stats().drawcall_count);
+    ImGui::Text("Total Culled Draw Calls: %d", Renderer::get_stats().drawcall_culled_count);
 
     ImGui::Text("Environment");
     if (OxUI::begin_properties()) {

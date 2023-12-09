@@ -293,14 +293,14 @@ void InspectorPanel::draw_components(Entity entity) const {
     " Mesh Renderer Component",
     entity,
     [](const MeshComponent& component) {
-      if (!component.original_mesh)
+      if (!component.mesh_base)
         return;
-      const char* file_name = component.original_mesh->name.empty()
+      const char* file_name = component.mesh_base->name.empty()
                                 ? "Empty"
-                                : component.original_mesh->name.c_str();
+                                : component.mesh_base->name.c_str();
       ImGui::Text("Loaded Mesh: %s", file_name);
-      ImGui::Text("Primitive Count: %d", (uint32_t)component.subsets.size());
-      ImGui::Text("Material Count: %d", (uint32_t)component.original_mesh->get_materials_as_ref().size());
+      ImGui::Text("Primitive Count: %d", (uint32_t)component.mesh_base->linear_nodes[component.node_index]->mesh_data->primitives.size());
+      ImGui::Text("Material Count: %d", (uint32_t)component.mesh_base->get_materials_as_ref().size());
     });
 
   draw_component<MaterialComponent>(

@@ -74,6 +74,11 @@ Application& Application::push_overlay(Layer* layer) {
 
 void Application::run() {
   while (is_running) {
+    Window::poll_events();
+    while (VulkanContext::get()->suspend) {
+      Window::wait_for_events();
+    }
+
     update_timestep();
 
     update_layers(timestep);
@@ -82,11 +87,7 @@ void Application::run() {
     update_renderer();
 
     Input::reset_pressed();
-
-    Window::poll_events();
-    while (VulkanContext::get()->suspend) {
-      Window::wait_for_events();
-    }
+    Renderer::reset_stats();
   }
 
   system_manager->shutdown();

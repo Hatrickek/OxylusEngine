@@ -75,36 +75,34 @@ Entity Scene::create_entity_with_uuid(UUID uuid, const std::string& name) {
   return entity;
 }
 
-Entity Scene::load_mesh(const Ref<Mesh>& mesh) {
-  OX_SCOPED_ZONE;
-  Entity root_entity = {};
-  if ((uint32_t)mesh->linear_nodes.size() > 1)
-    root_entity = create_entity(mesh->name);
+void Scene::iterate_mesh_node(MeshComponent& base_component, const Entity parent_entity, const Mesh::Node* node) {
+  auto node_entity = create_entity(node->name);
 
-  for (const auto& node : mesh->linear_nodes) {
-    auto node_entity = create_entity(node->name);
-    node_entity.get_transform().set_from_matrix(node->get_matrix());
-    if (root_entity)
-      node_entity.set_parent(root_entity);
-    else
-      root_entity = node_entity;
-    auto& mesh_component = node_entity.add_component<MeshComponent>(mesh);
-    auto& material_component = node_entity.add_component<MaterialComponent>();
-    material_component.materials = mesh->materials;
-
-    if (node->mesh_data) {
-      for (const auto& primitive : node->mesh_data->primitives) {
-        mesh_component.subsets.emplace_back(MeshComponent::MeshSubset{
-          .index_count = primitive->index_count,
-          .first_index = primitive->first_index,
-          .material = mesh->materials[primitive->material_index],
-          .material_index = primitive->material_index
-        });
-      }
-    }
+  if (node->mesh_data) {
+    auto mesh_component = node_entity.add_component_internal<MeshComponent>();
+    mesh_component.node_index = node->index;
+    mesh_component.base_node = false;
   }
 
-  return root_entity;
+  node_entity.set_parent(parent_entity);
+
+  for (const auto& child : node->children)
+    iterate_mesh_node(base_component, node_entity, child);
+}
+
+Entity Scene::load_mesh(const Ref<Mesh>& mesh) {
+  auto base_entity = create_entity(mesh->linear_nodes[0]->name);
+  auto base_component = base_entity.add_component_internal<MeshComponent>(mesh);
+  base_component.base_node = true;
+
+  if (mesh->nodes.size() == 1)
+    return base_entity;
+
+  for (uint32_t i = 1; i < mesh->nodes.size(); i++) {
+    iterate_mesh_node(base_component, base_entity, mesh->linear_nodes[i]);
+  }
+
+  return base_entity;
 }
 
 void Scene::update_physics(const Timestep& delta_time) {
@@ -181,24 +179,24 @@ void Scene::update_physics(const Timestep& delta_time) {
           JPH::Vec3 rotation = ch.character->GetRotation().GetEulerAngles();
 
           ch.previous_translation = ch.translation;
-          ch.previous_rotation = ch.Rotation;
+          ch.previous_rotation = ch.rotation;
           ch.translation = {position.GetX(), position.GetY(), position.GetZ()};
-          ch.Rotation = glm::vec3(rotation.GetX(), rotation.GetY(), rotation.GetZ());
+          ch.rotation = glm::vec3(rotation.GetX(), rotation.GetY(), rotation.GetZ());
         }
 
         tc.position = glm::lerp(ch.previous_translation, ch.translation, interpolation_factor);
-        tc.rotation = glm::eulerAngles(glm::slerp(ch.previous_rotation, ch.Rotation, interpolation_factor));
+        tc.rotation = glm::eulerAngles(glm::slerp(ch.previous_rotation, ch.rotation, interpolation_factor));
       }
       else {
         const JPH::Vec3 position = ch.character->GetPosition();
         JPH::Vec3 rotation = ch.character->GetRotation().GetEulerAngles();
 
         ch.previous_translation = ch.translation;
-        ch.previous_rotation = ch.Rotation;
+        ch.previous_rotation = ch.rotation;
         ch.translation = {position.GetX(), position.GetY(), position.GetZ()};
-        ch.Rotation = glm::vec3(rotation.GetX(), rotation.GetY(), rotation.GetZ());
+        ch.rotation = glm::vec3(rotation.GetX(), rotation.GetY(), rotation.GetZ());
         tc.position = ch.translation;
-        tc.rotation = glm::eulerAngles(ch.Rotation);
+        tc.rotation = glm::eulerAngles(ch.rotation);
       }
     }
   }
@@ -475,7 +473,7 @@ void Scene::create_rigidbody(Entity entity, const TransformComponent& transform,
   auto rotation = glm::quat(transform.rotation);
 
   auto layer = entity.get_component<TagComponent>().layer;
-  uint8_t layer_index = 1;	// Default Layer
+  uint8_t layer_index = 1; // Default Layer
   auto collision_mask_it = Physics::layer_collision_mask.find(layer);
   if (collision_mask_it != Physics::layer_collision_mask.end())
     layer_index = collision_mask_it->second.index;
@@ -517,7 +515,7 @@ void Scene::create_character_controller(const TransformComponent& transform, Cha
   settings->mMaxSlopeAngle = JPH::DegreesToRadians(45.0f);
   settings->mLayer = PhysicsLayers::MOVING;
   settings->mShape = capsule_shape;
-  settings->mFriction = 0.0f; // For now this is not set. 
+  settings->mFriction = 0.0f;                                                                          // For now this is not set. 
   settings->mSupportingVolume = JPH::Plane(JPH::Vec3::sAxisY(), -component.character_radius_standing); // Accept contacts that touch the lower sphere of the capsule
   component.character = new JPH::Character(settings.get(), position, JPH::Quat::sIdentity(), 0, Physics::get_physics_system());
   component.character->AddToPhysicsSystem(JPH::EActivation::Activate);
@@ -638,9 +636,9 @@ void Scene::on_component_added<AudioListenerComponent>(Entity entity, AudioListe
 template <>
 void Scene::on_component_added<MeshComponent>(Entity entity, MeshComponent& component) {
   entity.add_component_internal<MaterialComponent>();
-  if (!component.original_mesh->animations.empty()) {
+  if (!component.mesh_base->animations.empty()) {
     auto& animation_component = entity.add_component_internal<AnimationComponent>();
-    animation_component.animations = component.original_mesh->animations;
+    animation_component.animations = component.mesh_base->animations;
   }
 }
 
@@ -651,7 +649,7 @@ template <>
 void Scene::on_component_added<MaterialComponent>(Entity entity, MaterialComponent& component) {
   if (component.materials.empty()) {
     if (entity.has_component<MeshComponent>())
-      component.materials = entity.get_component<MeshComponent>().original_mesh->get_materials_as_ref();
+      component.materials = entity.get_component<MeshComponent>().mesh_base->get_materials_as_ref();
   }
 }
 
