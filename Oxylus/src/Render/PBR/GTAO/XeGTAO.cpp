@@ -4,47 +4,23 @@
 #include <glm/gtc/type_ptr.hpp>
 
 namespace XeGTAO {
-uint HilbertIndex(uint posX, uint posY) {
-  uint index = 0U;
-  for (uint curLevel = XE_HILBERT_WIDTH / 2U; curLevel > 0U; curLevel /= 2U) {
-    uint regionX = (posX & curLevel) > 0U;
-    uint regionY = (posY & curLevel) > 0U;
-    index += curLevel * curLevel * ((3U * regionX) ^ regionY);
-    if (regionY == 0U) {
-      if (regionX == 1U) {
-        posX = static_cast<uint>((XE_HILBERT_WIDTH - 1U)) - posX;
-        posY = static_cast<uint>((XE_HILBERT_WIDTH - 1U)) - posY;
-      }
+void gtao_update_constants(GTAOConstants& consts, const int viewport_width, const int viewport_height, const GTAOSettings& settings, const Oxylus::Camera* camera, const unsigned frameCounter) {
+  consts.ViewportSize = {viewport_width, viewport_height};
+  consts.ViewportPixelSize = {1.0f / static_cast<float>(viewport_width), 1.0f / static_cast<float>(viewport_height)};
 
-      uint temp = posX;
-      posX = posY;
-      posY = temp;
-    }
-  }
-  return index;
-}
-
-void gtao_update_constants(GTAOConstants& consts, int viewportWidth, int viewportHeight, const GTAOSettings& settings, const Oxylus::Camera* camera, unsigned frameCounter) {
-  consts.ViewportSize = {viewportWidth, viewportHeight};
-  consts.ViewportPixelSize = {1.0f / static_cast<float>(viewportWidth), 1.0f / static_cast<float>(viewportHeight)};
-
-  float depth_linearize_mul = camera->get_far() * camera->get_near() / (camera->get_far() - camera->get_near());
+  const float depth_linearize_mul = camera->get_far() * camera->get_near() / (camera->get_far() - camera->get_near());
   float depth_linearize_add = camera->get_far() / (camera->get_far() - camera->get_near());
 
-  auto projMatrix = value_ptr(camera->get_projection_matrix());
-
-  //float depth_linearize_mul = -projMatrix[3 + 2 * 4];     // float depthLinearizeMul = ( clipFar * clipNear ) / ( clipFar - clipNear );
-  //float depth_linearize_add = projMatrix[2 + 2 * 4];     // float depthLinearizeAdd = clipFar / ( clipFar - clipNear );
+  auto proj_mat = camera->get_projection_matrix();
+  const auto proj_mat_ptr = value_ptr(proj_mat);
 
   // correct the handedness issue. need to make sure this below is correct, but I think it is.
   if (depth_linearize_mul * depth_linearize_add < 0)
     depth_linearize_add = -depth_linearize_add;
   consts.DepthUnpackConsts = {depth_linearize_mul, depth_linearize_add};
 
-  //float tan_half_fovy = glm::tan(camera->get_fov()) * 0.5f;
-  //float tan_half_fovx = tan_half_fovy * camera->get_aspect();
-  float tan_half_fovy = 1.0f / projMatrix[1 + 1 *4];    // = tanf( drawContext.Camera.GetYFOV( ) * 0.5f );
-  float tan_half_fovx = 1.0F /  projMatrix[0 + 0 *4];    // = tanHalfFOVY * drawContext.Camera.GetAspect( );
+  const float tan_half_fovy = 1.0f / proj_mat_ptr[1 + 1 *4];
+  const float tan_half_fovx = 1.0F /  proj_mat_ptr[0 + 0 *4];
   consts.CameraTanHalfFOV = {tan_half_fovx, tan_half_fovy};
 
   consts.NDCToViewMul = {consts.CameraTanHalfFOV.x * 2.0f, consts.CameraTanHalfFOV.y * -2.0f};

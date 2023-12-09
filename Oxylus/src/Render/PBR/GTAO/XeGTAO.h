@@ -140,8 +140,8 @@ T clamp(const T& v, const T& min, const T& max) {
 // If using TAA then set noiseIndex to frameIndex % 64 - otherwise use 0
 // glm is column major by default
 void gtao_update_constants(GTAOConstants& consts,
-                           int viewportWidth,
-                           int viewportHeight,
+                           int viewport_width,
+                           int viewport_height,
                            const GTAOSettings& settings,
                            const Oxylus::Camera* camera,
                            unsigned int frameCounter);

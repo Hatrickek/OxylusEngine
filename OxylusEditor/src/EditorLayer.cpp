@@ -360,10 +360,6 @@ void EditorLayer::load_default_scene(const std::shared_ptr<Scene>& scene) {
 
   const auto cube = scene->load_mesh(AssetManager::get_mesh_asset("Resources/Objects/cube.glb"));
   cube.get_transform().position.y = 0.5f;
-
-  const auto sphere = scene->load_mesh(AssetManager::get_mesh_asset("Resources/Objects/sphere.glb"));
-  sphere.get_transform().position.y = 1.0f;
-  sphere.get_transform().position.z = -2.0f;
 }
 
 void EditorLayer::clear_selected_entity() {

@@ -55,7 +55,7 @@ public:
   static void destroy_cursor(GLFWcursor* cursor);
 
 private:
-#define MAX_KEYS 128
+#define MAX_KEYS 512
 #define MAX_BUTTONS 32
 
   static struct InputData {

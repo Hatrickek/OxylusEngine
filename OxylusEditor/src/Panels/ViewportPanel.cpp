@@ -547,17 +547,19 @@ void ViewportPanel::mouse_picking_pass(const Ref<RenderPipeline>& rp, const vuk:
 
   auto& buffer = id_buffers[VulkanContext::get()->current_frame];
   const auto buf_pos = (mouse_y * dim.extent.width + mouse_x) * 4;
-  static auto* id_ptr = new uint32_t;
-  memcpy(id_ptr, &buffer->mapped_ptr[buf_pos], sizeof(uint32_t));
-  const auto id = *id_ptr;
 
-  m_hovered_entity = id <= 0 ? Entity() : Entity(entt::entity{id - 1u}, m_scene.get());
+  if (buf_pos + sizeof(uint32_t) <= buffer->size) {
+    uint32_t id = 0;
+    memcpy(&id, &buffer->mapped_ptr[buf_pos], sizeof(uint32_t));
 
-  if (!ImGuizmo::IsUsing() && !ImGuizmo::IsOver()) {
-    if (m_hovered_entity && ImGui::IsMouseClicked(ImGuiMouseButton_Left) && m_viewport_hovered)
-      m_scene_hierarchy_panel->set_selected_entity(m_hovered_entity);
-    else if (ImGui::IsMouseClicked(ImGuiMouseButton_Left) && m_viewport_hovered)
-      m_scene_hierarchy_panel->set_selected_entity({});
+    m_hovered_entity = id <= 0 ? Entity() : Entity(entt::entity{id - 1u}, m_scene.get());
+
+    if (!ImGuizmo::IsUsing() && !ImGuizmo::IsOver()) {
+      if (m_hovered_entity && ImGui::IsMouseClicked(ImGuiMouseButton_Left) && m_viewport_hovered)
+        m_scene_hierarchy_panel->set_selected_entity(m_hovered_entity);
+      else if (ImGui::IsMouseClicked(ImGuiMouseButton_Left) && m_viewport_hovered)
+        m_scene_hierarchy_panel->set_selected_entity({});
+    }
   }
 }
 

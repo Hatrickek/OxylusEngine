@@ -157,6 +157,6 @@ vuk::CommandBuffer& Renderer::draw_indexed(vuk::CommandBuffer& command_buffer,
 }
 
 void Renderer::reset_stats() {
-  renderer_stats = RendererStats{};
+  renderer_stats = {};
 }
 }

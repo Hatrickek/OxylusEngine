@@ -23,17 +23,17 @@ void RendererSettingsPanel::on_imgui_render() {
 
     m_FrameTimes.emplace_back(ImGui::GetIO().Framerate);
     for (uint32_t i = 0; i < size; i++) {
-      const float frameTime = m_FrameTimes[i];
-      m_FpsValues[i] = frameTime;
-      avg += frameTime;
+      const float frame_time = m_FrameTimes[i];
+      m_FpsValues[i] = frame_time;
+      avg += frame_time;
     }
     avg /= (float)size;
     const double fps = 1.0 / static_cast<double>(avg) * 1000.0;
     ImGui::Text("FPS: %lf / (ms): %lf", static_cast<double>(avg), fps);
     ImGui::Text("GPU: %s", VulkanContext::get()->device_name.c_str());
-    ImGui::Text("Internal Render Size: [ %d, %d ]", Renderer::get_viewport_width(), Renderer::get_viewport_height());
-    ImGui::Text("Total Draw Calls: %d", Renderer::get_stats().drawcall_count);
-    ImGui::Text("Total Culled Draw Calls: %d", Renderer::get_stats().drawcall_culled_count);
+    ImGui::Text("Internal Render Size: [ %u, %u ]", Renderer::get_viewport_width(), Renderer::get_viewport_height());
+    ImGui::Text("Draw Calls: %u", Renderer::get_stats().drawcall_count);
+    ImGui::Text("Culled Draw Calls: %u", Renderer::get_stats().drawcall_culled_count);
 
     ImGui::Text("Environment");
     if (OxUI::begin_properties()) {
