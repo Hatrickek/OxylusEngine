@@ -1,6 +1,4 @@
 #pragma once
-#include <string_view>
-#include <vector>
 #include "Core/Base.h"
 
 namespace sol {
@@ -21,8 +19,5 @@ private:
   Ref<sol::state> m_state = nullptr;
 
   void bind_log() const;
-  void bind_ecs();
-  void bind_math();
-  void bind_input() const;
 };
 }
