@@ -290,6 +290,20 @@ Scope<vuk::Future> DefaultRenderPipeline::on_render(vuk::Allocator& frame_alloca
   }
 #endif
 
+  // frustum cull base meshes
+  std::erase_if(
+    mesh_draw_list,
+    [this](const MeshComponent& mesh_component) {
+      if (mesh_component.base_node) {
+        const auto camera_frustum = m_renderer_context.current_camera->get_frustum();
+        if (!mesh_component.mesh_base->aabb.is_on_frustum(camera_frustum)) {
+          Renderer::get_stats().drawcall_culled_count += mesh_component.mesh_base->total_primitive_count;
+          return true;
+        }
+      }
+      return false;
+    });
+
   const auto rg = create_ref<vuk::RenderGraph>("DefaultRenderPipelineRenderGraph");
 
   m_renderer_data.ubo_vs.view = m_renderer_context.current_camera->get_view_matrix();
