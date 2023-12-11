@@ -19,7 +19,6 @@
 #include "Panels/ProjectPanel.h"
 #include "Panels/RendererSettingsPanel.h"
 #include "Panels/SceneHierarchyPanel.h"
-#include "Panels/ShadersPanel.h"
 #include "Panels/StatisticsPanel.h"
 #include "Render/Window.h"
 #include "Render/Vulkan/Renderer.h"
@@ -69,7 +68,6 @@ void EditorLayer::on_attach(EventDispatcher& dispatcher) {
   // Initialize panels
   m_editor_panels.emplace("EditorSettings", create_scope<EditorSettingsPanel>());
   m_editor_panels.emplace("RenderSettings", create_scope<RendererSettingsPanel>());
-  m_editor_panels.emplace("Shaders", create_scope<ShadersPanel>());
   m_editor_panels.emplace("FramebufferViewer", create_scope<FramebufferViewerPanel>());
   m_editor_panels.emplace("ProjectPanel", create_scope<ProjectPanel>());
   m_editor_panels.emplace("StatisticsPanel", create_scope<StatisticsPanel>());
@@ -197,9 +195,6 @@ void EditorLayer::on_imgui_render() {
           if (ImGui::MenuItem("Add viewport", nullptr)) {
             m_viewport_panels.emplace_back(create_scope<ViewportPanel>())->set_context(m_editor_scene, m_scene_hierarchy_panel);
           }
-          if (ImGui::MenuItem("Shaders", nullptr)) {
-            m_editor_panels["Shaders"]->Visible = true;
-          }
           if (ImGui::MenuItem("Framebuffer Viewer", nullptr)) {
             m_editor_panels["FramebufferViewer"]->Visible = true;
           }
@@ -226,10 +221,12 @@ void EditorLayer::on_imgui_render() {
           if (ImGui::MenuItem("Asset Manager")) {
             render_asset_manager = true;
           }
+          OxUI::tooltip("WIP");
           ImGui::EndMenu();
         }
         if (ImGui::BeginMenu("Help")) {
           if (ImGui::MenuItem("About")) { }
+          OxUI::tooltip("WIP");
           ImGui::EndMenu();
         }
         ImGui::SameLine();
@@ -423,7 +420,8 @@ void EditorLayer::draw_window_title() {
   ImGuiScoped::StyleVar var3(ImGuiStyleVar_WindowPadding, {0.0f, 0.0f});
   ImGuiScoped::StyleVar var4(ImGuiStyleVar_FramePadding, {ImGui::GetWindowSize().x, 7});
 
-  ImGuiScoped::MainMenuBar menubar; {
+  ImGuiScoped::MainMenuBar menubar;
+  {
     ImGuiScoped::StyleVar st(ImGuiStyleVar_FramePadding, {0, 8});
     OxUI::image(Resources::editor_resources.engine_icon->get_texture(), {30, 30});
     auto& name = Application::get()->get_specification().name;

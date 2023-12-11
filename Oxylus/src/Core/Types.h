@@ -13,5 +13,6 @@ using UVec3 = glm::uvec3;
 using Vec4 = glm::vec4;
 using IVec4 = glm::ivec4;
 using Mat4 = glm::mat4;
+using Mat3 = glm::mat3;
 using Quat = glm::quat;
 }

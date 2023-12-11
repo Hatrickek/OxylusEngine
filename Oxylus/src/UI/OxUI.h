@@ -41,7 +41,7 @@ public:
   // Dropdown
   static bool property(const char* label,
                        int* value,
-                       const char** dropdownStrings,
+                       const char** dropdown_strings,
                        int count,
                        const char* tooltip = nullptr);
 
@@ -54,32 +54,32 @@ public:
     begin_property_grid(label, tooltip);
     bool modified;
 
-    int dataType = ImGuiDataType_S32;
+    int data_type = ImGuiDataType_S32;
     if constexpr (std::is_signed_v<T>) {
       if constexpr (sizeof(T) == 1)
-        dataType = ImGuiDataType_S8;
+        data_type = ImGuiDataType_S8;
       else if constexpr (sizeof(T) == 2)
-        dataType = ImGuiDataType_S16;
+        data_type = ImGuiDataType_S16;
       else if constexpr (sizeof(T) == 4)
-        dataType = ImGuiDataType_S32;
+        data_type = ImGuiDataType_S32;
       else if constexpr (sizeof(T) == 8)
-        dataType = ImGuiDataType_S64;
+        data_type = ImGuiDataType_S64;
     }
     else {
       if constexpr (sizeof(T) == 1)
-        dataType = ImGuiDataType_U8;
+        data_type = ImGuiDataType_U8;
       else if constexpr (sizeof(T) == 2)
-        dataType = ImGuiDataType_U16;
+        data_type = ImGuiDataType_U16;
       else if constexpr (sizeof(T) == 4)
-        dataType = ImGuiDataType_U32;
+        data_type = ImGuiDataType_U32;
       else if constexpr (sizeof(T) == 8)
-        dataType = ImGuiDataType_U64;
+        data_type = ImGuiDataType_U64;
     }
 
     if (max > min)
-      modified = ImGui::SliderScalar(id_buffer, dataType, value, &min, &max);
+      modified = ImGui::SliderScalar(id_buffer, data_type, value, &min, &max);
     else
-      modified = ImGui::DragScalar(id_buffer, dataType, value);
+      modified = ImGui::DragScalar(id_buffer, data_type, value);
 
     end_property_grid();
     return modified;
@@ -96,14 +96,14 @@ public:
     begin_property_grid(label, tooltip);
     bool modified;
 
-    int dataType = ImGuiDataType_Float;
+    int data_type = ImGuiDataType_Float;
     if constexpr (sizeof(T) == 8)
-      dataType = ImGuiDataType_Double;
+      data_type = ImGuiDataType_Double;
 
     if (max > min)
-      modified = ImGui::SliderScalar(id_buffer, dataType, value, &min, &max, fmt);
+      modified = ImGui::SliderScalar(id_buffer, data_type, value, &min, &max, fmt);
     else
-      modified = ImGui::DragScalar(id_buffer, dataType, value, delta, nullptr, nullptr, fmt);
+      modified = ImGui::DragScalar(id_buffer, data_type, value, delta, nullptr, nullptr, fmt);
 
     end_property_grid();
     return modified;
@@ -114,31 +114,32 @@ public:
   static bool property_vector(const char* label,
                               T& value,
                               bool color = false,
-                              bool showAlpha = true,
+                              const bool show_alpha = true,
                               const char* tooltip = nullptr,
                               float delta = 0.1f) {
     begin_property_grid(label, tooltip);
     bool modified;
-    int componentCount = value.length();
-    if (componentCount >= 3 && color) {
-      if (showAlpha)
+    const int component_count = value.length();
+    if (component_count >= 3 && color) {
+      if (show_alpha)
         modified = ImGui::ColorEdit4(id_buffer, glm::value_ptr(value));
       else
         modified = ImGui::ColorEdit3(id_buffer, glm::value_ptr(value));
     }
     else {
-      modified = ImGui::DragScalarN(id_buffer, ImGuiDataType_Float, glm::value_ptr(value), componentCount, delta);
+      modified = ImGui::DragScalarN(id_buffer, ImGuiDataType_Float, glm::value_ptr(value), component_count, delta);
     }
     end_property_grid();
     return modified;
   }
 
+  // should be called after the item
   static void tooltip(const char* text);
 
   // Texture
   static bool property(const char* label,
                        Ref<TextureAsset>& texture,
-                       uint64_t overrideTextureID = 0,
+                       uint64_t override_texture_id = 0,
                        const char* tooltip = nullptr);
   // Draw vuk::Texture
   static void image(const vuk::Texture& texture,
@@ -182,12 +183,12 @@ public:
                             bool state,
                             ImVec2 size = {0, 0},
                             float alpha = 1.0f,
-                            float pressedAlpha = 1.0f,
-                            ImGuiButtonFlags buttonFlags = ImGuiButtonFlags_None);
+                            float pressed_alpha = 1.0f,
+                            ImGuiButtonFlags button_flags = ImGuiButtonFlags_None);
 
   static ImVec2 get_icon_button_size(const char8_t* icon, const char* label);
 
-  static bool icon_button(const char8_t* icon, const char* label, ImVec4 iconColor = {0.537f, 0.753f, 0.286f, 1.0f});
+  static bool icon_button(const char8_t* icon, const char* label, ImVec4 icon_color = {0.537f, 0.753f, 0.286f, 1.0f});
   static void clipped_text(const ImVec2& pos_min,
                            const ImVec2& pos_max,
                            const char* text,
@@ -213,7 +214,7 @@ public:
   // bigger scale = smaller gradient
   static void draw_gradient_shadow_bottom(float scale = 600.f);
 
-  static void begin_property_grid(const char* label, const char* tooltip, bool rightAlignNextColumn = true);
+  static void begin_property_grid(const char* label, const char* tooltip, bool right_align_next_column = true);
   static void end_property_grid();
 
   static void center_next_window();

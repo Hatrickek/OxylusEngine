@@ -42,8 +42,6 @@ public:
 
   // Drawing
   static void draw(VulkanContext* context, ImGuiLayer* imgui_layer, LayerStack& layer_stack, const Ref<SystemManager>& system_manager);
-  static void render_node(const Mesh::Node* node, vuk::CommandBuffer& command_buffer, const std::function<bool(Mesh::Primitive* prim, Mesh::MeshData* mesh_data)>& per_mesh_func = nullptr);
-  static void render_mesh(const MeshData& mesh, vuk::CommandBuffer& command_buffer, const std::function<bool(Mesh::Primitive* prim, Mesh::MeshData* mesh_data)>& per_mesh_func);
 
   static vuk::CommandBuffer& draw_indexed(vuk::CommandBuffer& command_buffer,
                                           size_t index_count,

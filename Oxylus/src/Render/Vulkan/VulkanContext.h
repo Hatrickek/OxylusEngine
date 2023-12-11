@@ -54,7 +54,7 @@ public:
 
   void create_context(const AppSpec& spec);
 
-  void rebuild_swapchain(vuk::PresentModeKHR present_mode = vuk::PresentModeKHR::eFifo);
+  void rebuild_swapchain(vuk::PresentModeKHR new_present_mode = vuk::PresentModeKHR::eFifo);
 
   vuk::Allocator begin();
   void end(const vuk::Future& src, vuk::Allocator frame_allocator);

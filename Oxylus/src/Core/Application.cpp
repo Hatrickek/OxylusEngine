@@ -82,7 +82,6 @@ void Application::run() {
     update_renderer();
 
     Input::reset_pressed();
-    Renderer::reset_stats();
 
     Window::poll_events();
     while (VulkanContext::get()->suspend) {

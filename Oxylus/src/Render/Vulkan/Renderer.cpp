@@ -37,14 +37,26 @@ void Renderer::shutdown() {
 void Renderer::draw(VulkanContext* context, ImGuiLayer* imgui_layer, LayerStack& layer_stack, const Ref<SystemManager>& system_manager) {
   OX_SCOPED_ZONE;
 
+  const auto rp = renderer_context.render_pipeline;
+
+  // consume renderer related cvars
+  if (RendererCVar::cvar_reload_render_pipeline.get()) {
+    rp->init(*VulkanContext::get()->superframe_allocator);
+    RendererCVar::cvar_reload_render_pipeline.toggle();
+  }
+
+  const auto set_present_mode = RendererCVar::cvar_vsync.get() ? vuk::PresentModeKHR::eFifo : vuk::PresentModeKHR::eImmediate;
+  if (context->present_mode != set_present_mode) {
+    context->rebuild_swapchain(set_present_mode);
+    return;
+  }
+
   imgui_layer->begin();
 
   auto frame_allocator = context->begin();
   const Ref<vuk::RenderGraph> rg = create_ref<vuk::RenderGraph>("runner");
   rg->attach_swapchain("_swp", context->swapchain);
   rg->clear_image("_swp", "final_image", vuk::ClearColor{0.0f, 0.0f, 0.0f, 1.0f});
-
-  const auto rp = renderer_context.render_pipeline;
 
   vuk::Future fut = {};
 
@@ -61,6 +73,8 @@ void Renderer::draw(VulkanContext* context, ImGuiLayer* imgui_layer, LayerStack&
       layer->on_imgui_render();
     system_manager->on_imgui_render();
     imgui_layer->end();
+
+    reset_stats();
 
     fut = imgui_layer->render_draw_data(frame_allocator, fut, ImGui::GetDrawData());
   }
@@ -119,31 +133,12 @@ void Renderer::draw(VulkanContext* context, ImGuiLayer* imgui_layer, LayerStack&
 
     imgui_layer->end();
 
+    reset_stats();
+
     fut = imgui_layer->render_draw_data(frame_allocator, vuk::Future{rg, "final_image"}, ImGui::GetDrawData());
   }
 
   context->end(fut, frame_allocator);
-}
-
-void Renderer::render_node(const Mesh::Node* node, vuk::CommandBuffer& command_buffer, const std::function<bool(Mesh::Primitive* prim, Mesh::MeshData* mesh_data)>& per_mesh_func) {
-  if (node->mesh_data) {
-    for (const auto& part : node->mesh_data->primitives) {
-      if (per_mesh_func && !per_mesh_func(part, node->mesh_data))
-        continue;
-
-      command_buffer.draw_indexed(part->index_count, 1, part->first_index, 0, 0);
-    }
-  }
-  for (const auto& child : node->children)
-    render_node(child, command_buffer, per_mesh_func);
-}
-
-void Renderer::render_mesh(const MeshData& mesh,
-                           vuk::CommandBuffer& command_buffer,
-                           const std::function<bool(Mesh::Primitive* prim, Mesh::MeshData* mesh_data)>& per_mesh_func) {
-  mesh.mesh_geometry->bind_vertex_buffer(command_buffer);
-  mesh.mesh_geometry->bind_index_buffer(command_buffer);
-  render_node(mesh.mesh_geometry->linear_nodes[mesh.submesh_index], command_buffer, per_mesh_func);
 }
 
 vuk::CommandBuffer& Renderer::draw_indexed(vuk::CommandBuffer& command_buffer,

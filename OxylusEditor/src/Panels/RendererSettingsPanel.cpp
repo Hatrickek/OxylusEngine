@@ -32,8 +32,16 @@ void RendererSettingsPanel::on_imgui_render() {
     ImGui::Text("FPS: %lf / (ms): %lf", static_cast<double>(avg), fps);
     ImGui::Text("GPU: %s", VulkanContext::get()->device_name.c_str());
     ImGui::Text("Internal Render Size: [ %u, %u ]", Renderer::get_viewport_width(), Renderer::get_viewport_height());
+    OxUI::tooltip("Current viewport resolution");
     ImGui::Text("Draw Calls: %u", Renderer::get_stats().drawcall_count);
+    OxUI::tooltip("Current amount of draw calls including editor only passes");
     ImGui::Text("Culled Draw Calls: %u", Renderer::get_stats().drawcall_culled_count);
+    OxUI::tooltip("Current amount of draw calls culled by frustum culling");
+
+    ImGui::Separator();
+    if (OxUI::icon_button(ICON_MDI_RELOAD, "Reload render pipeline"))
+      RendererCVar::cvar_reload_render_pipeline.toggle();
+    ImGui::Separator();
 
     ImGui::Text("Environment");
     if (OxUI::begin_properties()) {
@@ -43,6 +51,7 @@ void RendererSettingsPanel::on_imgui_render() {
       OxUI::property<float>("Gamma", RendererCVar::cvar_gamma.get_ptr(), 0, 5, "%.2f");
       OxUI::end_properties();
     }
+
     ImGui::Text("GTAO");
     if (OxUI::begin_properties()) {
       OxUI::property("Enabled", (bool*)RendererCVar::cvar_gtao_enable.get_ptr());
@@ -55,6 +64,7 @@ void RendererSettingsPanel::on_imgui_render() {
       OxUI::property<float>("Depth Mip Sampling Offset", RendererCVar::cvar_gtao_depth_mip_sampling_offset.get_ptr(), 0, 5);
       OxUI::end_properties();
     }
+
     ImGui::Text("Bloom");
     if (OxUI::begin_properties()) {
       OxUI::property("Enabled", (bool*)RendererCVar::cvar_bloom_enable.get_ptr());
@@ -70,6 +80,7 @@ void RendererSettingsPanel::on_imgui_render() {
       OxUI::property("Max Distance", RendererCVar::cvar_ssr_max_dist.get_ptr(), 50.0f, 500.0f);
       OxUI::end_properties();
     }
+
     ImGui::Text("FXAA");
     if (OxUI::begin_properties()) {
       OxUI::property("Enabled", (bool*)RendererCVar::cvar_fxaa_enable.get_ptr());

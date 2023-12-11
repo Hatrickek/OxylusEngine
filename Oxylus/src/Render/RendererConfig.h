@@ -5,7 +5,16 @@
 
 namespace Oxylus {
 namespace RendererCVar {
-inline AutoCVar_Int cvar_vsync("gpu.vsync", "toggle vsync", 1);
+inline AutoCVar_Int cvar_vsync("rr.vsync", "toggle vsync", 1);
+
+inline AutoCVar_Int cvar_shadows_size("rr.shadows_size", "cascaded shadow map size", 4096);
+inline AutoCVar_Int cvar_shadows_pcf("rr.shadows_pcf", "use pcf in cascaded shadows", 1);
+
+inline AutoCVar_Int cvar_draw_grid("rr.draw_grid", "draw editor scene grid", 1);
+inline AutoCVar_Int cvar_draw_bounding_boxes("rr.draw_bounding_boxes", "draw mesh bounding boxes", 1);
+inline AutoCVar_Int cvar_enable_debug_renderer("rr.debug_renderer", "draw debug shapes", 1);
+
+inline AutoCVar_Int cvar_reload_render_pipeline("rr.reload_render_pipeline", "reload current scene's render pipeline", 0);
 
 inline AutoCVar_Int cvar_ssr_enable("pp.ssr", "use ssr", 1);
 inline AutoCVar_Int cvar_ssr_samples("pp.ssr_samples", "ssr samples", 30);
@@ -30,15 +39,6 @@ inline AutoCVar_Int cvar_fxaa_enable("pp.fxaa", "use fxaa", 1);
 inline AutoCVar_Int cvar_tonemapper("pp.tonemapper", "tonemapper preset", 0);
 inline AutoCVar_Float cvar_exposure("pp.exposure", "tonemapping exposure", 1.0f);
 inline AutoCVar_Float cvar_gamma("pp.gamma", "screen gamma", 2.2f);
-
-inline AutoCVar_Int cvar_shadows_size("rr.shadows_size", "cascaded shadow map size", 4096);
-inline AutoCVar_Int cvar_shadows_pcf("rr.shadows_pcf", "use pcf in cascaded shadows", 1);
-
-inline AutoCVar_Int cvar_draw_grid("ui.draw_grid", "draw editor scene grid", 1);
-inline AutoCVar_Int cvar_draw_bounding_boxes("ui.draw_bounding_boxes", "draw mesh bounding boxes", 1);
-inline AutoCVar_Int cvar_enable_debug_renderer("ui.debug_renderer", "draw debug shapes", 1);
-
-inline AutoCVar_Int cvar_reload_render_pipeline("rr.reload_render_pipeline", "reload current scene's render pipeline", 0);
 }
 
 class RendererConfig {

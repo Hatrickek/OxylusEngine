@@ -15,19 +15,19 @@
 
 namespace Oxylus {
 inline static int ui_context_id = 0;
-inline static int s_Counter = 0;
+inline static int s_counter = 0;
 char OxUI::id_buffer[16];
 
-bool OxUI::begin_properties(ImGuiTableFlags flags) {
+bool OxUI::begin_properties(const ImGuiTableFlags flags) {
   id_buffer[0] = '#';
   id_buffer[1] = '#';
   memset(id_buffer + 2, 0, 14);
-  ++s_Counter;
-  const std::string buffer = fmt::format("##{}", s_Counter);
+  ++s_counter;
+  const std::string buffer = fmt::format("##{}", s_counter);
   std::memcpy(&id_buffer, buffer.data(), 16);
 
-  constexpr ImGuiTableFlags tableFlags = ImGuiTableFlags_PadOuterX;
-  if (ImGui::BeginTable(id_buffer, 2, tableFlags | flags)) {
+  constexpr ImGuiTableFlags table_flags = ImGuiTableFlags_PadOuterX;
+  if (ImGui::BeginTable(id_buffer, 2, table_flags | flags)) {
     ImGui::TableSetupColumn("PropertyName", 0, 0.5f);
     ImGui::TableSetupColumn("Property", ImGuiTableColumnFlags_WidthStretch);
     return true;
@@ -53,29 +53,29 @@ bool OxUI::property(const char* label, bool* flag, const char* tooltip) {
   return modified;
 }
 
-bool OxUI::property(const char* label, std::string* text, ImGuiInputFlags flags, const char* tooltip) {
+bool OxUI::property(const char* label, std::string* text, const ImGuiInputFlags flags, const char* tooltip) {
   begin_property_grid(label, tooltip);
   const bool modified = ImGui::InputText(id_buffer, text, flags);
   end_property_grid();
   return modified;
 }
 
-bool OxUI::property(const char* label, int* value, const char** dropdownStrings, int count, const char* tooltip) {
+bool OxUI::property(const char* label, int* value, const char** dropdown_strings, const int count, const char* tooltip) {
   begin_property_grid(label, tooltip);
 
   bool modified = false;
-  const char* current = dropdownStrings[*value];
+  const char* current = dropdown_strings[*value];
 
   if (ImGui::BeginCombo(id_buffer, current)) {
     for (int i = 0; i < count; i++) {
-      const bool isSelected = current == dropdownStrings[i];
-      if (ImGui::Selectable(dropdownStrings[i], isSelected)) {
-        current = dropdownStrings[i];
+      const bool is_selected = current == dropdown_strings[i];
+      if (ImGui::Selectable(dropdown_strings[i], is_selected)) {
+        current = dropdown_strings[i];
         *value = i;
         modified = true;
       }
 
-      if (isSelected)
+      if (is_selected)
         ImGui::SetItemDefaultFocus();
     }
     ImGui::EndCombo();
@@ -98,17 +98,17 @@ void OxUI::tooltip(const char* text) {
   ImGui::PopStyleVar();
 }
 
-bool OxUI::property(const char* label, Ref<TextureAsset>& texture, uint64_t overrideTextureID, const char* tooltip) {
+bool OxUI::property(const char* label, Ref<TextureAsset>& texture, uint64_t override_texture_id, const char* tooltip) {
   begin_property_grid(label, tooltip);
   bool changed = false;
 
-  const float frameHeight = ImGui::GetFrameHeight();
-  const float buttonSize = frameHeight * 3.0f;
-  const ImVec2 xButtonSize = {buttonSize / 4.0f, buttonSize};
-  const float tooltipSize = frameHeight * 11.0f;
+  const float frame_height = ImGui::GetFrameHeight();
+  const float button_size = frame_height * 3.0f;
+  const ImVec2 x_button_size = {button_size / 4.0f, button_size};
+  const float tooltip_size = frame_height * 11.0f;
 
   ImGui::SetCursorPos({
-    ImGui::GetContentRegionMax().x - buttonSize - xButtonSize.x,
+    ImGui::GetContentRegionMax().x - button_size - x_button_size.x,
     ImGui::GetCursorPosY() + ImGui::GetStyle().FramePadding.y
   });
   ImGui::PushStyleVar(ImGuiStyleVar_ItemSpacing, ImVec2{0, 0});
@@ -120,9 +120,9 @@ bool OxUI::property(const char* label, Ref<TextureAsset>& texture, uint64_t over
   sci.minFilter = sci.magFilter = vuk::Filter::eLinear;
   sci.mipmapMode = vuk::SamplerMipmapMode::eLinear;
   sci.addressModeU = sci.addressModeV = sci.addressModeW = vuk::SamplerAddressMode::eRepeat;
-  const vuk::SampledImage sampledImage(vuk::SampledImage::Global{.iv = *texture->get_texture().view, .sci = sci, .image_layout = vuk::ImageLayout::eShaderReadOnlyOptimal});
+  const vuk::SampledImage sampled_image(vuk::SampledImage::Global{.iv = *texture->get_texture().view, .sci = sci, .image_layout = vuk::ImageLayout::eShaderReadOnlyOptimal});
 
-  if (ImGui::ImageButton(Application::get()->get_imgui_layer()->add_sampled_image(sampledImage), {buttonSize, buttonSize}, {1, 1}, {0, 0}, 0)) {
+  if (ImGui::ImageButton(Application::get()->get_imgui_layer()->add_sampled_image(sampled_image), {button_size, button_size}, {1, 1}, {0, 0}, 0)) {
     const auto& path = FileDialogs::open_file({{"Texture file", "png,jpg"}});
     if (!path.empty()) {
       texture = AssetManager::get_texture_asset({path});
@@ -133,7 +133,7 @@ bool OxUI::property(const char* label, Ref<TextureAsset>& texture, uint64_t over
     ImGui::BeginTooltip();
     ImGui::TextUnformatted(texture->get_path().c_str());
     ImGui::Spacing();
-    ImGui::Image(Application::get()->get_imgui_layer()->add_sampled_image(sampledImage), {tooltipSize, tooltipSize}, {1, 1}, {0, 0});
+    ImGui::Image(Application::get()->get_imgui_layer()->add_sampled_image(sampled_image), {tooltip_size, tooltip_size}, {1, 1}, {0, 0});
     ImGui::EndTooltip();
   }
   if (ImGui::BeginDragDropTarget()) {
@@ -150,7 +150,7 @@ bool OxUI::property(const char* label, Ref<TextureAsset>& texture, uint64_t over
   ImGui::PushStyleColor(ImGuiCol_Button, ImVec4{0.2f, 0.2f, 0.2f, 1.0f});
   ImGui::PushStyleColor(ImGuiCol_ButtonHovered, ImVec4{0.3f, 0.3f, 0.3f, 1.0f});
   ImGui::PushStyleColor(ImGuiCol_ButtonActive, ImVec4{0.2f, 0.2f, 0.2f, 1.0f});
-  if (ImGui::Button("x", xButtonSize)) {
+  if (ImGui::Button("x", x_button_size)) {
     texture = TextureAsset::get_purple_texture();
     changed = true;
   }
@@ -161,7 +161,7 @@ bool OxUI::property(const char* label, Ref<TextureAsset>& texture, uint64_t over
   return changed;
 }
 
-void OxUI::image(const vuk::Texture& texture, ImVec2 size, const ImVec2& uv0, const ImVec2& uv1, const ImVec4& tint_col, const ImVec4& border_col) {
+void OxUI::image(const vuk::Texture& texture, const ImVec2 size, const ImVec2& uv0, const ImVec2& uv1, const ImVec4& tint_col, const ImVec4& border_col) {
   vuk::SamplerCreateInfo sci;
   sci.minFilter = sci.magFilter = vuk::Filter::eLinear;
   sci.mipmapMode = vuk::SamplerMipmapMode::eLinear;
@@ -171,11 +171,11 @@ void OxUI::image(const vuk::Texture& texture, ImVec2 size, const ImVec2& uv0, co
   ImGui::Image(Application::get()->get_imgui_layer()->add_sampled_image(sampled_image), size, uv0, uv1, tint_col, border_col);
 }
 
-void OxUI::image(const vuk::SampledImage& texture, ImVec2 size, const ImVec2& uv0, const ImVec2& uv1, const ImVec4& tint_col, const ImVec4& border_col) {
+void OxUI::image(const vuk::SampledImage& texture, const ImVec2 size, const ImVec2& uv0, const ImVec2& uv1, const ImVec4& tint_col, const ImVec4& border_col) {
   ImGui::Image(Application::get()->get_imgui_layer()->add_sampled_image(texture), size, uv0, uv1, tint_col, border_col);
 }
 
-bool OxUI::image_button(const char* id, const vuk::Texture& texture, ImVec2 size, const ImVec2& uv0, const ImVec2& uv1, const ImVec4& tint_col, const ImVec4& bg_col) {
+bool OxUI::image_button(const char* id, const vuk::Texture& texture, const ImVec2 size, const ImVec2& uv0, const ImVec2& uv1, const ImVec4& tint_col, const ImVec4& bg_col) {
   vuk::SamplerCreateInfo sci;
   sci.minFilter = sci.magFilter = vuk::Filter::eLinear;
   sci.mipmapMode = vuk::SamplerMipmapMode::eLinear;
@@ -185,25 +185,25 @@ bool OxUI::image_button(const char* id, const vuk::Texture& texture, ImVec2 size
   return ImGui::ImageButton(id, Application::get()->get_imgui_layer()->add_sampled_image(sampled_image), size, uv0, uv1, bg_col, tint_col);
 }
 
-bool OxUI::image_button(const char* id, const vuk::SampledImage& texture, ImVec2 size, const ImVec2& uv0, const ImVec2& uv1, const ImVec4& tint_col, const ImVec4& bg_col) {
+bool OxUI::image_button(const char* id, const vuk::SampledImage& texture, const ImVec2 size, const ImVec2& uv0, const ImVec2& uv1, const ImVec4& tint_col, const ImVec4& bg_col) {
   return ImGui::ImageButton(id, Application::get()->get_imgui_layer()->add_sampled_image(texture), size, uv0, uv1, bg_col, tint_col);
 }
 
-bool OxUI::draw_vec3_control(const char* label, glm::vec3& values, const char* tooltip, float reset_value) {
+bool OxUI::draw_vec3_control(const char* label, glm::vec3& values, const char* tooltip, const float reset_value) {
   bool changed = false;
 
   begin_property_grid(label, tooltip, false);
 
   const ImGuiIO& io = ImGui::GetIO();
-  const auto boldFont = io.Fonts->Fonts[1];
+  const auto bold_font = io.Fonts->Fonts[1];
 
   ImGui::PushMultiItemsWidths(3, ImGui::CalcItemWidth());
 
-  const float frameHeight = ImGui::GetFrameHeight();
-  const ImVec2 buttonSize = {frameHeight + 3.0f, frameHeight};
+  const float frame_height = ImGui::GetFrameHeight();
+  const ImVec2 button_size = {frame_height + 3.0f, frame_height};
 
-  const ImVec2 innerItemSpacing = ImGui::GetStyle().ItemInnerSpacing;
-  ImGui::PushStyleVar(ImGuiStyleVar_ItemSpacing, innerItemSpacing);
+  const ImVec2 inner_item_spacing = ImGui::GetStyle().ItemInnerSpacing;
+  ImGui::PushStyleVar(ImGuiStyleVar_ItemSpacing, inner_item_spacing);
 
   // X
   {
@@ -212,8 +212,8 @@ bool OxUI::draw_vec3_control(const char* label, glm::vec3& values, const char* t
     ImGui::PushStyleColor(ImGuiCol_Button, ImVec4{0.8f, 0.1f, 0.15f, 1.0f});
     ImGui::PushStyleColor(ImGuiCol_ButtonHovered, ImVec4{0.9f, 0.2f, 0.2f, 1.0f});
     ImGui::PushStyleColor(ImGuiCol_ButtonActive, ImVec4{0.8f, 0.1f, 0.15f, 1.0f});
-    ImGui::PushFont(boldFont);
-    if (ImGui::Button("X", buttonSize)) {
+    ImGui::PushFont(bold_font);
+    if (ImGui::Button("X", button_size)) {
       values.x = reset_value;
     }
     ImGui::PopFont();
@@ -236,8 +236,8 @@ bool OxUI::draw_vec3_control(const char* label, glm::vec3& values, const char* t
     ImGui::PushStyleColor(ImGuiCol_Button, ImVec4{0.2f, 0.7f, 0.2f, 1.0f});
     ImGui::PushStyleColor(ImGuiCol_ButtonHovered, ImVec4{0.3f, 0.8f, 0.3f, 1.0f});
     ImGui::PushStyleColor(ImGuiCol_ButtonActive, ImVec4{0.2f, 0.7f, 0.2f, 1.0f});
-    ImGui::PushFont(boldFont);
-    if (ImGui::Button("Y", buttonSize)) {
+    ImGui::PushFont(bold_font);
+    if (ImGui::Button("Y", button_size)) {
       values.y = reset_value;
     }
     ImGui::PopFont();
@@ -260,8 +260,8 @@ bool OxUI::draw_vec3_control(const char* label, glm::vec3& values, const char* t
     ImGui::PushStyleColor(ImGuiCol_Button, ImVec4{0.1f, 0.25f, 0.8f, 1.0f});
     ImGui::PushStyleColor(ImGuiCol_ButtonHovered, ImVec4{0.2f, 0.35f, 0.9f, 1.0f});
     ImGui::PushStyleColor(ImGuiCol_ButtonActive, ImVec4{0.1f, 0.25f, 0.8f, 1.0f});
-    ImGui::PushFont(boldFont);
-    if (ImGui::Button("Z", buttonSize)) {
+    ImGui::PushFont(bold_font);
+    if (ImGui::Button("Z", button_size)) {
       values.z = reset_value;
     }
     ImGui::PopFont();
@@ -282,27 +282,27 @@ bool OxUI::draw_vec3_control(const char* label, glm::vec3& values, const char* t
   return changed;
 }
 
-bool OxUI::toggle_button(const char* label, bool state, ImVec2 size, float alpha, float pressedAlpha, ImGuiButtonFlags buttonFlags) {
+bool OxUI::toggle_button(const char* label, const bool state, const ImVec2 size, const float alpha, const float pressed_alpha, const ImGuiButtonFlags button_flags) {
   if (state) {
     ImVec4 color = ImGui::GetStyle().Colors[ImGuiCol_ButtonActive];
 
-    color.w = pressedAlpha;
+    color.w = pressed_alpha;
     ImGui::PushStyleColor(ImGuiCol_Button, color);
     ImGui::PushStyleColor(ImGuiCol_ButtonHovered, color);
     ImGui::PushStyleColor(ImGuiCol_ButtonActive, color);
   }
   else {
     ImVec4 color = ImGui::GetStyle().Colors[ImGuiCol_Button];
-    ImVec4 hoveredColor = ImGui::GetStyle().Colors[ImGuiCol_ButtonHovered];
+    ImVec4 hovered_color = ImGui::GetStyle().Colors[ImGuiCol_ButtonHovered];
     color.w = alpha;
-    hoveredColor.w = pressedAlpha;
+    hovered_color.w = pressed_alpha;
     ImGui::PushStyleColor(ImGuiCol_Button, color);
-    ImGui::PushStyleColor(ImGuiCol_ButtonHovered, hoveredColor);
-    color.w = pressedAlpha;
+    ImGui::PushStyleColor(ImGuiCol_ButtonHovered, hovered_color);
+    color.w = pressed_alpha;
     ImGui::PushStyleColor(ImGuiCol_ButtonActive, color);
   }
 
-  const bool clicked = ImGui::ButtonEx(label, size, buttonFlags);
+  const bool clicked = ImGui::ButtonEx(label, size, button_flags);
 
   ImGui::PopStyleColor(3);
 
@@ -310,33 +310,33 @@ bool OxUI::toggle_button(const char* label, bool state, ImVec2 size, float alpha
 }
 
 ImVec2 OxUI::get_icon_button_size(const char8_t* icon, const char* label) {
-  const float lineHeight = ImGui::GetTextLineHeight();
+  const float line_height = ImGui::GetTextLineHeight();
   const ImVec2 padding = ImGui::GetStyle().FramePadding;
 
   float width = ImGui::CalcTextSize(StringUtils::from_char8_t(icon)).x;
   width += ImGui::CalcTextSize(label).x;
   width += padding.x * 2.0f;
 
-  return {width, lineHeight + padding.y * 2.0f};
+  return {width, line_height + padding.y * 2.0f};
 }
 
-bool OxUI::icon_button(const char8_t* icon, const char* label, ImVec4 iconColor) {
+bool OxUI::icon_button(const char8_t* icon, const char* label, const ImVec4 icon_color) {
   ImGui::PushID(label);
 
-  const float lineHeight = ImGui::GetTextLineHeight();
+  const float line_height = ImGui::GetTextLineHeight();
   const ImVec2 padding = ImGui::GetStyle().FramePadding;
 
   float width = ImGui::CalcTextSize(StringUtils::from_char8_t(icon)).x;
   width += ImGui::CalcTextSize(label).x;
   width += padding.x * 2.0f;
-  float height = lineHeight + padding.y * 2.0f;
+  float height = line_height + padding.y * 2.0f;
 
-  const float cursorPosX = ImGui::GetCursorPosX();
-  const bool clicked = ImGui::Button(label, {width, height});
+  const float cursor_pos_x = ImGui::GetCursorPosX();
+  const bool clicked = ImGui::Button("##", {width, height});
   ImGui::PushStyleVar(ImGuiStyleVar_ItemSpacing, {0, 0});
   ImGui::SameLine();
-  ImGui::SetCursorPosX(cursorPosX);
-  ImGui::TextColored(iconColor, "%s", StringUtils::from_char8_t(icon));
+  ImGui::SetCursorPosX(cursor_pos_x);
+  ImGui::TextColored(icon_color, "%s", StringUtils::from_char8_t(icon));
   ImGui::SameLine();
   ImGui::TextUnformatted(label);
   ImGui::PopStyleVar();
@@ -345,21 +345,21 @@ bool OxUI::icon_button(const char8_t* icon, const char* label, ImVec4 iconColor)
   return clicked;
 }
 
-void OxUI::clipped_text(const ImVec2& pos_min, const ImVec2& pos_max, const char* text, const char* text_end, const ImVec2* text_size_if_known, const ImVec2& align, const ImRect* clip_rect, float wrap_width) {
+void OxUI::clipped_text(const ImVec2& pos_min, const ImVec2& pos_max, const char* text, const char* text_end, const ImVec2* text_size_if_known, const ImVec2& align, const ImRect* clip_rect, const float wrap_width) {
   // Hide anything after a '##' string
   const char* text_display_end = ImGui::FindRenderedTextEnd(text, text_end);
   const int text_len = static_cast<int>(text_display_end - text);
   if (text_len == 0)
     return;
 
-  ImGuiContext& g = *GImGui;
-  ImGuiWindow* window = g.CurrentWindow;
+  const ImGuiContext& g = *GImGui;
+  const ImGuiWindow* window = g.CurrentWindow;
   clipped_text(window->DrawList, pos_min, pos_max, text, text_display_end, text_size_if_known, align, clip_rect, wrap_width);
   if (g.LogEnabled)
     ImGui::LogRenderedText(&pos_min, text, text_display_end);
 }
 
-void OxUI::clipped_text(ImDrawList* draw_list, const ImVec2& pos_min, const ImVec2& pos_max, const char* text, const char* text_display_end, const ImVec2* text_size_if_known, const ImVec2& align, const ImRect* clip_rect, float wrap_width) {
+void OxUI::clipped_text(ImDrawList* draw_list, const ImVec2& pos_min, const ImVec2& pos_max, const char* text, const char* text_display_end, const ImVec2* text_size_if_known, const ImVec2& align, const ImRect* clip_rect, const float wrap_width) {
   // Perform CPU side clipping for single clipped element to avoid using scissor state
   ImVec2 pos = pos_min;
   const ImVec2 text_size = text_size_if_known ? *text_size_if_known : ImGui::CalcTextSize(text, text_display_end, false, wrap_width);
@@ -375,11 +375,11 @@ void OxUI::clipped_text(ImDrawList* draw_list, const ImVec2& pos_min, const ImVe
     pos.y = ImMax(pos.y, pos.y + (pos_max.y - pos.y - text_size.y) * align.y);
 
   // Render
-  ImVec4 fine_clip_rect(clip_min->x, clip_min->y, clip_max->x, clip_max->y);
+  const ImVec4 fine_clip_rect(clip_min->x, clip_min->y, clip_max->x, clip_max->y);
   draw_list->AddText(nullptr, 0.0f, pos, ImGui::GetColorU32(ImGuiCol_Text), text, text_display_end, wrap_width, &fine_clip_rect);
 }
 
-void OxUI::spacing(uint32_t count) {
+void OxUI::spacing(const uint32_t count) {
   for (uint32_t i = 0; i < count; i++)
     ImGui::Spacing();
 }
@@ -388,7 +388,7 @@ std::filesystem::path OxUI::get_path_from_imgui_payload(const ImGuiPayload* payl
   return std::string(static_cast<const char*>(payload->Data));
 }
 
-void OxUI::draw_gradient_shadow_bottom(float scale) {
+void OxUI::draw_gradient_shadow_bottom(const float scale) {
   const auto draw_list = ImGui::GetWindowDrawList();
   const auto pos = ImGui::GetWindowPos();
   const auto window_height = ImGui::GetWindowHeight();
@@ -401,7 +401,7 @@ void OxUI::draw_gradient_shadow_bottom(float scale) {
 void OxUI::push_id() {
   ++ui_context_id;
   ImGui::PushID(ui_context_id);
-  s_Counter = 0;
+  s_counter = 0;
 }
 
 void OxUI::pop_id() {
@@ -409,7 +409,7 @@ void OxUI::pop_id() {
   --ui_context_id;
 }
 
-void OxUI::begin_property_grid(const char* label, const char* tooltip, bool rightAlignNextColumn) {
+void OxUI::begin_property_grid(const char* label, const char* tooltip, const bool right_align_next_column) {
   push_id();
 
   ImGui::TableNextRow();
@@ -426,14 +426,14 @@ void OxUI::begin_property_grid(const char* label, const char* tooltip, bool righ
 
   ImGui::TableNextColumn();
 
-  if (rightAlignNextColumn)
+  if (right_align_next_column)
     ImGui::SetNextItemWidth(-1);
 
   id_buffer[0] = '#';
   id_buffer[1] = '#';
   memset(id_buffer + 2, 0, 14);
-  ++s_Counter;
-  const std::string buffer = fmt::format("##{}", s_Counter);
+  ++s_counter;
+  const std::string buffer = fmt::format("##{}", s_counter);
   std::memcpy(&id_buffer, buffer.data(), 16);
 }
 
@@ -447,7 +447,7 @@ void OxUI::center_next_window() {
   ImGui::SetNextWindowPos(center, ImGuiCond_Always, ImVec2(0.5f, 0.5f));
 }
 
-void OxUI::draw_framerate_overlay(const ImVec2 work_pos, const ImVec2 work_size, ImVec2 padding, bool* visible) {
+void OxUI::draw_framerate_overlay(const ImVec2 work_pos, const ImVec2 work_size, const ImVec2 padding, bool* visible) {
   static int corner = 1;
   ImGuiWindowFlags window_flags = ImGuiWindowFlags_NoDecoration | ImGuiWindowFlags_NoDocking |
                                   ImGuiWindowFlags_AlwaysAutoResize | ImGuiWindowFlags_NoSavedSettings |

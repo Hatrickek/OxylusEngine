@@ -55,7 +55,7 @@ static VkBool32 DebugCallback(const VkDebugUtilsMessageSeverityFlagBitsEXT messa
 
 static vuk::Swapchain make_swapchain(VulkanContext* context, std::optional<VkSwapchainKHR> old_swapchain, vuk::PresentModeKHR present_mode = vuk::PresentModeKHR::eFifo) {
   context->context->wait_idle();
-  vkb::SwapchainBuilder swb(context->vkb_device, context->surface);
+  vkb::SwapchainBuilder swb(context->vkb_device);
   swb.set_desired_format(vuk::SurfaceFormatKHR{vuk::Format::eR8G8B8A8Unorm, vuk::ColorSpaceKHR::eSrgbNonlinear});
   swb.set_desired_present_mode((VkPresentModeKHR)present_mode);
   swb.set_image_usage_flags(VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT);
@@ -261,17 +261,18 @@ void VulkanContext::create_context(const AppSpec& spec) {
   OX_CORE_INFO("Vulkan context initialized using device: {}", device_name);
 }
 
-void VulkanContext::rebuild_swapchain(const vuk::PresentModeKHR present_mode) {
+void VulkanContext::rebuild_swapchain(const vuk::PresentModeKHR new_present_mode) {
   context->wait_idle();
   superframe_allocator->deallocate(std::span{&swapchain->swapchain, 1});
   superframe_allocator->deallocate(swapchain->image_views);
   context->remove_swapchain(swapchain);
-  auto sw = make_swapchain(this, swapchain->swapchain, present_mode);
+  auto sw = make_swapchain(this, swapchain->swapchain, new_present_mode);
   swapchain = context->add_swapchain(sw);
   for (auto& iv : swapchain->image_views) {
     context->set_name(iv.payload, "Swapchain ImageView");
   }
   suspend = false;
+  present_mode = new_present_mode;
 }
 
 vuk::Allocator VulkanContext::begin() {

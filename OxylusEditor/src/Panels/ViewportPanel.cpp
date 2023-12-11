@@ -245,10 +245,7 @@ void ViewportPanel::on_imgui_render() {
 
     if (ImGui::BeginPopup("ViewportSettings", ImGuiWindowFlags_AlwaysAutoResize)) {
       OxUI::begin_properties();
-      if (OxUI::property("VSync", (bool*)RendererCVar::cvar_vsync.get_ptr())) {
-        vuk::PresentModeKHR present_mode = RendererCVar::cvar_vsync.get() ? vuk::PresentModeKHR::eFifo : vuk::PresentModeKHR::eImmediate;
-        VulkanContext::get()->rebuild_swapchain(present_mode);
-      }
+      OxUI::property("VSync", (bool*)RendererCVar::cvar_vsync.get_ptr());
       OxUI::property<float>("Camera sensitivity", &m_mouse_sensitivity, 0.1f, 20.0f);
       OxUI::property<float>("Movement speed", &m_movement_speed, 5, 100.0f);
       OxUI::property("Smooth camera", &m_smooth_camera);

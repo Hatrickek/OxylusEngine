@@ -62,10 +62,12 @@ struct TransformComponent {
   TransformComponent(const Vec3& translation) : position(translation) { }
 
   TransformComponent(const Mat4& transform_matrix) {
+    OX_SCOPED_ZONE;
     Math::decompose_transform(transform_matrix, position, rotation, scale);
   }
 
   void set_from_matrix(const Mat4& transform_matrix) {
+    OX_SCOPED_ZONE;
     Math::decompose_transform(transform_matrix, position, rotation, scale);
   }
 };
@@ -82,6 +84,7 @@ struct MeshComponent {
   bool base_node = true;
   uint32_t node_index = 0;
 
+  // non-serialized data
   Mat4 transform = {};
 
   MeshComponent() = default;
