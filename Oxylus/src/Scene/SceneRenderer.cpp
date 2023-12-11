@@ -26,11 +26,6 @@ void SceneRenderer::init() {
 void SceneRenderer::update() const {
   OX_SCOPED_ZONE;
 
-  if (RendererCVar::cvar_reload_render_pipeline.get()) {
-    m_render_pipeline->init(*VulkanContext::get()->superframe_allocator);
-    RendererCVar::cvar_reload_render_pipeline.toggle();
-  }
-
   // Mesh System
   {
     const auto mesh_view = m_scene->m_registry.view<TransformComponent, MeshComponent, MaterialComponent, TagComponent>();
@@ -38,14 +33,16 @@ void SceneRenderer::update() const {
     for (const auto&& [entity, transform, mesh_component, material, tag] : mesh_view.each()) {
       if (tag.enabled) {
         auto e = Entity(entity, m_scene);
-        mesh_component.transform = e.get_world_transform();
+        auto mesh_transform = e.get_world_transform();
+        mesh_component.transform = mesh_transform;
         m_render_pipeline->on_register_render_object(mesh_component);
 
-        //if (RendererCVar::cvar_draw_bounding_boxes.get()) {
-        //  for (const auto* node : mesh_component.original_mesh->linear_nodes)
-        //    if (node->mesh_data)
-        //      DebugRenderer::draw_bb(node->aabb);
-        //}
+        if (RendererCVar::cvar_draw_bounding_boxes.get()) {
+          if (mesh_component.base_node) {
+            auto aabb = mesh_component.mesh_base->aabb.get_transformed(mesh_transform);
+            DebugRenderer::draw_aabb(aabb, Vec4(0, 1, 0, 1));
+          }
+        }
       }
     }
   }

@@ -133,8 +133,8 @@ void DefaultRenderPipeline::init(vuk::Allocator& allocator) {
   }
   {
     vuk::PipelineBaseCreateInfo pci;
-    pci.add_glsl(FileUtils::read_shader_file("Unlit.vert"), FileUtils::get_shader_path("Unlit.vert"));
-    pci.add_glsl(FileUtils::read_shader_file("Unlit.frag"), FileUtils::get_shader_path("Unlit.frag"));
+    pci.add_glsl(FileUtils::read_shader_file("Debug/Unlit.vert"), FileUtils::get_shader_path("Debug/Unlit.vert"));
+    pci.add_glsl(FileUtils::read_shader_file("Debug/Unlit.frag"), FileUtils::get_shader_path("Debug/Unlit.frag"));
     allocator.get_context().create_named_pipeline("unlit_pipeline", pci);
   }
   {
@@ -198,7 +198,6 @@ static std::pair<vuk::Resource, vuk::Name> get_attachment_or_black_uint(const ch
 }
 
 void DefaultRenderPipeline::debug_pass(const Ref<vuk::RenderGraph>& rg, const vuk::Name dst, const char* depth, vuk::Allocator& frame_allocator) const {
-#if 0
   struct DebugPassData {
     Mat4 vp = {};
     Mat4 model = {};
@@ -206,57 +205,61 @@ void DefaultRenderPipeline::debug_pass(const Ref<vuk::RenderGraph>& rg, const vu
   };
 
   const auto* camera = m_renderer_context.current_camera;
-  std::vector<DebugPassData> buffers;
+  std::vector<DebugPassData> buffers = {};
 
-  auto& shapes = DebugRenderer::get_instance()->get_shapes();
-  for (auto& shape : shapes) {
-    DebugPassData data;
-    data.vp = camera->get_projection_matrix() * camera->get_view_matrix();
-    data.model = shape.model_matrix;
-    data.color = Vec4(0, 1, 0, 1);
+  DebugPassData data = {
+    .vp = camera->get_projection_matrix() * camera->get_view_matrix(),
+    .model = glm::identity<Mat4>(),
+    .color = Vec4(0, 1, 0, 1)
+  };
 
-    buffers.emplace_back(data);
-  }
+  buffers.emplace_back(data);
 
   auto [buff, buff_fut] = create_buffer(frame_allocator, vuk::MemoryUsage::eCPUtoGPU, vuk::DomainFlagBits::eTransferOnGraphics, std::span(buffers));
   auto& buffer = *buff;
 
+  const auto& lines = DebugRenderer::get_instance()->get_lines(false);
+  auto [vertices, index_count] = DebugRenderer::get_vertices_from_lines(lines);
+
+  // fill in if empty
+  // TODO(hatrickek): (temporary solution until we move the vertex buffer initialization to DebugRenderer::init())
+  if (vertices.empty())
+    vertices.emplace_back(Vertex{});
+
+  auto [v_buff, v_buff_fut] = create_buffer(frame_allocator, vuk::MemoryUsage::eCPUtoGPU, vuk::DomainFlagBits::eTransferOnGraphics, std::span(vertices));
+  auto& vertex_buffer = *v_buff;
+
+  auto& index_buffer = *DebugRenderer::get_instance()->get_global_index_buffer();
+
+  // not depth tested
   rg->add_pass({
     .name = "debug_shapes_pass",
     .resources = {
       vuk::Resource(dst, vuk::Resource::Type::eImage, vuk::eColorWrite, dst.append("+")),
-      vuk::Resource(depth, vuk::Resource::Type::eImage, vuk::eDepthStencilRead)
     },
-    .execute = [this, buffer](vuk::CommandBuffer& command_buffer) {
-      auto& shapes = DebugRenderer::get_instance()->get_shapes();
+    .execute = [this, buffer, index_count, vertex_buffer, index_buffer](vuk::CommandBuffer& command_buffer) {
+      const auto vertex_layout = vuk::Packed{
+        vuk::Format::eR32G32B32Sfloat,
+        vuk::Format::eR32G32B32Sfloat,
+        vuk::Ignore{sizeof(Vertex) - (sizeof(Vertex::position) + sizeof(Vertex::normal))}
+      };
 
       command_buffer.bind_graphics_pipeline("unlit_pipeline")
                     .set_dynamic_state(vuk::DynamicStateFlagBits::eScissor | vuk::DynamicStateFlagBits::eViewport)
-                    .set_depth_stencil({
-                       .depthTestEnable = true,
-                       .depthWriteEnable = false,
-                       .depthCompareOp = vuk::CompareOp::eLessOrEqual
-                     })
                     .broadcast_color_blend({})
-                    .set_rasterization({.cullMode = vuk::CullModeFlagBits::eFront})
+                    .set_rasterization({.polygonMode = vuk::PolygonMode::eLine, .cullMode = vuk::CullModeFlagBits::eNone})
+                    .set_primitive_topology(vuk::PrimitiveTopology::eLineList)
                     .set_viewport(0, vuk::Rect2D::framebuffer())
                     .set_scissor(0, vuk::Rect2D::framebuffer())
-                    .bind_buffer(0, 0, buffer);
+                    .bind_buffer(0, 0, buffer)
+                    .push_constants(vuk::ShaderStageFlagBits::eVertex, 0, 0)
+                    .bind_vertex_buffer(0, vertex_buffer, 0, vertex_layout)
+                    .bind_index_buffer(index_buffer, vuk::IndexType::eUint32);
 
-      for (uint32_t i = 0; i < (uint32_t)shapes.size(); i++) {
-        shapes[i].shape_mesh->bind_vertex_buffer(command_buffer);
-        shapes[i].shape_mesh->bind_index_buffer(command_buffer);
-        for (const auto node : shapes[i].shape_mesh->nodes) {
-          const struct PushConst {
-            uint32_t index;
-          } pc = {i};
-          command_buffer.push_constants(vuk::ShaderStageFlagBits::eVertex, 0, pc);
-          Renderer::render_node(node, command_buffer);
-        }
-      }
+      Renderer::draw_indexed(command_buffer, index_count, 1, 0, 0, 0);
     }
   });
-#endif
+
   DebugRenderer::reset(true);
 }
 
@@ -441,10 +444,8 @@ Scope<vuk::Future> DefaultRenderPipeline::on_render(vuk::Allocator& frame_alloca
   }
 
   if (RendererCVar::cvar_enable_debug_renderer.get()) {
-    if (!DebugRenderer::get_instance()->get_shapes().empty()) {
-      debug_pass(rg, final_image_name, "depth_output", frame_allocator);
-      final_image_name = final_image_name.append("+");
-    }
+    debug_pass(rg, final_image_name, "depth_output", frame_allocator);
+    final_image_name = final_image_name.append("+");
   }
 
   if (RendererCVar::cvar_fxaa_enable.get()) {
@@ -554,25 +555,23 @@ void DefaultRenderPipeline::depth_pre_pass(const Ref<vuk::RenderGraph>& rg, vuk:
           mesh.mesh_base->bind_vertex_buffer(command_buffer);
         }
 
-        const auto node = mesh.mesh_base->linear_nodes[mesh.node_index];
-        if (node->mesh_data) {
-          for (const auto primitive : node->mesh_data->primitives) {
-            if (primitive->material->parameters.alpha_mode == (uint32_t)Material::AlphaMode::Mask
-                || primitive->material->parameters.alpha_mode == (uint32_t)Material::AlphaMode::Blend) {
-              continue;
-            }
-
-            const auto material_index = get_material_index(material_map, i, primitive->material_index);
-
-            command_buffer.push_constants(vuk::ShaderStageFlagBits::eVertex | vuk::ShaderStageFlagBits::eFragment, 0, mesh.transform)
-                          .push_constants(vuk::ShaderStageFlagBits::eFragment, sizeof(glm::mat4), material_index)
-                          .bind_sampler(1, 0, vuk::LinearSamplerRepeated)
-                          .bind_image(1, 0, *primitive->material->normal_texture->get_texture().view)
-                          .bind_sampler(1, 1, vuk::LinearSamplerRepeated)
-                          .bind_image(1, 1, *primitive->material->metallic_roughness_texture->get_texture().view);
-
-            Renderer::draw_indexed(command_buffer, primitive->index_count, 1, primitive->first_index, 0, 0);
+        const auto node = mesh.mesh_base->linear_mesh_nodes[mesh.node_index];
+        for (const auto primitive : node->mesh_data->primitives) {
+          if (primitive->material->parameters.alpha_mode == (uint32_t)Material::AlphaMode::Mask
+              || primitive->material->parameters.alpha_mode == (uint32_t)Material::AlphaMode::Blend) {
+            continue;
           }
+
+          const auto material_index = get_material_index(material_map, i, primitive->material_index);
+
+          command_buffer.push_constants(vuk::ShaderStageFlagBits::eVertex | vuk::ShaderStageFlagBits::eFragment, 0, mesh.transform)
+                        .push_constants(vuk::ShaderStageFlagBits::eFragment, sizeof(glm::mat4), material_index)
+                        .bind_sampler(1, 0, vuk::LinearSamplerRepeated)
+                        .bind_image(1, 0, *primitive->material->normal_texture->get_texture().view)
+                        .bind_sampler(1, 1, vuk::LinearSamplerRepeated)
+                        .bind_image(1, 1, *primitive->material->metallic_roughness_texture->get_texture().view);
+
+          Renderer::draw_indexed(command_buffer, primitive->index_count, 1, primitive->first_index, 0, 0);
         }
       }
     }
@@ -745,23 +744,21 @@ void DefaultRenderPipeline::geomerty_pass(const Ref<vuk::RenderGraph>& rg,
           mesh.mesh_base->bind_vertex_buffer(command_buffer);
         }
 
-        const auto node = mesh.mesh_base->linear_nodes[mesh.node_index];
-        if (node->mesh_data) {
-          for (auto primitive : node->mesh_data->primitives) {
-            if (primitive->material->parameters.alpha_mode == (uint32_t)Material::AlphaMode::Blend) {
-              //transparent_primitives.emplace_back(subset);
-              break;
-            }
-
-            const auto material_index = get_material_index(material_map, i, primitive->material_index);
-
-            command_buffer.push_constants(vuk::ShaderStageFlagBits::eVertex | vuk::ShaderStageFlagBits::eFragment, 0, mesh.transform)
-                          .push_constants(vuk::ShaderStageFlagBits::eFragment, sizeof(glm::mat4), material_index);
-
-            primitive->material->bind_textures(command_buffer);
-
-            Renderer::draw_indexed(command_buffer, primitive->index_count, 1, primitive->first_index, 0, 0);
+        const auto node = mesh.mesh_base->linear_mesh_nodes[mesh.node_index];
+        for (auto primitive : node->mesh_data->primitives) {
+          if (primitive->material->parameters.alpha_mode == (uint32_t)Material::AlphaMode::Blend) {
+            //transparent_primitives.emplace_back(subset);
+            break;
           }
+
+          const auto material_index = get_material_index(material_map, i, primitive->material_index);
+
+          command_buffer.push_constants(vuk::ShaderStageFlagBits::eVertex | vuk::ShaderStageFlagBits::eFragment, 0, mesh.transform)
+                        .push_constants(vuk::ShaderStageFlagBits::eFragment, sizeof(glm::mat4), material_index);
+
+          primitive->material->bind_textures(command_buffer);
+
+          Renderer::draw_indexed(command_buffer, primitive->index_count, 1, primitive->first_index, 0, 0);
         }
 
 #if 0 // TODO:
@@ -1143,21 +1140,19 @@ void DefaultRenderPipeline::cascaded_shadow_pass(const Ref<vuk::RenderGraph>& rg
             mesh.mesh_base->bind_vertex_buffer(command_buffer);
           }
 
-          const auto node = mesh.mesh_base->linear_nodes[mesh.node_index];
-          if (node->mesh_data) {
-            for (const auto primitive : node->mesh_data->primitives) {
-              struct PushConst {
-                Mat4 model;
-                uint32_t cascade_index = 0;
-              } push_const;
+          const auto node = mesh.mesh_base->linear_mesh_nodes[mesh.node_index];
+          for (const auto primitive : node->mesh_data->primitives) {
+            struct PushConst {
+              Mat4 model;
+              uint32_t cascade_index = 0;
+            } push_const;
 
-              push_const.model = mesh.transform;
-              push_const.cascade_index = cascade_index;
+            push_const.model = mesh.transform;
+            push_const.cascade_index = cascade_index;
 
-              command_buffer.push_constants(vuk::ShaderStageFlagBits::eVertex, 0, push_const);
+            command_buffer.push_constants(vuk::ShaderStageFlagBits::eVertex, 0, push_const);
 
-              Renderer::draw_indexed(command_buffer, primitive->index_count, 1, primitive->first_index, 0, 0);
-            }
+            Renderer::draw_indexed(command_buffer, primitive->index_count, 1, primitive->first_index, 0, 0);
           }
         }
       }

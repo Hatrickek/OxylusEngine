@@ -160,13 +160,11 @@ float GetShadowBias(const vec3 lightDirection, const vec3 normal) {
     return bias;
 }
 
-vec3 specularReflection(vec3 reflectance0, vec3 reflectance90, float VoH)
-{
+vec3 specularReflection(vec3 reflectance0, vec3 reflectance90, float VoH) {
     return reflectance0 + (reflectance90 - reflectance0) * pow(clamp(1.0 - VoH, 0.0, 1.0), 5.0);
 }
 
-float geometricOcclusion(float NoL, float NoV, float alphaRoughness)
-{
+float geometricOcclusion(float NoL, float NoV, float alphaRoughness) {
     float NdotL = NoL;
     float NdotV = NoV;
     float r = alphaRoughness;
@@ -316,15 +314,14 @@ vec3 DiffuseIrradiance(PixelData pixel) {
     return texture(samplerIrradiance, pixel.Normal).rgb;
 }
 
-
 vec3 EvaluateIBL(PixelData pixel) {
     vec3 E = specularDFG(pixel);
-    vec3 r = 2.0 * pixel.NDotV * pixel.Normal - pixel.View;//getReflectedVector(pixel, pixel.Normal);
-    vec3 Fr = E * prefilteredRadiance(r, pixel.PerceptualRoughness);
+    //vec3 r = 2.0 * pixel.NDotV * pixel.Normal - pixel.View;//getReflectedVector(pixel, pixel.Normal);
+    //vec3 Fr = E * prefilteredRadiance(r, pixel.PerceptualRoughness);
 
     vec3 diffuseIrradiance = DiffuseIrradiance(pixel);
 
-    vec3 Fd = pixel.DiffuseColor.xyz * diffuseIrradiance * (E);
+    vec3 Fd = pixel.DiffuseColor.xyz * diffuseIrradiance * E;
 
     return Fd; // + Fr;
 }

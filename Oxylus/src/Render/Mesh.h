@@ -10,6 +10,9 @@
 #define TINYGLTF_NO_STB_IMAGE_WRITE 
 #include <vuk/Buffer.hpp>
 
+#include "BoundingVolume.h"
+#include "MeshVertex.h"
+
 #include "Core/Types.h"
 
 namespace tinygltf {
@@ -26,39 +29,32 @@ public:
     DontCreateMaterials,
   };
 
-  struct BoundingBox {
-    glm::vec3 min;
-    glm::vec3 max;
-    bool valid = false;
-    BoundingBox() = default;
-    BoundingBox(glm::vec3 min, glm::vec3 max) : min(min), max(max) { }
-    BoundingBox get_aabb(glm::mat4 m) const;
-  };
-
   struct Primitive {
     uint32_t first_index = 0;
     uint32_t index_count = 0;
     uint32_t first_vertex = 0;
     uint32_t vertex_count = 0;
 
-    BoundingBox bb = {};
+    AABB aabb = {};
 
     Ref<Material> material = nullptr;
-    
+
     int32_t material_index = 0;
     uint32_t parent_node_index = 0;
 
-    void set_bounding_box(glm::vec3 min, glm::vec3 max);
-    Primitive(uint32_t firstIndex, uint32_t indexCount, uint32_t vertex_count, uint32_t first_vertex) : first_index(firstIndex), index_count(indexCount), first_vertex(first_vertex), vertex_count(vertex_count) { }
+    void set_bounding_box(Vec3 min, Vec3 max);
+
+    Primitive(const uint32_t first_index, const uint32_t index_count, const uint32_t vertex_count, const uint32_t first_vertex)
+      : first_index(first_index), index_count(index_count), first_vertex(first_vertex), vertex_count(vertex_count) { }
   };
 
   static constexpr auto MAX_NUM_JOINTS = 128u;
 
   struct MeshData {
     std::vector<Primitive*> primitives = {};
-    BoundingBox bb;
-    BoundingBox aabb;
     vuk::Unique<vuk::Buffer> node_buffer;
+
+    AABB bb = {};
 
     struct UniformBlock {
       glm::mat4 joint_matrix[MAX_NUM_JOINTS]{};
@@ -67,7 +63,6 @@ public:
 
     MeshData();
     ~MeshData();
-    void set_bounding_box(glm::vec3 min, glm::vec3 max);
   };
 
   struct Skin;
@@ -86,8 +81,8 @@ public:
     Vec3 scale = Vec3(1.0f);
     Quat rotation = {};
 
-    BoundingBox bvh;
-    BoundingBox aabb;
+    AABB bvh;
+    AABB aabb;
 
     ~Node();
 
@@ -116,7 +111,7 @@ public:
 
     InterpolationType interpolation;
     std::vector<float> inputs;
-    std::vector<glm::vec4> outputs_vec4;
+    std::vector<Vec4> outputs_vec4;
   };
 
   struct Animation {
@@ -127,22 +122,14 @@ public:
     float end = std::numeric_limits<float>::min();
   };
 
-  struct Vertex {
-    Vec3 position;
-    Vec3 normal;
-    Vec2 uv;
-    Vec4 tangent;
-    Vec4 color;
-    Vec4 joint0;
-    Vec4 weight0;
-  };
-
   std::vector<Ref<Animation>> animations = {};
 
   std::vector<Ref<TextureAsset>> m_textures;
   std::vector<Ref<Material>> materials;
   std::vector<Node*> nodes;
   std::vector<Node*> linear_nodes;
+  std::vector<Node*> linear_mesh_nodes;
+  uint32_t total_primitive_count = 0;
 
   std::vector<uint32_t> indices;
   std::vector<Vertex> vertices;
@@ -150,11 +137,11 @@ public:
   vuk::Unique<vuk::Buffer> index_buffer;
 
   struct Dimensions {
-    glm::vec3 min = glm::vec3(FLT_MAX);
-    glm::vec3 max = glm::vec3(-FLT_MAX);
+    Vec3 min = Vec3(FLT_MAX);
+    Vec3 max = Vec3(-FLT_MAX);
   } dimensions;
 
-  glm::mat4 aabb;
+  AABB aabb;
 
   std::string name;
   std::string path;
@@ -181,14 +168,13 @@ public:
   std::vector<Ref<Material>> get_materials_as_ref() const;
   uint32_t get_material_count() const { return (uint32_t)materials.size(); }
   size_t get_node_count() const { return nodes.size(); }
-  void set_scale(const glm::vec3& mesh_scale);
+  void set_scale(const Vec3& mesh_scale);
 
   operator bool() const {
     return !nodes.empty();
   }
 
 private:
-
   Vec3 scale{1.0f};
   Vec3 center{0.0f};
   Vec2 uv_scale{1.0f};

@@ -132,7 +132,7 @@ std::pair<vuk::Buffer, vuk::Buffer> RendererCommon::merge_render_objects(std::ve
   const auto vk_context = VulkanContext::get();
 
   vuk::Buffer merged_vertex_buffer;
-  vuk::BufferCreateInfo bci_vertex{vuk::MemoryUsage::eGPUonly, total_vertices * sizeof(Mesh::Vertex), 1};
+  vuk::BufferCreateInfo bci_vertex{vuk::MemoryUsage::eGPUonly, total_vertices * sizeof(Vertex), 1};
   vk_context->superframe_allocator->allocate_buffers(std::span{&merged_vertex_buffer, 1}, std::span{&bci_vertex, 1});
 
   vuk::Buffer merged_index_buffer;
@@ -157,8 +157,8 @@ std::pair<vuk::Buffer, vuk::Buffer> RendererCommon::merge_render_objects(std::ve
         const auto& buffer = *command_buffer.get_resource_buffer("_dst_vertex");
 
         VkBufferCopy vertexCopy;
-        vertexCopy.dstOffset = m.first_vertex * sizeof(Mesh::Vertex);
-        vertexCopy.size = m.vertex_count * sizeof(Mesh::Vertex);
+        vertexCopy.dstOffset = m.first_vertex * sizeof(Vertex);
+        vertexCopy.size = m.vertex_count * sizeof(Vertex);
         vertexCopy.srcOffset = 0;
 
         vkCmdCopyBuffer(command_buffer.get_underlying(), m.mesh_geometry->vertex_buffer->buffer, buffer.buffer, 1, &vertexCopy);
@@ -208,7 +208,7 @@ Ref<Mesh> RendererCommon::generate_quad() {
   if (mesh_lib.quad)
     return mesh_lib.quad;
 
-  std::vector<Mesh::Vertex> vertices(4);
+  std::vector<Vertex> vertices(4);
   vertices[0].position = Vec3{-1.0f, -1.0f, 0.0f};
   vertices[0].uv = {};
 
@@ -232,7 +232,7 @@ Ref<Mesh> RendererCommon::generate_cube() {
   if (mesh_lib.cube)
     return mesh_lib.cube;
 
-  std::vector<Mesh::Vertex> vertices(24);
+  std::vector<Vertex> vertices(24);
 
   vertices[0].position = Vec3(0.5f, 0.5f, 0.5f);
   vertices[0].normal = Vec3(0.0f, 0.0f, 1.0f);
@@ -328,7 +328,7 @@ Ref<Mesh> RendererCommon::generate_cube() {
     20, 22, 23
   };
 
-  mesh_lib.cube = create_ref<Mesh>(vertices, indices);;
+  mesh_lib.cube = create_ref<Mesh>(vertices, indices);
 
   return mesh_lib.cube;
 }
@@ -337,7 +337,7 @@ Ref<Mesh> RendererCommon::generate_sphere() {
   if (mesh_lib.sphere)
     return mesh_lib.sphere;
 
-  std::vector<Mesh::Vertex> vertices;
+  std::vector<Vertex> vertices;
   std::vector<uint32_t> indices;
 
   int latitude_bands = 30;
@@ -354,7 +354,7 @@ Ref<Mesh> RendererCommon::generate_sphere() {
       float sinPhi = sin(phi);
       float cosPhi = cos(phi);
 
-      Mesh::Vertex vs;
+      Vertex vs;
       vs.normal[0] = cosPhi * sinTheta;   // x
       vs.normal[1] = cosTheta;            // y
       vs.normal[2] = sinPhi * sinTheta;   // z
