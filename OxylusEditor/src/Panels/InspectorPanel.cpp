@@ -325,7 +325,7 @@ void InspectorPanel::draw_components(Entity entity) const {
         ImGui::TextUnformatted(StringUtils::from_char8_t(ICON_MDI_MAGNIFY " Search..."));
       }
 
-      for (auto i = 0; i < (uint32_t)component.materials.size(); i ++) {
+      for (auto i = 0; i < (uint32_t)component.materials.size(); i++) {
         auto& material = component.materials[i];
         if (name_filter.PassFilter(material->name.c_str())) {
           ImGui::PushID(i);
@@ -385,15 +385,15 @@ void InspectorPanel::draw_components(Entity entity) const {
       auto load_cube_map = [](Scene* scene, const std::string& path, SkyLightComponent& comp) {
         if (path.empty())
           return;
-        const auto ext = std::filesystem::path(path).extension().string();
-        if (ext == ".hdr") {
-          comp.cubemap = AssetManager::get_texture_asset({.path = path, .format = vuk::Format::eR8G8B8A8Srgb});
+        const auto ext = FileSystem::get_file_extension(path);
+        if (ext == "hdr") {
+          comp.cubemap = AssetManager::get_texture_asset({.path = path, .format = vuk::Format::eR8G8B8A8Srgb, .generate_mips = false});
           scene->get_renderer()->dispatcher.trigger(SkyboxLoadEvent{comp.cubemap});
         }
       };
       const float x = ImGui::GetContentRegionAvail().x;
       const float y = ImGui::GetFrameHeight();
-      if (ImGui::Button(name.c_str(), {x, y})) {
+      if (ImGui::Button(name.c_str(), {x - 60.f, y})) {
         const std::string file_path = FileDialogs::open_file({{"HDR File", "hdr"}});
         load_cube_map(m_Scene, file_path, component);
       }
@@ -403,6 +403,11 @@ void InspectorPanel::draw_components(Entity entity) const {
           load_cube_map(m_Scene, path, component);
         }
         ImGui::EndDragDropTarget();
+      }
+      ImGui::SameLine(0, 2.f);
+      if (ImGui::Button("x", {50.f, 0.f})) {
+        component.cubemap = {};
+        m_Scene->get_renderer()->dispatcher.trigger(SkyboxLoadEvent{component.cubemap});
       }
       ImGui::Spacing();
     });

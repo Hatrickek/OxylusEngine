@@ -54,14 +54,14 @@ float V_SmithGGXCorrelated(float NoV, float NoL, float a) {
     return 0.5 / (GGXV + GGXL);
 }
 
-float Fd_Lambert() { return 1.0 / PI; }
-
 float ComputeMicroShadowing(float NoL, float visibility) {
     // Chan 2018, "Material Advances in Call of Duty: WWII"
     float aperture = inversesqrt(1.0 - min(visibility, 0.9999));
     float microShadow = saturate(NoL * aperture);
     return microShadow * microShadow;
 }
+
+float Fd_Lambert() { return 1.0 / PI; }
 
 float Diffuse(float roughness, float NoV, float NoL, float LoH) {
     #if QUALITY_LOW

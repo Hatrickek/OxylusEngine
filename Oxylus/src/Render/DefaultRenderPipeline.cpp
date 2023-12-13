@@ -59,6 +59,13 @@ void DefaultRenderPipeline::init(vuk::Allocator& allocator) {
   }
   {
     vuk::PipelineBaseCreateInfo pci;
+    pci.add_glsl(FileUtils::read_shader_file("PBRTiled.vert"), FileUtils::get_shader_path("PBRTiled.vert"));
+    pci.add_glsl(FileUtils::read_shader_file("PBRTiled.frag"), FileUtils::get_shader_path("PBRTiled.frag"));
+    pci.define("CUBEMAP_PIPELINE", "");
+    allocator.get_context().create_named_pipeline("pbr_cubemap_pipeline", pci);
+  }
+  {
+    vuk::PipelineBaseCreateInfo pci;
     pci.add_glsl(FileUtils::read_shader_file("SSR.comp"), FileUtils::get_shader_path("SSR.comp"));
     allocator.get_context().create_named_pipeline("ssr_pipeline", pci);
   }
@@ -154,13 +161,9 @@ void DefaultRenderPipeline::init(vuk::Allocator& allocator) {
 
   compute_sky_transmittance(allocator);
 
-  cube_map = create_ref<TextureAsset>();
-  cube_map = AssetManager::get_texture_asset({
-    .path = Resources::get_resources_path("HDRs/sunflowers_puresky_4k.hdr"),
-    .format = vuk::Format::eR8G8B8A8Srgb,
-    .generate_mips = false
-  });
-  generate_prefilter(allocator);
+  // TODO List:
+  // add raymarching for atmosphere.
+  // move directional light properties to SkyLightComponent
 }
 
 void DefaultRenderPipeline::on_dispatcher_events(EventDispatcher& dispatcher) {
@@ -537,7 +540,8 @@ void DefaultRenderPipeline::compute_sky_transmittance(vuk::Allocator& allocator)
 void DefaultRenderPipeline::update_skybox(const SkyboxLoadEvent& e) {
   cube_map = e.cube_map;
 
-  generate_prefilter(*VulkanContext::get()->superframe_allocator);
+  if (cube_map)
+    generate_prefilter(*VulkanContext::get()->superframe_allocator);
 }
 
 void DefaultRenderPipeline::depth_pre_pass(const Ref<vuk::RenderGraph>& rg, vuk::Buffer& vs_buffer, const std::unordered_map<uint32_t, uint32_t>& material_map, vuk::Buffer& mat_buffer) const {
@@ -644,28 +648,57 @@ void DefaultRenderPipeline::geomerty_pass(const Ref<vuk::RenderGraph>& rg,
       gtao_resource
     },
     .execute = [this, vs_buffer, scene_lights_buffer, shadow_buffer, pbr_buffer, mat_buffer, material_map, sun_const_buffer, gtao_name](vuk::CommandBuffer& command_buffer) {
-      constexpr auto sampler = vuk::SamplerCreateInfo{
-        .magFilter = vuk::Filter::eLinear,
-        .minFilter = vuk::Filter::eLinear,
-        .addressModeU = vuk::SamplerAddressMode::eRepeat,
-        .addressModeV = vuk::SamplerAddressMode::eClampToEdge,
-        .addressModeW = vuk::SamplerAddressMode::eClampToEdge
-      };
-      command_buffer.set_dynamic_state(vuk::DynamicStateFlagBits::eScissor | vuk::DynamicStateFlagBits::eViewport)
-                    .set_viewport(0, vuk::Rect2D::framebuffer())
-                    .set_scissor(0, vuk::Rect2D::framebuffer())
-                    .broadcast_color_blend(vuk::BlendPreset::eOff)
-                    .set_depth_stencil({
-                       .depthTestEnable = false,
-                       .depthWriteEnable = false,
-                       .depthCompareOp = vuk::CompareOp::eLessOrEqual
-                     })
-                    .set_rasterization({.cullMode = vuk::CullModeFlagBits::eNone})
-                    .bind_graphics_pipeline("sky_view_final_pipeline")
-                    .bind_image(0, 0, "sky_view_lut+")
-                    .bind_sampler(0, 0, sampler)
-                    .bind_buffer(0, 1, sun_const_buffer)
-                    .draw(3, 1, 0, 0);
+      if (cube_map) {
+        struct SkyboxPushConstant {
+          Mat4 view;
+        } skybox_push_constant = {};
+
+        skybox_push_constant.view = m_renderer_context.current_camera->get_view_matrix();
+        skybox_push_constant.view[3] = Vec4(0, 0, 0, 1);
+
+        command_buffer.bind_graphics_pipeline("skybox_pipeline")
+                      .set_viewport(0, vuk::Rect2D::framebuffer())
+                      .set_scissor(0, vuk::Rect2D::framebuffer())
+                      .broadcast_color_blend({})
+                      .set_rasterization({.cullMode = vuk::CullModeFlagBits::eNone})
+                      .set_depth_stencil(vuk::PipelineDepthStencilStateCreateInfo{
+                         .depthTestEnable = false,
+                         .depthWriteEnable = false,
+                         .depthCompareOp = vuk::CompareOp::eLessOrEqual,
+                       })
+                      .bind_buffer(0, 0, vs_buffer)
+                      .bind_sampler(0, 1, vuk::LinearSamplerRepeated)
+                      .bind_image(0, 1, cube_map->as_attachment())
+                      .push_constants(vuk::ShaderStageFlagBits::eVertex | vuk::ShaderStageFlagBits::eFragment, 0, skybox_push_constant);
+
+        m_cube->bind_index_buffer(command_buffer);
+        m_cube->bind_vertex_buffer(command_buffer);
+        command_buffer.draw_indexed(m_cube->indices.size(), 1, 0, 0, 0);
+      }
+      else {
+        constexpr auto sampler = vuk::SamplerCreateInfo{
+          .magFilter = vuk::Filter::eLinear,
+          .minFilter = vuk::Filter::eLinear,
+          .addressModeU = vuk::SamplerAddressMode::eRepeat,
+          .addressModeV = vuk::SamplerAddressMode::eClampToEdge,
+          .addressModeW = vuk::SamplerAddressMode::eClampToEdge
+        };
+        command_buffer.set_dynamic_state(vuk::DynamicStateFlagBits::eScissor | vuk::DynamicStateFlagBits::eViewport)
+                      .set_viewport(0, vuk::Rect2D::framebuffer())
+                      .set_scissor(0, vuk::Rect2D::framebuffer())
+                      .broadcast_color_blend(vuk::BlendPreset::eOff)
+                      .set_depth_stencil({
+                         .depthTestEnable = false,
+                         .depthWriteEnable = false,
+                         .depthCompareOp = vuk::CompareOp::eLessOrEqual
+                       })
+                      .set_rasterization({.cullMode = vuk::CullModeFlagBits::eNone})
+                      .bind_graphics_pipeline("sky_view_final_pipeline")
+                      .bind_image(0, 0, "sky_view_lut+")
+                      .bind_sampler(0, 0, sampler)
+                      .bind_buffer(0, 1, sun_const_buffer)
+                      .draw(3, 1, 0, 0);
+      }
 
       const auto sky_transmittance_lut = vuk::ImageAttachment{
         .image = *sky_transmittance_lut_image,
@@ -721,8 +754,14 @@ void DefaultRenderPipeline::geomerty_pass(const Ref<vuk::RenderGraph>& rg,
         .layer_count = 1
       };
 
-      command_buffer.bind_graphics_pipeline("pbr_pipeline")
-                    .set_dynamic_state(vuk::DynamicStateFlagBits::eScissor | vuk::DynamicStateFlagBits::eViewport)
+      if (cube_map) {
+        command_buffer.bind_graphics_pipeline("pbr_cubemap_pipeline");
+      }
+      else {
+        command_buffer.bind_graphics_pipeline("pbr_pipeline");
+      }
+
+      command_buffer.set_dynamic_state(vuk::DynamicStateFlagBits::eScissor | vuk::DynamicStateFlagBits::eViewport)
                     .set_viewport(0, vuk::Rect2D::framebuffer())
                     .set_scissor(0, vuk::Rect2D::framebuffer())
                     .broadcast_color_blend({})
@@ -741,14 +780,14 @@ void DefaultRenderPipeline::geomerty_pass(const Ref<vuk::RenderGraph>& rg,
                     .bind_sampler(0, 5, vuk::LinearSamplerClamped)
                     .bind_image(0, 6, gtao_name)
                     .bind_sampler(0, 6, {})
-                    .bind_image(0, 7, irradiance_att)
-                    .bind_sampler(0, 7, vuk::LinearSamplerClamped)
-                    .bind_image(0, 8, brdf_att)
-                    .bind_sampler(0, 8, vuk::LinearSamplerClamped)
-                    .bind_image(0, 9, prefilter_att)
-                    .bind_sampler(0, 9, vuk::LinearSamplerClamped)
+                    .bind_sampler(0, 10, vuk::LinearSamplerClamped)
                     .bind_buffer(2, 0, mat_buffer);
 
+      if (cube_map) {
+        command_buffer.bind_image(0, 7, brdf_att)
+                      .bind_image(0, 8, prefilter_att)
+                      .bind_image(0, 9, irradiance_att);
+      }
 
       for (uint32_t i = 0; i < mesh_draw_list.size(); i++) {
         auto& mesh = mesh_draw_list[i];
@@ -1179,6 +1218,15 @@ void DefaultRenderPipeline::cascaded_shadow_pass(const Ref<vuk::RenderGraph>& rg
 void DefaultRenderPipeline::generate_prefilter(vuk::Allocator& allocator) {
   OX_SCOPED_ZONE;
   vuk::Compiler compiler{};
+
+  const auto rg = create_ref<vuk::RenderGraph>("cubemap_blurring");
+
+  rg->attach_image("cubemap", vuk::ImageAttachment::from_texture(cube_map->get_texture()));
+  auto [diverged_image, diverged_image_output] = vuk::diverge_image_layers(rg, "cubemap_image", 6);
+
+  for (uint32_t i = 0; i < 6; i++) {
+    RendererCommon::apply_blur(rg, "", diverged_image[i], diverged_image_output[i]);
+  }
 
   auto [brdf_img, brdf_fut] = Prefilter::generate_brdflut();
   brdf_fut.wait(allocator, compiler);

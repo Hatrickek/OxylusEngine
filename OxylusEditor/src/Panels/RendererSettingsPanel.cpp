@@ -41,7 +41,10 @@ void RendererSettingsPanel::on_imgui_render() {
     ImGui::Separator();
     if (OxUI::icon_button(ICON_MDI_RELOAD, "Reload render pipeline"))
       RendererCVar::cvar_reload_render_pipeline.toggle();
-    ImGui::Separator();
+    if (OxUI::begin_properties()) {
+      OxUI::property("Draw bounding boxes", (bool*)RendererCVar::cvar_draw_bounding_boxes.get_ptr());
+      OxUI::end_properties();
+    }
 
     ImGui::Text("Environment");
     if (OxUI::begin_properties()) {

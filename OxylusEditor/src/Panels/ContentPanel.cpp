@@ -624,7 +624,7 @@ void ContentPanel::render_body(bool grid) {
         ImGui::PopStyleVar();
 
         if (is_dir)
-          drag_drop_target(file.file_path.c_str());
+          drag_drop_target(file.file_path);
 
         drag_drop_from(file.file_path);
 

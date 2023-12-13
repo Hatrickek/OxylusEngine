@@ -8,13 +8,12 @@ layout(binding = 1) uniform samplerCube s_Env;
 
 layout(push_constant) uniform PushConst { 
 	mat4 Model; 
-	float LodBias;
 };
 
 void main() {
   vec3 uv = in_UV;
 
-  vec4 finalColor = textureLod(s_Env, uv, LodBias);
+  vec4 finalColor = texture(s_Env, uv);
 
   out_Color = finalColor;
 }
