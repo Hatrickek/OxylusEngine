@@ -37,6 +37,7 @@ struct PixelData {
     vec3 EnergyCompensation;
     vec2 dfg;
     vec3 TransmittanceLut;
+    vec3 SpecularColor;
 };
 
 layout(location = 0) in vec3 inWorldPos;
@@ -185,7 +186,6 @@ void GetEnergyCompensationPixelData(inout PixelData pixelData) {
 }
 #endif
 
-
 vec3 Lighting(vec3 F0, vec3 wsPos, inout PixelData pixelData) {
     vec3 result = vec3(0);
 
@@ -251,6 +251,8 @@ vec3 Lighting(vec3 F0, vec3 wsPos, inout PixelData pixelData) {
 
         vec3 specularColor = mix(pixelData.F0, pixelData.Albedo.rgb, pixelData.Metallic);
 
+        pixelData.SpecularColor = specularColor;
+
         // Compute reflectance.
         float reflectance = max(max(specularColor.r, specularColor.g), specularColor.b);
 
@@ -274,7 +276,9 @@ vec3 Lighting(vec3 F0, vec3 wsPos, inout PixelData pixelData) {
         // Obtain final intensity as reflectance (BRDF) scaled by the energy of the light (cosine law)
         
         result += color * (NoL * visibility * ComputeMicroShadowing(NoL, pixelData.AO)) * (currentLight.ColorRadius.rgb * currentLight.PositionIntensity.w);
+#ifndef CUBEMAP_PIPELINE
         result *= transmittance_lut;
+#endif
         //result += currentLight.Position.w * (value * sun_radiance * ComputeMicroShadowing(NoL, material.AO)) + transmittance_lut;
     }
 
@@ -285,11 +289,11 @@ vec3 EvaluateIBL(PixelData pixel) {
 #ifdef CUBEMAP_PIPELINE
     vec3 E = SpecularDFG(pixel);
     vec3 r = GetReflectedVector(pixel);
-    vec3 Fr = E * PrefilteredRadiance(r, pixel.PerceptualRoughness);
+    vec3 Fr = E * PrefilteredRadiance(r, pixel.PerceptualRoughness) * pixel.SpecularColor;
 
     vec3 diffuseIrradiance = DiffuseIrradiance(pixel);
 
-    vec3 Fd = pixel.DiffuseColor.xyz * diffuseIrradiance * E;
+    vec3 Fd = pixel.DiffuseColor.xyz * diffuseIrradiance;
 
     return Fd + Fr;
 #endif
@@ -313,14 +317,14 @@ void main() {
         discard;
     }
 
-    float roughness = 1.0 - mat.Roughness;
+    float roughness = mat.Roughness;
     float metallic = mat.Metallic;
 
     // metallic roughness workflow
     if (mat.UsePhysicalMap) {
         vec4 physicalMapTexture = texture(physicalMap, scaledUV);
-        roughness = physicalMapTexture.g;//* (1.0 - mat.Roughness);
-        metallic = physicalMapTexture.b; //* (1.0 - mat.Metallic);
+        roughness = physicalMapTexture.g;//* (mat.Roughness);
+        metallic = physicalMapTexture.b;// * (mat.Metallic);
     } else {
         metallic = clamp(metallic, 0.0, 1.0);
         roughness = clamp(roughness, MIN_ROUGHNESS, 1.0);
@@ -374,7 +378,7 @@ void main() {
 
     vec3 finalColor = iblContribution + lightContribution + pixelData.Emissive;
 
-    #ifndef BLEND_MODE_BLEND
+#ifndef BLEND_MODE
     // Apply GTAO
     if (EnableGTAO == 1) {
         vec2 uv = gl_FragCoord.xy / vec2(ScreenDimensions.x, ScreenDimensions.y);
@@ -384,7 +388,7 @@ void main() {
         // maybe apply it to only pixelData.Albedo? 
         finalColor *= aoVisibility;
     }
-    #endif
+#endif
 
     outColor = vec4(finalColor, pixelData.Albedo.a);
 }

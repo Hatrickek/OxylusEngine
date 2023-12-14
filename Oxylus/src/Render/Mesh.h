@@ -154,8 +154,8 @@ public:
 
   void load_from_file(const std::string& file_path, int file_loading_flags = None, float scale = 1);
 
-  void bind_vertex_buffer(vuk::CommandBuffer& command_buffer) const;
-  void bind_index_buffer(vuk::CommandBuffer& command_buffer) const;
+  const Mesh* bind_vertex_buffer(vuk::CommandBuffer& command_buffer) const;
+  const Mesh* bind_index_buffer(vuk::CommandBuffer& command_buffer) const;
   void draw_node(const Node* node, vuk::CommandBuffer& command_buffer) const;
   void draw(vuk::CommandBuffer& command_buffer) const;
   void update_animation(uint32_t index, float time) const;

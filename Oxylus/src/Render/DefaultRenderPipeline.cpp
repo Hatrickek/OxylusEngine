@@ -10,7 +10,6 @@
 #include "Core/Application.h"
 #include "Assets/AssetManager.h"
 #include "Core/Entity.h"
-#include "Core/Resources.h"
 #include "PBR/DirectShadowPass.h"
 #include "PBR/Prefilter.h"
 
@@ -63,6 +62,21 @@ void DefaultRenderPipeline::init(vuk::Allocator& allocator) {
     pci.add_glsl(FileUtils::read_shader_file("PBRTiled.frag"), FileUtils::get_shader_path("PBRTiled.frag"));
     pci.define("CUBEMAP_PIPELINE", "");
     allocator.get_context().create_named_pipeline("pbr_cubemap_pipeline", pci);
+  }
+  {
+    vuk::PipelineBaseCreateInfo pci;
+    pci.add_glsl(FileUtils::read_shader_file("PBRTiled.vert"), FileUtils::get_shader_path("PBRTiled.vert"));
+    pci.add_glsl(FileUtils::read_shader_file("PBRTiled.frag"), FileUtils::get_shader_path("PBRTiled.frag"));
+    pci.define("BLEND_MODE", "");
+    allocator.get_context().create_named_pipeline("pbr_transparency_pipeline", pci);
+  }
+  {
+    vuk::PipelineBaseCreateInfo pci;
+    pci.add_glsl(FileUtils::read_shader_file("PBRTiled.vert"), FileUtils::get_shader_path("PBRTiled.vert"));
+    pci.add_glsl(FileUtils::read_shader_file("PBRTiled.frag"), FileUtils::get_shader_path("PBRTiled.frag"));
+    pci.define("CUBEMAP_PIPELINE", "");
+    pci.define("BLEND_MODE", "");
+    allocator.get_context().create_named_pipeline("pbr_transparency_cubemap_pipeline", pci);
   }
   {
     vuk::PipelineBaseCreateInfo pci;
@@ -282,6 +296,8 @@ Scope<vuk::Future> DefaultRenderPipeline::on_render(vuk::Allocator& frame_alloca
     m_renderer_context.current_camera = default_camera.get();
   }
 
+  is_cube_map_pipeline = cube_map == nullptr ? false : true;
+
   auto vk_context = VulkanContext::get();
 
 #if 0
@@ -299,7 +315,8 @@ Scope<vuk::Future> DefaultRenderPipeline::on_render(vuk::Allocator& frame_alloca
     [this](const MeshComponent& mesh_component) {
       if (mesh_component.base_node) {
         const auto camera_frustum = m_renderer_context.current_camera->get_frustum();
-        if (!mesh_component.mesh_base->aabb.is_on_frustum(camera_frustum)) {
+        const auto aabb = mesh_component.mesh_base->aabb.get_transformed(mesh_component.transform);
+        if (!aabb.is_on_frustum(camera_frustum)) {
           Renderer::get_stats().drawcall_culled_count += mesh_component.mesh_base->total_primitive_count;
           return true;
         }
@@ -389,7 +406,8 @@ Scope<vuk::Future> DefaultRenderPipeline::on_render(vuk::Allocator& frame_alloca
   auto [point_lights_buf, point_lights_buffer_fut] = create_buffer(frame_allocator, vuk::MemoryUsage::eCPUtoGPU, vuk::DomainFlagBits::eTransferOnGraphics, std::span(scene_lights_data));
   auto& point_lights_buffer = *point_lights_buf;
 
-  sky_view_lut_pass(frame_allocator, rg, sun_direction);
+  if (!is_cube_map_pipeline)
+    sky_view_lut_pass(frame_allocator, rg, sun_direction);
 
   geomerty_pass(rg, frame_allocator, vs_buffer, material_map, mat_buffer, shadow_buffer, point_lights_buffer);
 
@@ -569,8 +587,7 @@ void DefaultRenderPipeline::depth_pre_pass(const Ref<vuk::RenderGraph>& rg, vuk:
       for (uint32_t i = 0; i < mesh_draw_list.size(); i++) {
         const auto& mesh = mesh_draw_list[i];
         if (mesh.base_node) {
-          mesh.mesh_base->bind_index_buffer(command_buffer);
-          mesh.mesh_base->bind_vertex_buffer(command_buffer);
+          mesh.mesh_base->bind_index_buffer(command_buffer)->bind_vertex_buffer(command_buffer);
         }
 
         const auto node = mesh.mesh_base->linear_mesh_nodes[mesh.node_index];
@@ -638,23 +655,82 @@ void DefaultRenderPipeline::geomerty_pass(const Ref<vuk::RenderGraph>& rg,
 
   auto [gtao_resource, gtao_name] = get_attachment_or_black_uint("gtao_final_output", RendererCVar::cvar_gtao_enable.get());
 
+  auto resources = std::vector<vuk::Resource>{
+    "pbr_image"_image >> vuk::eColorRW >> "pbr_output",
+    "depth_output"_image >> vuk::eDepthStencilRead,
+    "shadow_array_output"_image >> vuk::eFragmentSampled,
+    gtao_resource
+  };
+
+  if (!is_cube_map_pipeline)
+    resources.emplace_back("sky_view_lut+", vuk::Resource::Type::eImage, vuk::eFragmentSampled);
+
+
+  const auto sky_transmittance_lut = vuk::ImageAttachment{
+    .image = *sky_transmittance_lut_image,
+    .usage = vuk::ImageUsageFlagBits::eSampled | vuk::ImageUsageFlagBits::eColorAttachment,
+    .extent = vuk::Dimension3D::absolute(512, 512, 1),
+    .format = vuk::Format::eR32G32B32A32Sfloat,
+    .sample_count = vuk::Samples::e1,
+    .view_type = vuk::ImageViewType::e2D,
+    .base_level = 0,
+    .level_count = 1,
+    .base_layer = 0,
+    .layer_count = 1
+  };
+
+  auto irradiance_att = vuk::ImageAttachment{
+    .image = *irradiance_image,
+    .image_flags = vuk::ImageCreateFlagBits::eCubeCompatible,
+    .usage = vuk::ImageUsageFlagBits::eSampled | vuk::ImageUsageFlagBits::eColorAttachment,
+    .extent = vuk::Dimension3D::absolute(64, 64, 1),
+    .format = vuk::Format::eR32G32B32A32Sfloat,
+    .sample_count = vuk::Samples::e1,
+    .view_type = vuk::ImageViewType::eCube,
+    .base_level = 0,
+    .level_count = 1,
+    .base_layer = 0,
+    .layer_count = 6
+  };
+
+  auto prefilter_att = vuk::ImageAttachment{
+    .image = *prefiltered_image,
+    .image_flags = vuk::ImageCreateFlagBits::eCubeCompatible,
+    .usage = vuk::ImageUsageFlagBits::eSampled | vuk::ImageUsageFlagBits::eColorAttachment,
+    .extent = vuk::Dimension3D::absolute(512, 512, 1),
+    .format = vuk::Format::eR32G32B32A32Sfloat,
+    .sample_count = vuk::Samples::e1,
+    .view_type = vuk::ImageViewType::eCube,
+    .base_level = 0,
+    .level_count = 1,
+    .base_layer = 0,
+    .layer_count = 6
+  };
+
+  auto brdf_att = vuk::ImageAttachment{
+    .image = *brdf_image,
+    .usage = vuk::ImageUsageFlagBits::eSampled | vuk::ImageUsageFlagBits::eColorAttachment,
+    .extent = vuk::Dimension3D::absolute(512, 512, 1),
+    .format = vuk::Format::eR32G32B32A32Sfloat,
+    .sample_count = vuk::Samples::e1,
+    .view_type = vuk::ImageViewType::e2D,
+    .base_level = 0,
+    .level_count = 1,
+    .base_layer = 0,
+    .layer_count = 1
+  };
+
   rg->add_pass({
     .name = "geomerty_pass",
-    .resources = {
-      "pbr_image"_image >> vuk::eColorRW >> "pbr_output",
-      "depth_output"_image >> vuk::eDepthStencilRead,
-      "shadow_array_output"_image >> vuk::eFragmentSampled,
-      "sky_view_lut+"_image >> vuk::eFragmentSampled,
-      gtao_resource
-    },
-    .execute = [this, vs_buffer, scene_lights_buffer, shadow_buffer, pbr_buffer, mat_buffer, material_map, sun_const_buffer, gtao_name](vuk::CommandBuffer& command_buffer) {
-      if (cube_map) {
-        struct SkyboxPushConstant {
+    .resources = resources,
+    .execute = [this, vs_buffer, scene_lights_buffer, shadow_buffer, pbr_buffer, mat_buffer, material_map, sun_const_buffer,
+      gtao_name, sky_transmittance_lut, brdf_att, prefilter_att, irradiance_att](vuk::CommandBuffer& command_buffer) {
+      if (is_cube_map_pipeline) {
+        auto view = m_renderer_context.current_camera->get_view_matrix();
+        view[3] = Vec4(0, 0, 0, 1);
+        const struct SkyboxPushConstant {
           Mat4 view;
-        } skybox_push_constant = {};
-
-        skybox_push_constant.view = m_renderer_context.current_camera->get_view_matrix();
-        skybox_push_constant.view[3] = Vec4(0, 0, 0, 1);
+        } skybox_push_constant = {view};
 
         command_buffer.bind_graphics_pipeline("skybox_pipeline")
                       .set_viewport(0, vuk::Rect2D::framebuffer())
@@ -671,8 +747,8 @@ void DefaultRenderPipeline::geomerty_pass(const Ref<vuk::RenderGraph>& rg,
                       .bind_image(0, 1, cube_map->as_attachment())
                       .push_constants(vuk::ShaderStageFlagBits::eVertex | vuk::ShaderStageFlagBits::eFragment, 0, skybox_push_constant);
 
-        m_cube->bind_index_buffer(command_buffer);
-        m_cube->bind_vertex_buffer(command_buffer);
+        m_cube->bind_index_buffer(command_buffer)
+              ->bind_vertex_buffer(command_buffer);
         command_buffer.draw_indexed(m_cube->indices.size(), 1, 0, 0, 0);
       }
       else {
@@ -700,61 +776,7 @@ void DefaultRenderPipeline::geomerty_pass(const Ref<vuk::RenderGraph>& rg,
                       .draw(3, 1, 0, 0);
       }
 
-      const auto sky_transmittance_lut = vuk::ImageAttachment{
-        .image = *sky_transmittance_lut_image,
-        .usage = vuk::ImageUsageFlagBits::eSampled | vuk::ImageUsageFlagBits::eColorAttachment,
-        .extent = vuk::Dimension3D::absolute(512, 512, 1),
-        .format = vuk::Format::eR32G32B32A32Sfloat,
-        .sample_count = vuk::Samples::e1,
-        .view_type = vuk::ImageViewType::e2D,
-        .base_level = 0,
-        .level_count = 1,
-        .base_layer = 0,
-        .layer_count = 1
-      };
-
-      auto irradiance_att = vuk::ImageAttachment{
-        .image = *irradiance_image,
-        .image_flags = vuk::ImageCreateFlagBits::eCubeCompatible,
-        .usage = vuk::ImageUsageFlagBits::eSampled | vuk::ImageUsageFlagBits::eColorAttachment,
-        .extent = vuk::Dimension3D::absolute(64, 64, 1),
-        .format = vuk::Format::eR32G32B32A32Sfloat,
-        .sample_count = vuk::Samples::e1,
-        .view_type = vuk::ImageViewType::eCube,
-        .base_level = 0,
-        .level_count = 1,
-        .base_layer = 0,
-        .layer_count = 6
-      };
-
-      auto prefilter_att = vuk::ImageAttachment{
-        .image = *prefiltered_image,
-        .image_flags = vuk::ImageCreateFlagBits::eCubeCompatible,
-        .usage = vuk::ImageUsageFlagBits::eSampled | vuk::ImageUsageFlagBits::eColorAttachment,
-        .extent = vuk::Dimension3D::absolute(512, 512, 1),
-        .format = vuk::Format::eR32G32B32A32Sfloat,
-        .sample_count = vuk::Samples::e1,
-        .view_type = vuk::ImageViewType::eCube,
-        .base_level = 0,
-        .level_count = 1,
-        .base_layer = 0,
-        .layer_count = 6
-      };
-
-      auto brdf_att = vuk::ImageAttachment{
-        .image = *brdf_image,
-        .usage = vuk::ImageUsageFlagBits::eSampled | vuk::ImageUsageFlagBits::eColorAttachment,
-        .extent = vuk::Dimension3D::absolute(512, 512, 1),
-        .format = vuk::Format::eR32G32B32A32Sfloat,
-        .sample_count = vuk::Samples::e1,
-        .view_type = vuk::ImageViewType::e2D,
-        .base_level = 0,
-        .level_count = 1,
-        .base_layer = 0,
-        .layer_count = 1
-      };
-
-      if (cube_map) {
+      if (is_cube_map_pipeline) {
         command_buffer.bind_graphics_pipeline("pbr_cubemap_pipeline");
       }
       else {
@@ -783,7 +805,7 @@ void DefaultRenderPipeline::geomerty_pass(const Ref<vuk::RenderGraph>& rg,
                     .bind_sampler(0, 10, vuk::LinearSamplerClamped)
                     .bind_buffer(2, 0, mat_buffer);
 
-      if (cube_map) {
+      if (is_cube_map_pipeline) {
         command_buffer.bind_image(0, 7, brdf_att)
                       .bind_image(0, 8, prefilter_att)
                       .bind_image(0, 9, irradiance_att);
@@ -793,14 +815,15 @@ void DefaultRenderPipeline::geomerty_pass(const Ref<vuk::RenderGraph>& rg,
         auto& mesh = mesh_draw_list[i];
 
         if (mesh.base_node) {
-          mesh.mesh_base->bind_index_buffer(command_buffer);
-          mesh.mesh_base->bind_vertex_buffer(command_buffer);
+          mesh.mesh_base->bind_index_buffer(command_buffer)->bind_vertex_buffer(command_buffer);
         }
+
+        std::vector<Mesh::Primitive*> transparent_primitives = {};
 
         const auto node = mesh.mesh_base->linear_mesh_nodes[mesh.node_index];
         for (auto primitive : node->mesh_data->primitives) {
           if (primitive->material->parameters.alpha_mode == (uint32_t)Material::AlphaMode::Blend) {
-            //transparent_primitives.emplace_back(subset);
+            transparent_primitives.emplace_back(primitive);
             break;
           }
 
@@ -813,18 +836,26 @@ void DefaultRenderPipeline::geomerty_pass(const Ref<vuk::RenderGraph>& rg,
 
           Renderer::draw_indexed(command_buffer, primitive->index_count, 1, primitive->first_index, 0, 0);
         }
-
-#if 0 // TODO:
+#if 0
         // Transparency pass
-        command_buffer.bind_graphics_pipeline("pbr_pipeline").broadcast_color_blend(vuk::BlendPreset::eAlphaBlend);
+        if (is_cube_map_pipeline) {
+          command_buffer.bind_graphics_pipeline("pbr_transparency_cubemap_pipeline");
+        }
+        else {
+          command_buffer.bind_graphics_pipeline("pbr_transparency_pipeline");
+        }
 
-        for (const auto& subset : transparent_primitives) {
+        command_buffer.broadcast_color_blend(vuk::BlendPreset::eAlphaBlend);
+
+        for (const auto& primitive : transparent_primitives) {
+          const auto material_index = get_material_index(material_map, i, primitive->material_index);
+
           command_buffer.push_constants(vuk::ShaderStageFlagBits::eVertex | vuk::ShaderStageFlagBits::eFragment, 0, mesh.transform)
-                        .push_constants(vuk::ShaderStageFlagBits::eFragment, sizeof(glm::mat4), get_material_index(material_map, i, subset.material_index));
+                        .push_constants(vuk::ShaderStageFlagBits::eFragment, sizeof(glm::mat4), material_index);
 
-          subset.material->bind_textures(command_buffer);
+          primitive->material->bind_textures(command_buffer);
 
-          command_buffer.draw_indexed(subset.index_count, 1, subset.first_index, 0, 0);
+          Renderer::draw_indexed(command_buffer, primitive->index_count, 1, primitive->first_index, 0, 0);
         }
 #endif
       }
@@ -1156,8 +1187,8 @@ void DefaultRenderPipeline::apply_grid(vuk::RenderGraph* rg, const vuk::Name dst
                     .bind_buffer(0, 0, grid_vertex_buffer)
                     .bind_buffer(0, 1, grid_fragment_buffer);
 
-      m_quad->bind_index_buffer(command_buffer);
-      m_quad->bind_vertex_buffer(command_buffer);
+      m_quad->bind_index_buffer(command_buffer)
+            ->bind_vertex_buffer(command_buffer);
 
       Renderer::draw_indexed(command_buffer, m_quad->indices.size(), 1, 0, 0, 0);
     }
@@ -1189,8 +1220,7 @@ void DefaultRenderPipeline::cascaded_shadow_pass(const Ref<vuk::RenderGraph>& rg
 
         for (const auto& mesh : mesh_draw_list) {
           if (mesh.base_node) {
-            mesh.mesh_base->bind_index_buffer(command_buffer);
-            mesh.mesh_base->bind_vertex_buffer(command_buffer);
+            mesh.mesh_base->bind_index_buffer(command_buffer)->bind_vertex_buffer(command_buffer);
           }
 
           const auto node = mesh.mesh_base->linear_mesh_nodes[mesh.node_index];

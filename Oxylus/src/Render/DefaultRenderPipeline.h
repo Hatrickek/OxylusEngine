@@ -101,7 +101,7 @@ private:
   XeGTAO::GTAOSettings gtao_settings = {};
 
   // PBR Resources
-  Ref<TextureAsset> cube_map;
+  Ref<TextureAsset> cube_map = nullptr;
   vuk::Unique<vuk::Image> brdf_image;
   vuk::Unique<vuk::Image> irradiance_image;
   vuk::Unique<vuk::Image> prefiltered_image;
@@ -121,6 +121,7 @@ private:
   DirectShadowPass::DirectShadowUB direct_shadow_ub = {};
   std::vector<LightingData> scene_lights_data = {};
   EventDispatcher light_buffer_dispatcher;
+  bool is_cube_map_pipeline = false;
 
   void update_skybox(const SkyboxLoadEvent& e);
   void generate_prefilter(vuk::Allocator& allocator);

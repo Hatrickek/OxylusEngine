@@ -320,7 +320,7 @@ UUID EntitySerializer::deserialize_entity(ryml::ConstNodeRef entity_node, Scene*
   }
 
   if (entity_node.has_child("MaterialComponent")) {
-    auto& mc = deserialized_entity.add_component_internal<MaterialComponent>();
+    auto& mc = deserialized_entity.get_or_add_component<MaterialComponent>();
 
     const auto& node = entity_node["MaterialComponent"];
 

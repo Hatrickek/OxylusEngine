@@ -158,17 +158,18 @@ void Mesh::load_from_file(const std::string& file_path, int file_loading_flags, 
   OX_CORE_INFO("Mesh file loaded: ({}) {}, {} materials, {} animations", timer.get_elapsed_ms(), name.c_str(), gltf_model.materials.size(), animations.size());
 }
 
-void Mesh::bind_vertex_buffer(vuk::CommandBuffer& command_buffer) const {
+const Mesh* Mesh::bind_vertex_buffer(vuk::CommandBuffer& command_buffer) const {
   OX_SCOPED_ZONE;
   OX_CORE_ASSERT(vertex_buffer)
-  // TODO: We should only bind the animation data if necessary etc.
   command_buffer.bind_vertex_buffer(0, *vertex_buffer, 0, vertex_pack);
+  return this;
 }
 
-void Mesh::bind_index_buffer(vuk::CommandBuffer& command_buffer) const {
+const Mesh* Mesh::bind_index_buffer(vuk::CommandBuffer& command_buffer) const {
   OX_SCOPED_ZONE;
   OX_CORE_ASSERT(index_buffer)
   command_buffer.bind_index_buffer(*index_buffer, vuk::IndexType::eUint32);
+  return this;
 }
 
 void Mesh::set_scale(const Vec3& mesh_scale) {
