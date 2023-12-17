@@ -1,6 +1,6 @@
 #include "Scene.h"
 
-#include "Core/Entity.h"
+#include "Scene/Entity.h"
 #include "Render/Camera.h"
 #include "Utils/Profiler.h"
 #include "Utils/Timestep.h"

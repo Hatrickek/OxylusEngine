@@ -7,7 +7,7 @@
 #include "RendererData.h"
 
 #include "Core/Base.h"
-#include "Core/Components.h"
+#include "Scene/Components.h"
 
 namespace vuk {
 struct SampledImage;

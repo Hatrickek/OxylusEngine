@@ -1,7 +1,7 @@
 #pragma once
 
 #include "EntitySerializer.h"
-#include "Core/Components.h"
+#include "Scene/Components.h"
 
 #include "Core/UUID.h"
 #include "Core/Systems/System.h"

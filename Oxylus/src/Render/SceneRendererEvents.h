@@ -1,6 +1,6 @@
 ﻿#pragma once
 #include "Core/Base.h"
-#include "Core/Components.h"
+#include "Scene/Components.h"
 
 namespace Oxylus {
 struct SkyboxLoadEvent {

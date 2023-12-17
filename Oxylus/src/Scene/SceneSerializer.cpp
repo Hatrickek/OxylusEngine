@@ -1,7 +1,7 @@
 #include "SceneSerializer.h"
 
 #include <fstream>
-#include "Core/Entity.h"
+#include "Scene/Entity.h"
 #include "Core/Project.h"
 #include "Core/YamlHelpers.h"
 #include "Utils/Profiler.h"

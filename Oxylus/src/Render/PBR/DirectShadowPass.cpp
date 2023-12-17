@@ -3,7 +3,7 @@
 #include <vuk/Partials.hpp>
 
 #include "Core/Application.h"
-#include "Core/Entity.h"
+#include "Scene/Entity.h"
 
 #include "Render/RendererConfig.h"
 

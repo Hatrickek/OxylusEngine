@@ -20,8 +20,8 @@
 #include "Texture.h"
 #include "Assets/AssetManager.h"
 
-#include "Core/Components.h"
-#include "Core/Entity.h"
+#include "Scene/Components.h"
+#include "Scene/Entity.h"
 
 #include "Scene/Scene.h"
 

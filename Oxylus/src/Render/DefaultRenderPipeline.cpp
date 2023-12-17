@@ -9,7 +9,7 @@
 
 #include "Core/Application.h"
 #include "Assets/AssetManager.h"
-#include "Core/Entity.h"
+#include "Scene/Entity.h"
 #include "PBR/DirectShadowPass.h"
 #include "PBR/Prefilter.h"
 

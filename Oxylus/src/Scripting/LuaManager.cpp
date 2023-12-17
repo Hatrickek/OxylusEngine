@@ -7,7 +7,7 @@
 #include "LuaMathBindings.h"
 
 #include "Scene/Scene.h"
-#include "Core/Entity.h"
+#include "Scene/Entity.h"
 #include "Core/Input.h"
 
 namespace Oxylus {

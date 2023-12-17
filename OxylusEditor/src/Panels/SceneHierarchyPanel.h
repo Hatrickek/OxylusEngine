@@ -3,7 +3,7 @@
 #include "EditorPanel.h"
 #include "imgui_internal.h"
 #include "Scene/Scene.h"
-#include "Core/Entity.h"
+#include "Scene/Entity.h"
 
 namespace Oxylus {
   class SceneHierarchyPanel : public EditorPanel {

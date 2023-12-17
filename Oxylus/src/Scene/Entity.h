@@ -2,7 +2,7 @@
 
 #include "Utils/Log.h"
 
-#include "Scene/Scene.h"
+#include "Scene.h"
 #include "Components.h"
 
 namespace Oxylus {
@@ -21,8 +21,8 @@ public:
       OX_CORE_ERROR("Entity already has {0}!", typeid(T).name());
     }
 
-    T& component = m_Scene->m_registry.emplace<T>(m_EntityHandle, std::forward<Args>(args)...);
-    m_Scene->on_component_added<T>(*this, component);
+    T& component = scene->m_registry.emplace<T>(entity_handle, std::forward<Args>(args)...);
+    scene->on_component_added<T>(*this, component);
     return component;
   }
 
@@ -34,7 +34,7 @@ public:
       OX_CORE_ERROR("Entity already has {0}!", typeid(T).name());
     }
 
-    T& component = m_Scene->m_registry.emplace<T>(m_EntityHandle, std::forward<Args>(args)...);
+    T& component = scene->m_registry.emplace<T>(entity_handle, std::forward<Args>(args)...);
     return component;
   }
 
@@ -44,13 +44,13 @@ public:
     if (!has_component<T>()) {
       OX_CORE_ERROR("Entity doesn't have {0}!", typeid(T).name());
     }
-    return m_Scene->m_registry.get<T>(m_EntityHandle);
+    return scene->m_registry.get<T>(entity_handle);
   }
 
   template <typename T>
   bool has_component() const {
     OX_SCOPED_ZONE;
-    return m_Scene->m_registry.all_of<T>(m_EntityHandle);
+    return scene->m_registry.all_of<T>(entity_handle);
   }
 
   template <typename T>
@@ -59,27 +59,27 @@ public:
     if (!has_component<T>()) {
       OX_CORE_ERROR("Entity does not have {0} to remove!", typeid(T).name());
     }
-    m_Scene->m_registry.remove<T>(m_EntityHandle);
+    scene->m_registry.remove<T>(entity_handle);
   }
 
   template <typename T, typename... Args>
   T& add_or_replace_component(Args&&... args) {
     OX_SCOPED_ZONE;
-    T& component = m_Scene->m_registry.emplace_or_replace<T>(m_EntityHandle, std::forward<Args>(args)...);
-    m_Scene->on_component_added<T>(*this, component);
+    T& component = scene->m_registry.emplace_or_replace<T>(entity_handle, std::forward<Args>(args)...);
+    scene->on_component_added<T>(*this, component);
     return component;
   }
 
   template <typename T, typename... Args>
   T& get_or_add_component(Args&&... args) {
     OX_SCOPED_ZONE;
-    return m_Scene->m_registry.get_or_emplace<T>(m_EntityHandle, std::forward<Args>(args)...);
+    return scene->m_registry.get_or_emplace<T>(entity_handle, std::forward<Args>(args)...);
   }
 
   template <typename T>
   T* try_get_component() {
     OX_SCOPED_ZONE;
-    return m_Scene->m_registry.try_get<T>(m_EntityHandle);
+    return scene->m_registry.try_get<T>(entity_handle);
   }
 
   RelationshipComponent& get_relationship() const { return get_component<RelationshipComponent>(); }
@@ -88,11 +88,11 @@ public:
   TransformComponent& get_transform() const { return get_component<TransformComponent>(); }
 
   Entity get_parent() const {
-    if (!m_Scene)
+    if (!scene)
       return {};
 
     const auto& rc = get_component<RelationshipComponent>();
-    return rc.parent != 0 ? m_Scene->get_entity_by_uuid(rc.parent) : Entity{};
+    return rc.parent != 0 ? scene->get_entity_by_uuid(rc.parent) : Entity{};
   }
 
   Entity get_child(uint32_t index = 0) const {
@@ -107,7 +107,7 @@ public:
     for (const auto& child : children) {
       Entity entity = get_scene()->get_entity_by_uuid(child);
       entities.push_back(entity);
-      get_all_children();
+      get_all_children(entity, entities);
     }
 
     return entities;
@@ -123,7 +123,7 @@ public:
   }
 
   Entity set_parent(Entity parent) const {
-    OX_CORE_ASSERT(m_Scene->entity_map.contains(parent.get_uuid()), "Parent is not in the same scene as entity")
+    OX_CORE_ASSERT(scene->entity_map.contains(parent.get_uuid()), "Parent is not in the same scene as entity")
     deparent();
 
     auto& [Parent, Children] = get_component<RelationshipComponent>();
@@ -152,39 +152,39 @@ public:
   }
 
 
-  glm::mat4 get_world_transform() const {
+  Mat4 get_world_transform() const {
     OX_SCOPED_ZONE;
     const auto& transform = get_transform();
     const auto& rc = get_relationship();
-    const Entity parent = m_Scene->get_entity_by_uuid(rc.parent);
-    const glm::mat4 parent_transform = parent ? parent.get_world_transform() : glm::mat4(1.0f);
-    return parent_transform * glm::translate(glm::mat4(1.0f), transform.position) *
-           glm::toMat4(glm::quat(transform.rotation)) * glm::scale(glm::mat4(1.0f), transform.scale);
+    const Entity parent = scene->get_entity_by_uuid(rc.parent);
+    const Mat4 parent_transform = parent ? parent.get_world_transform() : Mat4(1.0f);
+    return parent_transform * glm::translate(Mat4(1.0f), transform.position) *
+           glm::toMat4(glm::quat(transform.rotation)) * glm::scale(Mat4(1.0f), transform.scale);
   }
 
-  glm::mat4 get_local_transform() const {
+  Mat4 get_local_transform() const {
     OX_SCOPED_ZONE;
     const auto& transform = get_transform();
-    return glm::translate(glm::mat4(1.0f), transform.position) * glm::toMat4(glm::quat(transform.rotation)) *
-           glm::scale(glm::mat4(1.0f), transform.scale);
+    return glm::translate(Mat4(1.0f), transform.position) * glm::toMat4(glm::quat(transform.rotation)) *
+           glm::scale(Mat4(1.0f), transform.scale);
   }
 
-  Scene* get_scene() const { return m_Scene; }
+  Scene* get_scene() const { return scene; }
 
   operator entt::entity() const {
-    return m_EntityHandle;
+    return entity_handle;
   }
 
   operator uint32_t() const {
-    return (uint32_t)m_EntityHandle;
+    return (uint32_t)entity_handle;
   }
 
   operator bool() const {
-    return m_EntityHandle != entt::null && m_Scene;
+    return entity_handle != entt::null && scene;
   }
 
   bool operator==(const Entity& other) const {
-    return m_EntityHandle == other.m_EntityHandle && m_Scene == other.m_Scene;
+    return entity_handle == other.entity_handle && scene == other.scene;
   }
 
   bool operator!=(const Entity& other) const {
@@ -192,7 +192,7 @@ public:
   }
 
 private:
-  entt::entity m_EntityHandle{entt::null};
-  Scene* m_Scene = nullptr;
+  entt::entity entity_handle{entt::null};
+  Scene* scene = nullptr;
 };
 }

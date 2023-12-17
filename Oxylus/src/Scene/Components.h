@@ -3,8 +3,8 @@
 
 #include <string>
 
-#include "Types.h"
-#include "UUID.h"
+#include "Core/Types.h"
+#include "Core/UUID.h"
 
 #include "Audio/AudioListener.h"
 #include "Audio/AudioSource.h"

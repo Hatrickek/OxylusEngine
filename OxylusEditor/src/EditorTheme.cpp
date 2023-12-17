@@ -2,7 +2,7 @@
 
 #include <icons/IconsMaterialDesignIcons.h>
 
-#include "Core/Components.h"
+#include "Scene/Components.h"
 
 namespace Oxylus {
 std::unordered_map<size_t, const char8_t*> EditorTheme::component_icon_map = {};

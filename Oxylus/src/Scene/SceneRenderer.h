@@ -1,5 +1,5 @@
 ﻿#pragma once
-#include "Core/Components.h"
+#include "Scene/Components.h"
 #include "Event/Event.h"
 
 namespace Oxylus {

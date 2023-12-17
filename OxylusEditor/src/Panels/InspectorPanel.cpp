@@ -11,7 +11,7 @@
 #include "Utils/ColorUtils.h"
 
 #include "EditorLayer.h"
-#include "Core/Entity.h"
+#include "Scene/Entity.h"
 #include "UI/OxUI.h"
 #include "Utils/StringUtils.h"
 #include "Utils/UIUtils.h"

@@ -6,7 +6,7 @@
 #include "Scene.h"
 
 #include "Core/Application.h"
-#include "Core/Entity.h"
+#include "Scene/Entity.h"
 
 #include "Render/DebugRenderer.h"
 #include "Render/DefaultRenderPipeline.h"

@@ -4,7 +4,7 @@
 
 #include <glm/glm.hpp>
 
-#include "Core/Components.h"
+#include "Scene/Components.h"
 
 #include "Render/RendererConfig.h"
 #include "Render/RenderPipeline.h"

@@ -7,7 +7,7 @@
 #include "Assets/AssetManager.h"
 #include "Assets/MaterialSerializer.h"
 
-#include "Core/Entity.h"
+#include "Scene/Entity.h"
 #include "Core/YamlHelpers.h"
 
 #include "Render/SceneRendererEvents.h"

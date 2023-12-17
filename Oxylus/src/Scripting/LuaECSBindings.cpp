@@ -2,7 +2,7 @@
 
 #include <sol/state.hpp>
 
-#include "Core/Entity.h"
+#include "Scene/Entity.h"
 
 namespace Oxylus::LuaBindings {
 template <typename, typename>

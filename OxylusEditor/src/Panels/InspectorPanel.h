@@ -1,7 +1,7 @@
 #pragma once
 
 #include "EditorPanel.h"
-#include "Core/Entity.h"
+#include "Scene/Entity.h"
 
 namespace Oxylus {
 class InspectorPanel : public EditorPanel {
