@@ -96,15 +96,16 @@ void Renderer::draw(VulkanContext* context, ImGuiLayer* imgui_layer, LayerStack&
     renderer_context.viewport_size.x = dim.extent.width;
     renderer_context.viewport_size.y = dim.extent.height;
 
-    rgx->attach_and_clear_image("_img",
-                                vuk::ImageAttachment{
-                                  .extent = dim,
-                                  .format = context->swapchain->format,
-                                  .sample_count = vuk::Samples::e1,
-                                  .level_count = 1,
-                                  .layer_count = 1
-                                },
-                                vuk::ClearColor(0.0f, 0.0f, 0.0f, 1.f)
+    rgx->attach_and_clear_image(
+      "_img",
+      vuk::ImageAttachment{
+        .extent = dim,
+        .format = context->swapchain->format,
+        .sample_count = vuk::Samples::e1,
+        .level_count = 1,
+        .layer_count = 1
+      },
+      vuk::ClearColor(0.0f, 0.0f, 0.0f, 1.f)
     );
 
     const auto rp_fut = rp->on_render(frame_allocator, vuk::Future{rgx, "_img"}, dim);

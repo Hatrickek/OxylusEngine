@@ -44,6 +44,8 @@ EditorLayer* EditorLayer::s_instance = nullptr;
 AutoCVar_Int cvar_show_style_editor("ui.imgui_style_editor", "show imgui style editor", 0, CVarFlags::EditCheckbox);
 AutoCVar_Int cvar_show_imgui_demo("ui.imgui_demo", "show imgui demo window", 0, CVarFlags::EditCheckbox);
 
+static ViewportPanel* fullscreen_viewport_panel = nullptr;
+
 EditorLayer::EditorLayer() : Layer("Editor Layer") {
   s_instance = this;
 }
@@ -83,6 +85,14 @@ void EditorLayer::on_detach() {
 }
 
 void EditorLayer::on_update(const Timestep& delta_time) {
+  for (const auto& panel : m_viewport_panels) {
+    if (panel->fullscreen_viewport) {
+      fullscreen_viewport_panel = panel.get();
+      break;
+    }
+    fullscreen_viewport_panel = nullptr;
+  }
+
   for (const auto& [name, panel] : m_editor_panels) {
     if (!panel->Visible)
       continue;
@@ -192,6 +202,9 @@ void EditorLayer::on_imgui_render() {
           ImGui::EndMenu();
         }
         if (ImGui::BeginMenu("Window")) {
+          if (ImGui::MenuItem("Fullscreen", "F11")) {
+            Window::is_fullscreen_borderless() ? Window::set_windowed() : Window::set_fullscreen_borderless();
+          }
           if (ImGui::MenuItem("Add viewport", nullptr)) {
             m_viewport_panels.emplace_back(create_scope<ViewportPanel>())->set_context(m_editor_scene, m_scene_hierarchy_panel);
           }
@@ -298,17 +311,21 @@ void EditorLayer::on_imgui_render() {
 }
 
 void EditorLayer::editor_shortcuts() {
-  if (ImGui::IsKeyDown(ImGuiKey_LeftCtrl)) {
-    if (ImGui::IsKeyPressed(ImGuiKey_N, false)) {
+  if (Input::get_key_pressed(KeyCode::F11)) {
+    Window::is_fullscreen_borderless() ? Window::set_windowed() : Window::set_fullscreen_borderless();
+  }
+
+  if (Input::get_key_held(KeyCode::LeftControl)) {
+    if (Input::get_key_pressed(KeyCode::N)) {
       new_scene();
     }
-    if (ImGui::IsKeyPressed(ImGuiKey_S, false)) {
+    if (Input::get_key_pressed(KeyCode::S)) {
       save_scene();
     }
-    if (ImGui::IsKeyPressed(ImGuiKey_O, false)) {
+    if (Input::get_key_pressed(KeyCode::O)) {
       open_scene_file_dialog();
     }
-    if (ImGui::IsKeyDown(ImGuiKey_LeftShift) && ImGui::IsKeyPressed(ImGuiKey_S, false)) {
+    if (Input::get_key_held(KeyCode::LeftShift) && Input::get_key_pressed(KeyCode::S)) {
       save_scene_as();
     }
   }
@@ -470,23 +487,14 @@ void EditorLayer::draw_window_title() {
 }
 
 void EditorLayer::draw_panels() {
-  static EditorPanel* fullscreen_viewport_panel = nullptr;
-
-  for (const auto& panel : m_viewport_panels) {
-    if (panel->Visible && !panel->fullscreen_viewport) {
-      panel->on_imgui_render();
-      if (panel->fullscreen_viewport) {
-        fullscreen_viewport_panel = panel.get();
-        break;
-      }
-      fullscreen_viewport_panel = nullptr;
-    }
-  }
-
   if (fullscreen_viewport_panel) {
     fullscreen_viewport_panel->on_imgui_render();
     return;
   }
+
+  for (const auto& panel : m_viewport_panels)
+    panel->on_imgui_render();
+
 
   for (const auto& [name, panel] : m_editor_panels) {
     if (panel->Visible)

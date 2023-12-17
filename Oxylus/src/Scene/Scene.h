@@ -34,7 +34,7 @@ public:
   Entity create_entity(const std::string& name = "New Entity");
   Entity create_entity_with_uuid(UUID uuid, const std::string& name = std::string());
 
-  void iterate_mesh_node(MeshComponent& base_component, Entity parent_entity, const Mesh::Node* node);
+  void iterate_mesh_node(const Ref<Mesh>& mesh, Entity parent_entity, const Mesh::Node* node);
   Entity load_mesh(const Ref<Mesh>& mesh);
 
   template <typename T, typename... Args>

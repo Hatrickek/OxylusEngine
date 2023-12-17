@@ -75,34 +75,28 @@ Entity Scene::create_entity_with_uuid(UUID uuid, const std::string& name) {
   return entity;
 }
 
-void Scene::iterate_mesh_node(MeshComponent& base_component, const Entity parent_entity, const Mesh::Node* node) {
+void Scene::iterate_mesh_node(const Ref<Mesh>& mesh, const Entity parent_entity, const Mesh::Node* node) {
   auto node_entity = create_entity(node->name);
 
   if (node->mesh_data) {
-    auto mesh_component = node_entity.add_component_internal<MeshComponent>();
+    auto& mesh_component = node_entity.add_component_internal<MeshComponent>(mesh);
     mesh_component.node_index = node->index;
-    mesh_component.base_node = false;
+    mesh_component.base_node = true;
   }
 
-  node_entity.set_parent(parent_entity);
+  if (parent_entity)
+    node_entity.set_parent(parent_entity);
 
   for (const auto& child : node->children)
-    iterate_mesh_node(base_component, node_entity, child);
+    iterate_mesh_node(mesh, node_entity, child);
 }
 
 Entity Scene::load_mesh(const Ref<Mesh>& mesh) {
-  auto base_entity = create_entity(mesh->linear_nodes[0]->name);
-  auto base_component = base_entity.add_component_internal<MeshComponent>(mesh);
-  base_component.base_node = true;
-
-  if (mesh->nodes.size() == 1)
-    return base_entity;
-
-  for (uint32_t i = 1; i < mesh->nodes.size(); i++) {
-    iterate_mesh_node(base_component, base_entity, mesh->linear_nodes[i]);
+  for (const auto* node : mesh->nodes) {
+    iterate_mesh_node(mesh, {}, node);
   }
 
-  return base_entity;
+  return find_entity(mesh->linear_nodes[0]->name);
 }
 
 void Scene::update_physics(const Timestep& delta_time) {

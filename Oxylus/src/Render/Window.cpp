@@ -29,13 +29,8 @@ void Window::init_vulkan_window(const AppSpec& spec) {
   s_window_handle = glfwCreateWindow(window_width, window_height, spec.name.c_str(), nullptr, nullptr);
 
   // center window
-  int32_t monitor_width = 0, monitor_height = 0;
-  int32_t monitor_posx = 0, monitor_posy = 0;
-  glfwGetMonitorWorkarea(glfwGetPrimaryMonitor(), &monitor_posx, &monitor_posy, &monitor_width, &monitor_height);
-  const auto video_mode = glfwGetVideoMode(glfwGetPrimaryMonitor());
-  glfwSetWindowPos(s_window_handle,
-    monitor_posx + (video_mode->width - window_width) / 2,
-    monitor_posy + (video_mode->height - window_height) / 2);
+  const auto center = get_center_pos(window_width, window_height);
+  glfwSetWindowPos(s_window_handle, center.x, center.y);
 
   //Load file icon
   {
@@ -52,7 +47,8 @@ void Window::init_vulkan_window(const AppSpec& spec) {
 
   glfwSetWindowCloseCallback(s_window_handle, close_window);
 
-  glfwSetKeyCallback(get_glfw_window(),
+  glfwSetKeyCallback(
+    get_glfw_window(),
     [](GLFWwindow*, const int key, int, const int action, int) {
       switch (action) {
         case GLFW_PRESS: {
@@ -70,7 +66,8 @@ void Window::init_vulkan_window(const AppSpec& spec) {
       }
     });
 
-  glfwSetMouseButtonCallback(get_glfw_window(),
+  glfwSetMouseButtonCallback(
+    get_glfw_window(),
     [](GLFWwindow*, int button, int action, int) {
       switch (action) {
         case GLFW_PRESS: {
@@ -118,6 +115,18 @@ uint32_t Window::get_height() {
   return (uint32_t)height;
 }
 
+IVec2 Window::get_center_pos(const int width, const int height) {
+  int32_t monitor_width = 0, monitor_height = 0;
+  int32_t monitor_posx = 0, monitor_posy = 0;
+  glfwGetMonitorWorkarea(glfwGetPrimaryMonitor(), &monitor_posx, &monitor_posy, &monitor_width, &monitor_height);
+  const auto video_mode = glfwGetVideoMode(glfwGetPrimaryMonitor());
+
+  return {
+    monitor_posx + (video_mode->width - width) / 2,
+    monitor_posy + (video_mode->height - height) / 2
+  };
+}
+
 bool Window::is_focused() {
   return glfwGetWindowAttrib(get_glfw_window(), GLFW_FOCUSED);
 }
@@ -140,6 +149,49 @@ bool Window::is_maximized() {
 
 void Window::restore() {
   glfwRestoreWindow(s_window_handle);
+}
+
+bool Window::is_decorated() {
+  return (bool)glfwGetWindowAttrib(s_window_handle, GLFW_DECORATED);
+}
+
+void Window::set_undecorated() {
+  glfwSetWindowAttrib(s_window_handle, GLFW_DECORATED, false);
+}
+
+void Window::set_decorated() {
+  glfwSetWindowAttrib(s_window_handle, GLFW_DECORATED, true);
+}
+
+bool Window::is_floating() {
+  return (bool)glfwGetWindowAttrib(s_window_handle, GLFW_FLOATING);
+}
+
+void Window::set_floating() {
+  glfwSetWindowAttrib(s_window_handle, GLFW_FLOATING, true);
+}
+
+void Window::set_not_floating() {
+  glfwSetWindowAttrib(s_window_handle, GLFW_FLOATING, false);
+}
+
+bool Window::is_fullscreen_borderless() {
+  return s_window_data.is_fullscreen_borderless;
+}
+
+void Window::set_fullscreen_borderless() {
+  auto* monitor = glfwGetPrimaryMonitor();
+  const GLFWvidmode* mode = glfwGetVideoMode(monitor);
+  glfwSetWindowMonitor(s_window_handle, monitor, 0, 0, mode->width, mode->height, mode->refreshRate);
+  s_window_data.is_fullscreen_borderless = true;
+}
+
+void Window::set_windowed() {
+  auto* monitor = glfwGetPrimaryMonitor();
+  const GLFWvidmode* mode = glfwGetVideoMode(monitor);
+  const auto center = get_center_pos(1600, 900);
+  glfwSetWindowMonitor(s_window_handle, nullptr, center.x, center.y, 1600, 900, mode->refreshRate);
+  s_window_data.is_fullscreen_borderless = false;
 }
 
 void Window::wait_for_events() {

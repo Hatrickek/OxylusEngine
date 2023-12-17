@@ -239,6 +239,9 @@ vec3 Lighting(vec3 F0, vec3 wsPos, inout PixelData pixelData) {
             // shadowFarAttenuation
             highp vec2 p = shadowFar > 0.0f ? 0.5f * vec2(10.0, 10.0 / (shadowFar * shadowFar)) : vec2(1.0, 0.0);
             visibility = 1.0 - ((1.0 - visibility) * saturate(p.x - z * z * p.y));
+
+            // handle bright sun like this for now
+            currentLight.PositionIntensity.w *= 0.2;
         }
 
         float lightNoL = saturate(dot(pixelData.Normal, lightDirection));
@@ -263,20 +266,23 @@ vec3 Lighting(vec3 F0, vec3 wsPos, inout PixelData pixelData) {
         vec3 F = SpecularReflection(specularEnvironmentR0, specularEnvironmentR90, VoH); //SpecularLobe(pixelData, h, pixelData.NDotV, NoL, NoH, VoH);
         float D = MicrofacetDistribution(pixelData.Roughness, NoH);
         float G = GeometricOcclusion(pixelData, NoL);
-
-        float sun_radiance = max(0, dot(lightDirection, pixelData.Normal));
-        float light_nol = saturate(dot(pixelData.Normal, lightDirection));
-        vec3 transmittance_lut = SampleLUT(u_TransmittanceLut, PlanetRadius, light_nol, 0.0, PlanetRadius);
-        pixelData.TransmittanceLut = transmittance_lut;
         
         // Calculation of analytical lighting contribution
         vec3 diffuseContrib = (1.0 - F) * DiffuseLobe(pixelData, pixelData.NDotV, NoL, LoH);
         vec3 specContrib = F * D * G;
-        vec3 color = (diffuseContrib + specContrib); //* pixelData.EnergyCompensation;
-        // Obtain final intensity as reflectance (BRDF) scaled by the energy of the light (cosine law)
-        
+        vec3 color = (diffuseContrib + specContrib);
+
+#ifdef CUBEMAP_PIPELINE
+        //color *= pixelData.EnergyCompensation;
+#endif
+
         result += color * (NoL * visibility * ComputeMicroShadowing(NoL, pixelData.AO)) * (currentLight.ColorRadius.rgb * currentLight.PositionIntensity.w);
+
 #ifndef CUBEMAP_PIPELINE
+        float sun_radiance = max(0, dot(lightDirection, pixelData.Normal));
+        float light_nol = saturate(dot(pixelData.Normal, lightDirection));
+        vec3 transmittance_lut = SampleLUT(u_TransmittanceLut, PlanetRadius, light_nol, 0.0, PlanetRadius);
+        pixelData.TransmittanceLut = transmittance_lut;
         result *= transmittance_lut;
 #endif
         //result += currentLight.Position.w * (value * sun_radiance * ComputeMicroShadowing(NoL, material.AO)) + transmittance_lut;

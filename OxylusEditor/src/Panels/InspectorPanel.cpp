@@ -299,7 +299,6 @@ void InspectorPanel::draw_components(Entity entity) const {
                                 ? "Empty"
                                 : component.mesh_base->name.c_str();
       ImGui::Text("Loaded Mesh: %s", file_name);
-      ImGui::Text("Primitive Count: %d", (uint32_t)component.mesh_base->linear_nodes[component.node_index]->mesh_data->primitives.size());
       ImGui::Text("Material Count: %d", (uint32_t)component.mesh_base->get_materials_as_ref().size());
     });
 

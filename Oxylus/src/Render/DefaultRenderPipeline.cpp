@@ -590,7 +590,7 @@ void DefaultRenderPipeline::depth_pre_pass(const Ref<vuk::RenderGraph>& rg, vuk:
           mesh.mesh_base->bind_index_buffer(command_buffer)->bind_vertex_buffer(command_buffer);
         }
 
-        const auto node = mesh.mesh_base->linear_mesh_nodes[mesh.node_index];
+        const auto node = mesh.mesh_base->linear_nodes[mesh.node_index];
         for (const auto primitive : node->mesh_data->primitives) {
           if (primitive->material->parameters.alpha_mode == (uint32_t)Material::AlphaMode::Mask
               || primitive->material->parameters.alpha_mode == (uint32_t)Material::AlphaMode::Blend) {
@@ -820,7 +820,7 @@ void DefaultRenderPipeline::geomerty_pass(const Ref<vuk::RenderGraph>& rg,
 
         std::vector<Mesh::Primitive*> transparent_primitives = {};
 
-        const auto node = mesh.mesh_base->linear_mesh_nodes[mesh.node_index];
+        const auto node = mesh.mesh_base->linear_nodes[mesh.node_index];
         for (auto primitive : node->mesh_data->primitives) {
           if (primitive->material->parameters.alpha_mode == (uint32_t)Material::AlphaMode::Blend) {
             transparent_primitives.emplace_back(primitive);
@@ -1223,7 +1223,7 @@ void DefaultRenderPipeline::cascaded_shadow_pass(const Ref<vuk::RenderGraph>& rg
             mesh.mesh_base->bind_index_buffer(command_buffer)->bind_vertex_buffer(command_buffer);
           }
 
-          const auto node = mesh.mesh_base->linear_mesh_nodes[mesh.node_index];
+          const auto node = mesh.mesh_base->linear_nodes[mesh.node_index];
           for (const auto primitive : node->mesh_data->primitives) {
             struct PushConst {
               Mat4 model;
