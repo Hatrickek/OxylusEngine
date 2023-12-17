@@ -24,8 +24,6 @@ void Window::init_vulkan_window(const AppSpec& spec) {
   constexpr auto window_height = 900;
 
   glfwWindowHint(GLFW_CLIENT_API, GLFW_NO_API);
-  if (spec.custom_window_title)
-    glfwWindowHint(GLFW_DECORATED, GLFW_FALSE);
   s_window_handle = glfwCreateWindow(window_width, window_height, spec.name.c_str(), nullptr, nullptr);
 
   // center window

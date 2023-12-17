@@ -87,7 +87,6 @@ private:
   std::string m_last_save_scene_path{};
 
   // Panels
-  static void draw_window_title();
   void draw_panels();
   std::unordered_map<std::string, Scope<EditorPanel>> m_editor_panels;
   std::vector<Scope<ViewportPanel>> m_viewport_panels;

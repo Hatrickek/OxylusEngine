@@ -27,7 +27,6 @@ struct AppSpec {
   std::string name = "Oxylus App";
   std::string working_directory = {};
   std::string resources_path = "Resources";
-  bool custom_window_title = false;
   uint32_t device_index = 0;
   ApplicationCommandLineArgs command_line_args;
 };

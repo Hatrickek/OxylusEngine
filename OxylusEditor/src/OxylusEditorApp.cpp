@@ -21,7 +21,6 @@ Application* create_application(ApplicationCommandLineArgs args) {
 #endif
   spec.working_directory = std::filesystem::current_path().string();
   spec.command_line_args = args;
-  spec.custom_window_title = false;
 
   const auto app = new OxylusEditor(spec);
 

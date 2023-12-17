@@ -167,7 +167,6 @@ void EditorLayer::on_imgui_render() {
                                             ImGuiWindowFlags_MenuBar | ImGuiWindowFlags_NoNavFocus;
 
     ImVec2 frame_padding = ImGui::GetStyle().FramePadding;
-    draw_window_title();
     ImGui::PushStyleVar(ImGuiStyleVar_FramePadding, {frame_padding.x, 4.0f});
 
     if (ImGui::BeginViewportSideBar("##PrimaryMenuBar", viewport, ImGuiDir_Up, frame_height, menu_flags)) {
@@ -426,66 +425,6 @@ void EditorLayer::on_scene_simulate() {
   set_editor_context(m_active_scene);
 }
 
-void EditorLayer::draw_window_title() {
-  if (!Application::get()->get_specification().custom_window_title)
-    return;
-
-  ImGuiScoped::StyleColor col(ImGuiCol_MenuBarBg, {0, 0, 0, 1});
-  ImGuiScoped::StyleColor col2(ImGuiCol_Button, {0, 0, 0, 0});
-  ImGuiScoped::StyleVar var(ImGuiStyleVar_FrameRounding, 0.0f);
-  ImGuiScoped::StyleVar var2(ImGuiStyleVar_FrameBorderSize, 0.0f);
-  ImGuiScoped::StyleVar var3(ImGuiStyleVar_WindowPadding, {0.0f, 0.0f});
-  ImGuiScoped::StyleVar var4(ImGuiStyleVar_FramePadding, {ImGui::GetWindowSize().x, 7});
-
-  ImGuiScoped::MainMenuBar menubar;
-  {
-    ImGuiScoped::StyleVar st(ImGuiStyleVar_FramePadding, {0, 8});
-    OxUI::image(Resources::editor_resources.engine_icon->get_texture(), {30, 30});
-    auto& name = Application::get()->get_specification().name;
-    ImGui::Text("%s", name.c_str());
-  }
-
-  ImGui::SameLine();
-
-  const ImVec2 region = ImGui::GetContentRegionMax();
-  const ImVec2 button_size = {region.y * 1.6f, region.y};
-
-  const float button_start_region = region.x - 3.0f * button_size.x + ImGui::GetStyle().WindowPadding.x;
-  // Minimize/Maximize/Close buttons
-  ImGui::PushStyleVar(ImGuiStyleVar_FramePadding, {0.0f, 0.0f});
-  ImGui::PushStyleVar(ImGuiStyleVar_ItemSpacing, {0.0f, 0.0f});
-  ImGui::PushStyleVar(ImGuiStyleVar_FrameRounding, 0.0f);
-  ImGui::PushStyleVar(ImGuiStyleVar_FrameBorderSize, 0.0f);
-  ImGui::PushStyleColor(ImGuiCol_Button, {0.0f, 0.0f, 0.0f, 0.0f});
-
-  ImGui::SetCursorPosX(button_start_region);
-  const bool is_normal_cursor = ImGui::GetMouseCursor() == ImGuiMouseCursor_Arrow;
-
-  // Minimize Button
-  if (ImGui::Button(StringUtils::from_char8_t(ICON_MDI_MINUS), button_size) && is_normal_cursor)
-    Window::minimize();
-  ImGui::SameLine();
-
-  // Maximize Button
-  if (ImGui::Button(StringUtils::from_char8_t(ICON_MDI_WINDOW_MAXIMIZE), button_size) && is_normal_cursor) {
-    if (Window::is_maximized())
-      Window::restore();
-    else
-      Window::maximize();
-  }
-  ImGui::SameLine();
-
-  ImGui::PushStyleColor(ImGuiCol_ButtonHovered, {0.909f, 0.066f, 0.137f, 1.0f});
-  ImGui::PushStyleColor(ImGuiCol_ButtonActive, {0.920f, 0.066f, 0.120f, 1.0f});
-  // Close Button
-  if (ImGui::Button(StringUtils::from_char8_t(ICON_MDI_WINDOW_CLOSE), button_size) && is_normal_cursor)
-    Application::get()->close();
-  ImGui::PopStyleColor(2);
-
-  ImGui::PopStyleColor();
-  ImGui::PopStyleVar(4);
-}
-
 void EditorLayer::draw_panels() {
   if (fullscreen_viewport_panel) {
     fullscreen_viewport_panel->on_imgui_render();
@@ -494,7 +433,6 @@ void EditorLayer::draw_panels() {
 
   for (const auto& panel : m_viewport_panels)
     panel->on_imgui_render();
-
 
   for (const auto& [name, panel] : m_editor_panels) {
     if (panel->Visible)
