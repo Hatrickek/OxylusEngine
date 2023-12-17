@@ -321,32 +321,21 @@ void Mesh::destroy() {
   materials.clear();
 }
 
-void Mesh::calculate_bounding_box(Node* node, const Node* parent) {
-  AABB parent_bvh = parent ? parent->bvh : AABB(dimensions.min, dimensions.max);
-
+void Mesh::calculate_node_bounding_box(Node* node) {
   if (node->mesh_data) {
-    if (node->mesh_data) {
-      node->aabb = AABB(node->mesh_data->bb.min, node->mesh_data->bb.max);
-      node->aabb.transform(node->get_matrix());
-      if (node->children.empty()) {
-        node->bvh.min = node->aabb.min;
-        node->bvh.max = node->aabb.max;
-      }
-    }
+    node->aabb = node->mesh_data->aabb;
+    node->aabb.transform(node->get_matrix());
   }
 
-  parent_bvh.min = min(parent_bvh.min, node->bvh.min);
-  parent_bvh.max = min(parent_bvh.max, node->bvh.max);
-
   for (const auto& child : node->children) {
-    calculate_bounding_box(child, node);
+    calculate_node_bounding_box(child);
   }
 }
 
 void Mesh::get_scene_dimensions() {
   // Calculate binary volume hierarchy for all nodes in the scene
   for (const auto node : linear_nodes) {
-    calculate_bounding_box(node, nullptr);
+    calculate_node_bounding_box(node);
   }
 
   dimensions.min = Vec3(FLT_MAX);
@@ -354,10 +343,8 @@ void Mesh::get_scene_dimensions() {
 
   for (const auto node : linear_nodes) {
     if (node->mesh_data) {
-      for (const auto p : node->mesh_data->primitives) {
-        dimensions.min = min(dimensions.min, p->aabb.min);
-        dimensions.max = max(dimensions.max, p->aabb.max);
-      }
+      dimensions.min = min(dimensions.min, node->mesh_data->aabb.min);
+      dimensions.max = max(dimensions.max, node->mesh_data->aabb.max);
     }
   }
 
@@ -716,11 +703,12 @@ void Mesh::load_node(Node* parent,
       total_primitive_count += 1;
     }
 
+    new_mesh->aabb = {};
+
     // Mesh BB from BBs of primitives
     for (auto& p : new_mesh->primitives) {
-      new_mesh->bb = p->aabb;
-      new_mesh->bb.min = min(new_mesh->bb.min, p->aabb.min);
-      new_mesh->bb.max = max(new_mesh->bb.max, p->aabb.max);
+      new_mesh->aabb.min = min(new_mesh->aabb.min, p->aabb.min);
+      new_mesh->aabb.max = max(new_mesh->aabb.max, p->aabb.max);
     }
 
     new_node->mesh_data = new_mesh;

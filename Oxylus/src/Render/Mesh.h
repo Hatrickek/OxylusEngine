@@ -54,7 +54,7 @@ public:
     std::vector<Primitive*> primitives = {};
     vuk::Unique<vuk::Buffer> node_buffer;
 
-    AABB bb = {};
+    AABB aabb = {};
 
     struct UniformBlock {
       glm::mat4 joint_matrix[MAX_NUM_JOINTS]{};
@@ -81,7 +81,6 @@ public:
     Vec3 scale = Vec3(1.0f);
     Quat rotation = {};
 
-    AABB bvh;
     AABB aabb;
 
     ~Node();
@@ -192,7 +191,7 @@ private:
                  float globalscale);
   void load_animations(tinygltf::Model& gltf_model);
   void load_skins(tinygltf::Model& gltf_model);
-  void calculate_bounding_box(Node* node, const Node* parent);
+  void calculate_node_bounding_box(Node* node);
   void get_scene_dimensions();
   Node* find_node(Node* parent, uint32_t index);
   Node* node_from_index(uint32_t index);

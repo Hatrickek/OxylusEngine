@@ -330,20 +330,22 @@ Scope<vuk::Future> DefaultRenderPipeline::on_render(vuk::Allocator& frame_alloca
   }
 #endif
 
-  // frustum cull base meshes
-  std::erase_if(
-    mesh_draw_list,
-    [this](const MeshComponent& mesh_component) {
-      if (mesh_component.base_node) {
+  {
+    OX_SCOPED_ZONE_N("Frustum culling");
+    // frustum cull 
+    std::erase_if(
+      mesh_draw_list,
+      [this](const MeshComponent& mesh_component) {
         const auto camera_frustum = m_renderer_context.current_camera->get_frustum();
-        const auto aabb = mesh_component.mesh_base->aabb.get_transformed(mesh_component.transform);
+        const auto* node = mesh_component.mesh_base->linear_nodes[mesh_component.node_index];
+        const auto aabb = node->aabb.get_transformed(mesh_component.transform);
         if (!aabb.is_on_frustum(camera_frustum)) {
           Renderer::get_stats().drawcall_culled_count += mesh_component.mesh_base->total_primitive_count;
           return true;
         }
-      }
-      return false;
-    });
+        return false;
+      });
+  }
 
   std::vector<Material::Parameters> materials = {};
 
