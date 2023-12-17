@@ -23,6 +23,8 @@
 
 namespace Oxylus {
 void DefaultRenderPipeline::init(vuk::Allocator& allocator) {
+  OX_SCOPED_ZONE;
+
   m_quad = RendererCommon::generate_quad();
   m_cube = RendererCommon::generate_cube();
 
@@ -186,15 +188,18 @@ void DefaultRenderPipeline::on_dispatcher_events(EventDispatcher& dispatcher) {
 }
 
 void DefaultRenderPipeline::on_register_render_object(const MeshComponent& render_object) {
+  OX_SCOPED_ZONE;
   mesh_draw_list.emplace_back(render_object);
 }
 
 void DefaultRenderPipeline::on_register_light(const LightingData& lighting_data, LightComponent::LightType light_type) {
+  OX_SCOPED_ZONE;
   scene_lights_data.emplace_back(lighting_data);
   light_buffer_dispatcher.trigger(LightChangeEvent{});
 }
 
 void DefaultRenderPipeline::on_register_camera(Camera* camera) {
+  OX_SCOPED_ZONE;
   m_renderer_context.current_camera = camera;
 }
 
@@ -215,6 +220,7 @@ static std::pair<vuk::Resource, vuk::Name> get_attachment_or_black_uint(const ch
 }
 
 void DefaultRenderPipeline::debug_pass(const Ref<vuk::RenderGraph>& rg, const vuk::Name dst, const char* depth, vuk::Allocator& frame_allocator) const {
+  OX_SCOPED_ZONE;
   struct DebugPassData {
     Mat4 vp = {};
     Mat4 model = {};
@@ -280,14 +286,29 @@ void DefaultRenderPipeline::debug_pass(const Ref<vuk::RenderGraph>& rg, const vu
   DebugRenderer::reset(true);
 }
 
-static uint32_t get_material_index(const std::unordered_map<uint32_t, uint32_t>& material_map, uint32_t mesh_index, uint32_t material_index) {
-  uint32_t size = 0;
-  for (uint32_t i = 0; i < mesh_index; i++)
-    size += material_map.at(i);
-  return size + material_index;
+static std::vector<uint32_t> cumulate_material_map(const std::unordered_map<uint32_t, uint32_t>& material_map) {
+  OX_SCOPED_ZONE;
+  std::vector<uint32_t> cumulative_sums;
+  uint32_t sum = 0;
+  for (const auto& entry : material_map) {
+    sum += entry.second;
+    cumulative_sums.push_back(sum);
+  }
+  return cumulative_sums;
+}
+
+static std::vector<uint32_t> cumulated_material_map = {};
+
+static uint32_t get_material_index(uint32_t mesh_index, uint32_t material_index) {
+  OX_SCOPED_ZONE;
+  if (mesh_index == 0)
+    return 0;
+
+  return cumulated_material_map[mesh_index - 1] + material_index;
 }
 
 Scope<vuk::Future> DefaultRenderPipeline::on_render(vuk::Allocator& frame_allocator, const vuk::Future& target, vuk::Dimension3D dim) {
+  OX_SCOPED_ZONE;
   if (!m_renderer_context.current_camera) {
     OX_CORE_ERROR("No camera is set for rendering!");
     // set a temporary one
@@ -324,6 +345,22 @@ Scope<vuk::Future> DefaultRenderPipeline::on_render(vuk::Allocator& frame_alloca
       return false;
     });
 
+  std::vector<Material::Parameters> materials = {};
+
+  std::unordered_map<uint32_t, uint32_t> material_map; //mesh, material
+
+  for (uint32_t mesh_index = 0; mesh_index < mesh_draw_list.size(); mesh_index++) {
+    auto mesh_materials = mesh_draw_list[mesh_index].mesh_base->get_materials_as_ref();
+    for (auto& mat : mesh_materials)
+      materials.emplace_back(mat->parameters);
+    material_map.emplace(mesh_index, mesh_draw_list[mesh_index].mesh_base->get_material_count());
+  }
+
+  cumulated_material_map = cumulate_material_map(material_map);
+
+  auto [matBuff, matBufferFut] = create_buffer(frame_allocator, vuk::MemoryUsage::eCPUtoGPU, vuk::DomainFlagBits::eTransferOnGraphics, std::span(materials));
+  auto& mat_buffer = *matBuff;
+
   const auto rg = create_ref<vuk::RenderGraph>("DefaultRenderPipelineRenderGraph");
 
   m_renderer_data.ubo_vs.view = m_renderer_context.current_camera->get_view_matrix();
@@ -337,19 +374,7 @@ Scope<vuk::Future> DefaultRenderPipeline::on_render(vuk::Allocator& frame_alloca
 
   rg->attach_and_clear_image("black_image_uint", {.format = vuk::Format::eR8Uint, .sample_count = vuk::SampleCountFlagBits::e1}, vuk::Black<float>);
   rg->inference_rule("black_image_uint", vuk::same_shape_as("final_image"));
-  std::vector<Material::Parameters> materials = {};
 
-  std::unordered_map<uint32_t, uint32_t> material_map; //mesh, material
-
-  for (uint32_t mesh_index = 0; mesh_index < mesh_draw_list.size(); mesh_index++) {
-    auto mesh_materials = mesh_draw_list[mesh_index].mesh_base->get_materials_as_ref();
-    for (auto& mat : mesh_materials)
-      materials.emplace_back(mat->parameters);
-    material_map.emplace(mesh_index, mesh_draw_list[mesh_index].mesh_base->get_material_count());
-  }
-
-  auto [matBuff, matBufferFut] = create_buffer(frame_allocator, vuk::MemoryUsage::eCPUtoGPU, vuk::DomainFlagBits::eTransferOnGraphics, std::span(materials));
-  auto& mat_buffer = *matBuff;
 
   rg->attach_and_clear_image("normal_image", {.format = vuk::Format::eR16G16B16A16Sfloat, .sample_count = vuk::SampleCountFlagBits::e1}, vuk::Black<float>);
   rg->attach_and_clear_image("depth_image", {.format = vuk::Format::eD32Sfloat, .sample_count = vuk::SampleCountFlagBits::e1}, vuk::DepthOne);
@@ -503,6 +528,7 @@ Scope<vuk::Future> DefaultRenderPipeline::on_render(vuk::Allocator& frame_alloca
 }
 
 void DefaultRenderPipeline::compute_sky_transmittance(vuk::Allocator& allocator) {
+  OX_SCOPED_ZONE;
   vuk::PipelineBaseCreateInfo pci;
   pci.add_glsl(FileUtils::read_shader_file("SkyTransmittance.comp"), FileUtils::get_shader_path("SkyTransmittance.comp"));
   allocator.get_context().create_named_pipeline("sky_transmittance_pipeline", pci);
@@ -556,6 +582,7 @@ void DefaultRenderPipeline::compute_sky_transmittance(vuk::Allocator& allocator)
 }
 
 void DefaultRenderPipeline::update_skybox(const SkyboxLoadEvent& e) {
+  OX_SCOPED_ZONE;
   cube_map = e.cube_map;
 
   if (cube_map)
@@ -563,13 +590,14 @@ void DefaultRenderPipeline::update_skybox(const SkyboxLoadEvent& e) {
 }
 
 void DefaultRenderPipeline::depth_pre_pass(const Ref<vuk::RenderGraph>& rg, vuk::Buffer& vs_buffer, const std::unordered_map<uint32_t, uint32_t>& material_map, vuk::Buffer& mat_buffer) const {
+  OX_SCOPED_ZONE;
   rg->add_pass({
     .name = "depth_pre_pass",
     .resources = {
       "normal_image"_image >> vuk::eColorRW >> "normal_output",
       "depth_image"_image >> vuk::eDepthStencilRW >> "depth_output"
     },
-    .execute = [this, vs_buffer, mat_buffer, material_map](vuk::CommandBuffer& command_buffer) {
+    .execute = [this, vs_buffer, mat_buffer](vuk::CommandBuffer& command_buffer) {
       command_buffer.set_dynamic_state(vuk::DynamicStateFlagBits::eScissor | vuk::DynamicStateFlagBits::eViewport)
                     .set_viewport(0, vuk::Rect2D::framebuffer())
                     .set_scissor(0, vuk::Rect2D::framebuffer())
@@ -597,7 +625,7 @@ void DefaultRenderPipeline::depth_pre_pass(const Ref<vuk::RenderGraph>& rg, vuk:
             continue;
           }
 
-          const auto material_index = get_material_index(material_map, i, primitive->material_index);
+          const auto material_index = get_material_index(i, primitive->material_index);
 
           command_buffer.push_constants(vuk::ShaderStageFlagBits::eVertex | vuk::ShaderStageFlagBits::eFragment, 0, mesh.transform)
                         .push_constants(vuk::ShaderStageFlagBits::eFragment, sizeof(glm::mat4), material_index)
@@ -620,6 +648,7 @@ void DefaultRenderPipeline::geomerty_pass(const Ref<vuk::RenderGraph>& rg,
                                           vuk::Buffer& mat_buffer,
                                           vuk::Buffer& shadow_buffer,
                                           vuk::Buffer& scene_lights_buffer) {
+  OX_SCOPED_ZONE;
   struct PBRPassParams {
     IVec2 screen_dimensions = {};
     int num_lights = 0;
@@ -723,7 +752,7 @@ void DefaultRenderPipeline::geomerty_pass(const Ref<vuk::RenderGraph>& rg,
   rg->add_pass({
     .name = "geomerty_pass",
     .resources = resources,
-    .execute = [this, vs_buffer, scene_lights_buffer, shadow_buffer, pbr_buffer, mat_buffer, material_map, sun_const_buffer,
+    .execute = [this, vs_buffer, scene_lights_buffer, shadow_buffer, pbr_buffer, mat_buffer, sun_const_buffer,
       gtao_name, sky_transmittance_lut, brdf_att, prefilter_att, irradiance_att](vuk::CommandBuffer& command_buffer) {
       if (is_cube_map_pipeline) {
         auto view = m_renderer_context.current_camera->get_view_matrix();
@@ -827,7 +856,7 @@ void DefaultRenderPipeline::geomerty_pass(const Ref<vuk::RenderGraph>& rg,
             break;
           }
 
-          const auto material_index = get_material_index(material_map, i, primitive->material_index);
+          const auto material_index = get_material_index(i, primitive->material_index);
 
           command_buffer.push_constants(vuk::ShaderStageFlagBits::eVertex | vuk::ShaderStageFlagBits::eFragment, 0, mesh.transform)
                         .push_constants(vuk::ShaderStageFlagBits::eFragment, sizeof(glm::mat4), material_index);
@@ -864,6 +893,7 @@ void DefaultRenderPipeline::geomerty_pass(const Ref<vuk::RenderGraph>& rg,
 }
 
 void DefaultRenderPipeline::bloom_pass(const Ref<vuk::RenderGraph>& rg) {
+  OX_SCOPED_ZONE;
   struct BloomPushConst {
     // x: threshold, y: clamp, z: radius, w: unused
     Vec4 params = {};
@@ -954,6 +984,7 @@ void DefaultRenderPipeline::bloom_pass(const Ref<vuk::RenderGraph>& rg) {
 }
 
 void DefaultRenderPipeline::gtao_pass(vuk::Allocator& frame_allocator, const Ref<vuk::RenderGraph>& rg) {
+  OX_SCOPED_ZONE;
   gtao_settings.QualityLevel = RendererCVar::cvar_gtao_quality_level.get();
   gtao_settings.DenoisePasses = RendererCVar::cvar_gtao_denoise_passes.get();
   gtao_settings.Radius = RendererCVar::cvar_gtao_radius.get();
@@ -1080,6 +1111,7 @@ void DefaultRenderPipeline::gtao_pass(vuk::Allocator& frame_allocator, const Ref
 }
 
 void DefaultRenderPipeline::ssr_pass(vuk::Allocator& frame_allocator, const Ref<vuk::RenderGraph>& rg, vuk::Buffer& vs_buffer) const {
+  OX_SCOPED_ZONE;
   struct SSRData {
     int samples = 64;
     int binary_search_samples = 16;
@@ -1118,6 +1150,7 @@ void DefaultRenderPipeline::ssr_pass(vuk::Allocator& frame_allocator, const Ref<
 }
 
 void DefaultRenderPipeline::apply_fxaa(vuk::RenderGraph* rg, const vuk::Name src, vuk::Name dst, vuk::Buffer& fxaa_buffer) {
+  OX_SCOPED_ZONE;
   rg->add_pass({
     .name = "fxaa",
     .resources = {
@@ -1140,6 +1173,7 @@ void DefaultRenderPipeline::apply_fxaa(vuk::RenderGraph* rg, const vuk::Name src
 }
 
 void DefaultRenderPipeline::apply_grid(vuk::RenderGraph* rg, const vuk::Name dst, const vuk::Name depth_image, vuk::Allocator& frame_allocator) const {
+  OX_SCOPED_ZONE;
   struct GridVertexBuffer {
     Mat4 view;
     Mat4 proj;
@@ -1196,6 +1230,7 @@ void DefaultRenderPipeline::apply_grid(vuk::RenderGraph* rg, const vuk::Name dst
 }
 
 void DefaultRenderPipeline::cascaded_shadow_pass(const Ref<vuk::RenderGraph>& rg, vuk::Buffer& shadow_buffer) const {
+  OX_SCOPED_ZONE;
   auto [d_cascade_names, d_cascade_name_outputs] = diverge_image_layers(rg, "shadow_map_array", 4);
 
   for (uint32_t cascade_index = 0; cascade_index < SHADOW_MAP_CASCADE_COUNT; cascade_index++) {
@@ -1272,6 +1307,7 @@ void DefaultRenderPipeline::generate_prefilter(vuk::Allocator& allocator) {
 }
 
 void DefaultRenderPipeline::update_parameters(ProbeChangeEvent& e) {
+  OX_SCOPED_ZONE;
   auto& ubo = m_renderer_data.final_pass_data;
   auto& component = e.probe;
   ubo.film_grain = {component.film_grain_enabled, component.film_grain_intensity};
@@ -1284,6 +1320,7 @@ void DefaultRenderPipeline::update_parameters(ProbeChangeEvent& e) {
 void DefaultRenderPipeline::sky_view_lut_pass(vuk::Allocator& frame_allocator,
                                               const Ref<vuk::RenderGraph>& rg,
                                               const Vec3& sun_direction) {
+  OX_SCOPED_ZONE;
   auto [atmos_const_buff, atmos_const_buff_fut] = create_buffer(frame_allocator, vuk::MemoryUsage::eCPUtoGPU, vuk::DomainFlagBits::eTransferOnGraphics, std::span(&m_renderer_data.m_atmosphere, 1));
   auto& atmos_const_buffer = *atmos_const_buff;
 
