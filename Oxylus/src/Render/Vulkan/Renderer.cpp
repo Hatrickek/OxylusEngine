@@ -67,7 +67,8 @@ void Renderer::draw(VulkanContext* context, ImGuiLayer* imgui_layer, LayerStack&
 
     const auto dim = vuk::Dimension3D::absolute(context->swapchain->extent);
 
-    fut = *rp->on_render(frame_allocator, vuk::Future{rg, "final_image"}, dim);
+    const auto cleared_image = vuk::Future{std::move(rg), "final_image"};
+    fut = *rp->on_render(frame_allocator, cleared_image, dim);
 
     for (const auto& layer : layer_stack)
       layer->on_imgui_render();
@@ -108,7 +109,7 @@ void Renderer::draw(VulkanContext* context, ImGuiLayer* imgui_layer, LayerStack&
       vuk::ClearColor(0.0f, 0.0f, 0.0f, 1.f)
     );
 
-    const auto rp_fut = rp->on_render(frame_allocator, vuk::Future{rgx, "_img"}, dim);
+    const auto rp_fut = rp->on_render(frame_allocator, vuk::Future{std::move(rgx), "_img"}, dim);
     const auto attachment_name_out = rp_fut->get_bound_name().name;
 
     auto rp_rg = rp_fut->get_render_graph();
@@ -136,7 +137,7 @@ void Renderer::draw(VulkanContext* context, ImGuiLayer* imgui_layer, LayerStack&
 
     reset_stats();
 
-    fut = imgui_layer->render_draw_data(frame_allocator, vuk::Future{rg, "final_image"}, ImGui::GetDrawData());
+    fut = imgui_layer->render_draw_data(frame_allocator, vuk::Future{std::move(rg), "final_image"}, ImGui::GetDrawData());
   }
 
   context->end(fut, frame_allocator);

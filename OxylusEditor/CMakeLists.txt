@@ -8,7 +8,18 @@ source_group("src/Panels" FILES ${Panels})
 file(GLOB_RECURSE Utils "src/Utils/*.h" "src/Utils/*.cpp" )
 source_group("src/Utils" FILES ${Utils})
 
-set(ALL_FILES ${src} ${Panels} ${Utils})
+set(EDITOR_SOURCE_FILES ${src} ${Panels} ${Utils})
+
+# Shaders
+if(MSVC)
+    file(GLOB_RECURSE Shaders "Resources/Shaders/*.hlsl" "Resources/Shaders/*.hlsli")
+    source_group("Shaders" FILES ${Shaders})
+
+    set(ALL_FILES ${EDITOR_SOURCE_FILES} ${Shaders})
+    set_source_files_properties(${Shaders} PROPERTIES VS_TOOL_OVERRIDE "None") # Don't compile shaders with VS
+else() 
+    set(ALL_FILES ${EDITOR_SOURCE_FILES})
+endif()
 
 # Target
 add_executable(${PROJECT_NAME} ${ALL_FILES})

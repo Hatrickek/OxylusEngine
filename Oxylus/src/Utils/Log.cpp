@@ -12,7 +12,7 @@ void Log::init() {
     std::filesystem::create_directory("logs");
   fmtlog::setLogCB(logcb, fmtlog::DBG);
   fmtlog::setLogFile("logs/oxylus_log.txt", true);
-  fmtlog::setHeaderPattern("{HMS} | {l} | {s:<16} |");
+  fmtlog::setHeaderPattern("{HMS} | {l} | {s:<16} | ");
   fmtlog::flushOn(fmtlog::DBG);
   fmtlog::setThreadName("MAIN");
   fmtlog::startPollingThread(1);

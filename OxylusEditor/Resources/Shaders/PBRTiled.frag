@@ -82,8 +82,6 @@ layout(binding = 9) uniform textureCube u_Irradiance;
 
 layout(binding = 10) uniform sampler u_Sampler;
 
-#include "SkyCommon.glsl"
-
 // Material
 layout(set = 1, binding = 0) uniform sampler2D albedoMap;
 layout(set = 1, binding = 1) uniform sampler2D normalMap;
@@ -185,6 +183,11 @@ void GetEnergyCompensationPixelData(inout PixelData pixelData) {
     pixelData.EnergyCompensation = 1.0 + pixelData.F0 * (1.0 / max(0.01, pixelData.dfg.y) - 1.0);
 }
 #endif
+
+vec3 SampleLUT(sampler2D transmittanceLUT, float altitude, float theta, float atmosRadius, float planetRadius) {
+    vec2 uv = vec2(0.5 + 0.5 * theta, max(0.0, min(altitude / (atmosRadius - planetRadius), 1.0)));
+    return texture(transmittanceLUT, uv).xyz;
+}
 
 vec3 Lighting(vec3 F0, vec3 wsPos, inout PixelData pixelData) {
     vec3 result = vec3(0);

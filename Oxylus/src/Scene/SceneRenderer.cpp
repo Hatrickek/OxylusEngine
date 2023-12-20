@@ -28,8 +28,8 @@ void SceneRenderer::update() const {
 
   // Mesh System
   {
-    const auto mesh_view = m_scene->m_registry.view<TransformComponent, MeshComponent, MaterialComponent, TagComponent>();
     OX_SCOPED_ZONE_N("Mesh System");
+    const auto mesh_view = m_scene->m_registry.view<TransformComponent, MeshComponent, MaterialComponent, TagComponent>();
     for (const auto&& [entity, transform, mesh_component, material, tag] : mesh_view.each()) {
       if (tag.enabled) {
         auto e = Entity(entity, m_scene);
@@ -49,8 +49,8 @@ void SceneRenderer::update() const {
 
   // Animation system
   {
-    const auto animation_view = m_scene->m_registry.view<TransformComponent, MeshComponent, AnimationComponent, TagComponent>();
     OX_SCOPED_ZONE_N("Animated Mesh System");
+    const auto animation_view = m_scene->m_registry.view<TransformComponent, MeshComponent, AnimationComponent, TagComponent>();
     for (const auto&& [entity, transform, mesh_renderer, animation, tag] : animation_view.each()) {
       if (!animation.animations.empty()) {
         animation.animation_timer += Application::get_timestep() * animation.animation_speed;
@@ -64,8 +64,8 @@ void SceneRenderer::update() const {
 
   // Lighting
   {
-    const auto lighting_view = m_scene->m_registry.view<TransformComponent, LightComponent>();
     OX_SCOPED_ZONE_N("Lighting System");
+    const auto lighting_view = m_scene->m_registry.view<TransformComponent, LightComponent>();
     for (auto&& [e,tc, lc] : lighting_view.each()) {
       Entity entity = {e, m_scene};
       if (!entity.get_component<TagComponent>().enabled)

@@ -91,6 +91,8 @@ void DefaultRenderPipeline::init(vuk::Allocator& allocator) {
     pci.add_glsl(FileUtils::read_shader_file("FinalPass.frag"), FileUtils::get_shader_path("FinalPass.frag"));
     allocator.get_context().create_named_pipeline("final_pipeline", pci);
   }
+
+  // --- GTAO ---
   {
     vuk::PipelineBaseCreateInfo pci;
     pci.add_hlsl(FileUtils::read_shader_file("GTAO/GTAO_First.hlsl"), FileUtils::get_shader_path("GTAO/GTAO_First.hlsl"), vuk::HlslShaderStage::eCompute, "CSPrefilterDepths16x16");
@@ -127,12 +129,16 @@ void DefaultRenderPipeline::init(vuk::Allocator& allocator) {
     //pci.define("XE_GTAO_COMPUTE_BENT_NORMALS", "");
     allocator.get_context().create_named_pipeline("gtao_final_pipeline", pci);
   }
+  // --- GTAO ---
+
   {
     vuk::PipelineBaseCreateInfo pci;
     pci.add_glsl(FileUtils::read_shader_file("FullscreenPass.vert"), FileUtils::get_shader_path("FullscreenPass.vert"));
     pci.add_glsl(FileUtils::read_shader_file("FXAA.frag"), FileUtils::get_shader_path("FXAA.frag"));
     allocator.get_context().create_named_pipeline("fxaa_pipeline", pci);
   }
+
+  // --- Bloom ---
   {
     vuk::PipelineBaseCreateInfo pci;
     pci.add_glsl(FileUtils::read_shader_file("BloomPrefilter.comp"), FileUtils::get_shader_path("BloomPrefilter.comp"));
@@ -148,6 +154,8 @@ void DefaultRenderPipeline::init(vuk::Allocator& allocator) {
     pci.add_glsl(FileUtils::read_shader_file("BloomUpsample.comp"), FileUtils::get_shader_path("BloomUpsample.comp"));
     allocator.get_context().create_named_pipeline("bloom_upsample_pipeline", pci);
   }
+  // --- Bloom ---
+
   {
     vuk::PipelineBaseCreateInfo pci;
     pci.add_glsl(FileUtils::read_shader_file("Grid.vert"), FileUtils::get_shader_path("Grid.vert"));
@@ -160,26 +168,33 @@ void DefaultRenderPipeline::init(vuk::Allocator& allocator) {
     pci.add_glsl(FileUtils::read_shader_file("Debug/Unlit.frag"), FileUtils::get_shader_path("Debug/Unlit.frag"));
     allocator.get_context().create_named_pipeline("unlit_pipeline", pci);
   }
+
+  // --- Atmosphere ---
   {
     vuk::PipelineBaseCreateInfo pci;
-    pci.add_glsl(FileUtils::read_shader_file("FullscreenPass.vert"), FileUtils::get_shader_path("FullscreenPass.vert"));
-    pci.add_glsl(FileUtils::read_shader_file("SkyView.frag"), FileUtils::get_shader_path("SkyView.frag"));
+    pci.add_hlsl(FileUtils::read_shader_file("Atmosphere/TransmittanceLUT.hlsl"), FileUtils::get_shader_path("Atmosphere/TransmittanceLUT.hlsl"), vuk::HlslShaderStage::eCompute);
+    allocator.get_context().create_named_pipeline("sky_transmittance_pipeline", pci);
+  }
+  {
+    vuk::PipelineBaseCreateInfo pci;
+    pci.add_hlsl(FileUtils::read_shader_file("Atmosphere/MultiScatterLUT.hlsl"), FileUtils::get_shader_path("Atmosphere/MultiScatterLUT.hlsl"), vuk::HlslShaderStage::eCompute);
+    allocator.get_context().create_named_pipeline("sky_multiscatter_pipeline", pci);
+  }
+  {
+    vuk::PipelineBaseCreateInfo pci;
+    pci.add_hlsl(FileUtils::read_shader_file("FullscreenPass.hlsl"), FileUtils::get_shader_path("FullscreenPass.hlsl"), vuk::HlslShaderStage::eVertex);
+    pci.add_hlsl(FileUtils::read_shader_file("Atmosphere/SkyView.hlsl"), FileUtils::get_shader_path("Atmosphere/SkyView.hlsl"), vuk::HlslShaderStage::ePixel);
     allocator.get_context().create_named_pipeline("sky_view_pipeline", pci);
   }
   {
     vuk::PipelineBaseCreateInfo pci;
     pci.add_glsl(FileUtils::read_shader_file("FullscreenPass.vert"), FileUtils::get_shader_path("FullscreenPass.vert"));
-    pci.add_glsl(FileUtils::read_shader_file("SkyViewFinal.frag"), FileUtils::get_shader_path("SkyViewFinal.frag"));
+    pci.add_glsl(FileUtils::read_shader_file("Atmosphere/SkyViewFinal.frag"), FileUtils::get_shader_path("Atmosphere/SkyViewFinal.frag"));
     allocator.get_context().create_named_pipeline("sky_view_final_pipeline", pci);
   }
+  // --- Atmosphere --- 
 
   wait_for_futures(allocator);
-
-  compute_sky_transmittance(allocator);
-
-  // TODO List:
-  // add raymarching for atmosphere.
-  // move directional light properties to SkyLightComponent
 }
 
 void DefaultRenderPipeline::on_dispatcher_events(EventDispatcher& dispatcher) {
@@ -283,6 +298,8 @@ void DefaultRenderPipeline::debug_pass(const Ref<vuk::RenderGraph>& rg, const vu
     }
   });
 
+  // TODO: depth tested 
+
   DebugRenderer::reset(true);
 }
 
@@ -299,7 +316,7 @@ static std::vector<uint32_t> cumulate_material_map(const std::unordered_map<uint
 
 static std::vector<uint32_t> cumulated_material_map = {};
 
-static uint32_t get_material_index(uint32_t mesh_index, uint32_t material_index) {
+static uint32_t get_material_index(const uint32_t mesh_index, const uint32_t material_index) {
   OX_SCOPED_ZONE;
   if (mesh_index == 0)
     return 0;
@@ -391,16 +408,19 @@ Scope<vuk::Future> DefaultRenderPipeline::on_render(vuk::Allocator& frame_alloca
   LightingData* dir_light_data = nullptr;
 
   Vec3 sun_direction = {};
+  Vec3 sun_color = {};
 
   for (auto& light : scene_lights_data)
     if ((uint32_t)light.rotation_type.w == (uint32_t)(LightComponent::LightType::Directional))
       dir_light_data = &light;
 
-  if (dir_light_data)
+  if (dir_light_data) {
     sun_direction = normalize(glm::vec3(cos(dir_light_data->rotation_type.x)
                                         * cos(dir_light_data->rotation_type.y),
                                         sin(dir_light_data->rotation_type.y),
                                         sin(dir_light_data->rotation_type.x) * cos(dir_light_data->rotation_type.y)));
+    sun_color = Vec3(dir_light_data->color_radius) * dir_light_data->position_intensity.w;
+  }
 
   if (dir_light_data)
     DirectShadowPass::update_cascades(sun_direction, m_renderer_context.current_camera, &direct_shadow_ub);
@@ -433,8 +453,22 @@ Scope<vuk::Future> DefaultRenderPipeline::on_render(vuk::Allocator& frame_alloca
   auto [point_lights_buf, point_lights_buffer_fut] = create_buffer(frame_allocator, vuk::MemoryUsage::eCPUtoGPU, vuk::DomainFlagBits::eTransferOnGraphics, std::span(scene_lights_data));
   auto& point_lights_buffer = *point_lights_buf;
 
+  auto [atmos_buff, atmos_buff_fut] = create_buffer(frame_allocator, vuk::MemoryUsage::eCPUtoGPU, vuk::DomainFlagBits::eTransferOnGraphics, std::span(&m_renderer_data.m_atmosphere, 1));
+  auto& atmos_const_buff = *atmos_buff;
+  rg->attach_buffer("atmosphere_const_buffer", atmos_const_buff);
+
+  m_renderer_data.eye_view_data.sun_direction = sun_direction;
+  m_renderer_data.eye_view_data.sun_color = sun_color;
+  m_renderer_data.eye_view_data.camera_position = m_renderer_context.current_camera->get_position(); // + m_renderer_data.m_atmosphere.planet_radius;
+  auto [eye_const_buff, eye_const_buff_fut] = create_buffer(frame_allocator, vuk::MemoryUsage::eCPUtoGPU, vuk::DomainFlagBits::eTransferOnGraphics, std::span(&m_renderer_data.eye_view_data, 1));
+  auto& eye_const_buffer = *eye_const_buff;
+  rg->attach_buffer("sky_view_buffer", eye_const_buffer);
+
+  sky_transmittance_pass(rg);
+  sky_multiscatter_pass(rg);
+
   if (!is_cube_map_pipeline)
-    sky_view_lut_pass(frame_allocator, rg, sun_direction);
+    sky_view_lut_pass(rg);
 
   geomerty_pass(rg, frame_allocator, vs_buffer, material_map, mat_buffer, shadow_buffer, point_lights_buffer);
 
@@ -529,22 +563,15 @@ Scope<vuk::Future> DefaultRenderPipeline::on_render(vuk::Allocator& frame_alloca
   return create_scope<vuk::Future>(rg, final_image_name);
 }
 
-void DefaultRenderPipeline::compute_sky_transmittance(vuk::Allocator& allocator) {
+void DefaultRenderPipeline::sky_transmittance_pass(const Ref<vuk::RenderGraph>& rg) {
   OX_SCOPED_ZONE;
-  vuk::PipelineBaseCreateInfo pci;
-  pci.add_glsl(FileUtils::read_shader_file("SkyTransmittance.comp"), FileUtils::get_shader_path("SkyTransmittance.comp"));
-  allocator.get_context().create_named_pipeline("sky_transmittance_pipeline", pci);
-
-  vuk::Unique<vuk::Image> lut_image;
 
   IVec2 lut_size = {256, 64};
 
-  vuk::ImageAttachment attachment = {
-    .image = *lut_image,
-    .image_type = vuk::ImageType::e2D,
+  const vuk::ImageAttachment attachment = {
     .usage = vuk::ImageUsageFlagBits::eStorage | vuk::ImageUsageFlagBits::eSampled | vuk::ImageUsageFlagBits::eColorAttachment,
     .extent = vuk::Dimension3D::absolute(lut_size.x, lut_size.y, 1),
-    .format = vuk::Format::eR32G32B32A32Sfloat,
+    .format = vuk::Format::eR16G16B16A16Sfloat,
     .sample_count = vuk::Samples::e1,
     .view_type = vuk::ImageViewType::e2D,
     .base_level = 0,
@@ -553,34 +580,58 @@ void DefaultRenderPipeline::compute_sky_transmittance(vuk::Allocator& allocator)
     .layer_count = 1
   };
 
-  lut_image = *allocate_image(allocator, attachment);
-  attachment.image = *lut_image;
-
-  const Ref<vuk::RenderGraph> rg = create_ref<vuk::RenderGraph>("gen_transmittance");
-
-  auto [atmos_buff, atmos_buff_fut] = create_buffer(allocator, vuk::MemoryUsage::eCPUtoGPU, vuk::DomainFlagBits::eTransferOnGraphics, std::span(&m_renderer_data.m_atmosphere, 1));
-  auto& atmos_const_buff = *atmos_buff;
-
-  rg->attach_image("sky_transmittance_lut", attachment);
+  rg->attach_and_clear_image("sky_transmittance_lut", attachment, vuk::Black<float>);
 
   rg->add_pass({
-    .name = "generate_transmittance",
+    .name = "sky_transmittance_lut_pass",
     .resources = {
-      "sky_transmittance_lut"_image >> vuk::eComputeRW
+      "sky_transmittance_lut"_image >> vuk::eComputeRW,
+      "atmosphere_const_buffer"_buffer >> vuk::eMemoryRead,
+      "sky_view_buffer"_buffer >> vuk::eMemoryRead
     },
-    .execute = [lut_size, atmos_const_buff](vuk::CommandBuffer& command_buffer) {
+    .execute = [lut_size](vuk::CommandBuffer& command_buffer) {
       command_buffer.bind_compute_pipeline("sky_transmittance_pipeline")
                     .bind_image(0, 0, "sky_transmittance_lut")
-                    .bind_buffer(0, 1, atmos_const_buff)
+                    .bind_buffer(0, 1, "sky_view_buffer")
                     .dispatch((lut_size.x + 8 - 1) / 8, (lut_size.y + 8 - 1) / 8);
     }
   });
+}
 
-  vuk::Compiler compiler{};
-  auto fut = transition(vuk::Future{rg, "sky_transmittance_lut+"}, vuk::eFragmentSampled);
-  fut.wait(allocator, compiler);
+void DefaultRenderPipeline::sky_multiscatter_pass(const Ref<vuk::RenderGraph>& rg) {
+  OX_SCOPED_ZONE;
 
-  sky_transmittance_lut_image = std::move(lut_image);
+  IVec2 lut_size = {32, 32};
+
+  const vuk::ImageAttachment attachment = {
+    .usage = vuk::ImageUsageFlagBits::eStorage | vuk::ImageUsageFlagBits::eSampled | vuk::ImageUsageFlagBits::eColorAttachment,
+    .extent = vuk::Dimension3D::absolute(lut_size.x, lut_size.y, 1),
+    .format = vuk::Format::eR16G16B16A16Sfloat,
+    .sample_count = vuk::Samples::e1,
+    .view_type = vuk::ImageViewType::e2D,
+    .base_level = 0,
+    .level_count = 1,
+    .base_layer = 0,
+    .layer_count = 1
+  };
+
+  rg->attach_and_clear_image("sky_multiscatter_lut", attachment, vuk::Black<float>);
+
+  rg->add_pass({
+    .name = "sky_multiscatter_lut_pass",
+    .resources = {
+      "sky_multiscatter_lut"_image >> vuk::eComputeRW,
+      "sky_transmittance_lut+"_image >> vuk::eComputeSampled,
+      "atmosphere_const_buffer"_buffer >> vuk::eMemoryRead
+    },
+    .execute = [lut_size](vuk::CommandBuffer& command_buffer) {
+      command_buffer.bind_compute_pipeline("sky_multiscatter_pipeline")
+                    .bind_image(0, 0, "sky_transmittance_lut+")
+                    .bind_image(0, 1, "sky_multiscatter_lut")
+                    .bind_sampler(0, 2, vuk::LinearSamplerClamped)
+                    .dispatch(lut_size.x, lut_size.y);
+    }
+  });
 }
 
 void DefaultRenderPipeline::update_skybox(const SkyboxLoadEvent& e) {
@@ -690,25 +741,12 @@ void DefaultRenderPipeline::geomerty_pass(const Ref<vuk::RenderGraph>& rg,
     "pbr_image"_image >> vuk::eColorRW >> "pbr_output",
     "depth_output"_image >> vuk::eDepthStencilRead,
     "shadow_array_output"_image >> vuk::eFragmentSampled,
+    "sky_transmittance_lut+"_image >> vuk::eFragmentSampled,
     gtao_resource
   };
 
   if (!is_cube_map_pipeline)
     resources.emplace_back("sky_view_lut+", vuk::Resource::Type::eImage, vuk::eFragmentSampled);
-
-
-  const auto sky_transmittance_lut = vuk::ImageAttachment{
-    .image = *sky_transmittance_lut_image,
-    .usage = vuk::ImageUsageFlagBits::eSampled | vuk::ImageUsageFlagBits::eColorAttachment,
-    .extent = vuk::Dimension3D::absolute(512, 512, 1),
-    .format = vuk::Format::eR32G32B32A32Sfloat,
-    .sample_count = vuk::Samples::e1,
-    .view_type = vuk::ImageViewType::e2D,
-    .base_level = 0,
-    .level_count = 1,
-    .base_layer = 0,
-    .layer_count = 1
-  };
 
   auto irradiance_att = vuk::ImageAttachment{
     .image = *irradiance_image,
@@ -755,7 +793,7 @@ void DefaultRenderPipeline::geomerty_pass(const Ref<vuk::RenderGraph>& rg,
     .name = "geomerty_pass",
     .resources = resources,
     .execute = [this, vs_buffer, scene_lights_buffer, shadow_buffer, pbr_buffer, mat_buffer, sun_const_buffer,
-      gtao_name, sky_transmittance_lut, brdf_att, prefilter_att, irradiance_att](vuk::CommandBuffer& command_buffer) {
+      gtao_name, brdf_att, prefilter_att, irradiance_att](vuk::CommandBuffer& command_buffer) {
       if (is_cube_map_pipeline) {
         auto view = m_renderer_context.current_camera->get_view_matrix();
         view[3] = Vec4(0, 0, 0, 1);
@@ -829,7 +867,7 @@ void DefaultRenderPipeline::geomerty_pass(const Ref<vuk::RenderGraph>& rg,
                     .bind_image(0, 3, "shadow_array_output")
                     .bind_sampler(0, 3, {})
                     .bind_buffer(0, 4, shadow_buffer)
-                    .bind_image(0, 5, sky_transmittance_lut)
+                    .bind_image(0, 5, "sky_transmittance_lut+")
                     .bind_sampler(0, 5, vuk::LinearSamplerClamped)
                     .bind_image(0, 6, gtao_name)
                     .bind_sampler(0, 6, {})
@@ -1151,7 +1189,7 @@ void DefaultRenderPipeline::ssr_pass(vuk::Allocator& frame_allocator, const Ref<
   rg->inference_rule("ssr_image", vuk::same_shape_as("final_image"));
 }
 
-void DefaultRenderPipeline::apply_fxaa(vuk::RenderGraph* rg, const vuk::Name src, vuk::Name dst, vuk::Buffer& fxaa_buffer) {
+void DefaultRenderPipeline::apply_fxaa(vuk::RenderGraph* rg, const vuk::Name src, const vuk::Name dst, vuk::Buffer& fxaa_buffer) {
   OX_SCOPED_ZONE;
   rg->add_pass({
     .name = "fxaa",
@@ -1319,21 +1357,12 @@ void DefaultRenderPipeline::update_parameters(ProbeChangeEvent& e) {
   ubo.vignette_color.a = component.vignette_intensity;
 }
 
-void DefaultRenderPipeline::sky_view_lut_pass(vuk::Allocator& frame_allocator,
-                                              const Ref<vuk::RenderGraph>& rg,
-                                              const Vec3& sun_direction) {
+void DefaultRenderPipeline::sky_view_lut_pass(const Ref<vuk::RenderGraph>& rg) {
   OX_SCOPED_ZONE;
-  auto [atmos_const_buff, atmos_const_buff_fut] = create_buffer(frame_allocator, vuk::MemoryUsage::eCPUtoGPU, vuk::DomainFlagBits::eTransferOnGraphics, std::span(&m_renderer_data.m_atmosphere, 1));
-  auto& atmos_const_buffer = *atmos_const_buff;
-
-  m_renderer_data.eye_view_data.eye_position.y = m_renderer_context.current_camera->get_position().y + m_renderer_data.m_atmosphere.planet_radius;
-  m_renderer_data.eye_view_data.sun_direction = sun_direction;
-  auto [eye_const_buff, eye_const_buff_fut] = create_buffer(frame_allocator, vuk::MemoryUsage::eCPUtoGPU, vuk::DomainFlagBits::eTransferOnGraphics, std::span(&m_renderer_data.eye_view_data, 1));
-  auto& eye_const_buffer = *eye_const_buff;
 
   const auto attachment = vuk::ImageAttachment{
-    .extent = vuk::Dimension3D::absolute(400, 200, 1),
-    .format = vuk::Format::eR32G32B32A32Sfloat,
+    .extent = vuk::Dimension3D::absolute(192, 104, 1),
+    .format = vuk::Format::eR16G16B16A16Sfloat,
     .sample_count = vuk::SampleCountFlagBits::e1,
     .base_level = 0,
     .level_count = 1,
@@ -1347,31 +1376,21 @@ void DefaultRenderPipeline::sky_view_lut_pass(vuk::Allocator& frame_allocator,
     .name = "sky_view_pass",
     .resources = {
       "sky_view_lut"_image >> vuk::eColorRW,
+      "sky_transmittance_lut+"_image >> vuk::eFragmentSampled,
+      "sky_multiscatter_lut+"_image >> vuk::eFragmentSampled,
+      "sky_view_buffer"_buffer >> vuk::eMemoryRead,
     },
-    .execute = [this, atmos_const_buffer, eye_const_buffer](vuk::CommandBuffer& command_buffer) {
-      const auto sky_transmittance_lut = vuk::ImageAttachment{
-        .image = *sky_transmittance_lut_image,
-        .usage = vuk::ImageUsageFlagBits::eSampled | vuk::ImageUsageFlagBits::eColorAttachment,
-        .extent = vuk::Dimension3D::absolute(512, 512, 1),
-        .format = vuk::Format::eR32G32B32A32Sfloat,
-        .sample_count = vuk::Samples::e1,
-        .view_type = vuk::ImageViewType::e2D,
-        .base_level = 0,
-        .level_count = 1,
-        .base_layer = 0,
-        .layer_count = 1
-      };
-
+    .execute = [this](vuk::CommandBuffer& command_buffer) {
       command_buffer.set_dynamic_state(vuk::DynamicStateFlagBits::eScissor | vuk::DynamicStateFlagBits::eViewport)
                     .set_viewport(0, vuk::Rect2D::framebuffer())
                     .set_scissor(0, vuk::Rect2D::framebuffer())
                     .broadcast_color_blend(vuk::BlendPreset::eOff)
                     .set_rasterization({.cullMode = vuk::CullModeFlagBits::eNone})
                     .bind_graphics_pipeline("sky_view_pipeline")
-                    .bind_image(0, 0, sky_transmittance_lut)
-                    .bind_sampler(0, 0, vuk::LinearSamplerClamped)
-                    .bind_buffer(0, 1, atmos_const_buffer)
-                    .bind_buffer(0, 2, eye_const_buffer)
+                    .bind_image(0, 0, "sky_transmittance_lut+")
+                    .bind_image(0, 1, "sky_multiscatter_lut+")
+                    .bind_sampler(0, 2, vuk::LinearSamplerClamped)
+                    .bind_buffer(0, 3, "sky_view_buffer")
                     .draw(3, 1, 0, 0);
     }
   });

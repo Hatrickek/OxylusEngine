@@ -279,6 +279,7 @@ vuk::Allocator VulkanContext::begin() {
   auto& frame_resource = superframe_resource->get_next_frame();
   context->next_frame();
   const vuk::Allocator frame_allocator(frame_resource);
+  m_bundle = *acquire_one(*context, swapchain, (*present_ready)[context->get_frame_count() % 3], (*render_complete)[context->get_frame_count() % 3]);
 
   return frame_allocator;
 }
@@ -316,7 +317,6 @@ void VulkanContext::end(const vuk::Future& src, vuk::Allocator frame_allocator) 
 
   vuk::Compiler compiler;
   auto erg = *compiler.link(std::span{&rg_p, 1}, {.callbacks = cbs});
-  m_bundle = *acquire_one(*context, swapchain, (*present_ready)[context->get_frame_count() % 3], (*render_complete)[context->get_frame_count() % 3]);
   auto result = *execute_submit(frame_allocator, std::move(erg), std::move(m_bundle));
   present_to_one(*context, std::move(result));
 

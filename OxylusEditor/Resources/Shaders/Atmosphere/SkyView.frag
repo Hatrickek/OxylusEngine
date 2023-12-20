@@ -27,9 +27,14 @@ layout(set = 0, binding = 2) uniform EyeView {
     float StepCount;
     vec3 SunDirection;
     float SunIntensity;
+    vec3 SunColor;
+    float _pad;
 };
 
-#include "SkyCommon.glsl"
+vec3 SampleLUT(sampler2D transmittancelut, float altitude, float theta, float atmosRadius, float planetRadius) {
+    vec2 uv = vec2(0.5 + 0.5 * theta, max(0.0, min(altitude / (atmosRadius - planetRadius), 1.0)));
+    return texture(transmittancelut, uv).xyz;
+}
 
 vec3 GetExtinctionSum(float altitude)
 {

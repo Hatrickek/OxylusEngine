@@ -40,15 +40,16 @@ private:
   } m_renderer_context;
 
   struct RendererData {
+    // TODO: make a global camera data buffer in Camera.h
+
     struct UBOVS {
       Mat4 projection;
       Mat4 view;
       Vec3 cam_pos;
-      float planet_radius = 6360.f * 1e3f;
     } ubo_vs;
 
     struct FinalPassData {
-      int tonemapper = RendererConfig::TONEMAP_ACES; // 0- Aces 1- Uncharted 2-Filmic 3- Reinhard
+      int tonemapper = RendererConfig::TONEMAP_ACES;
       float exposure = 1.0f;
       float gamma = 2.5f;
       int enable_bloom = 1;
@@ -84,10 +85,12 @@ private:
     } m_atmosphere;
 
     struct EyeViewData {
-      Vec3 eye_position = {0.0, 6360010.0, 0.0};
-      float step_count = 100.f;
-      Vec3 sun_direction = {-3.09086E-08, 0.70711, 0.70711};
-      float sun_intensity = 10.f;
+      Vec3 camera_position = {};
+      float _pad;
+      Vec3 sun_direction = {};
+      float _pad2;
+      Vec3 sun_color = {}; // pre-multipled with intensity
+      float _pad3;
     } eye_view_data;
 
     struct SunData {
@@ -105,7 +108,6 @@ private:
   vuk::Unique<vuk::Image> brdf_image;
   vuk::Unique<vuk::Image> irradiance_image;
   vuk::Unique<vuk::Image> prefiltered_image;
-  vuk::Unique<vuk::Image> sky_transmittance_lut_image;
 
   // Mesh
   std::vector<MeshComponent> mesh_draw_list;
@@ -127,8 +129,9 @@ private:
   void generate_prefilter(vuk::Allocator& allocator);
   void update_parameters(ProbeChangeEvent& e);
 
-  void sky_view_lut_pass(vuk::Allocator& frame_allocator, const Ref<vuk::RenderGraph>& rg, const Vec3& sun_direction);
-  void compute_sky_transmittance(vuk::Allocator& allocator);
+  void sky_view_lut_pass(const Ref<vuk::RenderGraph>& rg);
+  void sky_transmittance_pass(const Ref<vuk::RenderGraph>& rg);
+  void sky_multiscatter_pass(const Ref<vuk::RenderGraph>& rg);
   void depth_pre_pass(const Ref<vuk::RenderGraph>& rg, vuk::Buffer& vs_buffer, const std::unordered_map<uint32_t, uint32_t>&, vuk::Buffer& mat_buffer) const;
   void geomerty_pass(const Ref<vuk::RenderGraph>& rg, vuk::Allocator& frame_allocator, vuk::Buffer& vs_buffer, const std::unordered_map<uint32_t, uint32_t>&, vuk::Buffer& mat_buffer, vuk::Buffer& shadow_buffer, vuk::Buffer& scene_lights_buffer);
   void apply_fxaa(vuk::RenderGraph* rg, vuk::Name src, vuk::Name dst, vuk::Buffer& fxaa_buffer);
