@@ -132,8 +132,11 @@ public:
 
   std::vector<uint32_t> indices;
   std::vector<Vertex> vertices;
+  uint32_t index_count = 0;
   vuk::Unique<vuk::Buffer> vertex_buffer;
+  VkDeviceAddress vertex_buffer_device_address = 0;
   vuk::Unique<vuk::Buffer> index_buffer;
+  VkDeviceAddress index_buffer_device_address = 0;
 
   struct Dimensions {
     Vec3 min = Vec3(FLT_MAX);

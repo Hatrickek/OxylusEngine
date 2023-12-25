@@ -243,12 +243,14 @@ void ViewportPanel::on_imgui_render() {
     if (viewport_settings_popup)
       ImGui::OpenPopup("ViewportSettings");
 
-    if (ImGui::BeginPopup("ViewportSettings", ImGuiWindowFlags_AlwaysAutoResize)) {
+    ImGui::SetNextWindowSize({300.f, 0.f});
+    if (ImGui::BeginPopup("ViewportSettings")) {
       OxUI::begin_properties();
       OxUI::property("VSync", (bool*)RendererCVar::cvar_vsync.get_ptr());
       OxUI::property<float>("Camera sensitivity", &m_mouse_sensitivity, 0.1f, 20.0f);
       OxUI::property<float>("Movement speed", &m_movement_speed, 5, 100.0f);
       OxUI::property("Smooth camera", &m_smooth_camera);
+      OxUI::property<float>("Grid distance", RendererCVar::cvar_draw_grid_distance.get_ptr(), 10.f, 100.0f);
       OxUI::end_properties();
       ImGui::EndPopup();
     }
@@ -472,10 +474,8 @@ void ViewportPanel::mouse_picking_pass(const Ref<RenderPipeline>& rp, const vuk:
                     .bind_buffer(0, 0, vs_buffer);
 
       for (auto& mesh : scene_meshes) {
-        if (mesh.mesh_component.base_node) {
-          mesh.mesh_component.mesh_base->bind_index_buffer(command_buffer);
-          mesh.mesh_component.mesh_base->bind_vertex_buffer(command_buffer);
-        }
+        mesh.mesh_component.mesh_base->bind_index_buffer(command_buffer);
+        mesh.mesh_component.mesh_base->bind_vertex_buffer(command_buffer);
 
         const auto node = mesh.mesh_component.mesh_base->linear_nodes[mesh.mesh_component.node_index];
         if (node->mesh_data) {

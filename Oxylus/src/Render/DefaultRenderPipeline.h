@@ -93,10 +93,9 @@ private:
       float _pad3;
     } eye_view_data;
 
+    //@TEMP
     struct SunData {
-      Vec3 sun_dir = {};
-      float sun_radius = 0.3f;
-      Vec4 frustum[4] = {};
+      Mat4 inv_vp = {};
     } sun_data;
   } m_renderer_data = {};
 
@@ -129,7 +128,7 @@ private:
   void generate_prefilter(vuk::Allocator& allocator);
   void update_parameters(ProbeChangeEvent& e);
 
-  void sky_view_lut_pass(const Ref<vuk::RenderGraph>& rg);
+  void sky_view_lut_pass(const Ref<vuk::RenderGraph>& rg) const;
   void sky_transmittance_pass(const Ref<vuk::RenderGraph>& rg);
   void sky_multiscatter_pass(const Ref<vuk::RenderGraph>& rg);
   void depth_pre_pass(const Ref<vuk::RenderGraph>& rg, vuk::Buffer& vs_buffer, const std::unordered_map<uint32_t, uint32_t>&, vuk::Buffer& mat_buffer) const;

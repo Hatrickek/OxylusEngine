@@ -56,7 +56,7 @@ void Renderer::draw(VulkanContext* context, ImGuiLayer* imgui_layer, LayerStack&
   auto frame_allocator = context->begin();
   const Ref<vuk::RenderGraph> rg = create_ref<vuk::RenderGraph>("runner");
   rg->attach_swapchain("_swp", context->swapchain);
-  rg->clear_image("_swp", "final_image", vuk::ClearColor{0.0f, 0.0f, 0.0f, 1.0f});
+  rg->clear_image("_swp", "target_image", vuk::ClearColor{0.0f, 0.0f, 0.0f, 1.0f});
 
   vuk::Future fut = {};
 
@@ -67,7 +67,7 @@ void Renderer::draw(VulkanContext* context, ImGuiLayer* imgui_layer, LayerStack&
 
     const auto dim = vuk::Dimension3D::absolute(context->swapchain->extent);
 
-    const auto cleared_image = vuk::Future{std::move(rg), "final_image"};
+    const auto cleared_image = vuk::Future{std::move(rg), "target_image"};
     fut = *rp->on_render(frame_allocator, cleared_image, dim);
 
     for (const auto& layer : layer_stack)
@@ -137,7 +137,7 @@ void Renderer::draw(VulkanContext* context, ImGuiLayer* imgui_layer, LayerStack&
 
     reset_stats();
 
-    fut = imgui_layer->render_draw_data(frame_allocator, vuk::Future{std::move(rg), "final_image"}, ImGui::GetDrawData());
+    fut = imgui_layer->render_draw_data(frame_allocator, vuk::Future{std::move(rg), "target_image"}, ImGui::GetDrawData());
   }
 
   context->end(fut, frame_allocator);

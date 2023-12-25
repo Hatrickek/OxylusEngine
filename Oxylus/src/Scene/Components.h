@@ -81,8 +81,9 @@ struct MaterialComponent {
 struct MeshComponent {
   Ref<Mesh> mesh_base = nullptr;
 
-  bool base_node = true;
   uint32_t node_index = 0;
+
+  bool cast_shadows = true;
 
   // non-serialized data
   Mat4 transform = {};

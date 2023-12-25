@@ -12,7 +12,8 @@ set(EDITOR_SOURCE_FILES ${src} ${Panels} ${Utils})
 
 # Shaders
 if(MSVC)
-    file(GLOB_RECURSE Shaders "Resources/Shaders/*.hlsl" "Resources/Shaders/*.hlsli")
+    file(GLOB_RECURSE Shaders "Resources/Shaders/*.hlsl" "Resources/Shaders/*.hlsli" 
+                              "Resources/Shaders/*.glsl" "Resources/Shaders/*.frag" "Resources/Shaders/*.vert")
     source_group("Shaders" FILES ${Shaders})
 
     set(ALL_FILES ${EDITOR_SOURCE_FILES} ${Shaders})

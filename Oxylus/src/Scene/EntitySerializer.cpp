@@ -65,7 +65,6 @@ void EntitySerializer::serialize_entity(Scene* scene, ryml::NodeRef& entities, E
     auto node = entity_node["MeshComponent"];
     node |= ryml::MAP;
     node["Mesh"] << mrc.mesh_base->path;
-    node["BaseNode"] << mrc.base_node;
     node["NodeIndex"] << mrc.node_index;
   }
 
@@ -309,13 +308,10 @@ UUID EntitySerializer::deserialize_entity(ryml::ConstNodeRef entity_node, Scene*
 
     std::string mesh_path;
     node["Mesh"] >> mesh_path;
-    bool base_node = false;
-    node["BaseNode"] >> base_node;
     uint32_t node_index = 0;
     node["NodeIndex"] >> node_index;
 
     auto component = deserialized_entity.add_component_internal<MeshComponent>(AssetManager::get_mesh_asset(mesh_path));
-    component.base_node = base_node;
     component.node_index = node_index;
   }
 

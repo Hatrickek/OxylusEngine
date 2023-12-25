@@ -7,12 +7,12 @@
 #include "Vulkan/Renderer.h"
 
 namespace Oxylus {
-Camera::Camera(glm::vec3 position) {
+Camera::Camera(Vec3 position) {
   m_position = position;
   update_view_matrix();
 }
 
-glm::mat4 Camera::get_projection_matrix() const {
+Mat4 Camera::get_projection_matrix() const {
   OX_SCOPED_ZONE;
   auto projection = glm::perspective(glm::radians(m_fov), m_aspect, m_near_clip, m_far_clip);
   projection[1][1] *= -1.0f;
@@ -35,16 +35,16 @@ void Camera::dolly(float z) {
   translate({0, 0, z});
 }
 
-glm::mat4 Camera::get_view_matrix() const {
+Mat4 Camera::get_view_matrix() const {
   return m_view_matrix;
 }
 
 Mat4 Camera::get_world_matrix() const {
-  return glm::translate(glm::mat4(1.0f), m_position) *
+  return glm::translate(Mat4(1.0f), m_position) *
          glm::toMat4(glm::quat(Vec3(get_pitch(), get_yaw(), m_tilt)));
 }
 
-void Camera::set_position(const glm::vec3 pos) {
+void Camera::set_position(const Vec3 pos) {
   m_position = pos;
 }
 
@@ -71,24 +71,24 @@ void Camera::update_aspect_ratio(const VkExtent2D& size) {
   update_aspect_ratio(static_cast<float>(size.width) / static_cast<float>(size.height));
 }
 
-glm::vec3 Camera::get_front() const {
+Vec3 Camera::get_front() const {
   return m_forward;
 }
 
-glm::vec3 Camera::get_right() const {
+Vec3 Camera::get_right() const {
   return m_right;
 }
 
-const glm::vec3& Camera::get_position() const {
+const Vec3& Camera::get_position() const {
   return m_position;
 }
 
-void Camera::translate(const glm::vec3& delta) {
-  const glm::vec3 cam_front = get_front();
-  glm::vec3 cam_up = glm::vec3(0.0f, 1.0f, 0.0f);
-  const glm::vec3 cam_left = glm::cross(cam_front, cam_up);
+void Camera::translate(const Vec3& delta) {
+  const Vec3 cam_front = get_front();
+  Vec3 cam_up = Vec3(0.0f, 1.0f, 0.0f);
+  const Vec3 cam_left = glm::cross(cam_front, cam_up);
   cam_up = glm::cross(cam_front, cam_left);
-  const glm::vec3 result = cam_left * delta.x + cam_up * -delta.y + cam_front * delta.z;
+  const Vec3 result = cam_left * delta.x + cam_up * -delta.y + cam_front * delta.z;
   m_position += result;
 }
 
@@ -96,7 +96,7 @@ void Camera::update() {
   update_view_matrix();
 }
 
-void Camera::update(const glm::vec3& pos, const glm::vec3& rotation) {
+void Camera::update(const Vec3& pos, const Vec3& rotation) {
   OX_SCOPED_ZONE;
   set_position(pos);
   set_pitch(rotation.x);

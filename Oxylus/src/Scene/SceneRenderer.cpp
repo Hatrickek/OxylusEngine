@@ -38,10 +38,8 @@ void SceneRenderer::update() const {
         m_render_pipeline->on_register_render_object(mesh_component);
 
         if (RendererCVar::cvar_draw_bounding_boxes.get()) {
-          if (mesh_component.base_node) {
-            auto aabb = mesh_component.mesh_base->linear_nodes[mesh_component.node_index]->aabb.get_transformed(mesh_transform);
-            DebugRenderer::draw_aabb(aabb, Vec4(0, 1, 0, 1));
-          }
+          auto aabb = mesh_component.mesh_base->linear_nodes[mesh_component.node_index]->aabb.get_transformed(mesh_transform);
+          DebugRenderer::draw_aabb(aabb, Vec4(0, 1, 0, 1));
         }
       }
     }

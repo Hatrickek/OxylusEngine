@@ -209,6 +209,7 @@ target_link_libraries(${PROJECT_NAME} PUBLIC tinygltf)
 # FMT
 CPMAddPackage("gh:fmtlib/fmt#10.1.1")
 target_link_libraries(${PROJECT_NAME} PUBLIC fmt::fmt)
+set_target_properties(fmt PROPERTIES FOLDER "Vendor/${_target}")
 
 # fmtlog
 CPMAddPackage(
@@ -337,4 +338,5 @@ target_include_directories(${PROJECT_NAME} PUBLIC ${sol2_SOURCE_DIR}/include)
 target_link_libraries(sol2 INTERFACE $<BUILD_INTERFACE:${lua_static}>)
 target_link_libraries(${PROJECT_NAME} PUBLIC sol2 lua_static)
 set_targets_static(lua_static)
+set_target_properties(lua_static PROPERTIES FOLDER "Vendor/${_target}")
 

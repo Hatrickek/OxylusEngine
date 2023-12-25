@@ -133,7 +133,7 @@ void DefaultRenderPipeline::init(vuk::Allocator& allocator) {
 
   {
     vuk::PipelineBaseCreateInfo pci;
-    pci.add_glsl(FileUtils::read_shader_file("FullscreenPass.vert"), FileUtils::get_shader_path("FullscreenPass.vert"));
+    pci.add_hlsl(FileUtils::read_shader_file("FullscreenTriangle.hlsl"), FileUtils::get_shader_path("FullscreenTriangle.hlsl"), vuk::HlslShaderStage::eVertex);
     pci.add_glsl(FileUtils::read_shader_file("FXAA.frag"), FileUtils::get_shader_path("FXAA.frag"));
     allocator.get_context().create_named_pipeline("fxaa_pipeline", pci);
   }
@@ -182,14 +182,14 @@ void DefaultRenderPipeline::init(vuk::Allocator& allocator) {
   }
   {
     vuk::PipelineBaseCreateInfo pci;
-    pci.add_hlsl(FileUtils::read_shader_file("FullscreenPass.hlsl"), FileUtils::get_shader_path("FullscreenPass.hlsl"), vuk::HlslShaderStage::eVertex);
+    pci.add_hlsl(FileUtils::read_shader_file("FullscreenTriangle.hlsl"), FileUtils::get_shader_path("FullscreenTriangle.hlsl"), vuk::HlslShaderStage::eVertex);
     pci.add_hlsl(FileUtils::read_shader_file("Atmosphere/SkyView.hlsl"), FileUtils::get_shader_path("Atmosphere/SkyView.hlsl"), vuk::HlslShaderStage::ePixel);
     allocator.get_context().create_named_pipeline("sky_view_pipeline", pci);
   }
   {
     vuk::PipelineBaseCreateInfo pci;
-    pci.add_glsl(FileUtils::read_shader_file("FullscreenPass.vert"), FileUtils::get_shader_path("FullscreenPass.vert"));
-    pci.add_glsl(FileUtils::read_shader_file("Atmosphere/SkyViewFinal.frag"), FileUtils::get_shader_path("Atmosphere/SkyViewFinal.frag"));
+    pci.add_hlsl(FileUtils::read_shader_file("FullscreenTriangle.hlsl"), FileUtils::get_shader_path("FullscreenTriangle.hlsl"), vuk::HlslShaderStage::eVertex);
+    pci.add_hlsl(FileUtils::read_shader_file("Atmosphere/SkyViewFinal.hlsl"), FileUtils::get_shader_path("Atmosphere/SkyViewFinal.hlsl"), vuk::HlslShaderStage::ePixel);
     allocator.get_context().create_named_pipeline("sky_view_final_pipeline", pci);
   }
   // --- Atmosphere --- 
@@ -493,56 +493,7 @@ Scope<vuk::Future> DefaultRenderPipeline::on_render(vuk::Allocator& frame_alloca
   auto [ssr_resouce, ssr_name] = get_attachment_or_black("ssr_output", RendererCVar::cvar_ssr_enable.get());
   auto [bloom_resource, bloom_name] = get_attachment_or_black("bloom_upsampled_image", RendererCVar::cvar_bloom_enable.get());
 
-  std::vector<vuk::Resource> final_resources = {
-    "final_image"_image >> vuk::eColorRW >> "final_output",
-    "pbr_output"_image >> vuk::eFragmentSampled,
-    ssr_resouce,
-    bloom_resource,
-  };
-
-  auto final_image_attachment = vuk::ImageAttachment{
-    .extent = dim,
-    .format = vuk::Format::eR32G32B32A32Sfloat,
-    .sample_count = vuk::Samples::e1,
-    .level_count = 1,
-    .layer_count = 1
-  };
-  rg->attach_and_clear_image("final_image", final_image_attachment, vuk::Black<float>);
-
-  rg->add_pass({
-    .name = "final_pass",
-    .resources = std::move(final_resources),
-    .execute = [this, final_buffer, ssr_name, bloom_name](vuk::CommandBuffer& command_buffer) {
-      this->mesh_draw_list.clear();
-
-      command_buffer.bind_graphics_pipeline("final_pipeline")
-                    .set_dynamic_state(vuk::DynamicStateFlagBits::eScissor | vuk::DynamicStateFlagBits::eViewport)
-                    .set_viewport(0, vuk::Rect2D::framebuffer())
-                    .set_scissor(0, vuk::Rect2D::framebuffer())
-                    .broadcast_color_blend(vuk::BlendPreset::eOff)
-                    .set_rasterization({.cullMode = vuk::CullModeFlagBits::eNone})
-                    .bind_sampler(0, 0, vuk::LinearSamplerClamped)
-                    .bind_image(0, 0, "pbr_output")
-                    .bind_sampler(0, 3, vuk::LinearSamplerClamped)
-                    .bind_image(0, 3, ssr_name)
-                    .bind_sampler(0, 4, {})
-                    .bind_image(0, 4, bloom_name)
-                    .bind_buffer(0, 5, final_buffer)
-                    .draw(3, 1, 0, 0);
-    }
-  });
-
-  vuk::Name final_image_name = "final_output";
-
-  if (RendererCVar::cvar_draw_grid.get()) {
-    apply_grid(rg.get(), "final_output", "depth_output", frame_allocator);
-    final_image_name = final_image_name.append("+");
-  }
-
-  if (RendererCVar::cvar_enable_debug_renderer.get()) {
-    debug_pass(rg, final_image_name, "depth_output", frame_allocator);
-    final_image_name = final_image_name.append("+");
-  }
+  vuk::Name pbr_image_name = "pbr_output";
 
   if (RendererCVar::cvar_fxaa_enable.get()) {
     struct FXAAData {
@@ -556,11 +507,53 @@ Scope<vuk::Future> DefaultRenderPipeline::on_render(vuk::Allocator& frame_alloca
     rg->attach_and_clear_image("fxaa_image", {.format = vuk::Format::eR32G32B32A32Sfloat, .sample_count = vuk::Samples::e1}, vuk::Black<float>);
     rg->inference_rule("fxaa_image", vuk::same_shape_as("final_image"));
 
-    apply_fxaa(rg.get(), final_image_name, "fxaa_image", fxaa_buffer);
-    final_image_name = "fxaa_image+";
+    apply_fxaa(rg.get(), pbr_image_name, "fxaa_image", fxaa_buffer);
+    pbr_image_name = "fxaa_image+";
   }
 
-  return create_scope<vuk::Future>(rg, final_image_name);
+  if (RendererCVar::cvar_enable_debug_renderer.get()) {
+    debug_pass(rg, pbr_image_name, "depth_output", frame_allocator);
+    pbr_image_name = pbr_image_name.append("+");
+  }
+
+  if (RendererCVar::cvar_draw_grid.get()) {
+    apply_grid(rg.get(), pbr_image_name, "depth_output", frame_allocator);
+    pbr_image_name = pbr_image_name.append("+");
+  }
+
+  std::vector final_resources = {
+    "final_image"_image >> vuk::eColorRW >> "final_output",
+    vuk::Resource{pbr_image_name, vuk::Resource::Type::eImage, vuk::eFragmentSampled},
+    ssr_resouce,
+    bloom_resource,
+  };
+
+  rg->attach_in("final_image", target);
+
+  rg->add_pass({
+    .name = "final_pass",
+    .resources = std::move(final_resources),
+    .execute = [this, final_buffer, ssr_name, bloom_name, pbr_image_name](vuk::CommandBuffer& command_buffer) {
+      this->mesh_draw_list.clear();
+
+      command_buffer.bind_graphics_pipeline("final_pipeline")
+                    .set_dynamic_state(vuk::DynamicStateFlagBits::eScissor | vuk::DynamicStateFlagBits::eViewport)
+                    .set_viewport(0, vuk::Rect2D::framebuffer())
+                    .set_scissor(0, vuk::Rect2D::framebuffer())
+                    .broadcast_color_blend(vuk::BlendPreset::eOff)
+                    .set_rasterization({.cullMode = vuk::CullModeFlagBits::eNone})
+                    .bind_sampler(0, 0, vuk::LinearSamplerClamped)
+                    .bind_image(0, 0, pbr_image_name)
+                    .bind_sampler(0, 3, vuk::LinearSamplerClamped)
+                    .bind_image(0, 3, ssr_name)
+                    .bind_sampler(0, 4, {})
+                    .bind_image(0, 4, bloom_name)
+                    .bind_buffer(0, 5, final_buffer)
+                    .draw(3, 1, 0, 0);
+    }
+  });
+
+  return create_scope<vuk::Future>(rg, "final_output");
 }
 
 void DefaultRenderPipeline::sky_transmittance_pass(const Ref<vuk::RenderGraph>& rg) {
@@ -667,9 +660,7 @@ void DefaultRenderPipeline::depth_pre_pass(const Ref<vuk::RenderGraph>& rg, vuk:
 
       for (uint32_t i = 0; i < mesh_draw_list.size(); i++) {
         const auto& mesh = mesh_draw_list[i];
-        if (mesh.base_node) {
-          mesh.mesh_base->bind_index_buffer(command_buffer)->bind_vertex_buffer(command_buffer);
-        }
+        mesh.mesh_base->bind_index_buffer(command_buffer)->bind_vertex_buffer(command_buffer);
 
         const auto node = mesh.mesh_base->linear_nodes[mesh.node_index];
         for (const auto primitive : node->mesh_data->primitives) {
@@ -719,21 +710,11 @@ void DefaultRenderPipeline::geomerty_pass(const Ref<vuk::RenderGraph>& rg,
 
   const Mat4 inv_cam = inverse(m_renderer_context.current_camera->get_projection_matrix() * m_renderer_context.current_camera->get_view_matrix());
 
-  constexpr Vec4 ndc[] = {
-    Vec4(-1.0f, -1.0f, 1.0f, 1.0f), // bottom-left
-    Vec4(1.0f, -1.0f, 1.0f, 1.0f),  // bottom-right
-    Vec4(-1.0f, 1.0f, 1.0f, 1.0f),  // top-left
-    Vec4(1.0f, 1.0f, 1.0f, 1.0f)    // top-right
-  };
-
-  for (int i = 0; i < 4; ++i) {
-    Vec4 inv_corner = inv_cam * ndc[i];
-    m_renderer_data.sun_data.frustum[i] = inv_corner / inv_corner.w;
-  }
-
-  m_renderer_data.sun_data.sun_dir = m_renderer_data.eye_view_data.sun_direction;
+  m_renderer_data.sun_data.inv_vp = inv_cam;
   auto [sun_const_buff, sun_const_buff_fut] = create_buffer(frame_allocator, vuk::MemoryUsage::eCPUtoGPU, vuk::DomainFlagBits::eTransferOnGraphics, std::span(&m_renderer_data.sun_data, 1));
-  auto& sun_const_buffer = *sun_const_buff;
+  auto& sky_frustum_buffer = *sun_const_buff;
+
+  rg->attach_buffer("sky_frustum_buffer", sky_frustum_buffer);
 
   auto [gtao_resource, gtao_name] = get_attachment_or_black_uint("gtao_final_output", RendererCVar::cvar_gtao_enable.get());
 
@@ -742,11 +723,11 @@ void DefaultRenderPipeline::geomerty_pass(const Ref<vuk::RenderGraph>& rg,
     "depth_output"_image >> vuk::eDepthStencilRead,
     "shadow_array_output"_image >> vuk::eFragmentSampled,
     "sky_transmittance_lut+"_image >> vuk::eFragmentSampled,
+    "sky_multiscatter_lut+"_image >> vuk::eFragmentSampled,
+    "sky_view_buffer"_buffer >> vuk::eMemoryRead,
+    "sky_frustum_buffer"_buffer >> vuk::eMemoryRead,
     gtao_resource
   };
-
-  if (!is_cube_map_pipeline)
-    resources.emplace_back("sky_view_lut+", vuk::Resource::Type::eImage, vuk::eFragmentSampled);
 
   auto irradiance_att = vuk::ImageAttachment{
     .image = *irradiance_image,
@@ -792,7 +773,7 @@ void DefaultRenderPipeline::geomerty_pass(const Ref<vuk::RenderGraph>& rg,
   rg->add_pass({
     .name = "geomerty_pass",
     .resources = resources,
-    .execute = [this, vs_buffer, scene_lights_buffer, shadow_buffer, pbr_buffer, mat_buffer, sun_const_buffer,
+    .execute = [this, vs_buffer, scene_lights_buffer, shadow_buffer, pbr_buffer, mat_buffer ,
       gtao_name, brdf_att, prefilter_att, irradiance_att](vuk::CommandBuffer& command_buffer) {
       if (is_cube_map_pipeline) {
         auto view = m_renderer_context.current_camera->get_view_matrix();
@@ -818,16 +799,9 @@ void DefaultRenderPipeline::geomerty_pass(const Ref<vuk::RenderGraph>& rg,
 
         m_cube->bind_index_buffer(command_buffer)
               ->bind_vertex_buffer(command_buffer);
-        command_buffer.draw_indexed(m_cube->indices.size(), 1, 0, 0, 0);
+        command_buffer.draw_indexed(m_cube->index_count, 1, 0, 0, 0);
       }
       else {
-        constexpr auto sampler = vuk::SamplerCreateInfo{
-          .magFilter = vuk::Filter::eLinear,
-          .minFilter = vuk::Filter::eLinear,
-          .addressModeU = vuk::SamplerAddressMode::eRepeat,
-          .addressModeV = vuk::SamplerAddressMode::eClampToEdge,
-          .addressModeW = vuk::SamplerAddressMode::eClampToEdge
-        };
         command_buffer.set_dynamic_state(vuk::DynamicStateFlagBits::eScissor | vuk::DynamicStateFlagBits::eViewport)
                       .set_viewport(0, vuk::Rect2D::framebuffer())
                       .set_scissor(0, vuk::Rect2D::framebuffer())
@@ -839,9 +813,11 @@ void DefaultRenderPipeline::geomerty_pass(const Ref<vuk::RenderGraph>& rg,
                        })
                       .set_rasterization({.cullMode = vuk::CullModeFlagBits::eNone})
                       .bind_graphics_pipeline("sky_view_final_pipeline")
-                      .bind_image(0, 0, "sky_view_lut+")
-                      .bind_sampler(0, 0, sampler)
-                      .bind_buffer(0, 1, sun_const_buffer)
+                      .bind_buffer(0, 0, "sky_view_buffer")
+                      .bind_buffer(0, 1, "sky_frustum_buffer")
+                      .bind_image(0, 2, "sky_transmittance_lut+")
+                      .bind_image(0, 3, "sky_multiscatter_lut+")
+                      .bind_sampler(0, 4, vuk::LinearSamplerClamped)
                       .draw(3, 1, 0, 0);
       }
 
@@ -883,9 +859,7 @@ void DefaultRenderPipeline::geomerty_pass(const Ref<vuk::RenderGraph>& rg,
       for (uint32_t i = 0; i < mesh_draw_list.size(); i++) {
         auto& mesh = mesh_draw_list[i];
 
-        if (mesh.base_node) {
-          mesh.mesh_base->bind_index_buffer(command_buffer)->bind_vertex_buffer(command_buffer);
-        }
+        mesh.mesh_base->bind_index_buffer(command_buffer)->bind_vertex_buffer(command_buffer);
 
         std::vector<Mesh::Primitive*> transparent_primitives = {};
 
@@ -1235,7 +1209,7 @@ void DefaultRenderPipeline::apply_grid(vuk::RenderGraph* rg, const vuk::Name dst
   grid_fragment_data.camera_pos = Vec4(m_renderer_context.current_camera->get_position(), 0.0);
   grid_fragment_data.near = m_renderer_context.current_camera->get_near();
   grid_fragment_data.far = m_renderer_context.current_camera->get_far();
-  grid_fragment_data.max_distance = 10000.0f;
+  grid_fragment_data.max_distance = RendererCVar::cvar_draw_grid_distance.get();
 
   auto [fgrid_buff, fgrid_buff_fut] = create_buffer(frame_allocator, vuk::MemoryUsage::eCPUtoGPU, vuk::DomainFlagBits::eTransferOnGraphics, std::span(&grid_fragment_data, 1));
   auto& grid_fragment_buffer = *fgrid_buff;
@@ -1264,7 +1238,7 @@ void DefaultRenderPipeline::apply_grid(vuk::RenderGraph* rg, const vuk::Name dst
       m_quad->bind_index_buffer(command_buffer)
             ->bind_vertex_buffer(command_buffer);
 
-      Renderer::draw_indexed(command_buffer, m_quad->indices.size(), 1, 0, 0, 0);
+      Renderer::draw_indexed(command_buffer, m_quad->index_count, 1, 0, 0, 0);
     }
   });
 }
@@ -1294,9 +1268,7 @@ void DefaultRenderPipeline::cascaded_shadow_pass(const Ref<vuk::RenderGraph>& rg
                       .bind_buffer(0, 0, shadow_buffer);
 
         for (const auto& mesh : mesh_draw_list) {
-          if (mesh.base_node) {
-            mesh.mesh_base->bind_index_buffer(command_buffer)->bind_vertex_buffer(command_buffer);
-          }
+          mesh.mesh_base->bind_index_buffer(command_buffer)->bind_vertex_buffer(command_buffer);
 
           const auto node = mesh.mesh_base->linear_nodes[mesh.node_index];
           for (const auto primitive : node->mesh_data->primitives) {
@@ -1324,15 +1296,6 @@ void DefaultRenderPipeline::generate_prefilter(vuk::Allocator& allocator) {
   OX_SCOPED_ZONE;
   vuk::Compiler compiler{};
 
-  const auto rg = create_ref<vuk::RenderGraph>("cubemap_blurring");
-
-  rg->attach_image("cubemap", vuk::ImageAttachment::from_texture(cube_map->get_texture()));
-  auto [diverged_image, diverged_image_output] = vuk::diverge_image_layers(rg, "cubemap_image", 6);
-
-  for (uint32_t i = 0; i < 6; i++) {
-    RendererCommon::apply_blur(rg, "", diverged_image[i], diverged_image_output[i]);
-  }
-
   auto [brdf_img, brdf_fut] = Prefilter::generate_brdflut();
   brdf_fut.wait(allocator, compiler);
   brdf_image = std::move(brdf_img);
@@ -1357,7 +1320,7 @@ void DefaultRenderPipeline::update_parameters(ProbeChangeEvent& e) {
   ubo.vignette_color.a = component.vignette_intensity;
 }
 
-void DefaultRenderPipeline::sky_view_lut_pass(const Ref<vuk::RenderGraph>& rg) {
+void DefaultRenderPipeline::sky_view_lut_pass(const Ref<vuk::RenderGraph>& rg) const {
   OX_SCOPED_ZONE;
 
   const auto attachment = vuk::ImageAttachment{

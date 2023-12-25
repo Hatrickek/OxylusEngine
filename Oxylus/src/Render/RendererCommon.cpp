@@ -103,7 +103,7 @@ std::pair<vuk::Unique<vuk::Image>, vuk::Future> RendererCommon::generate_cubemap
 
       cube->bind_vertex_buffer(cbuf);
       cube->bind_index_buffer(cbuf);
-      cbuf.draw_indexed(cube->indices.size(), 6, 0, 0, 0);
+      cbuf.draw_indexed(cube->index_count, 6, 0, 0, 0);
     }
   });
 

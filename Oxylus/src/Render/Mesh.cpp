@@ -53,6 +53,11 @@ Mesh::Mesh(const std::vector<Vertex>& vertices, const std::vector<uint32_t>& ind
 
   iBufferFut.wait(*context->superframe_allocator, compiler);
   index_buffer = std::move(iBuffer);
+
+  index_count = (uint32_t)indices.size();
+
+  this->vertices.clear();
+  this->indices.clear();
 }
 
 Mesh::~Mesh() {
@@ -140,20 +145,30 @@ void Mesh::load_from_file(const std::string& file_path, int file_loading_flags, 
 
   get_scene_dimensions();
 
-  auto context = VulkanContext::get();
+  auto ctx = VulkanContext::get();
   auto compiler = vuk::Compiler{};
 
-  auto [vBuffer, vBufferFut] = create_buffer(*context->superframe_allocator, vuk::MemoryUsage::eGPUonly, vuk::DomainFlagBits::eTransferOnGraphics, std::span(vertices));
+  auto [vBuffer, vBufferFut] = create_buffer(*ctx->superframe_allocator, vuk::MemoryUsage::eGPUonly, vuk::DomainFlagBits::eTransferOnGraphics, std::span(vertices));
 
-  vBufferFut.wait(*context->superframe_allocator, compiler);
+  vBufferFut.wait(*ctx->superframe_allocator, compiler);
   vertex_buffer = std::move(vBuffer);
 
-  auto [iBuffer, iBufferFut] = create_buffer(*context->superframe_allocator, vuk::MemoryUsage::eGPUonly, vuk::DomainFlagBits::eTransferOnGraphics, std::span(indices));
+  const VkBufferDeviceAddressInfo address_info_vertex{.sType = VK_STRUCTURE_TYPE_BUFFER_DEVICE_ADDRESS_INFO, .buffer = vertex_buffer->buffer};
+  vertex_buffer_device_address = ctx->context->vkGetBufferDeviceAddress(ctx->device, &address_info_vertex);
 
-  iBufferFut.wait(*context->superframe_allocator, compiler);
+  auto [iBuffer, iBufferFut] = create_buffer(*ctx->superframe_allocator, vuk::MemoryUsage::eGPUonly, vuk::DomainFlagBits::eTransferOnGraphics, std::span(indices));
+
+  iBufferFut.wait(*ctx->superframe_allocator, compiler);
   index_buffer = std::move(iBuffer);
 
+  const VkBufferDeviceAddressInfo address_info_index{.sType = VK_STRUCTURE_TYPE_BUFFER_DEVICE_ADDRESS_INFO, .buffer = index_buffer->buffer};
+  index_buffer_device_address = ctx->context->vkGetBufferDeviceAddress(ctx->device, &address_info_index);
+
   m_textures.clear();
+  vertices.clear();
+
+  index_count = (uint32_t)indices.size();
+  indices.clear();
 
   OX_CORE_INFO("Mesh file loaded: ({}) {}, {} materials, {} animations", timer.get_elapsed_ms(), name.c_str(), gltf_model.materials.size(), animations.size());
 }

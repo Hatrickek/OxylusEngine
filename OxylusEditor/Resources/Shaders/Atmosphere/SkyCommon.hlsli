@@ -5,6 +5,10 @@
 
 static const float M_TO_SKY_UNIT = 0.001f; // Engine units are in meters
 static const float SKY_UNIT_TO_M = rcp(M_TO_SKY_UNIT);
+static const float AP_START_OFFSET_KM = 0.1f;
+
+static const float2 MULTI_SCATTERING_LUT_RES = float2(32, 32);
+static const float2 SKY_VIEW_LUT_RES = float2(192, 104);
 
 struct AtmosphereParameters {
   float2 padding0;
@@ -272,6 +276,39 @@ void UvToSkyViewLutParams(AtmosphereParameters atmosphere, out float viewZenithC
   lightViewCosAngle = -(coord * 2.0 - 1.0);
 }
 
+void SkyViewLutParamsToUv(AtmosphereParameters atmosphere, bool intersectGround, float viewZenithCosAngle, float lightViewCosAngle, float viewHeight, out float2 uv) {
+  float Vhorizon = sqrt(viewHeight * viewHeight - atmosphere.bottomRadius * atmosphere.bottomRadius);
+  float CosBeta = Vhorizon / viewHeight; // GroundToHorizonCos
+  float Beta = acos(CosBeta);
+  float ZenithHorizonAngle = PI - Beta;
+
+  if (!intersectGround) {
+    float coord = acos(viewZenithCosAngle) / ZenithHorizonAngle;
+    coord = 1.0 - coord;
+#if NONLINEARSKYVIEWLUT
+    coord = sqrt(abs(coord));
+#endif
+    coord = 1.0 - coord;
+    uv.y = coord * 0.5f;
+  }
+  else {
+    float coord = (acos(viewZenithCosAngle) - ZenithHorizonAngle) / Beta;
+#if NONLINEARSKYVIEWLUT
+    coord = sqrt(abs(coord));
+#endif
+    uv.y = coord * 0.5f + 0.5f;
+  }
+
+  {
+    float coord = -lightViewCosAngle * 0.5f + 0.5f;
+    coord = sqrt(coord);
+    uv.x = coord;
+  }
+
+  // Constrain uvs to valid sub texel range (avoid zenith derivative issue making LUT usage visible)
+  uv = float2(FromUnitToSubUvs(uv.x, SKY_VIEW_LUT_RES.x), FromUnitToSubUvs(uv.y, SKY_VIEW_LUT_RES.y));
+}
+
 float3 GetTransmittance(float bottomRadius, float topRadius, float pHeight, float sunZenithCosAngle, Texture2D<float4> transmittanceLutTexture, SamplerState linearSampler) {
   float2 uv;
   LutTransmittanceParamsToUv(bottomRadius, topRadius, pHeight, sunZenithCosAngle, uv);
@@ -280,9 +317,9 @@ float3 GetTransmittance(float bottomRadius, float topRadius, float pHeight, floa
   return TransmittanceToSun;
 }
 
-float3 GetMultipleScattering(AtmosphereParameters atmosphere, Texture2D<float4> multiScatteringLUTTexture, SamplerState linearSampler, float2 multiScatteringLUTRes, float3 scattering, float3 extinction, float3 worldPosition, float viewZenithCosAngle) {
+float3 GetMultipleScattering(AtmosphereParameters atmosphere, Texture2D<float4> multiScatteringLUTTexture, SamplerState linearSampler, float3 scattering, float3 extinction, float3 worldPosition, float viewZenithCosAngle) {
   float2 uv = saturate(float2(viewZenithCosAngle * 0.5f + 0.5f, (length(worldPosition) - atmosphere.bottomRadius) / (atmosphere.topRadius - atmosphere.bottomRadius)));
-  uv = float2(FromUnitToSubUvs(uv.x, multiScatteringLUTRes.x), FromUnitToSubUvs(uv.y, multiScatteringLUTRes.y));
+  uv = float2(FromUnitToSubUvs(uv.x, MULTI_SCATTERING_LUT_RES.x), FromUnitToSubUvs(uv.y, MULTI_SCATTERING_LUT_RES.y));
 
   float3 multiScatteredLuminance = multiScatteringLUTTexture.SampleLevel(linearSampler, uv, 0).rgb;
   return multiScatteredLuminance;
@@ -424,13 +461,11 @@ SingleScatteringResult IntegrateScatteredLuminance(
     float sampleCount = sampleCountIni;
     float sampleCountFloor = sampleCountIni;
     float tMaxFloor = tMax;
-#if 0
     if (variableSampleCount) {
-      sampleCount = lerp(atmosphere.rayMarchMinMaxSPP.x, atmosphere.rayMarchMinMaxSPP.y, saturate(tMax * atmosphere.distanceSPPMaxInv));
+      sampleCount = lerp(atmosphereParameters.rayMarchMinMaxSPP.x, atmosphereParameters.rayMarchMinMaxSPP.y, saturate(tMax * atmosphereParameters.distanceSPPMaxInv));
       sampleCountFloor = floor(sampleCount);
       tMaxFloor = tMax * sampleCountFloor / sampleCount; // rescale tMax to map to the last entire step segment.
     }
-#endif
     float dt = tMax / sampleCount;
 
     // Unlike volumetric fog lighting, we only care about the outmost cascade. This improves performance where we can't see the inner cascades anyway
@@ -552,8 +587,7 @@ SingleScatteringResult IntegrateScatteredLuminance(
       float3 multiScatteredLuminance = 0.0f;
 #ifdef HAS_MULTISCATTER_LUT
       if (multiScatteringApprox) {
-        const float2 multiScatteringLUTRes = float2(32, 32);
-        multiScatteredLuminance = GetMultipleScattering(atmosphereParameters, multiScatteringLUT, linearSampler, multiScatteringLUTRes, medium.scattering, medium.extinction, P, sunZenithCosAngle);
+        multiScatteredLuminance = GetMultipleScattering(atmosphereParameters, multiScatteringLUT, linearSampler, medium.scattering, medium.extinction, P, sunZenithCosAngle);
       }
 #endif
 
@@ -620,4 +654,70 @@ SingleScatteringResult IntegrateScatteredLuminance(
     result.transmittance = throughput;
   }
   return result;
+}
+
+float3 GetAtmosphereTransmittance(float3 worldPosition, float3 worldDirection, AtmosphereParameters atmosphere, Texture2D<float4> transmittanceLutTexture, SamplerState linearSampler) {
+  // If the worldDirection is occluded from this virtual planet, then return.
+  // We do this due to the low resolution LUT, where the stored zenith to horizon never reaches black, to prevent linear interpolation artefacts.
+  // At the most shadowed point of the LUT, pure black with earth shadow is never reached.
+  float2 sol = RaySphereIntersect(worldPosition, worldDirection, float3(0.0f, 0.0f, 0.0f), atmosphere.bottomRadius);
+  if (sol.x > 0.0f || sol.y > 0.0f) {
+    return 0.0f;
+  }
+
+  const float pHeight = length(worldPosition);
+  const float3 UpVector = worldPosition / pHeight;
+  const float SunZenithCosAngle = dot(worldDirection, UpVector);
+
+  float2 uv;
+  LutTransmittanceParamsToUv(atmosphere.bottomRadius, atmosphere.topRadius, pHeight, SunZenithCosAngle, uv);
+
+  float3 TransmittanceToSun = transmittanceLutTexture.SampleLevel(linearSampler, uv, 0).rgb;
+  return TransmittanceToSun;
+}
+
+float3 GetSunLuminance(float3 worldPosition,
+                       float3 worldDirection,
+                       float3 sunDirection,
+                       float3 sunIlluminance,
+                       AtmosphereParameters atmosphere,
+                       Texture2D<float4> transmittanceLutTexture,
+                       SamplerState linearSampler) {
+  //float sunApexAngleDegree = 0.545; // Angular diameter of sun to earth from sea level, see https://en.wikipedia.org/wiki/Solid_angle
+  const float sunApexAngleDegree = 2.4; // Modified sun size
+  const float sunHalfApexAngleRadian = 0.5 * sunApexAngleDegree * PI / 180.0;
+  const float sunCosHalfApexAngle = cos(sunHalfApexAngleRadian);
+
+  float3 retval = 0;
+
+  const float t = RaySphereIntersectNearest(worldPosition, worldDirection, float3(0.0f, 0.0f, 0.0f), atmosphere.bottomRadius);
+  // no intersection
+  if (t < 0.0f) {
+    const float VdotL = dot(worldDirection, normalize(sunDirection)); // weird... the sun disc shrinks near the horizon if we don't normalize sun direction
+    if (VdotL > sunCosHalfApexAngle) {
+      // Edge fade
+      const float halfCosHalfApex = sunCosHalfApexAngle + (1.0f - sunCosHalfApexAngle) * 0.25; // Start fading when at 75% distance from light disk center
+      const float weight = 1.0 - saturate((halfCosHalfApex - VdotL) / (halfCosHalfApex - sunCosHalfApexAngle));
+
+      retval = weight * sunIlluminance;
+    }
+
+#if STARS // TODO
+    if (GetWeather().stars > 0) {
+      float3 stars_direction = mul(worldDirection, (float3x3)GetWeather().stars_rotation);
+      float stars_visibility = pow(saturate(1 - sunDirection.y), 2);
+      float stars_density_at_maximum = lerp(22, 8, GetWeather().stars);
+      float stars_threshold = lerp(32, stars_density_at_maximum, stars_visibility); // modifies the number of stars that are visible
+      float stars_exposure = lerp(0, 512, stars_visibility);                        // modifies the overall strength of the stars
+      float stars = saturate(pow(noise_gradient_3D(stars_direction * 300), stars_threshold)) * stars_exposure;
+      stars *= lerp(0.4, 1.4, noise_gradient_3D(stars_direction * 256 + GetTime())); // time based flickering
+      retval += stars;
+    }
+#endif
+
+    const float3 atmosphereTransmittance = GetAtmosphereTransmittance(worldPosition, worldDirection, atmosphere, transmittanceLutTexture, linearSampler);
+    retval *= atmosphereTransmittance;
+  }
+
+  return retval;
 }

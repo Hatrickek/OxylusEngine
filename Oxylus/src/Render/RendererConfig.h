@@ -11,6 +11,7 @@ inline AutoCVar_Int cvar_shadows_size("rr.shadows_size", "cascaded shadow map si
 inline AutoCVar_Int cvar_shadows_pcf("rr.shadows_pcf", "use pcf in cascaded shadows", 1);
 
 inline AutoCVar_Int cvar_draw_grid("rr.draw_grid", "draw editor scene grid", 1);
+inline AutoCVar_Float cvar_draw_grid_distance("rr.grid_distance", "max grid distance", 20.f);
 inline AutoCVar_Int cvar_draw_bounding_boxes("rr.draw_bounding_boxes", "draw mesh bounding boxes", 0);
 inline AutoCVar_Int cvar_enable_debug_renderer("rr.debug_renderer", "draw debug shapes", 1);
 

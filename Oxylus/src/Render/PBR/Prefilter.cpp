@@ -140,7 +140,7 @@ std::pair<vuk::Unique<vuk::Image>, vuk::Future> Prefilter::generate_irradiance_c
 
       skybox->bind_vertex_buffer(command_buffer);
       skybox->bind_index_buffer(command_buffer);
-      command_buffer.draw_indexed(skybox->indices.size(), 6, 0, 0, 0);
+      command_buffer.draw_indexed(skybox->index_count, 6, 0, 0, 0);
     }
   });
 
@@ -218,7 +218,7 @@ std::pair<vuk::Unique<vuk::Image>, vuk::Future> Prefilter::generate_prefiltered_
 
       skybox->bind_vertex_buffer(command_buffer);
       skybox->bind_index_buffer(command_buffer);
-      command_buffer.draw_indexed(skybox->indices.size(), 6, 0, 0, 0);
+      command_buffer.draw_indexed(skybox->index_count, 6, 0, 0, 0);
     }
   });
 
