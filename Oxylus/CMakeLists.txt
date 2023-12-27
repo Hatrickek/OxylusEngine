@@ -209,7 +209,7 @@ target_link_libraries(${PROJECT_NAME} PUBLIC tinygltf)
 # FMT
 CPMAddPackage("gh:fmtlib/fmt#10.1.1")
 target_link_libraries(${PROJECT_NAME} PUBLIC fmt::fmt)
-set_target_properties(fmt PROPERTIES FOLDER "Vendor/${_target}")
+set_target_properties(fmt PROPERTIES FOLDER "Vendor")
 
 # fmtlog
 CPMAddPackage(
@@ -309,7 +309,7 @@ CPMAddPackage(
         "TRACY_STATIC ON"
         "TRACY_VK_USE_SYMBOL_TABLE ON"
         "TRACY_NO_FRAME_IMAGE ON"
-        "TRACY_ON_DEMAND ON"
+        "TRACY_ON_DEMAND OFF"
 )
 target_link_libraries(${PROJECT_NAME} PUBLIC Tracy::TracyClient)
 set_targets_static_and_folder(TracyClient)
@@ -338,5 +338,18 @@ target_include_directories(${PROJECT_NAME} PUBLIC ${sol2_SOURCE_DIR}/include)
 target_link_libraries(sol2 INTERFACE $<BUILD_INTERFACE:${lua_static}>)
 target_link_libraries(${PROJECT_NAME} PUBLIC sol2 lua_static)
 set_targets_static(lua_static)
-set_target_properties(lua_static PROPERTIES FOLDER "Vendor/${_target}")
+set_target_properties(lua_static PROPERTIES FOLDER "Vendor")
 
+# enkiTS
+CPMAddPackage(
+    NAME enkiTS
+    GITHUB_REPOSITORY dougbinks/enkiTS
+    GIT_TAG master
+    OPTIONS
+        "ENKITS_BUILD_C_INTERFACE OFF"
+        "ENKITS_BUILD_EXAMPLES OFF"
+)
+target_include_directories(${PROJECT_NAME} PUBLIC ${enkiTS_SOURCE_DIR}/src)
+target_link_libraries(${PROJECT_NAME} PUBLIC enkiTS)
+set_target_properties(enkiTS PROPERTIES FOLDER "Vendor")
+set_targets_static(enkiTS)

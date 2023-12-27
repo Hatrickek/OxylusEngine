@@ -15,6 +15,7 @@
 
 #include "Scripting/LuaManager.h"
 
+#include "Thread/TaskScheduler.h"
 #include "Thread/ThreadManager.h"
 
 #include "Utils/Profiler.h"
@@ -28,6 +29,8 @@ bool Core::init(const AppSpec& spec) {
     Application::get()->close();
     return false;
   }
+
+  TaskScheduler::init();
 
   FileDialogs::init_nfd();
   Project::create_new();
@@ -55,5 +58,7 @@ void Core::shutdown() {
   ThreadManager::get()->wait_all_threads();
 
   Window::close_window(Window::get_glfw_window());
+
+  TaskScheduler::shutdown();
 }
 }
