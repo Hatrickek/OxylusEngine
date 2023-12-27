@@ -6,6 +6,8 @@
 
 #include "Core/Types.h"
 
+#include "Utils/Profiler.h"
+
 namespace Oxylus::LuaBindings {
 #define SET_MATH_FUNCTIONS(var, type)                                                                            \
 {                                                                                                                \
@@ -18,6 +20,7 @@ namespace Oxylus::LuaBindings {
 }
 
 void bind_lua_math(const Ref<sol::state>& state) {
+  OX_SCOPED_ZONE;
   auto vec2 = state->new_usertype<Vec2>("Vec2", sol::constructors<Vec2(float, float)>());
   SET_MATH_FUNCTIONS(vec2, Vec2)
   vec2["x"] = &Vec2::x;

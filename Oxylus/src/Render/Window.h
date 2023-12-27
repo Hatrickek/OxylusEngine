@@ -47,7 +47,6 @@ private:
     bool is_fullscreen_borderless = false;
   } s_window_data;
 
-  static void init_vulkan_window(const AppSpec& spec);
   static GLFWwindow* s_window_handle;
 };
 }

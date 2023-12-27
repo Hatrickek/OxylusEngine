@@ -132,7 +132,7 @@ private:
   void sky_transmittance_pass(const Ref<vuk::RenderGraph>& rg);
   void sky_multiscatter_pass(const Ref<vuk::RenderGraph>& rg);
   void depth_pre_pass(const Ref<vuk::RenderGraph>& rg, vuk::Buffer& vs_buffer, const std::unordered_map<uint32_t, uint32_t>&, vuk::Buffer& mat_buffer) const;
-  void geomerty_pass(const Ref<vuk::RenderGraph>& rg, vuk::Allocator& frame_allocator, vuk::Buffer& vs_buffer, const std::unordered_map<uint32_t, uint32_t>&, vuk::Buffer& mat_buffer, vuk::Buffer& shadow_buffer, vuk::Buffer& scene_lights_buffer);
+  void geometry_pass(const Ref<vuk::RenderGraph>& rg, vuk::Allocator& frame_allocator, vuk::Buffer& vs_buffer, const std::unordered_map<uint32_t, uint32_t>&, vuk::Buffer& mat_buffer, vuk::Buffer& shadow_buffer, vuk::Buffer& scene_lights_buffer);
   void apply_fxaa(vuk::RenderGraph* rg, vuk::Name src, vuk::Name dst, vuk::Buffer& fxaa_buffer);
   void cascaded_shadow_pass(const Ref<vuk::RenderGraph>& rg, vuk::Buffer& shadow_buffer) const;
   void gtao_pass(vuk::Allocator& frame_allocator, const Ref<vuk::RenderGraph>& rg);

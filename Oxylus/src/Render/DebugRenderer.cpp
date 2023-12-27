@@ -13,6 +13,7 @@ namespace Oxylus {
 DebugRenderer* DebugRenderer::instance = nullptr;
 
 void DebugRenderer::init() {
+  OX_SCOPED_ZONE;
   if (instance)
     return;
 

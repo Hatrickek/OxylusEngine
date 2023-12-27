@@ -31,6 +31,6 @@ protected:
 
   TimeStamp m_start;     // Start of timer
   TimeStamp m_frequency; // Ticks Per Second
-  TimeStamp m_last_time;  // Last time GetTimedMS was called
+  TimeStamp m_last_time; // Last time GetTimedMS was called
 };
 }

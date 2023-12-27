@@ -12,21 +12,28 @@
 #include "Render/DebugRenderer.h"
 #include "Render/DefaultRenderPipeline.h"
 
+#include "Thread/TaskScheduler.h"
+
 namespace Oxylus {
 Renderer::RendererContext Renderer::renderer_context;
 RendererConfig Renderer::renderer_config;
 Renderer::RendererStats Renderer::renderer_stats;
 
 void Renderer::init() {
+  OX_SCOPED_ZONE;
+
   // Save/Load renderer config
-  if (!RendererConfig::get()->load_config("renderer.oxconfig"))
+  ADD_TASK_TO_PIPE(,
+    if (!RendererConfig::get()->load_config("renderer.oxconfig"))
     RendererConfig::get()->save_config("renderer.oxconfig");
+  );
 
-  TextureAsset::create_blank_texture();
-  TextureAsset::create_white_texture();
+  ADD_TASK_TO_PIPE(, TextureAsset::create_blank_texture(););
+  ADD_TASK_TO_PIPE(, TextureAsset::create_white_texture(););
 
-  // Debug renderer
-  DebugRenderer::init();
+  ADD_TASK_TO_PIPE(, DebugRenderer::init(););
+
+  TaskScheduler::get()->WaitforAll();
 }
 
 void Renderer::shutdown() {

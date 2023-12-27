@@ -8,6 +8,7 @@
 
 #include "Utils/EmbeddedMissingTexture.h"
 #include "Utils/FileSystem.h"
+#include "Utils/Profiler.h"
 
 namespace Oxylus {
 Ref<TextureAsset> TextureAsset::s_purple_texture = nullptr;
@@ -27,6 +28,7 @@ TextureAsset::TextureAsset(const TextureLoadInfo& info) {
 TextureAsset::~TextureAsset() = default;
 
 void TextureAsset::create_texture(const uint32_t x, const uint32_t y, void* data, const vuk::Format format, bool generate_mips) {
+  OX_SCOPED_ZONE;
   auto [tex, tex_fut] = vuk::create_texture(*VulkanContext::get()->superframe_allocator, format, vuk::Extent3D{x, y, 1u}, data, generate_mips);
   texture = std::move(tex);
 
@@ -82,11 +84,13 @@ vuk::ImageAttachment TextureAsset::as_attachment() const {
 }
 
 void TextureAsset::create_blank_texture() {
+  OX_SCOPED_ZONE;
   s_purple_texture = create_ref<TextureAsset>();
   s_purple_texture->create_texture(MissingTextureWidth, MissingTextureHeight, MissingTexture, vuk::Format::eR8G8B8A8Unorm, false);
 }
 
 void TextureAsset::create_white_texture() {
+  OX_SCOPED_ZONE;
   s_white_texture = create_ref<TextureAsset>();
   char white_texture_data[16 * 16 * 4];
   memset(white_texture_data, 0xff, 16 * 16 * 4);

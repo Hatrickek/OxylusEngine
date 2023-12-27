@@ -34,6 +34,7 @@ struct _ECS_export_view<entt::type_list<Component...>, entt::type_list<Exclude..
 }
 
 void bind_lua_ecs(const Ref<sol::state>& state) {
+  OX_SCOPED_ZONE;
   state->new_usertype<entt::registry>("EnttRegistry");
   state->new_usertype<Entity>("Entity", sol::constructors<sol::types<entt::entity, Scene*>>());
 

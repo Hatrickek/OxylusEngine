@@ -4,12 +4,16 @@
 
 #include <fmt/color.h>
 
+#include "Profiler.h"
+
 namespace Oxylus {
 std::vector<std::shared_ptr<ExternalSink>> Log::external_sinks = {};
 
 void Log::init() {
+  OX_SCOPED_ZONE;
   if (!std::filesystem::exists("logs"))
     std::filesystem::create_directory("logs");
+  fmtlog::setLogLevel(fmtlog::DBG);
   fmtlog::setLogCB(logcb, fmtlog::DBG);
   fmtlog::setLogFile("logs/oxylus_log.txt", true);
   fmtlog::setHeaderPattern("{HMS} | {l} | {s:<16} | ");
@@ -34,7 +38,7 @@ void Log::logcb(int64_t ns,
       break;
     }
     case fmtlog::LogLevel::INF: {
-      color = fg(fmt::color::green);
+      color = fg(fmt::color::lime_green);
       break;
     }
     case fmtlog::LogLevel::WRN: {

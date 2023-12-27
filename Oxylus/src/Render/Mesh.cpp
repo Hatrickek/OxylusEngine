@@ -153,16 +153,10 @@ void Mesh::load_from_file(const std::string& file_path, int file_loading_flags, 
   vBufferFut.wait(*ctx->superframe_allocator, compiler);
   vertex_buffer = std::move(vBuffer);
 
-  const VkBufferDeviceAddressInfo address_info_vertex{.sType = VK_STRUCTURE_TYPE_BUFFER_DEVICE_ADDRESS_INFO, .buffer = vertex_buffer->buffer};
-  vertex_buffer_device_address = ctx->context->vkGetBufferDeviceAddress(ctx->device, &address_info_vertex);
-
   auto [iBuffer, iBufferFut] = create_buffer(*ctx->superframe_allocator, vuk::MemoryUsage::eGPUonly, vuk::DomainFlagBits::eTransferOnGraphics, std::span(indices));
 
   iBufferFut.wait(*ctx->superframe_allocator, compiler);
   index_buffer = std::move(iBuffer);
-
-  const VkBufferDeviceAddressInfo address_info_index{.sType = VK_STRUCTURE_TYPE_BUFFER_DEVICE_ADDRESS_INFO, .buffer = index_buffer->buffer};
-  index_buffer_device_address = ctx->context->vkGetBufferDeviceAddress(ctx->device, &address_info_index);
 
   m_textures.clear();
   vertices.clear();

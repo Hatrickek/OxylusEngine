@@ -2,6 +2,14 @@
 #define TwoPI = 2 * PI;
 #define Epsilon = 0.00001;
 
+#define PBR_TEXTURES_COUNT 5
+
+#define ALBEDO_MAP_INDEX 0
+#define NORMAL_MAP_INDEX 1
+#define AO_MAP_INDEX 2
+#define PHYSICAL_MAP_INDEX 3
+#define EMISSIVE_MAP_INDEX 4
+
 struct Vertex {
   float3 Position;
   float3 Normal;

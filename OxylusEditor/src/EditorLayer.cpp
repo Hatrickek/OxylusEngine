@@ -51,6 +51,7 @@ EditorLayer::EditorLayer() : Layer("Editor Layer") {
 }
 
 void EditorLayer::on_attach(EventDispatcher& dispatcher) {
+  OX_SCOPED_ZONE;
   EditorTheme::init();
 
   m_editor_config.load_config();
@@ -363,6 +364,7 @@ bool EditorLayer::open_scene(const std::filesystem::path& path) {
 }
 
 void EditorLayer::load_default_scene(const std::shared_ptr<Scene>& scene) {
+  OX_SCOPED_ZONE;
   auto sun = scene->create_entity("Sun");
   sun.add_component<LightComponent>().type = LightComponent::LightType::Directional;
   sun.get_transform().rotation.y = glm::radians(60.f);

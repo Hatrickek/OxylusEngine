@@ -1,7 +1,16 @@
 ﻿#pragma once
-namespace enki {
-class TaskScheduler;
-}
+#include <functional>
+#include <TaskScheduler.h>
+
+#define COMBINE(X,Y) X##Y
+#define VAR_NAME(X,Y) COMBINE(X,Y)
+
+#define ADD_TASK_TO_PIPE(closure, func) \
+  auto VAR_NAME(task, __LINE__) = enki::TaskSet( \
+    [closure](enki::TaskSetPartition, uint32_t) { \
+      func\
+    }); \
+  TaskScheduler::get()->AddTaskSetToPipe(&VAR_NAME(task, __LINE__))
 
 namespace Oxylus {
 class TaskScheduler {
@@ -11,6 +20,8 @@ public:
 
   static void init();
   static void shutdown();
+
+  static void add_task_to_pipe(const std::function<void()>& func);
 
   static enki::TaskScheduler* get() { return instance->task_scheduler; }
 

@@ -48,6 +48,7 @@ Scene::Scene(const Scene& scene) {
 }
 
 void Scene::init(const Ref<RenderPipeline>& render_pipeline) {
+  OX_SCOPED_ZONE;
   // Renderer
   scene_renderer = create_ref<SceneRenderer>(this);
 

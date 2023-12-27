@@ -9,9 +9,6 @@
 #include "Render/RendererConfig.h"
 #include "Render/RenderPipeline.h"
 
-#include "Render/Mesh.h"
-#include "Render/RendererData.h"
-
 namespace Oxylus {
 class DefaultRenderPipeline;
 class SystemManager;

@@ -16,6 +16,7 @@ namespace Oxylus {
 Application* Application::instance = nullptr;
 
 Application::Application(AppSpec spec) : m_spec(std::move(spec)), system_manager(create_ref<SystemManager>()) {
+  OX_SCOPED_ZONE;
   if (instance) {
     OX_CORE_ERROR("Application already exists!");
     return;
@@ -52,6 +53,7 @@ Application::~Application() {
 }
 
 void Application::init_systems() {
+  OX_SCOPED_ZONE;
   for (const auto& system : system_manager->get_systems()) {
     system.second->set_dispatcher(&dispatcher);
     system.second->on_init();

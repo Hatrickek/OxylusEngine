@@ -21,6 +21,7 @@ EditorConfig::EditorConfig() {
 }
 
 void EditorConfig::load_config() {
+  OX_SCOPED_ZONE;
   const auto& content = FileUtils::read_file(EDITOR_CONFIG_FILE_NAME);
   if (content.empty())
     return;

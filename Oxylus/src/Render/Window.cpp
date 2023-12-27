@@ -14,10 +14,7 @@ Window::WindowData Window::s_window_data;
 GLFWwindow* Window::s_window_handle;
 
 void Window::init_window(const AppSpec& spec) {
-  init_vulkan_window(spec);
-}
-
-void Window::init_vulkan_window(const AppSpec& spec) {
+  OX_SCOPED_ZONE;
   glfwInit();
 
   constexpr auto window_width = 1600;

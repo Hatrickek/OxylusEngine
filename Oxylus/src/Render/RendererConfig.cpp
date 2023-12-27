@@ -6,6 +6,8 @@
 #include <fstream>
 #include <sstream>
 
+#include "Utils/Profiler.h"
+
 namespace Oxylus {
 RendererConfig* RendererConfig::s_instance = nullptr;
 
@@ -14,6 +16,7 @@ RendererConfig::RendererConfig() {
 }
 
 void RendererConfig::save_config(const char* path) const {
+  OX_SCOPED_ZONE;
   ryml::Tree tree;
 
   ryml::NodeRef node_root = tree.rootref();
@@ -87,6 +90,7 @@ void RendererConfig::save_config(const char* path) const {
 }
 
 bool RendererConfig::load_config(const char* path) {
+  OX_SCOPED_ZONE;
   const auto& content = FileUtils::read_file(path);
   if (content.empty())
     return false;

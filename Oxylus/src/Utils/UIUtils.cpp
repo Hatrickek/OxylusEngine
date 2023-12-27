@@ -1,4 +1,7 @@
 #include "UIUtils.h"
+
+#include "Profiler.h"
+
 #include "Render/Window.h"
 
 #include "Core/PlatformDetection.h"
@@ -11,6 +14,7 @@
 
 namespace Oxylus {
 void FileDialogs::init_nfd() {
+  OX_SCOPED_ZONE;
   NFD_Init();
 }
 

@@ -2,9 +2,12 @@
 
 #include "Materials.hlsli"
 // #define MANUAL_SRGB 1 // we have to tonemap some inputs to make this viable
-#include "Conversions.glsl"
+#include "Conversions.hlsli"
 
 #include <cstdint> // To shut the reshaper up
+
+[[vk::binding(0, 1)]] Texture2D TextureMaps[PBR_TEXTURES_COUNT];
+[[vk::binding(1, 1)]] SamplerState LinearSampler;
 
 [[vk::push_constant]] struct PushConstant {
   float4x4 ModelMatrix;
@@ -59,7 +62,7 @@ float3 GetNormal(VSLayout vs, Material mat, float2 uv) {
     return normalize(vs.Normal);
   }
 
-  float3 tangentNormal = normalize(texture(normalMap, uv).xyz * 2.0 - 1.0);
+  const float3 tangentNormal = normalize(TextureMaps[NORMAL_MAP_INDEX].Sample(LinearSampler, uv).rgb * 2.0 - 1.0);
 
   float3 q1 = ddx(vs.WorldPos);
   float3 q2 = ddy(vs.WorldPos);
@@ -71,7 +74,7 @@ float3 GetNormal(VSLayout vs, Material mat, float2 uv) {
   float3 B = -normalize(cross(N, T));
   float3x3 TBN = float3x3(T, B, N);
 
-  return normalize(TBN * tangentNormal);
+  return normalize(mul(TBN, tangentNormal));
 }
 
 float4x4 BiasMatrix = float4x4(0.5, 0.0, 0.0, 0.0, 0.0, 0.5, 0.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.5, 0.5, 0.0, 1.0);
@@ -143,8 +146,8 @@ void GetEnergyCompensationPixelData(inout PixelData pixelData) {
 }
 #endif
 
-float3 Lighting(float3 F0, float3 wsPos, inout PixelData pixelData) {
-  float3 result = float3(0.0.rrr);
+float3 Lighting(float3 F0, float3 worldPos, inout PixelData pixelData) {
+  float3 result = float3(0.0, 0.0, 0.0);
 
   for (int i = 0; i < Scene.NumLights; i++) {
     Light currentLight = Scene.Lights[i];
@@ -156,7 +159,7 @@ float3 Lighting(float3 F0, float3 wsPos, inout PixelData pixelData) {
 
     if (currentLight.RotationType.w == POINT_LIGHT) {
       // Vector to light
-      float3 L = currentLight.PositionIntensity.xyz - inWorldPos;
+      float3 L = currentLight.PositionIntensity.xyz - worldPos;
       // Distance from light to fragment position
       float dist = length(L);
 
@@ -174,7 +177,7 @@ float3 Lighting(float3 F0, float3 wsPos, inout PixelData pixelData) {
       lightDirection = L;
     }
     else if (currentLight.RotationType.w == SPOT_LIGHT) {
-      float3 L = currentLight.PositionIntensity.xyz - wsPos;
+      float3 L = currentLight.PositionIntensity.xyz - worldPos;
       float cutoffAngle = 0.5f; //- light.angle;
       float dist = length(L);
       L = normalize(L);
@@ -187,11 +190,11 @@ float3 Lighting(float3 F0, float3 wsPos, inout PixelData pixelData) {
     }
     else if (currentLight.RotationType.w == DIRECTIONAL_LIGHT) {
       int cascadeIndex = GetCascadeIndex(CascadeSplits, in_ViewPos, SHADOW_MAP_CASCADE_COUNT);
-      float4 shadowPosition = GetShadowPosition(inWorldPos, cascadeIndex);
+      float4 shadowPosition = GetShadowPosition(worldPos, cascadeIndex);
       float shadowBias = GetShadowBias(lightDirection, pixelData.Normal);
       visibility = 1.0 - Shadow(true, in_DirectShadows, cascadeIndex, shadowPosition, ScissorNormalized, shadowBias);
       // shadow far attenuation   
-      float3 v = inWorldPos - CamPos;
+      float3 v = worldPos - Camera.Position;
 
       float z = dot(transpose(Camera.ViewMatrix)[2].xyz, v);
 
@@ -265,18 +268,18 @@ float3 EvaluateIBL(PixelData pixel) {
     return Fd + Fr;
 #endif
 
-  return float3(0.0.rrr);
+  return float3(0.0, 0.0, 0.0);
 }
 
 float4 PSmain(VSLayout input) : SV_Target {
   Material mat = Materials[MaterialIndex];
-  float2 scaledUV = inUV;
+  float2 scaledUV = input.UV;
   scaledUV *= mat.UVScale;
 
   float4 baseColor;
 
   if (mat.UseAlbedo) {
-    baseColor = SRGBtoLINEAR(texture(albedoMap, scaledUV)) * mat.Color;
+    baseColor = SRGBtoLINEAR(TextureMaps[ALBEDO_MAP_INDEX].Sample(LinearSampler, scaledUV) * mat.Color);
   }
   else {
     baseColor = mat.Color;
@@ -290,7 +293,7 @@ float4 PSmain(VSLayout input) : SV_Target {
 
   // metallic roughness workflow
   if (mat.UsePhysicalMap) {
-    float4 physicalMapTexture = texture(physicalMap, scaledUV);
+    float4 physicalMapTexture = TextureMaps[PHYSICAL_MAP_INDEX].Sample(LinearSampler, scaledUV);
     roughness = physicalMapTexture.g; //* (mat.Roughness);
     metallic = physicalMapTexture.b;  // * (mat.Metallic);
   }
@@ -300,16 +303,16 @@ float4 PSmain(VSLayout input) : SV_Target {
   }
 
   const float u_EmissiveFactor = 1.0f;
-  float3 emmisive = float3(0.0.rrr);
+  float3 emmisive = float3(0.0, 0.0, 0.0);
   if (mat.UseEmissive) {
-    float3 value = SRGBtoLINEAR(texture(emissiveMap, scaledUV)).rgb * u_EmissiveFactor;
+    float3 value = TextureMaps[EMISSIVE_MAP_INDEX].Sample(LinearSampler, scaledUV).rgb * u_EmissiveFactor;
     emmisive += value;
   }
   else {
     emmisive += mat.Emissive.rgb * mat.Emissive.a;
   }
 
-  float ao = mat.UseAO ? texture(aoMap, scaledUV).r : 1.0;
+  float ao = mat.UseAO ? AOMap.Sample(LinearSampler, scaledUV).r : 1.0;
 
   PixelData pixelData;
   pixelData.Albedo = baseColor;
@@ -321,7 +324,7 @@ float4 PSmain(VSLayout input) : SV_Target {
   pixelData.Emissive = emmisive;
   pixelData.Normal = GetNormal(mat, scaledUV);
   pixelData.AO = ao;
-  pixelData.View = normalize(CamPos.xyz - inWorldPos);
+  pixelData.View = normalize(Camera.Position.xyz - input.WorldPos);
   pixelData.NDotV = clampNoV(dot(pixelData.Normal, pixelData.View));
   float reflectance = computeDielectricF0(mat.Reflectance);
   pixelData.F0 = computeF0(pixelData.Albedo, pixelData.Metallic, reflectance);
@@ -331,8 +334,8 @@ float4 PSmain(VSLayout input) : SV_Target {
     const float strength = 1.0f;
     const float maxRoughnessGain = 0.02f;
     float roughness2 = roughness * roughness;
-    float3 dndu = dFdx(pixelData.Normal);
-    float3 dndv = dFdy(pixelData.Normal);
+    float3 dndu = ddx(pixelData.Normal);
+    float3 dndv = ddy(pixelData.Normal);
     float variance = (dot(dndu, dndu) + dot(dndv, dndv));
     float kernelRoughness2 = min(variance * strength, maxRoughnessGain);
     float filteredRoughness2 = saturate(roughness2 + kernelRoughness2);
@@ -343,7 +346,7 @@ float4 PSmain(VSLayout input) : SV_Target {
     GetEnergyCompensationPixelData(pixelData);
 #endif
 
-  float3 lightContribution = Lighting(pixelData.F0, inWorldPos, pixelData);
+  float3 lightContribution = Lighting(pixelData.F0, input.WorldPos, pixelData);
   float3 iblContribution = EvaluateIBL(pixelData);
 
   float3 finalColor = iblContribution + lightContribution + pixelData.Emissive;
@@ -360,5 +363,5 @@ float4 PSmain(VSLayout input) : SV_Target {
   }
 #endif
 
-  outColor = float4(finalColor, pixelData.Albedo.a);
+  return float4(finalColor, pixelData.Albedo.a);
 }

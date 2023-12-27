@@ -18,6 +18,8 @@
 
 #include "Scene/SceneRenderer.h"
 
+#include "Thread/TaskScheduler.h"
+
 #include "UI/OxUI.h"
 
 #include "Utils/FileUtils.h"
@@ -27,28 +29,47 @@
 
 namespace Oxylus {
 ViewportPanel::ViewportPanel() : EditorPanel("Viewport", ICON_MDI_TERRAIN, true) {
-  m_show_gizmo_image_map[typeid(LightComponent).hash_code()] = create_ref<TextureAsset>(TextureLoadInfo{.path = "Resources/Icons/PointLightIcon.png", .generate_mips = false});
-  m_show_gizmo_image_map[typeid(SkyLightComponent).hash_code()] = create_ref<TextureAsset>(TextureLoadInfo{.path = "Resources/Icons/SkyIcon.png", .generate_mips = false});
-  m_show_gizmo_image_map[typeid(CameraComponent).hash_code()] = create_ref<TextureAsset>(TextureLoadInfo{.path = "Resources/Icons/CameraIcon.png", .generate_mips = false});
+  OX_SCOPED_ZONE;
+  ADD_TASK_TO_PIPE(
+    this,
+    m_show_gizmo_image_map[typeid(LightComponent).hash_code()] = create_ref<TextureAsset>(TextureLoadInfo{.path = "Resources/Icons/PointLightIcon.png", .generate_mips = false});
+  );
+
+  ADD_TASK_TO_PIPE(
+    this,
+    m_show_gizmo_image_map[typeid(SkyLightComponent).hash_code()] = create_ref<TextureAsset>(TextureLoadInfo{.path = "Resources/Icons/SkyIcon.png", .generate_mips = false});
+  );
+
+  ADD_TASK_TO_PIPE(
+    this,
+    m_show_gizmo_image_map[typeid(CameraComponent).hash_code()] = create_ref<TextureAsset>(TextureLoadInfo{.path = "Resources/Icons/CameraIcon.png", .generate_mips = false});
+  );
 
   auto& superframe_allocator = VulkanContext::get()->superframe_allocator;
-  if (!superframe_allocator->get_context().is_pipeline_available("id_pipeline")) {
+  ADD_TASK_TO_PIPE(
+    &superframe_allocator,
     vuk::PipelineBaseCreateInfo pci;
     pci.add_glsl(FileUtils::read_shader_file("Editor/Editor_IDPass.vert"), "Editor_IDPass.vert");
     pci.add_glsl(FileUtils::read_shader_file("Editor/Editor_IDPass.frag"), "Editor_IDPass.frag");
     superframe_allocator->get_context().create_named_pipeline("id_pipeline", pci);
-  }
-  if (!superframe_allocator->get_context().is_pipeline_available("outline_pipeline")) {
+  );
+  ADD_TASK_TO_PIPE(
+    &superframe_allocator,
     vuk::PipelineBaseCreateInfo pci_stencil;
     pci_stencil.add_glsl(FileUtils::read_shader_file("Editor/Editor_StencilPass.vert"), "Editor_StencilPass.vert");
     pci_stencil.add_glsl(FileUtils::read_shader_file("Editor/Editor_StencilPass.frag"), "Editor_StencilPass.frag");
     superframe_allocator->get_context().create_named_pipeline("stencil_pipeline", pci_stencil);
+  );
 
+  ADD_TASK_TO_PIPE(
+    &superframe_allocator,
     vuk::PipelineBaseCreateInfo pci_fullscreen;
     pci_fullscreen.add_glsl(FileUtils::read_shader_file("FullscreenPass.vert"), "FullscreenPass.vert");
     pci_fullscreen.add_glsl(FileUtils::read_shader_file("FullscreenComposite.frag"), "FullscreenComposite.frag");
     superframe_allocator->get_context().create_named_pipeline("fullscreen_pipeline", pci_fullscreen);
-  }
+  );
+
+  TaskScheduler::get()->WaitforAll();
 }
 
 bool ViewportPanel::outline_pass(const Ref<RenderPipeline>& rp, const vuk::Dimension3D& dim) const {

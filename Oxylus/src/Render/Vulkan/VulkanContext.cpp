@@ -104,6 +104,7 @@ inline VkSurfaceKHR create_surface_glfw(const VkInstance instance, GLFWwindow* w
 }
 
 void VulkanContext::create_context(const AppSpec& spec) {
+  OX_SCOPED_ZONE;
   vkb::InstanceBuilder builder;
   builder.set_app_name("Oxylus")
          .set_engine_name("Oxylus")
@@ -140,7 +141,7 @@ void VulkanContext::create_context(const AppSpec& spec) {
   vkb::PhysicalDeviceSelector selector{vkb_instance};
   surface = create_surface_glfw(instance, Window::get_glfw_window());
   selector.set_surface(surface)
-          .set_minimum_version(1, 0)
+          .set_minimum_version(1, 2)
           .add_required_extension(VK_KHR_SYNCHRONIZATION_2_EXTENSION_NAME)
            //.add_required_extension(VK_KHR_ACCELERATION_STRUCTURE_EXTENSION_NAME)
            //.add_required_extension(VK_KHR_RAY_TRACING_PIPELINE_EXTENSION_NAME)

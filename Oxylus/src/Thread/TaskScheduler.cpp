@@ -23,4 +23,12 @@ void TaskScheduler::shutdown() {
   delete instance;
   instance = nullptr;
 }
+
+void TaskScheduler::add_task_to_pipe(const std::function<void()>& func) {
+  auto task = enki::TaskSet(
+    [func](enki::TaskSetPartition, uint32_t) {
+      func();
+    });
+  instance->task_scheduler->AddTaskSetToPipe(&task);
+}
 }

@@ -12,6 +12,7 @@
 
 namespace Oxylus {
 void LuaManager::init() {
+  OX_SCOPED_ZONE;
   m_state = create_ref<sol::state>();
   m_state->open_libraries(sol::lib::base, sol::lib::package, sol::lib::math, sol::lib::table, sol::lib::os, sol::lib::string);
 
@@ -27,6 +28,7 @@ LuaManager* LuaManager::get() {
 }
 
 void LuaManager::bind_log() const {
+  OX_SCOPED_ZONE;
   auto log = m_state->create_table("Log");
 
   log.set_function("trace", [&](sol::this_state s, const std::string_view message) { OX_CORE_TRACE("{}", message); });

@@ -5,11 +5,13 @@
 #include <miniaudio.h>
 
 #include "Utils/Log.h"
+#include "Utils/Profiler.h"
 
 namespace Oxylus {
 ma_engine* AudioEngine::s_engine;
 
 void AudioEngine::init() {
+  OX_SCOPED_ZONE;
   ma_engine_config config = ma_engine_config_init();
   config.listenerCount = 1;
 

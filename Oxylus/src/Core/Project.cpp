@@ -3,9 +3,11 @@
 #include "Base.h"
 #include "ProjectSerializer.h"
 #include "Utils/Log.h"
+#include "Utils/Profiler.h"
 
 namespace Oxylus {
 Ref<Project> Project::create_new() {
+  OX_SCOPED_ZONE;
   s_active_project = create_ref<Project>();
   return s_active_project;
 }

@@ -11,6 +11,7 @@ void RenderPipeline::enqueue_future(vuk::Future&& fut) {
 }
 
 void RenderPipeline::wait_for_futures(vuk::Allocator& allocator) {
+  OX_SCOPED_ZONE;
   vuk::Compiler compiler;
   wait_for_futures_explicit(allocator, compiler, futures);
   futures.clear();

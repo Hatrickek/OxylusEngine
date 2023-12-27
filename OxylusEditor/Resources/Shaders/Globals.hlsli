@@ -4,6 +4,6 @@ cbuffer CameraBuffer : register(b0) {
   CameraData Camera;
 }
 
-cbuffer CameraBuffer : register(b0) {
+cbuffer SceneBuffer : register(b1) {
   SceneData Scene;
 }
