@@ -389,14 +389,15 @@ void ViewportPanel::on_imgui_render() {
       const float frame_height = 1.0f * ImGui::GetFrameHeight();
       const ImVec2 button_size = {frame_height, frame_height};
       constexpr float button_count = 3.0f;
-      const ImVec2 gizmo_position = {m_viewport_bounds[0].x + start_cursor_pos.x + m_viewport_size.x * 0.5f - 8.0f, m_viewport_bounds[0].y + 8.0f};
-      const auto width = gizmo_position.x + (button_size.x + 12) * (button_count + 0.5f);
+      constexpr float button_pad = 15.0f;
+      const ImVec2 gizmo_position = {m_viewport_bounds[0].x + m_viewport_size.x * 0.5f, m_viewport_bounds[0].y + 8.0f};
+      const auto width = gizmo_position.x + (button_size.x + button_pad) * (button_count + 0.5f);
       const ImRect bb(gizmo_position.x, gizmo_position.y, width, gizmo_position.y + button_size.y + 8);
       ImVec4 frame_color = ImGui::GetStyleColorVec4(ImGuiCol_Tab);
       frame_color.w = 0.5f;
       ImGui::RenderFrame(bb.Min, bb.Max, ImGui::GetColorU32(frame_color), false, 3.0f);
 
-      ImGui::SetCursorPos({start_cursor_pos.x + m_viewport_size.x * 0.5f, start_cursor_pos.y + ImGui::GetStyle().FramePadding.y + 8.0f});
+      ImGui::SetCursorPos({m_viewport_size.x * 0.5f + (button_pad / button_count), start_cursor_pos.y + ImGui::GetStyle().FramePadding.y + 8.0f});
       ImGui::BeginGroup();
       {
         ImGui::PushStyleVar(ImGuiStyleVar_FrameBorderSize, 0.0f);

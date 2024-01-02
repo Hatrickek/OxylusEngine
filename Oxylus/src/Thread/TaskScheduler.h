@@ -1,5 +1,4 @@
 ﻿#pragma once
-#include <functional>
 #include <TaskScheduler.h>
 
 #define COMBINE(X,Y) X##Y
@@ -20,8 +19,6 @@ public:
 
   static void init();
   static void shutdown();
-
-  static void add_task_to_pipe(const std::function<void()>& func);
 
   static enki::TaskScheduler* get() { return instance->task_scheduler; }
 

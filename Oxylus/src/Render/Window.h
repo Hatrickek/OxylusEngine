@@ -15,6 +15,9 @@ public:
   static uint32_t get_width();
   static uint32_t get_height();
 
+  // ratio between the current DPI and the platform's default DPI
+  static Vec2 get_content_scale();
+
   static IVec2 get_center_pos(int width, int height);
 
   static bool is_focused();

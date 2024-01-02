@@ -17,14 +17,16 @@ void Window::init_window(const AppSpec& spec) {
   OX_SCOPED_ZONE;
   glfwInit();
 
-  constexpr auto window_width = 1600;
-  constexpr auto window_height = 900;
+  const auto scale = get_content_scale();
+
+  const auto window_width = 1600 * scale.x;
+  const auto window_height = 900 * scale.y;
 
   glfwWindowHint(GLFW_CLIENT_API, GLFW_NO_API);
-  s_window_handle = glfwCreateWindow(window_width, window_height, spec.name.c_str(), nullptr, nullptr);
+  s_window_handle = glfwCreateWindow((int)window_width, (int)window_height, spec.name.c_str(), nullptr, nullptr);
 
   // center window
-  const auto center = get_center_pos(window_width, window_height);
+  const auto center = get_center_pos((int)window_width, (int)window_height);
   glfwSetWindowPos(s_window_handle, center.x, center.y);
 
   //Load file icon
@@ -108,6 +110,12 @@ uint32_t Window::get_height() {
   int width, height;
   glfwGetWindowSize(s_window_handle, &width, &height);
   return (uint32_t)height;
+}
+
+Vec2 Window::get_content_scale() {
+  float xscale, yscale;
+  glfwGetMonitorContentScale(glfwGetPrimaryMonitor(), &xscale, &yscale);
+  return {xscale, yscale};
 }
 
 IVec2 Window::get_center_pos(const int width, const int height) {

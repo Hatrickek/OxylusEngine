@@ -42,10 +42,10 @@ void ImGuiLayer::on_attach(EventDispatcher&) {
   io.BackendFlags |= ImGuiBackendFlags_RendererHasVtxOffset;
   /*io.BackendFlags |= ImGuiBackendFlags_RendererHasViewports;*/
 
+  init_for_vulkan();
+
   apply_theme();
   set_style();
-
-  init_for_vulkan();
 }
 
 void ImGuiLayer::add_icon_font(float font_size) {
@@ -57,9 +57,9 @@ void ImGuiLayer::add_icon_font(float font_size) {
   icons_config.MergeMode = true;
   icons_config.PixelSnapH = true;
   icons_config.GlyphOffset.y = 1.0f;
-  icons_config.OversampleH = icons_config.OversampleV = 1;
+  icons_config.OversampleH = icons_config.OversampleV = 3;
   icons_config.GlyphMinAdvanceX = 4.0f;
-  icons_config.SizePixels = 12.0f;
+  icons_config.SizePixels = font_size;
 
   io.Fonts->AddFontFromMemoryCompressedTTF(MaterialDesign_compressed_data,
                                            MaterialDesign_compressed_size,
@@ -114,20 +114,20 @@ void ImGuiLayer::init_for_vulkan() {
   constexpr float font_size = 16.0f;
   constexpr float font_size_small = 12.0f;
 
-  ImFontConfig icons_config;
-  icons_config.MergeMode = false;
-  icons_config.PixelSnapH = true;
-  icons_config.OversampleH = icons_config.OversampleV = 1;
-  icons_config.GlyphMinAdvanceX = 4.0f;
-  icons_config.SizePixels = 12.0f;
+  ImFontConfig fonts_config;
+  fonts_config.MergeMode = false;
+  fonts_config.PixelSnapH = true;
+  fonts_config.OversampleH = fonts_config.OversampleV = 3;
+  fonts_config.GlyphMinAdvanceX = 4.0f;
+  fonts_config.SizePixels = font_size;
 
   {
     OX_SCOPED_ZONE_N("Font Loading/Building");
-    regular_font = io.Fonts->AddFontFromFileTTF(regular_font_path.c_str(), font_size, &icons_config);
+    regular_font = io.Fonts->AddFontFromFileTTF(regular_font_path.c_str(), font_size, &fonts_config);
     add_icon_font(font_size);
-    small_font = io.Fonts->AddFontFromFileTTF(regular_font_path.c_str(), font_size_small, &icons_config);
-    add_icon_font(font_size_small);
-    bold_font = io.Fonts->AddFontFromFileTTF(bold_font_path.c_str(), font_size, &icons_config);
+    small_font = io.Fonts->AddFontFromFileTTF(regular_font_path.c_str(), font_size_small, &fonts_config);
+    add_icon_font(font_size);
+    bold_font = io.Fonts->AddFontFromFileTTF(bold_font_path.c_str(), font_size, &fonts_config);
     add_icon_font(font_size);
     io.Fonts->TexGlyphPadding = 1;
     for (int n = 0; n < io.Fonts->ConfigData.Size; n++) {
@@ -136,7 +136,6 @@ void ImGuiLayer::init_for_vulkan() {
     }
     io.Fonts->Build();
   }
-
 
   imgui_data = imgui_impl_vuk_init(*VulkanContext::get()->superframe_allocator);
 }
@@ -500,5 +499,7 @@ void ImGuiLayer::set_style() {
                                                    | ImGuiColorEditFlags_PickerHueBar
                                                    | ImGuiColorEditFlags_Uint8;
   ImGui::SetColorEditOptions(color_edit_flags);
+
+  style->ScaleAllSizes(1.0f);
 }
 }
