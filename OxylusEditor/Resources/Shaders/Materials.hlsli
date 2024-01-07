@@ -22,13 +22,29 @@ struct Material {
   float2 _pad;
 };
 
-// set = 2 binding = 0
-[[vk::binding(0, 2)]] cbuffer GTAOConstantBuffer {
-  Material Materials[];
+#define TOTAL_PBR_MATERIAL_TEXTURE_COUNT 5
+#define ALBEDO_MAP_INDEX 0
+#define NORMAL_MAP_INDEX 1
+#define PHYSICAL_MAP_INDEX 2
+#define AO_MAP_INDEX 3
+#define EMISSIVE_MAP_INDEX 4
+
+int GetAlbedoTextureIndex(int materialIndex) {
+  return materialIndex * TOTAL_PBR_MATERIAL_TEXTURE_COUNT + ALBEDO_MAP_INDEX;
 }
 
-//@todo: we probably should offset it by the vertex 
-[[vk::push_constant]] struct MaterialPushConstant {
-  int MaterialIndex;
-};
+int GetNormalTextureIndex(int materialIndex) {
+  return materialIndex * TOTAL_PBR_MATERIAL_TEXTURE_COUNT + NORMAL_MAP_INDEX;
+}
 
+int GetPhysicalTextureIndex(int materialIndex) {
+  return materialIndex * TOTAL_PBR_MATERIAL_TEXTURE_COUNT + PHYSICAL_MAP_INDEX;
+}
+
+int GetAOTextureIndex(int materialIndex) {
+  return materialIndex * TOTAL_PBR_MATERIAL_TEXTURE_COUNT + AO_MAP_INDEX;
+}
+
+int GetEmissiveTextureIndex(int materialIndex) {
+  return materialIndex * TOTAL_PBR_MATERIAL_TEXTURE_COUNT + EMISSIVE_MAP_INDEX;
+}

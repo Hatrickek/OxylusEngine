@@ -32,6 +32,7 @@ public:
 class Log {
 public:
   static void init();
+  static void force_poll();
 
   template<typename T>
   static void register_sink(void* user_data) {
@@ -58,7 +59,9 @@ private:
 #define OX_CORE_WARN(...) FMTLOG(fmtlog::WRN, __VA_ARGS__)
 #define OX_CORE_ERROR(...) FMTLOG(fmtlog::ERR, __VA_ARGS__)
 
+#ifndef OX_DEBUG
 #define OX_DISABLE_DEBUG_BREAKS
+#endif
 
 #ifdef OX_DISTRIBUTION
 #define OX_DISABLE_DEBUG_BREAKS

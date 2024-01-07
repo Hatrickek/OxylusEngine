@@ -43,11 +43,11 @@ static VkBool32 DebugCallback(const VkDebugUtilsMessageSeverityFlagBitsEXT messa
     OX_CORE_INFO("{}", debug_message.str());
   }
   else if (messageSeverity & VK_DEBUG_UTILS_MESSAGE_SEVERITY_WARNING_BIT_EXT) {
-    OX_CORE_WARN("{}", debug_message.str());
+    fmt::println("{}", debug_message.str());
     OX_DEBUGBREAK();
   }
   else if (messageSeverity & VK_DEBUG_UTILS_MESSAGE_SEVERITY_ERROR_BIT_EXT) {
-    OX_CORE_ERROR("{}", debug_message.str());
+    fmt::println("{}", debug_message.str());
     OX_DEBUGBREAK();
   }
   return VK_FALSE;
@@ -108,7 +108,7 @@ void VulkanContext::create_context(const AppSpec& spec) {
   vkb::InstanceBuilder builder;
   builder.set_app_name("Oxylus")
          .set_engine_name("Oxylus")
-         .require_api_version(1, 3, 0)
+         .require_api_version(1, 2, 0)
          .set_app_version(0, 1, 0);
 
   bool enable_validation = false;
@@ -151,7 +151,7 @@ void VulkanContext::create_context(const AppSpec& spec) {
   if (!phys_ret) {
     has_rt = false;
     vkb::PhysicalDeviceSelector selector2{vkb_instance};
-    selector2.set_surface(surface).set_minimum_version(1, 0).add_required_extension(VK_KHR_SYNCHRONIZATION_2_EXTENSION_NAME);
+    selector2.set_surface(surface).set_minimum_version(1, 2).add_required_extension(VK_KHR_SYNCHRONIZATION_2_EXTENSION_NAME);
     auto phys_ret2 = selector2.select();
     if (!phys_ret2) {
       OX_CORE_ERROR("Couldn't create physical device");
@@ -197,7 +197,12 @@ void VulkanContext::create_context(const AppSpec& spec) {
     .sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_RAY_TRACING_PIPELINE_FEATURES_KHR,
     .rayTracingPipeline = true
   };
-  device_builder = device_builder.add_pNext(&vk12features).add_pNext(&vk11features).add_pNext(&sync_feat).add_pNext(&vk10features);
+
+  device_builder = device_builder.add_pNext(&vk12features)
+                                 .add_pNext(&vk11features)
+                                 .add_pNext(&sync_feat)
+                                 .add_pNext(&vk10features);
+
   if (has_rt) {
     device_builder = device_builder.add_pNext(&rtPipelineFeature).add_pNext(&accelFeature);
   }
@@ -249,15 +254,15 @@ void VulkanContext::create_context(const AppSpec& spec) {
 
   Window::set_window_user_data(this);
   glfwSetWindowSizeCallback(Window::get_glfw_window(),
-    [](GLFWwindow* window, const int width, const int height) {
-      auto* ctx = reinterpret_cast<VulkanContext*>(glfwGetWindowUserPointer(window));
-      if (width == 0 && height == 0) {
-        ctx->suspend = true;
-      }
-      else {
-        ctx->rebuild_swapchain();
-      }
-    });
+                            [](GLFWwindow* window, const int width, const int height) {
+                              auto* ctx = reinterpret_cast<VulkanContext*>(glfwGetWindowUserPointer(window));
+                              if (width == 0 && height == 0) {
+                                ctx->suspend = true;
+                              }
+                              else {
+                                ctx->rebuild_swapchain();
+                              }
+                            });
 
   OX_CORE_INFO("Vulkan context initialized using device: {}", device_name);
 }

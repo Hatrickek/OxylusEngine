@@ -64,7 +64,7 @@ ViewportPanel::ViewportPanel() : EditorPanel("Viewport", ICON_MDI_TERRAIN, true)
   ADD_TASK_TO_PIPE(
     &superframe_allocator,
     vuk::PipelineBaseCreateInfo pci_fullscreen;
-    pci_fullscreen.add_glsl(FileUtils::read_shader_file("FullscreenPass.vert"), "FullscreenPass.vert");
+    pci_fullscreen.add_hlsl(FileUtils::read_shader_file("FullscreenTriangle.hlsl"), FileUtils::get_shader_path("FullscreenTriangle.hlsl"), vuk::HlslShaderStage::eVertex);
     pci_fullscreen.add_glsl(FileUtils::read_shader_file("FullscreenComposite.frag"), "FullscreenComposite.frag");
     superframe_allocator->get_context().create_named_pipeline("fullscreen_pipeline", pci_fullscreen);
   );

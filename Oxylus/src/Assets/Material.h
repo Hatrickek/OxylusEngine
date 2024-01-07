@@ -29,13 +29,13 @@ public:
     float reflectance = 0.0f;
     float normal = 1.0f;
     float ao = 1.0f;
-    GLSL_BOOL use_albedo = false;
-    GLSL_BOOL use_physical_map = false;
-    GLSL_BOOL use_normal = false;
-    GLSL_BOOL use_ao = false;
-    GLSL_BOOL use_emissive = false;
+    int use_albedo = false;
+    int use_physical_map = false;
+    int use_normal = false;
+    int use_ao = false;
+    int use_emissive = false;
     float alpha_cutoff = 0.5f;
-    GLSL_BOOL double_sided = false;
+    int double_sided = false;
     uint32_t uv_scale = 1;
     uint32_t alpha_mode = (uint32_t)AlphaMode::Opaque;
     Vec2 _pad;
@@ -49,6 +49,13 @@ public:
   Ref<TextureAsset> metallic_roughness_texture = nullptr;
   Ref<TextureAsset> ao_texture = nullptr;
   Ref<TextureAsset> emissive_texture = nullptr;
+
+  static constexpr auto TOTAL_PBR_MATERIAL_TEXTURE_COUNT = 5;
+  static constexpr auto ALBEDO_MAP_INDEX = 0;
+  static constexpr auto NORMAL_MAP_INDEX = 1;
+  static constexpr auto PHYSICAL_MAP_INDEX = 2;
+  static constexpr auto AO_MAP_INDEX = 3;
+  static constexpr auto EMISSIVE_MAP_INDEX = 4;
 
   Material() = default;
   ~Material();

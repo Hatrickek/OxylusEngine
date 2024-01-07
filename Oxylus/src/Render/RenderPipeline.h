@@ -32,7 +32,7 @@ public:
 
   virtual void on_update(Scene* scene) { }
   virtual void on_register_render_object(const MeshComponent& render_object) { }
-  virtual void on_register_light(const LightingData& lighting_data, LightComponent::LightType light_type) { }
+  virtual void on_register_light(const TransformComponent& transform, const LightComponent& light) { }
   virtual void on_register_camera(Camera* camera) { }
 
   virtual void enqueue_future(vuk::Future&& fut);

@@ -30,7 +30,7 @@ public:
 
   void on_dispatcher_events(EventDispatcher& dispatcher) override;
   void on_register_render_object(const MeshComponent& render_object) override;
-  void on_register_light(const LightingData& lighting_data, LightComponent::LightType light_type) override;
+  void on_register_light(const TransformComponent& transform, const LightComponent& light) override;
   void on_register_camera(Camera* camera) override;
 
 private:
@@ -39,14 +39,77 @@ private:
     Camera* current_camera = nullptr;
   } m_renderer_context;
 
-  struct RendererData {
-    // TODO: make a global camera data buffer in Camera.h
+  struct UBOVS {
+    Mat4 projection;
+    Mat4 view;
+    Vec3 cam_pos;
+  } ubo_vs;
 
-    struct UBOVS {
-      Mat4 projection;
-      Mat4 view;
-      Vec3 cam_pos;
-    } ubo_vs;
+  // scene cubemap textures
+  static constexpr auto CUBE_MAP_INDEX = 0;
+  static constexpr auto PREFILTERED_CUBE_MAP_INDEX = 1;
+  static constexpr auto IRRADIANCE_MAP_INDEX = 2;
+
+  // scene textures
+  static constexpr auto BRDFLUT_INDEX = 0;
+  static constexpr auto SKY_TRANSMITTANCE_LUT_INDEX = 1;
+  static constexpr auto SKY_MULTISCATTER_LUT_INDEX = 2;
+
+  // scene array textures
+  static constexpr auto SHADOW_ARRAY_INDEX = 0;
+
+  // scene uint textures
+  static constexpr auto GTAO_INDEX = 0;
+
+  struct MeshData {
+    uint32_t first_vertex = 0;
+    uint32_t first_index = 0;
+    uint32_t index_count = 0;
+    uint32_t vertex_count = 0;
+    bool is_merged = false;
+
+    Mesh* mesh_geometry;
+    std::vector<Ref<Material>> materials;
+    Mat4 transform;
+    uint32_t submesh_index = 0;
+  };
+
+  // GPU Buffer
+  struct LightData {
+    Vec4 position_intensity = {};
+    Vec4 color_radius = {};
+    Vec4 rotation_type = {};
+  };
+
+  struct Lights {
+    std::vector<LightData> lights;
+  };
+
+  // GPU Buffer
+  struct SceneData {
+    int num_lights;
+    int enable_gtao;
+    IVec2 screen_size;
+
+    Vec3 sun_direction;
+    int _pad;
+    Vec4 sun_color; // pre-multipled with intensity
+
+    Mat4 cascade_view_projections[4];
+    Vec4 cascade_splits;
+    Vec4 scissor_normalized;
+
+    struct Indices {
+      int cube_map_index;
+      int prefiltered_cube_map_index;
+      int irradiance_map_index;
+      int brdflut_index;
+
+      int sky_transmittance_lut_index;
+      int sky_multiscatter_lut_index;
+      int shadow_array_index;
+      int gtao_index;
+    } indices;
 
     struct FinalPassData {
       int tonemapper = RendererConfig::TONEMAP_ACES;
@@ -54,59 +117,38 @@ private:
       float gamma = 2.5f;
       int enable_bloom = 1;
       int enable_ssr = 1;
+      Vec3 _pad;
       Vec4 vignette_color = Vec4(0.0f, 0.0f, 0.0f, 0.25f); // rgb: color, a: intensity
       Vec4 vignette_offset = Vec4(0.0f, 0.0f, 0.0f, 0.0f); // xy: offset, z: useMask, w: enable effect
       Vec2 film_grain = {};                                // x: enable, y: amount
       Vec2 chromatic_aberration = {};                      // x: enable, y: amount
       Vec2 sharpen = {};                                   // x: enable, y: amount
-      Vec2 _pad;
+      Vec2 _pad2;
     } final_pass_data;
+  } scene_data;
 
-    struct Atmosphere {
-      constexpr static float kuM = 1e-6f;
-      constexpr static float kKM = 1e3f;
+  struct ShaderPC {
+    Mat4 model_matrix;
+    uint64_t vertex_buffer_ptr;
+    uint32_t material_index;
+  };
 
-      Vec3 rayleigh_scatter_val = {5.802 * kuM, 13.558 * kuM, 33.1 * kuM};
-      float rayleigh_density = 8 * kKM;
+  vuk::Unique<vuk::PersistentDescriptorSet> descriptor_set_00;
+  vuk::Unique<vuk::PersistentDescriptorSet> descriptor_set_01;
 
-      float planet_radius = 6360.f * kKM;
-      float atmos_radius = 6460.f * kKM;
-
-      float mie_scatter_val = 3.996f * kuM;
-      float mie_absorption_val = 4.4f * kuM;
-      float mie_density = 1.2f * kKM;
-      float mie_asymmetry = 0.8f;
-
-      float ozone_height = 25 * kKM;
-      float ozone_thickness = 15 * kKM;
-      Vec3 ozone_absorption = {0.650 * kuM, 1.881 * kuM, 0.085 * kuM};
-
-      float _padding;
-    } m_atmosphere;
-
-    struct EyeViewData {
-      Vec3 camera_position = {};
-      float _pad;
-      Vec3 sun_direction = {};
-      float _pad2;
-      Vec3 sun_color = {}; // pre-multipled with intensity
-      float _pad3;
-    } eye_view_data;
-
-    //@TEMP
-    struct SunData {
-      Mat4 inv_vp = {};
-    } sun_data;
-  } m_renderer_data = {};
+  vuk::Texture sky_transmittance_lut;
+  vuk::Texture sky_multiscatter_lut;
+  vuk::Texture gtao_final_image;
+  vuk::Texture sun_shadow_texture;
 
   XeGTAO::GTAOConstants gtao_constants = {};
   XeGTAO::GTAOSettings gtao_settings = {};
 
   // PBR Resources
   Ref<TextureAsset> cube_map = nullptr;
-  vuk::Unique<vuk::Image> brdf_image;
-  vuk::Unique<vuk::Image> irradiance_image;
-  vuk::Unique<vuk::Image> prefiltered_image;
+  vuk::Texture brdf_texture;
+  vuk::Texture irradiance_texture;
+  vuk::Texture prefiltered_texture;
 
   // Mesh
   std::vector<MeshComponent> mesh_draw_list;
@@ -120,23 +162,27 @@ private:
   struct LightChangeEvent { };
 
   DirectShadowPass::DirectShadowUB direct_shadow_ub = {};
-  std::vector<LightingData> scene_lights_data = {};
+  std::vector<LightData> scene_lights = {};
   EventDispatcher light_buffer_dispatcher;
   bool is_cube_map_pipeline = false;
+
+  void commit_descriptor_sets(vuk::Allocator& allocator);
+  void create_images(vuk::Allocator& allocator);
+  void create_descriptor_sets(vuk::Allocator& allocator, vuk::Context& ctx);
 
   void update_skybox(const SkyboxLoadEvent& e);
   void generate_prefilter(vuk::Allocator& allocator);
   void update_parameters(ProbeChangeEvent& e);
 
-  void sky_view_lut_pass(const Ref<vuk::RenderGraph>& rg) const;
+  void sky_view_lut_pass(const Ref<vuk::RenderGraph>& rg);
   void sky_transmittance_pass(const Ref<vuk::RenderGraph>& rg);
   void sky_multiscatter_pass(const Ref<vuk::RenderGraph>& rg);
-  void depth_pre_pass(const Ref<vuk::RenderGraph>& rg, vuk::Buffer& vs_buffer, const std::unordered_map<uint32_t, uint32_t>&, vuk::Buffer& mat_buffer) const;
-  void geometry_pass(const Ref<vuk::RenderGraph>& rg, vuk::Allocator& frame_allocator, vuk::Buffer& vs_buffer, const std::unordered_map<uint32_t, uint32_t>&, vuk::Buffer& mat_buffer, vuk::Buffer& shadow_buffer, vuk::Buffer& scene_lights_buffer);
+  void depth_pre_pass(const Ref<vuk::RenderGraph>& rg);
+  void geometry_pass(const Ref<vuk::RenderGraph>& rg);
   void apply_fxaa(vuk::RenderGraph* rg, vuk::Name src, vuk::Name dst, vuk::Buffer& fxaa_buffer);
-  void cascaded_shadow_pass(const Ref<vuk::RenderGraph>& rg, vuk::Buffer& shadow_buffer) const;
+  void cascaded_shadow_pass(const Ref<vuk::RenderGraph>& rg);
   void gtao_pass(vuk::Allocator& frame_allocator, const Ref<vuk::RenderGraph>& rg);
-  void ssr_pass(vuk::Allocator& frame_allocator, const Ref<vuk::RenderGraph>& rg, vuk::Buffer& vs_buffer) const;
+  void ssr_pass(vuk::Allocator& frame_allocator, const Ref<vuk::RenderGraph>& rg, vuk::Buffer& vs_buffer);
   void bloom_pass(const Ref<vuk::RenderGraph>& rg);
   void apply_grid(vuk::RenderGraph* rg, vuk::Name dst, vuk::Name depth_image, vuk::Allocator& frame_allocator) const;
   void debug_pass(const Ref<vuk::RenderGraph>& rg, vuk::Name dst, const char* depth, vuk::Allocator& frame_allocator) const;

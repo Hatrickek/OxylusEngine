@@ -1,8 +1,58 @@
 #define PI 3.1415926535897932384626433832795
-#define GAMMA 2.2
+#define TwoPI = 2 * PI;
+#define Epsilon = 0.00001;
 
-const float TwoPI = 2 * PI;
-const float Epsilon = 0.00001;
+struct Vertex {
+  vec3 Position;
+  int _pad;
+  vec3 Normal;
+  int _pad2;
+  vec2 UV;
+  vec2 _pad3;
+  vec4 Tangent;
+  vec4 Color;
+  vec4 Joint0;
+  vec4 Weight0;
+  float _pad4;
+};
+
+struct CameraData {
+  vec4 Position;
+  mat4 ProjectionMatrix;
+  mat4 ViewMatrix;
+};
+
+#define DIRECTIONAL_LIGHT 0
+#define POINT_LIGHT 1
+#define SPOT_LIGHT 2
+
+#define SHADOW_MAP_CASCADE_COUNT 4
+
+struct Light {
+  vec4 PositionIntensity; // w: intensity
+  vec4 ColorRadius;       // w: radius
+  vec4 RotationType;      // w: type
+};
+
+struct SceneData {
+  int NumLights;
+
+  mat4 CascadeViewProjections[4];
+  vec4 CascadeSplits;
+  vec4 ScissorNormalized;
+
+  ivec2 ScreenSize;
+  bool EnableGTAO;
+
+  int PrefilteredCubeMapIndex;
+  int IrradianceMapIndex;
+  int BRDFLUTIndex;
+
+  int SkyTransmittanceLutIndex;
+  int SkyMultiscatterLutIndex;
+  int ShadowArrayIndex;
+  int GTAOIndex;
+};
 
 float sq(float x) {
     return x * x;

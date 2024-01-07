@@ -8,13 +8,14 @@
 
 #include "Render/Mesh.h"
 #include "Render/Vulkan/VulkanContext.h"
+#include "Render/Vulkan/VukUtils.h"
 
 #include "Utils/FileUtils.h"
 
 #define M_PI       3.14159265358979323846
 
 namespace Oxylus {
-std::pair<vuk::Unique<vuk::Image>, vuk::Future> Prefilter::generate_brdflut() {
+std::pair<vuk::Texture, vuk::Future> Prefilter::generate_brdflut() {
   constexpr uint32_t dim = 512;
 
   const auto vk_context = VulkanContext::get();
@@ -28,10 +29,7 @@ std::pair<vuk::Unique<vuk::Image>, vuk::Future> Prefilter::generate_brdflut() {
     vk_context->context->create_named_pipeline(pipeline_name, pci);
   }
 
-  vuk::Unique<vuk::Image> brdf_image;
-
   vuk::ImageAttachment attachment = {
-    .image = *brdf_image,
     .image_type = vuk::ImageType::e2D,
     .usage = vuk::ImageUsageFlagBits::eSampled | vuk::ImageUsageFlagBits::eColorAttachment,
     .extent = vuk::Dimension3D::absolute(dim, dim, 1),
@@ -44,8 +42,9 @@ std::pair<vuk::Unique<vuk::Image>, vuk::Future> Prefilter::generate_brdflut() {
     .layer_count = 1
   };
 
-  brdf_image = *allocate_image(*vk_context->superframe_allocator, attachment);
-  attachment.image = *brdf_image;
+  vuk::Texture brdf_texture = create_texture(*vk_context->superframe_allocator, attachment);
+
+  attachment.image = *brdf_texture.image;
 
   vuk::RenderGraph rg("BRDFLUT");
   rg.attach_image("BRDF-Output", attachment);
@@ -54,20 +53,20 @@ std::pair<vuk::Unique<vuk::Image>, vuk::Future> Prefilter::generate_brdflut() {
     .resources = {"BRDF-Output"_image >> vuk::eColorWrite},
     .execute = [](vuk::CommandBuffer& command_buffer) {
       command_buffer.broadcast_color_blend({})
-                   .set_rasterization({})
-                   .set_depth_stencil({})
-                   .set_viewport(0, vuk::Rect2D::framebuffer())
-                   .set_scissor(0, vuk::Rect2D::framebuffer())
-                   .bind_graphics_pipeline("BRDFLUTPipeline")
-                   .draw(3, 1, 0, 0);
+                    .set_rasterization({})
+                    .set_depth_stencil({})
+                    .set_viewport(0, vuk::Rect2D::framebuffer())
+                    .set_scissor(0, vuk::Rect2D::framebuffer())
+                    .bind_graphics_pipeline("BRDFLUTPipeline")
+                    .draw(3, 1, 0, 0);
     }
   });
 
-  return {std::move(brdf_image), transition(vuk::Future{std::make_unique<vuk::RenderGraph>(std::move(rg)), "BRDF-Output+"}, vuk::eFragmentSampled)};
+  return {std::move(brdf_texture), transition(vuk::Future{std::make_unique<vuk::RenderGraph>(std::move(rg)), "BRDF-Output+"}, vuk::eFragmentSampled)};
 }
 
-std::pair<vuk::Unique<vuk::Image>, vuk::Future> Prefilter::generate_irradiance_cube(const Ref<Mesh>& skybox,
-                                                                                    const Ref<TextureAsset>& cubemap) {
+std::pair<vuk::Texture, vuk::Future> Prefilter::generate_irradiance_cube(const Ref<Mesh>& skybox,
+                                                                        const Ref<TextureAsset>& cubemap) {
   const auto vk_context = VulkanContext::get();
   constexpr int32_t dim = 64;
 
@@ -98,10 +97,7 @@ std::pair<vuk::Unique<vuk::Image>, vuk::Future> Prefilter::generate_irradiance_c
     vk_context->context->create_named_pipeline(pipeline_name, pci);
   }
 
-  vuk::Unique<vuk::Image> irradiance_image;
-
   vuk::ImageAttachment irradiance_ia = {
-    .image = *irradiance_image,
     .image_flags = vuk::ImageCreateFlagBits::eCubeCompatible,
     .image_type = vuk::ImageType::e2D,
     .usage = vuk::ImageUsageFlagBits::eSampled | vuk::ImageUsageFlagBits::eColorAttachment,
@@ -114,8 +110,9 @@ std::pair<vuk::Unique<vuk::Image>, vuk::Future> Prefilter::generate_irradiance_c
     .base_layer = 0,
     .layer_count = 6
   };
-  irradiance_image = *allocate_image(*vk_context->superframe_allocator, irradiance_ia);
-  irradiance_ia.image = *irradiance_image;
+
+  vuk::Texture irradiance_texture = create_texture(*vk_context->superframe_allocator, irradiance_ia);
+  irradiance_ia.image = *irradiance_texture.image;
 
   vuk::RenderGraph rg("Irradiance");
   rg.attach_image("IrradianceCube", irradiance_ia);
@@ -124,14 +121,14 @@ std::pair<vuk::Unique<vuk::Image>, vuk::Future> Prefilter::generate_irradiance_c
     .resources = {"IrradianceCube"_image >> vuk::eColorWrite},
     .execute = [=](vuk::CommandBuffer& command_buffer) {
       command_buffer.broadcast_color_blend(vuk::BlendPreset::eOff)
-                   .set_rasterization({})
-                   .set_depth_stencil({})
-                   .set_viewport(0, vuk::Rect2D::framebuffer())
-                   .set_scissor(0, vuk::Rect2D::framebuffer())
-                   .bind_graphics_pipeline("IrradiancePipeline")
-                   .bind_sampler(1, 0, {.magFilter = vuk::Filter::eLinear, .minFilter = vuk::Filter::eLinear})
-                   .bind_image(1, 0, cubemap->as_attachment())
-                   .push_constants(vuk::ShaderStageFlagBits::eFragment, 0, push_block);
+                    .set_rasterization({})
+                    .set_depth_stencil({})
+                    .set_viewport(0, vuk::Rect2D::framebuffer())
+                    .set_scissor(0, vuk::Rect2D::framebuffer())
+                    .bind_graphics_pipeline("IrradiancePipeline")
+                    .bind_sampler(1, 0, {.magFilter = vuk::Filter::eLinear, .minFilter = vuk::Filter::eLinear})
+                    .bind_image(1, 0, cubemap->as_attachment())
+                    .push_constants(vuk::ShaderStageFlagBits::eFragment, 0, push_block);
 
       auto* projection = command_buffer.map_scratch_buffer<glm::mat4>(0, 0);
       *projection = capture_projection;
@@ -144,10 +141,10 @@ std::pair<vuk::Unique<vuk::Image>, vuk::Future> Prefilter::generate_irradiance_c
     }
   });
 
-  return {std::move(irradiance_image), transition(vuk::Future{std::make_unique<vuk::RenderGraph>(std::move(rg)), "IrradianceCube+"}, vuk::eFragmentSampled)};
+  return {std::move(irradiance_texture), transition(vuk::Future{std::make_unique<vuk::RenderGraph>(std::move(rg)), "IrradianceCube+"}, vuk::eFragmentSampled)};
 }
 
-std::pair<vuk::Unique<vuk::Image>, vuk::Future> Prefilter::generate_prefiltered_cube(const Ref<Mesh>& skybox,
+std::pair<vuk::Texture, vuk::Future> Prefilter::generate_prefiltered_cube(const Ref<Mesh>& skybox,
                                                                                      const Ref<TextureAsset>& cubemap) {
   const auto vk_context = VulkanContext::get();
   constexpr int32_t dim = 512;
@@ -176,10 +173,7 @@ std::pair<vuk::Unique<vuk::Image>, vuk::Future> Prefilter::generate_prefiltered_
     lookAt(Vec3(0.0f, 0.0f, 0.0f), Vec3(0.0f, 0.0f, -1.0f), Vec3(0.0f, -1.0f, 0.0f))
   };
 
-  vuk::Unique<vuk::Image> prefilter_image;
-
   vuk::ImageAttachment prefilter_ia = {
-    .image = *prefilter_image,
     .image_flags = vuk::ImageCreateFlagBits::eCubeCompatible,
     .image_type = vuk::ImageType::e2D,
     .usage = vuk::ImageUsageFlagBits::eSampled | vuk::ImageUsageFlagBits::eColorAttachment,
@@ -192,8 +186,9 @@ std::pair<vuk::Unique<vuk::Image>, vuk::Future> Prefilter::generate_prefiltered_
     .base_layer = 0,
     .layer_count = 6
   };
-  prefilter_image = *allocate_image(*vk_context->superframe_allocator, prefilter_ia);
-  prefilter_ia.image = *prefilter_image;
+
+  vuk::Texture prefilter_texture = create_texture(*vk_context->superframe_allocator, prefilter_ia);
+  prefilter_ia.image = *prefilter_texture.image;
 
   vuk::RenderGraph rg("Prefilter");
   rg.attach_image("PrefilterCube", prefilter_ia);
@@ -202,14 +197,14 @@ std::pair<vuk::Unique<vuk::Image>, vuk::Future> Prefilter::generate_prefiltered_
     .resources = {"PrefilterCube"_image >> vuk::eColorWrite},
     .execute = [=](vuk::CommandBuffer& command_buffer) {
       command_buffer.broadcast_color_blend(vuk::BlendPreset::eOff)
-                   .set_rasterization({})
-                   .set_depth_stencil({})
-                   .set_viewport(0, vuk::Rect2D::framebuffer())
-                   .set_scissor(0, vuk::Rect2D::framebuffer())
-                   .bind_graphics_pipeline("PrefilterPipeline")
-                   .bind_sampler(1, 0, {.magFilter = vuk::Filter::eLinear, .minFilter = vuk::Filter::eLinear})
-                   .bind_image(1, 0, cubemap->as_attachment())
-                   .push_constants(vuk::ShaderStageFlagBits::eFragment, 0, push_block);
+                    .set_rasterization({})
+                    .set_depth_stencil({})
+                    .set_viewport(0, vuk::Rect2D::framebuffer())
+                    .set_scissor(0, vuk::Rect2D::framebuffer())
+                    .bind_graphics_pipeline("PrefilterPipeline")
+                    .bind_sampler(1, 0, {.magFilter = vuk::Filter::eLinear, .minFilter = vuk::Filter::eLinear})
+                    .bind_image(1, 0, cubemap->as_attachment())
+                    .push_constants(vuk::ShaderStageFlagBits::eFragment, 0, push_block);
 
       auto* projection = command_buffer.map_scratch_buffer<glm::mat4>(0, 0);
       *projection = capture_projection;
@@ -222,6 +217,6 @@ std::pair<vuk::Unique<vuk::Image>, vuk::Future> Prefilter::generate_prefiltered_
     }
   });
 
-  return {std::move(prefilter_image), transition(vuk::Future{std::make_unique<vuk::RenderGraph>(std::move(rg)), "PrefilterCube+"}, vuk::eFragmentSampled)};
+  return {std::move(prefilter_texture), transition(vuk::Future{std::make_unique<vuk::RenderGraph>(std::move(rg)), "PrefilterCube+"}, vuk::eFragmentSampled)};
 }
 }

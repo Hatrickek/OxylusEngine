@@ -1,23 +1,8 @@
-﻿#define HAS_TRANSMITTANCE_LUT
+﻿#include "../Globals.hlsli"
+
+#define HAS_TRANSMITTANCE_LUT
 #define HAS_MULTISCATTER_LUT
 #include "SkyCommon.hlsli"
-
-cbuffer ViewBuffer : register(b0) {
-  float3 CameraPosition;
-  float _pad;
-  float3 SunDirection;
-  float _pad2;
-  float3 SunColor;
-  float _pad3;
-}
-
-cbuffer SkyFrustumBuffer : register(b1) {
-  float4x4 InvVP;
-}
-
-Texture2D<float4> TransmittanceLUT : register(t2);
-Texture2D<float4> MultiScatteringLUT : register(t3);
-SamplerState LinearSampler : register(s4);
 
 float3 AccurateAtmosphericScattering(float2 pixelPosition,
                                      float3 rayOrigin,
@@ -69,9 +54,9 @@ float3 AccurateAtmosphericScattering(float2 pixelPosition,
       multiScatteringApprox,
       volumetricCloudShadow,
       opaqueShadow,
-      TransmittanceLUT,
-      LinearSampler,
-      MultiScatteringLUT
+      GetSkyTransmittanceLUTTexture(),
+      LINEAR_CLAMPED_SAMPLER,
+      GetSkyMultiScatterLUTTexture()
     );
 
     luminance = ss.L;
@@ -81,7 +66,7 @@ float3 AccurateAtmosphericScattering(float2 pixelPosition,
 
   if (enableSun) {
     const float3 sunIlluminance = sunColor;
-    totalColor = luminance + GetSunLuminance(worldPosition, worldDirection, sunDirection, sunIlluminance, atmosphere, TransmittanceLUT, LinearSampler);
+    totalColor = luminance + GetSunLuminance(worldPosition, worldDirection, sunDirection, sunIlluminance, atmosphere, GetSkyTransmittanceLUTTexture(), LINEAR_CLAMPED_SAMPLER);
   }
   else {
     totalColor = luminance; // We cant really seperate mie from luminance due to precomputation, todo?
@@ -122,13 +107,13 @@ float3 AccurateAtmosphericScattering(float2 pixelPosition,
 float3 GetDynamicSkyColor(in float2 pixel, in float3 V, bool sunEnabled = true, bool darkEnabled = false, bool stationary = false, bool perPixelNoise = false, bool receiveShadow = false) {
   float3 sky = AccurateAtmosphericScattering(
     pixel,
-    CameraPosition,
+    GetCamera().Position,
     // Ray origin
     V,
     // Ray direction
-    SunDirection,
+    GetScene().SunDirection,
     // Position of the sun
-    SunColor,
+    GetScene().SunColor,
     // Sun Color
     sunEnabled,
     // Use sun and total
@@ -152,16 +137,18 @@ float4 main(float4 pos : SV_POSITION, float2 clipspace : TEXCOORD) : SV_TARGET {
     float4(1.0f, 1.0f, 1.0f, 1.0f)    // top-right
   };
 
-  float4 inv_corner = mul(InvVP, ndc[0]);
+  const float4x4 inVP = transpose(mul(GetCamera().ProjectionMatrix, GetCamera().ViewMatrix));
+
+  float4 inv_corner = mul(inVP, ndc[0]);
   const float4 frustumX = inv_corner / inv_corner.w;
 
-  inv_corner = mul(InvVP, ndc[1]);
+  inv_corner = mul(inVP, ndc[1]);
   const float4 frustumY = inv_corner / inv_corner.w;
 
-  inv_corner = mul(InvVP, ndc[2]);
+  inv_corner = mul(inVP, ndc[2]);
   const float4 frustumZ = inv_corner / inv_corner.w;
 
-  inv_corner = mul(InvVP, ndc[3]);
+  inv_corner = mul(inVP, ndc[3]);
   const float4 frustumW = inv_corner / inv_corner.w;
 
   const float3 direction = normalize(

@@ -316,6 +316,12 @@ std::vector<Ref<Material>> Mesh::get_materials_as_ref() const {
   return materials;
 }
 
+std::vector<Ref<Material>> Mesh::get_materials(uint32_t node_index) const {
+  OX_SCOPED_ZONE;
+  OX_CORE_ASSERT(linear_nodes[node_index]->mesh_data);
+  return linear_nodes[node_index]->mesh_data->materials;
+}
+
 void Mesh::destroy() {
   OX_SCOPED_ZONE;
   for (const auto node : nodes) {
@@ -707,6 +713,7 @@ void Mesh::load_node(Node* parent,
 
       new_primitive->set_bounding_box(pos_min, pos_max);
 
+      new_mesh->materials.emplace_back(new_primitive->material);
       new_mesh->primitives.push_back(new_primitive);
 
       total_primitive_count += 1;

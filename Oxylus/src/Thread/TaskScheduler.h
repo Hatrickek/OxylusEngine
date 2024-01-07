@@ -6,7 +6,7 @@
 
 #define ADD_TASK_TO_PIPE(closure, func) \
   auto VAR_NAME(task, __LINE__) = enki::TaskSet( \
-    [closure](enki::TaskSetPartition, uint32_t) { \
+    [closure](enki::TaskSetPartition, uint32_t) mutable { \
       func\
     }); \
   TaskScheduler::get()->AddTaskSetToPipe(&VAR_NAME(task, __LINE__))

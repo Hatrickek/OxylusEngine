@@ -52,6 +52,7 @@ public:
 
   struct MeshData {
     std::vector<Primitive*> primitives = {};
+    std::vector<Ref<Material>> materials = {};
     vuk::Unique<vuk::Buffer> node_buffer;
 
     AABB aabb = {};
@@ -166,6 +167,7 @@ public:
 
   Ref<Material> get_material(uint32_t index) const;
   std::vector<Ref<Material>> get_materials_as_ref() const;
+  std::vector<Ref<Material>> get_materials(uint32_t node_index) const;
   uint32_t get_material_count() const { return (uint32_t)materials.size(); }
   size_t get_node_count() const { return nodes.size(); }
   void set_scale(const Vec3& mesh_scale);

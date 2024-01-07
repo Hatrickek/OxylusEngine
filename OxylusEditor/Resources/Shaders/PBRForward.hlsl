@@ -1,21 +1,14 @@
 ﻿#include "Globals.hlsli"
-
-#include "Materials.hlsli"
-// #define MANUAL_SRGB 1 // we have to tonemap some inputs to make this viable
-#include "Conversions.hlsli"
-
-#include <cstdint> // To shut the reshaper up
-
-[[vk::binding(0, 1)]] Texture2D TextureMaps[PBR_TEXTURES_COUNT];
-[[vk::binding(1, 1)]] SamplerState LinearSampler;
+#include "PBRCommon.hlsli"
 
 [[vk::push_constant]] struct PushConstant {
   float4x4 ModelMatrix;
   uint64_t VertexBufferPtr;
+  uint32_t MaterialIndex;
 } PushConst;
 
 struct VSLayout {
-  float3 Position : SV_Position;
+  float4 Position : POSITION;
   float3 WorldPos : WORLD_POSITION;
   float3 Normal : NORMAL;
   float2 UV : TEXCOORD;
@@ -23,17 +16,18 @@ struct VSLayout {
 };
 
 VSLayout VSmain(uint vertexIndex : SV_VertexID) {
-  const Vertex vertices[] = vk::RawBufferLoad<Vertex[]>(PushConst.VertexBufferPtr);
-  Vertex vertex = vertices[vertexIndex];
+  const float3 vertexPosition = vk::RawBufferLoad<float3>(PushConst.VertexBufferPtr + vertexIndex * sizeof(Vertex));
+  const float3 vertexNormal = vk::RawBufferLoad<float3>(PushConst.VertexBufferPtr + vertexIndex * sizeof(Vertex) + 16);
+  const float2 vertexUV = vk::RawBufferLoad<float2>(PushConst.VertexBufferPtr + vertexIndex * sizeof(Vertex) + 32);
 
-  const float4 locPos = PushConst.ModelMatrix * float4(vertex.Position, 1.0);
+  const float4 locPos = mul(PushConst.ModelMatrix, float4(vertexPosition, 1.0));
 
   VSLayout output;
-  output.Normal = normalize(transpose(float3x3(PushConst.ModelMatrix)) * vertex.Normal);
+  output.Normal = normalize(mul(transpose((float3x3)PushConst.ModelMatrix), vertexNormal));
   output.WorldPos = locPos.xyz / locPos.w;
-  output.ViewPos = (Camera.ViewMatrix * float4(locPos.xyz, 1.0)).xyz;
-  output.UV = vertex.UV;
-  output.Position = Camera.ProjectionMatrix * Camera.ViewMatrix * float4(output.WorldPos, 1.0);
+  output.ViewPos = mul(Camera.ViewMatrix, float4(locPos.xyz, 1.0)).xyz;
+  output.UV = vertexUV;
+  output.Position = mul(Camera.ProjectionMatrix * Camera.ViewMatrix, float4(output.WorldPos, 1.0));
 
   return output;
 }
@@ -55,6 +49,7 @@ struct PixelData {
   float2 dfg;
   float3 TransmittanceLut;
   float3 SpecularColor;
+  float2 PixelPosition;
 };
 
 float3 GetNormal(VSLayout vs, Material mat, float2 uv) {
@@ -62,7 +57,7 @@ float3 GetNormal(VSLayout vs, Material mat, float2 uv) {
     return normalize(vs.Normal);
   }
 
-  const float3 tangentNormal = normalize(TextureMaps[NORMAL_MAP_INDEX].Sample(LinearSampler, uv).rgb * 2.0 - 1.0);
+  const float3 tangentNormal = normalize(GetMaterialNormalTexture(PushConst.MaterialIndex).Sample(LINEAR_REPEATED_SAMPLER, uv).rgb * 2.0 - 1.0);
 
   float3 q1 = ddx(vs.WorldPos);
   float3 q2 = ddy(vs.WorldPos);
@@ -70,17 +65,17 @@ float3 GetNormal(VSLayout vs, Material mat, float2 uv) {
   float2 st2 = ddy(uv);
 
   float3 N = normalize(vs.Normal);
-  float3 T = normalize(q1 * st2.t - q2 * st1.t);
+  float3 T = normalize(q1 * st2.y - q2 * st1.y);
   float3 B = -normalize(cross(N, T));
   float3x3 TBN = float3x3(T, B, N);
 
   return normalize(mul(TBN, tangentNormal));
 }
 
-float4x4 BiasMatrix = float4x4(0.5, 0.0, 0.0, 0.0, 0.0, 0.5, 0.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.5, 0.5, 0.0, 1.0);
+static const float4x4 BiasMatrix = float4x4(0.5, 0.0, 0.0, 0.0, 0.0, 0.5, 0.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.5, 0.5, 0.0, 1.0);
 
 float4 GetShadowPosition(float3 wsPos, int cascadeIndex) {
-  float4 shadowCoord = BiasMatrix * CascadeViewProjMat[cascadeIndex] * float4(wsPos, 1.0);
+  float4 shadowCoord = mul(BiasMatrix * GetScene().CascadeViewProjections[cascadeIndex], float4(wsPos, 1.0));
   return shadowCoord;
 }
 
@@ -116,41 +111,43 @@ float MicrofacetDistribution(float alphaRoughness, float NoH) {
 
 #ifdef CUBEMAP_PIPELINE
 float3 SpecularDFG(const PixelData pixel) {
-    return lerp(pixel.dfg.xxx, pixel.dfg.yyy, pixel.F0);
+  return lerp(pixel.dfg.xxx, pixel.dfg.yyy, pixel.F0);
 }
 
 float PerceptualRoughnessToLod(float perceptualRoughness) {
-    return 4 * perceptualRoughness * (2.0 - perceptualRoughness);
+  return 4 * perceptualRoughness * (2.0 - perceptualRoughness);
 }
 
 float3 PrefilteredRadiance(const float3 r, float perceptualRoughness) {
-    float lod = PerceptualRoughnessToLod(perceptualRoughness);
-    return textureLod(samplerCube(u_PrefilteredMap, u_Sampler), r, lod).rgb;
+  float lod = PerceptualRoughnessToLod(perceptualRoughness);
+  return GetPrefilteredMapTexture().SampleLevel(LINEAR_CLAMPED_SAMPLER, r, lod).rgb;
 }
 
 float3 DiffuseIrradiance(PixelData pixel) {
-    return texture(samplerCube(u_Irradiance, u_Sampler), pixel.Normal).rgb;
+  return GetIrradianceTexture().Sample(LINEAR_CLAMPED_SAMPLER, pixel.Normal).rgb;
 }
 
 float3 GetReflectedVector(PixelData pixel) {
-    return 2.0 * pixel.NDotV * pixel.Normal - pixel.View;
+  return 2.0 * pixel.NDotV * pixel.Normal - pixel.View;
 }
 
 float2 PrefilteredDFG(float perceptualRoughness, float NoV) {
-    return textureLod(sampler2D(u_BRDFLut, u_Sampler), float2(NoV, perceptualRoughness), 0.0).rg;
+  // TODO: Lod shouldn't be 0.0
+  return GetBRDFLUTTexture().SampleLevel(LINEAR_CLAMPED_SAMPLER, float2(NoV, perceptualRoughness), 0.0).rg;
 }
 
 void GetEnergyCompensationPixelData(inout PixelData pixelData) {
-    pixelData.dfg = PrefilteredDFG(pixelData.PerceptualRoughness, pixelData.NDotV);
-    pixelData.EnergyCompensation = 1.0 + pixelData.F0 * (1.0 / max(0.01, pixelData.dfg.y) - 1.0);
+  pixelData.dfg = PrefilteredDFG(pixelData.PerceptualRoughness, pixelData.NDotV);
+  pixelData.EnergyCompensation = 1.0 + pixelData.F0 * (1.0 / max(0.01, pixelData.dfg.y) - 1.0);
 }
+
 #endif
 
-float3 Lighting(float3 F0, float3 worldPos, inout PixelData pixelData) {
+float3 Lighting(VSLayout vsLayout, inout PixelData pixelData) {
   float3 result = float3(0.0, 0.0, 0.0);
 
-  for (int i = 0; i < Scene.NumLights; i++) {
-    Light currentLight = Scene.Lights[i];
+  for (int i = 0; i < GetScene().NumLights; i++) {
+    Light currentLight = Lights[i].Load<Light>(0);
 
     float visibility = 0.0;
 
@@ -159,7 +156,7 @@ float3 Lighting(float3 F0, float3 worldPos, inout PixelData pixelData) {
 
     if (currentLight.RotationType.w == POINT_LIGHT) {
       // Vector to light
-      float3 L = currentLight.PositionIntensity.xyz - worldPos;
+      float3 L = currentLight.PositionIntensity.xyz - vsLayout.WorldPos;
       // Distance from light to fragment position
       float dist = length(L);
 
@@ -177,7 +174,7 @@ float3 Lighting(float3 F0, float3 worldPos, inout PixelData pixelData) {
       lightDirection = L;
     }
     else if (currentLight.RotationType.w == SPOT_LIGHT) {
-      float3 L = currentLight.PositionIntensity.xyz - worldPos;
+      float3 L = currentLight.PositionIntensity.xyz - vsLayout.WorldPos;
       float cutoffAngle = 0.5f; //- light.angle;
       float dist = length(L);
       L = normalize(L);
@@ -189,12 +186,18 @@ float3 Lighting(float3 F0, float3 worldPos, inout PixelData pixelData) {
       visibility = clamp(attenuation, 0.0, 1.0);
     }
     else if (currentLight.RotationType.w == DIRECTIONAL_LIGHT) {
-      int cascadeIndex = GetCascadeIndex(CascadeSplits, in_ViewPos, SHADOW_MAP_CASCADE_COUNT);
-      float4 shadowPosition = GetShadowPosition(worldPos, cascadeIndex);
+      int cascadeIndex = GetCascadeIndex(GetScene().CascadeSplits, vsLayout.ViewPos, SHADOW_MAP_CASCADE_COUNT);
+      float4 shadowPosition = GetShadowPosition(vsLayout.WorldPos, cascadeIndex);
       float shadowBias = GetShadowBias(lightDirection, pixelData.Normal);
-      visibility = 1.0 - Shadow(true, in_DirectShadows, cascadeIndex, shadowPosition, ScissorNormalized, shadowBias);
+      visibility = 1.0 - Shadow(pixelData.PixelPosition,
+                                true,
+                                GetSunShadowArrayTexture(),
+                                cascadeIndex,
+                                shadowPosition,
+                                GetScene().ScissorNormalized,
+                                shadowBias);
       // shadow far attenuation   
-      float3 v = worldPos - Camera.Position;
+      float3 v = vsLayout.WorldPos - Camera.Position;
 
       float z = dot(transpose(Camera.ViewMatrix)[2].xyz, v);
 
@@ -271,15 +274,15 @@ float3 EvaluateIBL(PixelData pixel) {
   return float3(0.0, 0.0, 0.0);
 }
 
-float4 PSmain(VSLayout input) : SV_Target {
-  Material mat = Materials[MaterialIndex];
+float4 PSmain(VSLayout input, float4 position : SV_Position) : SV_Target {
+  Material mat = Materials[PushConst.MaterialIndex].Load<Material>(0);
   float2 scaledUV = input.UV;
   scaledUV *= mat.UVScale;
 
   float4 baseColor;
 
   if (mat.UseAlbedo) {
-    baseColor = SRGBtoLINEAR(TextureMaps[ALBEDO_MAP_INDEX].Sample(LinearSampler, scaledUV) * mat.Color);
+    baseColor = MaterialTextureMaps[ALBEDO_MAP_INDEX].Sample(LINEAR_REPEATED_SAMPLER, scaledUV) * mat.Color;
   }
   else {
     baseColor = mat.Color;
@@ -293,7 +296,7 @@ float4 PSmain(VSLayout input) : SV_Target {
 
   // metallic roughness workflow
   if (mat.UsePhysicalMap) {
-    float4 physicalMapTexture = TextureMaps[PHYSICAL_MAP_INDEX].Sample(LinearSampler, scaledUV);
+    float4 physicalMapTexture = MaterialTextureMaps[PHYSICAL_MAP_INDEX].Sample(LINEAR_REPEATED_SAMPLER, scaledUV);
     roughness = physicalMapTexture.g; //* (mat.Roughness);
     metallic = physicalMapTexture.b;  // * (mat.Metallic);
   }
@@ -302,32 +305,33 @@ float4 PSmain(VSLayout input) : SV_Target {
     roughness = clamp(roughness, MIN_ROUGHNESS, 1.0);
   }
 
-  const float u_EmissiveFactor = 1.0f;
+  const float emissiveFactor = 1.0f;
   float3 emmisive = float3(0.0, 0.0, 0.0);
   if (mat.UseEmissive) {
-    float3 value = TextureMaps[EMISSIVE_MAP_INDEX].Sample(LinearSampler, scaledUV).rgb * u_EmissiveFactor;
+    float3 value = MaterialTextureMaps[EMISSIVE_MAP_INDEX].Sample(LINEAR_REPEATED_SAMPLER, scaledUV).rgb * emissiveFactor;
     emmisive += value;
   }
   else {
     emmisive += mat.Emissive.rgb * mat.Emissive.a;
   }
 
-  float ao = mat.UseAO ? AOMap.Sample(LinearSampler, scaledUV).r : 1.0;
+  float ao = mat.UseAO ? MaterialTextureMaps[AO_MAP_INDEX].Sample(LINEAR_REPEATED_SAMPLER, scaledUV).r : 1.0;
 
   PixelData pixelData;
   pixelData.Albedo = baseColor;
   pixelData.DiffuseColor = ComputeDiffuseColor(baseColor, metallic);
   pixelData.Metallic = metallic;
   pixelData.PerceptualRoughness = clamp(roughness, MIN_PERCEPTUAL_ROUGHNESS, 1.0);
-  pixelData.Roughness = perceptualRoughnessToRoughness(pixelData.Roughness);
+  pixelData.Roughness = PerceptualRoughnessToRoughness(pixelData.Roughness);
   pixelData.Reflectance = mat.Reflectance;
   pixelData.Emissive = emmisive;
-  pixelData.Normal = GetNormal(mat, scaledUV);
+  pixelData.Normal = GetNormal(input, mat, scaledUV);
   pixelData.AO = ao;
   pixelData.View = normalize(Camera.Position.xyz - input.WorldPos);
   pixelData.NDotV = clampNoV(dot(pixelData.Normal, pixelData.View));
   float reflectance = computeDielectricF0(mat.Reflectance);
   pixelData.F0 = computeF0(pixelData.Albedo, pixelData.Metallic, reflectance);
+  pixelData.PixelPosition = position.xy;
 
   // Specular anti-aliasing
   {
@@ -346,17 +350,17 @@ float4 PSmain(VSLayout input) : SV_Target {
     GetEnergyCompensationPixelData(pixelData);
 #endif
 
-  float3 lightContribution = Lighting(pixelData.F0, input.WorldPos, pixelData);
+  float3 lightContribution = Lighting(input, pixelData);
   float3 iblContribution = EvaluateIBL(pixelData);
 
   float3 finalColor = iblContribution + lightContribution + pixelData.Emissive;
 
 #ifndef BLEND_MODE
   // Apply GTAO
-  if (EnableGTAO == 1) {
-    float2 uv = gl_FragCoord.xy / float2(ScreenDimensions.x, ScreenDimensions.y);
+  if (GetScene().EnableGTAO == 1) {
+    float2 uv = position.xy / float2(GetScene().ScreenSize.x, GetScene().ScreenSize.y);
     float aoVisibility = 1.0;
-    uint value = texture(u_GTAO, uv).r;
+    uint value = GetGTAOTexture().Sample(NEAREST_REPEATED_SAMPLER, uv).r;
     aoVisibility = value / 255.0;
     // maybe apply it to only pixelData.Albedo? 
     finalColor *= aoVisibility;

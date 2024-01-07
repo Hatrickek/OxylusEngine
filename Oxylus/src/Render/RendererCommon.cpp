@@ -112,98 +112,6 @@ std::pair<vuk::Unique<vuk::Image>, vuk::Future> RendererCommon::generate_cubemap
   };
 }
 
-std::pair<vuk::Buffer, vuk::Buffer> RendererCommon::merge_render_objects(std::vector<MeshData>& draw_list) {
-  OX_SCOPED_ZONE_N("Mesh Merge");
-  size_t total_vertices = 0;
-  size_t total_indices = 0;
-
-  for (auto& m : draw_list) {
-    m.first_index = (uint32_t)total_indices;
-    m.first_vertex = (uint32_t)total_vertices;
-
-    OX_CORE_ASSERT(m.vertex_count != 0)
-    OX_CORE_ASSERT(m.index_count != 0)
-    total_vertices += m.vertex_count;
-    total_indices += m.index_count;
-
-    m.is_merged = true;
-  }
-
-  const auto vk_context = VulkanContext::get();
-
-  vuk::Buffer merged_vertex_buffer;
-  vuk::BufferCreateInfo bci_vertex{vuk::MemoryUsage::eGPUonly, total_vertices * sizeof(Vertex), 1};
-  vk_context->superframe_allocator->allocate_buffers(std::span{&merged_vertex_buffer, 1}, std::span{&bci_vertex, 1});
-
-  vuk::Buffer merged_index_buffer;
-  vuk::BufferCreateInfo bci_index{vuk::MemoryUsage::eGPUonly, total_indices * sizeof(uint32_t), 1};
-  vk_context->superframe_allocator->allocate_buffers(std::span{&merged_index_buffer, 1}, std::span{&bci_index, 1});
-
-  std::vector<vuk::Future> futures;
-
-  for (auto& m : draw_list) {
-    Ref<vuk::RenderGraph> rgv = create_ref<vuk::RenderGraph>("host_data_to_buffer");
-    rgv->attach_buffer("_src_vertex", *m.mesh_geometry->vertex_buffer, vuk::Access::eNone);
-    rgv->attach_buffer("_dst_vertex", merged_vertex_buffer, vuk::Access::eNone);
-
-    rgv->add_pass({
-      .name = "mesh_merge_vertex_copy",
-      .execute_on = vuk::DomainFlagBits::eTransferOnGraphics,
-      .resources = {
-        "_dst_vertex"_buffer >> vuk::Access::eTransferWrite,
-        "_src_vertex"_buffer >> vuk::Access::eTransferRead,
-      },
-      .execute = [&m](vuk::CommandBuffer& command_buffer) {
-        const auto& buffer = *command_buffer.get_resource_buffer("_dst_vertex");
-
-        VkBufferCopy vertexCopy;
-        vertexCopy.dstOffset = m.first_vertex * sizeof(Vertex);
-        vertexCopy.size = m.vertex_count * sizeof(Vertex);
-        vertexCopy.srcOffset = 0;
-
-        vkCmdCopyBuffer(command_buffer.get_underlying(), m.mesh_geometry->vertex_buffer->buffer, buffer.buffer, 1, &vertexCopy);
-
-        //command_buffer.copy_buffer("_src_vertex", "_dst_vertex", m.vertex_count * sizeof(Mesh::Vertex));
-      }
-    });
-    futures.emplace_back(rgv, "_dst_vertex+");
-
-    const Ref<vuk::RenderGraph> rgi = create_ref<vuk::RenderGraph>("host_data_to_buffer");
-    rgi->attach_buffer("_src_index", *m.mesh_geometry->index_buffer, vuk::Access::eNone);
-    rgi->attach_buffer("_dst_index", merged_index_buffer, vuk::Access::eNone);
-
-    rgi->add_pass({
-      .name = "mesh_merge_index_copy",
-      .execute_on = vuk::DomainFlagBits::eTransferOnGraphics,
-      .resources = {
-        "_dst_index"_buffer >> vuk::Access::eTransferWrite,
-        "_src_index"_buffer >> vuk::Access::eTransferRead,
-      },
-      .execute = [&m](vuk::CommandBuffer& command_buffer) {
-        const auto& buffer = *command_buffer.get_resource_buffer("_dst_index");
-        VkBufferCopy indexCopy;
-        indexCopy.dstOffset = m.first_index * sizeof(uint32_t);
-        indexCopy.size = m.index_count * sizeof(uint32_t);
-        indexCopy.srcOffset = 0;
-
-        vkCmdCopyBuffer(command_buffer.get_underlying(), m.mesh_geometry->index_buffer->buffer, buffer.buffer, 1, &indexCopy);
-        //command_buffer.copy_buffer("_src_index", "_dst_index", m.index_count * sizeof(uint32_t));
-      }
-    });
-    futures.emplace_back(rgi, "_dst_index+");
-  }
-
-  vuk::Compiler compiler{};
-  for (auto& f : futures) {
-    f.wait(*vk_context->superframe_allocator, compiler);
-  }
-
-  auto index_buffer = futures.back().get_result<vuk::Buffer>();
-  auto vertex_buffer = std::vector<vuk::Future>::iterator(futures.end() - 1)->get_result<vuk::Buffer>();
-
-  return {index_buffer, vertex_buffer};
-}
-
 Ref<Mesh> RendererCommon::generate_quad() {
   if (mesh_lib.quad)
     return mesh_lib.quad;
@@ -392,8 +300,8 @@ void RendererCommon::apply_blur(const std::shared_ptr<vuk::RenderGraph>& render_
   auto& allocator = *VulkanContext::get()->superframe_allocator;
   if (!allocator.get_context().is_pipeline_available("gaussian_blur_pipeline")) {
     vuk::PipelineBaseCreateInfo pci;
-    pci.add_glsl(FileUtils::read_shader_file("FullscreenPass.vert"), FileUtils::get_shader_path("FullscreenPass.vert"));
-    pci.add_glsl(FileUtils::read_shader_file("SinglePassGaussianBlur.frag"), "SinglePassGaussianBlur.frag");
+    pci.add_hlsl(FileUtils::read_shader_file("FullscreenTriangle.hlsl"), FileUtils::get_shader_path("FullscreenTriangle.hlsl"), vuk::HlslShaderStage::eVertex);
+    pci.add_glsl(FileUtils::read_shader_file("PostProcess/SinglePassGaussianBlur.frag"), "PostProcess/SinglePassGaussianBlur.frag");
     allocator.get_context().create_named_pipeline("gaussian_blur_pipeline", pci);
   }
 

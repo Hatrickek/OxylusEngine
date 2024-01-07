@@ -3,7 +3,6 @@
 #include <glm/glm.hpp>
 
 namespace Oxylus {
-#define GLSL_BOOL int32_t //GLSL doesn't have one byte bools
 using Vec2 = glm::vec2;
 using IVec2 = glm::ivec2;
 using UVec2 = glm::uvec2;

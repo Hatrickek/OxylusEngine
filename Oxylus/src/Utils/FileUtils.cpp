@@ -19,7 +19,7 @@ std::string FileUtils::read_file(const std::string& file_path) {
 std::string FileUtils::read_shader_file(const std::string& shader_file_name) {
   OX_SCOPED_ZONE;
   auto value = read_file(get_shader_path(shader_file_name));
-  OX_CORE_ASSERT(!value.empty())
+  OX_CORE_ASSERT(!value.empty(), fmt::format("Shader file doesn't exist: {0}", shader_file_name.c_str()))
   return value;
 }
 

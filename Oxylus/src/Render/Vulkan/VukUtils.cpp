@@ -6,6 +6,36 @@
 #include <vuk/CommandBuffer.hpp>
 
 namespace vuk {
+Texture create_texture(Allocator& allocator, Extent3D extent, Format format, ImageUsageFlags usage_flags, bool generate_mips, int array_layers) {
+  ImageCreateInfo ici;
+  ici.format = format;
+  ici.extent = extent;
+  ici.samples = Samples::e1;
+  ici.imageType = ImageType::e2D;
+  ici.initialLayout = ImageLayout::eUndefined;
+  ici.tiling = ImageTiling::eOptimal;
+  ici.usage = usage_flags;
+  ici.mipLevels = generate_mips ? (uint32_t)log2f((float)std::max(std::max(extent.width, extent.height), extent.depth)) + 1 : 1;
+  ici.arrayLayers = array_layers;
+
+  return allocator.get_context().allocate_texture(allocator, ici);
+}
+
+Texture create_texture(Allocator& allocator, const ImageAttachment& attachment) {
+  ImageCreateInfo ici;
+  ici.format = attachment.format;
+  ici.extent = attachment.extent.extent;
+  ici.samples = Samples::e1;
+  ici.imageType = ImageType::e2D;
+  ici.initialLayout = ImageLayout::eUndefined;
+  ici.tiling = ImageTiling::eOptimal;
+  ici.usage = attachment.usage;
+  ici.mipLevels = attachment.level_count;
+  ici.arrayLayers = attachment.layer_count;
+  
+  return allocator.get_context().allocate_texture(allocator, ici);
+}
+
 std::pair<std::vector<Name>, std::vector<Name>> diverge_image_mips(const std::shared_ptr<RenderGraph>& rg, const std::string_view input_name, const uint32_t mip_count) {
   std::vector<Name> diverged_names;
   std::vector<Name> output_names = {};
@@ -60,7 +90,7 @@ void generate_mips(const std::shared_ptr<RenderGraph>& rg, std::string_view inpu
         auto dim = src_ia.extent;
         assert(dim.sizing == vuk::Sizing::eAbsolute);
         auto extent = dim.extent;
-        blit.srcSubresource.aspectMask = vuk::format_to_aspect(src_ia.format);
+        blit.srcSubresource.aspectMask = format_to_aspect(src_ia.format);
         blit.srcSubresource.baseArrayLayer = src_ia.base_layer;
         blit.srcSubresource.layerCount = src_ia.layer_count;
         blit.srcSubresource.mipLevel = mip_level - 1;

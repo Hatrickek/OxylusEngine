@@ -68,12 +68,7 @@ void SceneRenderer::update() const {
       Entity entity = {e, m_scene};
       if (!entity.get_component<TagComponent>().enabled)
         continue;
-      auto lighting_data = LightingData{
-        .position_intensity = Vec4{tc.position, lc.intensity},
-        .color_radius = Vec4{lc.color, lc.range},
-        .rotation_type = Vec4{tc.rotation, lc.type}
-      };
-      m_render_pipeline->on_register_light(lighting_data, lc.type);
+      m_render_pipeline->on_register_light(tc, lc);
     }
   }
 

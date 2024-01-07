@@ -22,6 +22,10 @@ void Log::init() {
   fmtlog::startPollingThread(1);
 }
 
+void Log::force_poll() {
+  fmtlog::poll(true);
+}
+
 void Log::logcb(int64_t ns,
                 fmtlog::LogLevel level,
                 fmt::string_view location,

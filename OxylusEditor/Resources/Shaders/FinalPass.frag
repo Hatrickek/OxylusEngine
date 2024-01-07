@@ -15,8 +15,8 @@ struct Parameters {
   vec2 _pad;
 };
 
-#include "PostProcessing.glsl"
-#include "Tonemaps.glsl"
+#include "PostProcess/PostProcessing.glsl"
+#include "PostProcess/Tonemaps.glsl"
 
 layout(binding = 0) uniform sampler2D in_Color;
 layout(binding = 3) uniform sampler2D in_SSR;
