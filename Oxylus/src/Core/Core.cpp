@@ -19,6 +19,7 @@
 #include "Thread/ThreadManager.h"
 
 #include "Utils/Profiler.h"
+#include "Utils/Random.h"
 #include "Utils/UIUtils.h"
 
 namespace Oxylus {
@@ -30,6 +31,7 @@ bool Core::init(const AppSpec& spec) {
     return false;
   }
 
+  Random::init();
   TaskScheduler::init();
 
   FileDialogs::init_nfd();
