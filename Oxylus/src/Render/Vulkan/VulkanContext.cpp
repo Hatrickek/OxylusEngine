@@ -146,6 +146,32 @@ void VulkanContext::create_context(const AppSpec& spec) {
            //.add_required_extension(VK_KHR_ACCELERATION_STRUCTURE_EXTENSION_NAME)
            //.add_required_extension(VK_KHR_RAY_TRACING_PIPELINE_EXTENSION_NAME)
           .add_required_extension(VK_KHR_DEFERRED_HOST_OPERATIONS_EXTENSION_NAME);
+
+  VkPhysicalDeviceFeatures2 vk10features{.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_FEATURES_2_KHR};
+  vk10features.features.shaderInt64 = true;
+  vk10features.features.shaderStorageImageWriteWithoutFormat = true;
+  vk10features.features.depthClamp = true;
+  vk10features.features.shaderStorageImageReadWithoutFormat = true;
+  vk10features.features.fillModeNonSolid = true;
+  selector.set_required_features(vk10features.features);
+  VkPhysicalDeviceVulkan11Features vk11features{.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_VULKAN_1_1_FEATURES};
+  vk11features.shaderDrawParameters = true;
+  selector.set_required_features_11(vk11features);
+  VkPhysicalDeviceVulkan12Features vk12features{.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_VULKAN_1_2_FEATURES};
+  vk12features.timelineSemaphore = true;
+  vk12features.descriptorBindingPartiallyBound = true;
+  vk12features.descriptorBindingUpdateUnusedWhilePending = true;
+  vk12features.shaderSampledImageArrayNonUniformIndexing = true;
+  vk12features.runtimeDescriptorArray = true;
+  vk12features.descriptorBindingVariableDescriptorCount = true;
+  vk12features.hostQueryReset = true;
+  vk12features.bufferDeviceAddress = true;
+  vk12features.shaderOutputLayer = true;
+  vk12features.descriptorIndexing = true;
+  vk12features.shaderInputAttachmentArrayNonUniformIndexing = true;
+  vk12features.shaderUniformBufferArrayNonUniformIndexing = true;
+  selector.set_required_features_12(vk12features);
+
   auto phys_ret = selector.select();
   vkb::PhysicalDevice vkbphysical_device;
   if (!phys_ret) {
@@ -166,25 +192,7 @@ void VulkanContext::create_context(const AppSpec& spec) {
 
   physical_device = vkbphysical_device.physical_device;
   vkb::DeviceBuilder device_builder{vkbphysical_device};
-  VkPhysicalDeviceVulkan12Features vk12features{.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_VULKAN_1_2_FEATURES};
-  vk12features.timelineSemaphore = true;
-  vk12features.descriptorBindingPartiallyBound = true;
-  vk12features.descriptorBindingUpdateUnusedWhilePending = true;
-  vk12features.shaderSampledImageArrayNonUniformIndexing = true;
-  vk12features.runtimeDescriptorArray = true;
-  vk12features.descriptorBindingVariableDescriptorCount = true;
-  vk12features.hostQueryReset = true;
-  vk12features.bufferDeviceAddress = true;
-  vk12features.shaderOutputLayer = true;
-  vk12features.descriptorIndexing = true;
-  vk12features.shaderInputAttachmentArrayNonUniformIndexing = true;
-  vk12features.shaderUniformBufferArrayNonUniformIndexing = true;
-  VkPhysicalDeviceVulkan11Features vk11features{.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_VULKAN_1_1_FEATURES};
-  vk11features.shaderDrawParameters = true;
-  VkPhysicalDeviceFeatures2 vk10features{.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_FEATURES_2_KHR};
-  vk10features.features.shaderInt64 = true;
-  vk10features.features.shaderStorageImageWriteWithoutFormat = true;
-  vk10features.features.depthClamp = true;
+
   VkPhysicalDeviceSynchronization2FeaturesKHR sync_feat{
     .sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SYNCHRONIZATION_2_FEATURES_KHR,
     .synchronization2 = true
@@ -198,10 +206,7 @@ void VulkanContext::create_context(const AppSpec& spec) {
     .rayTracingPipeline = true
   };
 
-  device_builder = device_builder.add_pNext(&vk12features)
-                                 .add_pNext(&vk11features)
-                                 .add_pNext(&sync_feat)
-                                 .add_pNext(&vk10features);
+  device_builder = device_builder.add_pNext(&sync_feat);
 
   if (has_rt) {
     device_builder = device_builder.add_pNext(&rtPipelineFeature).add_pNext(&accelFeature);

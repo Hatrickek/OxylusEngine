@@ -5,6 +5,7 @@ struct PushConstant {
   float4x4 ModelMatrix;
   uint64_t VertexBufferPtr;
   uint32_t CascadeIndex;
+  float _pad;
 } PushConst;
 
 struct VSLayout {

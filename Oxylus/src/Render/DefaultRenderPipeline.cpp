@@ -214,16 +214,18 @@ void DefaultRenderPipeline::init(vuk::Allocator& allocator) {
     bindless_binding(9, vuk::DescriptorType::eStorageImage),
   };
   bindless_dslci_00.index = 0;
-  bindless_pci.set_binding_flags(0, 0, vuk::DescriptorBindingFlagBits::ePartiallyBound);
-  bindless_pci.set_binding_flags(0, 1, vuk::DescriptorBindingFlagBits::ePartiallyBound);
-  bindless_pci.set_binding_flags(0, 2, vuk::DescriptorBindingFlagBits::ePartiallyBound);
-  bindless_pci.set_binding_flags(0, 3, vuk::DescriptorBindingFlagBits::ePartiallyBound);
-  bindless_pci.set_binding_flags(0, 4, vuk::DescriptorBindingFlagBits::ePartiallyBound);
-  bindless_pci.set_binding_flags(0, 5, vuk::DescriptorBindingFlagBits::ePartiallyBound);
-  bindless_pci.set_binding_flags(0, 6, vuk::DescriptorBindingFlagBits::ePartiallyBound);
-  bindless_pci.set_binding_flags(0, 7, vuk::DescriptorBindingFlagBits::ePartiallyBound);
-  bindless_pci.set_binding_flags(0, 8, vuk::DescriptorBindingFlagBits::ePartiallyBound);
-  bindless_pci.set_binding_flags(0, 9, vuk::DescriptorBindingFlagBits::ePartiallyBound);
+  bindless_dslci_00.flags = {
+    VK_DESCRIPTOR_BINDING_PARTIALLY_BOUND_BIT,
+    VK_DESCRIPTOR_BINDING_PARTIALLY_BOUND_BIT,
+    VK_DESCRIPTOR_BINDING_PARTIALLY_BOUND_BIT,
+    VK_DESCRIPTOR_BINDING_PARTIALLY_BOUND_BIT,
+    VK_DESCRIPTOR_BINDING_PARTIALLY_BOUND_BIT,
+    VK_DESCRIPTOR_BINDING_PARTIALLY_BOUND_BIT,
+    VK_DESCRIPTOR_BINDING_PARTIALLY_BOUND_BIT,
+    VK_DESCRIPTOR_BINDING_PARTIALLY_BOUND_BIT,
+    VK_DESCRIPTOR_BINDING_PARTIALLY_BOUND_BIT,
+    VK_DESCRIPTOR_BINDING_PARTIALLY_BOUND_BIT,
+  };
   bindless_pci.explicit_set_layouts.emplace_back(bindless_dslci_00);
 
   vuk::DescriptorSetLayoutCreateInfo bindless_dslci_01 = {};
@@ -829,6 +831,9 @@ void DefaultRenderPipeline::geometry_pass(const Ref<vuk::RenderGraph>& rg) {
       else {
         command_buffer.bind_graphics_pipeline("pbr_pipeline");
       }
+
+      command_buffer.bind_persistent(0, *descriptor_set_00)
+                    .bind_persistent(1, *descriptor_set_01);
 
       command_buffer.set_dynamic_state(vuk::DynamicStateFlagBits::eScissor | vuk::DynamicStateFlagBits::eViewport)
                     .set_viewport(0, vuk::Rect2D::framebuffer())
