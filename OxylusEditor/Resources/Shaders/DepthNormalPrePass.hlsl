@@ -41,7 +41,7 @@ VSLayout VSmain(uint vertexIndex : SV_VertexID) {
 }
 
 float4 PSmain(VSLayout input) : SV_Target0 {
-  Material mat = Materials[PushConst.MaterialIndex].Load<Material>(0);
+  Material mat = GetMaterial(PushConst.MaterialIndex);
 
   float2 scaledUV = input.UV;
   scaledUV *= mat.UVScale;

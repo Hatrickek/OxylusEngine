@@ -60,6 +60,11 @@ private:
 
   // scene uint textures
   static constexpr auto GTAO_INDEX = 0;
+  static constexpr auto SSR_INDEX = 1;
+
+  // buffers
+  static constexpr auto LIGHTS_BUFFER_INDEX = 0;
+  static constexpr auto MATERIALS_BUFFER_INDEX = 1;
 
   struct MeshData {
     uint32_t first_vertex = 0;
@@ -116,6 +121,11 @@ private:
       int sky_multiscatter_lut_index;
       int shadow_array_index;
       int gtao_index;
+
+      int ssr_index;
+      int lights_buffer_index;
+      int materials_buffer_index;
+      int _pad;
     } indices;
 
     struct PostProcessingData {

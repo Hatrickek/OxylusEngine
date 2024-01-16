@@ -9,7 +9,7 @@ struct PushConstant {
 } PushConst;
 
 struct VSLayout {
-  float4 Position : POSITION;
+  float4 Position : SV_POSITION;
 };
 
 VSLayout VSmain(uint vertexIndex : SV_VertexID) {

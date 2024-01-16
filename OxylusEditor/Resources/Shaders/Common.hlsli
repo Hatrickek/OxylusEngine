@@ -52,13 +52,14 @@ struct SceneData {
     int PrefilteredCubeMapIndex;
     int IrradianceMapIndex;
     int BRDFLUTIndex;
-
     int SkyTransmittanceLutIndex;
     int SkyMultiscatterLutIndex;
     int ShadowArrayIndex;
     int GTAOIndex;
     int SSRIndex;
-    float3 _pad;
+    int LightsBufferIndex;
+    int MaterialsBufferIndex;
+    int _pad;
   } Indices;
 
   struct PostProcessingData {

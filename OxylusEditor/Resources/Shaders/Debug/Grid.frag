@@ -56,6 +56,7 @@ void main() {
   if (t < 0.) discard;
 
   vec3 fragPos3D = in_NearPoint + t * (in_FarPoint - in_NearPoint);
+  fragPos3D.y -= 0.01; // depth fighting fix
 
   gl_FragDepth = compute_depth(fragPos3D);
 

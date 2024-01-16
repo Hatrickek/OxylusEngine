@@ -102,17 +102,15 @@ void DefaultRenderPipeline::load_pipelines(vuk::Allocator& allocator) {
     bindless_binding(0, vuk::DescriptorType::eUniformBuffer, 1),
     bindless_binding(1, vuk::DescriptorType::eUniformBuffer, 1),
     bindless_binding(2, vuk::DescriptorType::eStorageBuffer),
-    bindless_binding(3, vuk::DescriptorType::eStorageBuffer),
+    bindless_binding(3, vuk::DescriptorType::eSampledImage),
     bindless_binding(4, vuk::DescriptorType::eSampledImage),
     bindless_binding(5, vuk::DescriptorType::eSampledImage),
     bindless_binding(6, vuk::DescriptorType::eSampledImage),
     bindless_binding(7, vuk::DescriptorType::eSampledImage),
-    bindless_binding(8, vuk::DescriptorType::eSampledImage),
-    bindless_binding(9, vuk::DescriptorType::eStorageImage),
+    bindless_binding(8, vuk::DescriptorType::eStorageImage),
   };
   bindless_dslci_00.index = 0;
   bindless_dslci_00.flags = {
-    VK_DESCRIPTOR_BINDING_PARTIALLY_BOUND_BIT,
     VK_DESCRIPTOR_BINDING_PARTIALLY_BOUND_BIT,
     VK_DESCRIPTOR_BINDING_PARTIALLY_BOUND_BIT,
     VK_DESCRIPTOR_BINDING_PARTIALLY_BOUND_BIT,
@@ -335,6 +333,9 @@ void DefaultRenderPipeline::commit_descriptor_sets(vuk::Allocator& allocator) {
   scene_data.indices.sky_multiscatter_lut_index = SKY_MULTISCATTER_LUT_INDEX;
   scene_data.indices.shadow_array_index = SHADOW_ARRAY_INDEX;
   scene_data.indices.gtao_index = GTAO_INDEX;
+  scene_data.indices.ssr_index = SSR_INDEX;
+  scene_data.indices.lights_buffer_index = LIGHTS_BUFFER_INDEX;
+  scene_data.indices.materials_buffer_index = MATERIALS_BUFFER_INDEX;
 
   memcpy(scene_data.cascade_view_projections, direct_shadow_ub.cascade_view_proj_mat, sizeof(Mat4) * 4);
 
@@ -362,7 +363,7 @@ void DefaultRenderPipeline::commit_descriptor_sets(vuk::Allocator& allocator) {
 
   descriptor_set_00->update_uniform_buffer(0, 0, scene_buffer);
   descriptor_set_00->update_uniform_buffer(1, 0, camera_buffer);
-  descriptor_set_00->update_storage_buffer(2, 0, lights_buffer);
+  descriptor_set_00->update_storage_buffer(2, LIGHTS_BUFFER_INDEX, lights_buffer);
 
   // TODO: A better ID based system for material textures rather than this.
   // since multiple materials might have same textures
@@ -374,11 +375,11 @@ void DefaultRenderPipeline::commit_descriptor_sets(vuk::Allocator& allocator) {
     for (auto& mat : materials) {
       material_parameters.emplace_back(mat->parameters);
 
-      descriptor_set_00->update_sampled_image(8, material_count * Material::TOTAL_PBR_MATERIAL_TEXTURE_COUNT + Material::ALBEDO_MAP_INDEX, *mat->albedo_texture->get_texture().view, vuk::ImageLayout::eReadOnlyOptimalKHR);
-      descriptor_set_00->update_sampled_image(8, material_count * Material::TOTAL_PBR_MATERIAL_TEXTURE_COUNT + Material::NORMAL_MAP_INDEX, *mat->normal_texture->get_texture().view, vuk::ImageLayout::eReadOnlyOptimalKHR);
-      descriptor_set_00->update_sampled_image(8, material_count * Material::TOTAL_PBR_MATERIAL_TEXTURE_COUNT + Material::PHYSICAL_MAP_INDEX, *mat->metallic_roughness_texture->get_texture().view, vuk::ImageLayout::eReadOnlyOptimalKHR);
-      descriptor_set_00->update_sampled_image(8, material_count * Material::TOTAL_PBR_MATERIAL_TEXTURE_COUNT + Material::AO_MAP_INDEX, *mat->ao_texture->get_texture().view, vuk::ImageLayout::eReadOnlyOptimalKHR);
-      descriptor_set_00->update_sampled_image(8, material_count * Material::TOTAL_PBR_MATERIAL_TEXTURE_COUNT + Material::EMISSIVE_MAP_INDEX, *mat->emissive_texture->get_texture().view, vuk::ImageLayout::eReadOnlyOptimalKHR);
+      descriptor_set_00->update_sampled_image(7, material_count * Material::TOTAL_PBR_MATERIAL_TEXTURE_COUNT + Material::ALBEDO_MAP_INDEX, *mat->albedo_texture->get_texture().view, vuk::ImageLayout::eReadOnlyOptimalKHR);
+      descriptor_set_00->update_sampled_image(7, material_count * Material::TOTAL_PBR_MATERIAL_TEXTURE_COUNT + Material::NORMAL_MAP_INDEX, *mat->normal_texture->get_texture().view, vuk::ImageLayout::eReadOnlyOptimalKHR);
+      descriptor_set_00->update_sampled_image(7, material_count * Material::TOTAL_PBR_MATERIAL_TEXTURE_COUNT + Material::PHYSICAL_MAP_INDEX, *mat->metallic_roughness_texture->get_texture().view, vuk::ImageLayout::eReadOnlyOptimalKHR);
+      descriptor_set_00->update_sampled_image(7, material_count * Material::TOTAL_PBR_MATERIAL_TEXTURE_COUNT + Material::AO_MAP_INDEX, *mat->ao_texture->get_texture().view, vuk::ImageLayout::eReadOnlyOptimalKHR);
+      descriptor_set_00->update_sampled_image(7, material_count * Material::TOTAL_PBR_MATERIAL_TEXTURE_COUNT + Material::EMISSIVE_MAP_INDEX, *mat->emissive_texture->get_texture().view, vuk::ImageLayout::eReadOnlyOptimalKHR);
 
       material_count += 1;
     }
@@ -390,30 +391,30 @@ void DefaultRenderPipeline::commit_descriptor_sets(vuk::Allocator& allocator) {
   auto [matBuff, matBufferFut] = create_cpu_buffer(allocator, std::span(material_parameters));
   auto& mat_buffer = *matBuff;
 
-  descriptor_set_00->update_storage_buffer(3, 0, mat_buffer);
+  descriptor_set_00->update_storage_buffer(2, MATERIALS_BUFFER_INDEX, mat_buffer);
 
   // scene textures
   if (cube_map) {
-    descriptor_set_00->update_sampled_image(4, BRDFLUT_INDEX, *brdf_texture.view, vuk::ImageLayout::eReadOnlyOptimalKHR);
+    descriptor_set_00->update_sampled_image(3, BRDFLUT_INDEX, *brdf_texture.view, vuk::ImageLayout::eReadOnlyOptimalKHR);
   }
-  descriptor_set_00->update_sampled_image(4, SKY_TRANSMITTANCE_LUT_INDEX, *sky_transmittance_lut.view, vuk::ImageLayout::eReadOnlyOptimalKHR);
-  descriptor_set_00->update_sampled_image(4, SKY_MULTISCATTER_LUT_INDEX, *sky_multiscatter_lut.view, vuk::ImageLayout::eReadOnlyOptimalKHR);
+  descriptor_set_00->update_sampled_image(3, SKY_TRANSMITTANCE_LUT_INDEX, *sky_transmittance_lut.view, vuk::ImageLayout::eReadOnlyOptimalKHR);
+  descriptor_set_00->update_sampled_image(3, SKY_MULTISCATTER_LUT_INDEX, *sky_multiscatter_lut.view, vuk::ImageLayout::eReadOnlyOptimalKHR);
 
   // scene uint texture array
-  descriptor_set_00->update_sampled_image(5, GTAO_INDEX, *gtao_final_image.view, vuk::ImageLayout::eReadOnlyOptimalKHR);
+  descriptor_set_00->update_sampled_image(4, GTAO_INDEX, *gtao_final_image.view, vuk::ImageLayout::eReadOnlyOptimalKHR);
 
   // scene cubemap texture array
   if (cube_map) {
-    descriptor_set_00->update_sampled_image(6, CUBE_MAP_INDEX, *cube_map->get_texture().view, vuk::ImageLayout::eReadOnlyOptimalKHR);
-    descriptor_set_00->update_sampled_image(6, PREFILTERED_CUBE_MAP_INDEX, *prefiltered_texture.view, vuk::ImageLayout::eReadOnlyOptimalKHR);
-    descriptor_set_00->update_sampled_image(6, IRRADIANCE_MAP_INDEX, *irradiance_texture.view, vuk::ImageLayout::eReadOnlyOptimalKHR);
+    descriptor_set_00->update_sampled_image(5, CUBE_MAP_INDEX, *cube_map->get_texture().view, vuk::ImageLayout::eReadOnlyOptimalKHR);
+    descriptor_set_00->update_sampled_image(5, PREFILTERED_CUBE_MAP_INDEX, *prefiltered_texture.view, vuk::ImageLayout::eReadOnlyOptimalKHR);
+    descriptor_set_00->update_sampled_image(5, IRRADIANCE_MAP_INDEX, *irradiance_texture.view, vuk::ImageLayout::eReadOnlyOptimalKHR);
   }
 
   // scene array texture array
-  descriptor_set_00->update_sampled_image(7, SHADOW_ARRAY_INDEX, *sun_shadow_texture.view, vuk::ImageLayout::eReadOnlyOptimalKHR);
+  descriptor_set_00->update_sampled_image(6, SHADOW_ARRAY_INDEX, *sun_shadow_texture.view, vuk::ImageLayout::eReadOnlyOptimalKHR);
 
   // scene Read/Write textures
-  descriptor_set_00->update_storage_image(9, SKY_TRANSMITTANCE_LUT_INDEX, *sky_transmittance_lut.view);
+  descriptor_set_00->update_storage_image(8, SKY_TRANSMITTANCE_LUT_INDEX, *sky_transmittance_lut.view);
 
   descriptor_set_00->commit(ctx);
 }
@@ -1215,7 +1216,7 @@ void DefaultRenderPipeline::apply_grid(vuk::RenderGraph* rg, const vuk::Name dst
     .name = "grid",
     .resources = {
       vuk::Resource(dst, vuk::Resource::Type::eImage, vuk::eColorWrite, dst.append("+")),
-      vuk::Resource(depth_image, vuk::Resource::Type::eImage, vuk::eDepthStencilRead)
+      vuk::Resource(depth_image, vuk::Resource::Type::eImage, vuk::eDepthStencilRW)
     },
     .execute = [this, grid_vertex_buffer, grid_fragment_buffer](vuk::CommandBuffer& command_buffer) {
       command_buffer.bind_graphics_pipeline("grid_pipeline")

@@ -149,7 +149,7 @@ float3 Lighting(VSLayout vsLayout, inout PixelData pixelData) {
   float3 result = float3(0.0, 0.0, 0.0);
 
   for (int i = 0; i < GetScene().NumLights; i++) {
-    Light currentLight = Lights[i].Load<Light>(0);
+    Light currentLight = GetLight(i);
 
     float visibility = 0.0;
 
@@ -277,7 +277,7 @@ float3 EvaluateIBL(PixelData pixel) {
 }
 
 float4 PSmain(VSLayout input , float4 pixelPosition : SV_Position) : SV_Target {
-  Material mat = Materials[PushConst.MaterialIndex].Load<Material>(0);
+  Material mat = GetMaterial(PushConst.MaterialIndex);
   float2 scaledUV = input.UV;
   scaledUV *= mat.UVScale;
 

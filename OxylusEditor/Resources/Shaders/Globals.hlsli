@@ -9,15 +9,14 @@
   CameraData Camera;
 }
 
-[[vk::binding(2, 0)]] ByteAddressBuffer Lights[];
-[[vk::binding(3, 0)]] ByteAddressBuffer Materials[];
+[[vk::binding(2, 0)]] ByteAddressBuffer Buffers[];
 
-[[vk::binding(4, 0)]] Texture2D<float4> SceneTextureMaps[];
-[[vk::binding(5, 0)]] Texture2D<uint> SceneTextureMapsUint[];
-[[vk::binding(6, 0)]] TextureCube<float4> SceneTextureCubeMaps[];
-[[vk::binding(7, 0)]] Texture2DArray<float4> SceneTextureArrayMaps[];
-[[vk::binding(8, 0)]] Texture2D<float4> MaterialTextureMaps[];
-[[vk::binding(9, 0)]] RWTexture2D<float4> SceneRWTextureMaps[];
+[[vk::binding(3, 0)]] Texture2D<float4> SceneTextureMaps[];
+[[vk::binding(4, 0)]] Texture2D<uint> SceneTextureMapsUint[];
+[[vk::binding(5, 0)]] TextureCube<float4> SceneTextureCubeMaps[];
+[[vk::binding(6, 0)]] Texture2DArray<float4> SceneTextureArrayMaps[];
+[[vk::binding(7, 0)]] Texture2D<float4> MaterialTextureMaps[];
+[[vk::binding(8, 0)]] RWTexture2D<float4> SceneRWTextureMaps[];
 
 // 0 - Linear Clamped
 // 1 - Linear Repeated
@@ -92,6 +91,14 @@ Texture2D<float4> GetMaterialAOTexture(int materialIndex) {
 
 Texture2D<float4> GetMaterialEmissiveTexture(int materialIndex) {
   return MaterialTextureMaps[GetEmissiveTextureIndex(materialIndex)];
+}
+
+Material GetMaterial(int materialIndex) {
+  return Buffers[Scene.Indices.MaterialsBufferIndex].Load<Material>(materialIndex * sizeof(Material));
+}
+
+Light GetLight(int lightIndex) {
+  return Buffers[Scene.Indices.LightsBufferIndex].Load<Light>(lightIndex * sizeof(Light));
 }
 
 CameraData GetCamera() {
