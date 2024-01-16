@@ -20,6 +20,8 @@ public:
   static void init();
   static void shutdown();
 
+  static void wait_for_all();
+
   static enki::TaskScheduler* get() { return instance->task_scheduler; }
 
 private:

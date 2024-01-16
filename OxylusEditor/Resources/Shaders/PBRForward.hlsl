@@ -9,7 +9,7 @@
 } PushConst;
 
 struct VSLayout {
-  float4 Position : POSITION;
+  float4 Position : SV_POSITION;
   float3 WorldPos : WORLD_POSITION;
   float3 Normal : NORMAL;
   float2 UV : TEXCOORD;
@@ -17,18 +17,19 @@ struct VSLayout {
 };
 
 VSLayout VSmain(uint vertexIndex : SV_VertexID) {
-  const float3 vertexPosition = vk::RawBufferLoad<float3>(PushConst.VertexBufferPtr + vertexIndex * sizeof(Vertex));
-  const float3 vertexNormal = vk::RawBufferLoad<float3>(PushConst.VertexBufferPtr + vertexIndex * sizeof(Vertex) + 16);
-  const float2 vertexUV = vk::RawBufferLoad<float2>(PushConst.VertexBufferPtr + vertexIndex * sizeof(Vertex) + 32);
+  uint64_t addressOffset = PushConst.VertexBufferPtr + vertexIndex * sizeof(Vertex);
+  const float4 vertexPosition = vk::RawBufferLoad<float4>(addressOffset);
+  const float4 vertexNormal = vk::RawBufferLoad<float4>(addressOffset + sizeof(float4));
+  const float4 vertexUV = vk::RawBufferLoad<float4>(addressOffset + sizeof(float4) * 2);
 
-  const float4 locPos = mul(PushConst.ModelMatrix, float4(vertexPosition, 1.0));
+  const float4 locPos = mul(PushConst.ModelMatrix, float4(vertexPosition.xyz, 1.0));
 
   VSLayout output;
-  output.Normal = normalize(mul(transpose((float3x3)PushConst.ModelMatrix), vertexNormal));
+  output.Normal = normalize(mul(transpose((float3x3)PushConst.ModelMatrix), vertexNormal.xyz));
   output.WorldPos = locPos.xyz / locPos.w;
   output.ViewPos = mul(Camera.ViewMatrix, float4(locPos.xyz, 1.0)).xyz;
-  output.UV = vertexUV;
-  output.Position = mul(Camera.ProjectionMatrix * Camera.ViewMatrix, float4(output.WorldPos, 1.0));
+  output.UV = vertexUV.xy;
+  output.Position = mul(mul(Camera.ProjectionMatrix, Camera.ViewMatrix), float4(output.WorldPos, 1.0));
 
   return output;
 }
@@ -275,7 +276,7 @@ float3 EvaluateIBL(PixelData pixel) {
   return float3(0.0, 0.0, 0.0);
 }
 
-float4 PSmain(VSLayout input, float4 position : SV_Position) : SV_Target {
+float4 PSmain(VSLayout input , float4 pixelPosition : SV_Position) : SV_Target {
   Material mat = Materials[PushConst.MaterialIndex].Load<Material>(0);
   float2 scaledUV = input.UV;
   scaledUV *= mat.UVScale;
@@ -332,7 +333,7 @@ float4 PSmain(VSLayout input, float4 position : SV_Position) : SV_Target {
   pixelData.NDotV = clampNoV(dot(pixelData.Normal, pixelData.View));
   float reflectance = computeDielectricF0(mat.Reflectance);
   pixelData.F0 = computeF0(pixelData.Albedo, pixelData.Metallic, reflectance);
-  pixelData.PixelPosition = position.xy;
+  pixelData.PixelPosition = pixelPosition.xy;
 
   // Specular anti-aliasing
   {
@@ -358,8 +359,8 @@ float4 PSmain(VSLayout input, float4 position : SV_Position) : SV_Target {
 
 #ifndef BLEND_MODE
   // Apply GTAO
-  if (GetScene().EnableGTAO == 1) {
-    float2 uv = position.xy / float2(GetScene().ScreenSize.x, GetScene().ScreenSize.y);
+  if (GetScene().PostProcessingData.EnableGTAO == 1) {
+    float2 uv = pixelPosition.xy / float2(GetScene().ScreenSize.x, GetScene().ScreenSize.y);
     float aoVisibility = 1.0;
     uint value = GetGTAOTexture().Sample(NEAREST_REPEATED_SAMPLER, uv).r;
     aoVisibility = value / 255.0;

@@ -46,6 +46,10 @@ RWTexture2D<float4> GetSkyTransmittanceLUTRWTexture() {
   return SceneRWTextureMaps[GetScene().Indices.SkyTransmittanceLutIndex];
 }
 
+RWTexture2D<float4> GetSSRRWTexture() {
+  return SceneRWTextureMaps[GetScene().Indices.SSRIndex];
+}
+
 Texture2D<float4> GetSkyMultiScatterLUTTexture() {
   return SceneTextureMaps[GetScene().Indices.SkyMultiscatterLutIndex];
 }

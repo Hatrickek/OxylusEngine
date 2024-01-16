@@ -23,4 +23,8 @@ void TaskScheduler::shutdown() {
   delete instance;
   instance = nullptr;
 }
+
+void TaskScheduler::wait_for_all() {
+  instance->task_scheduler->WaitforAll();
+}
 }

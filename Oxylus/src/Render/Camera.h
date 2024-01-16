@@ -11,21 +11,12 @@
 struct VkExtent2D;
 
 namespace Oxylus {
-// GPU Buffer
-struct ShaderCamera {
-  Vec4 Position;
-  Mat4 ProjectionMatrix;
-  Mat4 ViewMatrix;
-};
-
 class Camera {
 public:
   Camera(Vec3 position = Vec3(0.0f, 0.0f, 0.0f));
 
   void update();
   void update(const Vec3& pos, const Vec3& rotation);
-
-  ShaderCamera get_shader_camera_data() const;
 
   Mat4 get_projection_matrix() const;
   Mat4 get_projection_matrix_flipped() const;

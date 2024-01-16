@@ -105,14 +105,6 @@ void Camera::update(const Vec3& pos, const Vec3& rotation) {
   update_view_matrix();
 }
 
-ShaderCamera Camera::get_shader_camera_data() const {
-  return {
-    .Position = {get_position(), 0.0f},
-    .ProjectionMatrix = get_projection_matrix(),
-    .ViewMatrix = get_view_matrix(),
-  };
-}
-
 void Camera::update_view_matrix() {
   OX_SCOPED_ZONE;
   const float cos_yaw = glm::cos(m_yaw);

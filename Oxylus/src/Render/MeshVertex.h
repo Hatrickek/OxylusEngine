@@ -15,7 +15,6 @@ struct Vertex {
   Vec4 color;
   Vec4 joint0;
   Vec4 weight0;
-  Vec4 _pad4;
 };
 
 inline auto vertex_pack = vuk::Packed{
@@ -26,6 +25,5 @@ inline auto vertex_pack = vuk::Packed{
   vuk::Format::eR32G32B32A32Sfloat, // 16 color
   vuk::Format::eR32G32B32A32Sfloat, // 16 joint
   vuk::Format::eR32G32B32A32Sfloat, // 16 weight
-  vuk::Format::eR32G32B32A32Sfloat, // 16 
 };
 }

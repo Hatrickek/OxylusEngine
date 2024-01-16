@@ -13,10 +13,10 @@ struct VSLayout {
 };
 
 VSLayout VSmain(uint vertexIndex : SV_VertexID) {
-  const float3 vertexPosition = vk::RawBufferLoad<float3>(PushConst.VertexBufferPtr + vertexIndex * sizeof(Vertex));
+  const float4 vertexPosition = vk::RawBufferLoad<float4>(PushConst.VertexBufferPtr + vertexIndex * sizeof(Vertex));
 
   VSLayout output;
-  output.Position = mul(GetScene().CascadeViewProjections[PushConst.CascadeIndex] * PushConst.ModelMatrix, float4(vertexPosition, 1.0));
+  output.Position = mul(mul(GetScene().CascadeViewProjections[PushConst.CascadeIndex], PushConst.ModelMatrix), float4(vertexPosition.xyz, 1.0));
 
   return output;
 }

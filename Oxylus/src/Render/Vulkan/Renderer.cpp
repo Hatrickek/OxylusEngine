@@ -33,7 +33,7 @@ void Renderer::init() {
 
   ADD_TASK_TO_PIPE(, DebugRenderer::init(););
 
-  TaskScheduler::get()->WaitforAll();
+  TaskScheduler::wait_for_all();
 }
 
 void Renderer::shutdown() {

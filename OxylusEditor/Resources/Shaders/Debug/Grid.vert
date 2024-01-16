@@ -1,8 +1,8 @@
 #version 450
 #pragma shader_stage(vertex)
 
-layout(location = 0) in vec3 in_Pos;
-layout(location = 1) in vec3 in_Normal;
+layout(location = 0) in vec4 in_Pos;
+layout(location = 1) in vec4 in_Normal;
 layout(location = 2) in vec2 in_UV;
 
 layout(set = 0, binding = 0) uniform UBO {
@@ -28,10 +28,10 @@ vec3 unproject_point(float x, float y, float z, mat4 view, mat4 projection) {
 }
 
 void main() {
-  vec4 position = vec4(in_Pos, 1.0f);
-  out_Position = in_Pos;
+  vec4 position = in_Pos;
+  out_Position = in_Pos.xyz;
 
-  vec3 normal = in_Normal;
+  vec3 normal = in_Normal.xyz;
 
   out_FragView = ubo.view;
   out_FragProj = ubo.proj;

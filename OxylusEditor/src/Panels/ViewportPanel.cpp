@@ -69,7 +69,7 @@ ViewportPanel::ViewportPanel() : EditorPanel("Viewport", ICON_MDI_TERRAIN, true)
     superframe_allocator->get_context().create_named_pipeline("fullscreen_pipeline", pci_fullscreen);
   );
 
-  TaskScheduler::get()->WaitforAll();
+  TaskScheduler::wait_for_all();
 }
 
 bool ViewportPanel::outline_pass(const Ref<RenderPipeline>& rp, const vuk::Dimension3D& dim) const {

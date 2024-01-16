@@ -24,6 +24,7 @@ public:
   ~DefaultRenderPipeline() override = default;
 
   void init(vuk::Allocator& allocator) override;
+  void load_pipelines(vuk::Allocator& allocator);
   void shutdown() override;
 
   Scope<vuk::Future> on_render(vuk::Allocator& frame_allocator, const vuk::Future& target, vuk::Dimension3D dim) override;
@@ -34,16 +35,15 @@ public:
   void on_register_camera(Camera* camera) override;
 
 private:
-  struct RendererContext {
-    //Camera
-    Camera* current_camera = nullptr;
-  } m_renderer_context;
+  Camera* current_camera = nullptr;
 
   struct UBOVS {
     Mat4 projection;
     Mat4 view;
     Vec3 cam_pos;
   } ubo_vs;
+
+  bool initalized = false;
 
   // scene cubemap textures
   static constexpr auto CUBE_MAP_INDEX = 0;
@@ -85,14 +85,21 @@ private:
     std::vector<LightData> lights;
   };
 
+  struct CameraData {
+    Vec4 position;
+    Mat4 projection_matrix;
+    Mat4 view_matrix;
+    Mat4 inv_projection_view_matrix;
+  };
+
   // GPU Buffer
   struct SceneData {
     int num_lights;
-    int enable_gtao;
+    int _pad1;
     IVec2 screen_size;
 
     Vec3 sun_direction;
-    int _pad;
+    int _pad2;
     Vec4 sun_color; // pre-multipled with intensity
 
     Mat4 cascade_view_projections[4];
@@ -111,20 +118,23 @@ private:
       int gtao_index;
     } indices;
 
-    struct FinalPassData {
+    struct PostProcessingData {
       int tonemapper = RendererConfig::TONEMAP_ACES;
       float exposure = 1.0f;
       float gamma = 2.5f;
+      int _pad;
+
       int enable_bloom = 1;
       int enable_ssr = 1;
-      Vec3 _pad;
+      int enable_gtao = 1;
+      int _pad2;
+
       Vec4 vignette_color = Vec4(0.0f, 0.0f, 0.0f, 0.25f); // rgb: color, a: intensity
       Vec4 vignette_offset = Vec4(0.0f, 0.0f, 0.0f, 0.0f); // xy: offset, z: useMask, w: enable effect
       Vec2 film_grain = {};                                // x: enable, y: amount
       Vec2 chromatic_aberration = {};                      // x: enable, y: amount
       Vec2 sharpen = {};                                   // x: enable, y: amount
-      Vec2 _pad2;
-    } final_pass_data;
+    } post_processing_data;
   } scene_data;
 
   struct ShaderPC {
