@@ -82,9 +82,10 @@ target_compile_definitions(${PROJECT_NAME} PRIVATE
 
 # Compile and link options
 if(MSVC)
+    set_property(TARGET ${PROJECT_NAME} PROPERTY VS_DEBUGGER_WORKING_DIRECTORY "${CMAKE_SOURCE_DIR}/OxylusEditor")
     target_compile_options(${PROJECT_NAME} PRIVATE PRIVATE /std:c++20 /permissive-)
     target_link_options(${PROJECT_NAME} PRIVATE PRIVATE /DEBUG:FULL)
-	  set(CMAKE_SHARED_LINKER_FLAGS_DISTRIBUTION ${CMAKE_SHARED_LINKER_FLAGS})
+	set(CMAKE_SHARED_LINKER_FLAGS_DISTRIBUTION ${CMAKE_SHARED_LINKER_FLAGS})
     set(CMAKE_EXE_LINKER_FLAGS_DISTRIBUTION ${CMAKE_EXE_LINKER_FLAGS})
 endif()
 
@@ -99,7 +100,3 @@ target_link_libraries(${PROJECT_NAME} PRIVATE
 
 # Copy resource folder
 add_custom_command(TARGET OxylusEditor POST_BUILD COMMAND ${CMAKE_COMMAND} -E copy_directory ${CMAKE_SOURCE_DIR}/OxylusEditor/Resources $<TARGET_FILE_DIR:OxylusEditor>/Resources)
-
-# Set working directory
-set(VS_DEBUGGER_WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}/OxylusEditor)
-

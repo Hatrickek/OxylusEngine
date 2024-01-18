@@ -133,6 +133,7 @@ set_target_properties(${PROJECT_NAME} PROPERTIES MSVC_RUNTIME_LIBRARY ${MSVC_RUN
 #-------------
 include(${CMAKE_CURRENT_SOURCE_DIR}/vendor/CMake-Utils/CMakeUtils.cmake)
 include(${CMAKE_CURRENT_SOURCE_DIR}/vendor/CPM.cmake)
+set_property(GLOBAL PROPERTY CTEST_TARGETS_ADDED 1) # hack for removing auto generated ctest targets
 
 # Suppress all warnings from dependencies.
 if(MSVC)
@@ -333,6 +334,8 @@ CPMAddPackage(
     VERSION 3.3.0
     OPTIONS
         "SOL2_BUILD_LUA OFF"
+        "SOL2_TESTS OFF"
+        "SOL2_TESTS_SINGLE OFF"
 )
 target_include_directories(${PROJECT_NAME} PUBLIC ${sol2_SOURCE_DIR}/include)
 target_link_libraries(sol2 INTERFACE $<BUILD_INTERFACE:${lua_static}>)
