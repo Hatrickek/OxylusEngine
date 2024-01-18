@@ -188,6 +188,7 @@ private:
 
   void commit_descriptor_sets(vuk::Allocator& allocator);
   void create_images(vuk::Allocator& allocator);
+  void create_dynamic_images(vuk::Allocator& allocator, vuk::Dimension3D dim);
   void create_descriptor_sets(vuk::Allocator& allocator, vuk::Context& ctx);
 
   void update_skybox(const SkyboxLoadEvent& e);

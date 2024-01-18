@@ -84,7 +84,7 @@ void DefaultRenderPipeline::init(vuk::Allocator& allocator) {
   // Mesh data
   mesh_draw_list.reserve(MAX_NUM_MESHES);
 
-  create_images(allocator);
+  create_static_textures(allocator);
 
   create_descriptor_sets(allocator, ctx);
 
@@ -386,7 +386,7 @@ void DefaultRenderPipeline::commit_descriptor_sets(vuk::Allocator& allocator) {
   }
 
   if (material_parameters.empty())
-    material_parameters.emplace_back(Material::Parameters{});
+    material_parameters.emplace_back();
 
   auto [matBuff, matBufferFut] = create_cpu_buffer(allocator, std::span(material_parameters));
   auto& mat_buffer = *matBuff;
@@ -419,18 +419,20 @@ void DefaultRenderPipeline::commit_descriptor_sets(vuk::Allocator& allocator) {
   descriptor_set_00->commit(ctx);
 }
 
-void DefaultRenderPipeline::create_images(vuk::Allocator& allocator) {
+void DefaultRenderPipeline::create_static_textures(vuk::Allocator& allocator) {
   constexpr auto transmittance_lut_size = vuk::Extent3D{256, 64, 1};
   sky_transmittance_lut = create_texture(allocator, transmittance_lut_size, vuk::Format::eR16G16B16A16Sfloat, DEFAULT_USAGE_FLAGS | vuk::ImageUsageFlagBits::eStorage);
 
   constexpr auto multi_scatter_lut_size = vuk::Extent3D{32, 32, 1};
   sky_multiscatter_lut = create_texture(allocator, multi_scatter_lut_size, vuk::Format::eR16G16B16A16Sfloat, DEFAULT_USAGE_FLAGS | vuk::ImageUsageFlagBits::eStorage);
 
-  // TODO: extent is static
-  gtao_final_image = create_texture(allocator, vuk::Extent3D{1600, 900, 1}, vuk::Format::eR8Uint, DEFAULT_USAGE_FLAGS | vuk::ImageUsageFlagBits::eStorage);
-
   const auto shadow_size = vuk::Extent3D{(unsigned)RendererCVar::cvar_shadows_size.get(), (unsigned)RendererCVar::cvar_shadows_size.get(), 1};
   sun_shadow_texture = create_texture(allocator, shadow_size, vuk::Format::eD32Sfloat, DEFAULT_USAGE_FLAGS | vuk::ImageUsageFlagBits::eDepthStencilAttachment, false, 4);
+}
+
+void DefaultRenderPipeline::create_dynamic_textures(vuk::Allocator& allocator, const vuk::Dimension3D& dim) {
+  if (gtao_final_image.extent != dim.extent)
+    gtao_final_image = create_texture(allocator, dim.extent, vuk::Format::eR8Uint, DEFAULT_USAGE_FLAGS | vuk::ImageUsageFlagBits::eStorage);
 }
 
 void DefaultRenderPipeline::create_descriptor_sets(vuk::Allocator& allocator, vuk::Context& ctx) {
@@ -500,7 +502,7 @@ Scope<vuk::Future> DefaultRenderPipeline::on_render(vuk::Allocator& frame_alloca
     current_camera = default_camera.get();
   }
 
-  is_cube_map_pipeline = cube_map == nullptr ? false : true;
+  is_cube_map_pipeline = cube_map != nullptr;
 
   auto vk_context = VulkanContext::get();
 
@@ -561,6 +563,8 @@ Scope<vuk::Future> DefaultRenderPipeline::on_render(vuk::Allocator& frame_alloca
   ubo_vs.projection = current_camera->get_projection_matrix();
   auto [vs_buff, vs_buffer_fut] = create_cpu_buffer(frame_allocator, std::span(&ubo_vs, 1));
   auto& vs_buffer = *vs_buff;
+
+  create_dynamic_textures(*vk_context->superframe_allocator, dim);
 
   rg->attach_and_clear_image("black_image", {.format = vk_context->swapchain->format, .sample_count = vuk::SampleCountFlagBits::e1}, vuk::Black<float>);
   rg->inference_rule("black_image", vuk::same_shape_as("final_image"));
