@@ -17,10 +17,10 @@ void Window::init_window(const AppSpec& spec) {
   OX_SCOPED_ZONE;
   glfwInit();
 
-  const auto scale = get_content_scale();
+  const auto monitor_size = get_monitor_size();
 
-  const auto window_width = 1600 * scale.x;
-  const auto window_height = 900 * scale.y;
+  const auto window_width = (float)monitor_size.x * 0.8f;
+  const auto window_height = (float)monitor_size.y * 0.8f;
 
   glfwWindowHint(GLFW_CLIENT_API, GLFW_NO_API);
   s_window_handle = glfwCreateWindow((int)window_width, (int)window_height, spec.name.c_str(), nullptr, nullptr);
@@ -112,10 +112,16 @@ uint32_t Window::get_height() {
   return (uint32_t)height;
 }
 
-Vec2 Window::get_content_scale() {
+Vec2 Window::get_content_scale(GLFWmonitor* monitor) {
   float xscale, yscale;
-  glfwGetMonitorContentScale(glfwGetPrimaryMonitor(), &xscale, &yscale);
+  glfwGetMonitorContentScale(monitor == nullptr ? glfwGetPrimaryMonitor() : monitor, &xscale, &yscale);
   return {xscale, yscale};
+}
+
+IVec2 Window::get_monitor_size(GLFWmonitor* monitor) {
+  int width, height;
+  glfwGetMonitorWorkarea(monitor == nullptr ? glfwGetPrimaryMonitor() : monitor, nullptr, nullptr, &width, &height);
+  return {width, height};
 }
 
 IVec2 Window::get_center_pos(const int width, const int height) {

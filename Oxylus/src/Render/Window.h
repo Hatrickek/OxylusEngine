@@ -16,7 +16,8 @@ public:
   static uint32_t get_height();
 
   // ratio between the current DPI and the platform's default DPI
-  static Vec2 get_content_scale();
+  static Vec2 get_content_scale(GLFWmonitor* monitor = nullptr);
+  static IVec2 get_monitor_size(GLFWmonitor* monitor = nullptr);
 
   static IVec2 get_center_pos(int width, int height);
 
