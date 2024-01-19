@@ -19,7 +19,7 @@ constexpr auto TILES_PER_THREADGROUP = 16;
 class DefaultRenderPipeline : public RenderPipeline {
 public:
   explicit DefaultRenderPipeline(const std::string& name)
-    : RenderPipeline(name) { }
+    : RenderPipeline(name) {}
 
   ~DefaultRenderPipeline() override = default;
 
@@ -37,12 +37,6 @@ public:
 private:
   Camera* current_camera = nullptr;
 
-  struct UBOVS {
-    Mat4 projection;
-    Mat4 view;
-    Vec3 cam_pos;
-  } ubo_vs;
-
   bool initalized = false;
 
   // scene cubemap textures
@@ -51,33 +45,21 @@ private:
   static constexpr auto IRRADIANCE_MAP_INDEX = 2;
 
   // scene textures
-  static constexpr auto BRDFLUT_INDEX = 0;
-  static constexpr auto SKY_TRANSMITTANCE_LUT_INDEX = 1;
-  static constexpr auto SKY_MULTISCATTER_LUT_INDEX = 2;
+  static constexpr auto PBR_IMAGE_INDEX = 0;
+  static constexpr auto NORMAL_IMAGE_INDEX = 1;
+  static constexpr auto DEPTH_IMAGE_INDEX = 2;
+  static constexpr auto BRDFLUT_INDEX = 3;
+  static constexpr auto SKY_TRANSMITTANCE_LUT_INDEX = 4;
+  static constexpr auto SKY_MULTISCATTER_LUT_INDEX = 5;
 
   // scene array textures
   static constexpr auto SHADOW_ARRAY_INDEX = 0;
 
-  // scene uint textures
-  static constexpr auto GTAO_INDEX = 0;
-  static constexpr auto SSR_INDEX = 1;
-
-  // buffers
+  // buffers and buffer/image combined indices
   static constexpr auto LIGHTS_BUFFER_INDEX = 0;
   static constexpr auto MATERIALS_BUFFER_INDEX = 1;
-
-  struct MeshData {
-    uint32_t first_vertex = 0;
-    uint32_t first_index = 0;
-    uint32_t index_count = 0;
-    uint32_t vertex_count = 0;
-    bool is_merged = false;
-
-    Mesh* mesh_geometry;
-    std::vector<Ref<Material>> materials;
-    Mat4 transform;
-    uint32_t submesh_index = 0;
-  };
+  static constexpr auto SSR_BUFFER_IMAGE_INDEX = 2;
+  static constexpr auto GTAO_BUFFER_IMAGE_INDEX = 3;
 
   // GPU Buffer
   struct LightData {
@@ -95,12 +77,17 @@ private:
     Mat4 projection_matrix;
     Mat4 view_matrix;
     Mat4 inv_projection_view_matrix;
+
+    float near;
+    float far;
+    float fov;
+    float _pad = 0;
   };
 
   // GPU Buffer
   struct SceneData {
     int num_lights;
-    int _pad1;
+    float grid_max_distance;
     IVec2 screen_size;
 
     Vec3 sun_direction;
@@ -112,20 +99,25 @@ private:
     Vec4 scissor_normalized;
 
     struct Indices {
+      int pbr_image_index;
+      int normal_image_index;
+      int depth_image_index;
+      int _pad;
+
       int cube_map_index;
       int prefiltered_cube_map_index;
       int irradiance_map_index;
       int brdflut_index;
 
+      int _pad2;
       int sky_transmittance_lut_index;
       int sky_multiscatter_lut_index;
       int shadow_array_index;
-      int gtao_index;
 
-      int ssr_index;
+      int gtao_buffer_image_index;
+      int ssr_buffer_image_index;
       int lights_buffer_index;
       int materials_buffer_index;
-      int _pad;
     } indices;
 
     struct PostProcessingData {
@@ -153,12 +145,24 @@ private:
     uint32_t material_index;
   };
 
+  struct SSRData {
+    int samples = 64;
+    int binary_search_samples = 16;
+    float max_dist = 100.0f;
+    int _pad;
+  } ssr_data;
+
   vuk::Unique<vuk::PersistentDescriptorSet> descriptor_set_00;
   vuk::Unique<vuk::PersistentDescriptorSet> descriptor_set_01;
 
+  vuk::Texture pbr_texture;
+  vuk::Texture normal_texture;
+  vuk::Texture depth_texture;
+
   vuk::Texture sky_transmittance_lut;
   vuk::Texture sky_multiscatter_lut;
-  vuk::Texture gtao_final_image;
+  vuk::Texture gtao_final_texture;
+  vuk::Texture ssr_texture;
   vuk::Texture sun_shadow_texture;
 
   XeGTAO::GTAOConstants gtao_constants = {};
@@ -179,7 +183,7 @@ private:
   Ref<Mesh> m_cube = nullptr;
   Ref<Camera> default_camera;
 
-  struct LightChangeEvent { };
+  struct LightChangeEvent {};
 
   DirectShadowPass::DirectShadowUB direct_shadow_ub = {};
   std::vector<LightData> scene_lights = {};
@@ -187,8 +191,8 @@ private:
   bool is_cube_map_pipeline = false;
 
   void commit_descriptor_sets(vuk::Allocator& allocator);
-  void create_images(vuk::Allocator& allocator);
-  void create_dynamic_images(vuk::Allocator& allocator, vuk::Dimension3D dim);
+  void create_static_textures(vuk::Allocator& allocator);
+  void create_dynamic_textures(vuk::Allocator& allocator, const vuk::Dimension3D& dim);
   void create_descriptor_sets(vuk::Allocator& allocator, vuk::Context& ctx);
 
   void update_skybox(const SkyboxLoadEvent& e);
@@ -203,9 +207,9 @@ private:
   void apply_fxaa(vuk::RenderGraph* rg, vuk::Name src, vuk::Name dst, vuk::Buffer& fxaa_buffer);
   void cascaded_shadow_pass(const Ref<vuk::RenderGraph>& rg);
   void gtao_pass(vuk::Allocator& frame_allocator, const Ref<vuk::RenderGraph>& rg);
-  void ssr_pass(vuk::Allocator& frame_allocator, const Ref<vuk::RenderGraph>& rg, vuk::Buffer& vs_buffer);
+  void ssr_pass(const Ref<vuk::RenderGraph>& rg);
   void bloom_pass(const Ref<vuk::RenderGraph>& rg);
-  void apply_grid(vuk::RenderGraph* rg, vuk::Name dst, vuk::Name depth_image, vuk::Allocator& frame_allocator) const;
+  void apply_grid(vuk::RenderGraph* rg, const vuk::Name dst, const vuk::Name depth_image_name);
   void debug_pass(const Ref<vuk::RenderGraph>& rg, vuk::Name dst, const char* depth, vuk::Allocator& frame_allocator) const;
 };
 }

@@ -35,7 +35,7 @@ void RendererSettingsPanel::on_imgui_render() {
     OxUI::tooltip("Current viewport resolution");
     ImGui::Text("Draw Calls: %u", Renderer::get_stats().drawcall_count);
     OxUI::tooltip("Current amount of draw calls including editor only passes");
-    ImGui::Text("Culled Draw Calls: %u", Renderer::get_stats().drawcall_culled_count);
+    ImGui::Text("Culled Primitives: %u", Renderer::get_stats().drawcall_culled_count);
     OxUI::tooltip("Current amount of draw calls culled by frustum culling");
 
     ImGui::Separator();

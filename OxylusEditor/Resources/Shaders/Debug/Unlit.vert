@@ -1,8 +1,8 @@
 #version 450
 #pragma shader_stage(vertex)
 
-layout(location = 0) in vec3 in_Position;
-layout(location = 1) in vec3 in_Color;
+layout(location = 0) in vec4 in_Position;
+layout(location = 1) in vec4 in_Color;
 
 layout(location = 0) out vec3 out_Position;
 layout(location = 1) out vec4 out_Color;
@@ -21,8 +21,8 @@ layout(push_constant) uniform NodeBuffer {
 };
 
 void main() {
-	vec3 pos = in_Position;
-	vec3 color = in_Color;
+	vec3 pos = in_Position.xyz;
+	vec3 color = in_Color.rgb;
 
 	vec4 local_pos = u_buffers[buffer_index].model_matrix * vec4(pos, 1.0);
 

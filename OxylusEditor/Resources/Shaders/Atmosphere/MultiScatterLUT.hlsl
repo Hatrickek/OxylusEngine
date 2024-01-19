@@ -1,12 +1,6 @@
 #define HAS_TRANSMITTANCE_LUT
 #include "SkyCommon.hlsli"
 
-Texture2D<float4> TransmittanceLUT : register(t0);
-
-RWTexture2D<float4> MultiScatterLut : register(u1);
-
-SamplerState SamplerLinear : register(s2);
-
 static const float MULTIPLE_SCATTERING_FACTOR = 1.0;
 
 groupshared float3 MultiScatAs1SharedMem[64];
@@ -14,6 +8,8 @@ groupshared float3 LSharedMem[64];
 
 [numthreads(1, 1, 64)]
 void main(uint3 threadID : SV_DispatchThreadID) {
+  RWTexture2D<float4> MultiScatterLut = GetSkyMultiScatterLUTRWTexture();
+
   float2 pixelPosition = float2(threadID.xy) + 0.5;
 
   int width, height;
@@ -85,8 +81,7 @@ void main(uint3 threadID : SV_DispatchThreadID) {
       multiScatteringApprox,
       volumetricCloudShadow,
       opaqueShadow,
-      TransmittanceLUT,
-      SamplerLinear
+      GetSkyTransmittanceLUTTexture()
     );
 
     MultiScatAs1SharedMem[threadID.z] = result.multiScatAs1 * sphereSolidAngle / (sqrtSample * sqrtSample);

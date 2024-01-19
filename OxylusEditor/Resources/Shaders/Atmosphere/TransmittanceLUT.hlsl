@@ -1,4 +1,3 @@
-#include "../Globals.hlsli"
 #include "SkyCommon.hlsli"
 
 [numthreads(8, 8, 1)]

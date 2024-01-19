@@ -34,7 +34,7 @@ VSLayout VSmain(uint vertexIndex : SV_VertexID) {
   output.Normal = normalize(mul(transpose((float3x3)PushConst.ModelMatrix), vertexNormal));
   output.WorldPos = locPos.xyz / locPos.w;
   output.UV = vertexUV.xy;
-  output.Position = mul(mul(Camera.ProjectionMatrix, Camera.ViewMatrix), float4(output.WorldPos, 1.0));
+  output.Position = mul(mul(GetCamera().ProjectionMatrix, GetCamera().ViewMatrix), float4(output.WorldPos, 1.0));
   output.WorldTangent = float3x3(T, B, N);
 
   return output;
@@ -50,7 +50,7 @@ float4 PSmain(VSLayout input) : SV_Target0 {
   float3 normal = GetMaterialNormalTexture(PushConst.MaterialIndex).Sample(LINEAR_REPEATED_SAMPLER, scaledUV).rgb;
   normal = mul(input.WorldTangent, normalize(normal * 2.0 - 1.0));
   normal = lerp(normalize(input.Normal), normal, normalMapStrenght);
-  normal = normalize(mul((float3x3)Camera.ViewMatrix, normal));
+  normal = normalize(mul((float3x3)GetCamera().ViewMatrix, normal));
 
   float invRoughness;
   if (mat.UsePhysicalMap) {

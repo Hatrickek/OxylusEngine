@@ -1,4 +1,8 @@
-﻿#define MIN_PERCEPTUAL_ROUGHNESS 0.045
+﻿#ifndef PBRCOMMON_HLSLI
+#define PBRCOMMON_HLSLI
+
+#include "Globals.hlsli"
+#define MIN_PERCEPTUAL_ROUGHNESS 0.045
 #define MIN_ROUGHNESS 0.002025
 #define MIN_N_DOT_V 1e-4
 
@@ -68,20 +72,19 @@ int GetCascadeIndex(float4 cascadeSplits, float3 viewPosition, int cascadeCount)
   return cascadeIndex;
 }
 
-float HardenedKernel(float x) {
+float HardenedKernel(float a) {
   // this is basically a stronger smoothstep()
-  x = 2.0 * x - 1.0;
-  float s = sign(x);
-  x = 1.0 - s * x;
+  float x = 2.0f * a - 1.0f;
+  const float s = sign(x);
+  x = 1.0f - s * x;
   x = x * x * x;
   x = s - x * s;
-  return 0.5 * x + 0.5;
+  return 0.5f * x + 0.5f;
 }
 
 // Poisson disk generated with 'poisson-disk-generator' tool from
 // https://github.com/corporateshark/poisson-disk-generator by Sergey Kosarevsky
-static const float2 PoissonDisk[64] =
-{
+static const float2 PoissonDisk[64] = {
   float2(0.511749, 0.547686),
   float2(0.58929, 0.257224),
   float2(0.165018, 0.57663),
@@ -148,11 +151,11 @@ static const float2 PoissonDisk[64] =
   float2(0.863832, -0.407206)
 };
 
-float GetPenumbraRatio(const bool DIRECTIONAL, const int index, float z_receiver, float z_blocker) {
+float GetPenumbraRatio(const bool directional, const int index, float z_receiver, float z_blocker) {
   // z_receiver/z_blocker are not linear depths (i.e. they're not distances)
   // Penumbra ratio for PCSS is given by:  pr = (d_receiver - d_blocker) / d_blocker
   float penumbraRatio;
-  if (DIRECTIONAL) {
+  if (directional) {
     // TODO: take lispsm into account
     // For directional lights, the depths are linear but depend on the position (because of LiSPSM).
     // With:        z_linear = f + z * (n - f)
@@ -164,7 +167,7 @@ float GetPenumbraRatio(const bool DIRECTIONAL, const int index, float z_receiver
     // For spotlights, the depths are congruent to 1/z, specifically:
     //      z_linear = (n * f) / (n + z * (f - n))
     // replacing in (r - b) / b gives:
-    float nearOverFarMinusNear = 0.01 / (1000 - 0.01); // shadowUniforms.shadows[index].nearOverFarMinusNear; TODO: parameterize
+    float nearOverFarMinusNear = 0.01f / (1000.f - 0.01f); // shadowUniforms.shadows[index].nearOverFarMinusNear; TODO: parameterize
     penumbraRatio = (nearOverFarMinusNear + z_blocker) / (nearOverFarMinusNear + z_receiver) - 1.0;
   }
   return penumbraRatio;
@@ -181,14 +184,13 @@ void BlockerSearchAndFilter(out float occludedCount,
                             const float2x2 R,
                             const float shadowBias,
                             const uint tapCount) {
-  occludedCount = 0.0;
-  z_occSum = 0.0;
+  occludedCount = 0.0f;
+  z_occSum = 0.0f;
 
   for (uint i = 0u; i < tapCount; i++) {
     float2 duv = mul(R, (PoissonDisk[i] * filterRadii));
-    float2 tc = clamp(uv + duv, 0, 1);
+    float2 tc = clamp(uv + duv, 0.f, 1.f);
 
-    // TODO: perhaps we should sample with linear
     float z_occ = map.Sample(NEAREST_CLAMPED_SAMPLER, float3(uv + duv, layer)).r;
 
     // note: z_occ and z_rec are not necessarily linear here, comparing them is always okay for
@@ -207,13 +209,13 @@ void BlockerSearchAndFilter(out float occludedCount,
 }
 
 float interleavedGradientNoise(float2 w) {
-  const float3 m = float3(0.06711056, 0.00583715, 52.9829189);
+  const float3 m = float3(0.06711056f, 0.00583715f, 52.9829189f);
   return frac(m.z * frac(dot(w, m.xy)));
 }
 
 float2x2 GetRandomRotationMatrix(float2 fragCoord) {
   // rotate the poisson disk randomly
-  float randomAngle = interleavedGradientNoise(fragCoord) * (2.0 * PI);
+  float randomAngle = interleavedGradientNoise(fragCoord) * (2.0f * PI);
   float2 randomBase = float2(cos(randomAngle), sin(randomAngle));
   float2x2 R = float2x2(randomBase.x, randomBase.y, -randomBase.y, randomBase.x);
   return R;
@@ -223,11 +225,11 @@ float GetPenumbraLs(const bool DIRECTIONAL, const int index, const float zLight)
   float penumbra;
   // This conditional is resolved at compile time
   if (DIRECTIONAL) {
-    penumbra = 3.0;
+    penumbra = 3.0f;
     //penumbra = shadowUniforms.shadows[index].bulbRadiusLs; TODO:
   }
   else {
-    penumbra = 3.0;
+    penumbra = 3.0f;
     // the penumbra radius depends on the light-space z for spotlights
     //penumbra = shadowUniforms.shadows[index].bulbRadiusLs / zLight; TODO:
   }
@@ -237,7 +239,7 @@ float GetPenumbraLs(const bool DIRECTIONAL, const int index, const float zLight)
 #define DPCF_SHADOW_TAP_COUNT 12
 
 float ShadowSample_DPCF(const float2 pixelPosition,
-                        const bool DIRECTIONAL,
+                        const bool directional,
                         const Texture2DArray map,
                         const float4 scissorNormalized,
                         const uint layer,
@@ -246,15 +248,15 @@ float ShadowSample_DPCF(const float2 pixelPosition,
                         const float shadowBias) {
   int width, height, element, numlevels;
   map.GetDimensions(0, width, height, element, numlevels);
-  float2 texelSize = float2(1.0, 1.0) / float2(width, height);
-  float3 position = shadowPosition.xyz * (1.0 / shadowPosition.w);
+  float2 texelSize = float2(1.0f, 1.0f) / float2(width, height);
+  float3 position = shadowPosition.xyz * (1.0f / shadowPosition.w);
 
-  float penumbra = GetPenumbraLs(DIRECTIONAL, index, 0.0);
+  float penumbra = GetPenumbraLs(directional, index, 0.0f);
 
   float2x2 R = GetRandomRotationMatrix(pixelPosition.xy);
 
-  float occludedCount = 0.0;
-  float z_occSum = 0.0;
+  float occludedCount = 0.0f;
+  float z_occSum = 0.0f;
 
   BlockerSearchAndFilter(occludedCount,
                          z_occSum,
@@ -269,21 +271,21 @@ float ShadowSample_DPCF(const float2 pixelPosition,
                          DPCF_SHADOW_TAP_COUNT);
 
   // early exit if there is no occluders at all, also avoids a divide-by-zero below.
-  if (z_occSum == 0.0) {
-    return 1.0;
+  if (z_occSum == 0.0f) {
+    return 1.0f;
   }
 
-  float penumbraRatio = GetPenumbraRatio(DIRECTIONAL, index, position.z, z_occSum / occludedCount);
+  float penumbraRatio = GetPenumbraRatio(directional, index, position.z, z_occSum / occludedCount);
   penumbraRatio = saturate(penumbraRatio);
 
   float percentageOccluded = occludedCount * (1.0 / float(DPCF_SHADOW_TAP_COUNT));
 
   percentageOccluded = lerp(HardenedKernel(percentageOccluded), percentageOccluded, penumbraRatio);
-  return 1.0 - percentageOccluded;
+  return 1.0f - percentageOccluded;
 }
 
 float Shadow(float2 pixelPosition,
-             const bool DIRECTIONAL,
+             const bool directional,
              const Texture2DArray shadowMap,
              const int index,
              float4 shadowPosition,
@@ -291,7 +293,7 @@ float Shadow(float2 pixelPosition,
              float shadowBias) {
   uint layer = index;
   return ShadowSample_DPCF(pixelPosition,
-                           DIRECTIONAL,
+                           directional,
                            shadowMap,
                            scissorNormalized,
                            layer,
@@ -299,3 +301,5 @@ float Shadow(float2 pixelPosition,
                            shadowPosition,
                            shadowBias);
 }
+
+#endif

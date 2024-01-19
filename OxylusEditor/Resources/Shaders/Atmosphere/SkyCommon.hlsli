@@ -1,4 +1,7 @@
-#define PI 3.14159265358
+#ifndef SKYCOMMON_HLSLI
+#define SKYCOMMON_HLSLI
+
+#include "../Globals.hlsli"
 
 #define PLANET_RADIUS_OFFSET 0.001f // Float accuracy offset in Sky unit (km, so this is 1m)
 #define USE_CORNETTE_SHANKS
@@ -309,19 +312,19 @@ void SkyViewLutParamsToUv(AtmosphereParameters atmosphere, bool intersectGround,
   uv = float2(FromUnitToSubUvs(uv.x, SKY_VIEW_LUT_RES.x), FromUnitToSubUvs(uv.y, SKY_VIEW_LUT_RES.y));
 }
 
-float3 GetTransmittance(float bottomRadius, float topRadius, float pHeight, float sunZenithCosAngle, Texture2D<float4> transmittanceLutTexture, SamplerState linearSampler) {
+float3 GetTransmittance(float bottomRadius, float topRadius, float pHeight, float sunZenithCosAngle, Texture2D<float4> transmittanceLutTexture) {
   float2 uv;
   LutTransmittanceParamsToUv(bottomRadius, topRadius, pHeight, sunZenithCosAngle, uv);
 
-  float3 TransmittanceToSun = transmittanceLutTexture.SampleLevel(linearSampler, uv, 0).rgb;
+  float3 TransmittanceToSun = transmittanceLutTexture.SampleLevel(LINEAR_CLAMPED_SAMPLER, uv, 0).rgb;
   return TransmittanceToSun;
 }
 
-float3 GetMultipleScattering(AtmosphereParameters atmosphere, Texture2D<float4> multiScatteringLUTTexture, SamplerState linearSampler, float3 scattering, float3 extinction, float3 worldPosition, float viewZenithCosAngle) {
+float3 GetMultipleScattering(AtmosphereParameters atmosphere, Texture2D<float4> multiScatteringLUTTexture, float3 scattering, float3 extinction, float3 worldPosition, float viewZenithCosAngle) {
   float2 uv = saturate(float2(viewZenithCosAngle * 0.5f + 0.5f, (length(worldPosition) - atmosphere.bottomRadius) / (atmosphere.topRadius - atmosphere.bottomRadius)));
   uv = float2(FromUnitToSubUvs(uv.x, MULTI_SCATTERING_LUT_RES.x), FromUnitToSubUvs(uv.y, MULTI_SCATTERING_LUT_RES.y));
 
-  float3 multiScatteredLuminance = multiScatteringLUTTexture.SampleLevel(linearSampler, uv, 0).rgb;
+  float3 multiScatteredLuminance = multiScatteringLUTTexture.SampleLevel(LINEAR_CLAMPED_SAMPLER, uv, 0).rgb;
   return multiScatteredLuminance;
 }
 
@@ -407,14 +410,13 @@ SingleScatteringResult IntegrateScatteredLuminance(
   bool volumetricCloudShadow,
   bool opaqueShadow,
 #ifdef HAS_TRANSMITTANCE_LUT
-  in Texture2D<float4> transmittanceLutTexture,
-  SamplerState linearSampler,
+  Texture2D<float4> transmittanceLutTexture,
 #endif
 #ifdef HAS_MULTISCATTER_LUT
-  in Texture2D<float4> multiScatteringLUT,
+  Texture2D<float4> multiScatteringLUT,
 #endif
-  in float opticalDepthScale = 1.0f,
-  in float tMaxMax = 9000000.0f) {
+  float opticalDepthScale = 1.0f,
+  float tMaxMax = 9000000.0f) {
   SingleScatteringResult result = (SingleScatteringResult)0;
   result.L = 0;
   result.opticalDepth = 0;
@@ -545,7 +547,7 @@ SingleScatteringResult IntegrateScatteredLuminance(
       const float3 UpVector = P / pHeight;
       float sunZenithCosAngle = dot(sunDirection, UpVector);
 #ifdef HAS_TRANSMITTANCE_LUT
-      float3 transmittanceToSun = GetTransmittance(atmosphereParameters.bottomRadius, atmosphereParameters.topRadius, pHeight, sunZenithCosAngle, transmittanceLutTexture, linearSampler);
+      float3 transmittanceToSun = GetTransmittance(atmosphereParameters.bottomRadius, atmosphereParameters.topRadius, pHeight, sunZenithCosAngle, transmittanceLutTexture);
 #else
       float3 transmittanceToSun = float3(0.0f, 0.0f, 0.0f);
 #endif
@@ -587,7 +589,7 @@ SingleScatteringResult IntegrateScatteredLuminance(
       float3 multiScatteredLuminance = 0.0f;
 #ifdef HAS_MULTISCATTER_LUT
       if (multiScatteringApprox) {
-        multiScatteredLuminance = GetMultipleScattering(atmosphereParameters, multiScatteringLUT, linearSampler, medium.scattering, medium.extinction, P, sunZenithCosAngle);
+        multiScatteredLuminance = GetMultipleScattering(atmosphereParameters, multiScatteringLUT, medium.scattering, medium.extinction, P, sunZenithCosAngle);
       }
 #endif
 
@@ -642,7 +644,7 @@ SingleScatteringResult IntegrateScatteredLuminance(
 
       const float3 UpVector = P / pHeight;
       float sunZenithCosAngle = dot(sunDirection, UpVector);
-      float3 transmittanceToSun = GetTransmittance(atmosphereParameters.bottomRadius, atmosphereParameters.topRadius, pHeight, sunZenithCosAngle, transmittanceLutTexture, linearSampler);
+      float3 transmittanceToSun = GetTransmittance(atmosphereParameters.bottomRadius, atmosphereParameters.topRadius, pHeight, sunZenithCosAngle, transmittanceLutTexture);
 
       const float NdotL = saturate(dot(normalize(UpVector), normalize(sunDirection)));
       L += globalL * transmittanceToSun * throughput * NdotL * atmosphereParameters.groundAlbedo / PI;
@@ -656,7 +658,7 @@ SingleScatteringResult IntegrateScatteredLuminance(
   return result;
 }
 
-float3 GetAtmosphereTransmittance(float3 worldPosition, float3 worldDirection, AtmosphereParameters atmosphere, Texture2D<float4> transmittanceLutTexture, SamplerState linearSampler) {
+float3 GetAtmosphereTransmittance(float3 worldPosition, float3 worldDirection, AtmosphereParameters atmosphere, Texture2D<float4> transmittanceLutTexture) {
   // If the worldDirection is occluded from this virtual planet, then return.
   // We do this due to the low resolution LUT, where the stored zenith to horizon never reaches black, to prevent linear interpolation artefacts.
   // At the most shadowed point of the LUT, pure black with earth shadow is never reached.
@@ -672,7 +674,7 @@ float3 GetAtmosphereTransmittance(float3 worldPosition, float3 worldDirection, A
   float2 uv;
   LutTransmittanceParamsToUv(atmosphere.bottomRadius, atmosphere.topRadius, pHeight, SunZenithCosAngle, uv);
 
-  float3 TransmittanceToSun = transmittanceLutTexture.SampleLevel(linearSampler, uv, 0).rgb;
+  float3 TransmittanceToSun = transmittanceLutTexture.SampleLevel(LINEAR_CLAMPED_SAMPLER, uv, 0).rgb;
   return TransmittanceToSun;
 }
 
@@ -681,8 +683,7 @@ float3 GetSunLuminance(float3 worldPosition,
                        float3 sunDirection,
                        float3 sunIlluminance,
                        AtmosphereParameters atmosphere,
-                       Texture2D<float4> transmittanceLutTexture,
-                       SamplerState linearSampler) {
+                       Texture2D<float4> transmittanceLutTexture) {
   //float sunApexAngleDegree = 0.545; // Angular diameter of sun to earth from sea level, see https://en.wikipedia.org/wiki/Solid_angle
   const float sunApexAngleDegree = 2.4; // Modified sun size
   const float sunHalfApexAngleRadian = 0.5 * sunApexAngleDegree * PI / 180.0;
@@ -715,9 +716,11 @@ float3 GetSunLuminance(float3 worldPosition,
     }
 #endif
 
-    const float3 atmosphereTransmittance = GetAtmosphereTransmittance(worldPosition, worldDirection, atmosphere, transmittanceLutTexture, linearSampler);
+    const float3 atmosphereTransmittance = GetAtmosphereTransmittance(worldPosition, worldDirection, atmosphere, transmittanceLutTexture);
     retval *= atmosphereTransmittance;
   }
 
   return retval;
 }
+
+#endif

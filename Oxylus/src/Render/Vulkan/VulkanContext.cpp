@@ -206,7 +206,10 @@ void VulkanContext::create_context(const AppSpec& spec) {
     .rayTracingPipeline = true
   };
 
-  device_builder = device_builder.add_pNext(&sync_feat);
+  device_builder = device_builder.add_pNext(&vk12features)
+                                 .add_pNext(&vk11features)
+                                 .add_pNext(&sync_feat)
+                                 .add_pNext(&vk10features);
 
   if (has_rt) {
     device_builder = device_builder.add_pNext(&rtPipelineFeature).add_pNext(&accelFeature);

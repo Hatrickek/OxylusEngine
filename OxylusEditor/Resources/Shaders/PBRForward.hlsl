@@ -1,5 +1,5 @@
-﻿#include "Globals.hlsli"
-#include "PBRCommon.hlsli"
+﻿#include "PBRCommon.hlsli"
+#include "Atmosphere/SkyCommonShading.hlsli"
 
 [[vk::push_constant]] struct PushConstant {
   float4x4 ModelMatrix;
@@ -22,14 +22,14 @@ VSLayout VSmain(uint vertexIndex : SV_VertexID) {
   const float4 vertexNormal = vk::RawBufferLoad<float4>(addressOffset + sizeof(float4));
   const float4 vertexUV = vk::RawBufferLoad<float4>(addressOffset + sizeof(float4) * 2);
 
-  const float4 locPos = mul(PushConst.ModelMatrix, float4(vertexPosition.xyz, 1.0));
+  const float4 locPos = mul(PushConst.ModelMatrix, float4(vertexPosition.xyz, 1.0f));
 
   VSLayout output;
   output.Normal = normalize(mul(transpose((float3x3)PushConst.ModelMatrix), vertexNormal.xyz));
   output.WorldPos = locPos.xyz / locPos.w;
-  output.ViewPos = mul(Camera.ViewMatrix, float4(locPos.xyz, 1.0)).xyz;
+  output.ViewPos = mul(GetCamera().ViewMatrix, float4(locPos.xyz, 1.0f)).xyz;
   output.UV = vertexUV.xy;
-  output.Position = mul(mul(Camera.ProjectionMatrix, Camera.ViewMatrix), float4(output.WorldPos, 1.0));
+  output.Position = mul(mul(GetCamera().ProjectionMatrix, GetCamera().ViewMatrix), float4(output.WorldPos, 1.0f));
 
   return output;
 }
@@ -74,17 +74,15 @@ float3 GetNormal(VSLayout vs, Material mat, float2 uv) {
   return normalize(mul(TBN, tangentNormal));
 }
 
-static const float4x4 BiasMatrix = float4x4(0.5, 0.0, 0.0, 0.0, 0.0, 0.5, 0.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.5, 0.5, 0.0, 1.0);
+static const float4x4 BiasMatrix = float4x4(0.5f, 0.0f, 0.0f, 0.0f, 0.0f, 0.5f, 0.0f, 0.0f, 0.0f, 0.0f, 1.0f, 0.0f, 0.5f, 0.5f, 0.0f, 1.0f);
 
 float4 GetShadowPosition(float3 wsPos, int cascadeIndex) {
-  float4 shadowCoord = mul(BiasMatrix * GetScene().CascadeViewProjections[cascadeIndex], float4(wsPos, 1.0));
-  return shadowCoord;
+  return mul(mul(BiasMatrix, GetScene().CascadeViewProjections[cascadeIndex]), float4(wsPos, 1.0));
 }
 
 float GetShadowBias(const float3 lightDirection, const float3 normal) {
-  float minBias = 0.0023f;
-  float bias = max(minBias * (1.0 - dot(normal, lightDirection)), minBias);
-  return bias;
+  const float minBias = 0.0023f;
+  return max(minBias * (1.0f - dot(normal, lightDirection)), minBias);
 }
 
 float3 DiffuseLobe(PixelData pixelData, float NoV, float NoL, float LoH) {
@@ -145,6 +143,19 @@ void GetEnergyCompensationPixelData(inout PixelData pixelData) {
 
 #endif
 
+float3 GetAmbient(float3 worldNormal) {
+  // Set realistic_sky_stationary to true so we capture ambient at float3(0.0, 0.0, 0.0), similar to the standard sky to avoid flickering and weird behavior
+  float3 ambient = lerp(
+    GetDynamicSkyColor(float2(0.0f, 0.0f), float3(0, -1, 0), false, false, true),
+    GetDynamicSkyColor(float2(0.0f, 0.0f), float3(0, 1, 0), false, false, true),
+    saturate(worldNormal.y * 0.5 + 0.5)
+  );
+
+  // TODO: ambient += GetAmbientColor();
+
+  return ambient;
+}
+
 float3 Lighting(VSLayout vsLayout, inout PixelData pixelData) {
   float3 result = float3(0.0, 0.0, 0.0);
 
@@ -155,6 +166,8 @@ float3 Lighting(VSLayout vsLayout, inout PixelData pixelData) {
 
     float3 lightDirection = currentLight.RotationType.xyz;
     lightDirection.z = 0;
+
+    float3 lightColor = currentLight.ColorRadius.rgb;
 
     if (currentLight.RotationType.w == POINT_LIGHT) {
       // Vector to light
@@ -191,25 +204,29 @@ float3 Lighting(VSLayout vsLayout, inout PixelData pixelData) {
       int cascadeIndex = GetCascadeIndex(GetScene().CascadeSplits, vsLayout.ViewPos, SHADOW_MAP_CASCADE_COUNT);
       float4 shadowPosition = GetShadowPosition(vsLayout.WorldPos, cascadeIndex);
       float shadowBias = GetShadowBias(lightDirection, pixelData.Normal);
-      visibility = 1.0 - Shadow(pixelData.PixelPosition,
-                                true,
-                                GetSunShadowArrayTexture(),
-                                cascadeIndex,
-                                shadowPosition,
-                                GetScene().ScissorNormalized,
-                                shadowBias);
-      // shadow far attenuation   
-      float3 v = vsLayout.WorldPos - Camera.Position;
+      visibility = 1.0f - Shadow(pixelData.PixelPosition,
+                                 true,
+                                 GetSunShadowArrayTexture(),
+                                 cascadeIndex,
+                                 shadowPosition,
+                                 GetScene().ScissorNormalized,
+                                 shadowBias);
 
-      float z = dot(transpose(Camera.ViewMatrix)[2].xyz, v);
-
-      const float shadowFar = 100.0;
       // shadowFarAttenuation
-      float2 p = shadowFar > 0.0f ? 0.5f * float2(10.0, 10.0 / (shadowFar * shadowFar)) : float2(1.0, 0.0);
-      visibility = 1.0 - ((1.0 - visibility) * saturate(p.x - z * z * p.y));
+      const float shadowFar = 100.0f;
+      float z = dot(transpose(GetCamera().ViewMatrix)[2].xyz, pixelData.View);
+      float2 p = shadowFar > 0.0f ? 0.5f * float2(10.0f, 10.0f / (shadowFar * shadowFar)) : float2(1.0f, 0.0f);
+      visibility = 1.0f - ((1.0f - visibility) * saturate(p.x - z * z * p.y));
 
       // handle bright sun like this for now
       currentLight.PositionIntensity.w *= 0.2;
+
+#ifndef CUBEMAP_PIPELINE
+      AtmosphereParameters atmosphere;
+      InitAtmosphereParameters(atmosphere);
+      float3 lightTransmittance = GetAtmosphericLightTransmittance(atmosphere, vsLayout.WorldPos.xyz, lightDirection, GetSkyTransmittanceLUTTexture());
+      lightColor *= lightTransmittance;
+#endif // CUBEMAP_PIPELINE
     }
 
     float lightNoL = saturate(dot(pixelData.Normal, lightDirection));
@@ -231,7 +248,7 @@ float3 Lighting(VSLayout vsLayout, inout PixelData pixelData) {
     float3 specularEnvironmentR0 = specularColor.rgb;
     float3 specularEnvironmentR90 = float3(1.0, 1.0, 1.0) * reflectance90;
 
-    float3 F = SpecularReflection(specularEnvironmentR0, specularEnvironmentR90, VoH); //SpecularLobe(pixelData, h, pixelData.NDotV, NoL, NoH, VoH);
+    float3 F = SpecularReflection(specularEnvironmentR0, specularEnvironmentR90, VoH);
     float D = MicrofacetDistribution(pixelData.Roughness, NoH);
     float G = GeometricOcclusion(pixelData, NoL);
 
@@ -244,17 +261,7 @@ float3 Lighting(VSLayout vsLayout, inout PixelData pixelData) {
     //color *= pixelData.EnergyCompensation;
 #endif
 
-    result += color * (NoL * visibility * ComputeMicroShadowing(NoL, pixelData.AO)) * (currentLight.ColorRadius.rgb * currentLight.PositionIntensity.w);
-
-#ifndef CUBEMAP_PIPELINE
-    float sun_radiance = max(0, dot(lightDirection, pixelData.Normal));
-    float light_nol = saturate(dot(pixelData.Normal, lightDirection));
-    //@TODO
-    //float3 transmittance_lut = SampleLUT(u_TransmittanceLut, PlanetRadius, light_nol, 0.0, PlanetRadius);
-    //pixelData.TransmittanceLut = transmittance_lut;
-    //result *= transmittance_lut;
-#endif
-    //result += currentLight.Position.w * (value * sun_radiance * ComputeMicroShadowing(NoL, material.AO)) + transmittance_lut;
+    result += color * (NoL * visibility * ComputeMicroShadowing(NoL, pixelData.AO)) * (lightColor * currentLight.PositionIntensity.w);
   }
 
   return result;
@@ -276,7 +283,7 @@ float3 EvaluateIBL(PixelData pixel) {
   return float3(0.0, 0.0, 0.0);
 }
 
-float4 PSmain(VSLayout input , float4 pixelPosition : SV_Position) : SV_Target {
+float4 PSmain(VSLayout input, float4 pixelPosition : SV_Position) : SV_Target {
   Material mat = GetMaterial(PushConst.MaterialIndex);
   float2 scaledUV = input.UV;
   scaledUV *= mat.UVScale;
@@ -329,7 +336,7 @@ float4 PSmain(VSLayout input , float4 pixelPosition : SV_Position) : SV_Target {
   pixelData.Emissive = emmisive;
   pixelData.Normal = GetNormal(input, mat, scaledUV);
   pixelData.AO = ao;
-  pixelData.View = normalize(Camera.Position.xyz - input.WorldPos);
+  pixelData.View = normalize(GetCamera().Position.xyz - input.WorldPos);
   pixelData.NDotV = clampNoV(dot(pixelData.Normal, pixelData.View));
   float reflectance = computeDielectricF0(mat.Reflectance);
   pixelData.F0 = computeF0(pixelData.Albedo, pixelData.Metallic, reflectance);
@@ -356,6 +363,8 @@ float4 PSmain(VSLayout input , float4 pixelPosition : SV_Position) : SV_Target {
   float3 iblContribution = EvaluateIBL(pixelData);
 
   float3 finalColor = iblContribution + lightContribution + pixelData.Emissive;
+
+  finalColor += GetAmbient(input.Normal);
 
 #ifndef BLEND_MODE
   // Apply GTAO

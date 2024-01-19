@@ -1,6 +1,4 @@
-﻿#include "../Globals.hlsli"
-
-#define HAS_TRANSMITTANCE_LUT
+﻿#define HAS_TRANSMITTANCE_LUT
 #define HAS_MULTISCATTER_LUT
 #include "SkyCommon.hlsli"
 
@@ -72,7 +70,6 @@ float4 main(VSInput input) : SV_TARGET {
     volumetricCloudShadow,
     opaqueShadow,
     GetSkyTransmittanceLUTTexture(),
-    LINEAR_CLAMPED_SAMPLER,
     GetSkyMultiScatterLUTTexture());
 
   float3 L = ss.L;
