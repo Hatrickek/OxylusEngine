@@ -139,7 +139,6 @@ public:
   // Texture
   static bool property(const char* label,
                        Ref<TextureAsset>& texture,
-                       uint64_t override_texture_id = 0,
                        const char* tooltip = nullptr);
   // Draw vuk::Texture
   static void image(const vuk::Texture& texture,

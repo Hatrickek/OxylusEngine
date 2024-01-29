@@ -43,6 +43,7 @@ private:
   static constexpr auto CUBE_MAP_INDEX = 0;
   static constexpr auto PREFILTERED_CUBE_MAP_INDEX = 1;
   static constexpr auto IRRADIANCE_MAP_INDEX = 2;
+  static constexpr auto SKY_ENVMAP_INDEX = 3;
 
   // scene textures
   static constexpr auto PBR_IMAGE_INDEX = 0;
@@ -58,14 +59,17 @@ private:
   // buffers and buffer/image combined indices
   static constexpr auto LIGHTS_BUFFER_INDEX = 0;
   static constexpr auto MATERIALS_BUFFER_INDEX = 1;
-  static constexpr auto SSR_BUFFER_IMAGE_INDEX = 2;
   static constexpr auto GTAO_BUFFER_IMAGE_INDEX = 3;
+  static constexpr auto SSR_BUFFER_IMAGE_INDEX = 6;
 
   // GPU Buffer
   struct LightData {
-    Vec4 position_intensity = {};
-    Vec4 color_radius = {};
-    Vec4 rotation_type = {};
+    Vec3 position = {};
+    float intensity = 0.0f;
+    Vec3 color = {};
+    float radius = 0.0f;
+    Vec3 rotation = {};
+    uint32_t type = 0;
   };
 
   struct Lights {
@@ -94,6 +98,8 @@ private:
     int _pad2;
     Vec4 sun_color; // pre-multipled with intensity
 
+    Mat4 cubemap_view_projections[6];
+
     Mat4 cascade_view_projections[4];
     Vec4 cascade_splits;
     Vec4 scissor_normalized;
@@ -109,7 +115,7 @@ private:
       int irradiance_map_index;
       int brdflut_index;
 
-      int _pad2;
+      int sky_envmap_index;
       int sky_transmittance_lut_index;
       int sky_multiscatter_lut_index;
       int shadow_array_index;
@@ -137,6 +143,8 @@ private:
       Vec2 chromatic_aberration = {};                      // x: enable, y: amount
       Vec2 sharpen = {};                                   // x: enable, y: amount
     } post_processing_data;
+
+    Vec2 _pad;
   } scene_data;
 
   struct ShaderPC {
@@ -161,6 +169,7 @@ private:
 
   vuk::Texture sky_transmittance_lut;
   vuk::Texture sky_multiscatter_lut;
+  vuk::Texture sky_envmap_texture;
   vuk::Texture gtao_final_texture;
   vuk::Texture ssr_texture;
   vuk::Texture sun_shadow_texture;
@@ -187,6 +196,7 @@ private:
 
   DirectShadowPass::DirectShadowUB direct_shadow_ub = {};
   std::vector<LightData> scene_lights = {};
+  LightData* dir_light_data = nullptr;
   EventDispatcher light_buffer_dispatcher;
   bool is_cube_map_pipeline = false;
 
@@ -199,6 +209,7 @@ private:
   void generate_prefilter(vuk::Allocator& allocator);
   void update_parameters(ProbeChangeEvent& e);
 
+  void sky_envmap_pass(const Ref<vuk::RenderGraph>& rg);
   void sky_view_lut_pass(const Ref<vuk::RenderGraph>& rg);
   void sky_transmittance_pass(const Ref<vuk::RenderGraph>& rg);
   void sky_multiscatter_pass(const Ref<vuk::RenderGraph>& rg);

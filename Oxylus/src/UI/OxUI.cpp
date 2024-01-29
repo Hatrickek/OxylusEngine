@@ -98,7 +98,7 @@ void OxUI::tooltip(const char* text) {
   ImGui::PopStyleVar();
 }
 
-bool OxUI::property(const char* label, Ref<TextureAsset>& texture, uint64_t override_texture_id, const char* tooltip) {
+bool OxUI::property(const char* label, Ref<TextureAsset>& texture, const char* tooltip) {
   begin_property_grid(label, tooltip);
   bool changed = false;
 
@@ -116,25 +116,38 @@ bool OxUI::property(const char* label, Ref<TextureAsset>& texture, uint64_t over
   ImGui::PushStyleColor(ImGuiCol_ButtonHovered, ImVec4{0.35f, 0.35f, 0.35f, 1.0f});
   ImGui::PushStyleColor(ImGuiCol_ButtonActive, ImVec4{0.25f, 0.25f, 0.25f, 1.0f});
 
-  vuk::SamplerCreateInfo sci;
-  sci.minFilter = sci.magFilter = vuk::Filter::eLinear;
-  sci.mipmapMode = vuk::SamplerMipmapMode::eLinear;
-  sci.addressModeU = sci.addressModeV = sci.addressModeW = vuk::SamplerAddressMode::eRepeat;
-  const vuk::SampledImage sampled_image(vuk::SampledImage::Global{.iv = *texture->get_texture().view, .sci = sci, .image_layout = vuk::ImageLayout::eShaderReadOnlyOptimal});
-
-  if (ImGui::ImageButton(Application::get()->get_imgui_layer()->add_sampled_image(sampled_image), {button_size, button_size}, {1, 1}, {0, 0}, 0)) {
+  auto texture_load_func = [](Ref<TextureAsset>& texture, bool& changed) {
     const auto& path = FileDialogs::open_file({{"Texture file", "png,jpg"}});
     if (!path.empty()) {
       texture = AssetManager::get_texture_asset({path});
       changed = true;
     }
+  };
+
+  if (texture) {
+    vuk::SamplerCreateInfo sci;
+    sci.minFilter = sci.magFilter = vuk::Filter::eLinear;
+    sci.mipmapMode = vuk::SamplerMipmapMode::eLinear;
+    sci.addressModeU = sci.addressModeV = sci.addressModeW = vuk::SamplerAddressMode::eRepeat;
+    const vuk::SampledImage sampled_image(vuk::SampledImage::Global{.iv = *texture->get_texture().view, .sci = sci, .image_layout = vuk::ImageLayout::eShaderReadOnlyOptimal});
+
+    if (ImGui::ImageButton(Application::get()->get_imgui_layer()->add_sampled_image(sampled_image), {button_size, button_size}, {1, 1}, {0, 0}, 0)) {
+      texture_load_func(texture, changed);
+    }
+    if (ImGui::IsItemHovered(ImGuiHoveredFlags_DelayNormal | ImGuiHoveredFlags_NoSharedDelay)) {
+      ImGui::BeginTooltip();
+      ImGui::TextUnformatted(texture->get_path().c_str());
+      ImGui::Spacing();
+      ImGui::Image(Application::get()->get_imgui_layer()->add_sampled_image(sampled_image), {tooltip_size, tooltip_size}, {1, 1}, {0, 0});
+      ImGui::EndTooltip();
+    }
   }
-  if (texture && ImGui::IsItemHovered(ImGuiHoveredFlags_DelayNormal | ImGuiHoveredFlags_NoSharedDelay)) {
-    ImGui::BeginTooltip();
-    ImGui::TextUnformatted(texture->get_path().c_str());
-    ImGui::Spacing();
-    ImGui::Image(Application::get()->get_imgui_layer()->add_sampled_image(sampled_image), {tooltip_size, tooltip_size}, {1, 1}, {0, 0});
-    ImGui::EndTooltip();
+  else {
+    ImGui::PushFont(ImGuiLayer::bold_font);
+    if (ImGui::Button("NO\nTEXTURE", {button_size, button_size})) {
+      texture_load_func(texture, changed);
+    }
+    ImGui::PopFont();
   }
   if (ImGui::BeginDragDropTarget()) {
     if (const ImGuiPayload* payload = ImGui::AcceptDragDropPayload("CONTENT_BROWSER_ITEM")) {
@@ -151,7 +164,7 @@ bool OxUI::property(const char* label, Ref<TextureAsset>& texture, uint64_t over
   ImGui::PushStyleColor(ImGuiCol_ButtonHovered, ImVec4{0.3f, 0.3f, 0.3f, 1.0f});
   ImGui::PushStyleColor(ImGuiCol_ButtonActive, ImVec4{0.2f, 0.2f, 0.2f, 1.0f});
   if (ImGui::Button("x", x_button_size)) {
-    texture = TextureAsset::get_purple_texture();
+    texture = nullptr;
     changed = true;
   }
   ImGui::PopStyleColor(3);

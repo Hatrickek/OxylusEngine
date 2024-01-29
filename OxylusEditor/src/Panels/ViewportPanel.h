@@ -55,7 +55,7 @@ private:
         const Vec2 screen_pos = Math::world_to_screen(pos, view_proj, width, height, xpos, ypos);
         ImGui::SetCursorPos({screen_pos.x - ImGui::GetFontSize() * 0.5f, screen_pos.y - ImGui::GetFontSize() * 0.5f});
         ImGui::PushStyleColor(ImGuiCol_Button, ImVec4(0.7f, 0.7f, 0.7f, 0.0f));
-        ImGui::PushStyleColor(ImGuiCol_ButtonHovered, ImVec4(0.7f, 0.7f, 0.7f, 0.0f));
+        ImGui::PushStyleColor(ImGuiCol_ButtonHovered, ImVec4(0.1f, 0.1f, 0.1f, 0.1f));
 
         if (OxUI::image_button("##", m_show_gizmo_image_map[typeid(T).hash_code()]->get_texture(), {40.f, 40.f})) {
           m_scene_hierarchy_panel->set_selected_entity(Entity(entity, scene));
@@ -93,9 +93,6 @@ private:
   bool m_lock_aspect_ratio = true;
   float m_translation_dampening = 0.6f;
   float m_rotation_dampening = 0.3f;
-  bool m_smooth_camera = true;
-  float m_mouse_sensitivity = 0.1f;
-  float m_movement_speed = 5.0f;
   bool m_use_editor_camera = true;
   bool m_using_editor_camera = false;
   Vec2 m_locked_mouse_position = Vec2(0.0f);

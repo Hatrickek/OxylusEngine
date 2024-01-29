@@ -275,6 +275,10 @@ target_link_libraries(${PROJECT_NAME} PUBLIC ryml)
 target_link_libraries(${PROJECT_NAME} PUBLIC c4core)
 set_targets_static_and_folder(ryml)
 
+# toml
+CPMAddPackage("gh:marzer/tomlplusplus#master")
+target_include_directories(${PROJECT_NAME} PUBLIC ${tomlplusplus_SOURCE_DIR}/include)
+
 # RapidJSON
 CPMAddPackage(
     NAME rapidjson

@@ -133,25 +133,26 @@ bool InspectorPanel::draw_material_properties(Ref<Material>& material, const boo
   OxUI::begin_properties();
   OxUI::text("Alpha mode: ", material->alpha_mode_to_string());
   OxUI::property("UV Scale", &material->parameters.uv_scale);
-  OxUI::property("Use Albedo", (bool*)&material->parameters.use_albedo);
-  OxUI::property("Albedo", material->albedo_texture);
+
+  if (OxUI::property("Albedo", material->get_albedo_texture()))
+    material->set_albedo_texture(material->get_albedo_texture());
   OxUI::property_vector("Color", material->parameters.color, true, true);
 
   OxUI::property("Reflectance", &material->parameters.reflectance);
-  OxUI::property_vector("Emmisive", material->parameters.emmisive, true, true);
+  if (OxUI::property("Normal", material->get_normal_texture()))
+    material->set_normal_texture(material->get_normal_texture());
 
-  OxUI::property("Use Normal", (bool*)&material->parameters.use_normal);
-  OxUI::property("Normal", material->normal_texture);
-
-  OxUI::property("Use PhysicalMap(Roughness/Metallic)", (bool*)&material->parameters.use_physical_map);
-  OxUI::property("PhysicalMap", material->metallic_roughness_texture);
-
+  if (OxUI::property("PhysicalMap", material->get_physical_texture()))
+    material->set_physical_texture(material->get_physical_texture());
   OxUI::property("Roughness", &material->parameters.roughness);
-
   OxUI::property("Metallic", &material->parameters.metallic);
 
-  OxUI::property("Use AO", (bool*)&material->parameters.use_ao);
-  OxUI::property("AO", material->ao_texture);
+  if (OxUI::property("AO", material->get_ao_texture()))
+    material->set_ao_texture(material->get_ao_texture());
+
+  if (OxUI::property("Emissive", material->get_emissive_texture()))
+    material->set_emissive_texture(material->get_emissive_texture());
+  OxUI::property_vector("Emissive Color", material->parameters.emissive, true, true);
 
   OxUI::end_properties();
 

@@ -2,6 +2,8 @@
 
 #include <vuk/CommandBuffer.hpp>
 
+#include "Core/Application.h"
+
 #include "Render/Vulkan/VukUtils.h"
 #include "Render/Vulkan/VulkanContext.h"
 
@@ -27,8 +29,84 @@ void Material::bind_textures(vuk::CommandBuffer& command_buffer) const {
   command_buffer.bind_image(1, 0, *albedo_texture->get_texture().view)
                 .bind_image(1, 1, *normal_texture->get_texture().view)
                 .bind_image(1, 2, *ao_texture->get_texture().view)
-                .bind_image(1, 3, *metallic_roughness_texture->get_texture().view)
+                .bind_image(1, 3, *physical_texture->get_texture().view)
                 .bind_image(1, 4, *emissive_texture->get_texture().view);
+}
+
+#define SET_TEXTURE_ID(texture, parameter) \
+  if (!texture) \
+    parameter = INVALID_ASSET_ID; \
+  else \
+    parameter = texture->get_id();
+
+Material* Material::set_albedo_texture(const Ref<TextureAsset>& texture) {
+  albedo_texture = texture;
+  SET_TEXTURE_ID(texture, parameters.albedo_map_id)
+  return this;
+}
+
+Material* Material::set_normal_texture(const Ref<TextureAsset>& texture) {
+  normal_texture = texture;
+  SET_TEXTURE_ID(texture, parameters.normal_map_id)
+  return this;
+}
+
+Material* Material::set_physical_texture(const Ref<TextureAsset>& texture) {
+  physical_texture = texture;
+  SET_TEXTURE_ID(texture, parameters.physical_map_id)
+  return this;
+}
+
+Material* Material::set_ao_texture(const Ref<TextureAsset>& texture) {
+  ao_texture = texture;
+  SET_TEXTURE_ID(texture, parameters.ao_map_id)
+  return this;
+}
+
+Material* Material::set_emissive_texture(const Ref<TextureAsset>& texture) {
+  emissive_texture = texture;
+  SET_TEXTURE_ID(texture, parameters.emissive_map_id)
+  return this;
+}
+
+Material* Material::set_color(Vec4 color) {
+  parameters.color = color;
+  return this;
+}
+
+Material* Material::set_roughness(float roughness) {
+  parameters.roughness = roughness;
+  return this;
+}
+
+Material* Material::set_metallic(float metallic) {
+  parameters.metallic = metallic;
+  return this;
+}
+
+Material* Material::set_reflectance(float reflectance) {
+  parameters.reflectance = reflectance;
+  return this;
+}
+
+Material* Material::set_emissive(Vec4 emissive) {
+  parameters.emissive = emissive;
+  return this;
+}
+
+Material* Material::set_alpha_mode(AlphaMode alpha_mode) {
+  parameters.alpha_mode = (uint32_t)alpha_mode;
+  return this;
+}
+
+Material* Material::set_alpha_cutoff(float cutoff) {
+  parameters.alpha_cutoff = cutoff;
+  return this;
+}
+
+Material* Material::set_double_sided(bool double_sided) {
+  parameters.double_sided = double_sided;
+  return this;
 }
 
 bool Material::is_opaque() const {
@@ -45,11 +123,16 @@ const char* Material::alpha_mode_to_string() const {
 }
 
 void Material::reset() {
-  albedo_texture = TextureAsset::get_purple_texture();
-  normal_texture = TextureAsset::get_purple_texture();
-  ao_texture = TextureAsset::get_purple_texture();
-  metallic_roughness_texture = TextureAsset::get_purple_texture();
-  emissive_texture = TextureAsset::get_purple_texture();
+  albedo_texture = nullptr;
+  parameters.albedo_map_id = INVALID_ASSET_ID;
+  normal_texture = nullptr;
+  parameters.normal_map_id = INVALID_ASSET_ID;
+  ao_texture = nullptr;
+  parameters.ao_map_id = INVALID_ASSET_ID;
+  physical_texture = nullptr;
+  parameters.physical_map_id = INVALID_ASSET_ID;
+  emissive_texture = nullptr;
+  parameters.emissive_map_id = INVALID_ASSET_ID;
 }
 
 void Material::destroy() {

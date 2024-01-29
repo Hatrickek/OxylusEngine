@@ -9,7 +9,6 @@
 
 namespace Oxylus {
 AssetManager::AssetLibrary AssetManager::s_library;
-std::mutex AssetManager::s_asset_mutex;
 
 std::filesystem::path AssetManager::get_asset_file_system_path(const std::filesystem::path& path) {
   return Project::get_asset_directory() / path;
@@ -43,8 +42,6 @@ Ref<Mesh> AssetManager::get_mesh_asset(const std::string& path, const int32_t lo
 Ref<TextureAsset> AssetManager::load_texture_asset(const std::string& path) {
   OX_SCOPED_ZONE;
 
-  std::lock_guard lock(s_asset_mutex);
-
   Ref<TextureAsset> texture = create_ref<TextureAsset>(path);
   return s_library.texture_assets.emplace(path, texture).first->second;
 }
@@ -52,9 +49,8 @@ Ref<TextureAsset> AssetManager::load_texture_asset(const std::string& path) {
 Ref<TextureAsset> AssetManager::load_texture_asset(const std::string& path, const TextureLoadInfo& info) {
   OX_SCOPED_ZONE;
 
-  std::lock_guard lock(s_asset_mutex);
-
   Ref<TextureAsset> texture = create_ref<TextureAsset>(info);
+  texture->asset_id = (uint32_t)s_library.texture_assets.size() + 1;
   return s_library.texture_assets.emplace(path, texture).first->second;
 }
 

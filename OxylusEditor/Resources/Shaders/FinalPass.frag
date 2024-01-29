@@ -19,7 +19,6 @@ struct Parameters {
 #include "PostProcess/Tonemaps.glsl"
 
 layout(binding = 0) uniform sampler2D in_Color;
-layout(binding = 3) uniform sampler2D in_SSR;
 layout(binding = 4) uniform sampler2D in_Bloom;
 
 layout(binding = 5) uniform UBO_Parameters { Parameters u_Parameters; };
@@ -31,12 +30,8 @@ layout(location = 0) in vec2 in_UV;
 void main() {
     vec4 finalImage = texture(in_Color, in_UV).rgba;
     
-    vec4 ssr = texture(in_SSR, in_UV).rgba;
     vec4 bloom = texture(in_Bloom, in_UV);
 
-    if (u_Parameters.EnableSSR) {
-      finalImage += ssr;
-    }
     if (u_Parameters.EnableBloom) {
       finalImage += bloom;
     }

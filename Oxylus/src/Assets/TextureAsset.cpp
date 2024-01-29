@@ -6,12 +6,10 @@
 #include "Render/Texture.h"
 #include "Render/Vulkan/VulkanContext.h"
 
-#include "Utils/EmbeddedMissingTexture.h"
 #include "Utils/FileSystem.h"
 #include "Utils/Profiler.h"
 
 namespace Oxylus {
-Ref<TextureAsset> TextureAsset::s_purple_texture = nullptr;
 Ref<TextureAsset> TextureAsset::s_white_texture = nullptr;
 
 TextureAsset::TextureAsset(const std::string& file_path) {
@@ -81,12 +79,6 @@ void TextureAsset::load_from_memory(void* initial_data, const size_t size) {
 
 vuk::ImageAttachment TextureAsset::as_attachment() const {
   return vuk::ImageAttachment::from_texture(texture);
-}
-
-void TextureAsset::create_blank_texture() {
-  OX_SCOPED_ZONE;
-  s_purple_texture = create_ref<TextureAsset>();
-  s_purple_texture->create_texture(MissingTextureWidth, MissingTextureHeight, MissingTexture, vuk::Format::eR8G8B8A8Unorm, false);
 }
 
 void TextureAsset::create_white_texture() {

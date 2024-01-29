@@ -9,8 +9,6 @@ Currently I'm developing [Oxrena](https://github.com/Hatrickek/Oxrena) -a quake-
 
 Windows, Linux and Mac (with MoltenVK) is supported.
 
-If you liked my work and would like to donate, you can do so with my [ko-fi page](https://ko-fi.com/hatrickek). Thanks!
-
 ## Features:     
 - Modular Vulkan renderer built with Vuk.
 - Modern rendering features:

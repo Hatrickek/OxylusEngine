@@ -46,15 +46,18 @@ float4 PSmain(VSLayout input) : SV_Target0 {
   float2 scaledUV = input.UV;
   scaledUV *= mat.UVScale;
 
-  const float normalMapStrenght = mat.UseNormal ? 1.0 : 0.0;
-  float3 normal = GetMaterialNormalTexture(PushConst.MaterialIndex).Sample(LINEAR_REPEATED_SAMPLER, scaledUV).rgb;
+  bool useNormalMap = mat.NormalMapID != INVALID_ID;
+  const float normalMapStrenght = useNormalMap ? 1.0 : 0.0;
+  float3 normal = float3(0, 0, 0);
+  if (useNormalMap)
+    normal = GetMaterialNormalTexture(mat).Sample(LINEAR_REPEATED_SAMPLER, scaledUV).rgb;
   normal = mul(input.WorldTangent, normalize(normal * 2.0 - 1.0));
   normal = lerp(normalize(input.Normal), normal, normalMapStrenght);
   normal = normalize(mul((float3x3)GetCamera().ViewMatrix, normal));
 
   float invRoughness;
-  if (mat.UsePhysicalMap) {
-    invRoughness = GetMaterialPhysicalTexture(PushConst.MaterialIndex).Sample(LINEAR_REPEATED_SAMPLER, scaledUV).g;
+  if (mat.PhysicalMapID != INVALID_ID) {
+    invRoughness = GetMaterialPhysicalTexture(mat).Sample(LINEAR_REPEATED_SAMPLER, scaledUV).g;
     invRoughness *= 1.0 - mat.Roughness;
   }
   else {

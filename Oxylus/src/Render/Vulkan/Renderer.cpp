@@ -24,11 +24,10 @@ void Renderer::init() {
 
   // Save/Load renderer config
   ADD_TASK_TO_PIPE(,
-    if (!RendererConfig::get()->load_config("renderer.oxconfig"))
-    RendererConfig::get()->save_config("renderer.oxconfig");
+    if (!RendererConfig::get()->load_config("renderer_config.toml"))
+    RendererConfig::get()->save_config("renderer_config.toml");
   );
 
-  ADD_TASK_TO_PIPE(, TextureAsset::create_blank_texture(););
   ADD_TASK_TO_PIPE(, TextureAsset::create_white_texture(););
 
   ADD_TASK_TO_PIPE(, DebugRenderer::init(););

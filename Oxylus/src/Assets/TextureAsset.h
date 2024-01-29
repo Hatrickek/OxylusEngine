@@ -3,6 +3,8 @@
 #include <vuk/Image.hpp>
 #include <vuk/ImageAttachment.hpp>
 
+#include "Asset.h"
+
 #include "Core/Base.h"
 
 namespace Oxylus {
@@ -16,7 +18,7 @@ struct TextureLoadInfo {
   bool generate_cubemap_from_hdr = true;
 };
 
-class TextureAsset {
+class TextureAsset : public Asset {
 public:
   TextureAsset() = default;
   TextureAsset(const std::string& file_path);
@@ -38,15 +40,12 @@ public:
   const std::string& get_path() const { return path; }
   const vuk::Texture& get_texture() const { return texture; }
 
-  static void create_blank_texture();
   static void create_white_texture();
-  static Ref<TextureAsset> get_purple_texture() { return s_purple_texture; }
   static Ref<TextureAsset> get_white_texture() { return s_white_texture; }
 
 private:
   vuk::Texture texture;
   std::string path = {};
-  static Ref<TextureAsset> s_purple_texture;
   static Ref<TextureAsset> s_white_texture;
 };
 }

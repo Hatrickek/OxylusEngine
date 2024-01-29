@@ -247,52 +247,47 @@ void Mesh::load_materials(tinygltf::Model& model) {
     material.create();
     if (!mat.name.empty())
       material.name = mat.name;
-    material.parameters.double_sided = mat.doubleSided;
-    if (mat.values.contains("baseColorTexture")) {
-      material.albedo_texture = m_textures.at(model.textures[mat.values["baseColorTexture"].TextureIndex()].source);
-      material.parameters.use_albedo = true;
-    }
+
+    material.set_double_sided(mat.doubleSided);
+
+    material.set_reflectance(0.04f);
+
+    if (mat.values.contains("baseColorTexture"))
+      material.set_albedo_texture(m_textures.at(model.textures[mat.values["baseColorTexture"].TextureIndex()].source));
+    if (mat.additionalValues.contains("normalTexture"))
+      material.set_normal_texture(m_textures.at(model.textures[mat.additionalValues["normalTexture"].TextureIndex()].source));
     if (mat.values.contains("metallicRoughnessTexture")) {
-      material.metallic_roughness_texture = m_textures.at(model.textures[mat.values["metallicRoughnessTexture"].TextureIndex()].source);
-      material.parameters.use_physical_map = true;
+      material.set_physical_texture(m_textures.at(model.textures[mat.values["metallicRoughnessTexture"].TextureIndex()].source));
+      material.set_metallic(1.0f);
+      material.set_roughness(1.0f);
     }
-    if (mat.values.contains("roughnessFactor")) {
-      material.parameters.roughness = static_cast<float>(mat.values["roughnessFactor"].Factor());
-    }
-    if (mat.values.contains("metallicFactor")) {
-      material.parameters.metallic = static_cast<float>(mat.values["metallicFactor"].Factor());
-    }
-    if (mat.values.contains("specularFactor")) {
-      material.parameters.reflectance = static_cast<float>(mat.values["specularFactor"].Factor());
-    }
-    if (mat.values.contains("baseColorFactor")) {
-      material.parameters.color = glm::make_vec4(mat.values["baseColorFactor"].ColorFactor().data());
-    }
-    if (mat.additionalValues.contains("emissiveFactor")) {
-      material.parameters.emmisive = Vec4(glm::make_vec3(mat.additionalValues["emissiveFactor"].ColorFactor().data()), 1.0);
-    }
-    if (mat.additionalValues.contains("normalTexture")) {
-      material.normal_texture = m_textures.at(model.textures[mat.additionalValues["normalTexture"].TextureIndex()].source);
-      material.parameters.use_normal = true;
-    }
-    if (mat.additionalValues.contains("emissiveTexture")) {
-      material.emissive_texture = m_textures.at(model.textures[mat.additionalValues["emissiveTexture"].TextureIndex()].source);
-      material.parameters.use_emissive = true;
-    }
-    if (mat.additionalValues.contains("occlusionTexture")) {
-      material.ao_texture = m_textures.at(model.textures[mat.additionalValues["occlusionTexture"].TextureIndex()].source);
-      material.parameters.use_ao = true;
-    }
+    if (mat.additionalValues.contains("emissiveTexture"))
+      material.set_emissive_texture(m_textures.at(model.textures[mat.additionalValues["emissiveTexture"].TextureIndex()].source));
+    if (mat.additionalValues.contains("occlusionTexture"))
+      material.set_ao_texture(m_textures.at(model.textures[mat.additionalValues["occlusionTexture"].TextureIndex()].source));
+
+    if (mat.values.contains("baseColorFactor"))
+      material.set_color(glm::make_vec4(mat.values["baseColorFactor"].ColorFactor().data()));
+    if (mat.values.contains("roughnessFactor"))
+      material.set_roughness(static_cast<float>(mat.values["roughnessFactor"].Factor()));
+    if (mat.values.contains("metallicFactor"))
+      material.set_metallic(static_cast<float>(mat.values["metallicFactor"].Factor()));
+    if (mat.values.contains("specularFactor"))
+      material.set_reflectance(static_cast<float>(mat.values["specularFactor"].Factor()));
+    if (mat.additionalValues.contains("emissiveFactor"))
+      material.set_emissive(Vec4(glm::make_vec3(mat.additionalValues["emissiveFactor"].ColorFactor().data()), 1.0));
+
     if (mat.alphaMode == "BLEND") {
-      material.parameters.alpha_mode = (uint32_t)Material::AlphaMode::Blend;
+      material.set_alpha_mode(Material::AlphaMode::Blend);
     }
     else if (mat.alphaMode == "MASK") {
-      material.parameters.alpha_cutoff = (float)mat.alphaCutoff;
-      material.parameters.alpha_mode = (uint32_t)Material::AlphaMode::Mask;
+      material.set_alpha_cutoff((float)mat.alphaCutoff);
+      material.set_alpha_mode(Material::AlphaMode::Mask);
     }
     if (mat.additionalValues.contains("alphaCutoff")) {
-      material.parameters.alpha_cutoff = static_cast<float>(mat.additionalValues["alphaCutoff"].Factor());
+      material.set_alpha_cutoff(static_cast<float>(mat.additionalValues["alphaCutoff"].Factor()));
     }
+
     if (mat.extensions.contains("KHR_materials_ior")) {
       const auto ext = mat.extensions.find("KHR_materials_ior");
       if (ext->second.Has("ior")) {
@@ -318,7 +313,7 @@ std::vector<Ref<Material>> Mesh::get_materials_as_ref() const {
 
 std::vector<Ref<Material>> Mesh::get_materials(uint32_t node_index) const {
   OX_SCOPED_ZONE;
-  OX_CORE_ASSERT(linear_nodes[node_index]->mesh_data);
+  OX_CORE_ASSERT(linear_nodes[node_index]->mesh_data)
   return linear_nodes[node_index]->mesh_data->materials;
 }
 
@@ -711,9 +706,12 @@ void Mesh::load_node(Node* parent,
         new_primitive->material_index = 0;
       new_primitive->material = materials[new_primitive->material_index];
 
+      if ((uint32_t)new_mesh->materials.size() <= new_primitive->material_index)
+        new_mesh->materials.resize(new_primitive->material_index + 1);
+      new_mesh->materials[new_primitive->material_index] = new_primitive->material;
+
       new_primitive->set_bounding_box(pos_min, pos_max);
 
-      new_mesh->materials.emplace_back(new_primitive->material);
       new_mesh->primitives.push_back(new_primitive);
 
       total_primitive_count += 1;

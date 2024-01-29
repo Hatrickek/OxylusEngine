@@ -5,6 +5,7 @@
 
 #include <fstream>
 #include <sstream>
+#include <toml++/toml.hpp>
 
 #include "Utils/Profiler.h"
 
@@ -17,74 +18,57 @@ RendererConfig::RendererConfig() {
 
 void RendererConfig::save_config(const char* path) const {
   OX_SCOPED_ZONE;
-  ryml::Tree tree;
 
-  ryml::NodeRef node_root = tree.rootref();
-  node_root |= ryml::MAP;
-
-  //TODO: Add comment at the top of the file: "# Renderer settings" (Note: Couldn't find how to add comments in ryml docs)
-
-  //Display
-  {
-    auto node = node_root["Display"];
-    node |= ryml::MAP;
-
-    node["VSync"] << RendererCVar::cvar_vsync.get();
-  }
-
-  //Color
-  {
-    auto node = node_root["Color"];
-    node |= ryml::MAP;
-
-    node["Tonemapper"] << RendererCVar::cvar_tonemapper.get();
-    node["Exposure"] << RendererCVar::cvar_exposure.get();
-    node["Gamma"] << RendererCVar::cvar_gamma.get();
-  }
-
-  //GTAO
-  {
-    auto node = node_root["GTAO"];
-    node |= ryml::MAP;
-
-    node["Enabled"] << RendererCVar::cvar_gtao_enable.get();
-  }
-
-  //Bloom
-  {
-    auto node = node_root["Bloom"];
-    node |= ryml::MAP;
-
-    node["Enabled"] << RendererCVar::cvar_bloom_enable.get();
-    node["Threshold"] << RendererCVar::cvar_bloom_threshold.get();
-  }
-
-  //SSR
-  {
-    auto node = node_root["SSR"];
-    node |= ryml::MAP;
-
-    node["Enabled"] << RendererCVar::cvar_ssr_enable.get();
-  }
-
-  //DirectShadows
-  {
-    auto node = node_root["DirectShadows"];
-    node |= ryml::MAP;
-
-    node["UsePCF"] << RendererCVar::cvar_shadows_pcf.get();
-  }
-
-  //FXAA
-  {
-    auto node = node_root["FXAA"];
-    node |= ryml::MAP;
-
-    node["Enabled"] << RendererCVar::cvar_fxaa_enable.get();
-  }
+  const auto root = toml::table{
+    {
+      "display",
+      toml::table{
+        {"vsync", (bool)RendererCVar::cvar_vsync.get()},
+      }
+    },
+    {
+      "color",
+      toml::table{
+        {"tonemapper", RendererCVar::cvar_tonemapper.get()},
+        {"exposure", RendererCVar::cvar_exposure.get()},
+        {"gamma", RendererCVar::cvar_gamma.get()}
+      }
+    },
+    {
+      "gtao",
+      toml::table{
+        {"enabled", (bool)RendererCVar::cvar_gtao_enable.get()},
+      }
+    },
+    {
+      "bloom",
+      toml::table{
+        {"enabled", (bool)RendererCVar::cvar_bloom_enable.get()},
+        {"threshold", RendererCVar::cvar_bloom_threshold.get()},
+      }
+    },
+    {
+      "ssr",
+      toml::table{
+        {"enabled", (bool)RendererCVar::cvar_ssr_enable.get()},
+      }
+    },
+    {
+      "shadows",
+      toml::table{
+        {"size", RendererCVar::cvar_shadows_size.get()},
+      }
+    },
+    {
+      "fxaa",
+      toml::table{
+        {"enabled", (bool)RendererCVar::cvar_fxaa_enable.get()},
+      }
+    }
+  };
 
   std::stringstream ss;
-  ss << tree;
+  ss << root;
   std::ofstream filestream(path);
   filestream << ss.str();
 }
@@ -95,73 +79,33 @@ bool RendererConfig::load_config(const char* path) {
   if (content.empty())
     return false;
 
-  ryml::Tree tree = ryml::parse_in_arena(c4::to_csubstr(content));
-  const ryml::ConstNodeRef root = tree.rootref();
-  const ryml::ConstNodeRef nodeRoot = root;
+  toml::table toml = toml::parse(content);
 
-  //Display
-  {
-    const ryml::ConstNodeRef node = nodeRoot["Display"];
-    auto vsync = 1;
-    node["VSync"] >> vsync;
-    RendererCVar::cvar_vsync.set(vsync);
-  }
+  const auto config = toml["renderer_config"];
 
-  //Color
-  {
-    const ryml::ConstNodeRef node = nodeRoot["Color"];
-    int tonemapper;
-    float exposure, gamma;
-    node["Tonemapper"] >> tonemapper;
-    node["Exposure"] >> exposure;
-    node["Gamma"] >> gamma;
-    RendererCVar::cvar_tonemapper.set(tonemapper);
-    RendererCVar::cvar_exposure.set(exposure);
-    RendererCVar::cvar_gamma.set(gamma);
-  }
+  const auto display_config = config["display"];
+  RendererCVar::cvar_vsync.set(display_config["vsync"].as_boolean()->get());
 
-  //GTAO
-  {
-    const ryml::ConstNodeRef node = nodeRoot["GTAO"];
-    int enabled;
-    node["Enabled"] >> enabled;
-    RendererCVar::cvar_gtao_enable.set(enabled);
-  }
+  const auto color_config = config["color"];
+  RendererCVar::cvar_tonemapper.set((int)color_config["tonemapper"].as_integer()->get());
+  RendererCVar::cvar_exposure.set((float)color_config["exposure"].as_floating_point()->get());
+  RendererCVar::cvar_gamma.set((float)color_config["gamma"].as_floating_point()->get());
 
-  //Bloom
-  {
-    const ryml::ConstNodeRef node = nodeRoot["Bloom"];
-    int enabled;
-    float threshold;
-    node["Enabled"] >> enabled;
-    node["Threshold"] >> threshold;
-    RendererCVar::cvar_bloom_enable.set(enabled);
-    RendererCVar::cvar_bloom_threshold.set(threshold);
-  }
+  const auto gtao_config = config["gtao"];
+  RendererCVar::cvar_gtao_enable.set(gtao_config["enabled"].as_boolean()->get());
 
-  //SSR
-  {
-    const ryml::ConstNodeRef node = nodeRoot["SSR"];
-    int enabled;
-    node["Enabled"] >> enabled;
-    RendererCVar::cvar_ssr_enable.set(enabled);
-  }
+  const auto bloom_config = config["bloom"];
+  RendererCVar::cvar_bloom_enable.set(bloom_config["enabled"].as_boolean()->get());
+  RendererCVar::cvar_bloom_threshold.set((float)bloom_config["threshold"].as_floating_point()->get());
 
-  //DirectShadows
-  {
-    const ryml::ConstNodeRef node = nodeRoot["DirectShadows"];
-    int use_pcf;
-    node["UsePCF"] >> use_pcf;
-    RendererCVar::cvar_shadows_pcf.set(use_pcf);
-  }
+  const auto ssr_config = config["ssr"];
+  RendererCVar::cvar_ssr_enable.set(ssr_config["enabled"].as_boolean()->get());
 
-  //FXAA
-  {
-    const ryml::ConstNodeRef node = nodeRoot["FXAA"];
-    int enabled;
-    node["Enabled"] >> enabled;
-    RendererCVar::cvar_fxaa_enable.set(enabled);
-  }
+  const auto shadows_config = config["shadows"];
+  RendererCVar::cvar_shadows_size.set((int)shadows_config["size"].as_integer()->get());
+
+  const auto fxaa_config = config["fxaa"];
+  RendererCVar::cvar_fxaa_enable.set(fxaa_config["enabled"].as_boolean()->get());
 
   return true;
 }

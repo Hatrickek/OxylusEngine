@@ -6,15 +6,17 @@
 #define MIN_ROUGHNESS 0.002025
 #define MIN_N_DOT_V 1e-4
 
-float F_Schlick(float u, float f0, float f90) {
-  return f0 + (f90 - f0) * pow(1.0 - u, 5.0);
+float3 F_Schlick(const float3 f0, float VoH) {
+  // Schlick 1994, "An Inexpensive BRDF Model for Physically-Based Rendering"
+  float f90 = saturate(50.0 * dot(f0, 0.33)); // reflectance at grazing angle
+  return f0 + (f90 - f0) * pow5(1.0 - VoH);
 }
 
 float Fd_Burley(float roughness, float NoV, float NoL, float LoH) {
   // Burley 2012, "Physically-Based Shading at Disney"
   float f90 = 0.5 + 2.0 * roughness * LoH * LoH;
-  float lightScatter = F_Schlick(1.0, f90, NoL);
-  float viewScatter = F_Schlick(1.0, f90, NoV);
+  float lightScatter = F_Schlick(f90, NoL);
+  float viewScatter = F_Schlick(f90, NoV);
   return lightScatter * viewScatter * (1.0 / PI);
 }
 

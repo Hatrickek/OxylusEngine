@@ -1,7 +1,6 @@
 #pragma once
 
 #include <filesystem>
-#include <mutex>
 #include <unordered_map>
 
 #include "Core/Base.h"
@@ -29,14 +28,12 @@ public:
 
 private:
   static struct AssetLibrary {
-    std::unordered_map<AssetID, Ref<TextureAsset>> texture_assets = {};
-    std::unordered_map<AssetID, Ref<Mesh>> mesh_assets = {};
+    std::unordered_map<AssetID, Ref<TextureAsset>> texture_assets ;
+    std::unordered_map<AssetID, Ref<Mesh>> mesh_assets;
   } s_library;
 
   static Ref<TextureAsset> load_texture_asset(const std::string& path);
   static Ref<TextureAsset> load_texture_asset(const std::string& path, const TextureLoadInfo& info);
   static Ref<Mesh> load_mesh_asset(const std::string& path, int32_t loadingFlags);
-
-  static std::mutex s_asset_mutex;
 };
 }

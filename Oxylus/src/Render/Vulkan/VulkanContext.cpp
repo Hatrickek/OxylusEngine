@@ -148,11 +148,13 @@ void VulkanContext::create_context(const AppSpec& spec) {
           .add_required_extension(VK_KHR_DEFERRED_HOST_OPERATIONS_EXTENSION_NAME);
 
   VkPhysicalDeviceFeatures2 vk10features{.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_FEATURES_2_KHR};
+  vk10features.features.geometryShader = true;
   vk10features.features.shaderInt64 = true;
   vk10features.features.shaderStorageImageWriteWithoutFormat = true;
   vk10features.features.depthClamp = true;
   vk10features.features.shaderStorageImageReadWithoutFormat = true;
   vk10features.features.fillModeNonSolid = true;
+  vk10features.features.multiViewport = true;
   selector.set_required_features(vk10features.features);
   VkPhysicalDeviceVulkan11Features vk11features{.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_VULKAN_1_1_FEATURES};
   vk11features.shaderDrawParameters = true;
@@ -170,6 +172,7 @@ void VulkanContext::create_context(const AppSpec& spec) {
   vk12features.descriptorIndexing = true;
   vk12features.shaderInputAttachmentArrayNonUniformIndexing = true;
   vk12features.shaderUniformBufferArrayNonUniformIndexing = true;
+  vk12features.shaderOutputViewportIndex = true;
   selector.set_required_features_12(vk12features);
 
   auto phys_ret = selector.select();
@@ -245,6 +248,8 @@ void VulkanContext::create_context(const AppSpec& spec) {
   swapchain = context->add_swapchain(sw);
   present_ready = vuk::Unique<std::array<VkSemaphore, 3>>(*superframe_allocator);
   render_complete = vuk::Unique<std::array<VkSemaphore, 3>>(*superframe_allocator);
+
+  context->set_shader_target_version(VK_API_VERSION_1_2);
 
   superframe_allocator->allocate_semaphores(*present_ready);
   superframe_allocator->allocate_semaphores(*render_complete);

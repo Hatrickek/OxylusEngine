@@ -30,22 +30,17 @@ void MaterialSerializer::serialize(const std::string& path) const {
   node_refs["AO"] << parameters.ao;
   auto colorNode = node_refs["Color"];
   glm::write(&colorNode, parameters.color);
-  node_refs["UseAlbedo"] << parameters.use_albedo;
-  node_refs["UsePhysicalMap"] << parameters.use_physical_map;
-  node_refs["UseNormal"] << parameters.use_normal;
-  node_refs["UseAO"] << parameters.use_ao;
-  node_refs["UseEmissive"] << parameters.use_ao;
   node_refs["DoubleSided"] << parameters.double_sided;
   node_refs["UVScale"] << parameters.uv_scale;
 
   auto texture_node = node_root["Textures"];
   texture_node |= ryml::MAP;
 
-  save_if_path_exists(texture_node["Albedo"], m_material->albedo_texture);
-  save_if_path_exists(texture_node["Normal"], m_material->normal_texture);
-  save_if_path_exists(texture_node["Physical"], m_material->metallic_roughness_texture);
-  save_if_path_exists(texture_node["AO"], m_material->ao_texture);
-  save_if_path_exists(texture_node["Emissive"], m_material->emissive_texture);
+  save_if_path_exists(texture_node["Albedo"], m_material->get_albedo_texture());
+  save_if_path_exists(texture_node["Normal"], m_material->get_normal_texture());
+  save_if_path_exists(texture_node["Physical"], m_material->get_physical_texture());
+  save_if_path_exists(texture_node["AO"], m_material->get_ao_texture());
+  save_if_path_exists(texture_node["Emissive"], m_material->get_emissive_texture());
 
   std::stringstream ss;
   ss << tree;
@@ -89,19 +84,14 @@ void MaterialSerializer::deserialize(const std::string& path) const {
   TryLoad(par_node, "Normal", parameters.normal);
   TryLoad(par_node, "AO", parameters.ao);
   glm::read(par_node["Color"], &parameters.color);
-  TryLoad(par_node, "UseAlbedo", parameters.use_albedo);
-  TryLoad(par_node, "UsePhysicalMap", parameters.use_physical_map);
-  TryLoad(par_node, "UseNormal", parameters.use_normal);
-  TryLoad(par_node, "UseAO", parameters.use_ao);
-  TryLoad(par_node, "UseEmissive", parameters.use_ao);
   TryLoad(par_node, "DoubleSided", parameters.double_sided);
   TryLoad(par_node, "UVScale", parameters.uv_scale);
 
-  load_if_path_exists(node_refs["Textures"], "Albedo", m_material->albedo_texture);
-  load_if_path_exists(node_refs["Textures"], "Normal", m_material->normal_texture);
-  load_if_path_exists(node_refs["Textures"], "Physical", m_material->metallic_roughness_texture);
-  load_if_path_exists(node_refs["Textures"], "AO", m_material->ao_texture);
-  load_if_path_exists(node_refs["Textures"], "Emmisive", m_material->emissive_texture);
+  load_if_path_exists(node_refs["Textures"], "Albedo", m_material->get_albedo_texture());
+  load_if_path_exists(node_refs["Textures"], "Normal", m_material->get_normal_texture());
+  load_if_path_exists(node_refs["Textures"], "Physical", m_material->get_physical_texture());
+  load_if_path_exists(node_refs["Textures"], "AO", m_material->get_ao_texture());
+  load_if_path_exists(node_refs["Textures"], "Emmisive", m_material->get_emissive_texture());
 }
 
 void MaterialSerializer::save_if_path_exists(ryml::NodeRef node, const Ref<TextureAsset>& texture) {

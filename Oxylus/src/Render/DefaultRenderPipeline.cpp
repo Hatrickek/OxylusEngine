@@ -110,17 +110,8 @@ void DefaultRenderPipeline::load_pipelines(vuk::Allocator& allocator) {
     bindless_binding(8, vuk::DescriptorType::eSampledImage),
   };
   bindless_dslci_00.index = 0;
-  bindless_dslci_00.flags = {
-    VK_DESCRIPTOR_BINDING_PARTIALLY_BOUND_BIT,
-    VK_DESCRIPTOR_BINDING_PARTIALLY_BOUND_BIT,
-    VK_DESCRIPTOR_BINDING_PARTIALLY_BOUND_BIT,
-    VK_DESCRIPTOR_BINDING_PARTIALLY_BOUND_BIT,
-    VK_DESCRIPTOR_BINDING_PARTIALLY_BOUND_BIT,
-    VK_DESCRIPTOR_BINDING_PARTIALLY_BOUND_BIT,
-    VK_DESCRIPTOR_BINDING_PARTIALLY_BOUND_BIT,
-    VK_DESCRIPTOR_BINDING_PARTIALLY_BOUND_BIT,
-    VK_DESCRIPTOR_BINDING_PARTIALLY_BOUND_BIT,
-  };
+  for (int i = 0; i < 9; i++)
+    bindless_dslci_00.flags.emplace_back(VK_DESCRIPTOR_BINDING_PARTIALLY_BOUND_BIT);
   bindless_pci.explicit_set_layouts.emplace_back(bindless_dslci_00);
 
   vuk::DescriptorSetLayoutCreateInfo bindless_dslci_01 = {};
@@ -308,6 +299,12 @@ void DefaultRenderPipeline::load_pipelines(vuk::Allocator& allocator) {
     bindless_pci.add_hlsl(FileUtils::read_shader_file("Atmosphere/SkyViewFinal.hlsl"), FileUtils::get_shader_path("Atmosphere/SkyViewFinal.hlsl"), vuk::HlslShaderStage::ePixel);
     allocator.get_context().create_named_pipeline("sky_view_final_pipeline", bindless_pci);
   );
+  ADD_TASK_TO_PIPE(
+    =,
+    bindless_pci.add_hlsl(FileUtils::read_shader_file("Atmosphere/SkyEnvMap.hlsl"), FileUtils::get_shader_path("Atmosphere/SkyEnvMap.hlsl"), vuk::HlslShaderStage::eVertex, "VSmain");
+    bindless_pci.add_hlsl(FileUtils::read_shader_file("Atmosphere/SkyEnvMap.hlsl"), FileUtils::get_shader_path("Atmosphere/SkyEnvMap.hlsl"), vuk::HlslShaderStage::ePixel, "PSmain");
+    allocator.get_context().create_named_pipeline("sky_envmap_pipeline", bindless_pci);
+  );
 
   wait_for_futures(allocator);
 
@@ -322,11 +319,23 @@ void DefaultRenderPipeline::commit_descriptor_sets(vuk::Allocator& allocator) {
   scene_data.grid_max_distance = RendererCVar::cvar_draw_grid_distance.get();
   scene_data.screen_size = IVec2(Renderer::get_viewport_width(), Renderer::get_viewport_height());
 
+  const auto capture_projection = glm::perspective(glm::radians(90.0f), 1.0f, 0.1f, 10.0f);
+  const Mat4 capture_views[] = {
+    lookAt(Vec3(0.0f, 0.0f, 0.0f), Vec3(1.0f, 0.0f, 0.0f), Vec3(0.0f, -1.0f, 0.0f)),
+    lookAt(Vec3(0.0f, 0.0f, 0.0f), Vec3(-1.0f, 0.0f, 0.0f), Vec3(0.0f, -1.0f, 0.0f)),
+    lookAt(Vec3(0.0f, 0.0f, 0.0f), Vec3(0.0f, 1.0f, 0.0f), Vec3(0.0f, 0.0f, 1.0f)),
+    lookAt(Vec3(0.0f, 0.0f, 0.0f), Vec3(0.0f, -1.0f, 0.0f), Vec3(0.0f, 0.0f, -1.0f)),
+    lookAt(Vec3(0.0f, 0.0f, 0.0f), Vec3(0.0f, 0.0f, 1.0f), Vec3(0.0f, -1.0f, 0.0f)),
+    lookAt(Vec3(0.0f, 0.0f, 0.0f), Vec3(0.0f, 0.0f, -1.0f), Vec3(0.0f, -1.0f, 0.0f))
+  };
+
+  for (int i = 0; i < 6; i++)
+    scene_data.cubemap_view_projections[i] = capture_projection * capture_views[i];
+
   scene_data.cascade_splits = direct_shadow_ub.cascade_splits;
   scene_data.scissor_normalized = direct_shadow_ub.scissor_normalized;
   memcpy(scene_data.cascade_view_projections, direct_shadow_ub.cascade_view_proj_mat, sizeof(Mat4) * 4);
 
-  // TODO: perhaps use internal vuk id's
   scene_data.indices.pbr_image_index = PBR_IMAGE_INDEX;
   scene_data.indices.normal_image_index = NORMAL_IMAGE_INDEX;
   scene_data.indices.depth_image_index = DEPTH_IMAGE_INDEX;
@@ -336,6 +345,7 @@ void DefaultRenderPipeline::commit_descriptor_sets(vuk::Allocator& allocator) {
   scene_data.indices.brdflut_index = BRDFLUT_INDEX;
   scene_data.indices.sky_transmittance_lut_index = SKY_TRANSMITTANCE_LUT_INDEX;
   scene_data.indices.sky_multiscatter_lut_index = SKY_MULTISCATTER_LUT_INDEX;
+  scene_data.indices.sky_envmap_index = SKY_ENVMAP_INDEX;
   scene_data.indices.shadow_array_index = SHADOW_ARRAY_INDEX;
   scene_data.indices.gtao_buffer_image_index = GTAO_BUFFER_IMAGE_INDEX;
   scene_data.indices.ssr_buffer_image_index = SSR_BUFFER_IMAGE_INDEX;
@@ -367,33 +377,33 @@ void DefaultRenderPipeline::commit_descriptor_sets(vuk::Allocator& allocator) {
 
   // fill it if it's empty. Or we could allow vulkan to bind null buffers with VK_EXT_robustness2 nullDescriptor feature. 
   if (scene_lights.empty())
-    scene_lights.emplace_back(LightData{Vec4{0}, Vec4{0}, Vec4{0}});
+    scene_lights.emplace_back(LightData{Vec3{0}, 0.0f, Vec3{0}, 0.0f, Vec3{0}, 0});
 
   auto [lights_buff, lights_buff_fut] = create_cpu_buffer(allocator, std::span(scene_lights));
   const auto& lights_buffer = *lights_buff;
 
   scene_lights.clear();
+  dir_light_data = nullptr;
 
   auto [ssr_buff, ssr_buff_fut] = create_cpu_buffer(allocator, std::span(&ssr_data, 1));
   auto ssr_buffer = *ssr_buff;
 
-  // TODO: A better ID based system for material textures rather than this.
-  // since multiple materials might have same textures
-
   std::vector<Material::Parameters> material_parameters = {};
-  uint32_t material_count = 0;
   for (auto& mesh : mesh_draw_list) {
     auto materials = mesh.mesh_base->get_materials(mesh.node_index);
     for (auto& mat : materials) {
       material_parameters.emplace_back(mat->parameters);
 
-      descriptor_set_00->update_sampled_image(8, material_count * Material::TOTAL_PBR_MATERIAL_TEXTURE_COUNT + Material::ALBEDO_MAP_INDEX, *mat->albedo_texture->get_texture().view, vuk::ImageLayout::eReadOnlyOptimalKHR);
-      descriptor_set_00->update_sampled_image(8, material_count * Material::TOTAL_PBR_MATERIAL_TEXTURE_COUNT + Material::NORMAL_MAP_INDEX, *mat->normal_texture->get_texture().view, vuk::ImageLayout::eReadOnlyOptimalKHR);
-      descriptor_set_00->update_sampled_image(8, material_count * Material::TOTAL_PBR_MATERIAL_TEXTURE_COUNT + Material::PHYSICAL_MAP_INDEX, *mat->metallic_roughness_texture->get_texture().view, vuk::ImageLayout::eReadOnlyOptimalKHR);
-      descriptor_set_00->update_sampled_image(8, material_count * Material::TOTAL_PBR_MATERIAL_TEXTURE_COUNT + Material::AO_MAP_INDEX, *mat->ao_texture->get_texture().view, vuk::ImageLayout::eReadOnlyOptimalKHR);
-      descriptor_set_00->update_sampled_image(8, material_count * Material::TOTAL_PBR_MATERIAL_TEXTURE_COUNT + Material::EMISSIVE_MAP_INDEX, *mat->emissive_texture->get_texture().view, vuk::ImageLayout::eReadOnlyOptimalKHR);
-
-      material_count += 1;
+      if (mat->get_albedo_texture() && mat->get_albedo_texture()->is_valid_id())
+        descriptor_set_00->update_sampled_image(8, mat->get_albedo_texture()->get_id(), *mat->get_albedo_texture()->get_texture().view, vuk::ImageLayout::eReadOnlyOptimalKHR);
+      if (mat->get_normal_texture() && mat->get_normal_texture()->is_valid_id())
+        descriptor_set_00->update_sampled_image(8, mat->get_normal_texture()->get_id(), *mat->get_normal_texture()->get_texture().view, vuk::ImageLayout::eReadOnlyOptimalKHR);
+      if (mat->get_physical_texture() && mat->get_physical_texture()->is_valid_id())
+        descriptor_set_00->update_sampled_image(8, mat->get_physical_texture()->get_id(), *mat->get_physical_texture()->get_texture().view, vuk::ImageLayout::eReadOnlyOptimalKHR);
+      if (mat->get_ao_texture() && mat->get_ao_texture()->is_valid_id())
+        descriptor_set_00->update_sampled_image(8, mat->get_ao_texture()->get_id(), *mat->get_ao_texture()->get_texture().view, vuk::ImageLayout::eReadOnlyOptimalKHR);
+      if (mat->get_emissive_texture() && mat->get_emissive_texture()->is_valid_id())
+        descriptor_set_00->update_sampled_image(8, mat->get_emissive_texture()->get_id(), *mat->get_emissive_texture()->get_texture().view, vuk::ImageLayout::eReadOnlyOptimalKHR);
     }
   }
 
@@ -413,6 +423,7 @@ void DefaultRenderPipeline::commit_descriptor_sets(vuk::Allocator& allocator) {
   descriptor_set_00->update_sampled_image(3, PBR_IMAGE_INDEX, *pbr_texture.view, vuk::ImageLayout::eReadOnlyOptimalKHR);
   descriptor_set_00->update_sampled_image(3, NORMAL_IMAGE_INDEX, *normal_texture.view, vuk::ImageLayout::eReadOnlyOptimalKHR);
   descriptor_set_00->update_sampled_image(3, DEPTH_IMAGE_INDEX, *depth_texture.view, vuk::ImageLayout::eReadOnlyOptimalKHR);
+  //descriptor_set_00->update_sampled_image(3, SSR_BUFFER_IMAGE_INDEX, *ssr_texture.view, vuk::ImageLayout::eReadOnlyOptimalKHR);
 
   if (cube_map) {
     descriptor_set_00->update_sampled_image(3, BRDFLUT_INDEX, *brdf_texture.view, vuk::ImageLayout::eReadOnlyOptimalKHR);
@@ -428,6 +439,9 @@ void DefaultRenderPipeline::commit_descriptor_sets(vuk::Allocator& allocator) {
     descriptor_set_00->update_sampled_image(5, CUBE_MAP_INDEX, *cube_map->get_texture().view, vuk::ImageLayout::eReadOnlyOptimalKHR);
     descriptor_set_00->update_sampled_image(5, PREFILTERED_CUBE_MAP_INDEX, *prefiltered_texture.view, vuk::ImageLayout::eReadOnlyOptimalKHR);
     descriptor_set_00->update_sampled_image(5, IRRADIANCE_MAP_INDEX, *irradiance_texture.view, vuk::ImageLayout::eReadOnlyOptimalKHR);
+  }
+  else {
+    descriptor_set_00->update_sampled_image(5, SKY_ENVMAP_INDEX, *sky_envmap_texture.view, vuk::ImageLayout::eReadOnlyOptimalKHR);
   }
 
   // scene array texture array
@@ -450,6 +464,21 @@ void DefaultRenderPipeline::create_static_textures(vuk::Allocator& allocator) {
 
   const auto shadow_size = vuk::Extent3D{(unsigned)RendererCVar::cvar_shadows_size.get(), (unsigned)RendererCVar::cvar_shadows_size.get(), 1};
   sun_shadow_texture = create_texture(allocator, shadow_size, vuk::Format::eD32Sfloat, DEFAULT_USAGE_FLAGS | vuk::ImageUsageFlagBits::eDepthStencilAttachment, false, 4);
+
+  const vuk::ImageAttachment attachment = {
+    .image_flags = vuk::ImageCreateFlagBits::eCubeCompatible,
+    .usage = DEFAULT_USAGE_FLAGS | vuk::ImageUsageFlagBits::eColorAttachment,
+    .extent = vuk::Dimension3D::absolute(1024, 1024, 1),
+    .format = vuk::Format::eR32G32B32A32Sfloat,
+    .sample_count = vuk::Samples::e1,
+    .view_type = vuk::ImageViewType::eCube,
+    .base_level = 0,
+    .level_count = 1,
+    .base_layer = 0,
+    .layer_count = 6
+  };
+
+  sky_envmap_texture = create_texture(allocator, attachment);
 }
 
 void DefaultRenderPipeline::create_dynamic_textures(vuk::Allocator& allocator, const vuk::Dimension3D& dim) {
@@ -493,11 +522,16 @@ void DefaultRenderPipeline::on_register_render_object(const MeshComponent& rende
 
 void DefaultRenderPipeline::on_register_light(const TransformComponent& transform, const LightComponent& light) {
   OX_SCOPED_ZONE;
-  scene_lights.emplace_back(LightData{
-    .position_intensity = {transform.position, light.intensity},
-    .color_radius = {light.color, light.range},
-    .rotation_type = {transform.rotation, (int)light.type}
+  auto& light_data = scene_lights.emplace_back(LightData{
+    .position = {transform.position},
+    .intensity = light.intensity,
+    .color = light.color,
+    .radius = light.range,
+    .rotation = transform.rotation,
+    .type = (uint32_t)light.type
   });
+  if (light.type == LightComponent::LightType::Directional)
+    dir_light_data = &light_data;
   light_buffer_dispatcher.trigger(LightChangeEvent{});
 }
 
@@ -561,20 +595,14 @@ Scope<vuk::Future> DefaultRenderPipeline::on_render(vuk::Allocator& frame_alloca
 
   cumulated_material_map = cumulate_material_map(material_map);
 
-  LightData* dir_light_data = nullptr;
-
   Vec3 sun_direction = {};
   Vec3 sun_color = {};
 
-  for (auto& light : scene_lights)
-    if ((uint32_t)light.rotation_type.w == (uint32_t)(LightComponent::LightType::Directional))
-      dir_light_data = &light;
-
   if (dir_light_data) {
-    sun_direction = normalize(Vec3(cos(dir_light_data->rotation_type.x) * cos(dir_light_data->rotation_type.y),
-                                   sin(dir_light_data->rotation_type.y),
-                                   sin(dir_light_data->rotation_type.x) * cos(dir_light_data->rotation_type.y)));
-    sun_color = Vec3(dir_light_data->color_radius) * dir_light_data->position_intensity.w;
+    sun_direction = normalize(Vec3(cos(dir_light_data->rotation.x) * cos(dir_light_data->rotation.y),
+                                   sin(dir_light_data->rotation.y),
+                                   sin(dir_light_data->rotation.x) * cos(dir_light_data->rotation.y)));
+    sun_color = dir_light_data->color * dir_light_data->intensity;
   }
 
   scene_data.sun_direction = sun_direction;
@@ -615,6 +643,8 @@ Scope<vuk::Future> DefaultRenderPipeline::on_render(vuk::Allocator& frame_alloca
   if (!is_cube_map_pipeline)
     sky_view_lut_pass(rg);
 
+  sky_envmap_pass(rg);
+
   geometry_pass(rg);
 
   if (RendererCVar::cvar_ssr_enable.get())
@@ -626,7 +656,6 @@ Scope<vuk::Future> DefaultRenderPipeline::on_render(vuk::Allocator& frame_alloca
   auto [final_buff, final_buff_fut] = create_cpu_buffer(frame_allocator, std::span(&scene_data.post_processing_data, 1));
   auto& final_buffer = *final_buff;
 
-  auto [ssr_resouce, ssr_name] = get_attachment_or_black("ssr_output", RendererCVar::cvar_ssr_enable.get());
   auto [bloom_resource, bloom_name] = get_attachment_or_black("bloom_upsampled_image", RendererCVar::cvar_bloom_enable.get());
 
   vuk::Name pbr_image_name = "pbr_output";
@@ -660,7 +689,6 @@ Scope<vuk::Future> DefaultRenderPipeline::on_render(vuk::Allocator& frame_alloca
   std::vector final_resources = {
     "final_image"_image >> vuk::eColorRW >> "final_output",
     vuk::Resource{pbr_image_name, vuk::Resource::Type::eImage, vuk::eFragmentSampled},
-    ssr_resouce,
     bloom_resource,
   };
 
@@ -669,7 +697,7 @@ Scope<vuk::Future> DefaultRenderPipeline::on_render(vuk::Allocator& frame_alloca
   rg->add_pass({
     .name = "final_pass",
     .resources = std::move(final_resources),
-    .execute = [this, final_buffer, ssr_name, bloom_name, pbr_image_name](vuk::CommandBuffer& command_buffer) {
+    .execute = [this, final_buffer, bloom_name, pbr_image_name](vuk::CommandBuffer& command_buffer) {
       this->mesh_draw_list.clear();
 
       command_buffer.bind_graphics_pipeline("final_pipeline")
@@ -680,8 +708,6 @@ Scope<vuk::Future> DefaultRenderPipeline::on_render(vuk::Allocator& frame_alloca
                     .set_rasterization({.cullMode = vuk::CullModeFlagBits::eNone})
                     .bind_sampler(0, 0, vuk::LinearSamplerClamped)
                     .bind_image(0, 0, pbr_image_name)
-                    .bind_sampler(0, 3, vuk::LinearSamplerClamped)
-                    .bind_image(0, 3, ssr_name)
                     .bind_sampler(0, 4, {})
                     .bind_image(0, 4, bloom_name)
                     .bind_buffer(0, 5, final_buffer)
@@ -799,6 +825,7 @@ void DefaultRenderPipeline::geometry_pass(const Ref<vuk::RenderGraph>& rg) {
   rg->attach_and_clear_image("pbr_image", vuk::ImageAttachment::from_texture(pbr_texture), vuk::Black<float>);
 
   auto [gtao_resource, gtao_name] = get_attachment_or_black_uint("gtao_final_output", RendererCVar::cvar_gtao_enable.get());
+  auto [ssr_resouce, ssr_name] = get_attachment_or_black("ssr_output", RendererCVar::cvar_ssr_enable.get());
 
   const auto resources = std::vector<vuk::Resource>{
     "pbr_image"_image >> vuk::eColorRW >> "pbr_output",
@@ -806,6 +833,8 @@ void DefaultRenderPipeline::geometry_pass(const Ref<vuk::RenderGraph>& rg) {
     "shadow_array_output"_image >> vuk::eFragmentSampled,
     "sky_transmittance_lut+"_image >> vuk::eFragmentSampled,
     "sky_multiscatter_lut+"_image >> vuk::eFragmentSampled,
+    "sky_envmap_image+"_image >> vuk::eFragmentSampled,
+    ssr_resouce,
     gtao_resource
   };
 
@@ -1292,6 +1321,31 @@ void DefaultRenderPipeline::update_parameters(ProbeChangeEvent& e) {
   ubo.vignette_color.a = component.vignette_intensity;
 }
 
+void DefaultRenderPipeline::sky_envmap_pass(const Ref<vuk::RenderGraph>& rg) {
+  rg->attach_and_clear_image("sky_envmap_image", vuk::ImageAttachment::from_texture(sky_envmap_texture), vuk::Black<float>);
+
+  rg->add_pass({
+    .name = "sky_envmap_pass",
+    .resources = {
+      "sky_envmap_image"_image >> vuk::eColorRW,
+    },
+    .execute = [this](vuk::CommandBuffer& command_buffer) {
+      command_buffer.bind_persistent(0, *descriptor_set_00)
+                    .bind_persistent(1, *descriptor_set_01)
+                    .set_viewport(0, vuk::Rect2D::framebuffer())
+                    .set_scissor(0, vuk::Rect2D::framebuffer())
+                    .broadcast_color_blend(vuk::BlendPreset::eOff)
+                    .set_rasterization({.cullMode = vuk::CullModeFlagBits::eNone})
+                    .set_depth_stencil({})
+                    .bind_graphics_pipeline("sky_envmap_pipeline");
+
+      m_cube->bind_vertex_buffer(command_buffer);
+      m_cube->bind_index_buffer(command_buffer);
+      command_buffer.draw_indexed(m_cube->index_count, 6, 0, 0, 0);
+    }
+  });
+}
+
 void DefaultRenderPipeline::sky_view_lut_pass(const Ref<vuk::RenderGraph>& rg) {
   OX_SCOPED_ZONE;
 
@@ -1372,7 +1426,7 @@ void DefaultRenderPipeline::debug_pass(const Ref<vuk::RenderGraph>& rg, const vu
       const auto vertex_layout = vuk::Packed{
         vuk::Format::eR32G32B32A32Sfloat,
         vuk::Format::eR32G32B32A32Sfloat,
-        vuk::Ignore{sizeof(Vertex) - (sizeof(Vertex::position) + sizeof(Vertex::normal))}
+        vuk::Ignore{sizeof(Vertex) - (sizeof(Vec4) + sizeof(Vec4))}
       };
 
       command_buffer.bind_graphics_pipeline("unlit_pipeline")

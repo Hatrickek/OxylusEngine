@@ -268,9 +268,9 @@ void ViewportPanel::on_imgui_render() {
     if (ImGui::BeginPopup("ViewportSettings")) {
       OxUI::begin_properties();
       OxUI::property("VSync", (bool*)RendererCVar::cvar_vsync.get_ptr());
-      OxUI::property<float>("Camera sensitivity", &m_mouse_sensitivity, 0.1f, 20.0f);
-      OxUI::property<float>("Movement speed", &m_movement_speed, 5, 100.0f);
-      OxUI::property("Smooth camera", &m_smooth_camera);
+      OxUI::property<float>("Camera sensitivity", EditorCVar::cvar_camera_sens.get_ptr(), 0.1f, 20.0f);
+      OxUI::property<float>("Movement speed", EditorCVar::cvar_camera_speed.get_ptr(), 5, 100.0f);
+      OxUI::property("Smooth camera", (bool*)EditorCVar::cvar_camera_smooth.get_ptr());
       OxUI::property<float>("Grid distance", RendererCVar::cvar_draw_grid_distance.get_ptr(), 10.f, 100.0f);
       OxUI::end_properties();
       ImGui::EndPopup();
@@ -606,11 +606,11 @@ void ViewportPanel::on_update() {
       Input::set_cursor_position(m_locked_mouse_position.x, m_locked_mouse_position.y);
       //Input::SetCursorIcon(EditorLayer::Get()->m_CrosshairCursor);
 
-      const Vec2 change = (new_mouse_position - m_locked_mouse_position) * m_mouse_sensitivity;
+      const Vec2 change = (new_mouse_position - m_locked_mouse_position) * EditorCVar::cvar_camera_sens.get();
       final_yaw_pitch.x += change.x;
       final_yaw_pitch.y = glm::clamp(final_yaw_pitch.y - change.y, glm::radians(-89.9f), glm::radians(89.9f));
 
-      const float max_move_speed = m_movement_speed * (ImGui::IsKeyDown(ImGuiKey_LeftShift) ? 3.0f : 1.0f);
+      const float max_move_speed = EditorCVar::cvar_camera_speed.get() * (ImGui::IsKeyDown(ImGuiKey_LeftShift) ? 3.0f : 1.0f);
       if (ImGui::IsKeyDown(ImGuiKey_W))
         final_position += m_camera.get_front() * max_move_speed;
       else if (ImGui::IsKeyDown(ImGuiKey_S))
@@ -639,9 +639,9 @@ void ViewportPanel::on_update() {
       Input::set_cursor_position(m_locked_mouse_position.x, m_locked_mouse_position.y);
       //Input::SetCursorIcon(EditorLayer::Get()->m_CrosshairCursor);
 
-      const Vec2 change = (new_mouse_position - m_locked_mouse_position) * m_mouse_sensitivity;
+      const Vec2 change = (new_mouse_position - m_locked_mouse_position) * EditorCVar::cvar_camera_sens.get();
 
-      const float max_move_speed = m_movement_speed * (ImGui::IsKeyDown(ImGuiKey_LeftShift) ? 3.0f : 1.0f);
+      const float max_move_speed = EditorCVar::cvar_camera_speed.get() * (ImGui::IsKeyDown(ImGuiKey_LeftShift) ? 3.0f : 1.0f);
       final_position += m_camera.get_front() * change.y * max_move_speed;
       final_position += m_camera.get_right() * change.x * max_move_speed;
     }
@@ -664,9 +664,9 @@ void ViewportPanel::on_update() {
                                                     1000.0f,
                                                     (float)Application::get_timestep().get_seconds());
 
-    m_camera.set_position(m_smooth_camera ? damped_position : final_position);
-    m_camera.set_yaw(m_smooth_camera ? damped_yaw_pitch.x : final_yaw_pitch.x);
-    m_camera.set_pitch(m_smooth_camera ? damped_yaw_pitch.y : final_yaw_pitch.y);
+    m_camera.set_position(EditorCVar::cvar_camera_smooth.get() ? damped_position : final_position);
+    m_camera.set_yaw(EditorCVar::cvar_camera_smooth.get() ? damped_yaw_pitch.x : final_yaw_pitch.x);
+    m_camera.set_pitch(EditorCVar::cvar_camera_smooth.get() ? damped_yaw_pitch.y : final_yaw_pitch.y);
 
     m_camera.update();
   }

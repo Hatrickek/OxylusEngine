@@ -37,6 +37,7 @@ Texture2D<float4> GetDepthTexture() { return SceneTextures[GetScene().Indices.De
 Texture2D<float4> GetBRDFLUTTexture() { return SceneTextures[GetScene().Indices.BRDFLUTIndex]; }
 Texture2D<float4> GetSkyTransmittanceLUTTexture() { return SceneTextures[GetScene().Indices.SkyTransmittanceLutIndex]; }
 Texture2D<float4> GetSkyMultiScatterLUTTexture() { return SceneTextures[GetScene().Indices.SkyMultiscatterLutIndex]; }
+//Texture2D<float4> GetSSRTexture() { return SceneTextures[GetScene().Indices.SSRBufferImageIndex]; }
 
 // scene r/w textures
 RWTexture2D<float4> GetSkyTransmittanceLUTRWTexture() { return SceneRWTextures[GetScene().Indices.SkyTransmittanceLutIndex]; }
@@ -47,6 +48,7 @@ RWTexture2D<float4> GetSSRRWTexture() { return SceneRWTextures[GetScene().Indice
 TextureCube<float4> GetPrefilteredMapTexture() { return SceneCubeTextures[GetScene().Indices.PrefilteredCubeMapIndex]; }
 TextureCube<float4> GetIrradianceTexture() { return SceneCubeTextures[GetScene().Indices.IrradianceMapIndex]; }
 TextureCube<float4> GetCubeMapTexture() { return SceneCubeTextures[GetScene().Indices.CubeMapIndex]; }
+TextureCube<float4> GetSkyEnvMapTexture() { return SceneCubeTextures[GetScene().Indices.SkyEnvMapIndex]; }
 
 // scene uint textures
 Texture2D<uint> GetGTAOTexture() { return SceneUintTextures[GetScene().Indices.GTAOBufferImageIndex]; }
@@ -55,11 +57,11 @@ Texture2D<uint> GetGTAOTexture() { return SceneUintTextures[GetScene().Indices.G
 Texture2DArray<float4> GetSunShadowArrayTexture() { return SceneArrayTextures[GetScene().Indices.ShadowArrayIndex]; }
 
 // material textures
-Texture2D<float4> GetMaterialAlbedoTexture(int materialIndex) { return MaterialTextureMaps[GetAlbedoTextureIndex(materialIndex)]; }
-Texture2D<float4> GetMaterialNormalTexture(int materialIndex) { return MaterialTextureMaps[GetNormalTextureIndex(materialIndex)]; }
-Texture2D<float4> GetMaterialPhysicalTexture(int materialIndex) { return MaterialTextureMaps[GetPhysicalTextureIndex(materialIndex)]; }
-Texture2D<float4> GetMaterialAOTexture(int materialIndex) { return MaterialTextureMaps[GetAOTextureIndex(materialIndex)]; }
-Texture2D<float4> GetMaterialEmissiveTexture(int materialIndex) { return MaterialTextureMaps[GetEmissiveTextureIndex(materialIndex)]; }
+Texture2D<float4> GetMaterialAlbedoTexture(Material material) { return MaterialTextureMaps[material.AlbedoMapID]; }
+Texture2D<float4> GetMaterialNormalTexture(Material material) { return MaterialTextureMaps[material.NormalMapID]; }
+Texture2D<float4> GetMaterialPhysicalTexture(Material material) { return MaterialTextureMaps[material.PhysicalMapID]; }
+Texture2D<float4> GetMaterialAOTexture(Material material) { return MaterialTextureMaps[material.AOMapID]; }
+Texture2D<float4> GetMaterialEmissiveTexture(Material material) { return MaterialTextureMaps[material.EmissiveMapID]; }
 
 Material GetMaterial(int materialIndex) { return Buffers[GetScene().Indices.MaterialsBufferIndex].Load<Material>(materialIndex * sizeof(Material)); }
 Light GetLight(int lightIndex) { return Buffers[GetScene().Indices.LightsBufferIndex].Load<Light>(lightIndex * sizeof(Light)); }
