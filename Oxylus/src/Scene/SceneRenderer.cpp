@@ -33,13 +33,13 @@ void SceneRenderer::update() const {
     for (const auto&& [entity, transform, mesh_component, material, tag] : mesh_view.each()) {
       if (tag.enabled) {
         auto e = Entity(entity, m_scene);
-        auto mesh_transform = e.get_world_transform();
-        mesh_component.transform = mesh_transform;
+        const auto world_transform = e.get_world_transform();
+        mesh_component.transform = world_transform;
+        mesh_component.aabb = mesh_component.mesh_base->linear_nodes[mesh_component.node_index]->aabb.get_transformed(world_transform);
         m_render_pipeline->on_register_render_object(mesh_component);
 
         if (RendererCVar::cvar_draw_bounding_boxes.get()) {
-          auto aabb = mesh_component.mesh_base->linear_nodes[mesh_component.node_index]->aabb.get_transformed(mesh_transform);
-          DebugRenderer::draw_aabb(aabb, Vec4(0, 1, 0, 1));
+          DebugRenderer::draw_aabb(mesh_component.aabb, Vec4(1, 1, 1, 0.5f));
         }
       }
     }

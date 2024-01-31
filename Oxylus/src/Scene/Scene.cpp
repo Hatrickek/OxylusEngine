@@ -82,6 +82,8 @@ void Scene::iterate_mesh_node(const Ref<Mesh>& mesh, const Entity parent_entity,
   if (node->mesh_data) {
     auto& mesh_component = node_entity.add_component_internal<MeshComponent>(mesh);
     mesh_component.node_index = node->index;
+
+    node_entity.get_transform().set_from_matrix(node->get_matrix());
   }
 
   if (parent_entity)

@@ -578,8 +578,7 @@ Scope<vuk::Future> DefaultRenderPipeline::on_render(vuk::Allocator& frame_alloca
       [this](const MeshComponent& mesh_component) {
         const auto camera_frustum = current_camera->get_frustum();
         const auto* node = mesh_component.mesh_base->linear_nodes[mesh_component.node_index];
-        const auto aabb = node->aabb.get_transformed(mesh_component.transform);
-        if (!aabb.is_on_frustum(camera_frustum)) {
+        if (!mesh_component.aabb.is_on_frustum(camera_frustum)) {
           Renderer::get_stats().drawcall_culled_count += (uint32_t)node->mesh_data->primitives.size();
           return true;
         }

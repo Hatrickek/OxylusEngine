@@ -334,7 +334,6 @@ void Mesh::destroy() {
 void Mesh::calculate_node_bounding_box(Node* node) {
   if (node->mesh_data) {
     node->aabb = node->mesh_data->aabb;
-    node->aabb.transform(node->get_matrix());
   }
 
   for (const auto& child : node->children) {

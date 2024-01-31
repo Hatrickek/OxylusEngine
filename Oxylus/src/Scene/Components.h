@@ -87,6 +87,7 @@ struct MeshComponent {
 
   // non-serialized data
   Mat4 transform = {};
+  AABB aabb = {};
 
   MeshComponent() = default;
   MeshComponent(const Ref<Mesh>& mesh) : mesh_base(mesh) { }
