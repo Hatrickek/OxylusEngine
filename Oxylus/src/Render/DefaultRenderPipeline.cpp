@@ -42,7 +42,7 @@ static std::vector<uint32_t> cumulate_material_map(const std::unordered_map<uint
 static uint32_t get_material_index(const uint32_t mesh_index, const uint32_t material_index) {
   OX_SCOPED_ZONE;
   if (mesh_index == 0)
-    return 0;
+    return material_index;
 
   return cumulated_material_map[mesh_index - 1] + material_index;
 }
