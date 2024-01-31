@@ -634,8 +634,6 @@ void Scene::on_component_added<MeshComponent>(Entity entity, MeshComponent& comp
     auto& animation_component = entity.add_component_internal<AnimationComponent>();
     animation_component.animations = component.mesh_base->animations;
   }
-
-  entity.get_transform().set_from_matrix(component.mesh_base->linear_nodes[component.node_index]->get_matrix());
 }
 
 template <>

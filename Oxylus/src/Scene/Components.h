@@ -115,8 +115,7 @@ struct SkyLightComponent {
   Ref<TextureAsset> cubemap = nullptr;
   float intensity = 0.7f;
   float rotation = 0.0f;
-  bool flip_image = false;
-  float lod_bias = 1.0f;
+  float lod_bias = 0.0f;
 };
 
 struct LightComponent {
@@ -134,6 +133,7 @@ struct LightComponent {
   float cut_off_angle = glm::radians(12.5f);
   float outer_cut_off_angle = glm::radians(17.5f);
 
+  bool cast_shadows = true;
   ShadowQualityType shadow_quality = ShadowQualityType::UltraSoft;
 };
 

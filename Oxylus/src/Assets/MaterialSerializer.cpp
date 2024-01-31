@@ -5,10 +5,12 @@
 #include "AssetManager.h"
 #include "Utils/FileUtils.h"
 #include "Utils/Log.h"
-#include "Utils/Profiler.h"
+#include "Utils/Toml.h"
 
 namespace Oxylus {
 void MaterialSerializer::serialize(const std::string& path) const {
+  // TODO:
+#if 0
   OX_SCOPED_ZONE;
   m_material->path = path;
 
@@ -46,9 +48,12 @@ void MaterialSerializer::serialize(const std::string& path) const {
   ss << tree;
   std::ofstream filestream(path);
   filestream << ss.str();
+#endif
 }
 
 void MaterialSerializer::deserialize(const std::string& path) const {
+  // TODO:
+#if 0
   if (path.empty())
     return;
   OX_SCOPED_ZONE;
@@ -92,8 +97,9 @@ void MaterialSerializer::deserialize(const std::string& path) const {
   load_if_path_exists(node_refs["Textures"], "Physical", m_material->get_physical_texture());
   load_if_path_exists(node_refs["Textures"], "AO", m_material->get_ao_texture());
   load_if_path_exists(node_refs["Textures"], "Emmisive", m_material->get_emissive_texture());
+#endif
 }
-
+#if 0
 void MaterialSerializer::save_if_path_exists(ryml::NodeRef node, const Ref<TextureAsset>& texture) {
   if (!texture->get_path().empty())
     node << texture->get_path();
@@ -108,4 +114,5 @@ void MaterialSerializer::load_if_path_exists(ryml::ConstNodeRef parent_node,
     texture = AssetManager::get_texture_asset({path});
   }
 }
+#endif
 }

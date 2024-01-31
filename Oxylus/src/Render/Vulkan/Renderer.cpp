@@ -36,7 +36,7 @@ void Renderer::init() {
 }
 
 void Renderer::shutdown() {
-  RendererConfig::get()->save_config("renderer.oxconfig");
+  RendererConfig::get()->save_config("renderer_config.toml");
   DebugRenderer::release();
 }
 

@@ -1,32 +1,31 @@
 #include "ProjectSerializer.h"
 
-#include "Core/YamlHelpers.h"
 #include <Utils/FileUtils.h>
 #include "Utils/Log.h"
+#include "Utils/Toml.h"
 
 #include <fstream>
 
-
 namespace Oxylus {
-ProjectSerializer::ProjectSerializer(Ref<Project> project) : m_project(std::move(project)) { }
+ProjectSerializer::ProjectSerializer(Ref<Project> project) : m_project(std::move(project)) {}
 
 bool ProjectSerializer::serialize(const std::filesystem::path& file_path) const {
   const auto& config = m_project->get_config();
 
-  ryml::Tree tree;
-
-  ryml::NodeRef nodeRoot = tree.rootref();
-  nodeRoot |= ryml::MAP;
-
-  auto node = nodeRoot["Project"];
-  node |= ryml::MAP;
-
-  node["Name"] << config.name;
-  node["StartScene"] << config.start_scene;
-  node["AssetDirectory"] << config.asset_directory;
+  const auto root = toml::table{
+    {
+      "project",
+      toml::table{
+        {"name", config.name},
+        {"asset_directory", config.asset_directory},
+        {"start_scene", config.start_scene},
+      }
+    }
+  };
 
   std::stringstream ss;
-  ss << tree;
+  ss << "# Oxylus project file\n";
+  ss << root;
   std::ofstream filestream(file_path);
   filestream << ss.str();
 
@@ -44,18 +43,12 @@ bool ProjectSerializer::deserialize(const std::filesystem::path& file_path) cons
     return false;
   }
 
-  ryml::Tree tree = ryml::parse_in_arena(c4::to_csubstr(content));
+  toml::table toml = toml::parse(content);
 
-  const ryml::ConstNodeRef root = tree.rootref();
-
-  if (!root.has_child("Project"))
-    return false;
-
-  const ryml::ConstNodeRef nodeRoot = root["Project"];
-
-  nodeRoot["Name"] >> Name;
-  nodeRoot["StartScene"] >> StartScene;
-  nodeRoot["AssetDirectory"] >> AssetDirectory;
+  const auto project_node = toml["project"];
+  Name = project_node["name"].as_string()->get(); 
+  AssetDirectory = project_node["asset_directory"].as_string()->get(); 
+  StartScene = project_node["start_scene"].as_string()->get(); 
 
   m_project->set_project_file_path(file_path.string());
 

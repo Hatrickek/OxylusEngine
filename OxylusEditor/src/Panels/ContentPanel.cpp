@@ -267,7 +267,6 @@ std::pair<bool, uint32_t> ContentPanel::directory_tree_view_recursive(const std:
 
 ContentPanel::ContentPanel() : EditorPanel("Contents", ICON_MDI_FOLDER_STAR, true) {
   const auto scale = Window::get_content_scale();
-  thumbnail_size *= scale.x;
   thumbnail_max_limit *= scale.x;
   thumbnail_size_grid_limit *= scale.x;
 
@@ -327,7 +326,7 @@ void ContentPanel::on_imgui_render() {
       ImGui::TableNextColumn();
       render_side_view();
       ImGui::TableNextColumn();
-      render_body(thumbnail_size >= thumbnail_size_grid_limit);
+      render_body(EditorCVar::cvar_file_thumbnail_size.get() >= thumbnail_size_grid_limit);
 
       ImGui::EndTable();
     }
@@ -346,8 +345,8 @@ void ContentPanel::render_header() {
     ImGui::OpenPopup("SettingsPopup");
   if (ImGui::BeginPopup("SettingsPopup")) {
     OxUI::begin_properties(ImGuiTableFlags_SizingStretchSame);
-    OxUI::property("Thumbnail Size", &thumbnail_size, thumbnail_size_grid_limit - 0.1f, thumbnail_max_limit, nullptr, 0.1f, "");
-    OxUI::property("Texture Previews", &m_texture_previews, "Show texture previews (experimental)");
+    OxUI::property("Thumbnail Size", EditorCVar::cvar_file_thumbnail_size.get_ptr(), thumbnail_size_grid_limit - 0.1f, thumbnail_max_limit, nullptr, 0.1f, "");
+    OxUI::property("Show file thumbnails", (bool*)EditorCVar::cvar_file_thumbnails.get_ptr());
     OxUI::end_properties();
     ImGui::EndPopup();
   }
@@ -516,7 +515,7 @@ void ContentPanel::render_body(bool grid) {
   std::filesystem::path directory_to_open;
 
   constexpr float padding = 2.0f;
-  const float scaled_thumbnail_size = thumbnail_size * ImGui::GetIO().FontGlobalScale;
+  const float scaled_thumbnail_size = EditorCVar::cvar_file_thumbnail_size.get() * ImGui::GetIO().FontGlobalScale;
   const float scaled_thumbnail_size_x = scaled_thumbnail_size * 0.55f;
   const float cell_size = scaled_thumbnail_size_x + 2 * padding + scaled_thumbnail_size_x * 0.1f;
 
@@ -570,7 +569,7 @@ void ContentPanel::render_body(bool grid) {
 
       std::string texture_name = "folder_icon";
       if (!is_dir) {
-        if ((file.type == FileType::Texture || file.type == FileType::Cubemap) && m_texture_previews) {
+        if ((file.type == FileType::Texture || file.type == FileType::Cubemap) && EditorCVar::cvar_file_thumbnails.get()) {
           if (thumbnail_cache.contains(file.file_path)) {
             texture_name = file.file_path;
           }

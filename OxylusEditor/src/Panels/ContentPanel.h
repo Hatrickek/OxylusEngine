@@ -75,12 +75,10 @@ private:
   std::vector<File> m_directory_entries;
   std::mutex m_directory_mutex;
   uint32_t m_currently_visible_items_tree_view = 0;
-  float thumbnail_size = 120.0f;
   float thumbnail_max_limit = 256.0f;
   float thumbnail_size_grid_limit = 96.0f; // lower values than this will switch to grid view
   ImGuiTextFilter m_filter;
   float m_elapsed_time = 0.0f;
-  bool m_texture_previews = true;
 
   std::unordered_map<std::string, Ref<TextureAsset>> thumbnail_cache;
 

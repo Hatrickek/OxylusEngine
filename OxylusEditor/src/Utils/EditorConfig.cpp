@@ -4,15 +4,11 @@
 #include <Render/RendererConfig.h>
 
 #include "EditorLayer.h"
-#include "Core/Application.h"
 #include "Core/Project.h"
 
 #include "Utils/Log.h"
-#include "Core/YamlHelpers.h"
 #include "Utils/FileUtils.h"
-#include "Utils/UIUtils.h"
-
-#include <toml++/toml.hpp>
+#include "Utils/Toml.h"
 
 namespace Oxylus {
 EditorConfig* EditorConfig::instance = nullptr;
@@ -40,6 +36,8 @@ void EditorConfig::load_config() {
   EditorCVar::cvar_camera_speed.set((float)config["camera_speed"].as_floating_point()->get());
   EditorCVar::cvar_camera_sens.set((float)config["camera_sens"].as_floating_point()->get());
   EditorCVar::cvar_camera_smooth.set(config["camera_smooth"].as_boolean()->get());
+  EditorCVar::cvar_file_thumbnails.set(config["file_thumbnails"].as_boolean()->get());
+  EditorCVar::cvar_file_thumbnail_size.set((float)config["file_thumbnail_size"].as_floating_point()->get());
 }
 
 void EditorConfig::save_config() const {
@@ -58,11 +56,14 @@ void EditorConfig::save_config() const {
         {"camera_speed", EditorCVar::cvar_camera_speed.get()},
         {"camera_sens", EditorCVar::cvar_camera_sens.get()},
         {"camera_smooth", (bool)EditorCVar::cvar_camera_smooth.get()},
+        {"file_thumbnails", (bool)EditorCVar::cvar_file_thumbnails.get()},
+        {"file_thumbnail_size", EditorCVar::cvar_file_thumbnail_size.get()},
       }
     }
   };
 
   std::stringstream ss;
+  ss << "# Oxylus Editor config file \n";
   ss << root;
   std::ofstream filestream(EDITOR_CONFIG_FILE_NAME);
   filestream << ss.str();

@@ -618,9 +618,6 @@ float4 PSmain(VSLayout input, float4 pixelPosition : SV_Position) : SV_Target {
   float MIP = surface.Roughness * mips;
   float3 envColor = cubemap.SampleLevel(LINEAR_CLAMPED_SAMPLER, surface.R, 0).rgb;
 
-  if (!any(envColor))
-       envColor += 1  * surface.R; 
-
   Lighting lighting;
   lighting.Create(0, 0, ambient, 0);
 

@@ -1,44 +1,39 @@
 #include "SceneSerializer.h"
 
-#include <fstream>
-#include "Scene/Entity.h"
-#include "Core/Project.h"
-#include "Core/YamlHelpers.h"
-#include "Utils/Profiler.h"
-#include "Utils/FileUtils.h"
-
 #include "EntitySerializer.h"
 #include "Assets/AssetManager.h"
+#include "Core/Project.h"
+#include "Scene/Entity.h"
+#include "Utils/FileUtils.h"
+#include "Utils/Profiler.h"
+
+#include <fstream>
 
 namespace Oxylus {
-SceneSerializer::SceneSerializer(const Ref<Scene>& scene) : m_Scene(scene) { }
+SceneSerializer::SceneSerializer(const Ref<Scene>& scene) : m_scene(scene) {}
 
 void SceneSerializer::serialize(const std::string& filePath) const {
-  ryml::Tree tree;
+  auto tbl = toml::table{{{"entities", toml::array{}}}};
+  auto entities = tbl.find("entities")->second.as_array();
 
-  ryml::NodeRef root = tree.rootref();
-  root |= ryml::MAP;
+  tbl.emplace("name", m_scene->scene_name);
 
-  root["Scene"] << std::filesystem::path(filePath).filename().string();
-
-  // Entities
-  ryml::NodeRef entities = root["Entities"];
-  entities |= ryml::SEQ;
-
-  for (const auto [e] : m_Scene->m_registry.storage<entt::entity>().each()) {
-    const Entity entity = {e, m_Scene.get()};
+  for (const auto [e] : m_scene->m_registry.storage<entt::entity>().each()) {
+    const Entity entity = {e, m_scene.get()};
     if (!entity)
       return;
-
-    EntitySerializer::serialize_entity(m_Scene.get(), entities, entity);
+    toml::array entity_array = {};
+    EntitySerializer::serialize_entity(&entity_array, entity);
+    entities->emplace_back(toml::table{{"entity", entity_array}});
   }
 
   std::stringstream ss;
-  ss << tree;
+  ss << "# Oxylus scene file \n";
+  ss << toml::default_formatter{tbl, toml::default_formatter::default_flags & ~toml::format_flags::indent_sub_tables};
   std::ofstream filestream(filePath);
   filestream << ss.str();
 
-  OX_CORE_INFO("Saved scene {0}.", m_Scene->scene_name);
+  OX_CORE_INFO("Saved scene {0}.", m_scene->scene_name);
 }
 
 bool SceneSerializer::deserialize(const std::string& filePath) const {
@@ -55,32 +50,23 @@ bool SceneSerializer::deserialize(const std::string& filePath) const {
     }
   }
 
-  ryml::Tree tree = ryml::parse_in_arena(ryml::to_csubstr(content));
+  toml::table table = toml::parse(content);
 
-  if (tree.empty()) {
-    OX_CORE_ERROR("Scene was unable to load from YAML file {0}", filePath);
+  if (table.empty()) {
+    OX_CORE_ERROR("Scene was unable to load from TOML file {0}", filePath);
     return false;
   }
 
-  const ryml::ConstNodeRef root = tree.rootref();
+  m_scene->scene_name = table["name"].as_string()->get();
 
-  if (!root.has_child("Scene"))
-    return false;
+  auto entities = table["entities"].as_array();
 
-  root["Scene"] >> m_Scene->scene_name;
-
-  if (root.has_child("Entities")) {
-    const ryml::ConstNodeRef entities = root["Entities"];
-
-    for (const auto entity : entities) {
-      EntitySerializer::deserialize_entity(entity, m_Scene.get(), true);
-    }
-
-    OX_CORE_INFO("Scene loaded : {0}", FileSystem::get_file_name(m_Scene->scene_name));
-    return true;
+  for (auto& entity : *entities) {
+    auto entity_arr = entity.as_table()->get("entity")->as_array();
+    EntitySerializer::deserialize_entity(entity_arr, m_scene.get(), true);
   }
 
-  OX_CORE_ERROR("Scene doesn't contain any entities! {0}", FileSystem::get_file_name(m_Scene->scene_name));
-  return false;
+  OX_CORE_INFO("Scene loaded : {0}", FileSystem::get_file_name(m_scene->scene_name));
+  return true;
 }
 }

@@ -1,7 +1,6 @@
 #pragma once
 
 #include "Material.h"
-#include "Core/YamlHelpers.h"
 
 namespace Oxylus {
 class MaterialSerializer {
@@ -13,10 +12,12 @@ public:
   void deserialize(const std::string& path) const;
 
 private:
+#if 0
   static void save_if_path_exists(ryml::NodeRef node, const Ref<TextureAsset>& texture);
   static void load_if_path_exists(ryml::ConstNodeRef parent_node,
                                   const char* node_name,
                                   Ref<TextureAsset>& texture);
+#endif
 
   Material* m_material;
 };
