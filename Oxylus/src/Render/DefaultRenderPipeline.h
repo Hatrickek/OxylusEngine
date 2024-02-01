@@ -161,7 +161,6 @@ private:
   } ssr_data;
 
   vuk::Unique<vuk::PersistentDescriptorSet> descriptor_set_00;
-  vuk::Unique<vuk::PersistentDescriptorSet> descriptor_set_01;
 
   vuk::Texture pbr_texture;
   vuk::Texture normal_texture;
@@ -198,7 +197,6 @@ private:
   std::vector<LightData> scene_lights = {};
   LightData* dir_light_data = nullptr;
   EventDispatcher light_buffer_dispatcher;
-  bool is_cube_map_pipeline = false;
 
   void commit_descriptor_sets(vuk::Allocator& allocator);
   void create_static_textures(vuk::Allocator& allocator);

@@ -20,7 +20,7 @@
 // 1 - Linear Repeated
 // 2 - Nearest Clamped
 // 3 - Nearest Repeated
-[[vk::binding(0, 1)]] SamplerState Samplers[4];
+[[vk::binding(9, 0)]] SamplerState Samplers[4];
 
 #define LINEAR_CLAMPED_SAMPLER Samplers[0]
 #define LINEAR_REPEATED_SAMPLER Samplers[1]

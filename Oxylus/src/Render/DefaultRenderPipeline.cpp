@@ -108,18 +108,12 @@ void DefaultRenderPipeline::load_pipelines(vuk::Allocator& allocator) {
     bindless_binding(6, vuk::DescriptorType::eSampledImage),
     bindless_binding(7, vuk::DescriptorType::eStorageImage),
     bindless_binding(8, vuk::DescriptorType::eSampledImage),
+    bindless_binding(9, vuk::DescriptorType::eSampler, 4),
   };
   bindless_dslci_00.index = 0;
-  for (int i = 0; i < 9; i++)
+  for (int i = 0; i < 10; i++)
     bindless_dslci_00.flags.emplace_back(VK_DESCRIPTOR_BINDING_PARTIALLY_BOUND_BIT);
   bindless_pci.explicit_set_layouts.emplace_back(bindless_dslci_00);
-
-  vuk::DescriptorSetLayoutCreateInfo bindless_dslci_01 = {};
-  bindless_dslci_01.bindings = {
-    bindless_binding(0, vuk::DescriptorType::eSampler, 4),
-  };
-  bindless_dslci_01.index = 1;
-  bindless_pci.explicit_set_layouts.emplace_back(bindless_dslci_01);
 
   ADD_TASK_TO_PIPE(
     =,
@@ -131,7 +125,6 @@ void DefaultRenderPipeline::load_pipelines(vuk::Allocator& allocator) {
   ADD_TASK_TO_PIPE(
     =,
     bindless_pci.add_hlsl(FileUtils::read_shader_file("DirectionalShadowPass.hlsl"), FileUtils::get_shader_path("DirectionalShadowPass.hlsl"), vuk::HlslShaderStage::eVertex, "VSmain");
-    bindless_pci.add_hlsl(FileUtils::read_shader_file("DirectionalShadowPass.hlsl"), FileUtils::get_shader_path("DirectionalShadowPass.hlsl"), vuk::HlslShaderStage::ePixel, "PSmain");
     allocator.get_context().create_named_pipeline("shadow_pipeline", bindless_pci);
   );
 
@@ -383,7 +376,6 @@ void DefaultRenderPipeline::commit_descriptor_sets(vuk::Allocator& allocator) {
   const auto& lights_buffer = *lights_buff;
 
   scene_lights.clear();
-  dir_light_data = nullptr;
 
   auto [ssr_buff, ssr_buff_fut] = create_cpu_buffer(allocator, std::span(&ssr_data, 1));
   auto ssr_buffer = *ssr_buff;
@@ -496,18 +488,15 @@ void DefaultRenderPipeline::create_dynamic_textures(vuk::Allocator& allocator, c
 
 void DefaultRenderPipeline::create_descriptor_sets(vuk::Allocator& allocator, vuk::Context& ctx) {
   descriptor_set_00 = ctx.create_persistent_descriptorset(allocator, *ctx.get_named_pipeline("pbr_pipeline"), 0, 64);
-  descriptor_set_01 = ctx.create_persistent_descriptorset(allocator, *ctx.get_named_pipeline("pbr_pipeline"), 1, 4);
 
   const vuk::Sampler linear_sampler_clamped = ctx.acquire_sampler(vuk::LinearSamplerClamped, ctx.get_frame_count());
   const vuk::Sampler linear_sampler_repeated = ctx.acquire_sampler(vuk::LinearSamplerRepeated, ctx.get_frame_count());
   const vuk::Sampler nearest_sampler_clamped = ctx.acquire_sampler(vuk::NearestSamplerClamped, ctx.get_frame_count());
   const vuk::Sampler nearest_sampler_repeated = ctx.acquire_sampler(vuk::NearestSamplerRepeated, ctx.get_frame_count());
-  descriptor_set_01->update_sampler(0, 0, linear_sampler_clamped);
-  descriptor_set_01->update_sampler(0, 1, linear_sampler_repeated);
-  descriptor_set_01->update_sampler(0, 2, nearest_sampler_clamped);
-  descriptor_set_01->update_sampler(0, 3, nearest_sampler_repeated);
-
-  descriptor_set_01->commit(ctx);
+  descriptor_set_00->update_sampler(9, 0, linear_sampler_clamped);
+  descriptor_set_00->update_sampler(9, 1, linear_sampler_repeated);
+  descriptor_set_00->update_sampler(9, 2, nearest_sampler_clamped);
+  descriptor_set_00->update_sampler(9, 3, nearest_sampler_repeated);
 }
 
 void DefaultRenderPipeline::on_dispatcher_events(EventDispatcher& dispatcher) {
@@ -565,8 +554,6 @@ Scope<vuk::Future> DefaultRenderPipeline::on_render(vuk::Allocator& frame_alloca
       default_camera = create_ref<Camera>();
     current_camera = default_camera.get();
   }
-
-  is_cube_map_pipeline = cube_map != nullptr;
 
   auto vk_context = VulkanContext::get();
 
@@ -636,11 +623,11 @@ Scope<vuk::Future> DefaultRenderPipeline::on_render(vuk::Allocator& frame_alloca
     rg->attach_and_clear_image("shadow_array_output", vuk::ImageAttachment::from_texture(sun_shadow_texture), vuk::DepthOne);
   }
 
+  dir_light_data = nullptr;
+
   sky_transmittance_pass(rg);
   sky_multiscatter_pass(rg);
-
-  if (!is_cube_map_pipeline)
-    sky_view_lut_pass(rg);
+  sky_view_lut_pass(rg);
 
   sky_envmap_pass(rg);
 
@@ -754,7 +741,6 @@ void DefaultRenderPipeline::sky_multiscatter_pass(const Ref<vuk::RenderGraph>& r
     .execute = [this, lut_size](vuk::CommandBuffer& command_buffer) {
       command_buffer.bind_compute_pipeline("sky_multiscatter_pipeline")
                     .bind_persistent(0, *descriptor_set_00)
-                    .bind_persistent(1, *descriptor_set_01)
                     .dispatch(lut_size.x, lut_size.y);
     }
   });
@@ -781,8 +767,7 @@ void DefaultRenderPipeline::depth_pre_pass(const Ref<vuk::RenderGraph>& rg) {
       "depth_image"_image >> vuk::eDepthStencilRW >> "depth_output"
     },
     .execute = [this](vuk::CommandBuffer& command_buffer) {
-      command_buffer.bind_persistent(0, *descriptor_set_00)
-                    .bind_persistent(1, *descriptor_set_01);
+      command_buffer.bind_persistent(0, *descriptor_set_00);
 
       command_buffer.set_dynamic_state(vuk::DynamicStateFlagBits::eScissor | vuk::DynamicStateFlagBits::eViewport)
                     .set_viewport(0, vuk::Rect2D::framebuffer())
@@ -824,7 +809,6 @@ void DefaultRenderPipeline::geometry_pass(const Ref<vuk::RenderGraph>& rg) {
   rg->attach_and_clear_image("pbr_image", vuk::ImageAttachment::from_texture(pbr_texture), vuk::Black<float>);
 
   auto [gtao_resource, gtao_name] = get_attachment_or_black_uint("gtao_final_output", RendererCVar::cvar_gtao_enable.get());
-  auto [ssr_resouce, ssr_name] = get_attachment_or_black("ssr_output", RendererCVar::cvar_ssr_enable.get());
 
   const auto resources = std::vector<vuk::Resource>{
     "pbr_image"_image >> vuk::eColorRW >> "pbr_output",
@@ -833,7 +817,6 @@ void DefaultRenderPipeline::geometry_pass(const Ref<vuk::RenderGraph>& rg) {
     "sky_transmittance_lut+"_image >> vuk::eFragmentSampled,
     "sky_multiscatter_lut+"_image >> vuk::eFragmentSampled,
     "sky_envmap_image+"_image >> vuk::eFragmentSampled,
-    ssr_resouce,
     gtao_resource
   };
 
@@ -842,56 +825,22 @@ void DefaultRenderPipeline::geometry_pass(const Ref<vuk::RenderGraph>& rg) {
     .resources = resources,
     .execute = [this](vuk::CommandBuffer& command_buffer) {
       command_buffer.bind_persistent(0, *descriptor_set_00)
-                    .bind_persistent(1, *descriptor_set_01);
-      if (is_cube_map_pipeline) {
-        auto view = current_camera->get_view_matrix();
-        view[3] = Vec4(0, 0, 0, 1);
-        const struct SkyboxPushConstant {
-          Mat4 view;
-        } skybox_push_constant = {view};
+                    .set_dynamic_state(vuk::DynamicStateFlagBits::eScissor | vuk::DynamicStateFlagBits::eViewport)
+                    .set_viewport(0, vuk::Rect2D::framebuffer())
+                    .set_scissor(0, vuk::Rect2D::framebuffer())
+                    .broadcast_color_blend(vuk::BlendPreset::eOff)
+                    .set_depth_stencil({
+                       .depthTestEnable = false,
+                       .depthWriteEnable = false,
+                       .depthCompareOp = vuk::CompareOp::eLessOrEqual
+                     })
+                    .set_rasterization({.cullMode = vuk::CullModeFlagBits::eNone})
+                    .bind_graphics_pipeline("sky_view_final_pipeline")
+                    .draw(3, 1, 0, 0);
 
-        command_buffer.bind_graphics_pipeline("skybox_pipeline")
-                      .set_viewport(0, vuk::Rect2D::framebuffer())
-                      .set_scissor(0, vuk::Rect2D::framebuffer())
-                      .broadcast_color_blend({})
-                      .set_rasterization({.cullMode = vuk::CullModeFlagBits::eNone})
-                      .set_depth_stencil(vuk::PipelineDepthStencilStateCreateInfo{
-                         .depthTestEnable = false,
-                         .depthWriteEnable = false,
-                         .depthCompareOp = vuk::CompareOp::eLessOrEqual,
-                       })
-                      .push_constants(vuk::ShaderStageFlagBits::eVertex, 0, skybox_push_constant);
-
-        m_cube->bind_index_buffer(command_buffer)
-              ->bind_vertex_buffer(command_buffer);
-        command_buffer.draw_indexed(m_cube->index_count, 1, 0, 0, 0);
-      }
-      else {
-        command_buffer.set_dynamic_state(vuk::DynamicStateFlagBits::eScissor | vuk::DynamicStateFlagBits::eViewport)
-                      .set_viewport(0, vuk::Rect2D::framebuffer())
-                      .set_scissor(0, vuk::Rect2D::framebuffer())
-                      .broadcast_color_blend(vuk::BlendPreset::eOff)
-                      .set_depth_stencil({
-                         .depthTestEnable = false,
-                         .depthWriteEnable = false,
-                         .depthCompareOp = vuk::CompareOp::eLessOrEqual
-                       })
-                      .set_rasterization({.cullMode = vuk::CullModeFlagBits::eNone})
-                      .bind_graphics_pipeline("sky_view_final_pipeline")
-                      .draw(3, 1, 0, 0);
-      }
-
-      if (is_cube_map_pipeline) {
-        command_buffer.bind_graphics_pipeline("pbr_cubemap_pipeline");
-      }
-      else {
-        command_buffer.bind_graphics_pipeline("pbr_pipeline");
-      }
-
-      command_buffer.bind_persistent(0, *descriptor_set_00)
-                    .bind_persistent(1, *descriptor_set_01);
-
-      command_buffer.set_dynamic_state(vuk::DynamicStateFlagBits::eScissor | vuk::DynamicStateFlagBits::eViewport)
+      command_buffer.bind_graphics_pipeline("pbr_pipeline")
+                    .bind_persistent(0, *descriptor_set_00)
+                    .set_dynamic_state(vuk::DynamicStateFlagBits::eScissor | vuk::DynamicStateFlagBits::eViewport)
                     .set_rasterization({.cullMode = vuk::CullModeFlagBits::eBack}).
                      set_viewport(0, vuk::Rect2D::framebuffer())
                     .set_scissor(0, vuk::Rect2D::framebuffer())
@@ -917,7 +866,6 @@ void DefaultRenderPipeline::geometry_pass(const Ref<vuk::RenderGraph>& rg) {
           }
 
           const auto material_index = get_material_index(i, primitive->material_index);
-
           const auto pc = ShaderPC{mesh.transform, mesh.mesh_base->vertex_buffer->device_address, material_index};
 
           command_buffer.push_constants(vuk::ShaderStageFlagBits::eVertex | vuk::ShaderStageFlagBits::eFragment, 0, pc);
@@ -1184,7 +1132,6 @@ void DefaultRenderPipeline::ssr_pass(const Ref<vuk::RenderGraph>& rg) {
     .execute = [this](vuk::CommandBuffer& command_buffer) {
       command_buffer.bind_compute_pipeline("ssr_pipeline")
                     .bind_persistent(0, *descriptor_set_00)
-                    .bind_persistent(1, *descriptor_set_01)
                     .dispatch((Renderer::get_viewport_width() + 8 - 1) / 8, (Renderer::get_viewport_height() + 8 - 1) / 8, 1);
     }
   });
@@ -1254,8 +1201,7 @@ void DefaultRenderPipeline::cascaded_shadow_pass(const Ref<vuk::RenderGraph>& rg
         vuk::Resource(d_cascade_names[cascade_index], vuk::Resource::Type::eImage, vuk::Access::eDepthStencilRW, d_cascade_name_outputs[cascade_index])
       },
       .execute = [this, cascade_index](vuk::CommandBuffer& command_buffer) {
-        command_buffer.bind_persistent(0, *descriptor_set_00)
-                      .bind_persistent(1, *descriptor_set_01);
+        command_buffer.bind_persistent(0, *descriptor_set_00);
 
         command_buffer.bind_graphics_pipeline("shadow_pipeline")
                       .set_dynamic_state(vuk::DynamicStateFlagBits::eScissor | vuk::DynamicStateFlagBits::eViewport)
@@ -1330,7 +1276,6 @@ void DefaultRenderPipeline::sky_envmap_pass(const Ref<vuk::RenderGraph>& rg) {
     },
     .execute = [this](vuk::CommandBuffer& command_buffer) {
       command_buffer.bind_persistent(0, *descriptor_set_00)
-                    .bind_persistent(1, *descriptor_set_01)
                     .set_viewport(0, vuk::Rect2D::framebuffer())
                     .set_scissor(0, vuk::Rect2D::framebuffer())
                     .broadcast_color_blend(vuk::BlendPreset::eOff)
@@ -1369,7 +1314,6 @@ void DefaultRenderPipeline::sky_view_lut_pass(const Ref<vuk::RenderGraph>& rg) {
     },
     .execute = [this](vuk::CommandBuffer& command_buffer) {
       command_buffer.bind_persistent(0, *descriptor_set_00)
-                    .bind_persistent(1, *descriptor_set_01)
                     .set_dynamic_state(vuk::DynamicStateFlagBits::eScissor | vuk::DynamicStateFlagBits::eViewport)
                     .set_viewport(0, vuk::Rect2D::framebuffer())
                     .set_scissor(0, vuk::Rect2D::framebuffer())

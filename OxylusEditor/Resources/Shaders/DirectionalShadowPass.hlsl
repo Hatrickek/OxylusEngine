@@ -21,6 +21,3 @@ VSLayout VSmain(uint vertexIndex : SV_VertexID) {
   return output;
 }
 
-float4 PSmain(VSLayout input) : SV_Target {
-  return float4(0.0, 0.0, 0.0, 0.0);
-}
