@@ -8,9 +8,7 @@ struct VSOutput {
 };
 
 float3 UnprojectPoint(float x, float y, float z, float4x4 view, float4x4 projection) {
-  const float4x4 viewInv = inverse(view);
-  const float4x4 projInv = inverse(projection);
-  float4 unprojectedPoint = mul(mul(viewInv, projInv), float4(x, y, z, 1.0));
+  float4 unprojectedPoint = mul(mul(view, projection), float4(x, y, z, 1.0));
   return unprojectedPoint.xyz / unprojectedPoint.w;
 }
 
@@ -19,8 +17,8 @@ VSOutput main(Vertex inVertex) {
   output.UV = inVertex.UV;
 
   float3 position = inVertex.Position;
-  output.NearPoint = UnprojectPoint(position.x, position.y, 0.0, GetCamera().ViewMatrix, GetCamera().ProjectionMatrix).xyz;
-  output.FarPoint = UnprojectPoint(position.x, position.y, 1.0, GetCamera().ViewMatrix, GetCamera().ProjectionMatrix).xyz;
+  output.NearPoint = UnprojectPoint(position.x, position.y, 0.0, GetCamera().InvViewMatrix, GetCamera().InvProjectionMatrix).xyz;
+  output.FarPoint = UnprojectPoint(position.x, position.y, 1.0, GetCamera().InvViewMatrix, GetCamera().InvProjectionMatrix).xyz;
   output.Position = float4(position.xyz, 1.0);
 
   return output;

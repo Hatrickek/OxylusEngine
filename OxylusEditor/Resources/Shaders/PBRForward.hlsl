@@ -610,7 +610,7 @@ float4 PSmain(VSLayout input, float4 pixelPosition : SV_Position) : SV_Target {
 
   float3 ambient = GetAmbient(surface.N);
 
-  TextureCube cubemap = GetSkyEnvMapTexture();
+  TextureCube<float4> cubemap = GetSkyEnvMapTexture();
   uint2 dim;
   uint mips;
   cubemap.GetDimensions(0, dim.x, dim.y, mips);
@@ -619,9 +619,7 @@ float4 PSmain(VSLayout input, float4 pixelPosition : SV_Position) : SV_Target {
   float3 envColor = cubemap.SampleLevel(LINEAR_CLAMPED_SAMPLER, surface.R, 0).rgb;
 
   Lighting lighting;
-  lighting.Create(0, 0, ambient, 0);
-
-  lighting.indirect.specular += max(0, envColor);
+  lighting.Create(0, 0, ambient, max(0, envColor));
 
   float4 color = surface.BaseColor;
 

@@ -104,8 +104,8 @@ void DefaultRenderPipeline::load_pipelines(vuk::Allocator& allocator) {
     bindless_binding(2, vuk::DescriptorType::eStorageBuffer),
     bindless_binding(3, vuk::DescriptorType::eSampledImage),
     bindless_binding(4, vuk::DescriptorType::eSampledImage),
-    bindless_binding(5, vuk::DescriptorType::eSampledImage),
-    bindless_binding(6, vuk::DescriptorType::eSampledImage),
+    bindless_binding(5, vuk::DescriptorType::eSampledImage, 8),
+    bindless_binding(6, vuk::DescriptorType::eSampledImage, 8),
     bindless_binding(7, vuk::DescriptorType::eStorageImage),
     bindless_binding(8, vuk::DescriptorType::eSampledImage),
     bindless_binding(9, vuk::DescriptorType::eSampler, 4),
@@ -126,13 +126,6 @@ void DefaultRenderPipeline::load_pipelines(vuk::Allocator& allocator) {
     =,
     bindless_pci.add_hlsl(FileUtils::read_shader_file("DirectionalShadowPass.hlsl"), FileUtils::get_shader_path("DirectionalShadowPass.hlsl"), vuk::HlslShaderStage::eVertex, "VSmain");
     allocator.get_context().create_named_pipeline("shadow_pipeline", bindless_pci);
-  );
-
-  ADD_TASK_TO_PIPE(
-    =,
-    bindless_pci.add_hlsl(FileUtils::read_shader_file("Skybox.hlsl"), FileUtils::get_shader_path("Skybox.hlsl"), vuk::HlslShaderStage::eVertex, "VSmain");
-    bindless_pci.add_hlsl(FileUtils::read_shader_file("Skybox.hlsl"), FileUtils::get_shader_path("Skybox.hlsl"), vuk::HlslShaderStage::ePixel, "PSmain");
-    allocator.get_context().create_named_pipeline("skybox_pipeline", bindless_pci);
   );
 
   ADD_TASK_TO_PIPE(
@@ -332,10 +325,6 @@ void DefaultRenderPipeline::commit_descriptor_sets(vuk::Allocator& allocator) {
   scene_data.indices.pbr_image_index = PBR_IMAGE_INDEX;
   scene_data.indices.normal_image_index = NORMAL_IMAGE_INDEX;
   scene_data.indices.depth_image_index = DEPTH_IMAGE_INDEX;
-  scene_data.indices.cube_map_index = CUBE_MAP_INDEX;
-  scene_data.indices.prefiltered_cube_map_index = PREFILTERED_CUBE_MAP_INDEX;
-  scene_data.indices.irradiance_map_index = IRRADIANCE_MAP_INDEX;
-  scene_data.indices.brdflut_index = BRDFLUT_INDEX;
   scene_data.indices.sky_transmittance_lut_index = SKY_TRANSMITTANCE_LUT_INDEX;
   scene_data.indices.sky_multiscatter_lut_index = SKY_MULTISCATTER_LUT_INDEX;
   scene_data.indices.sky_envmap_index = SKY_ENVMAP_INDEX;
@@ -358,7 +347,9 @@ void DefaultRenderPipeline::commit_descriptor_sets(vuk::Allocator& allocator) {
   CameraData camera_data = {
     .position = Vec4(current_camera->get_position(), 0.0f),
     .projection_matrix = current_camera->get_projection_matrix(),
+    .inv_projection_matrix = inverse(current_camera->get_projection_matrix()),
     .view_matrix = current_camera->get_view_matrix(),
+    .inv_view_matrix = inverse(current_camera->get_view_matrix()),
     .inv_projection_view_matrix = inverse(current_camera->get_projection_matrix() * current_camera->get_view_matrix()),
     .near = current_camera->get_near(),
     .far = current_camera->get_far(),
@@ -417,9 +408,6 @@ void DefaultRenderPipeline::commit_descriptor_sets(vuk::Allocator& allocator) {
   descriptor_set_00->update_sampled_image(3, DEPTH_IMAGE_INDEX, *depth_texture.view, vuk::ImageLayout::eReadOnlyOptimalKHR);
   //descriptor_set_00->update_sampled_image(3, SSR_BUFFER_IMAGE_INDEX, *ssr_texture.view, vuk::ImageLayout::eReadOnlyOptimalKHR);
 
-  if (cube_map) {
-    descriptor_set_00->update_sampled_image(3, BRDFLUT_INDEX, *brdf_texture.view, vuk::ImageLayout::eReadOnlyOptimalKHR);
-  }
   descriptor_set_00->update_sampled_image(3, SKY_TRANSMITTANCE_LUT_INDEX, *sky_transmittance_lut.view, vuk::ImageLayout::eReadOnlyOptimalKHR);
   descriptor_set_00->update_sampled_image(3, SKY_MULTISCATTER_LUT_INDEX, *sky_multiscatter_lut.view, vuk::ImageLayout::eReadOnlyOptimalKHR);
 
@@ -427,14 +415,7 @@ void DefaultRenderPipeline::commit_descriptor_sets(vuk::Allocator& allocator) {
   descriptor_set_00->update_sampled_image(4, GTAO_BUFFER_IMAGE_INDEX, *gtao_final_texture.view, vuk::ImageLayout::eReadOnlyOptimalKHR);
 
   // scene cubemap texture array
-  if (cube_map) {
-    descriptor_set_00->update_sampled_image(5, CUBE_MAP_INDEX, *cube_map->get_texture().view, vuk::ImageLayout::eReadOnlyOptimalKHR);
-    descriptor_set_00->update_sampled_image(5, PREFILTERED_CUBE_MAP_INDEX, *prefiltered_texture.view, vuk::ImageLayout::eReadOnlyOptimalKHR);
-    descriptor_set_00->update_sampled_image(5, IRRADIANCE_MAP_INDEX, *irradiance_texture.view, vuk::ImageLayout::eReadOnlyOptimalKHR);
-  }
-  else {
-    descriptor_set_00->update_sampled_image(5, SKY_ENVMAP_INDEX, *sky_envmap_texture.view, vuk::ImageLayout::eReadOnlyOptimalKHR);
-  }
+  descriptor_set_00->update_sampled_image(5, SKY_ENVMAP_INDEX, *sky_envmap_texture.view, vuk::ImageLayout::eReadOnlyOptimalKHR);
 
   // scene array texture array
   descriptor_set_00->update_sampled_image(6, SHADOW_ARRAY_INDEX, *sun_shadow_texture.view, vuk::ImageLayout::eReadOnlyOptimalKHR);
@@ -455,13 +436,26 @@ void DefaultRenderPipeline::create_static_textures(vuk::Allocator& allocator) {
   sky_multiscatter_lut = create_texture(allocator, multi_scatter_lut_size, vuk::Format::eR16G16B16A16Sfloat, DEFAULT_USAGE_FLAGS | vuk::ImageUsageFlagBits::eStorage);
 
   const auto shadow_size = vuk::Extent3D{(unsigned)RendererCVar::cvar_shadows_size.get(), (unsigned)RendererCVar::cvar_shadows_size.get(), 1};
-  sun_shadow_texture = create_texture(allocator, shadow_size, vuk::Format::eD32Sfloat, DEFAULT_USAGE_FLAGS | vuk::ImageUsageFlagBits::eDepthStencilAttachment, false, 4);
+  const vuk::ImageAttachment shadow_attachment = {
+    .image_flags = vuk::ImageCreateFlagBits::e2DArrayCompatible,
+    .usage = DEFAULT_USAGE_FLAGS | vuk::ImageUsageFlagBits::eDepthStencilAttachment,
+    .extent = vuk::Dimension3D{vuk::Sizing::eAbsolute, shadow_size, {}},
+    .format = vuk::Format::eD32Sfloat,
+    .sample_count = vuk::Samples::e1,
+    .view_type = vuk::ImageViewType::e2DArray,
+    .base_level = 0,
+    .level_count = 1,
+    .base_layer = 0,
+    .layer_count = 4
+  };
 
-  const vuk::ImageAttachment attachment = {
+  sun_shadow_texture = create_texture(allocator, shadow_attachment);
+
+  const vuk::ImageAttachment env_attachment = {
     .image_flags = vuk::ImageCreateFlagBits::eCubeCompatible,
     .usage = DEFAULT_USAGE_FLAGS | vuk::ImageUsageFlagBits::eColorAttachment,
-    .extent = vuk::Dimension3D::absolute(1024, 1024, 1),
-    .format = vuk::Format::eR32G32B32A32Sfloat,
+    .extent = vuk::Dimension3D::absolute(512, 512, 1),
+    .format = vuk::Format::eR16G16B16A16Sfloat,
     .sample_count = vuk::Samples::e1,
     .view_type = vuk::ImageViewType::eCube,
     .base_level = 0,
@@ -470,7 +464,7 @@ void DefaultRenderPipeline::create_static_textures(vuk::Allocator& allocator) {
     .layer_count = 6
   };
 
-  sky_envmap_texture = create_texture(allocator, attachment);
+  sky_envmap_texture = create_texture(allocator, env_attachment);
 }
 
 void DefaultRenderPipeline::create_dynamic_textures(vuk::Allocator& allocator, const vuk::Dimension3D& dim) {
@@ -615,6 +609,7 @@ Scope<vuk::Future> DefaultRenderPipeline::on_render(vuk::Allocator& frame_alloca
 
   if (dir_light_data) {
     auto attachment = vuk::ImageAttachment::from_texture(sun_shadow_texture);
+    attachment.image_flags = vuk::ImageCreateFlagBits::e2DArrayCompatible;
     attachment.view_type = vuk::ImageViewType::e2DArray;
     rg->attach_and_clear_image("shadow_map_array", attachment, vuk::DepthOne);
     cascaded_shadow_pass(rg);
@@ -1201,9 +1196,8 @@ void DefaultRenderPipeline::cascaded_shadow_pass(const Ref<vuk::RenderGraph>& rg
         vuk::Resource(d_cascade_names[cascade_index], vuk::Resource::Type::eImage, vuk::Access::eDepthStencilRW, d_cascade_name_outputs[cascade_index])
       },
       .execute = [this, cascade_index](vuk::CommandBuffer& command_buffer) {
-        command_buffer.bind_persistent(0, *descriptor_set_00);
-
-        command_buffer.bind_graphics_pipeline("shadow_pipeline")
+        command_buffer.bind_persistent(0, *descriptor_set_00)
+                      .bind_graphics_pipeline("shadow_pipeline")
                       .set_dynamic_state(vuk::DynamicStateFlagBits::eScissor | vuk::DynamicStateFlagBits::eViewport)
                       .broadcast_color_blend({})
                       .set_rasterization({.depthClampEnable = true, .cullMode = vuk::CullModeFlagBits::eBack})
@@ -1220,13 +1214,8 @@ void DefaultRenderPipeline::cascaded_shadow_pass(const Ref<vuk::RenderGraph>& rg
 
           const auto node = mesh.mesh_base->linear_nodes[mesh.node_index];
           for (const auto primitive : node->mesh_data->primitives) {
-            const struct PushConst {
-              Mat4 model;
-              uint64_t vertex_buffer_btr;
-              uint32_t cascade_index = 0;
-            } push_const = {mesh.transform, mesh.mesh_base->vertex_buffer->device_address, cascade_index};
-
-            command_buffer.push_constants(vuk::ShaderStageFlagBits::eVertex, 0, push_const);
+            const ShaderPC pc = {mesh.transform, mesh.mesh_base->vertex_buffer->device_address, cascade_index};
+            command_buffer.push_constants(vuk::ShaderStageFlagBits::eVertex, 0, pc);
 
             Renderer::draw_indexed(command_buffer, primitive->index_count, 1, primitive->first_index, 0, 0);
           }
@@ -1267,7 +1256,10 @@ void DefaultRenderPipeline::update_parameters(ProbeChangeEvent& e) {
 }
 
 void DefaultRenderPipeline::sky_envmap_pass(const Ref<vuk::RenderGraph>& rg) {
-  rg->attach_and_clear_image("sky_envmap_image", vuk::ImageAttachment::from_texture(sky_envmap_texture), vuk::Black<float>);
+  auto attachment = vuk::ImageAttachment::from_texture(sky_envmap_texture);
+  attachment.image_flags = vuk::ImageCreateFlagBits::eCubeCompatible;
+  attachment.view_type = vuk::ImageViewType::eCube;
+  rg->attach_and_clear_image("sky_envmap_image", attachment, vuk::Black<float>);
 
   rg->add_pass({
     .name = "sky_envmap_pass",

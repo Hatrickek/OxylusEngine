@@ -40,18 +40,14 @@ private:
   bool initalized = false;
 
   // scene cubemap textures
-  static constexpr auto CUBE_MAP_INDEX = 0;
-  static constexpr auto PREFILTERED_CUBE_MAP_INDEX = 1;
-  static constexpr auto IRRADIANCE_MAP_INDEX = 2;
-  static constexpr auto SKY_ENVMAP_INDEX = 3;
+  static constexpr auto SKY_ENVMAP_INDEX = 0;
 
   // scene textures
   static constexpr auto PBR_IMAGE_INDEX = 0;
   static constexpr auto NORMAL_IMAGE_INDEX = 1;
   static constexpr auto DEPTH_IMAGE_INDEX = 2;
-  static constexpr auto BRDFLUT_INDEX = 3;
-  static constexpr auto SKY_TRANSMITTANCE_LUT_INDEX = 4;
-  static constexpr auto SKY_MULTISCATTER_LUT_INDEX = 5;
+  static constexpr auto SKY_TRANSMITTANCE_LUT_INDEX = 3;
+  static constexpr auto SKY_MULTISCATTER_LUT_INDEX = 4;
 
   // scene array textures
   static constexpr auto SHADOW_ARRAY_INDEX = 0;
@@ -79,7 +75,9 @@ private:
   struct CameraData {
     Vec4 position;
     Mat4 projection_matrix;
+    Mat4 inv_projection_matrix;
     Mat4 view_matrix;
+    Mat4 inv_view_matrix;
     Mat4 inv_projection_view_matrix;
 
     float near;
@@ -109,11 +107,6 @@ private:
       int normal_image_index;
       int depth_image_index;
       int _pad;
-
-      int cube_map_index;
-      int prefiltered_cube_map_index;
-      int irradiance_map_index;
-      int brdflut_index;
 
       int sky_envmap_index;
       int sky_transmittance_lut_index;

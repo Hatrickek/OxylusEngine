@@ -34,7 +34,6 @@ CameraData GetCamera() { return Camera; }
 Texture2D<float4> GetPBRTexture() { return SceneTextures[GetScene().Indices.PBRImageIndex]; }
 Texture2D<float4> GetNormalTexture() { return SceneTextures[GetScene().Indices.NormalImageIndex]; }
 Texture2D<float4> GetDepthTexture() { return SceneTextures[GetScene().Indices.DepthImageIndex]; }
-Texture2D<float4> GetBRDFLUTTexture() { return SceneTextures[GetScene().Indices.BRDFLUTIndex]; }
 Texture2D<float4> GetSkyTransmittanceLUTTexture() { return SceneTextures[GetScene().Indices.SkyTransmittanceLutIndex]; }
 Texture2D<float4> GetSkyMultiScatterLUTTexture() { return SceneTextures[GetScene().Indices.SkyMultiscatterLutIndex]; }
 //Texture2D<float4> GetSSRTexture() { return SceneTextures[GetScene().Indices.SSRBufferImageIndex]; }
@@ -45,9 +44,6 @@ RWTexture2D<float4> GetSkyMultiScatterLUTRWTexture() { return SceneRWTextures[Ge
 RWTexture2D<float4> GetSSRRWTexture() { return SceneRWTextures[GetScene().Indices.SSRBufferImageIndex]; }
 
 // scene cube textures
-TextureCube<float4> GetPrefilteredMapTexture() { return SceneCubeTextures[GetScene().Indices.PrefilteredCubeMapIndex]; }
-TextureCube<float4> GetIrradianceTexture() { return SceneCubeTextures[GetScene().Indices.IrradianceMapIndex]; }
-TextureCube<float4> GetCubeMapTexture() { return SceneCubeTextures[GetScene().Indices.CubeMapIndex]; }
 TextureCube<float4> GetSkyEnvMapTexture() { return SceneCubeTextures[GetScene().Indices.SkyEnvMapIndex]; }
 
 // scene uint textures

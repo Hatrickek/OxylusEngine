@@ -17,7 +17,3 @@ VSLayout VSmain(Vertex inVertex) {
 
   return output;
 }
-
-float4 PSmain(VSLayout input) : SV_Target {
-  return GetCubeMapTexture().Sample(LINEAR_REPEATED_SAMPLER, input.UVW).rgba;
-}
