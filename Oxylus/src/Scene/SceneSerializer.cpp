@@ -10,7 +10,7 @@
 #include <fstream>
 
 namespace Oxylus {
-SceneSerializer::SceneSerializer(const Ref<Scene>& scene) : m_scene(scene) {}
+SceneSerializer::SceneSerializer(const Shared<Scene>& scene) : m_scene(scene) {}
 
 void SceneSerializer::serialize(const std::string& filePath) const {
   auto tbl = toml::table{{{"entities", toml::array{}}}};

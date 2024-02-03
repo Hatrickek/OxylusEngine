@@ -15,6 +15,6 @@ namespace Oxylus {
   private:
     void DrawMaterialAsset(const std::string* path);
 
-    Ref<Material> m_SelectedMaterial;
+    Shared<Material> m_SelectedMaterial;
   };
 }

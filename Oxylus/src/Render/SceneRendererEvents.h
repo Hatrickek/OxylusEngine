@@ -4,7 +4,7 @@
 
 namespace Oxylus {
 struct SkyboxLoadEvent {
-  Ref<TextureAsset> cube_map = nullptr;
+  Shared<TextureAsset> cube_map = nullptr;
 };
 
 struct ProbeChangeEvent {

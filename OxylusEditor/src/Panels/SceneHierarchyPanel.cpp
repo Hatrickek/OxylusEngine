@@ -36,7 +36,7 @@ void SceneHierarchyPanel::set_selected_entity(Entity entity) {
   m_selected_entity_entities.emplace_back(entity);
 }
 
-void SceneHierarchyPanel::set_context(const Ref<Scene>& scene) {
+void SceneHierarchyPanel::set_context(const Shared<Scene>& scene) {
   m_context = scene;
   clear_selection_context();
 }

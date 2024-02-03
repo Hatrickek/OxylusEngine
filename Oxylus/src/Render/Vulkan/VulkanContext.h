@@ -43,7 +43,7 @@ public:
   uint32_t current_frame = 0;
   vuk::Unique<std::array<VkSemaphore, 3>> present_ready;
   vuk::Unique<std::array<VkSemaphore, 3>> render_complete;
-  Ref<TracyProfiler> tracy_profiler = {};
+  Shared<TracyProfiler> tracy_profiler = {};
 
   std::string device_name = {};
   uint32_t driver_version = {};

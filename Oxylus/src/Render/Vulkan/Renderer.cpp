@@ -40,7 +40,7 @@ void Renderer::shutdown() {
   DebugRenderer::release();
 }
 
-void Renderer::draw(VulkanContext* context, ImGuiLayer* imgui_layer, LayerStack& layer_stack, const Ref<SystemManager>& system_manager) {
+void Renderer::draw(VulkanContext* context, ImGuiLayer* imgui_layer, LayerStack& layer_stack, const Shared<SystemManager>& system_manager) {
   OX_SCOPED_ZONE;
 
   const auto rp = renderer_context.render_pipeline;
@@ -60,7 +60,7 @@ void Renderer::draw(VulkanContext* context, ImGuiLayer* imgui_layer, LayerStack&
   imgui_layer->begin();
 
   auto frame_allocator = context->begin();
-  const Ref<vuk::RenderGraph> rg = create_ref<vuk::RenderGraph>("runner");
+  const Shared<vuk::RenderGraph> rg = create_shared<vuk::RenderGraph>("runner");
   rg->attach_swapchain("_swp", context->swapchain);
   rg->clear_image("_swp", "target_image", vuk::ClearColor{0.0f, 0.0f, 0.0f, 1.0f});
 
@@ -87,7 +87,7 @@ void Renderer::draw(VulkanContext* context, ImGuiLayer* imgui_layer, LayerStack&
   }
   // Render it into a separate image with given dimension
   else {
-    const auto rgx = create_ref<vuk::RenderGraph>(rp->get_name().c_str());
+    const auto rgx = create_shared<vuk::RenderGraph>(rp->get_name().c_str());
 
     auto dim = rp->get_dimension();
 
@@ -125,7 +125,7 @@ void Renderer::draw(VulkanContext* context, ImGuiLayer* imgui_layer, LayerStack&
 
     rg->attach_in(attachment_name_out, std::move(*rp_fut));
 
-    auto si = create_ref<vuk::SampledImage>(make_sampled_image(vuk::NameReference{rg.get(), vuk::QualifiedName({}, attachment_name_out)}, {}));
+    auto si = create_shared<vuk::SampledImage>(make_sampled_image(vuk::NameReference{rg.get(), vuk::QualifiedName({}, attachment_name_out)}, {}));
     rp->set_final_image(si);
     rp->set_frame_render_graph(rp_rg);
     rp->set_frame_allocator(&frame_allocator);

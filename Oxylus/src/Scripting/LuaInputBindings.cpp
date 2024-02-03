@@ -9,7 +9,7 @@
 #include "Utils/Profiler.h"
 
 namespace Oxylus::LuaBindings {
-void bind_lua_input(const Ref<sol::state>& state) {
+void bind_lua_input(const Shared<sol::state>& state) {
   OX_SCOPED_ZONE;
   auto input = (*state)["Input"].get_or_create<sol::table>();
 

@@ -79,7 +79,7 @@ private:
   };
 
   // Sink
-  Ref<RuntimeConsoleLogSink> runtime_console_log_sink;
+  Shared<RuntimeConsoleLogSink> runtime_console_log_sink;
   std::shared_mutex log_mutex;
 
   // Commands

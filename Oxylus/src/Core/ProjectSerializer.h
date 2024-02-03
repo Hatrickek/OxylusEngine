@@ -6,12 +6,12 @@
 namespace Oxylus {
 class ProjectSerializer {
 public:
-  ProjectSerializer(Ref<Project> project);
+  ProjectSerializer(Shared<Project> project);
 
   bool serialize(const std::filesystem::path& file_path) const;
   bool deserialize(const std::filesystem::path& file_path) const;
 
 private:
-  Ref<Project> m_project;
+  Shared<Project> m_project;
 };
 }

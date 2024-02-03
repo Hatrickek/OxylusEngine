@@ -65,8 +65,8 @@ std::pair<vuk::Texture, vuk::Future> Prefilter::generate_brdflut() {
   return {std::move(brdf_texture), transition(vuk::Future{std::make_unique<vuk::RenderGraph>(std::move(rg)), "BRDF-Output+"}, vuk::eFragmentSampled)};
 }
 
-std::pair<vuk::Texture, vuk::Future> Prefilter::generate_irradiance_cube(const Ref<Mesh>& skybox,
-                                                                        const Ref<TextureAsset>& cubemap) {
+std::pair<vuk::Texture, vuk::Future> Prefilter::generate_irradiance_cube(const Shared<Mesh>& skybox,
+                                                                        const Shared<TextureAsset>& cubemap) {
   const auto vk_context = VulkanContext::get();
   constexpr int32_t dim = 64;
 
@@ -144,8 +144,8 @@ std::pair<vuk::Texture, vuk::Future> Prefilter::generate_irradiance_cube(const R
   return {std::move(irradiance_texture), transition(vuk::Future{std::make_unique<vuk::RenderGraph>(std::move(rg)), "IrradianceCube+"}, vuk::eFragmentSampled)};
 }
 
-std::pair<vuk::Texture, vuk::Future> Prefilter::generate_prefiltered_cube(const Ref<Mesh>& skybox,
-                                                                                     const Ref<TextureAsset>& cubemap) {
+std::pair<vuk::Texture, vuk::Future> Prefilter::generate_prefiltered_cube(const Shared<Mesh>& skybox,
+                                                                                     const Shared<TextureAsset>& cubemap) {
   const auto vk_context = VulkanContext::get();
   constexpr int32_t dim = 512;
 

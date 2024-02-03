@@ -26,17 +26,17 @@ public:
   const std::string& get_project_file_path() const { return project_file_path; }
   void set_project_file_path(const std::string& path) { project_file_path = path; }
 
-  static Ref<Project> create_new();
-  static Ref<Project> new_project(const std::string& project_dir, const std::string& project_name, const std::string& project_asset_dir);
-  static void set_active(const Ref<Project>& project) { s_active_project = project; }
-  static Ref<Project> get_active() { return s_active_project; }
-  static Ref<Project> load(const std::filesystem::path& path);
+  static Shared<Project> create_new();
+  static Shared<Project> new_project(const std::string& project_dir, const std::string& project_name, const std::string& project_asset_dir);
+  static void set_active(const Shared<Project>& project) { s_active_project = project; }
+  static Shared<Project> get_active() { return s_active_project; }
+  static Shared<Project> load(const std::filesystem::path& path);
   static bool save_active(const std::filesystem::path& path);
 
 private:
   ProjectConfig m_config;
   std::filesystem::path m_project_directory;
   std::string project_file_path;
-  inline static Ref<Project> s_active_project;
+  inline static Shared<Project> s_active_project;
 };
 }

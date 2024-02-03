@@ -10,7 +10,7 @@
 #include "Utils/Profiler.h"
 
 namespace Oxylus {
-Ref<TextureAsset> TextureAsset::s_white_texture = nullptr;
+Shared<TextureAsset> TextureAsset::s_white_texture = nullptr;
 
 TextureAsset::TextureAsset(const std::string& file_path) {
   load(file_path);
@@ -83,7 +83,7 @@ vuk::ImageAttachment TextureAsset::as_attachment() const {
 
 void TextureAsset::create_white_texture() {
   OX_SCOPED_ZONE;
-  s_white_texture = create_ref<TextureAsset>();
+  s_white_texture = create_shared<TextureAsset>();
   char white_texture_data[16 * 16 * 4];
   memset(white_texture_data, 0xff, 16 * 16 * 4);
   s_white_texture->create_texture(16, 16, white_texture_data, vuk::Format::eR8G8B8A8Unorm, false);

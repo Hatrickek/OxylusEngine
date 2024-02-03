@@ -20,18 +20,19 @@ public:
   bool fullscreen_viewport = false;
 
   ViewportPanel();
+  ~ViewportPanel() override = default;
 
   void on_imgui_render() override;
 
-  void set_context(const Ref<Scene>& scene, SceneHierarchyPanel& scene_hierarchy_panel);
+  void set_context(const Shared<Scene>& scene, SceneHierarchyPanel& scene_hierarchy_panel);
 
   void on_update() override;
 
 private:
   void draw_performance_overlay();
   void draw_gizmos();
-  void mouse_picking_pass(const Ref<RenderPipeline>& rp, const vuk::Dimension3D& dim, float fixed_width);
-  bool outline_pass(const Ref<RenderPipeline>& rp, const vuk::Dimension3D& dim) const;
+  void mouse_picking_pass(const Shared<RenderPipeline>& rp, const vuk::Dimension3D& dim, float fixed_width);
+  bool outline_pass(const Shared<RenderPipeline>& rp, const vuk::Dimension3D& dim) const;
 
   template <typename T>
   void show_component_gizmo(const float width,
@@ -70,7 +71,7 @@ private:
     }
   }
 
-  Ref<Scene> m_scene = {};
+  Shared<Scene> m_scene = {};
   Entity m_hovered_entity = {};
   SceneHierarchyPanel* m_scene_hierarchy_panel = nullptr;
 
@@ -85,7 +86,7 @@ private:
   int m_gizmo_type = -1;
   int m_gizmo_mode = 0;
 
-  std::unordered_map<size_t, Ref<TextureAsset>> m_show_gizmo_image_map;
+  std::unordered_map<size_t, Shared<TextureAsset>> m_show_gizmo_image_map;
 
   std::vector<vuk::Unique<vuk::Buffer>> id_buffers = {};
 

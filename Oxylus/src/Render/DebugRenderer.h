@@ -30,7 +30,7 @@ struct PointInfo {
 struct ShapeInfo {
   Mat4 model_matrix = {};
   Vec4 color = {};
-  Ref<Mesh> shape_mesh = nullptr;
+  Shared<Mesh> shape_mesh = nullptr;
 };
 
 class DebugRenderer {
@@ -57,8 +57,8 @@ public:
   static void draw_box(const Vec3& pos, const Vec3& scale, const Vec4& color = Vec4(1.0f, 1.0f, 1.0f, 1.0f), const Vec3& rotation = Vec3(0), bool depth_tested = false);
   static void draw_sphere(const Vec3& pos, const Vec3& scale, const Vec4& color = Vec4(1.0f, 1.0f, 1.0f, 1.0f), const Vec3& rotation = Vec3(0), bool depth_tested = false);
   static void draw_capsule(const Vec3& pos, const Vec3& scale, const Vec4& color = Vec4(1.0f, 1.0f, 1.0f, 1.0f), const Vec3& rotation = Vec3(0), bool ndt = false);
-  static void draw_mesh(const Ref<Mesh>& mesh, const Vec3& pos, const Vec3& scale, const Vec4& color = Vec4(1.0f, 1.0f, 1.0f, 1.0f), const Vec3& rotation = Vec3(0), bool depth_tested = false);
-  static void draw_mesh(const Ref<Mesh>& mesh, const Mat4& model_matrix, const Vec4& color = Vec4(1.0f, 1.0f, 1.0f, 1.0f), bool depth_tested = false);
+  static void draw_mesh(const Shared<Mesh>& mesh, const Vec3& pos, const Vec3& scale, const Vec4& color = Vec4(1.0f, 1.0f, 1.0f, 1.0f), const Vec3& rotation = Vec3(0), bool depth_tested = false);
+  static void draw_mesh(const Shared<Mesh>& mesh, const Mat4& model_matrix, const Vec4& color = Vec4(1.0f, 1.0f, 1.0f, 1.0f), bool depth_tested = false);
   static void draw_aabb(const AABB& aabb, const Vec4& color = Vec4(1.0f), bool corners_only = false, float width = 1.0f, bool depth_tested = false);
 
   static DebugRenderer* get_instance() { return instance; }
@@ -85,8 +85,8 @@ private:
 
   struct DebugRendererContext {
     vuk::Unique<vuk::Buffer> index_buffer;
-    Ref<Mesh> cube;
-    Ref<Mesh> sphere;
+    Shared<Mesh> cube;
+    Shared<Mesh> sphere;
   } debug_renderer_context;
 
   DebugDrawList draw_list;

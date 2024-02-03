@@ -27,7 +27,7 @@ public:
   void load_pipelines(vuk::Allocator& allocator);
   void shutdown() override;
 
-  Scope<vuk::Future> on_render(vuk::Allocator& frame_allocator, const vuk::Future& target, vuk::Dimension3D dim) override;
+  Unique<vuk::Future> on_render(vuk::Allocator& frame_allocator, const vuk::Future& target, vuk::Dimension3D dim) override;
 
   void on_dispatcher_events(EventDispatcher& dispatcher) override;
   void on_register_render_object(const MeshComponent& render_object) override;
@@ -170,7 +170,7 @@ private:
   XeGTAO::GTAOSettings gtao_settings = {};
 
   // PBR Resources
-  Ref<TextureAsset> cube_map = nullptr;
+  Shared<TextureAsset> cube_map = nullptr;
   vuk::Texture brdf_texture;
   vuk::Texture irradiance_texture;
   vuk::Texture prefiltered_texture;
@@ -180,9 +180,9 @@ private:
   bool m_should_merge_render_objects = false;
   vuk::Buffer m_merged_index_buffer;
   vuk::Buffer m_merged_vertex_buffer;
-  Ref<Mesh> m_quad = nullptr;
-  Ref<Mesh> m_cube = nullptr;
-  Ref<Camera> default_camera;
+  Shared<Mesh> m_quad = nullptr;
+  Shared<Mesh> m_cube = nullptr;
+  Shared<Camera> default_camera;
 
   struct LightChangeEvent {};
 
@@ -200,18 +200,18 @@ private:
   void generate_prefilter(vuk::Allocator& allocator);
   void update_parameters(ProbeChangeEvent& e);
 
-  void sky_envmap_pass(const Ref<vuk::RenderGraph>& rg);
-  void sky_view_lut_pass(const Ref<vuk::RenderGraph>& rg);
-  void sky_transmittance_pass(const Ref<vuk::RenderGraph>& rg);
-  void sky_multiscatter_pass(const Ref<vuk::RenderGraph>& rg);
-  void depth_pre_pass(const Ref<vuk::RenderGraph>& rg);
-  void geometry_pass(const Ref<vuk::RenderGraph>& rg);
+  void sky_envmap_pass(const Shared<vuk::RenderGraph>& rg);
+  void sky_view_lut_pass(const Shared<vuk::RenderGraph>& rg);
+  void sky_transmittance_pass(const Shared<vuk::RenderGraph>& rg);
+  void sky_multiscatter_pass(const Shared<vuk::RenderGraph>& rg);
+  void depth_pre_pass(const Shared<vuk::RenderGraph>& rg);
+  void geometry_pass(const Shared<vuk::RenderGraph>& rg);
   void apply_fxaa(vuk::RenderGraph* rg, vuk::Name src, vuk::Name dst, vuk::Buffer& fxaa_buffer);
-  void cascaded_shadow_pass(const Ref<vuk::RenderGraph>& rg);
-  void gtao_pass(vuk::Allocator& frame_allocator, const Ref<vuk::RenderGraph>& rg);
-  void ssr_pass(const Ref<vuk::RenderGraph>& rg);
-  void bloom_pass(const Ref<vuk::RenderGraph>& rg);
+  void cascaded_shadow_pass(const Shared<vuk::RenderGraph>& rg);
+  void gtao_pass(vuk::Allocator& frame_allocator, const Shared<vuk::RenderGraph>& rg);
+  void ssr_pass(const Shared<vuk::RenderGraph>& rg);
+  void bloom_pass(const Shared<vuk::RenderGraph>& rg);
   void apply_grid(vuk::RenderGraph* rg, const vuk::Name dst, const vuk::Name depth_image_name);
-  void debug_pass(const Ref<vuk::RenderGraph>& rg, vuk::Name dst, const char* depth, vuk::Allocator& frame_allocator) const;
+  void debug_pass(const Shared<vuk::RenderGraph>& rg, vuk::Name dst, const char* depth, vuk::Allocator& frame_allocator) const;
 };
 }

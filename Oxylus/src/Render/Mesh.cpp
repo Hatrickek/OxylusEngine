@@ -235,7 +235,7 @@ void Mesh::load_materials(tinygltf::Model& model) {
   OX_SCOPED_ZONE;
   // Create a empty material if the mesh file doesn't have any.
   if (model.materials.empty()) {
-    materials.emplace_back(create_ref<Material>());
+    materials.emplace_back(create_shared<Material>());
     const bool dont_create_materials = loading_flags & DontCreateMaterials;
     if (!dont_create_materials)
       materials[0]->create();
@@ -297,21 +297,21 @@ void Mesh::load_materials(tinygltf::Model& model) {
       }
     }
 
-    materials.emplace_back(create_ref<Material>(material));
+    materials.emplace_back(create_shared<Material>(material));
   }
 }
 
-Ref<Material> Mesh::get_material(const uint32_t index) const {
+Shared<Material> Mesh::get_material(const uint32_t index) const {
   OX_CORE_ASSERT(index < materials.size())
   return materials.at(index);
 }
 
-std::vector<Ref<Material>> Mesh::get_materials_as_ref() const {
+std::vector<Shared<Material>> Mesh::get_materials_as_ref() const {
   OX_SCOPED_ZONE;
   return materials;
 }
 
-std::vector<Ref<Material>> Mesh::get_materials(uint32_t node_index) const {
+std::vector<Shared<Material>> Mesh::get_materials(uint32_t node_index) const {
   OX_SCOPED_ZONE;
   OX_CORE_ASSERT(linear_nodes[node_index]->mesh_data)
   return linear_nodes[node_index]->mesh_data->materials;
@@ -370,7 +370,7 @@ void Mesh::update_animation(uint32_t index, const float time) const {
     return;
   }
 
-  const Ref<Animation>& animation = animations[index];
+  const Shared<Animation>& animation = animations[index];
 
   bool updated = false;
   for (const auto& channel : animation->channels) {
@@ -844,7 +844,7 @@ void Mesh::load_animations(tinygltf::Model& gltf_model) {
       animation.channels.emplace_back(channel);
     }
 
-    animations.emplace_back(create_ref<Animation>(std::move(animation)));
+    animations.emplace_back(create_shared<Animation>(std::move(animation)));
   }
 }
 

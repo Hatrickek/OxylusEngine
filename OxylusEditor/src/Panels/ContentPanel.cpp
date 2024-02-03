@@ -272,15 +272,15 @@ ContentPanel::ContentPanel() : EditorPanel("Contents", ICON_MDI_FOLDER_STAR, tru
 
   m_white_texture = TextureAsset::get_white_texture();
 
-  auto file_icon = create_ref<TextureAsset>();
+  auto file_icon = create_shared<TextureAsset>();
   file_icon->load(Resources::get_resources_path("Icons/FileIcon.png"));
   thumbnail_cache.emplace("file_icon", file_icon);
 
-  auto directory_icon = create_ref<TextureAsset>();
+  auto directory_icon = create_shared<TextureAsset>();
   directory_icon->load(Resources::get_resources_path("Icons/FolderIcon.png"));
   thumbnail_cache.emplace("folder_icon", directory_icon);
 
-  auto mesh_icon = create_ref<TextureAsset>();
+  auto mesh_icon = create_shared<TextureAsset>();
   mesh_icon->load(Resources::get_resources_path("Icons/MeshFileIcon.png"));
   thumbnail_cache.emplace("mesh_icon", mesh_icon);
 }
@@ -578,7 +578,7 @@ void ContentPanel::render_body(bool grid) {
             // make sure this runs only if it's not already queued
             if (ThreadManager::get()->asset_thread.get_queue_size() == 0) {
               ThreadManager::get()->asset_thread.queue_job([this, file_path] {
-                auto thumbnail_texture = create_ref<TextureAsset>();
+                auto thumbnail_texture = create_shared<TextureAsset>();
                 thumbnail_texture->load(file_path, vuk::Format::eR8G8B8A8Unorm, false);
                 thumbnail_cache.emplace(file_path, thumbnail_texture);
               });
@@ -820,7 +820,7 @@ void ContentPanel::draw_context_menu_items(const std::filesystem::path& context,
       }
       if (ImGui::BeginMenu("Asset")) {
         if (ImGui::MenuItem("Material")) {
-          const auto mat = create_ref<Material>();
+          const auto mat = create_shared<Material>();
           mat->create();
           const MaterialSerializer serializer(mat);
           auto path = (context / "NewMaterial.oxmat").string();

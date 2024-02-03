@@ -31,7 +31,7 @@ Scene::Scene(std::string name) : scene_name(std::move(name)) {
   init();
 }
 
-Scene::Scene(const Ref<RenderPipeline>& render_pipeline) {
+Scene::Scene(const Shared<RenderPipeline>& render_pipeline) {
   init(render_pipeline);
 }
 
@@ -47,10 +47,10 @@ Scene::Scene(const Scene& scene) {
   this->m_registry.storage<entt::entity>().push(pack, pack + pack_size);
 }
 
-void Scene::init(const Ref<RenderPipeline>& render_pipeline) {
+void Scene::init(const Shared<RenderPipeline>& render_pipeline) {
   OX_SCOPED_ZONE;
   // Renderer
-  scene_renderer = create_ref<SceneRenderer>(this);
+  scene_renderer = create_shared<SceneRenderer>(this);
 
   scene_renderer->set_render_pipeline(render_pipeline);
   scene_renderer->init();
@@ -58,6 +58,14 @@ void Scene::init(const Ref<RenderPipeline>& render_pipeline) {
   // Systems
   for (const auto& system : systems) {
     system->on_init();
+  }
+
+  // Lua scripts
+  const auto script_view = m_registry.view<LuaScriptComponent>();
+  for (auto&& [e, script_component] : script_view.each()) {
+    if (script_component.lua_system) {
+      script_component.lua_system->on_init(this, e);
+    }
   }
 }
 
@@ -76,7 +84,7 @@ Entity Scene::create_entity_with_uuid(UUID uuid, const std::string& name) {
   return entity;
 }
 
-void Scene::iterate_mesh_node(const Ref<Mesh>& mesh, const Entity parent_entity, const Mesh::Node* node) {
+void Scene::iterate_mesh_node(const Shared<Mesh>& mesh, const Entity parent_entity, const Mesh::Node* node) {
   auto node_entity = create_entity(node->name);
 
   if (node->mesh_data) {
@@ -93,7 +101,7 @@ void Scene::iterate_mesh_node(const Ref<Mesh>& mesh, const Entity parent_entity,
     iterate_mesh_node(mesh, node_entity, child);
 }
 
-Entity Scene::load_mesh(const Ref<Mesh>& mesh) {
+Entity Scene::load_mesh(const Shared<Mesh>& mesh) {
   for (const auto* node : mesh->nodes) {
     iterate_mesh_node(mesh, {}, node);
   }
@@ -145,7 +153,7 @@ void Scene::update_physics(const Timestep& delta_time) {
         rb.previous_translation = rb.translation;
         rb.previous_rotation = rb.rotation;
         rb.translation = {position.GetX(), position.GetY(), position.GetZ()};
-        rb.rotation = glm::vec3(rotation.GetX(), rotation.GetY(), rotation.GetZ());
+        rb.rotation = Vec3(rotation.GetX(), rotation.GetY(), rotation.GetZ());
       }
 
       tc.position = glm::lerp(rb.previous_translation, rb.translation, interpolation_factor);
@@ -158,7 +166,7 @@ void Scene::update_physics(const Timestep& delta_time) {
       rb.previous_translation = rb.translation;
       rb.previous_rotation = rb.rotation;
       rb.translation = {position.GetX(), position.GetY(), position.GetZ()};
-      rb.rotation = glm::vec3(rotation.GetX(), rotation.GetY(), rotation.GetZ());
+      rb.rotation = Vec3(rotation.GetX(), rotation.GetY(), rotation.GetZ());
       tc.position = rb.translation;
       tc.rotation = glm::eulerAngles(rb.rotation);
     }
@@ -177,7 +185,7 @@ void Scene::update_physics(const Timestep& delta_time) {
           ch.previous_translation = ch.translation;
           ch.previous_rotation = ch.rotation;
           ch.translation = {position.GetX(), position.GetY(), position.GetZ()};
-          ch.rotation = glm::vec3(rotation.GetX(), rotation.GetY(), rotation.GetZ());
+          ch.rotation = Vec3(rotation.GetX(), rotation.GetY(), rotation.GetZ());
         }
 
         tc.position = glm::lerp(ch.previous_translation, ch.translation, interpolation_factor);
@@ -190,7 +198,7 @@ void Scene::update_physics(const Timestep& delta_time) {
         ch.previous_translation = ch.translation;
         ch.previous_rotation = ch.rotation;
         ch.translation = {position.GetX(), position.GetY(), position.GetZ()};
-        ch.rotation = glm::vec3(rotation.GetX(), rotation.GetY(), rotation.GetZ());
+        ch.rotation = Vec3(rotation.GetX(), rotation.GetY(), rotation.GetZ());
         tc.position = ch.translation;
         tc.rotation = glm::eulerAngles(ch.rotation);
       }
@@ -324,6 +332,14 @@ void Scene::on_runtime_stop() {
     body_activation_listener_3d = nullptr;
     contact_listener_3d = nullptr;
   }
+
+  // Lua scripts
+  const auto script_view = m_registry.view<LuaScriptComponent>();
+  for (auto&& [e, script_component] : script_view.each()) {
+    if (script_component.lua_system) {
+      script_component.lua_system->on_release(this, e);
+    }
+  }
 }
 
 Entity Scene::find_entity(const std::string_view& name) {
@@ -352,9 +368,9 @@ Entity Scene::get_entity_by_uuid(UUID uuid) {
   return {};
 }
 
-Ref<Scene> Scene::copy(const Ref<Scene>& other) {
+Shared<Scene> Scene::copy(const Shared<Scene>& other) {
   OX_SCOPED_ZONE;
-  Ref<Scene> new_scene = create_ref<Scene>();
+  Shared<Scene> new_scene = create_shared<Scene>();
 
   auto& src_scene_registry = other->m_registry;
   auto& dst_scene_registry = new_scene->m_registry;
@@ -507,7 +523,7 @@ void Scene::create_character_controller(const TransformComponent& transform, Cha
     new JPH::CapsuleShape(0.5f * component.character_height_standing, component.character_radius_standing)).Create().Get();
 
   // Create character
-  const Ref<JPH::CharacterSettings> settings = create_ref<JPH::CharacterSettings>();
+  const Shared<JPH::CharacterSettings> settings = create_shared<JPH::CharacterSettings>();
   settings->mMaxSlopeAngle = JPH::DegreesToRadians(45.0f);
   settings->mLayer = PhysicsLayers::MOVING;
   settings->mShape = capsule_shape;
@@ -552,8 +568,10 @@ void Scene::on_runtime_update(const Timestep& delta_time) {
     OX_SCOPED_ZONE_N("Lua Scripting Systems");
     const auto script_view = m_registry.view<LuaScriptComponent>();
     for (auto&& [e, script_component] : script_view.each()) {
-      if (script_component.lua_system)
-        script_component.lua_system->on_update(this, delta_time);
+      if (script_component.lua_system) {
+        script_component.lua_system->bind_globals(this, e, delta_time);
+        script_component.lua_system->on_update(delta_time);
+      }
     }
   }
 
@@ -562,10 +580,10 @@ void Scene::on_runtime_update(const Timestep& delta_time) {
     OX_SCOPED_ZONE_N("Audio Systems");
     const auto listener_view = m_registry.group<AudioListenerComponent>(entt::get<TransformComponent>);
     for (auto&& [e, ac, tc] : listener_view.each()) {
-      ac.listener = create_ref<AudioListener>();
+      ac.listener = create_shared<AudioListener>();
       if (ac.active) {
-        const glm::mat4 inverted = glm::inverse(Entity(e, this).get_world_transform());
-        const glm::vec3 forward = normalize(glm::vec3(inverted[2]));
+        const Mat4 inverted = inverse(Entity(e, this).get_world_transform());
+        const Vec3 forward = normalize(Vec3(inverted[2]));
         ac.listener->SetConfig(ac.config);
         ac.listener->SetPosition(tc.position);
         ac.listener->SetDirection(-forward);
@@ -576,8 +594,8 @@ void Scene::on_runtime_update(const Timestep& delta_time) {
     const auto source_view = m_registry.group<AudioSourceComponent>(entt::get<TransformComponent>);
     for (auto&& [e, ac, tc] : source_view.each()) {
       if (ac.source) {
-        const glm::mat4 inverted = glm::inverse(Entity(e, this).get_world_transform());
-        const glm::vec3 forward = normalize(glm::vec3(inverted[2]));
+        const Mat4 inverted = glm::inverse(Entity(e, this).get_world_transform());
+        const Vec3 forward = normalize(Vec3(inverted[2]));
         ac.source->SetConfig(ac.config);
         ac.source->SetPosition(tc.position);
         ac.source->SetDirection(forward);
@@ -606,28 +624,28 @@ void Scene::on_component_added(Entity entity, T& component) {
 }
 
 template <>
-void Scene::on_component_added<TagComponent>(Entity entity, TagComponent& component) { }
+void Scene::on_component_added<TagComponent>(Entity entity, TagComponent& component) {}
 
 template <>
-void Scene::on_component_added<IDComponent>(Entity entity, IDComponent& component) { }
+void Scene::on_component_added<IDComponent>(Entity entity, IDComponent& component) {}
 
 template <>
-void Scene::on_component_added<RelationshipComponent>(Entity entity, RelationshipComponent& component) { }
+void Scene::on_component_added<RelationshipComponent>(Entity entity, RelationshipComponent& component) {}
 
 template <>
-void Scene::on_component_added<PrefabComponent>(Entity entity, PrefabComponent& component) { }
+void Scene::on_component_added<PrefabComponent>(Entity entity, PrefabComponent& component) {}
 
 template <>
-void Scene::on_component_added<TransformComponent>(Entity entity, TransformComponent& component) { }
+void Scene::on_component_added<TransformComponent>(Entity entity, TransformComponent& component) {}
 
 template <>
-void Scene::on_component_added<CameraComponent>(Entity entity, CameraComponent& component) { }
+void Scene::on_component_added<CameraComponent>(Entity entity, CameraComponent& component) {}
 
 template <>
-void Scene::on_component_added<AudioSourceComponent>(Entity entity, AudioSourceComponent& component) { }
+void Scene::on_component_added<AudioSourceComponent>(Entity entity, AudioSourceComponent& component) {}
 
 template <>
-void Scene::on_component_added<AudioListenerComponent>(Entity entity, AudioListenerComponent& component) { }
+void Scene::on_component_added<AudioListenerComponent>(Entity entity, AudioListenerComponent& component) {}
 
 template <>
 void Scene::on_component_added<MeshComponent>(Entity entity, MeshComponent& component) {
@@ -639,7 +657,7 @@ void Scene::on_component_added<MeshComponent>(Entity entity, MeshComponent& comp
 }
 
 template <>
-void Scene::on_component_added<SkyLightComponent>(Entity entity, SkyLightComponent& component) { }
+void Scene::on_component_added<SkyLightComponent>(Entity entity, SkyLightComponent& component) {}
 
 template <>
 void Scene::on_component_added<MaterialComponent>(Entity entity, MaterialComponent& component) {
@@ -650,17 +668,17 @@ void Scene::on_component_added<MaterialComponent>(Entity entity, MaterialCompone
 }
 
 template <>
-void Scene::on_component_added<AnimationComponent>(Entity entity, AnimationComponent& component) { }
+void Scene::on_component_added<AnimationComponent>(Entity entity, AnimationComponent& component) {}
 
 template <>
-void Scene::on_component_added<LightComponent>(Entity entity, LightComponent& component) { }
+void Scene::on_component_added<LightComponent>(Entity entity, LightComponent& component) {}
 
 template <>
-void Scene::on_component_added<PostProcessProbe>(Entity entity, PostProcessProbe& component) { }
+void Scene::on_component_added<PostProcessProbe>(Entity entity, PostProcessProbe& component) {}
 
 template <>
 void Scene::on_component_added<ParticleSystemComponent>(Entity entity,
-                                                        ParticleSystemComponent& component) { }
+                                                        ParticleSystemComponent& component) {}
 
 template <>
 void Scene::on_component_added<RigidbodyComponent>(Entity entity, RigidbodyComponent& component) {
@@ -703,8 +721,5 @@ void Scene::on_component_added<CharacterControllerComponent>(Entity entity, Char
 }
 
 template <>
-void Scene::on_component_added<CustomComponent>(Entity entity, CustomComponent& component) { }
-
-template <>
-void Scene::on_component_added<LuaScriptComponent>(Entity entity, LuaScriptComponent& component) { }
+void Scene::on_component_added<LuaScriptComponent>(Entity entity, LuaScriptComponent& component) {}
 }

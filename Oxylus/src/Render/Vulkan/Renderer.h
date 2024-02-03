@@ -22,7 +22,7 @@ public:
     // TODO:
     // need to get rid of this and instead use the render pipeline from scenes directly.
     // currently this gets filled at scene creation 
-    Ref<RenderPipeline> render_pipeline = nullptr;
+    Shared<RenderPipeline> render_pipeline = nullptr;
     UVec2 viewport_size = {1600, 900};
   } renderer_context;
 
@@ -38,7 +38,7 @@ public:
   static void shutdown();
 
   // Drawing
-  static void draw(VulkanContext* context, ImGuiLayer* imgui_layer, LayerStack& layer_stack, const Ref<SystemManager>& system_manager);
+  static void draw(VulkanContext* context, ImGuiLayer* imgui_layer, LayerStack& layer_stack, const Shared<SystemManager>& system_manager);
 
   static vuk::CommandBuffer& draw_indexed(vuk::CommandBuffer& command_buffer,
                                           size_t index_count,

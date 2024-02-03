@@ -13,7 +13,7 @@
 namespace Oxylus {
 void LuaManager::init() {
   OX_SCOPED_ZONE;
-  m_state = create_ref<sol::state>();
+  m_state = create_shared<sol::state>();
   m_state->open_libraries(sol::lib::base, sol::lib::package, sol::lib::math, sol::lib::table, sol::lib::os, sol::lib::string);
 
   bind_log();

@@ -14,7 +14,7 @@ class TextureAsset;
 class Resources {
 public:
   static struct EditorRes {
-    Ref<TextureAsset> engine_icon;
+    Shared<TextureAsset> engine_icon;
   } editor_resources;
 
   static void init_editor_resources();

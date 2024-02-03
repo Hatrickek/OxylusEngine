@@ -416,7 +416,7 @@ UUID EntitySerializer::deserialize_entity(toml::array* entity_arr, Scene* scene,
       auto& lsc = deserialized_entity.add_component<LuaScriptComponent>();
       auto path = GET_STRING(lua_node, "path");
       if (!path.empty())
-        lsc.lua_system = create_ref<LuaSystem>(path);
+        lsc.lua_system = create_shared<LuaSystem>(path);
     }
   }
   return deserialized_entity.get_uuid();

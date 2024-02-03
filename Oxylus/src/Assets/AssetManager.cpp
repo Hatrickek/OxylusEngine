@@ -14,7 +14,7 @@ std::filesystem::path AssetManager::get_asset_file_system_path(const std::filesy
   return Project::get_asset_directory() / path;
 }
 
-Ref<TextureAsset> AssetManager::get_texture_asset(const TextureLoadInfo& info) {
+Shared<TextureAsset> AssetManager::get_texture_asset(const TextureLoadInfo& info) {
   if (s_library.texture_assets.contains(info.path)) {
     return s_library.texture_assets[info.path];
   }
@@ -22,7 +22,7 @@ Ref<TextureAsset> AssetManager::get_texture_asset(const TextureLoadInfo& info) {
   return load_texture_asset(info.path, info);
 }
 
-Ref<TextureAsset> AssetManager::get_texture_asset(const std::string& name, const TextureLoadInfo& info) {
+Shared<TextureAsset> AssetManager::get_texture_asset(const std::string& name, const TextureLoadInfo& info) {
   if (s_library.texture_assets.contains(name)) {
     return s_library.texture_assets[name];
   }
@@ -30,7 +30,7 @@ Ref<TextureAsset> AssetManager::get_texture_asset(const std::string& name, const
   return load_texture_asset(name, info);
 }
 
-Ref<Mesh> AssetManager::get_mesh_asset(const std::string& path, const int32_t loadingFlags) {
+Shared<Mesh> AssetManager::get_mesh_asset(const std::string& path, const int32_t loadingFlags) {
   OX_SCOPED_ZONE;
   if (s_library.mesh_assets.contains(path)) {
     return s_library.mesh_assets[path];
@@ -39,24 +39,24 @@ Ref<Mesh> AssetManager::get_mesh_asset(const std::string& path, const int32_t lo
   return load_mesh_asset(path, loadingFlags);
 }
 
-Ref<TextureAsset> AssetManager::load_texture_asset(const std::string& path) {
+Shared<TextureAsset> AssetManager::load_texture_asset(const std::string& path) {
   OX_SCOPED_ZONE;
 
-  Ref<TextureAsset> texture = create_ref<TextureAsset>(path);
+  Shared<TextureAsset> texture = create_shared<TextureAsset>(path);
   return s_library.texture_assets.emplace(path, texture).first->second;
 }
 
-Ref<TextureAsset> AssetManager::load_texture_asset(const std::string& path, const TextureLoadInfo& info) {
+Shared<TextureAsset> AssetManager::load_texture_asset(const std::string& path, const TextureLoadInfo& info) {
   OX_SCOPED_ZONE;
 
-  Ref<TextureAsset> texture = create_ref<TextureAsset>(info);
+  Shared<TextureAsset> texture = create_shared<TextureAsset>(info);
   texture->asset_id = (uint32_t)s_library.texture_assets.size() + 1;
   return s_library.texture_assets.emplace(path, texture).first->second;
 }
 
-Ref<Mesh> AssetManager::load_mesh_asset(const std::string& path, int32_t loadingFlags) {
+Shared<Mesh> AssetManager::load_mesh_asset(const std::string& path, int32_t loadingFlags) {
   OX_SCOPED_ZONE;
-  Ref<Mesh> asset = create_ref<Mesh>(path, loadingFlags);
+  Shared<Mesh> asset = create_shared<Mesh>(path, loadingFlags);
   return s_library.mesh_assets.emplace(path, asset).first->second;
 }
 

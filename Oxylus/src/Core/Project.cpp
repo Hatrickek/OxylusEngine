@@ -6,14 +6,14 @@
 #include "Utils/Profiler.h"
 
 namespace Oxylus {
-Ref<Project> Project::create_new() {
+Shared<Project> Project::create_new() {
   OX_SCOPED_ZONE;
-  s_active_project = create_ref<Project>();
+  s_active_project = create_shared<Project>();
   return s_active_project;
 }
 
-Ref<Project> Project::new_project(const std::string& project_dir, const std::string& project_name, const std::string& project_asset_dir) {
-  auto project = create_ref<Project>();
+Shared<Project> Project::new_project(const std::string& project_dir, const std::string& project_name, const std::string& project_asset_dir) {
+  auto project = create_shared<Project>();
   project->get_config().name = project_name;
   project->get_config().asset_directory = project_asset_dir;
 
@@ -35,8 +35,8 @@ Ref<Project> Project::new_project(const std::string& project_dir, const std::str
   return project;
 }
 
-Ref<Project> Project::load(const std::filesystem::path& path) {
-  const Ref<Project> project = create_ref<Project>();
+Shared<Project> Project::load(const std::filesystem::path& path) {
+  const Shared<Project> project = create_shared<Project>();
 
   const ProjectSerializer serializer(project);
   if (serializer.deserialize(path)) {

@@ -7,23 +7,23 @@ namespace Oxylus {
 class SystemManager {
 public:
   template <typename T, typename... Args>
-  Ref<T> add_system(Args&&... args) {
+  Shared<T> add_system(Args&&... args) {
     auto typeName = typeid(T).hash_code();
 
     OX_CORE_ASSERT(!m_Systems.contains(typeName), "Registering system more than once.");
 
-    Ref<T> system = create_ref<T>(std::forward<Args>(args)...);
+    Shared<T> system = create_shared<T>(std::forward<Args>(args)...);
     m_Systems.insert({typeName, std::move(system)});
     return system;
   }
 
   template <typename T>
-  Ref<T> add_system(T* t) {
+  Shared<T> add_system(T* t) {
     auto typeName = typeid(T).hash_code();
 
     OX_CORE_ASSERT(!m_Systems.contains(typeName), "Registering system more than once.");
 
-    Ref<T> system = create_ref<T>(t);
+    Shared<T> system = create_shared<T>(t);
     m_Systems.insert({typeName, std::move(system)});
     return system;
   }
@@ -55,7 +55,7 @@ public:
     return m_Systems.contains(typeName);
   }
 
-  std::unordered_map<size_t, Ref<System>>& get_systems() { return m_Systems; }
+  std::unordered_map<size_t, Shared<System>>& get_systems() { return m_Systems; }
 
   void on_update() const {
     for (auto& system : m_Systems)
@@ -73,6 +73,6 @@ public:
   }
 
 private:
-  std::unordered_map<size_t, Ref<System>> m_Systems = {};
+  std::unordered_map<size_t, Shared<System>> m_Systems = {};
 };
 }

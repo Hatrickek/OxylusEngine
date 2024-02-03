@@ -19,21 +19,21 @@ public:
   // TODO(hatrickek): rethink about the use of this function
   static std::filesystem::path get_asset_file_system_path(const std::filesystem::path& path);
 
-  static Ref<TextureAsset> get_texture_asset(const TextureLoadInfo& info);
-  static Ref<TextureAsset> get_texture_asset(const std::string& name, const TextureLoadInfo& info);
-  static Ref<Mesh> get_mesh_asset(const std::string& path, int32_t loadingFlags = 0);
+  static Shared<TextureAsset> get_texture_asset(const TextureLoadInfo& info);
+  static Shared<TextureAsset> get_texture_asset(const std::string& name, const TextureLoadInfo& info);
+  static Shared<Mesh> get_mesh_asset(const std::string& path, int32_t loadingFlags = 0);
 
   static void package_assets();
   static void free_unused_assets();
 
 private:
   static struct AssetLibrary {
-    std::unordered_map<AssetID, Ref<TextureAsset>> texture_assets ;
-    std::unordered_map<AssetID, Ref<Mesh>> mesh_assets;
+    std::unordered_map<AssetID, Shared<TextureAsset>> texture_assets ;
+    std::unordered_map<AssetID, Shared<Mesh>> mesh_assets;
   } s_library;
 
-  static Ref<TextureAsset> load_texture_asset(const std::string& path);
-  static Ref<TextureAsset> load_texture_asset(const std::string& path, const TextureLoadInfo& info);
-  static Ref<Mesh> load_mesh_asset(const std::string& path, int32_t loadingFlags);
+  static Shared<TextureAsset> load_texture_asset(const std::string& path);
+  static Shared<TextureAsset> load_texture_asset(const std::string& path, const TextureLoadInfo& info);
+  static Shared<Mesh> load_mesh_asset(const std::string& path, int32_t loadingFlags);
 };
 }

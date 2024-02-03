@@ -61,7 +61,7 @@ private:
     std::string file_path;
     std::string extension;
     std::filesystem::directory_entry directory_entry;
-    Ref<TextureAsset> thumbnail = nullptr;
+    Shared<TextureAsset> thumbnail = nullptr;
     bool is_directory = false;
 
     FileType type;
@@ -80,9 +80,9 @@ private:
   ImGuiTextFilter m_filter;
   float m_elapsed_time = 0.0f;
 
-  std::unordered_map<std::string, Ref<TextureAsset>> thumbnail_cache;
+  std::unordered_map<std::string, Shared<TextureAsset>> thumbnail_cache;
 
-  Ref<TextureAsset> m_white_texture;
+  Shared<TextureAsset> m_white_texture;
   std::filesystem::path m_directory_to_delete;
 };
 }

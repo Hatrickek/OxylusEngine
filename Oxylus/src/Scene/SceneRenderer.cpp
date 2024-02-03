@@ -17,7 +17,7 @@ namespace Oxylus {
 void SceneRenderer::init() {
   OX_SCOPED_ZONE;
   if (!m_render_pipeline)
-    m_render_pipeline = create_ref<DefaultRenderPipeline>("DefaultRenderPipeline");
+    m_render_pipeline = create_shared<DefaultRenderPipeline>("DefaultRenderPipeline");
   Renderer::renderer_context.render_pipeline = m_render_pipeline;
   m_render_pipeline->init(*VulkanContext::get()->superframe_allocator);
   m_render_pipeline->on_dispatcher_events(dispatcher);

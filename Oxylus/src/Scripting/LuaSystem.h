@@ -1,33 +1,39 @@
 ﻿#pragma once
+#include <entt/entity/entity.hpp>
+
 #include <sol/environment.hpp>
 
 #include "Core/Base.h"
 #include "Core/Systems/System.h"
 
 namespace Oxylus {
-class LuaSystem : public System {
+class LuaSystem {
 public:
-  LuaSystem(const std::string& file_path);
+  LuaSystem(const std::string& path);
   ~LuaSystem() = default;
 
-  void load(const std::string& file_path);
+  void load(const std::string& path);
   void reload();
 
-  void on_update(Scene* scene, const Timestep& delta_time) override;
-  void on_release(Scene* scene) override;
+  void bind_globals(Scene* scene, entt::entity entity, const Timestep& timestep);
 
-  const std::string& get_path() const { return m_file_path; }
+  void on_init(Scene* scene, entt::entity entity);
+  void on_update(const Timestep& delta_time);
+  void on_release(Scene* scene, entt::entity entity);
+
+  const std::string& get_path() const { return file_path; }
 
 private:
-  std::string m_file_path;
-  std::unordered_map<int, std::string> m_errors = {};
+  std::string file_path;
+  std::unordered_map<int, std::string> errors = {};
 
-  Ref<sol::environment> m_env = nullptr;
-  Ref<sol::protected_function> m_on_init_func = nullptr;
-  Ref<sol::protected_function> m_on_release_func = nullptr;
-  Ref<sol::protected_function> m_on_update_func = nullptr;
-  Ref<sol::protected_function> m_on_fixed_update_func = nullptr;
+  Unique<sol::environment> environment = nullptr;
+  Unique<sol::protected_function> on_init_func = nullptr;
+  Unique<sol::protected_function> on_release_func = nullptr;
+  Unique<sol::protected_function> on_update_func = nullptr;
+  Unique<sol::protected_function> on_fixed_update_func = nullptr;
 
-  void init_script(const std::string& file_path);
+  void init_script(const std::string& path);
+  void check_result(const sol::protected_function_result& result, const char* func_name);
 };
 }

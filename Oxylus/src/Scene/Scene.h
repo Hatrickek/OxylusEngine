@@ -26,7 +26,7 @@ public:
 
   Scene();
   Scene(std::string name);
-  Scene(const Ref<RenderPipeline>& render_pipeline);
+  Scene(const Shared<RenderPipeline>& render_pipeline);
   Scene(const Scene&);
 
   ~Scene();
@@ -34,12 +34,12 @@ public:
   Entity create_entity(const std::string& name = "New Entity");
   Entity create_entity_with_uuid(UUID uuid, const std::string& name = std::string());
 
-  void iterate_mesh_node(const Ref<Mesh>& mesh, Entity parent_entity, const Mesh::Node* node);
-  Entity load_mesh(const Ref<Mesh>& mesh);
+  void iterate_mesh_node(const Shared<Mesh>& mesh, Entity parent_entity, const Mesh::Node* node);
+  Entity load_mesh(const Shared<Mesh>& mesh);
 
   template <typename T, typename... Args>
   Scene* add_system(Args&&... args) {
-    systems.emplace_back(create_scope<T>(std::forward<Args>(args)...));
+    systems.emplace_back(create_unique<T>(std::forward<Args>(args)...));
     return this;
   }
 
@@ -56,7 +56,7 @@ public:
 
   Entity find_entity(const std::string_view& name);
   bool has_entity(UUID uuid) const;
-  static Ref<Scene> copy(const Ref<Scene>& other);
+  static Shared<Scene> copy(const Shared<Scene>& other);
 
   // Physics interfaces
   void on_contact_added(const JPH::Body& body1, const JPH::Body& body2, const JPH::ContactManifold& manifold, const JPH::ContactSettings& settings);
@@ -65,7 +65,7 @@ public:
   Entity get_entity_by_uuid(UUID uuid);
 
   // Renderer
-  Ref<SceneRenderer> get_renderer() { return scene_renderer; }
+  Shared<SceneRenderer> get_renderer() { return scene_renderer; }
 
   entt::registry& get_registry() { return m_registry;}
 
@@ -74,17 +74,17 @@ private:
 
 
   // Renderer
-  Ref<SceneRenderer> scene_renderer;
+  Shared<SceneRenderer> scene_renderer;
 
   // Systems
-  std::vector<Scope<System>> systems;
+  std::vector<Unique<System>> systems;
 
   // Physics
   Physics3DContactListener* contact_listener_3d = nullptr;
   Physics3DBodyActivationListener* body_activation_listener_3d = nullptr;
   float physics_frame_accumulator = 0.0f;
 
-  void init(const Ref<RenderPipeline>& render_pipeline = nullptr);
+  void init(const Shared<RenderPipeline>& render_pipeline = nullptr);
 
   // Physics
   void update_physics(const Timestep& delta_time);

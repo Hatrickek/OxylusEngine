@@ -39,31 +39,31 @@ void Material::bind_textures(vuk::CommandBuffer& command_buffer) const {
   else \
     parameter = texture->get_id();
 
-Material* Material::set_albedo_texture(const Ref<TextureAsset>& texture) {
+Material* Material::set_albedo_texture(const Shared<TextureAsset>& texture) {
   albedo_texture = texture;
   SET_TEXTURE_ID(texture, parameters.albedo_map_id)
   return this;
 }
 
-Material* Material::set_normal_texture(const Ref<TextureAsset>& texture) {
+Material* Material::set_normal_texture(const Shared<TextureAsset>& texture) {
   normal_texture = texture;
   SET_TEXTURE_ID(texture, parameters.normal_map_id)
   return this;
 }
 
-Material* Material::set_physical_texture(const Ref<TextureAsset>& texture) {
+Material* Material::set_physical_texture(const Shared<TextureAsset>& texture) {
   physical_texture = texture;
   SET_TEXTURE_ID(texture, parameters.physical_map_id)
   return this;
 }
 
-Material* Material::set_ao_texture(const Ref<TextureAsset>& texture) {
+Material* Material::set_ao_texture(const Shared<TextureAsset>& texture) {
   ao_texture = texture;
   SET_TEXTURE_ID(texture, parameters.ao_map_id)
   return this;
 }
 
-Material* Material::set_emissive_texture(const Ref<TextureAsset>& texture) {
+Material* Material::set_emissive_texture(const Shared<TextureAsset>& texture) {
   emissive_texture = texture;
   SET_TEXTURE_ID(texture, parameters.emissive_map_id)
   return this;

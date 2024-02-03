@@ -5,7 +5,7 @@
 namespace Oxylus {
 class SceneSerializer {
 public:
-  SceneSerializer(const Ref<Scene>& scene);
+  SceneSerializer(const Shared<Scene>& scene);
 
   void serialize(const std::string& filePath) const;
   //void SerializeRuntime(const std::string& filePath);
@@ -13,6 +13,6 @@ public:
   bool deserialize(const std::string& filePath) const;
   //bool DeserializeRuntime(const std::string& filePath);
 private:
-  Ref<Scene> m_scene;
+  Shared<Scene> m_scene;
 };
 }

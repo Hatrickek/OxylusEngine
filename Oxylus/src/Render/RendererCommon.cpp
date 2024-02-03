@@ -30,7 +30,7 @@ std::pair<vuk::Unique<vuk::Image>, vuk::Future> RendererCommon::generate_cubemap
   auto& allocator = *VulkanContext::get()->superframe_allocator;
 
   // blur the hdr texture
-  Ref<vuk::RenderGraph> rg = create_ref<vuk::RenderGraph>("cubegen");
+  Shared<vuk::RenderGraph> rg = create_shared<vuk::RenderGraph>("cubegen");
   rg->attach_image("hdr_image", vuk::ImageAttachment::from_texture(cubemap));
   rg->attach_and_clear_image("blurred_hdr_image", vuk::ImageAttachment{.sample_count = vuk::SampleCountFlagBits::e1, .view_type = vuk::ImageViewType::e2D}, vuk::Black<float>);
   rg->inference_rule("blurred_hdr_image", vuk::same_extent_as("hdr_image"));
@@ -112,7 +112,7 @@ std::pair<vuk::Unique<vuk::Image>, vuk::Future> RendererCommon::generate_cubemap
   };
 }
 
-Ref<Mesh> RendererCommon::generate_quad() {
+Shared<Mesh> RendererCommon::generate_quad() {
   if (mesh_lib.quad)
     return mesh_lib.quad;
 
@@ -131,12 +131,12 @@ Ref<Mesh> RendererCommon::generate_quad() {
 
   const auto indices = std::vector<uint32_t>{0, 1, 2, 2, 3, 0};
 
-  mesh_lib.quad = create_ref<Mesh>(vertices, indices);
+  mesh_lib.quad = create_shared<Mesh>(vertices, indices);
 
   return mesh_lib.quad;
 }
 
-Ref<Mesh> RendererCommon::generate_cube() {
+Shared<Mesh> RendererCommon::generate_cube() {
   if (mesh_lib.cube)
     return mesh_lib.cube;
 
@@ -236,12 +236,12 @@ Ref<Mesh> RendererCommon::generate_cube() {
     20, 22, 23
   };
 
-  mesh_lib.cube = create_ref<Mesh>(vertices, indices);
+  mesh_lib.cube = create_shared<Mesh>(vertices, indices);
 
   return mesh_lib.cube;
 }
 
-Ref<Mesh> RendererCommon::generate_sphere() {
+Shared<Mesh> RendererCommon::generate_sphere() {
   if (mesh_lib.sphere)
     return mesh_lib.sphere;
 
@@ -291,7 +291,7 @@ Ref<Mesh> RendererCommon::generate_sphere() {
     }
   }
 
-  mesh_lib.sphere = create_ref<Mesh>(vertices, indices);
+  mesh_lib.sphere = create_shared<Mesh>(vertices, indices);
 
   return mesh_lib.sphere;
 }

@@ -13,17 +13,17 @@ namespace Oxylus {
     void on_imgui_render() override;
 
     ImRect draw_entity_node(Entity entity, uint32_t depth = 0, bool force_expand_tree = false, bool is_part_of_prefab = false);
-    void set_context(const Ref<Scene>& scene);
+    void set_context(const Shared<Scene>& scene);
 
     void clear_selection_context();
     Entity get_selected_entity() const;
     void set_selected_entity(Entity entity);
-    Ref<Scene> get_scene() const { return m_context; }
+    Shared<Scene> get_scene() const { return m_context; }
 
     void drag_drop_target() const;
 
   private:
-    Ref<Scene> m_context = nullptr;
+    Shared<Scene> m_context = nullptr;
     ImGuiTextFilter m_filter;
     bool m_table_hovered = false;
     bool m_window_hovered = false;

@@ -74,12 +74,12 @@ struct TransformComponent {
 
 // Rendering
 struct MaterialComponent {
-  std::vector<Ref<Material>> materials{};
+  std::vector<Shared<Material>> materials{};
   bool using_material_asset = false;
 };
 
 struct MeshComponent {
-  Ref<Mesh> mesh_base = nullptr;
+  Shared<Mesh> mesh_base = nullptr;
 
   uint32_t node_index = 0;
 
@@ -90,30 +90,30 @@ struct MeshComponent {
   AABB aabb = {};
 
   MeshComponent() = default;
-  MeshComponent(const Ref<Mesh>& mesh) : mesh_base(mesh) { }
+  MeshComponent(const Shared<Mesh>& mesh) : mesh_base(mesh) { }
 };
 
 struct CameraComponent {
-  Ref<Camera> system;
+  Shared<Camera> system;
 
-  CameraComponent() : system(create_ref<Camera>()) { }
+  CameraComponent() : system(create_shared<Camera>()) { }
 };
 
 struct AnimationComponent {
   float animation_timer = 0.0;
   float animation_speed = 1.0f;
   uint32_t current_animation_index = 0;
-  std::vector<Ref<Mesh::Animation>> animations;
+  std::vector<Shared<Mesh::Animation>> animations;
 };
 
 struct ParticleSystemComponent {
-  Ref<ParticleSystem> system = nullptr;
+  Shared<ParticleSystem> system = nullptr;
 
-  ParticleSystemComponent() : system(create_ref<ParticleSystem>()) { }
+  ParticleSystemComponent() : system(create_shared<ParticleSystem>()) { }
 };
 
 struct SkyLightComponent {
-  Ref<TextureAsset> cubemap = nullptr;
+  Shared<TextureAsset> cubemap = nullptr;
   float intensity = 0.7f;
   float rotation = 0.0f;
   float lod_bias = 0.0f;
@@ -274,38 +274,19 @@ struct CharacterControllerComponent {
 struct AudioSourceComponent {
   AudioSourceConfig config;
 
-  Ref<AudioSource> source = nullptr;
+  Shared<AudioSource> source = nullptr;
 };
 
 struct AudioListenerComponent {
   bool active = true;
   AudioListenerConfig config;
 
-  Ref<AudioListener> listener;
+  Shared<AudioListener> listener;
 };
 
 // Scripting
 struct LuaScriptComponent {
-  Ref<LuaSystem> lua_system = nullptr;
-};
-
-// Custom
-struct CustomComponent {
-  enum FieldType {
-    INT = 0,
-    FLOAT,
-    STRING,
-    BOOL,
-  };
-
-  struct ComponentField {
-    std::string name = "NewField";
-    FieldType type = INT;
-    std::string value = {};
-  };
-
-  std::string name = "NewComponent";
-  std::vector<ComponentField> fields;
+  Shared<LuaSystem> lua_system = nullptr;
 };
 
 template <typename... Component>
@@ -328,8 +309,6 @@ ComponentGroup<TransformComponent, RelationshipComponent, PrefabComponent, Camer
                // Audio
                AudioSourceComponent, AudioListenerComponent,
 
-               // Custom  
-               CustomComponent,
                // Scripting
                LuaScriptComponent>;
 }

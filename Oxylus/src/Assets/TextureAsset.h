@@ -41,11 +41,11 @@ public:
   const vuk::Texture& get_texture() const { return texture; }
 
   static void create_white_texture();
-  static Ref<TextureAsset> get_white_texture() { return s_white_texture; }
+  static Shared<TextureAsset> get_white_texture() { return s_white_texture; }
 
 private:
   vuk::Texture texture;
   std::string path = {};
-  static Ref<TextureAsset> s_white_texture;
+  static Shared<TextureAsset> s_white_texture;
 };
 }

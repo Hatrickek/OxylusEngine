@@ -33,7 +33,7 @@ public:
   GLFWcursor* crosshair_cursor = nullptr;
 
   // Logo
-  Ref<TextureAsset> engine_banner = nullptr;
+  Shared<TextureAsset> engine_banner = nullptr;
 
   // Layout
   ImGuiID dockspace_id;
@@ -65,13 +65,13 @@ public:
   const EditorContext& get_context() const { return m_editor_context; }
 
   void editor_shortcuts();
-  Ref<Scene> get_active_scene();
-  void set_editor_context(const Ref<Scene>& scene);
+  Shared<Scene> get_active_scene();
+  void set_editor_context(const Shared<Scene>& scene);
   bool open_scene(const std::filesystem::path& path);
   static void load_default_scene(const std::shared_ptr<Scene>& scene);
 
   Entity get_selected_entity() const { return m_scene_hierarchy_panel.get_selected_entity(); }
-  Ref<Scene> get_selected_scene() const { return m_scene_hierarchy_panel.get_scene(); }
+  Shared<Scene> get_selected_scene() const { return m_scene_hierarchy_panel.get_scene(); }
   void clear_selected_entity();
 
   void set_scene_state(SceneState state);
@@ -88,8 +88,8 @@ private:
 
   // Panels
   void draw_panels();
-  std::unordered_map<std::string, Scope<EditorPanel>> m_editor_panels;
-  std::vector<Scope<ViewportPanel>> m_viewport_panels;
+  std::unordered_map<std::string, Unique<EditorPanel>> m_editor_panels;
+  std::vector<Unique<ViewportPanel>> m_viewport_panels;
   ConsolePanel m_console_panel;
   SceneHierarchyPanel m_scene_hierarchy_panel;
   InspectorPanel m_inspector_panel;
@@ -102,8 +102,8 @@ private:
   // Context
   EditorContext m_editor_context = {};
 
-  Ref<Scene> m_editor_scene;
-  Ref<Scene> m_active_scene;
+  Shared<Scene> m_editor_scene;
+  Shared<Scene> m_active_scene;
   static EditorLayer* s_instance;
 };
 }

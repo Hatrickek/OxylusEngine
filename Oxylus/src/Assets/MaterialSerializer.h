@@ -6,7 +6,7 @@ namespace Oxylus {
 class MaterialSerializer {
 public:
   MaterialSerializer(Material& material) : m_material(&material) { }
-  MaterialSerializer(const Ref<Material>& material) : m_material(material.get()) { }
+  MaterialSerializer(const Shared<Material>& material) : m_material(material.get()) { }
 
   void serialize(const std::string& path) const;
   void deserialize(const std::string& path) const;

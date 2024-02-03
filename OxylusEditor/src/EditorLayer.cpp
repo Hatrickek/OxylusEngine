@@ -59,23 +59,23 @@ void EditorLayer::on_attach(EventDispatcher& dispatcher) {
 
   crosshair_cursor = Input::load_cursor_icon_standard(GLFW_CROSSHAIR_CURSOR);
 
-  engine_banner = create_ref<TextureAsset>();
+  engine_banner = create_shared<TextureAsset>();
   engine_banner->create_texture(EngineBannerWidth, EngineBannerHeight, EngineBanner);
 
   Input::set_cursor_state(Input::CursorState::Normal);
 
-  m_editor_scene = create_ref<Scene>();
+  m_editor_scene = create_shared<Scene>();
   load_default_scene(m_editor_scene);
   set_editor_context(m_editor_scene);
 
   // Initialize panels
-  m_editor_panels.emplace("EditorSettings", create_scope<EditorSettingsPanel>());
-  m_editor_panels.emplace("RenderSettings", create_scope<RendererSettingsPanel>());
-  m_editor_panels.emplace("FramebufferViewer", create_scope<FramebufferViewerPanel>());
-  m_editor_panels.emplace("ProjectPanel", create_scope<ProjectPanel>());
-  m_editor_panels.emplace("StatisticsPanel", create_scope<StatisticsPanel>());
-  m_editor_panels.emplace("EditorDebugPanel", create_scope<EditorDebugPanel>());
-  const auto& viewport = m_viewport_panels.emplace_back(create_scope<ViewportPanel>());
+  m_editor_panels.emplace("EditorSettings", create_unique<EditorSettingsPanel>());
+  m_editor_panels.emplace("RenderSettings", create_unique<RendererSettingsPanel>());
+  m_editor_panels.emplace("FramebufferViewer", create_unique<FramebufferViewerPanel>());
+  m_editor_panels.emplace("ProjectPanel", create_unique<ProjectPanel>());
+  m_editor_panels.emplace("StatisticsPanel", create_unique<StatisticsPanel>());
+  m_editor_panels.emplace("EditorDebugPanel", create_unique<EditorDebugPanel>());
+  const auto& viewport = m_viewport_panels.emplace_back(create_unique<ViewportPanel>());
   viewport->m_camera.set_position({-2, 2, 0});
   viewport->set_context(m_editor_scene, m_scene_hierarchy_panel);
 }
@@ -206,7 +206,7 @@ void EditorLayer::on_imgui_render() {
             Window::is_fullscreen_borderless() ? Window::set_windowed() : Window::set_fullscreen_borderless();
           }
           if (ImGui::MenuItem("Add viewport", nullptr)) {
-            m_viewport_panels.emplace_back(create_scope<ViewportPanel>())->set_context(m_editor_scene, m_scene_hierarchy_panel);
+            m_viewport_panels.emplace_back(create_unique<ViewportPanel>())->set_context(m_editor_scene, m_scene_hierarchy_panel);
           }
           if (ImGui::MenuItem("Framebuffer Viewer", nullptr)) {
             m_editor_panels["FramebufferViewer"]->Visible = true;
@@ -332,7 +332,7 @@ void EditorLayer::editor_shortcuts() {
 }
 
 void EditorLayer::new_scene() {
-  const Ref<Scene> new_scene = create_ref<Scene>();
+  const Shared<Scene> new_scene = create_shared<Scene>();
   m_editor_scene = new_scene;
   set_editor_context(new_scene);
   m_last_save_scene_path.clear();
@@ -353,7 +353,7 @@ bool EditorLayer::open_scene(const std::filesystem::path& path) {
     OX_CORE_WARN("Could not load {0} - not a scene file", path.filename().string());
     return false;
   }
-  const Ref<Scene> new_scene = create_ref<Scene>();
+  const Shared<Scene> new_scene = create_shared<Scene>();
   const SceneSerializer serializer(new_scene);
   if (serializer.deserialize(path.string())) {
     m_editor_scene = new_scene;
@@ -452,11 +452,11 @@ void EditorLayer::draw_panels() {
     m_asset_inspector_panel.on_imgui_render();
 }
 
-Ref<Scene> EditorLayer::get_active_scene() {
+Shared<Scene> EditorLayer::get_active_scene() {
   return m_active_scene;
 }
 
-void EditorLayer::set_editor_context(const Ref<Scene>& scene) {
+void EditorLayer::set_editor_context(const Shared<Scene>& scene) {
   m_scene_hierarchy_panel.clear_selection_context();
   m_scene_hierarchy_panel.set_context(scene);
   for (const auto& panel : m_viewport_panels) {

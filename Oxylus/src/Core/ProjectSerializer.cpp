@@ -7,7 +7,7 @@
 #include <fstream>
 
 namespace Oxylus {
-ProjectSerializer::ProjectSerializer(Ref<Project> project) : m_project(std::move(project)) {}
+ProjectSerializer::ProjectSerializer(Shared<Project> project) : m_project(std::move(project)) {}
 
 bool ProjectSerializer::serialize(const std::filesystem::path& file_path) const {
   const auto& config = m_project->get_config();

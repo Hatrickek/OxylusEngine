@@ -41,7 +41,7 @@ public:
   Application& push_layer(Layer* layer);
   Application& push_overlay(Layer* layer);
 
-  Ref<SystemManager> get_system_manager() { return system_manager; }
+  Shared<SystemManager> get_system_manager() { return system_manager; }
 
   void close();
 
@@ -61,10 +61,10 @@ private:
   ImGuiLayer* imgui_layer;
   LayerStack layer_stack;
 
-  Ref<SystemManager> system_manager = nullptr;
+  Shared<SystemManager> system_manager = nullptr;
   EventDispatcher dispatcher;
 
-  Ref<ThreadManager> thread_manager;
+  Shared<ThreadManager> thread_manager;
   Timestep timestep;
 
   bool is_running = true;

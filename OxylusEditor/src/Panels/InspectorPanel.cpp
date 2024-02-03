@@ -91,7 +91,7 @@ static void draw_component(const char* name,
   }
 }
 
-bool InspectorPanel::draw_material_properties(Ref<Material>& material, const bool save_to_current_path) {
+bool InspectorPanel::draw_material_properties(Shared<Material>& material, const bool save_to_current_path) {
   bool load_asset = false;
 
   if (ImGui::Button("Save")) {
@@ -111,7 +111,7 @@ bool InspectorPanel::draw_material_properties(Ref<Material>& material, const boo
   }
   ImGui::SameLine();
   if (ImGui::Button("Reset")) {
-    material = create_ref<Material>();
+    material = create_shared<Material>();
     material->create();
   }
   ImGui::SameLine();
@@ -456,7 +456,7 @@ void InspectorPanel::draw_components(Entity entity) const {
 
       auto load_file = [](const std::filesystem::path& path, AudioSourceComponent& comp) {
         if (const std::string ext = path.extension().string(); ext == ".mp3" || ext == ".wav" || ext == ".flac")
-          comp.source = create_ref<AudioSource>(AssetManager::get_asset_file_system_path(path).string().c_str());
+          comp.source = create_shared<AudioSource>(AssetManager::get_asset_file_system_path(path).string().c_str());
       };
 
       const float x = ImGui::GetContentRegionAvail().x;
@@ -773,7 +773,7 @@ void InspectorPanel::draw_components(Entity entity) const {
           return;
         const auto ext = FileSystem::get_file_extension(path);
         if (ext == "lua") {
-          comp.lua_system = create_ref<LuaSystem>(path);
+          comp.lua_system = create_shared<LuaSystem>(path);
         }
       };
       const float x = ImGui::GetContentRegionAvail().x;

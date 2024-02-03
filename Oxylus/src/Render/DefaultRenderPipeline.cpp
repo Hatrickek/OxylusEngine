@@ -539,13 +539,13 @@ static std::pair<vuk::Resource, vuk::Name> get_attachment_or_black_uint(const ch
   return {vuk::Resource("black_image_uint", vuk::Resource::Type::eImage, access), "black_image_uint"};
 }
 
-Scope<vuk::Future> DefaultRenderPipeline::on_render(vuk::Allocator& frame_allocator, const vuk::Future& target, vuk::Dimension3D dim) {
+Unique<vuk::Future> DefaultRenderPipeline::on_render(vuk::Allocator& frame_allocator, const vuk::Future& target, vuk::Dimension3D dim) {
   OX_SCOPED_ZONE;
   if (!current_camera) {
     OX_CORE_ERROR("No camera is set for rendering!");
     // set a temporary one
     if (!default_camera)
-      default_camera = create_ref<Camera>();
+      default_camera = create_shared<Camera>();
     current_camera = default_camera.get();
   }
 
@@ -594,7 +594,7 @@ Scope<vuk::Future> DefaultRenderPipeline::on_render(vuk::Allocator& frame_alloca
   create_dynamic_textures(*vk_context->superframe_allocator, dim);
   commit_descriptor_sets(frame_allocator);
 
-  const auto rg = create_ref<vuk::RenderGraph>("DefaultRenderPipelineRenderGraph");
+  const auto rg = create_shared<vuk::RenderGraph>("DefaultRenderPipelineRenderGraph");
 
   rg->attach_and_clear_image("black_image", {.format = vk_context->swapchain->format, .sample_count = vuk::SampleCountFlagBits::e1}, vuk::Black<float>);
   rg->inference_rule("black_image", vuk::same_shape_as("final_image"));
@@ -696,10 +696,10 @@ Scope<vuk::Future> DefaultRenderPipeline::on_render(vuk::Allocator& frame_alloca
     }
   });
 
-  return create_scope<vuk::Future>(rg, "final_output");
+  return create_unique<vuk::Future>(rg, "final_output");
 }
 
-void DefaultRenderPipeline::sky_transmittance_pass(const Ref<vuk::RenderGraph>& rg) {
+void DefaultRenderPipeline::sky_transmittance_pass(const Shared<vuk::RenderGraph>& rg) {
   OX_SCOPED_ZONE;
 
   IVec2 lut_size = {256, 64};
@@ -720,7 +720,7 @@ void DefaultRenderPipeline::sky_transmittance_pass(const Ref<vuk::RenderGraph>& 
   });
 }
 
-void DefaultRenderPipeline::sky_multiscatter_pass(const Ref<vuk::RenderGraph>& rg) {
+void DefaultRenderPipeline::sky_multiscatter_pass(const Shared<vuk::RenderGraph>& rg) {
   OX_SCOPED_ZONE;
 
   IVec2 lut_size = {32, 32};
@@ -749,7 +749,7 @@ void DefaultRenderPipeline::update_skybox(const SkyboxLoadEvent& e) {
     generate_prefilter(*VulkanContext::get()->superframe_allocator);
 }
 
-void DefaultRenderPipeline::depth_pre_pass(const Ref<vuk::RenderGraph>& rg) {
+void DefaultRenderPipeline::depth_pre_pass(const Shared<vuk::RenderGraph>& rg) {
   OX_SCOPED_ZONE;
 
   rg->attach_and_clear_image("normal_image", vuk::ImageAttachment::from_texture(normal_texture), vuk::Black<float>);
@@ -798,7 +798,7 @@ void DefaultRenderPipeline::depth_pre_pass(const Ref<vuk::RenderGraph>& rg) {
   });
 }
 
-void DefaultRenderPipeline::geometry_pass(const Ref<vuk::RenderGraph>& rg) {
+void DefaultRenderPipeline::geometry_pass(const Shared<vuk::RenderGraph>& rg) {
   OX_SCOPED_ZONE;
 
   rg->attach_and_clear_image("pbr_image", vuk::ImageAttachment::from_texture(pbr_texture), vuk::Black<float>);
@@ -894,7 +894,7 @@ void DefaultRenderPipeline::geometry_pass(const Ref<vuk::RenderGraph>& rg) {
   });
 }
 
-void DefaultRenderPipeline::bloom_pass(const Ref<vuk::RenderGraph>& rg) {
+void DefaultRenderPipeline::bloom_pass(const Shared<vuk::RenderGraph>& rg) {
   OX_SCOPED_ZONE;
   struct BloomPushConst {
     // x: threshold, y: clamp, z: radius, w: unused
@@ -985,7 +985,7 @@ void DefaultRenderPipeline::bloom_pass(const Ref<vuk::RenderGraph>& rg) {
   rg->converge_image_explicit(up_output_names, "bloom_upsampled_image");
 }
 
-void DefaultRenderPipeline::gtao_pass(vuk::Allocator& frame_allocator, const Ref<vuk::RenderGraph>& rg) {
+void DefaultRenderPipeline::gtao_pass(vuk::Allocator& frame_allocator, const Shared<vuk::RenderGraph>& rg) {
   OX_SCOPED_ZONE;
   gtao_settings.QualityLevel = RendererCVar::cvar_gtao_quality_level.get();
   gtao_settings.DenoisePasses = RendererCVar::cvar_gtao_denoise_passes.get();
@@ -1112,7 +1112,7 @@ void DefaultRenderPipeline::gtao_pass(vuk::Allocator& frame_allocator, const Ref
   rg->inference_rule("gtao_final_image", vuk::same_extent_as("final_image"));
 }
 
-void DefaultRenderPipeline::ssr_pass(const Ref<vuk::RenderGraph>& rg) {
+void DefaultRenderPipeline::ssr_pass(const Shared<vuk::RenderGraph>& rg) {
   OX_SCOPED_ZONE;
   rg->attach_and_clear_image("ssr_image", vuk::ImageAttachment::from_texture(ssr_texture), vuk::Black<float>);
 
@@ -1185,7 +1185,7 @@ void DefaultRenderPipeline::apply_grid(vuk::RenderGraph* rg, const vuk::Name dst
   });
 }
 
-void DefaultRenderPipeline::cascaded_shadow_pass(const Ref<vuk::RenderGraph>& rg) {
+void DefaultRenderPipeline::cascaded_shadow_pass(const Shared<vuk::RenderGraph>& rg) {
   OX_SCOPED_ZONE;
   auto [d_cascade_names, d_cascade_name_outputs] = diverge_image_layers(rg, "shadow_map_array", 4);
 
@@ -1255,7 +1255,7 @@ void DefaultRenderPipeline::update_parameters(ProbeChangeEvent& e) {
   ubo.vignette_color.a = component.vignette_intensity;
 }
 
-void DefaultRenderPipeline::sky_envmap_pass(const Ref<vuk::RenderGraph>& rg) {
+void DefaultRenderPipeline::sky_envmap_pass(const Shared<vuk::RenderGraph>& rg) {
   auto attachment = vuk::ImageAttachment::from_texture(sky_envmap_texture);
   attachment.image_flags = vuk::ImageCreateFlagBits::eCubeCompatible;
   attachment.view_type = vuk::ImageViewType::eCube;
@@ -1282,7 +1282,7 @@ void DefaultRenderPipeline::sky_envmap_pass(const Ref<vuk::RenderGraph>& rg) {
   });
 }
 
-void DefaultRenderPipeline::sky_view_lut_pass(const Ref<vuk::RenderGraph>& rg) {
+void DefaultRenderPipeline::sky_view_lut_pass(const Shared<vuk::RenderGraph>& rg) {
   OX_SCOPED_ZONE;
 
   const auto attachment = vuk::ImageAttachment{
@@ -1317,7 +1317,7 @@ void DefaultRenderPipeline::sky_view_lut_pass(const Ref<vuk::RenderGraph>& rg) {
   });
 }
 
-void DefaultRenderPipeline::debug_pass(const Ref<vuk::RenderGraph>& rg, const vuk::Name dst, const char* depth, vuk::Allocator& frame_allocator) const {
+void DefaultRenderPipeline::debug_pass(const Shared<vuk::RenderGraph>& rg, const vuk::Name dst, const char* depth, vuk::Allocator& frame_allocator) const {
   OX_SCOPED_ZONE;
   struct DebugPassData {
     Mat4 vp = {};

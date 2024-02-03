@@ -16,7 +16,7 @@ public:
   sol::state* get_state() const { return m_state.get(); }
 
 private:
-  Ref<sol::state> m_state = nullptr;
+  Shared<sol::state> m_state = nullptr;
 
   void bind_log() const;
 };

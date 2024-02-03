@@ -10,7 +10,7 @@ namespace Oxylus {
 Resources::EditorRes Resources::editor_resources;
 
 void Resources::init_editor_resources() {
-  editor_resources.engine_icon = create_ref<TextureAsset>();
+  editor_resources.engine_icon = create_shared<TextureAsset>();
   editor_resources.engine_icon->load_from_memory(EngineLogo, EngineLogoLen);
 }
 

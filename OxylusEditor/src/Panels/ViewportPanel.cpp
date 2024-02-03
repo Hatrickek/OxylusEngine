@@ -32,17 +32,17 @@ ViewportPanel::ViewportPanel() : EditorPanel("Viewport", ICON_MDI_TERRAIN, true)
   OX_SCOPED_ZONE;
   ADD_TASK_TO_PIPE(
     this,
-    m_show_gizmo_image_map[typeid(LightComponent).hash_code()] = create_ref<TextureAsset>(TextureLoadInfo{.path = "Resources/Icons/PointLightIcon.png", .generate_mips = false});
+    m_show_gizmo_image_map[typeid(LightComponent).hash_code()] = create_shared<TextureAsset>(TextureLoadInfo{.path = "Resources/Icons/PointLightIcon.png", .generate_mips = false});
   );
 
   ADD_TASK_TO_PIPE(
     this,
-    m_show_gizmo_image_map[typeid(SkyLightComponent).hash_code()] = create_ref<TextureAsset>(TextureLoadInfo{.path = "Resources/Icons/SkyIcon.png", .generate_mips = false});
+    m_show_gizmo_image_map[typeid(SkyLightComponent).hash_code()] = create_shared<TextureAsset>(TextureLoadInfo{.path = "Resources/Icons/SkyIcon.png", .generate_mips = false});
   );
 
   ADD_TASK_TO_PIPE(
     this,
-    m_show_gizmo_image_map[typeid(CameraComponent).hash_code()] = create_ref<TextureAsset>(TextureLoadInfo{.path = "Resources/Icons/CameraIcon.png", .generate_mips = false});
+    m_show_gizmo_image_map[typeid(CameraComponent).hash_code()] = create_shared<TextureAsset>(TextureLoadInfo{.path = "Resources/Icons/CameraIcon.png", .generate_mips = false});
   );
 
   auto& superframe_allocator = VulkanContext::get()->superframe_allocator;
@@ -72,7 +72,7 @@ ViewportPanel::ViewportPanel() : EditorPanel("Viewport", ICON_MDI_TERRAIN, true)
   TaskScheduler::wait_for_all();
 }
 
-bool ViewportPanel::outline_pass(const Ref<RenderPipeline>& rp, const vuk::Dimension3D& dim) const {
+bool ViewportPanel::outline_pass(const Shared<RenderPipeline>& rp, const vuk::Dimension3D& dim) const {
   const auto rg = rp->get_frame_render_graph();
 
   struct VsUbo {
@@ -302,7 +302,7 @@ void ViewportPanel::on_imgui_render() {
     if (final_image) {
       mouse_picking_pass(rp, dim, fixed_width);
       if (outline_pass(rp, dim)) {
-        final_image = create_ref<vuk::SampledImage>(
+        final_image = create_shared<vuk::SampledImage>(
           make_sampled_image(vuk::NameReference{rp->get_frame_render_graph().get(), vuk::QualifiedName({}, "final_outlined_image+")}, {}));
       }
 
@@ -389,15 +389,15 @@ void ViewportPanel::on_imgui_render() {
       const float frame_height = 1.0f * ImGui::GetFrameHeight();
       const ImVec2 button_size = {frame_height, frame_height};
       constexpr float button_count = 3.0f;
-      constexpr float button_pad = 15.0f;
-      const ImVec2 gizmo_position = {m_viewport_bounds[0].x + m_viewport_size.x * 0.5f, m_viewport_bounds[0].y + 8.0f};
-      const auto width = gizmo_position.x + (button_size.x + button_pad) * (button_count + 0.5f);
-      const ImRect bb(gizmo_position.x, gizmo_position.y, width, gizmo_position.y + button_size.y + 8);
+      constexpr float y_pad = 8.0f;
+      const ImVec2 gizmo_position = {m_viewport_bounds[0].x + m_viewport_size.x * 0.5f, m_viewport_bounds[0].y + y_pad};
+      const auto width = gizmo_position.x + button_size.x * button_count + 50.0f;
+      const ImRect bb(gizmo_position.x - 5.0f, gizmo_position.y, width, gizmo_position.y + button_size.y + 8);
       ImVec4 frame_color = ImGui::GetStyleColorVec4(ImGuiCol_Tab);
       frame_color.w = 0.5f;
       ImGui::RenderFrame(bb.Min, bb.Max, ImGui::GetColorU32(frame_color), false, 3.0f);
 
-      ImGui::SetCursorPos({m_viewport_size.x * 0.5f + (button_pad / button_count), start_cursor_pos.y + ImGui::GetStyle().FramePadding.y + 8.0f});
+      ImGui::SetCursorPos({m_viewport_size.x * 0.5f, start_cursor_pos.y + ImGui::GetStyle().FramePadding.y + y_pad});
       ImGui::BeginGroup();
       {
         ImGui::PushStyleVar(ImGuiStyleVar_FrameBorderSize, 0.0f);
@@ -434,7 +434,7 @@ void ViewportPanel::on_imgui_render() {
   }
 }
 
-void ViewportPanel::mouse_picking_pass(const Ref<RenderPipeline>& rp, const vuk::Dimension3D& dim, const float fixed_width) {
+void ViewportPanel::mouse_picking_pass(const Shared<RenderPipeline>& rp, const vuk::Dimension3D& dim, const float fixed_width) {
   struct SceneMesh {
     uint32_t entity_id = 0;
     MeshComponent mesh_component = {};
@@ -582,7 +582,7 @@ void ViewportPanel::mouse_picking_pass(const Ref<RenderPipeline>& rp, const vuk:
   }
 }
 
-void ViewportPanel::set_context(const Ref<Scene>& scene, SceneHierarchyPanel& scene_hierarchy_panel) {
+void ViewportPanel::set_context(const Shared<Scene>& scene, SceneHierarchyPanel& scene_hierarchy_panel) {
   m_scene_hierarchy_panel = &scene_hierarchy_panel;
   m_scene = scene;
 }

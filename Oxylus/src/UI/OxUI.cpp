@@ -98,7 +98,7 @@ void OxUI::tooltip(const char* text) {
   ImGui::PopStyleVar();
 }
 
-bool OxUI::property(const char* label, Ref<TextureAsset>& texture, const char* tooltip) {
+bool OxUI::property(const char* label, Shared<TextureAsset>& texture, const char* tooltip) {
   begin_property_grid(label, tooltip);
   bool changed = false;
 
@@ -116,7 +116,7 @@ bool OxUI::property(const char* label, Ref<TextureAsset>& texture, const char* t
   ImGui::PushStyleColor(ImGuiCol_ButtonHovered, ImVec4{0.35f, 0.35f, 0.35f, 1.0f});
   ImGui::PushStyleColor(ImGuiCol_ButtonActive, ImVec4{0.25f, 0.25f, 0.25f, 1.0f});
 
-  auto texture_load_func = [](Ref<TextureAsset>& texture, bool& changed) {
+  auto texture_load_func = [](Shared<TextureAsset>& texture, bool& changed) {
     const auto& path = FileDialogs::open_file({{"Texture file", "png,jpg"}});
     if (!path.empty()) {
       texture = AssetManager::get_texture_asset({path});

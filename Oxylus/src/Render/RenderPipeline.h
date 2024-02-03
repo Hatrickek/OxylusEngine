@@ -26,7 +26,7 @@ public:
   virtual void init(vuk::Allocator& allocator) = 0;
   virtual void shutdown() = 0;
 
-  virtual Scope<vuk::Future> on_render(vuk::Allocator& frame_allocator, const vuk::Future& target, vuk::Dimension3D dim) = 0;
+  virtual Unique<vuk::Future> on_render(vuk::Allocator& frame_allocator, const vuk::Future& target, vuk::Dimension3D dim) = 0;
 
   virtual void on_dispatcher_events(EventDispatcher& dispatcher) { }
 
@@ -41,11 +41,11 @@ public:
   virtual void detach_swapchain(vuk::Dimension3D dim);
   virtual bool is_swapchain_attached() { return attach_swapchain; }
 
-  virtual Ref<vuk::SampledImage> get_final_image() { return final_image; }
-  virtual void set_final_image(Ref<vuk::SampledImage>& image) { final_image = image; }
+  virtual Shared<vuk::SampledImage> get_final_image() { return final_image; }
+  virtual void set_final_image(Shared<vuk::SampledImage>& image) { final_image = image; }
 
-  virtual Ref<vuk::RenderGraph> get_frame_render_graph() { return frame_render_graph; }
-  virtual void set_frame_render_graph(Ref<vuk::RenderGraph> render_graph) { frame_render_graph = render_graph; }
+  virtual Shared<vuk::RenderGraph> get_frame_render_graph() { return frame_render_graph; }
+  virtual void set_frame_render_graph(Shared<vuk::RenderGraph> render_graph) { frame_render_graph = render_graph; }
 
   virtual vuk::Allocator* get_frame_allocator() { return m_frame_allocator; }
   virtual void set_frame_allocator(vuk::Allocator* allocator) { m_frame_allocator = allocator; }
@@ -64,8 +64,8 @@ protected:
   std::string m_name = {};
   bool attach_swapchain = false;
   vuk::Dimension3D dimension = {};
-  Ref<vuk::SampledImage> final_image = nullptr;
-  Ref<vuk::RenderGraph> frame_render_graph = nullptr;
+  Shared<vuk::SampledImage> final_image = nullptr;
+  Shared<vuk::RenderGraph> frame_render_graph = nullptr;
   vuk::Name final_attachment_name;
   vuk::Allocator* m_frame_allocator;
   std::mutex setup_lock;

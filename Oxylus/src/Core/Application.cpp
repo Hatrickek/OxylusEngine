@@ -15,7 +15,7 @@
 namespace Oxylus {
 Application* Application::instance = nullptr;
 
-Application::Application(AppSpec spec) : m_spec(std::move(spec)), system_manager(create_ref<SystemManager>()) {
+Application::Application(AppSpec spec) : m_spec(std::move(spec)), system_manager(create_shared<SystemManager>()) {
   OX_SCOPED_ZONE;
   if (instance) {
     OX_CORE_ERROR("Application already exists!");
@@ -24,7 +24,7 @@ Application::Application(AppSpec spec) : m_spec(std::move(spec)), system_manager
 
   instance = this;
 
-  thread_manager = create_ref<ThreadManager>();
+  thread_manager = create_shared<ThreadManager>();
 
   if (m_spec.working_directory.empty())
     m_spec.working_directory = std::filesystem::current_path().string();

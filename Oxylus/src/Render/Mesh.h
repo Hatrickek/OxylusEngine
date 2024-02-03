@@ -37,7 +37,7 @@ public:
 
     AABB aabb = {};
 
-    Ref<Material> material = nullptr;
+    Shared<Material> material = nullptr;
 
     int32_t material_index = 0;
     uint32_t parent_node_index = 0;
@@ -52,7 +52,7 @@ public:
 
   struct MeshData {
     std::vector<Primitive*> primitives = {};
-    std::vector<Ref<Material>> materials = {};
+    std::vector<Shared<Material>> materials = {};
     vuk::Unique<vuk::Buffer> node_buffer;
 
     AABB aabb = {};
@@ -122,10 +122,10 @@ public:
     float end = std::numeric_limits<float>::min();
   };
 
-  std::vector<Ref<Animation>> animations = {};
+  std::vector<Shared<Animation>> animations = {};
 
-  std::vector<Ref<TextureAsset>> m_textures;
-  std::vector<Ref<Material>> materials;
+  std::vector<Shared<TextureAsset>> m_textures;
+  std::vector<Shared<Material>> materials;
   std::vector<Node*> nodes;
   std::vector<Node*> linear_nodes;
   std::vector<Node*> linear_mesh_nodes;
@@ -165,9 +165,9 @@ public:
   /// Export a mesh file as glb file.
   static bool export_as_binary(const std::string& in_path, const std::string& out_path);
 
-  Ref<Material> get_material(uint32_t index) const;
-  std::vector<Ref<Material>> get_materials_as_ref() const;
-  std::vector<Ref<Material>> get_materials(uint32_t node_index) const;
+  Shared<Material> get_material(uint32_t index) const;
+  std::vector<Shared<Material>> get_materials_as_ref() const;
+  std::vector<Shared<Material>> get_materials(uint32_t node_index) const;
   uint32_t get_material_count() const { return (uint32_t)materials.size(); }
   size_t get_node_count() const { return nodes.size(); }
   void set_scale(const Vec3& mesh_scale);

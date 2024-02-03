@@ -57,17 +57,17 @@ public:
 
   void bind_textures(vuk::CommandBuffer& command_buffer) const;
 
-  Ref<TextureAsset>& get_albedo_texture() { return albedo_texture; }
-  Ref<TextureAsset>& get_normal_texture() { return normal_texture; }
-  Ref<TextureAsset>& get_physical_texture() { return physical_texture; }
-  Ref<TextureAsset>& get_ao_texture() { return ao_texture; }
-  Ref<TextureAsset>& get_emissive_texture() { return emissive_texture; }
+  Shared<TextureAsset>& get_albedo_texture() { return albedo_texture; }
+  Shared<TextureAsset>& get_normal_texture() { return normal_texture; }
+  Shared<TextureAsset>& get_physical_texture() { return physical_texture; }
+  Shared<TextureAsset>& get_ao_texture() { return ao_texture; }
+  Shared<TextureAsset>& get_emissive_texture() { return emissive_texture; }
 
-  Material* set_albedo_texture(const Ref<TextureAsset>& texture);
-  Material* set_normal_texture(const Ref<TextureAsset>& texture);
-  Material* set_physical_texture(const Ref<TextureAsset>& texture);
-  Material* set_ao_texture(const Ref<TextureAsset>& texture);
-  Material* set_emissive_texture(const Ref<TextureAsset>& texture);
+  Material* set_albedo_texture(const Shared<TextureAsset>& texture);
+  Material* set_normal_texture(const Shared<TextureAsset>& texture);
+  Material* set_physical_texture(const Shared<TextureAsset>& texture);
+  Material* set_ao_texture(const Shared<TextureAsset>& texture);
+  Material* set_emissive_texture(const Shared<TextureAsset>& texture);
 
   Material* set_color(Vec4 color);
   Material* set_roughness(float roughness);
@@ -84,10 +84,10 @@ public:
   const char* alpha_mode_to_string() const;
 
 private:
-  Ref<TextureAsset> albedo_texture = nullptr;
-  Ref<TextureAsset> normal_texture = nullptr;
-  Ref<TextureAsset> physical_texture = nullptr;
-  Ref<TextureAsset> ao_texture = nullptr;
-  Ref<TextureAsset> emissive_texture = nullptr;
+  Shared<TextureAsset> albedo_texture = nullptr;
+  Shared<TextureAsset> normal_texture = nullptr;
+  Shared<TextureAsset> physical_texture = nullptr;
+  Shared<TextureAsset> ao_texture = nullptr;
+  Shared<TextureAsset> emissive_texture = nullptr;
 };
 }

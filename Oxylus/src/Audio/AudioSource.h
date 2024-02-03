@@ -68,7 +68,7 @@ public:
 
 private:
   std::string m_Path;
-  Scope<ma_sound> m_Sound;
+  Unique<ma_sound> m_Sound;
   bool m_Spatialization = false;
 };
 }
