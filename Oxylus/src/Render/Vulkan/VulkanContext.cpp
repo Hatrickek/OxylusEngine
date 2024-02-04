@@ -143,9 +143,8 @@ void VulkanContext::create_context(const AppSpec& spec) {
   selector.set_surface(surface)
           .set_minimum_version(1, 2)
           .add_required_extension(VK_KHR_SYNCHRONIZATION_2_EXTENSION_NAME)
-           //.add_required_extension(VK_KHR_ACCELERATION_STRUCTURE_EXTENSION_NAME)
-           //.add_required_extension(VK_KHR_RAY_TRACING_PIPELINE_EXTENSION_NAME)
-          .add_required_extension(VK_KHR_DEFERRED_HOST_OPERATIONS_EXTENSION_NAME);
+          .add_required_extension(VK_KHR_DEFERRED_HOST_OPERATIONS_EXTENSION_NAME)
+          .add_required_extension(VK_EXT_SHADER_VIEWPORT_INDEX_LAYER_EXTENSION_NAME);
 
   VkPhysicalDeviceFeatures2 vk10features{.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_FEATURES_2_KHR};
   vk10features.features.geometryShader = true;
@@ -175,6 +174,13 @@ void VulkanContext::create_context(const AppSpec& spec) {
   vk12features.shaderOutputViewportIndex = true;
   selector.set_required_features_12(vk12features);
 
+  VkPhysicalDeviceSynchronization2FeaturesKHR sync_feat{
+    .sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SYNCHRONIZATION_2_FEATURES_KHR,
+    .synchronization2 = true
+  };
+
+  selector.add_required_extension_features<>(sync_feat);
+
   auto phys_ret = selector.select();
   vkb::PhysicalDevice vkbphysical_device;
   if (!phys_ret) {
@@ -196,27 +202,6 @@ void VulkanContext::create_context(const AppSpec& spec) {
   physical_device = vkbphysical_device.physical_device;
   vkb::DeviceBuilder device_builder{vkbphysical_device};
 
-  VkPhysicalDeviceSynchronization2FeaturesKHR sync_feat{
-    .sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SYNCHRONIZATION_2_FEATURES_KHR,
-    .synchronization2 = true
-  };
-  VkPhysicalDeviceAccelerationStructureFeaturesKHR accelFeature{
-    .sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_ACCELERATION_STRUCTURE_FEATURES_KHR,
-    .accelerationStructure = true
-  };
-  VkPhysicalDeviceRayTracingPipelineFeaturesKHR rtPipelineFeature{
-    .sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_RAY_TRACING_PIPELINE_FEATURES_KHR,
-    .rayTracingPipeline = true
-  };
-
-  device_builder = device_builder.add_pNext(&vk12features)
-                                 .add_pNext(&vk11features)
-                                 .add_pNext(&sync_feat)
-                                 .add_pNext(&vk10features);
-
-  if (has_rt) {
-    device_builder = device_builder.add_pNext(&rtPipelineFeature).add_pNext(&accelFeature);
-  }
   auto dev_ret = device_builder.build();
   if (!dev_ret) {
     OX_CORE_ERROR("Couldn't create device");
