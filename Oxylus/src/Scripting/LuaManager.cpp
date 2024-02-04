@@ -2,6 +2,7 @@
 
 #include <sol/sol.hpp>
 
+#include "LuaAssetManagerBindings.h"
 #include "LuaAudioBindings.h"
 #include "LuaComponentBindings.h"
 #include "LuaSceneBindings.h"
@@ -21,11 +22,13 @@ void LuaManager::init() {
   bind_log();
   LuaBindings::bind_math(m_state);
   LuaBindings::bind_scene(m_state);
+  LuaBindings::bind_asset_manager(m_state);
 
   // Components
   LuaBindings::bind_tag_component(m_state);
   LuaBindings::bind_transform_component(m_state);
   LuaBindings::bind_light_component(m_state);
+  LuaBindings::bind_mesh_component(m_state);
   LuaBindings::bind_input(m_state);
   LuaBindings::bind_audio(m_state);
 }

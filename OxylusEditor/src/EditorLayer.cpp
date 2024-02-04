@@ -384,7 +384,7 @@ void EditorLayer::clear_selected_entity() {
 void EditorLayer::save_scene() {
   if (!m_last_save_scene_path.empty()) {
     ThreadManager::get()->asset_thread.queue_job([this] {
-      SceneSerializer(get_active_scene()).serialize(m_last_save_scene_path);
+      SceneSerializer(m_editor_scene).serialize(m_last_save_scene_path);
     });
   }
   else {

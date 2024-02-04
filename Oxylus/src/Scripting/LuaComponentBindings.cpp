@@ -2,6 +2,8 @@
 
 #include <sol/state.hpp>
 
+#include "Assets/AssetManager.h"
+
 #include "Scene/Entity.h"
 #include "Scripting/Sol2Helpers.h"
 
@@ -25,5 +27,15 @@ void LuaBindings::bind_light_component(const Shared<sol::state>& state) {
   SET_TYPE_FIELD(light_component_type, LightComponent, color);
   SET_TYPE_FIELD(light_component_type, LightComponent, intensity);
   REGISTER_COMPONENT_WITH_ECS(state, LightComponent)
+}
+
+void LuaBindings::bind_mesh_component(const Shared<sol::state>& state) {
+  state->new_usertype<Mesh>("Mesh");
+
+  auto mesh_component_type = state->new_usertype<MeshComponent>("MeshComponent");
+  SET_TYPE_FIELD(mesh_component_type, MeshComponent, mesh_base);
+  SET_TYPE_FIELD(mesh_component_type, MeshComponent, node_index);
+  SET_TYPE_FIELD(mesh_component_type, MeshComponent, cast_shadows);
+  REGISTER_COMPONENT_WITH_ECS(state, MeshComponent)
 }
 }

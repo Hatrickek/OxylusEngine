@@ -76,8 +76,8 @@ Entity Scene::create_entity_with_uuid(UUID uuid, const std::string& name) {
   return entity;
 }
 
-void Scene::iterate_mesh_node(const Shared<Mesh>& mesh, const Entity parent_entity, const Mesh::Node* node) {
-  auto node_entity = create_entity(node->name);
+void Scene::iterate_mesh_node(const Shared<Mesh>& mesh, const Entity base_entity, const Entity parent_entity, const Mesh::Node* node) {
+  auto node_entity = base_entity ? base_entity : create_entity(node->name);
 
   if (node->mesh_data) {
     auto& mesh_component = node_entity.add_component_internal<MeshComponent>(mesh);
@@ -90,15 +90,16 @@ void Scene::iterate_mesh_node(const Shared<Mesh>& mesh, const Entity parent_enti
     node_entity.set_parent(parent_entity);
 
   for (const auto& child : node->children)
-    iterate_mesh_node(mesh, node_entity, child);
+    iterate_mesh_node(mesh, {}, node_entity, child);
 }
 
 Entity Scene::load_mesh(const Shared<Mesh>& mesh) {
+  const auto base_entity = create_entity(mesh->nodes[0]->name);
   for (const auto* node : mesh->nodes) {
-    iterate_mesh_node(mesh, {}, node);
+    iterate_mesh_node(mesh, base_entity, {}, node);
   }
 
-  return find_entity(mesh->linear_nodes[0]->name);
+  return base_entity;
 }
 
 void Scene::update_physics(const Timestep& delta_time) {
