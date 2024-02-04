@@ -131,8 +131,12 @@ set_target_properties(${PROJECT_NAME} PROPERTIES MSVC_RUNTIME_LIBRARY ${MSVC_RUN
 #-------------
 # Dependencies
 #-------------
+if (NOT EXISTS ${CMAKE_SOURCE_DIR}/cpm.cmake)
+  file(DOWNLOAD https://github.com/cpm-cmake/CPM.cmake/releases/download/v0.38.7/CPM.cmake ${CMAKE_SOURCE_DIR}/cpm.cmake SHOW_PROGRESS)
+endif()
+
 include(${CMAKE_CURRENT_SOURCE_DIR}/vendor/CMake-Utils/CMakeUtils.cmake)
-include(${CMAKE_CURRENT_SOURCE_DIR}/vendor/CPM.cmake)
+include(${CMAKE_SOURCE_DIR}/cpm.cmake)
 set_property(GLOBAL PROPERTY CTEST_TARGETS_ADDED 1) # hack for removing auto generated ctest targets
 
 # Suppress all warnings from dependencies.
