@@ -12,7 +12,7 @@
 
 #include "Utils/StringUtils.h"
 
-namespace Oxylus {
+namespace Ox {
 class ViewportPanel : public EditorPanel {
 public:
   Camera m_camera;

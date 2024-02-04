@@ -13,7 +13,7 @@
 #include "Assets/TextureAsset.h"
 #include "Core/Application.h"
 
-namespace Oxylus {
+namespace Ox {
 inline static int ui_context_id = 0;
 inline static int s_counter = 0;
 char OxUI::id_buffer[16];

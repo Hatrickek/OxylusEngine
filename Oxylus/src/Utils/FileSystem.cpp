@@ -4,7 +4,7 @@
 
 #include "Core/PlatformDetection.h"
 
-namespace Oxylus {
+namespace Ox {
 std::string FileSystem::get_file_extension(const std::string_view filepath) {
   const auto lastDot = filepath.find_last_of('.');
   return static_cast<std::string>(filepath.substr(lastDot + 1, filepath.size() - lastDot));

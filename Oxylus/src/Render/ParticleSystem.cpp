@@ -4,7 +4,7 @@
 
 #include "Utils/Profiler.h"
 
-namespace Oxylus {
+namespace Ox {
 ParticleSystem::ParticleSystem() : particles(10000) {
   if (properties.play_on_awake)
     play();

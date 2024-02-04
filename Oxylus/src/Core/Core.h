@@ -1,5 +1,5 @@
 #pragma once
-namespace Oxylus {
+namespace Ox {
 class VulkanContext;
 struct AppSpec;
 

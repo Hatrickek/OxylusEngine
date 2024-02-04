@@ -3,7 +3,7 @@
 #include "AudioEngine.h"
 #include <miniaudio.h>
 
-namespace Oxylus {
+namespace Ox {
 void AudioListener::set_config(const AudioListenerConfig& config) const {
   auto* engine = static_cast<ma_engine*>(AudioEngine::get_engine());
   ma_engine_listener_set_cone(engine,

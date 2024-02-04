@@ -5,7 +5,7 @@
 #include "Utils/Log.h"
 #include "Utils/Profiler.h"
 
-namespace Oxylus {
+namespace Ox {
 TaskScheduler* TaskScheduler::instance = nullptr;
 
 void TaskScheduler::init() {

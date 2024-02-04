@@ -22,7 +22,7 @@
 
 #include "Render/RenderPipeline.h"
 
-namespace Oxylus {
+namespace Ox {
 Scene::Scene() {
   init();
 }

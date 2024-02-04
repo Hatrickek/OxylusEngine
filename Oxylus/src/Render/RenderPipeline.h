@@ -13,7 +13,7 @@ namespace vuk {
 struct SampledImage;
 }
 
-namespace Oxylus {
+namespace Ox {
 class VulkanContext;
 class Scene;
 

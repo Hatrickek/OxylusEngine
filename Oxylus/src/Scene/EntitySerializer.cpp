@@ -11,7 +11,7 @@
 
 #include "Utils/FileUtils.h"
 
-namespace Oxylus {
+namespace Ox {
 #define GET_STRING(node, name) node->as_table()->get(name)->as_string()->get()
 #define GET_FLOAT(node, name) (float)node->as_table()->get(name)->as_floating_point()->get()
 #define GET_UINT32(node, name) (uint32_t)node->as_table()->get(name)->as_integer()->get()

@@ -7,7 +7,7 @@
 #include "Utils/Log.h"
 #include "Utils/Toml.h"
 
-namespace Oxylus {
+namespace Ox {
 void MaterialSerializer::serialize(const std::string& path) const {
   // TODO:
 #if 0

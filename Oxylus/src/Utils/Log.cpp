@@ -6,7 +6,7 @@
 
 #include "Profiler.h"
 
-namespace Oxylus {
+namespace Ox {
 std::vector<std::shared_ptr<ExternalSink>> Log::external_sinks = {};
 
 void Log::init() {

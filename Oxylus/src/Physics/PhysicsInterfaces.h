@@ -3,7 +3,7 @@
 
 #include "JoltBuild.h"
 
-namespace Oxylus {
+namespace Ox {
 class Scene;
 }
 
@@ -63,7 +63,7 @@ public:
 
 class Physics3DContactListener : public JPH::ContactListener {
 public:
-  Physics3DContactListener(Oxylus::Scene* scene) : m_Scene(scene) {}
+  Physics3DContactListener(Ox::Scene* scene) : m_Scene(scene) {}
   JPH::ValidateResult OnContactValidate(const JPH::Body& inBody1, const JPH::Body& inBody2, JPH::RVec3Arg inBaseOffset, const JPH::CollideShapeResult& inCollisionResult) override;
 
   void OnContactAdded(const JPH::Body& inBody1, const JPH::Body& inBody2, const JPH::ContactManifold& inManifold, JPH::ContactSettings& ioSettings) override;
@@ -73,7 +73,7 @@ public:
   void OnContactRemoved([[maybe_unused]] const JPH::SubShapeIDPair& inSubShapePair) override;
 
 private:
-  Oxylus::Scene* m_Scene = nullptr;
+  Ox::Scene* m_Scene = nullptr;
   static void GetFrictionAndRestitution(const JPH::Body& inBody, const JPH::SubShapeID& inSubShapeID, float& outFriction, float& outRestitution);
 
   static void OverrideContactSettings(const JPH::Body& inBody1, const JPH::Body& inBody2, const JPH::ContactManifold& inManifold, JPH::ContactSettings& ioSettings);

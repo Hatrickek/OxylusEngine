@@ -8,7 +8,7 @@
 
 #include "Utils/Profiler.h"
 
-namespace Oxylus::Math {
+namespace Ox::Math {
 bool decompose_transform(const glm::mat4& transform, Vec3& translation, Vec3& rotation, Vec3& scale);
 
 template <typename T>

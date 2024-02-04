@@ -4,7 +4,7 @@
 #include <string>
 #include <vector>
 
-namespace Oxylus {
+namespace Ox {
 class FileDialogs {
 public:
   static void init_nfd();

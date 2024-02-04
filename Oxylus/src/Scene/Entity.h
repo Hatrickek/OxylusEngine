@@ -5,7 +5,7 @@
 #include "Scene.h"
 #include "Components.h"
 
-namespace Oxylus {
+namespace Ox {
 class Entity {
 public:
   Entity() = default;

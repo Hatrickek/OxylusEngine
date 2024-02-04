@@ -2,7 +2,7 @@
 #include "Core/Base.h"
 #include "Scene/Components.h"
 
-namespace Oxylus {
+namespace Ox {
 struct SkyboxLoadEvent {
   Shared<TextureAsset> cube_map = nullptr;
 };

@@ -13,7 +13,7 @@
 #include "Utils/EditorConfig.h"
 #include "Render/Window.h"
 
-namespace Oxylus {
+namespace Ox {
 class EditorLayer : public Layer {
 public:
   enum class SceneState {

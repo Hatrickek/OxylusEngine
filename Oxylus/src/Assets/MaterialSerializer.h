@@ -2,7 +2,7 @@
 
 #include "Material.h"
 
-namespace Oxylus {
+namespace Ox {
 class MaterialSerializer {
 public:
   MaterialSerializer(Material& material) : m_material(&material) { }

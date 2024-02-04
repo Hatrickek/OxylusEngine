@@ -8,7 +8,7 @@
 
 #include "Utils/Profiler.h"
 
-namespace Oxylus::LuaBindings {
+namespace Ox::LuaBindings {
 #define SET_MATH_FUNCTIONS(var, type)                                                                            \
 {                                                                                                                \
   (var).set_function(sol::meta_function::addition, [](const type& a, const type& b) { return a + b; });          \

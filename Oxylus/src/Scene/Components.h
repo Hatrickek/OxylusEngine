@@ -17,7 +17,7 @@
 
 #include "Scripting/LuaSystem.h"
 
-namespace Oxylus {
+namespace Ox {
 class TextureAsset;
 class Material;
 

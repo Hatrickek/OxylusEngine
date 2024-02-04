@@ -7,7 +7,7 @@
 
 #include "Core/Base.h"
 
-namespace Oxylus {
+namespace Ox {
 struct TextureLoadInfo {
   std::string path = {};
   uint32_t width = 0;

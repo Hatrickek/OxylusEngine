@@ -17,7 +17,7 @@ struct Device;
 struct Instance;
 }
 
-namespace Oxylus {
+namespace Ox {
 class TracyProfiler;
 struct AppSpec;
 

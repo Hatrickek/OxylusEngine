@@ -12,8 +12,7 @@
 #include "Utils/FileUtils.h"
 #include "Utils/Log.h"
 
-namespace Oxylus {
-
+namespace Ox {
 LuaSystem::LuaSystem(const std::string& path) : file_path(path) {
   init_script(file_path);
 }

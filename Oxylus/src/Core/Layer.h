@@ -6,7 +6,7 @@
 #include "Utils/Timestep.h"
 #include "Keycodes.h"
 
-namespace Oxylus {
+namespace Ox {
 class Layer {
 public:
   Layer(const std::string& name = "Layer");

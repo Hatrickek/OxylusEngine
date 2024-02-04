@@ -3,7 +3,7 @@
 
 #include "Core/Types.h"
 
-namespace Oxylus {
+namespace Ox {
 struct Vertex {
   Vec3 position;
   int _pad;

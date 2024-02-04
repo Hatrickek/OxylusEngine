@@ -7,7 +7,7 @@
 
 struct ma_sound;
 
-namespace Oxylus {
+namespace Ox {
 enum class AttenuationModelType {
   None = 0,
   Inverse,

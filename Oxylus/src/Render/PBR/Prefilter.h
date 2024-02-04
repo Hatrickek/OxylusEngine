@@ -4,7 +4,7 @@
 
 #include "Assets/TextureAsset.h"
 
-namespace Oxylus {
+namespace Ox {
 class Mesh;
 
 class Prefilter {

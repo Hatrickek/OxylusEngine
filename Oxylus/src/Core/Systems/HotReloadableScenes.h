@@ -4,7 +4,7 @@
 
 #include "System.h"
 
-namespace Oxylus {
+namespace Ox {
 struct ReloadSceneEvent {
   ReloadSceneEvent() = default;
 };

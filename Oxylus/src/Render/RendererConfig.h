@@ -3,7 +3,7 @@
 
 #include "Utils/CVars.h"
 
-namespace Oxylus {
+namespace Ox {
 namespace RendererCVar {
 inline AutoCVar_Int cvar_vsync("rr.vsync", "toggle vsync", 1);
 

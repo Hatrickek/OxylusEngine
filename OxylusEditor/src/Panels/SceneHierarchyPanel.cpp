@@ -16,7 +16,7 @@
 #include "Utils/ImGuiScoped.h"
 #include "Utils/StringUtils.h"
 
-namespace Oxylus {
+namespace Ox {
 Entity SceneHierarchyPanel::get_selected_entity_front() const {
   if (m_selected_entity_entities.empty())
     return {};

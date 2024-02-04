@@ -1,6 +1,6 @@
 #include "LayerStack.h"
 
-namespace Oxylus {
+namespace Ox {
 LayerStack::~LayerStack() {
   for (Layer* layer : m_layers) {
     layer->on_detach();

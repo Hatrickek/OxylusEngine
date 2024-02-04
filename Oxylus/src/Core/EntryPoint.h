@@ -4,9 +4,9 @@
 #include "Utils/Log.h"
 
 int main(int argc, char** argv) {
-  Oxylus::Log::init();
+  Ox::Log::init();
 
-  const auto app = Oxylus::create_application({argc, argv});
+  const auto app = Ox::create_application({argc, argv});
 
   app->init_systems();
   app->run();

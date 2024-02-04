@@ -1,6 +1,6 @@
 #pragma once
 
-namespace Oxylus {
+namespace Ox {
   class Command {
   public:
     virtual ~Command() = default;

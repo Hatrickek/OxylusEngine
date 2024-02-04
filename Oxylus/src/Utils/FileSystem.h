@@ -1,7 +1,7 @@
 ﻿#pragma once
 #include <string>
 
-namespace Oxylus {
+namespace Ox {
 /**
  * \brief A lightweight std::filesystem alternative 
  */

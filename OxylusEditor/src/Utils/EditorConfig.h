@@ -6,7 +6,7 @@
 
 #include <Utils/CVars.h>
 
-namespace Oxylus {
+namespace Ox {
 class Project;
 
 namespace EditorCVar {

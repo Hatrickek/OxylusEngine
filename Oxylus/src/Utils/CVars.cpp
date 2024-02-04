@@ -8,7 +8,7 @@
 #include "Log.h"
 #include "Profiler.h"
 
-namespace Oxylus {
+namespace Ox {
 class CVarSystemImpl final : public CVarSystem {
 public:
   CVarParameter* get_cvar(StringUtils::StringHash hash) override;

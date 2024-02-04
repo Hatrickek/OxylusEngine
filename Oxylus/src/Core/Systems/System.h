@@ -12,7 +12,7 @@ class ContactManifold;
 class Body;
 }
 
-namespace Oxylus {
+namespace Ox {
 class Scene;
 
 class System {

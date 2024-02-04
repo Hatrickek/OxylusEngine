@@ -8,7 +8,7 @@ namespace vuk {
 struct Texture;
 }
 
-namespace Oxylus {
+namespace Ox {
 class TextureAsset;
 
 class Resources {

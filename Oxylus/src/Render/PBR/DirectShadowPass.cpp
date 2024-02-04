@@ -7,7 +7,7 @@
 
 #include "Render/RendererConfig.h"
 
-namespace Oxylus {
+namespace Ox {
 void DirectShadowPass::update_cascades(const Vec3& dir_light_transform, Camera* camera, DirectShadowUB* cascades_ubo) {
   OX_SCOPED_ZONE;
   float cascade_splits[SHADOW_MAP_CASCADE_COUNT];

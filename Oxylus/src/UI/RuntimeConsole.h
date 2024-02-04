@@ -11,7 +11,7 @@
 
 #include "Utils/Log.h"
 
-namespace Oxylus {
+namespace Ox {
 class RuntimeConsoleLogSink : public ExternalSink {
 public:
   explicit RuntimeConsoleLogSink(void* user_data)

@@ -3,7 +3,7 @@
 #include "stb_image.h"
 #include "Types.h"
 
-namespace Oxylus {
+namespace Ox {
 Input::CursorState Input::cursor_state = CursorState::Disabled;
 Input::InputData Input::input_data = {};
 

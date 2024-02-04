@@ -3,7 +3,7 @@
 #include "Project.h"
 #include "Base.h"
 
-namespace Oxylus {
+namespace Ox {
 class ProjectSerializer {
 public:
   ProjectSerializer(Shared<Project> project);

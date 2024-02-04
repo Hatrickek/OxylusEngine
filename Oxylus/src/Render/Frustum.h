@@ -1,7 +1,7 @@
 ﻿#pragma once
 #include "Core/Types.h"
 
-namespace Oxylus {
+namespace Ox {
 enum class Intersection : uint32_t {
   Outside    = 0,
   Intersects = 1,

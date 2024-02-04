@@ -5,7 +5,7 @@ namespace sol {
 class state;
 }
 
-namespace Oxylus {
+namespace Ox {
 class LuaManager {
 public:
   ~LuaManager() = default;

@@ -2,7 +2,7 @@
 #include <cstring>
 #include <filesystem>
 
-namespace Oxylus {
+namespace Ox {
   enum class EditorContextType {
     None = 0,
     Entity,

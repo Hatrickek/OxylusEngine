@@ -11,7 +11,7 @@
 #include <vuk/RenderGraph.hpp>
 #include <vuk/resources/DeviceFrameResource.hpp>
 
-namespace Oxylus {
+namespace Ox {
 VulkanContext* VulkanContext::s_instance = nullptr;
 
 static VkBool32 DebugCallback(const VkDebugUtilsMessageSeverityFlagBitsEXT messageSeverity,

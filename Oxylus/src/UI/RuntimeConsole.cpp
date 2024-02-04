@@ -7,7 +7,7 @@
 #include "Utils/CVars.h"
 #include "Utils/StringUtils.h"
 
-namespace Oxylus {
+namespace Ox {
 static ImVec4 get_color(const fmtlog::LogLevel level) {
   switch (level) {
     case fmtlog::LogLevel::INF: return {0, 1, 0, 1};

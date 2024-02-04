@@ -11,7 +11,7 @@
 
 #include "glm/vec2.hpp"
 
-namespace Oxylus {
+namespace Ox {
 class Input {
 public:
   enum class CursorState {

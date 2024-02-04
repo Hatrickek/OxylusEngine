@@ -6,7 +6,7 @@ namespace vk {
   class DescriptorSet;
 }
 
-namespace Oxylus {
+namespace Ox {
   class FramebufferViewerPanel : public EditorPanel {
   public:
     FramebufferViewerPanel();

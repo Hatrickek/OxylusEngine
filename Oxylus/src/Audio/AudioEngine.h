@@ -1,7 +1,7 @@
 #pragma once
 struct ma_engine;
 
-namespace Oxylus {
+namespace Ox {
 using AudioEngineInternal = void*;
 
 class AudioEngine {

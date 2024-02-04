@@ -12,7 +12,7 @@
 
 #include "Core/Base.h"
 
-namespace Oxylus {
+namespace Ox {
 class TextureAsset;
 
 enum class FileType {

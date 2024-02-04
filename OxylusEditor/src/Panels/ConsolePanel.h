@@ -2,7 +2,7 @@
 
 #include "UI/RuntimeConsole.h"
 
-namespace Oxylus {
+namespace Ox {
   class ConsolePanel {
   public:
     RuntimeConsole runtime_console = {};

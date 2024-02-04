@@ -1,6 +1,6 @@
 #include "Thread.h"
 
-namespace Oxylus {
+namespace Ox {
 Thread::Thread() {
   worker = std::thread(&Thread::queue_loop, this);
 }

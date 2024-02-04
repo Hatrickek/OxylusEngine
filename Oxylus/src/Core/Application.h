@@ -9,7 +9,7 @@
 
 int main(int argc, char** argv);
 
-namespace Oxylus {
+namespace Ox {
 class ThreadManager;
 class SystemManager;
 

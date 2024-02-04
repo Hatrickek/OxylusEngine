@@ -5,7 +5,7 @@
 #include "Utils/Log.h"
 #include "Utils/Profiler.h"
 
-namespace Oxylus {
+namespace Ox {
 Shared<Project> Project::create_new() {
   OX_SCOPED_ZONE;
   s_active_project = create_shared<Project>();

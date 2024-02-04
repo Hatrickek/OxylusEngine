@@ -2,7 +2,7 @@
 
 #include "EditorPanel.h"
 
-namespace Oxylus {
+namespace Ox {
   class EditorSettingsPanel : public EditorPanel {
   public:
     EditorSettingsPanel();

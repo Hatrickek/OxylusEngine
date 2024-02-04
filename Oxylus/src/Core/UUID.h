@@ -3,7 +3,7 @@
 #include <cstdint>
 #include <unordered_map>
 
-namespace Oxylus {
+namespace Ox {
 class UUID {
 public:
   UUID();
@@ -22,8 +22,8 @@ private:
 }
 
 template <>
-struct std::hash<Oxylus::UUID> {
-  size_t operator()(const Oxylus::UUID& uuid) const noexcept {
+struct std::hash<Ox::UUID> {
+  size_t operator()(const Ox::UUID& uuid) const noexcept {
     return uuid;
   }
 };

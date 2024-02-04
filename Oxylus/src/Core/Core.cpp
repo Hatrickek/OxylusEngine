@@ -22,7 +22,7 @@
 #include "Utils/Random.h"
 #include "Utils/UIUtils.h"
 
-namespace Oxylus {
+namespace Ox {
 bool Core::init(const AppSpec& spec) {
   OX_SCOPED_ZONE;
   if (!Resources::resources_path_exists()) {

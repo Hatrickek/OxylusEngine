@@ -1,7 +1,7 @@
 ﻿#pragma once
 #include "EditorPanel.h"
 
-namespace Oxylus {
+namespace Ox {
   class EditorDebugPanel : public EditorPanel {
   public:
     EditorDebugPanel();

@@ -3,7 +3,7 @@
 #include <string>
 #include <stdint.h>
 
-namespace Oxylus {
+namespace Ox {
 class EditorPanel {
 public:
   bool Visible;

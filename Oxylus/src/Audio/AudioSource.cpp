@@ -5,7 +5,7 @@
 #include "AudioEngine.h"
 #include "Utils/Log.h"
 
-namespace Oxylus {
+namespace Ox {
 AudioSource::AudioSource(const std::string& filepath) : m_path(filepath) {
   m_sound = create_unique<ma_sound>();
 

@@ -12,7 +12,7 @@
 #include "Scene/Entity.h"
 #include "Core/Input.h"
 
-namespace Oxylus {
+namespace Ox {
 void LuaManager::init() {
   OX_SCOPED_ZONE;
   m_state = create_shared<sol::state>();

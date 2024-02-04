@@ -6,7 +6,7 @@
 #include "Core/Types.h"
 #include "Render/Mesh.h"
 
-namespace Oxylus {
+namespace Ox {
 class Material;
 
 }

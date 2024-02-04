@@ -7,7 +7,7 @@
 #include "Utils/Log.h"
 #include "Utils/Profiler.h"
 
-namespace Oxylus {
+namespace Ox {
 ma_engine* AudioEngine::s_engine;
 
 void AudioEngine::init() {

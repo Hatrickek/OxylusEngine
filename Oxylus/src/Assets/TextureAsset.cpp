@@ -9,7 +9,7 @@
 #include "Utils/FileSystem.h"
 #include "Utils/Profiler.h"
 
-namespace Oxylus {
+namespace Ox {
 Shared<TextureAsset> TextureAsset::s_white_texture = nullptr;
 
 TextureAsset::TextureAsset(const std::string& file_path) {

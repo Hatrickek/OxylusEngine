@@ -2,7 +2,7 @@
 
 #include "Thread.h"
 
-namespace Oxylus {
+namespace Ox {
 class ThreadManager {
 public:
   Thread asset_thread;

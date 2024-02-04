@@ -33,7 +33,7 @@
 #	pragma warning(pop)
 #endif
 
-namespace Oxylus {
+namespace Ox {
 static const std::unordered_map<FileType, const char*> FILE_TYPES_TO_STRING =
 {
   {FileType::Unknown, "Unknown"},

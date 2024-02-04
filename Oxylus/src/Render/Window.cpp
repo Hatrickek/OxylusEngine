@@ -9,7 +9,7 @@
 
 #include "Utils/Profiler.h"
 
-namespace Oxylus {
+namespace Ox {
 Window::WindowData Window::s_window_data;
 GLFWwindow* Window::s_window_handle;
 

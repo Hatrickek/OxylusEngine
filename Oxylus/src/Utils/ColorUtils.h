@@ -2,7 +2,7 @@
 
 #include <glm/glm.hpp>
 
-namespace Oxylus {
+namespace Ox {
 class ColorUtils {
 public:
   static void TempratureToColor(const uint32_t kelvin, glm::vec3& outColor) {

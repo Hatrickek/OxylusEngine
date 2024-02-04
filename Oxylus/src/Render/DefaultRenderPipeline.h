@@ -6,7 +6,7 @@
 #include "PBR/DirectShadowPass.h"
 #include "PBR/GTAO/XeGTAO.h"
 
-namespace Oxylus {
+namespace Ox {
 struct ProbeChangeEvent;
 struct SkyboxLoadEvent;
 constexpr auto MAX_NUM_LIGHTS = 1000;

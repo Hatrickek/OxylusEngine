@@ -5,7 +5,7 @@
 #include "Scene/Entity.h"
 #include "Scripting/Sol2Helpers.h"
 
-namespace Oxylus {
+namespace Ox {
 void LuaBindings::bind_tag_component(const Shared<sol::state>& state) {
   auto name_component_type = state->new_usertype<TagComponent>("NameComponent");
   SET_TYPE_FIELD(name_component_type, TagComponent, tag);

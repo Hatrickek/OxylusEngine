@@ -2,7 +2,7 @@
 
 #include "Scene.h"
 
-namespace Oxylus {
+namespace Ox {
 class SceneSerializer {
 public:
   SceneSerializer(const Shared<Scene>& scene);

@@ -2,7 +2,7 @@
 
 #include "Assets/AssetManager.h"
 
-namespace Oxylus {
+namespace Ox {
 ConsolePanel::ConsolePanel() {
   runtime_console.render_menu_bar = true;
   runtime_console.panel_name = "Console";

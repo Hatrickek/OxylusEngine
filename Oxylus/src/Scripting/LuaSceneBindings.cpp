@@ -6,7 +6,7 @@
 
 #include "Scene/Entity.h"
 
-namespace Oxylus::LuaBindings {
+namespace Ox::LuaBindings {
 void bind_scene(const Shared<sol::state>& state) {
   OX_SCOPED_ZONE;
   state->new_usertype<entt::registry>("EnttRegistry");

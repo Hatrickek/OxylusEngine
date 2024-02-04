@@ -2,7 +2,7 @@
 
 #include <string>
 
-namespace Oxylus {
+namespace Ox {
 class FileUtils {
 public:
   static std::string read_file(const std::string& file_path);

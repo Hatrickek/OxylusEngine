@@ -2,7 +2,7 @@
 
 #include <Utils/StringUtils.h>
 
-namespace Oxylus {
+namespace Ox {
 enum class CVarFlags : uint32_t {
   None         = 0,
   Noedit       = 1 << 1,

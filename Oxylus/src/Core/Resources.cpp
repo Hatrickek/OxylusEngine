@@ -6,7 +6,7 @@
 #include "EmbeddedLogo.h"
 #include "Assets/TextureAsset.h"
 
-namespace Oxylus {
+namespace Ox {
 Resources::EditorRes Resources::editor_resources;
 
 void Resources::init_editor_resources() {

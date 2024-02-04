@@ -3,7 +3,7 @@
 #include "Utils/Log.h"
 #include "Core/Base.h"
 
-namespace Oxylus {
+namespace Ox {
 class SystemManager {
 public:
   template <typename T, typename... Args>

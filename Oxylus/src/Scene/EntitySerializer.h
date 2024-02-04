@@ -4,7 +4,7 @@
 
 #include "Core/UUID.h"
 
-namespace Oxylus {
+namespace Ox {
 class Entity;
 
 class Scene;

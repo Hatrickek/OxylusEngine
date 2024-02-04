@@ -1,6 +1,6 @@
 ﻿#include "Timer.h"
 
-namespace Oxylus {
+namespace Ox {
 float Timer::get_timed_ms() {
   const float time = duration(m_last_time, now(), 1000.0f);
   m_last_time = now();

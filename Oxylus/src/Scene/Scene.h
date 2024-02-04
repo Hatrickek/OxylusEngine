@@ -13,7 +13,7 @@
 
 #include "Core/Keycodes.h"
 
-namespace Oxylus {
+namespace Ox {
 class RenderPipeline;
 class SceneRenderer;
 class Entity;

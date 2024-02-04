@@ -11,7 +11,7 @@
 #include "Scene/Components.h"
 #include "Scene/Entity.h"
 
-namespace Oxylus::LuaBindings {
+namespace Ox::LuaBindings {
 void bind_audio(const Shared<sol::state>& state) {
   auto audio_table = state->create_table("Audio");
   audio_table.set_function("load_source", [](const std::string& path) -> Shared<AudioSource> { return AssetManager::get_audio_asset(path); });

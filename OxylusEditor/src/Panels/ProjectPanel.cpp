@@ -14,7 +14,7 @@
 #include "Utils/StringUtils.h"
 #include "Utils/UIUtils.h"
 
-namespace Oxylus {
+namespace Ox {
 ProjectPanel::ProjectPanel() : EditorPanel("Projects", ICON_MDI_ACCOUNT_BADGE, true) { }
 
 void ProjectPanel::on_update() { }

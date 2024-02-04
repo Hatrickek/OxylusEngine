@@ -4,7 +4,7 @@
 
 #include "Utils/Profiler.h"
 
-namespace Oxylus {
+namespace Ox {
 AABB::AABB(const AABB& other) {
   min = other.min;
   max = other.max;

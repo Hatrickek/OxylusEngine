@@ -4,7 +4,7 @@
 
 #include "Core/Types.h"
 
-namespace Oxylus {
+namespace Ox {
 class Random {
 public:
   static void init();

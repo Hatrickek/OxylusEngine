@@ -21,7 +21,7 @@
 
 #include "Scene/SceneRenderer.h"
 
-namespace Oxylus {
+namespace Ox {
 static bool s_rename_entity = false;
 
 InspectorPanel::InspectorPanel() : EditorPanel("Inspector", ICON_MDI_INFORMATION, true), m_Scene(nullptr) { }

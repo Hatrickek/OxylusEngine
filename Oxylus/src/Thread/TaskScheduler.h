@@ -11,7 +11,7 @@
     }); \
   TaskScheduler::get()->AddTaskSetToPipe(&VAR_NAME(task, __LINE__))
 
-namespace Oxylus {
+namespace Ox {
 class TaskScheduler {
 public:
   TaskScheduler() = default;

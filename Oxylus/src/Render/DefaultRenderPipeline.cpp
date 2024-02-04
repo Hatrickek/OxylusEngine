@@ -25,7 +25,7 @@
 
 #include "Vulkan/Renderer.h"
 
-namespace Oxylus {
+namespace Ox {
 static std::vector<uint32_t> cumulated_material_map = {};
 
 static std::vector<uint32_t> cumulate_material_map(const std::unordered_map<uint32_t, uint32_t>& material_map) {

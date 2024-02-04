@@ -4,7 +4,7 @@
 #include <cstdlib>
 #include <cstring>
 
-namespace Oxylus {
+namespace Ox {
 // Non-owning raw buffer
 struct Buffer {
   uint8_t* Data = nullptr;

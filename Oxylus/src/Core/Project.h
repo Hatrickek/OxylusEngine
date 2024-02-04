@@ -5,7 +5,7 @@
 
 #include "Base.h"
 
-namespace Oxylus {
+namespace Ox {
 struct ProjectConfig {
   std::string name = "Untitled";
 

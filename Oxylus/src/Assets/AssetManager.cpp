@@ -8,7 +8,7 @@
 #include "Utils/Log.h"
 #include "Utils/Profiler.h"
 
-namespace Oxylus {
+namespace Ox {
 AssetManager::AssetLibrary AssetManager::asset_library;
 
 std::filesystem::path AssetManager::get_asset_file_system_path(const std::filesystem::path& path) {

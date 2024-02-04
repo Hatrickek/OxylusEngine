@@ -1,7 +1,7 @@
 ﻿#pragma once
 #include "Core/Types.h"
 
-namespace Oxylus {
+namespace Ox {
 class VulkanDescriptorSet;
 class Camera;
 

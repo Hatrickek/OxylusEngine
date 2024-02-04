@@ -1,6 +1,6 @@
 ﻿#pragma once
 #include <entt/signal/dispatcher.hpp>
 
-namespace Oxylus {
+namespace Ox {
 using EventDispatcher = entt::dispatcher;
 }

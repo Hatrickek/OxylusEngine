@@ -6,7 +6,7 @@
 #include <glm/mat4x4.hpp>
 #include <glm/ext/quaternion_float.hpp>
 
-namespace Oxylus {
+namespace Ox {
 using Vec2 = glm::vec2;
 using IVec2 = glm::ivec2;
 using UVec2 = glm::uvec2;

@@ -4,7 +4,7 @@
 
 #include "Vulkan/VulkanContext.h"
 
-namespace Oxylus {
+namespace Ox {
 void RenderPipeline::enqueue_future(vuk::Future&& fut) {
   std::scoped_lock _(setup_lock);
   futures.emplace_back(std::move(fut));

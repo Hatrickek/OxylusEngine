@@ -1,6 +1,6 @@
 #include "ThreadManager.h"
 
-namespace Oxylus {
+namespace Ox {
 ThreadManager* ThreadManager::instance = nullptr;
 
 ThreadManager::ThreadManager() {

@@ -5,7 +5,7 @@
 #include "Scene/Scene.h"
 #include "Scene/Entity.h"
 
-namespace Oxylus {
+namespace Ox {
   class SceneHierarchyPanel : public EditorPanel {
   public:
     SceneHierarchyPanel();

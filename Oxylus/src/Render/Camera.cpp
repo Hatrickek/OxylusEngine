@@ -6,7 +6,7 @@
 
 #include "Vulkan/Renderer.h"
 
-namespace Oxylus {
+namespace Ox {
 Camera::Camera(Vec3 position) {
   m_position = position;
   update_view_matrix();

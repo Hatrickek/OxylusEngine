@@ -13,7 +13,7 @@
 #include "Render/Vulkan/Renderer.h"
 #include "Render/Vulkan/VulkanContext.h"
 
-namespace Oxylus {
+namespace Ox {
 void SceneRenderer::init() {
   OX_SCOPED_ZONE;
   if (!m_render_pipeline)

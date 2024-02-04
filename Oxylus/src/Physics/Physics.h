@@ -3,7 +3,7 @@
 
 #include "PhysicsInterfaces.h"
 
-namespace Oxylus {
+namespace Ox {
 class Physics {
 public:
   using EntityLayer = uint16_t;

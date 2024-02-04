@@ -6,7 +6,7 @@
 #include "Core/Base.h"
 #include "Core/Systems/System.h"
 
-namespace Oxylus {
+namespace Ox {
 class LuaSystem {
 public:
   LuaSystem(const std::string& path);

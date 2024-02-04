@@ -6,7 +6,7 @@
 
 #include <fstream>
 
-namespace Oxylus {
+namespace Ox {
 ProjectSerializer::ProjectSerializer(Shared<Project> project) : m_project(std::move(project)) {}
 
 bool ProjectSerializer::serialize(const std::filesystem::path& file_path) const {

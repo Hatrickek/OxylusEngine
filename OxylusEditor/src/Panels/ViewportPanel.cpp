@@ -27,7 +27,7 @@
 #include "Utils/StringUtils.h"
 #include "Utils/Timestep.h"
 
-namespace Oxylus {
+namespace Ox {
 ViewportPanel::ViewportPanel() : EditorPanel("Viewport", ICON_MDI_TERRAIN, true) {
   OX_SCOPED_ZONE;
   ADD_TASK_TO_PIPE(

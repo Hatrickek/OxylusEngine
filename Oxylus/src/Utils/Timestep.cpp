@@ -3,7 +3,7 @@
 #include "Profiler.h"
 #include "Timer.h"
 
-namespace Oxylus {
+namespace Ox {
 Timestep::Timestep()
   : m_timestep(0.0)
     , m_last_time(0.0)

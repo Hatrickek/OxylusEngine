@@ -6,7 +6,7 @@
 #include "Utils/Log.h"
 #include "Utils/Profiler.h"
 
-namespace Oxylus {
+namespace Ox {
 BPLayerInterfaceImpl Physics::s_layer_interface;
 JPH::TempAllocatorImpl* Physics::s_TempAllocator = nullptr;
 ObjectVsBroadPhaseLayerFilterImpl Physics::s_object_vs_broad_phase_layer_filter_interface;

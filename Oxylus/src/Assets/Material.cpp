@@ -9,7 +9,7 @@
 
 #include "Utils/Profiler.h"
 
-namespace Oxylus {
+namespace Ox {
 Material::~Material() = default;
 
 void Material::create(const std::string& material_name) {

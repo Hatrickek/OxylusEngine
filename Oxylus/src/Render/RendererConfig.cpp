@@ -7,7 +7,7 @@
 #include "Utils/Profiler.h"
 #include "Utils/Toml.h"
 
-namespace Oxylus {
+namespace Ox {
 RendererConfig* RendererConfig::s_instance = nullptr;
 
 RendererConfig::RendererConfig() {

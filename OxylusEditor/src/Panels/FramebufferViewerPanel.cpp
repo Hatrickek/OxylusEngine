@@ -4,7 +4,7 @@
 #include <imgui.h>
 #include <icons/IconsMaterialDesignIcons.h>
 
-namespace Oxylus {
+namespace Ox {
   FramebufferViewerPanel::FramebufferViewerPanel() : EditorPanel("Framebuffer Viewer", ICON_MDI_IMAGE_FRAME) { }
 
   void FramebufferViewerPanel::on_imgui_render() {

@@ -3,7 +3,7 @@
 #include "EditorPanel.h"
 #include "Scene/Entity.h"
 
-namespace Oxylus {
+namespace Ox {
 class InspectorPanel : public EditorPanel {
 public:
   InspectorPanel();

@@ -14,7 +14,7 @@
 
 #include "Thread/TaskScheduler.h"
 
-namespace Oxylus {
+namespace Ox {
 Renderer::RendererContext Renderer::renderer_context;
 RendererConfig Renderer::renderer_config;
 Renderer::RendererStats Renderer::renderer_stats;

@@ -12,7 +12,7 @@
 #include <shellapi.h>
 #endif
 
-namespace Oxylus {
+namespace Ox {
 void FileDialogs::init_nfd() {
   OX_SCOPED_ZONE;
   NFD_Init();

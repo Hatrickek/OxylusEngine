@@ -38,7 +38,7 @@
 #include "Utils/EmbeddedBanner.h"
 #include "Utils/StringUtils.h"
 
-namespace Oxylus {
+namespace Ox {
 EditorLayer* EditorLayer::s_instance = nullptr;
 
 AutoCVar_Int cvar_show_style_editor("ui.imgui_style_editor", "show imgui style editor", 0, CVarFlags::EditCheckbox);

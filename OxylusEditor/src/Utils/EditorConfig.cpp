@@ -10,7 +10,7 @@
 #include "Utils/FileUtils.h"
 #include "Utils/Toml.h"
 
-namespace Oxylus {
+namespace Ox {
 EditorConfig* EditorConfig::instance = nullptr;
 
 constexpr const char* EDITOR_CONFIG_FILE_NAME = "editor_config.toml";

@@ -3,7 +3,7 @@
 
 #include "EditorPanel.h"
 
-namespace Oxylus {
+namespace Ox {
   class StatisticsPanel : public EditorPanel {
   public:
     StatisticsPanel();

@@ -10,7 +10,7 @@
 
 struct VkExtent2D;
 
-namespace Oxylus {
+namespace Ox {
 class Camera {
 public:
   Camera(Vec3 position = Vec3(0.0f, 0.0f, 0.0f));

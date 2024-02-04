@@ -9,7 +9,7 @@
 #include "Render/RendererConfig.h"
 #include "Render/RenderPipeline.h"
 
-namespace Oxylus {
+namespace Ox {
 class DefaultRenderPipeline;
 class SystemManager;
 class LayerStack;

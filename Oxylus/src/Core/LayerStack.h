@@ -4,7 +4,7 @@
 
 #include <vector>
 
-namespace Oxylus {
+namespace Ox {
 class LayerStack {
 public:
   LayerStack() = default;

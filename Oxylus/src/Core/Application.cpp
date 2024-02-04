@@ -12,7 +12,7 @@
 #include "Systems/SystemManager.h"
 #include "Utils/Profiler.h"
 
-namespace Oxylus {
+namespace Ox {
 Application* Application::instance = nullptr;
 
 Application::Application(AppSpec spec) : m_spec(std::move(spec)), system_manager(create_shared<SystemManager>()) {

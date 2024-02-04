@@ -6,7 +6,7 @@
 #include <condition_variable>
 #include <functional>
 
-namespace Oxylus {
+namespace Ox {
 class Thread {
 public:
   Thread();

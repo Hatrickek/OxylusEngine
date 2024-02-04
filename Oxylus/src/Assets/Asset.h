@@ -1,7 +1,7 @@
 ﻿#pragma once
 #include <cstdint>
 
-namespace Oxylus {
+namespace Ox {
 class AssetManager;
 
 static constexpr uint32_t INVALID_ASSET_ID = UINT32_MAX;

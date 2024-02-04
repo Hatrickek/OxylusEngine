@@ -2,7 +2,7 @@
 #include "Core/Input.h"
 #include "Core/Application.h"
 
-namespace Oxylus {
+namespace Ox {
 class Window {
 public:
   static void init_window(const AppSpec& spec);

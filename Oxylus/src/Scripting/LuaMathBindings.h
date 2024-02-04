@@ -5,6 +5,6 @@ namespace sol {
 class state;
 }
 
-namespace Oxylus::LuaBindings {
+namespace Ox::LuaBindings {
 void bind_math(const Shared<sol::state>& state);
 }

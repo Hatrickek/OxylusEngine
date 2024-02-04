@@ -20,7 +20,7 @@ class Node;
 class Model;
 }
 
-namespace Oxylus {
+namespace Ox {
 class Mesh {
 public:
   enum FileLoadingFlags : int {

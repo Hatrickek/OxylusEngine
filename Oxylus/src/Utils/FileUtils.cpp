@@ -7,7 +7,7 @@
 #include "Profiler.h"
 #include "Core/Resources.h"
 
-namespace Oxylus {
+namespace Ox {
 std::string FileUtils::read_file(const std::string& file_path) {
   OX_SCOPED_ZONE;
   std::ostringstream buf;

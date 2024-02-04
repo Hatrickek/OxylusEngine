@@ -3,7 +3,7 @@
 #include "EditorPanel.h"
 #include "Core/Base.h"
 
-namespace Oxylus {
+namespace Ox {
   class Material;
 
   class AssetInspectorPanel : public EditorPanel {

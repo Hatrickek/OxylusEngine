@@ -4,7 +4,7 @@
 
 #include "Scene/Components.h"
 
-namespace Oxylus {
+namespace Ox {
 std::unordered_map<size_t, const char8_t*> EditorTheme::component_icon_map = {};
 
 void EditorTheme::init() {

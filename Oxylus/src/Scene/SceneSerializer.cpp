@@ -9,7 +9,7 @@
 
 #include <fstream>
 
-namespace Oxylus {
+namespace Ox {
 SceneSerializer::SceneSerializer(const Shared<Scene>& scene) : m_scene(scene) {}
 
 void SceneSerializer::serialize(const std::string& filePath) const {

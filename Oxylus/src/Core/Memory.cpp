@@ -1,4 +1,4 @@
 #include "Memory.h"
 
-namespace Oxylus {
+namespace Ox {
 }

@@ -1,7 +1,7 @@
 #pragma once
 #include "Core/Types.h"
 
-namespace Oxylus {
+namespace Ox {
 struct AudioListenerConfig {
   float cone_inner_angle = glm::radians(360.0f);
   float cone_outer_angle = glm::radians(360.0f);

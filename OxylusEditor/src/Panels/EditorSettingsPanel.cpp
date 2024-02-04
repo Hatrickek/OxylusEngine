@@ -4,7 +4,7 @@
 #include "Core/Application.h"
 #include "icons/IconsMaterialDesignIcons.h"
 
-namespace Oxylus {
+namespace Ox {
   EditorSettingsPanel::EditorSettingsPanel() : EditorPanel("Editor Settings", ICON_MDI_COGS, false) { }
 
   void EditorSettingsPanel::on_imgui_render() {

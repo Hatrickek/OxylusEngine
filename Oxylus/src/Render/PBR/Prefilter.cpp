@@ -14,7 +14,7 @@
 
 #define M_PI       3.14159265358979323846
 
-namespace Oxylus {
+namespace Ox {
 std::pair<vuk::Texture, vuk::Future> Prefilter::generate_brdflut() {
   constexpr uint32_t dim = 512;
 

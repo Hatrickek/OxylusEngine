@@ -5,7 +5,7 @@
 
 #include "Core/Base.h"
 
-namespace Oxylus {
+namespace Ox {
 class Mesh;
 
 class RendererCommon {

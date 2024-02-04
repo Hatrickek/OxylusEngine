@@ -2,7 +2,7 @@
 #include <chrono>
 typedef std::chrono::time_point<std::chrono::high_resolution_clock> TimeStamp;
 
-namespace Oxylus {
+namespace Ox {
 class Timer {
 public:
   Timer()
