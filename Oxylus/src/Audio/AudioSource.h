@@ -1,8 +1,9 @@
 #pragma once
 
 #include <string>
-#include <glm/glm.hpp>
-#include <Core/Base.h>
+
+#include "Core/Base.h"
+#include "Core/Types.h"
 
 struct ma_sound;
 
@@ -15,60 +16,60 @@ enum class AttenuationModelType {
 };
 
 struct AudioSourceConfig {
-  float VolumeMultiplier = 1.0f;
-  float PitchMultiplier = 1.0f;
-  bool PlayOnAwake = true;
-  bool Looping = false;
+  float volume_multiplier = 1.0f;
+  float pitch_multiplier = 1.0f;
+  bool play_on_awake = true;
+  bool looping = false;
 
-  bool Spatialization = false;
-  AttenuationModelType AttenuationModel = AttenuationModelType::Inverse;
-  float RollOff = 1.0f;
-  float MinGain = 0.0f;
-  float MaxGain = 1.0f;
-  float MinDistance = 0.3f;
-  float MaxDistance = 1000.0f;
+  bool spatialization = false;
+  AttenuationModelType attenuation_model = AttenuationModelType::Inverse;
+  float roll_off = 1.0f;
+  float min_gain = 0.0f;
+  float max_gain = 1.0f;
+  float min_distance = 0.3f;
+  float max_distance = 1000.0f;
 
-  float ConeInnerAngle = glm::radians(360.0f);
-  float ConeOuterAngle = glm::radians(360.0f);
-  float ConeOuterGain = 0.0f;
+  float cone_inner_angle = glm::radians(360.0f);
+  float cone_outer_angle = glm::radians(360.0f);
+  float cone_outer_gain = 0.0f;
 
-  float DopplerFactor = 1.0f;
+  float doppler_factor = 1.0f;
 };
 
 class AudioSource {
 public:
-  explicit AudioSource(const char* filepath);
+  explicit AudioSource(const std::string& filepath);
   ~AudioSource();
   AudioSource(const AudioSource& other) = delete;
   AudioSource(AudioSource&& other) = delete;
 
-  const char* GetPath() const { return m_Path.c_str(); }
+  const char* get_path() const { return m_path.c_str(); }
 
-  void Play() const;
-  void Pause() const;
-  void UnPause() const;
-  void Stop() const;
-  bool IsPlaying() const;
-  void SetConfig(const AudioSourceConfig& config);
-  void SetVolume(float volume) const;
-  void SetPitch(float pitch) const;
-  void SetLooping(bool state) const;
-  void SetSpatialization(bool state);
-  void SetAttenuationModel(AttenuationModelType type) const;
-  void SetRollOff(float rollOff) const;
-  void SetMinGain(float minGain) const;
-  void SetMaxGain(float maxGain) const;
-  void SetMinDistance(float minDistance) const;
-  void SetMaxDistance(float maxDistance) const;
-  void SetCone(float innerAngle, float outerAngle, float outerGain) const;
-  void SetDopplerFactor(float factor) const;
-  void SetPosition(const glm::vec3& position) const;
-  void SetDirection(const glm::vec3& forward) const;
-  void SetVelocity(const glm::vec3& velocity) const;
+  void play() const;
+  void pause() const;
+  void un_pause() const;
+  void stop() const;
+  bool is_playing() const;
+  void set_config(const AudioSourceConfig& config);
+  void set_volume(float volume) const;
+  void set_pitch(float pitch) const;
+  void set_looping(bool state) const;
+  void set_spatialization(bool state);
+  void set_attenuation_model(AttenuationModelType type) const;
+  void set_roll_off(float rollOff) const;
+  void set_min_gain(float minGain) const;
+  void set_max_gain(float maxGain) const;
+  void set_min_distance(float minDistance) const;
+  void set_max_distance(float maxDistance) const;
+  void set_cone(float innerAngle, float outerAngle, float outerGain) const;
+  void set_doppler_factor(float factor) const;
+  void set_position(const Vec3& position) const;
+  void set_direction(const Vec3& forward) const;
+  void set_velocity(const Vec3& velocity) const;
 
 private:
-  std::string m_Path;
-  Unique<ma_sound> m_Sound;
-  bool m_Spatialization = false;
+  std::string m_path;
+  Unique<ma_sound> m_sound;
+  bool m_spatialization = false;
 };
 }

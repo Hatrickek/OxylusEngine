@@ -6,5 +6,5 @@ class state;
 }
 
 namespace Oxylus::LuaBindings {
-void bind_lua_ecs(const Shared<sol::state>& state);
+void bind_audio(const Shared<sol::state>& state);
 }

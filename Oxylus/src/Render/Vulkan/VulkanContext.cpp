@@ -162,15 +162,19 @@ void VulkanContext::create_context(const AppSpec& spec) {
   vk12features.timelineSemaphore = true;
   vk12features.descriptorBindingPartiallyBound = true;
   vk12features.descriptorBindingUpdateUnusedWhilePending = true;
-  vk12features.shaderSampledImageArrayNonUniformIndexing = true;
   vk12features.runtimeDescriptorArray = true;
   vk12features.descriptorBindingVariableDescriptorCount = true;
   vk12features.hostQueryReset = true;
   vk12features.bufferDeviceAddress = true;
   vk12features.shaderOutputLayer = true;
   vk12features.descriptorIndexing = true;
-  vk12features.shaderInputAttachmentArrayNonUniformIndexing = true;
   vk12features.shaderUniformBufferArrayNonUniformIndexing = true;
+  vk12features.shaderSampledImageArrayNonUniformIndexing = true;
+  vk12features.shaderStorageBufferArrayNonUniformIndexing = true;
+  vk12features.shaderStorageImageArrayNonUniformIndexing = true;
+  vk12features.shaderInputAttachmentArrayNonUniformIndexing = true;
+  vk12features.shaderUniformTexelBufferArrayNonUniformIndexing = true;
+  vk12features.shaderStorageTexelBufferArrayNonUniformIndexing = true;
   vk12features.shaderOutputViewportIndex = true;
   selector.set_required_features_12(vk12features);
 

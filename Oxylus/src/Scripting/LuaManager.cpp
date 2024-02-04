@@ -2,7 +2,9 @@
 
 #include <sol/sol.hpp>
 
-#include "LuaECSBindings.h"
+#include "LuaAudioBindings.h"
+#include "LuaComponentBindings.h"
+#include "LuaSceneBindings.h"
 #include "LuaInputBindings.h"
 #include "LuaMathBindings.h"
 
@@ -17,9 +19,15 @@ void LuaManager::init() {
   m_state->open_libraries(sol::lib::base, sol::lib::package, sol::lib::math, sol::lib::table, sol::lib::os, sol::lib::string);
 
   bind_log();
-  LuaBindings::bind_lua_math(m_state);
-  LuaBindings::bind_lua_ecs(m_state);
-  LuaBindings::bind_lua_input(m_state);
+  LuaBindings::bind_math(m_state);
+  LuaBindings::bind_scene(m_state);
+
+  // Components
+  LuaBindings::bind_tag_component(m_state);
+  LuaBindings::bind_transform_component(m_state);
+  LuaBindings::bind_light_component(m_state);
+  LuaBindings::bind_input(m_state);
+  LuaBindings::bind_audio(m_state);
 }
 
 LuaManager* LuaManager::get() {

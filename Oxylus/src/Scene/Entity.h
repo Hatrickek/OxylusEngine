@@ -13,7 +13,7 @@ public:
 
   Entity(entt::entity handle, Scene* scene);
 
-  //Add component for Internal components which calls OnComponentAdded for them.
+  // Add component for Internal components which calls OnComponentAdded for them.
   template <typename T, typename... Args>
   T& add_component_internal(Args&&... args) {
     OX_SCOPED_ZONE;
@@ -26,7 +26,6 @@ public:
     return component;
   }
 
-  //Add component for exposing the raw ECS system for use.
   template <typename T, typename... Args>
   T& add_component(Args&&... args) {
     OX_SCOPED_ZONE;

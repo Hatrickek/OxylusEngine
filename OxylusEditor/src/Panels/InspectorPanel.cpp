@@ -260,6 +260,7 @@ void InspectorPanel::draw_components(Entity entity) const {
     draw_add_component<MeshComponent>(m_SelectedEntity, "Mesh Renderer");
     draw_add_component<MaterialComponent>(m_SelectedEntity, "Material");
     draw_add_component<AudioSourceComponent>(m_SelectedEntity, "Audio Source");
+    draw_add_component<AudioListenerComponent>(m_SelectedEntity, "Audio Listener");
     draw_add_component<LightComponent>(m_SelectedEntity, "Light");
     draw_add_component<ParticleSystemComponent>(m_SelectedEntity, "Particle System");
     draw_add_component<CameraComponent>(m_SelectedEntity, "Camera");
@@ -451,7 +452,7 @@ void InspectorPanel::draw_components(Entity entity) const {
     [&entity](AudioSourceComponent& component) {
       auto& config = component.config;
       const char* filepath = component.source
-                               ? component.source->GetPath()
+                               ? component.source->get_path()
                                : "Drop an audio file";
 
       auto load_file = [](const std::filesystem::path& path, AudioSourceComponent& comp) {
@@ -475,30 +476,30 @@ void InspectorPanel::draw_components(Entity entity) const {
       ImGui::Spacing();
 
       OxUI::begin_properties();
-      OxUI::property("Volume Multiplier", &config.VolumeMultiplier);
-      OxUI::property("Pitch Multiplier", &config.PitchMultiplier);
-      OxUI::property("Play On Awake", &config.PlayOnAwake);
-      OxUI::property("Looping", &config.Looping);
+      OxUI::property("Volume Multiplier", &config.volume_multiplier);
+      OxUI::property("Pitch Multiplier", &config.pitch_multiplier);
+      OxUI::property("Play On Awake", &config.play_on_awake);
+      OxUI::property("Looping", &config.looping);
       OxUI::end_properties();
 
       ImGui::Spacing();
       if (ImGui::Button(StringUtils::from_char8_t(ICON_MDI_PLAY "Play ")) &&
           component.source)
-        component.source->Play();
+        component.source->play();
       ImGui::SameLine();
       if (ImGui::Button(StringUtils::from_char8_t(ICON_MDI_PAUSE "Pause ")) &&
           component.source)
-        component.source->Pause();
+        component.source->pause();
       ImGui::SameLine();
       if (ImGui::Button(StringUtils::from_char8_t(ICON_MDI_STOP "Stop ")) &&
           component.source)
-        component.source->Stop();
+        component.source->stop();
       ImGui::Spacing();
 
       OxUI::begin_properties();
-      OxUI::property("Spatialization", &config.Spatialization);
+      OxUI::property("Spatialization", &config.spatialization);
 
-      if (config.Spatialization) {
+      if (config.spatialization) {
         ImGui::Indent();
         const char* attenuation_type_strings[] = {
           "None",
@@ -506,22 +507,22 @@ void InspectorPanel::draw_components(Entity entity) const {
           "Linear",
           "Exponential"
         };
-        int attenuation_type = static_cast<int>(config.AttenuationModel);
+        int attenuation_type = static_cast<int>(config.attenuation_model);
         if (OxUI::property("Attenuation Model", &attenuation_type, attenuation_type_strings, 4))
-          config.AttenuationModel = static_cast<AttenuationModelType>(attenuation_type);
-        OxUI::property("Roll Off", &config.RollOff);
-        OxUI::property("Min Gain", &config.MinGain);
-        OxUI::property("Max Gain", &config.MaxGain);
-        OxUI::property("Min Distance", &config.MinDistance);
-        OxUI::property("Max Distance", &config.MaxDistance);
-        float degrees = glm::degrees(config.ConeInnerAngle);
+          config.attenuation_model = static_cast<AttenuationModelType>(attenuation_type);
+        OxUI::property("Roll Off", &config.roll_off);
+        OxUI::property("Min Gain", &config.min_gain);
+        OxUI::property("Max Gain", &config.max_gain);
+        OxUI::property("Min Distance", &config.min_distance);
+        OxUI::property("Max Distance", &config.max_distance);
+        float degrees = glm::degrees(config.cone_inner_angle);
         if (OxUI::property("Cone Inner Angle", &degrees))
-          config.ConeInnerAngle = glm::radians(degrees);
-        degrees = glm::degrees(config.ConeOuterAngle);
+          config.cone_inner_angle = glm::radians(degrees);
+        degrees = glm::degrees(config.cone_outer_angle);
         if (OxUI::property("Cone Outer Angle", &degrees))
-          config.ConeOuterAngle = glm::radians(degrees);
-        OxUI::property("Cone Outer Gain", &config.ConeOuterGain);
-        OxUI::property("Doppler Factor", &config.DopplerFactor);
+          config.cone_outer_angle = glm::radians(degrees);
+        OxUI::property("Cone Outer Gain", &config.cone_outer_gain);
+        OxUI::property("Doppler Factor", &config.doppler_factor);
         ImGui::Unindent();
       }
       OxUI::end_properties();
@@ -529,9 +530,9 @@ void InspectorPanel::draw_components(Entity entity) const {
       if (component.source) {
         const glm::mat4 inverted = glm::inverse(entity.get_world_transform());
         const Vec3 forward = normalize(Vec3(inverted[2]));
-        component.source->SetConfig(config);
-        component.source->SetPosition(entity.get_transform().position);
-        component.source->SetDirection(-forward);
+        component.source->set_config(config);
+        component.source->set_position(entity.get_transform().position);
+        component.source->set_direction(-forward);
       }
     });
 
@@ -542,13 +543,13 @@ void InspectorPanel::draw_components(Entity entity) const {
       auto& config = component.config;
       OxUI::begin_properties();
       OxUI::property("Active", &component.active);
-      float degrees = glm::degrees(config.ConeInnerAngle);
+      float degrees = glm::degrees(config.cone_inner_angle);
       if (OxUI::property("Cone Inner Angle", &degrees))
-        config.ConeInnerAngle = glm::radians(degrees);
-      degrees = glm::degrees(config.ConeOuterAngle);
+        config.cone_inner_angle = glm::radians(degrees);
+      degrees = glm::degrees(config.cone_outer_angle);
       if (OxUI::property("Cone Outer Angle", &degrees))
-        config.ConeOuterAngle = glm::radians(degrees);
-      OxUI::property("Cone Outer Gain", &config.ConeOuterGain);
+        config.cone_outer_angle = glm::radians(degrees);
+      OxUI::property("Cone Outer Gain", &config.cone_outer_gain);
       OxUI::end_properties();
     });
 

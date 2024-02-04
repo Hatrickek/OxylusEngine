@@ -59,14 +59,6 @@ void Scene::init(const Shared<RenderPipeline>& render_pipeline) {
   for (const auto& system : systems) {
     system->on_init();
   }
-
-  // Lua scripts
-  const auto script_view = m_registry.view<LuaScriptComponent>();
-  for (auto&& [e, script_component] : script_view.each()) {
-    if (script_component.lua_system) {
-      script_component.lua_system->on_init(this, e);
-    }
-  }
 }
 
 Entity Scene::create_entity(const std::string& name) {
@@ -300,6 +292,14 @@ void Scene::on_runtime_start() {
     }
 
     physics_system->OptimizeBroadPhase();
+  }
+
+  // Lua scripts
+  const auto script_view = m_registry.view<LuaScriptComponent>();
+  for (auto&& [e, script_component] : script_view.each()) {
+    if (script_component.lua_system) {
+      script_component.lua_system->on_init(this, e);
+    }
   }
 }
 
@@ -584,9 +584,9 @@ void Scene::on_runtime_update(const Timestep& delta_time) {
       if (ac.active) {
         const Mat4 inverted = inverse(Entity(e, this).get_world_transform());
         const Vec3 forward = normalize(Vec3(inverted[2]));
-        ac.listener->SetConfig(ac.config);
-        ac.listener->SetPosition(tc.position);
-        ac.listener->SetDirection(-forward);
+        ac.listener->set_config(ac.config);
+        ac.listener->set_position(tc.position);
+        ac.listener->set_direction(-forward);
         break;
       }
     }
@@ -596,11 +596,11 @@ void Scene::on_runtime_update(const Timestep& delta_time) {
       if (ac.source) {
         const Mat4 inverted = glm::inverse(Entity(e, this).get_world_transform());
         const Vec3 forward = normalize(Vec3(inverted[2]));
-        ac.source->SetConfig(ac.config);
-        ac.source->SetPosition(tc.position);
-        ac.source->SetDirection(forward);
-        if (ac.config.PlayOnAwake)
-          ac.source->Play();
+        ac.source->set_config(ac.config);
+        ac.source->set_position(tc.position);
+        ac.source->set_direction(forward);
+        if (ac.config.play_on_awake)
+          ac.source->play();
       }
     }
   }

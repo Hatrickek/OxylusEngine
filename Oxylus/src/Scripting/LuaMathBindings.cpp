@@ -19,7 +19,7 @@ namespace Oxylus::LuaBindings {
   (var).set_function(sol::meta_function::unary_minus, [](const type& v) -> type { return -v; });                 \
 }
 
-void bind_lua_math(const Shared<sol::state>& state) {
+void bind_math(const Shared<sol::state>& state) {
   OX_SCOPED_ZONE;
   auto vec2 = state->new_usertype<Vec2>("Vec2", sol::constructors<Vec2(float, float)>());
   SET_MATH_FUNCTIONS(vec2, Vec2)

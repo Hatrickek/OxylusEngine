@@ -6,5 +6,5 @@ class state;
 }
 
 namespace Oxylus::LuaBindings {
-void bind_math(const Shared<sol::state>& state);
+void bind_scene(const Shared<sol::state>& state);
 }

@@ -7,5 +7,5 @@ class state;
 }
 
 namespace Oxylus::LuaBindings {
-void bind_lua_input(const Shared<sol::state>& state);  
+void bind_input(const Shared<sol::state>& state);  
 }

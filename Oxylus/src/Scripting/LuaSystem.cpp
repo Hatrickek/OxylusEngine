@@ -21,7 +21,6 @@ LuaSystem::LuaSystem(const std::string& path) : file_path(path) {
 void LuaSystem::check_result(const sol::protected_function_result& result, const char* func_name) {
   if (!result.valid()) {
     const sol::error err = result;
-    OX_CORE_ERROR("Failed to execute Lua script: {0}:{1}", file_path, func_name);
     OX_CORE_ERROR("Error: {0}", err.what());
   }
 }

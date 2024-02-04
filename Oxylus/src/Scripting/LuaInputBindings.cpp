@@ -9,9 +9,9 @@
 #include "Utils/Profiler.h"
 
 namespace Oxylus::LuaBindings {
-void bind_lua_input(const Shared<sol::state>& state) {
+void bind_input(const Shared<sol::state>& state) {
   OX_SCOPED_ZONE;
-  auto input = (*state)["Input"].get_or_create<sol::table>();
+  auto input = state->create_table("Input");
 
   input.set_function("get_key_pressed", [](const KeyCode key) -> bool { return Input::get_key_pressed(key); });
   input.set_function("get_key_held", [](const KeyCode key) -> bool { return Input::get_key_held(key); });
