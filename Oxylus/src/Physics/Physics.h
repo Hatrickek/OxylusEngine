@@ -3,7 +3,11 @@
 
 #include "PhysicsInterfaces.h"
 
+#include "Jolt/Physics/Collision/CollisionCollectorImpl.h"
+
 namespace Ox {
+class RayCast;
+
 class Physics {
 public:
   using EntityLayer = uint16_t;
@@ -19,9 +23,9 @@ public:
   static constexpr uint32_t MAX_BODIES = 1024;
   static constexpr uint32_t MAX_BODY_PAIRS = 1024;
   static constexpr uint32_t MAX_CONTACT_CONSTRAINS = 1024;
-  static BPLayerInterfaceImpl s_layer_interface;
-  static ObjectVsBroadPhaseLayerFilterImpl s_object_vs_broad_phase_layer_filter_interface;
-  static ObjectLayerPairFilterImpl s_object_layer_pair_filter_interface;
+  static BPLayerInterfaceImpl layer_interface;
+  static ObjectVsBroadPhaseLayerFilterImpl object_vs_broad_phase_layer_filter_interface;
+  static ObjectLayerPairFilterImpl object_layer_pair_filter_interface;
 
   static void init();
   static void step(float physicsTs);
@@ -29,10 +33,13 @@ public:
 
   static JPH::PhysicsSystem* get_physics_system();
   static JPH::BodyInterface& get_body_interface();
+  static const JPH::BroadPhaseQuery& get_broad_phase();
+
+  static JPH::AllHitCollisionCollector<JPH::RayCastBodyCollector> cast_ray(const RayCast& ray_cast);
 
 private:
-  static JPH::PhysicsSystem* s_PhysicsSystem;
-  static JPH::TempAllocatorImpl* s_TempAllocator;
-  static JPH::JobSystemThreadPool* s_JobSystem;
+  static JPH::PhysicsSystem* physics_system;
+  static JPH::TempAllocatorImpl* temp_allocator;
+  static JPH::JobSystemThreadPool* job_system;
 };
 }

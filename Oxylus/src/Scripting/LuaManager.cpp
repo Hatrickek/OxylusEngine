@@ -8,6 +8,7 @@
 #include "LuaSceneBindings.h"
 #include "LuaInputBindings.h"
 #include "LuaMathBindings.h"
+#include "LuaPhysicsBindings.h"
 
 #include "Scene/Scene.h"
 #include "Scene/Entity.h"
@@ -31,6 +32,7 @@ void LuaManager::init() {
   LuaBindings::bind_mesh_component(m_state);
   LuaBindings::bind_input(m_state);
   LuaBindings::bind_audio(m_state);
+  LuaBindings::bind_physics(m_state);
 }
 
 LuaManager* LuaManager::get() {
