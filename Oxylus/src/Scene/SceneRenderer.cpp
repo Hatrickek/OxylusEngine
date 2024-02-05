@@ -58,7 +58,7 @@ void SceneRenderer::update() const {
 
         const auto* body = static_cast<const JPH::Body*>(rb.runtime_body);
         if (body) {
-          auto aabb = convert_jolt_aabb(body->GetShape()->GetLocalBounds());
+          auto aabb = convert_jolt_aabb(body->GetShape()->GetWorldSpaceBounds(body->GetCenterOfMassTransform(), convert_to_jolt_vec3(transform.scale)));
           DebugRenderer::draw_aabb(aabb, Vec4(0, 1, 0, 1.0f));
         }
       }
