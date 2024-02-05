@@ -106,6 +106,7 @@ endif ()
 
 if (MSVC AND NOT CMAKE_CXX_COMPILER_ID STREQUAL "Clang")
   add_definitions("/MP")
+  add_definitions("/bigobj")
 endif()
 
 # MSVC runtime library
