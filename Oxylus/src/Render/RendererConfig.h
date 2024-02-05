@@ -13,6 +13,7 @@ inline AutoCVar_Int cvar_shadows_pcf("rr.shadows_pcf", "use pcf in cascaded shad
 inline AutoCVar_Int cvar_draw_grid("rr.draw_grid", "draw editor scene grid", 1);
 inline AutoCVar_Float cvar_draw_grid_distance("rr.grid_distance", "max grid distance", 20.f);
 inline AutoCVar_Int cvar_draw_bounding_boxes("rr.draw_bounding_boxes", "draw mesh bounding boxes", 0);
+inline AutoCVar_Int cvar_draw_physics_shapes("rr.draw_physics_shapes", "draw physics shapes", 0);
 inline AutoCVar_Int cvar_enable_debug_renderer("rr.debug_renderer", "draw debug shapes", 1);
 
 inline AutoCVar_Int cvar_reload_render_pipeline("rr.reload_render_pipeline", "reload current scene's render pipeline", 0);

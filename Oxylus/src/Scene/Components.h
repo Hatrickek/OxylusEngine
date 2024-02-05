@@ -28,7 +28,7 @@ struct IDComponent {
 
   IDComponent(const IDComponent&) = default;
 
-  IDComponent(UUID id) : ID(id) { }
+  IDComponent(UUID id) : ID(id) {}
 };
 
 struct TagComponent {
@@ -40,7 +40,7 @@ struct TagComponent {
 
   TagComponent() = default;
 
-  TagComponent(std::string tag) : tag(std::move(tag)) { }
+  TagComponent(std::string tag) : tag(std::move(tag)) {}
 };
 
 struct RelationshipComponent {
@@ -59,7 +59,7 @@ struct TransformComponent {
 
   TransformComponent() = default;
   TransformComponent(const TransformComponent&) = default;
-  TransformComponent(const Vec3& translation) : position(translation) { }
+  TransformComponent(const Vec3& translation) : position(translation) {}
 
   TransformComponent(const Mat4& transform_matrix) {
     OX_SCOPED_ZONE;
@@ -90,13 +90,11 @@ struct MeshComponent {
   AABB aabb = {};
 
   MeshComponent() = default;
-  MeshComponent(const Shared<Mesh>& mesh) : mesh_base(mesh) { }
+  MeshComponent(const Shared<Mesh>& mesh) : mesh_base(mesh) {}
 };
 
 struct CameraComponent {
-  Shared<Camera> system;
-
-  CameraComponent() : system(create_shared<Camera>()) { }
+  Camera camera;
 };
 
 struct AnimationComponent {
@@ -109,7 +107,7 @@ struct AnimationComponent {
 struct ParticleSystemComponent {
   Shared<ParticleSystem> system = nullptr;
 
-  ParticleSystemComponent() : system(create_shared<ParticleSystem>()) { }
+  ParticleSystemComponent() : system(create_shared<ParticleSystem>()) {}
 };
 
 struct SkyLightComponent {
@@ -227,6 +225,12 @@ struct CylinderColliderComponent {
   float restitution = 0.0f;
 };
 
+struct MeshColliderComponent {
+  Vec3 offset = {0.0f, 0.0f, 0.0f};
+  float friction = 0.5f; 
+  float restitution = 0.0f;
+};
+
 struct CharacterControllerComponent {
   JPH::Ref<JPH::Character> character = nullptr;
 
@@ -243,7 +247,7 @@ struct CharacterControllerComponent {
     float deceleration;
 
     MovementSettings(const float maxSpeed, float accel, float decel)
-      : max_speed(maxSpeed), acceleration(accel), deceleration(decel) { }
+      : max_speed(maxSpeed), acceleration(accel), deceleration(decel) {}
   };
 
   bool interpolation = true;
@@ -290,7 +294,7 @@ struct LuaScriptComponent {
 };
 
 template <typename... Component>
-struct ComponentGroup { };
+struct ComponentGroup {};
 
 using AllComponents =
 ComponentGroup<TransformComponent, RelationshipComponent, PrefabComponent, CameraComponent,
@@ -305,6 +309,7 @@ ComponentGroup<TransformComponent, RelationshipComponent, PrefabComponent, Camer
                CapsuleColliderComponent,
                TaperedCapsuleColliderComponent,
                CylinderColliderComponent,
+               MeshColliderComponent,
 
                // Audio
                AudioSourceComponent, AudioListenerComponent,

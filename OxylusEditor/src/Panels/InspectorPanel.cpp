@@ -24,7 +24,7 @@
 namespace Ox {
 static bool s_rename_entity = false;
 
-InspectorPanel::InspectorPanel() : EditorPanel("Inspector", ICON_MDI_INFORMATION, true), m_Scene(nullptr) { }
+InspectorPanel::InspectorPanel() : EditorPanel("Inspector", ICON_MDI_INFORMATION, true), m_Scene(nullptr) {}
 
 void InspectorPanel::on_imgui_render() {
   m_SelectedEntity = EditorLayer::get()->get_selected_entity();
@@ -58,6 +58,7 @@ static void draw_component(const char* name,
     ImGui::SetCursorPosY(ImGui::GetCursorPosY() + line_height * 0.25f);
 
     const size_t id = entt::type_id<T>().hash();
+    OX_CORE_ASSERT(EditorTheme::component_icon_map.contains(typeid(T).hash_code()));
     std::string name_str = StringUtils::from_char8_t(EditorTheme::component_icon_map[typeid(T).hash_code()]);
     name_str = name_str.append(name);
     const bool open = ImGui::TreeNodeEx(reinterpret_cast<void*>(id), TREE_FLAGS, "%s", name_str.c_str());
@@ -271,6 +272,7 @@ void InspectorPanel::draw_components(Entity entity) const {
     draw_add_component<CapsuleColliderComponent>(entity, "Capsule Collider");
     draw_add_component<TaperedCapsuleColliderComponent>(entity, "Tapered Capsule Collider");
     draw_add_component<CylinderColliderComponent>(entity, "Cylinder Collider");
+    draw_add_component<MeshColliderComponent>(entity, "Mesh Collider");
     draw_add_component<CharacterControllerComponent>(entity, "Character Controller");
     draw_add_component<LuaScriptComponent>(entity, "Lua Script Component");
 
@@ -723,6 +725,17 @@ void InspectorPanel::draw_components(Entity entity) const {
       component.density = glm::max(component.density, 0.001f);
     });
 
+  draw_component<MeshColliderComponent>(
+    " Mesh Collider",
+    entity,
+    [](MeshColliderComponent& component) {
+      OxUI::begin_properties();
+      OxUI::property_vector("Offset", component.offset);
+      OxUI::property("Friction", &component.friction, 0.0f, 1.0f);
+      OxUI::property("Restitution", &component.restitution, 0.0f, 1.0f);
+      OxUI::end_properties();
+    });
+
   draw_component<CharacterControllerComponent>(
     " Character Controller",
     entity,
@@ -745,19 +758,19 @@ void InspectorPanel::draw_components(Entity entity) const {
   draw_component<CameraComponent>(
     "Camera Component",
     entity,
-    [](const CameraComponent& component) {
+    [](CameraComponent& component) {
       OxUI::begin_properties();
-      static float fov = component.system->get_fov();
+      static float fov = component.camera.get_fov();
       if (OxUI::property("FOV", &fov)) {
-        component.system->set_fov(fov);
+        component.camera.set_fov(fov);
       }
-      static float near_clip = component.system->get_near();
+      static float near_clip = component.camera.get_near();
       if (OxUI::property("Near Clip", &near_clip)) {
-        component.system->set_near(near_clip);
+        component.camera.set_near(near_clip);
       }
-      static float far_clip = component.system->get_far();
+      static float far_clip = component.camera.get_far();
       if (OxUI::property("Far Clip", &far_clip)) {
-        component.system->set_far(far_clip);
+        component.camera.set_far(far_clip);
       }
       OxUI::end_properties();
     });

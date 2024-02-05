@@ -38,4 +38,25 @@ void LuaBindings::bind_mesh_component(const Shared<sol::state>& state) {
   SET_TYPE_FIELD(mesh_component_type, MeshComponent, cast_shadows);
   REGISTER_COMPONENT_WITH_ECS(state, MeshComponent)
 }
+
+void LuaBindings::bind_camera_component(const Shared<sol::state>& state) {
+  auto camera_type = state->new_usertype<Camera>("Camera");
+  SET_TYPE_FIELD(camera_type, Camera, set_yaw);
+  SET_TYPE_FIELD(camera_type, Camera, set_pitch);
+  SET_TYPE_FIELD(camera_type, Camera, get_yaw);
+  SET_TYPE_FIELD(camera_type, Camera, get_pitch);
+  SET_TYPE_FIELD(camera_type, Camera, set_near);
+  SET_TYPE_FIELD(camera_type, Camera, set_far);
+  SET_TYPE_FIELD(camera_type, Camera, get_near);
+  SET_TYPE_FIELD(camera_type, Camera, get_far);
+  SET_TYPE_FIELD(camera_type, Camera, get_fov);
+  SET_TYPE_FIELD(camera_type, Camera, set_fov);
+  SET_TYPE_FIELD(camera_type, Camera, get_aspect);
+  SET_TYPE_FIELD(camera_type, Camera, get_front);
+  SET_TYPE_FIELD(camera_type, Camera, get_right);
+
+  auto camera_component_type = state->new_usertype<CameraComponent>("CameraComponent");
+  SET_TYPE_FIELD(camera_component_type, CameraComponent, camera);
+  REGISTER_COMPONENT_WITH_ECS(state, CameraComponent)
+}
 }

@@ -136,9 +136,9 @@ void EntitySerializer::serialize_entity(toml::array* entities, Entity entity) {
 
     // TODO: serialize the rest
     const auto table = toml::table{
-      {"fov", camera.system->get_fov()},
-      {"near", camera.system->get_near()},
-      {"far", camera.system->get_far()},
+      {"fov", camera.camera.get_fov()},
+      {"near", camera.camera.get_near()},
+      {"far", camera.camera.get_far()},
     };
 
     entities->push_back(toml::table{{"camera_component", table}});
@@ -340,9 +340,9 @@ UUID EntitySerializer::deserialize_entity(toml::array* entity_arr, Scene* scene,
     }
     else if (const auto camera_node = ent.as_table()->get("camera_component")) {
       auto& cc = deserialized_entity.add_component<CameraComponent>();
-      cc.system->set_fov(GET_FLOAT(camera_node, "fov"));
-      cc.system->set_near(GET_FLOAT(camera_node, "near"));
-      cc.system->set_far(GET_FLOAT(camera_node, "far"));
+      cc.camera.set_fov(GET_FLOAT(camera_node, "fov"));
+      cc.camera.set_near(GET_FLOAT(camera_node, "near"));
+      cc.camera.set_far(GET_FLOAT(camera_node, "far"));
     }
     else if (const auto rb_node = ent.as_table()->get("rigidbody_component")) {
       auto& rb = deserialized_entity.add_component<RigidbodyComponent>();

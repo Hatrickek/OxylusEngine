@@ -25,6 +25,7 @@ void EditorTheme::init() {
   component_icon_map[typeid(CapsuleColliderComponent).hash_code()] = ICON_MDI_CIRCLE_OUTLINE;
   component_icon_map[typeid(TaperedCapsuleColliderComponent).hash_code()] = ICON_MDI_CIRCLE_OUTLINE;
   component_icon_map[typeid(CylinderColliderComponent).hash_code()] = ICON_MDI_CIRCLE_OUTLINE;
+  component_icon_map[typeid(MeshColliderComponent).hash_code()] = ICON_MDI_CHECKBOX_BLANK_OUTLINE;
   component_icon_map[typeid(CharacterControllerComponent).hash_code()] = ICON_MDI_CIRCLE_OUTLINE;
   component_icon_map[typeid(CameraComponent).hash_code()] = ICON_MDI_CAMERA;
   component_icon_map[typeid(ParticleSystemComponent).hash_code()] = ICON_MDI_LAMP;

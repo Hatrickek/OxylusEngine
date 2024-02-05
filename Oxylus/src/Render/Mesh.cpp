@@ -56,8 +56,10 @@ Mesh::Mesh(const std::vector<Vertex>& vertices, const std::vector<uint32_t>& ind
 
   index_count = (uint32_t)indices.size();
 
+#if 0
   this->vertices.clear();
   this->indices.clear();
+#endif
 }
 
 Mesh::~Mesh() {
@@ -159,11 +161,12 @@ void Mesh::load_from_file(const std::string& file_path, int file_loading_flags, 
   index_buffer = std::move(iBuffer);
 
   m_textures.clear();
-  vertices.clear();
 
   index_count = (uint32_t)indices.size();
+#if 0
+  vertices.clear();
   indices.clear();
-
+#endif
   OX_CORE_INFO("Mesh file loaded: ({}) {}, {} materials, {} animations", timer.get_elapsed_ms(), name.c_str(), gltf_model.materials.size(), animations.size());
 }
 

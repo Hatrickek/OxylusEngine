@@ -15,6 +15,7 @@
 #include "Jolt/Physics/Character/Character.h"
 #include "Jolt/Physics/Collision/Shape/CapsuleShape.h"
 #include "Jolt/Physics/Collision/Shape/CylinderShape.h"
+#include "Jolt/Physics/Collision/Shape/MeshShape.h"
 #include "Jolt/Physics/Collision/Shape/MutableCompoundShape.h"
 #include "Jolt/Physics/Collision/Shape/RotatedTranslatedShape.h"
 #include "Jolt/Physics/Collision/Shape/TaperedCapsuleShape.h"
@@ -415,6 +416,8 @@ void Scene::create_rigidbody(Entity entity, const TransformComponent& transform,
   if (!is_running)
     return;
 
+  // TODO: We should get rid of 'new' usages and use JPH::Ref<> instead.
+
   auto& body_interface = Physics::get_body_interface();
   if (component.runtime_body) {
     body_interface.DestroyBody(static_cast<JPH::Body*>(component.runtime_body)->GetID());
@@ -482,6 +485,51 @@ void Scene::create_rigidbody(Entity entity, const TransformComponent& transform,
     compound_shape_settings.AddShape({cc.offset.x, cc.offset.y, cc.offset.z}, JPH::Quat::sIdentity(), shape_settings.Create().Get());
   }
 
+  if (entity.has_component<MeshColliderComponent>() && entity.has_component<MeshComponent>()) {
+    const auto& mc = entity.get_component<MeshColliderComponent>();
+    const auto* mat = new PhysicsMaterial3D(entity_name, JPH::ColorArg(255, 0, 0), mc.friction, mc.restitution);
+
+    // TODO: We should only get the vertices and indices for this particular MeshComponent using MeshComponent::node_index
+
+    const auto& mesh_component = entity.get_component<MeshComponent>();
+    auto vertices = mesh_component.mesh_base->vertices;
+    const auto& indices = mesh_component.mesh_base->indices;
+
+    // scale vertices
+    const auto world_transform = entity.get_world_transform();
+    for (auto& vert : vertices) {
+      Vec4 scaled_pos = world_transform * Vec4(vert.position, 1.0);
+      vert.position = Vec3(scaled_pos);
+    }
+
+    const uint32_t vertex_count = (uint32_t)vertices.size();
+    const uint32_t index_count = (uint32_t)indices.size();
+    const uint32_t triangle_count = vertex_count / 3;
+
+    JPH::VertexList vertex_list;
+    vertex_list.resize(vertex_count);
+    for (uint32_t i = 0; i < vertex_count; ++i)
+      vertex_list[i] = JPH::Float3(vertices[i].position.x, vertices[i].position.y, vertices[i].position.z);
+
+    JPH::IndexedTriangleList indexedTriangleList;
+    indexedTriangleList.resize(index_count * 2);
+
+    for (uint32_t i = 0; i < triangle_count; ++i) {
+      indexedTriangleList[i * 2 + 0].mIdx[0] = indices[i * 3 + 0];
+      indexedTriangleList[i * 2 + 0].mIdx[1] = indices[i * 3 + 1];
+      indexedTriangleList[i * 2 + 0].mIdx[2] = indices[i * 3 + 2];
+
+      indexedTriangleList[i * 2 + 1].mIdx[2] = indices[i * 3 + 0];
+      indexedTriangleList[i * 2 + 1].mIdx[1] = indices[i * 3 + 1];
+      indexedTriangleList[i * 2 + 1].mIdx[0] = indices[i * 3 + 2];
+    }
+
+    JPH::PhysicsMaterialList material_list = {};
+    material_list.emplace_back(mat);
+    JPH::MeshShapeSettings shape_settings(vertex_list, indexedTriangleList, material_list);
+    compound_shape_settings.AddShape({mc.offset.x, mc.offset.y, mc.offset.z}, JPH::Quat::sIdentity(), shape_settings.Create().Get());
+  }
+
   // Body
   auto rotation = glm::quat(transform.rotation);
 
@@ -543,8 +591,8 @@ void Scene::on_runtime_update(const Timestep& delta_time) {
     const auto camera_view = m_registry.view<TransformComponent, CameraComponent>();
     for (const auto entity : camera_view) {
       auto [transform, camera] = camera_view.get<TransformComponent, CameraComponent>(entity);
-      camera.system->update(transform.position, transform.rotation);
-      scene_renderer->get_render_pipeline()->on_register_camera(camera.system.get());
+      camera.camera.update(transform.position, transform.rotation);
+      scene_renderer->get_render_pipeline()->on_register_camera(&camera.camera);
     }
   }
 
@@ -712,6 +760,12 @@ void Scene::on_component_added<TaperedCapsuleColliderComponent>(Entity entity, T
 
 template <>
 void Scene::on_component_added<CylinderColliderComponent>(Entity entity, CylinderColliderComponent& component) {
+  if (entity.has_component<RigidbodyComponent>())
+    create_rigidbody(entity, entity.get_component<TransformComponent>(), entity.get_component<RigidbodyComponent>());
+}
+
+template <>
+void Scene::on_component_added<MeshColliderComponent>(Entity entity, MeshColliderComponent& component) {
   if (entity.has_component<RigidbodyComponent>())
     create_rigidbody(entity, entity.get_component<TransformComponent>(), entity.get_component<RigidbodyComponent>());
 }

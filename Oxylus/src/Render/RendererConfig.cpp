@@ -29,6 +29,7 @@ void RendererConfig::save_config(const char* path) const {
       toml::table{
         {"debug_renderer", (bool)RendererCVar::cvar_enable_debug_renderer.get()},
         {"bounding_boxes", (bool)RendererCVar::cvar_draw_bounding_boxes.get()},
+        {"physics_shapes", (bool)RendererCVar::cvar_draw_physics_shapes.get()},
       }
     },
     {
@@ -93,6 +94,7 @@ bool RendererConfig::load_config(const char* path) {
   const auto debug_config = toml["debug"];
   RendererCVar::cvar_enable_debug_renderer.set(debug_config["debug_renderer"].as_boolean()->get());
   RendererCVar::cvar_draw_bounding_boxes.set(debug_config["bounding_boxes"].as_boolean()->get());
+  RendererCVar::cvar_draw_physics_shapes.set(debug_config["physics_shapes"].as_boolean()->get());
 
   const auto color_config = toml["color"];
   RendererCVar::cvar_tonemapper.set((int)color_config["tonemapper"].as_integer()->get());

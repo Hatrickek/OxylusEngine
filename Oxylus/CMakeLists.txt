@@ -290,7 +290,7 @@ target_include_directories(${PROJECT_NAME} PUBLIC ${rapidjson_SOURCE_DIR}/includ
 CPMAddPackage(
     NAME JoltPhysics
     GITHUB_REPOSITORY jrouwe/JoltPhysics
-    GIT_TAG master
+    VERSION 4.0.2 
     SOURCE_SUBDIR Build
     OPTIONS
         "COMPILE_AS_SHARED_LIBRARY OFF"

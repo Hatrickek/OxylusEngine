@@ -43,6 +43,7 @@ void RendererSettingsPanel::on_imgui_render() {
       RendererCVar::cvar_reload_render_pipeline.toggle();
     if (OxUI::begin_properties()) {
       OxUI::property("Draw bounding boxes", (bool*)RendererCVar::cvar_draw_bounding_boxes.get_ptr());
+      OxUI::property("Draw physics shapes", (bool*)RendererCVar::cvar_draw_physics_shapes.get_ptr());
       OxUI::end_properties();
     }
 
