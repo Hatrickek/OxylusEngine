@@ -235,6 +235,17 @@ void EntitySerializer::serialize_entity(toml::array* entities, Entity entity) {
     entities->push_back(toml::table{{"cylinder_collider_component", table}});
   }
 
+  if (entity.has_component<MeshColliderComponent>()) {
+    const auto& mc = entity.get_component<MeshColliderComponent>();
+    const auto table = toml::table{
+      {"offset", get_toml_array(mc.offset)},
+      {"friction", mc.friction},
+      {"restitution", mc.restitution},
+    };
+
+    entities->push_back(toml::table{{"mesh_collider_component", table}});
+  }
+
   if (entity.has_component<CharacterControllerComponent>()) {
     const auto& component = entity.get_component<CharacterControllerComponent>();
     const auto table = toml::table{
@@ -400,6 +411,12 @@ UUID EntitySerializer::deserialize_entity(toml::array* entity_arr, Scene* scene,
       ccc.density = GET_FLOAT(ccc_node, "density");
       ccc.friction = GET_FLOAT(ccc_node, "friction");
       ccc.restitution = GET_FLOAT(ccc_node, "restitution");
+    }
+    else if (const auto mc_node = ent.as_table()->get("mesh_collider_component")) {
+      auto& mc = deserialized_entity.add_component<MeshColliderComponent>();
+      mc.offset = get_vec3_toml_array(GET_ARRAY(mc_node, "offset"));
+      mc.friction = GET_FLOAT(mc_node, "friction");
+      mc.restitution = GET_FLOAT(mc_node, "restitution");
     }
     else if (const auto chc_node = ent.as_table()->get("character_controller_component")) {
       auto& chc = deserialized_entity.add_component<CharacterControllerComponent>();
