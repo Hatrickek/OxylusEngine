@@ -49,6 +49,8 @@ public:
   void on_runtime_start();
   void on_runtime_stop();
 
+  bool is_running() const { return running; }
+
   void on_runtime_update(const Timestep& delta_time);
   void on_editor_update(const Timestep& delta_time, Camera& camera);
 
@@ -67,10 +69,10 @@ public:
   // Renderer
   Shared<SceneRenderer> get_renderer() { return scene_renderer; }
 
-  entt::registry& get_registry() { return m_registry;}
+  entt::registry& get_registry() { return m_registry; }
 
 private:
-  bool is_running = false;
+  bool running = false;
 
 
   // Renderer

@@ -26,6 +26,11 @@ void bind_math(const Shared<sol::state>& state) {
   vec2["x"] = &Vec2::x;
   vec2["y"] = &Vec2::y;
 
+  auto uvec2 = state->new_usertype<UVec2>("UVec2", sol::constructors<Vec2(float, float)>());
+  SET_MATH_FUNCTIONS(uvec2, UVec2)
+  uvec2["x"] = &UVec2::x;
+  uvec2["y"] = &UVec2::y;
+
   auto mult_overloads_vec3 = sol::overload(
     [](const Vec3& v1, const Vec3& v2) -> Vec3 { return v1 * v2; },
     [](const Vec3& v1, const float f) -> Vec3 { return v1 * f; },

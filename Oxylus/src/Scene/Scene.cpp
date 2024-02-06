@@ -37,7 +37,7 @@ Scene::Scene(const Shared<RenderPipeline>& render_pipeline) {
 }
 
 Scene::~Scene() {
-  if (is_running)
+  if (running)
     on_runtime_stop();
 }
 
@@ -261,7 +261,7 @@ void Scene::duplicate_entity(Entity entity) {
 void Scene::on_runtime_start() {
   OX_SCOPED_ZONE;
 
-  is_running = true;
+  running = true;
 
   physics_frame_accumulator = 0.0f;
 
@@ -308,7 +308,7 @@ void Scene::on_runtime_start() {
 void Scene::on_runtime_stop() {
   OX_SCOPED_ZONE;
 
-  is_running = false;
+  running = false;
 
   // Physics
   {
@@ -413,7 +413,7 @@ void Scene::on_contact_persisted(const JPH::Body& body1, const JPH::Body& body2,
 
 void Scene::create_rigidbody(Entity entity, const TransformComponent& transform, RigidbodyComponent& component) const {
   OX_SCOPED_ZONE;
-  if (!is_running)
+  if (!running)
     return;
 
   // TODO: We should get rid of 'new' usages and use JPH::Ref<> instead.
@@ -563,7 +563,7 @@ void Scene::create_rigidbody(Entity entity, const TransformComponent& transform,
 
 void Scene::create_character_controller(const TransformComponent& transform, CharacterControllerComponent& component) const {
   OX_SCOPED_ZONE;
-  if (!is_running)
+  if (!running)
     return;
   const auto position = JPH::Vec3(transform.position.x, transform.position.y, transform.position.z);
   const auto capsule_shape = JPH::RotatedTranslatedShapeSettings(

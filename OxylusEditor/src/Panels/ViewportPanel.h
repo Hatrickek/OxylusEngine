@@ -82,7 +82,6 @@ private:
   Vec2 m_gizmo_position = Vec2(1.0f, 1.0f);
   bool m_viewport_focused = {};
   bool m_viewport_hovered = {};
-  bool m_simulation_running = false;
   int m_gizmo_type = -1;
   int m_gizmo_mode = 0;
 

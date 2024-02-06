@@ -300,10 +300,12 @@ void ViewportPanel::on_imgui_render() {
     auto final_image = rp->get_final_image();
 
     if (final_image) {
-      mouse_picking_pass(rp, dim, fixed_width);
-      if (outline_pass(rp, dim)) {
-        final_image = create_shared<vuk::SampledImage>(
-          make_sampled_image(vuk::NameReference{rp->get_frame_render_graph().get(), vuk::QualifiedName({}, "final_outlined_image+")}, {}));
+      if (!m_scene->is_running()) {
+        mouse_picking_pass(rp, dim, fixed_width);
+        if (outline_pass(rp, dim)) {
+          final_image = create_shared<vuk::SampledImage>(
+            make_sampled_image(vuk::NameReference{rp->get_frame_render_graph().get(), vuk::QualifiedName({}, "final_outlined_image+")}, {}));
+        }
       }
 
       OxUI::image(*final_image, ImVec2{fixed_width, viewport_panel_size.y});
@@ -318,16 +320,17 @@ void ViewportPanel::on_imgui_render() {
     if (m_scene_hierarchy_panel)
       m_scene_hierarchy_panel->drag_drop_target();
 
-    Mat4 view_proj = m_camera.get_projection_matrix_flipped() * m_camera.get_view_matrix();
-    const Frustum& frustum = m_camera.get_frustum();
+    if (!m_scene->is_running()) {
+      Mat4 view_proj = m_camera.get_projection_matrix_flipped() * m_camera.get_view_matrix();
+      const Frustum& frustum = m_camera.get_frustum();
+      show_component_gizmo<LightComponent>(fixed_width, viewport_panel_size.y, 0, 0, view_proj, frustum, m_scene.get());
+      show_component_gizmo<SkyLightComponent>(fixed_width, viewport_panel_size.y, 0, 0, view_proj, frustum, m_scene.get());
+      show_component_gizmo<AudioSourceComponent>(fixed_width, viewport_panel_size.y, 0, 0, view_proj, frustum, m_scene.get());
+      show_component_gizmo<AudioListenerComponent>(fixed_width, viewport_panel_size.y, 0, 0, view_proj, frustum, m_scene.get());
+      show_component_gizmo<CameraComponent>(fixed_width, viewport_panel_size.y, 0, 0, view_proj, frustum, m_scene.get());
 
-    show_component_gizmo<LightComponent>(fixed_width, viewport_panel_size.y, 0, 0, view_proj, frustum, m_scene.get());
-    show_component_gizmo<SkyLightComponent>(fixed_width, viewport_panel_size.y, 0, 0, view_proj, frustum, m_scene.get());
-    show_component_gizmo<AudioSourceComponent>(fixed_width, viewport_panel_size.y, 0, 0, view_proj, frustum, m_scene.get());
-    show_component_gizmo<AudioListenerComponent>(fixed_width, viewport_panel_size.y, 0, 0, view_proj, frustum, m_scene.get());
-    show_component_gizmo<CameraComponent>(fixed_width, viewport_panel_size.y, 0, 0, view_proj, frustum, m_scene.get());
-
-    draw_gizmos();
+      draw_gizmos();
+    }
 
     {
       // Transform Gizmos Button Group
@@ -588,7 +591,7 @@ void ViewportPanel::set_context(const Shared<Scene>& scene, SceneHierarchyPanel&
 }
 
 void ViewportPanel::on_update() {
-  if (m_viewport_hovered && !m_simulation_running && m_use_editor_camera) {
+  if (m_viewport_hovered && !m_scene->is_running() && m_use_editor_camera) {
     const Vec3& position = m_camera.get_position();
     const Vec2 yaw_pitch = Vec2(m_camera.get_yaw(), m_camera.get_pitch());
     Vec3 final_position = position;

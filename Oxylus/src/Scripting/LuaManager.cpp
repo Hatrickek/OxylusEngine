@@ -5,10 +5,12 @@
 #include "LuaAssetManagerBindings.h"
 #include "LuaAudioBindings.h"
 #include "LuaComponentBindings.h"
+#include "LuaDebugBindings.h"
 #include "LuaSceneBindings.h"
 #include "LuaInputBindings.h"
 #include "LuaMathBindings.h"
 #include "LuaPhysicsBindings.h"
+#include "LuaRendererBindings.h"
 
 #include "Scene/Scene.h"
 #include "Scene/Entity.h"
@@ -24,12 +26,15 @@ void LuaManager::init() {
   LuaBindings::bind_math(m_state);
   LuaBindings::bind_scene(m_state);
   LuaBindings::bind_asset_manager(m_state);
+  LuaBindings::bind_debug_renderer(m_state);
+  LuaBindings::bind_renderer(m_state);
 
   // Components
   LuaBindings::bind_tag_component(m_state);
   LuaBindings::bind_transform_component(m_state);
   LuaBindings::bind_light_component(m_state);
   LuaBindings::bind_mesh_component(m_state);
+  LuaBindings::bind_camera_component(m_state);
   LuaBindings::bind_input(m_state);
   LuaBindings::bind_audio(m_state);
   LuaBindings::bind_physics(m_state);

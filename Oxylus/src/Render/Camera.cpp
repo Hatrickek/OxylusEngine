@@ -101,7 +101,7 @@ void Camera::update(const Vec3& pos, const Vec3& rotation) {
   set_position(pos);
   set_pitch(rotation.x);
   set_yaw(rotation.y);
-  m_tilt = rotation.z;
+  set_tilt(rotation.z);
   update_view_matrix();
 }
 
@@ -164,5 +164,23 @@ Frustum Camera::get_frustum() {
   frustum.planes[5] = &frustum.near_face;
 
   return frustum;
+}
+
+RayCast Camera::get_screen_ray(const Vec2& screen_pos) const {
+  const Mat4 viewProjInverse = inverse(get_projection_matrix() * get_view_matrix());
+
+  float screenX = screen_pos.x / (float)Renderer::get_viewport_width();
+  float screenY = screen_pos.y / (float)Renderer::get_viewport_height();
+
+  screenX = 2.0f * screenX - 1.0f;
+  screenY = 2.0f * screenY - 1.0f;
+
+  Vec4 n = viewProjInverse * Vec4(screenX, screenY, 0.0f, 1.0f);
+  n /= n.w;
+
+  Vec4 f = viewProjInverse * Vec4(screenX, screenY, 1.0f, 1.0f);
+  f /= f.w;
+
+  return {Vec3(n), normalize(Vec3(f) - Vec3(n))};
 }
 }

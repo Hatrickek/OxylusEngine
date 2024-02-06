@@ -54,6 +54,7 @@ void LuaBindings::bind_camera_component(const Shared<sol::state>& state) {
   SET_TYPE_FIELD(camera_type, Camera, get_aspect);
   SET_TYPE_FIELD(camera_type, Camera, get_front);
   SET_TYPE_FIELD(camera_type, Camera, get_right);
+  SET_TYPE_FIELD(camera_type, Camera, get_screen_ray);
 
   auto camera_component_type = state->new_usertype<CameraComponent>("CameraComponent");
   SET_TYPE_FIELD(camera_component_type, CameraComponent, camera);

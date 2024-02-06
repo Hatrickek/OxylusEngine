@@ -7,6 +7,8 @@
 
 #include "Frustum.h"
 
+#include "Physics/RayCast.h"
+
 
 struct VkExtent2D;
 
@@ -25,6 +27,7 @@ public:
 
   void set_yaw(const float value) { m_yaw = value; }
   void set_pitch(const float value) { m_pitch = value; }
+  void set_tilt(const float value) { m_tilt = value; }
 
   float get_yaw() const { return m_yaw; }
   float get_pitch() const { return m_pitch; }
@@ -50,9 +53,10 @@ public:
   const Vec3& get_position() const;
 
   void update_view_matrix();
-  static Mat4 generate_view_matrix(const Vec3& position, const Vec3& view_dir, const Vec3& up);
-
   Frustum get_frustum();
+  RayCast get_screen_ray(const Vec2& screen_pos) const;
+
+  static Mat4 generate_view_matrix(const Vec3& position, const Vec3& view_dir, const Vec3& up);
 
 private:
   float m_fov = 60.0f;
