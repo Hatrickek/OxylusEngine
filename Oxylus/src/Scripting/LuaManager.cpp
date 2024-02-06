@@ -45,13 +45,21 @@ LuaManager* LuaManager::get() {
   return &manager;
 }
 
+#define SET_LOG_FUNCTIONS(table, name, log_func) \
+  table.set_function(name, sol::overload([](const std::string_view message) { log_func("{}", message);}, \
+                                         [](const Vec4& vec4) { log_func("x: {} y: {} z: {} w: {}", vec4.x, vec4.y, vec4.z, vec4.w); }, \
+                                         [](const Vec3& vec3) { log_func("x: {} y: {} z: {}", vec3.x, vec3.y, vec3.z); }, \
+                                         [](const Vec2& vec2) { log_func("x: {} y: {}", vec2.x, vec2.y); }, \
+                                         [](const UVec2& vec2) { log_func("x: {} y: {}", vec2.x, vec2.y); } \
+));
+
 void LuaManager::bind_log() const {
   OX_SCOPED_ZONE;
   auto log = m_state->create_table("Log");
 
-  log.set_function("trace", [&](sol::this_state s, const std::string_view message) { OX_CORE_TRACE("{}", message); });
-  log.set_function("info", [&](sol::this_state s, const std::string_view message) { OX_CORE_INFO("{}", message); });
-  log.set_function("warn", [&](sol::this_state s, const std::string_view message) { OX_CORE_WARN("{}", message); });
-  log.set_function("error", [&](sol::this_state s, const std::string_view message) { OX_CORE_ERROR("{}", message); });
+  SET_LOG_FUNCTIONS(log, "trace", OX_CORE_TRACE)
+  SET_LOG_FUNCTIONS(log, "info", OX_CORE_INFO)
+  SET_LOG_FUNCTIONS(log, "warn", OX_CORE_WARN)
+  SET_LOG_FUNCTIONS(log, "error", OX_CORE_ERROR)
 }
 }

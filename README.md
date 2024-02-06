@@ -66,7 +66,7 @@ For clang:
 - [Jolt](https://github.com/jrouwe/JoltPhysics)
 - [MiniAudio](https://github.com/mackron/miniaudio)
 - [Tracy](https://github.com/wolfpld/tracy)
-- [ryml](https://github.com/biojppm/rapidyaml)
+- [tomlplusplus](https://github.com/marzer/tomlplusplus)
 - [lua](https://github.com/walterschell/Lua)
 - [sol2](https://github.com/ThePhD/sol2)
 - [RapidJson](https://github.com/Tencent/rapidjson/tree/master)
