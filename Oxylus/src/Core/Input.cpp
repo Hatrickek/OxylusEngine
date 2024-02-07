@@ -72,7 +72,7 @@ float Input::get_mouse_scroll_offset_y() {
   return input_data.scroll_offset_y;
 }
 
-void Input::set_cursor_position(const float x, const float y) {
+void Input::set_mouse_position(const float x, const float y) {
   glfwSetCursorPos(Window::get_glfw_window(), x, y);
   input_data.mouse_pos.x = x;
   input_data.mouse_pos.y = y;

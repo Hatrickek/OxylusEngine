@@ -39,6 +39,7 @@ public:
 
   /// Mouse
   static Vec2 get_mouse_position();
+  static void set_mouse_position(float x, float y);
   static float get_mouse_offset_x();
   static float get_mouse_offset_y();
   static float get_mouse_scroll_offset_y();
@@ -51,7 +52,6 @@ public:
   static GLFWcursor* load_cursor_icon_standard(int cursor);
   static void set_cursor_icon(GLFWcursor* cursor);
   static void set_cursor_icon_default();
-  static void set_cursor_position(float x, float y);
   static void destroy_cursor(GLFWcursor* cursor);
 
 private:

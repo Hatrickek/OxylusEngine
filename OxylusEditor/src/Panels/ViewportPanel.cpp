@@ -606,7 +606,7 @@ void ViewportPanel::on_update() {
         Input::set_cursor_state(Input::CursorState::Disabled);
       }
 
-      Input::set_cursor_position(m_locked_mouse_position.x, m_locked_mouse_position.y);
+      Input::set_mouse_position(m_locked_mouse_position.x, m_locked_mouse_position.y);
       //Input::SetCursorIcon(EditorLayer::Get()->m_CrosshairCursor);
 
       const Vec2 change = (new_mouse_position - m_locked_mouse_position) * EditorCVar::cvar_camera_sens.get();
@@ -639,7 +639,7 @@ void ViewportPanel::on_update() {
         m_locked_mouse_position = new_mouse_position;
       }
 
-      Input::set_cursor_position(m_locked_mouse_position.x, m_locked_mouse_position.y);
+      Input::set_mouse_position(m_locked_mouse_position.x, m_locked_mouse_position.y);
       //Input::SetCursorIcon(EditorLayer::Get()->m_CrosshairCursor);
 
       const Vec2 change = (new_mouse_position - m_locked_mouse_position) * EditorCVar::cvar_camera_sens.get();
