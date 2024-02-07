@@ -187,8 +187,9 @@ private:
   struct LightChangeEvent {};
 
   DirectShadowPass::DirectShadowUB direct_shadow_ub = {};
-  std::vector<LightData> scene_lights = {};
-  LightData* dir_light_data = nullptr;
+  std::vector<std::pair<LightData, LightComponent>> scene_lights = {};
+  std::pair<LightData, LightComponent>* dir_light_data = nullptr;
+  LightComponent* dir_light_component = nullptr;
   EventDispatcher light_buffer_dispatcher;
 
   void commit_descriptor_sets(vuk::Allocator& allocator);

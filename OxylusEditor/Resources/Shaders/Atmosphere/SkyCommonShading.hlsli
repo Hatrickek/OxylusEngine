@@ -123,7 +123,7 @@ float3 GetDynamicSkyColor(in float2 pixel, in float3 V, bool sunEnabled = true, 
     receiveShadow // Atmosphere to use pre-rendered shadow data
   );
 
-  sky *= 3.0f; //GetScene().sky_exposure;
+  sky *= 1.0f; //GetScene().sky_exposure;
 
   return sky;
 }

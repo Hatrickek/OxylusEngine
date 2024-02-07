@@ -7,7 +7,7 @@ namespace Ox {
 namespace RendererCVar {
 inline AutoCVar_Int cvar_vsync("rr.vsync", "toggle vsync", 1);
 
-inline AutoCVar_Int cvar_shadows_size("rr.shadows_size", "cascaded shadow map size", 4096);
+inline AutoCVar_Int cvar_shadows_size("rr.shadows_size", "cascaded shadow map size", 2048);
 inline AutoCVar_Int cvar_shadows_pcf("rr.shadows_pcf", "use pcf in cascaded shadows", 1);
 
 inline AutoCVar_Int cvar_draw_grid("rr.draw_grid", "draw editor scene grid", 1);

@@ -361,12 +361,18 @@ void DefaultRenderPipeline::commit_descriptor_sets(vuk::Allocator& allocator) {
 
   // fill it if it's empty. Or we could allow vulkan to bind null buffers with VK_EXT_robustness2 nullDescriptor feature. 
   if (scene_lights.empty())
-    scene_lights.emplace_back(LightData{Vec3{0}, 0.0f, Vec3{0}, 0.0f, Vec3{0}, 0});
+    scene_lights.emplace_back();
 
-  auto [lights_buff, lights_buff_fut] = create_cpu_buffer(allocator, std::span(scene_lights));
+  std::vector<LightData> light_datas;
+  light_datas.reserve(scene_lights.size());
+
+  std::transform(scene_lights.begin(),
+                 scene_lights.end(),
+                 std::back_inserter(light_datas),
+                 [](const std::pair<LightData, LightComponent>& pair) { return pair.first; });
+
+  auto [lights_buff, lights_buff_fut] = create_cpu_buffer(allocator, std::span(light_datas));
   const auto& lights_buffer = *lights_buff;
-
-  scene_lights.clear();
 
   auto [ssr_buff, ssr_buff_fut] = create_cpu_buffer(allocator, std::span(&ssr_data, 1));
   auto ssr_buffer = *ssr_buff;
@@ -505,16 +511,19 @@ void DefaultRenderPipeline::on_register_render_object(const MeshComponent& rende
 
 void DefaultRenderPipeline::on_register_light(const TransformComponent& transform, const LightComponent& light) {
   OX_SCOPED_ZONE;
-  auto& light_data = scene_lights.emplace_back(LightData{
-    .position = {transform.position},
-    .intensity = light.intensity,
-    .color = light.color,
-    .radius = light.range,
-    .rotation = transform.rotation,
-    .type = (uint32_t)light.type
-  });
+  auto& light_emplaced = scene_lights.emplace_back(
+    LightData{
+      .position = {transform.position},
+      .intensity = light.intensity,
+      .color = light.color,
+      .radius = light.range,
+      .rotation = transform.rotation,
+      .type = (uint32_t)light.type
+    },
+    light
+  );
   if (light.type == LightComponent::LightType::Directional)
-    dir_light_data = &light_data;
+    dir_light_data = &light_emplaced;
   light_buffer_dispatcher.trigger(LightChangeEvent{});
 }
 
@@ -575,39 +584,24 @@ Unique<vuk::Future> DefaultRenderPipeline::on_render(vuk::Allocator& frame_alloc
 
   cumulated_material_map = cumulate_material_map(material_map);
 
+  const auto rg = create_shared<vuk::RenderGraph>("DefaultRenderPipelineRenderGraph");
+
   Vec3 sun_direction = {};
   Vec3 sun_color = {};
 
   if (dir_light_data) {
-    sun_direction = normalize(Vec3(cos(dir_light_data->rotation.x) * cos(dir_light_data->rotation.y),
-                                   sin(dir_light_data->rotation.y),
-                                   sin(dir_light_data->rotation.x) * cos(dir_light_data->rotation.y)));
-    sun_color = dir_light_data->color * dir_light_data->intensity;
+    sun_direction = normalize(dir_light_data->first.rotation);
+    sun_color = dir_light_data->first.color * dir_light_data->first.intensity;
   }
 
-  scene_data.sun_direction = sun_direction;
+  scene_data.sun_direction = normalize(sun_direction);
   scene_data.sun_color = Vec4(sun_color, 1.0f);
-
-  if (dir_light_data)
-    DirectShadowPass::update_cascades(sun_direction, current_camera, &direct_shadow_ub);
 
   create_dynamic_textures(*vk_context->superframe_allocator, dim);
   commit_descriptor_sets(frame_allocator);
 
-  const auto rg = create_shared<vuk::RenderGraph>("DefaultRenderPipelineRenderGraph");
-
-  rg->attach_and_clear_image("black_image", {.format = vk_context->swapchain->format, .sample_count = vuk::SampleCountFlagBits::e1}, vuk::Black<float>);
-  rg->inference_rule("black_image", vuk::same_shape_as("final_image"));
-
-  rg->attach_and_clear_image("black_image_uint", {.format = vuk::Format::eR8Uint, .sample_count = vuk::SampleCountFlagBits::e1}, vuk::Black<float>);
-  rg->inference_rule("black_image_uint", vuk::same_shape_as("final_image"));
-
-  depth_pre_pass(rg);
-
-  if (RendererCVar::cvar_gtao_enable.get())
-    gtao_pass(frame_allocator, rg);
-
-  if (dir_light_data) {
+  if (dir_light_data && dir_light_data->second.cast_shadows) {
+    DirectShadowPass::update_cascades(sun_direction, current_camera, &direct_shadow_ub);
     auto attachment = vuk::ImageAttachment::from_texture(sun_shadow_texture);
     attachment.image_flags = vuk::ImageCreateFlagBits::e2DArrayCompatible;
     attachment.view_type = vuk::ImageViewType::e2DArray;
@@ -619,6 +613,18 @@ Unique<vuk::Future> DefaultRenderPipeline::on_render(vuk::Allocator& frame_alloc
   }
 
   dir_light_data = nullptr;
+  scene_lights.clear();
+
+  rg->attach_and_clear_image("black_image", {.format = vk_context->swapchain->format, .sample_count = vuk::SampleCountFlagBits::e1}, vuk::Black<float>);
+  rg->inference_rule("black_image", vuk::same_shape_as("final_image"));
+
+  rg->attach_and_clear_image("black_image_uint", {.format = vuk::Format::eR8Uint, .sample_count = vuk::SampleCountFlagBits::e1}, vuk::Black<float>);
+  rg->inference_rule("black_image_uint", vuk::same_shape_as("final_image"));
+
+  depth_pre_pass(rg);
+
+  if (RendererCVar::cvar_gtao_enable.get())
+    gtao_pass(frame_allocator, rg);
 
   sky_transmittance_pass(rg);
   sky_multiscatter_pass(rg);
@@ -1210,6 +1216,9 @@ void DefaultRenderPipeline::cascaded_shadow_pass(const Shared<vuk::RenderGraph>&
                       .set_scissor(0, vuk::Rect2D::framebuffer());
 
         for (const auto& mesh : mesh_draw_list) {
+          if (!mesh.cast_shadows)
+            continue;
+
           mesh.mesh_base->bind_index_buffer(command_buffer);
 
           const auto node = mesh.mesh_base->linear_nodes[mesh.node_index];

@@ -294,9 +294,9 @@ void InspectorPanel::draw_components(Entity entity) const {
     });
 
   draw_component<MeshComponent>(
-    " Mesh Renderer Component",
+    " Mesh Component",
     entity,
-    [](const MeshComponent& component) {
+    [](MeshComponent& component) {
       if (!component.mesh_base)
         return;
       const char* file_name = component.mesh_base->name.empty()
@@ -304,6 +304,9 @@ void InspectorPanel::draw_components(Entity entity) const {
                                 : component.mesh_base->name.c_str();
       ImGui::Text("Loaded Mesh: %s", file_name);
       ImGui::Text("Material Count: %d", (uint32_t)component.mesh_base->get_materials_as_ref().size());
+      OxUI::begin_properties();
+      OxUI::property("Cast shadows", &component.cast_shadows);
+      OxUI::end_properties();
     });
 
   draw_component<MaterialComponent>(

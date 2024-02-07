@@ -1,4 +1,6 @@
-﻿#include "SkyCommonShading.hlsli"
+﻿#define HAS_MULTISCATTER_LUT
+#define HAS_TRANSMITTANCE_LUT
+#include "SkyCommonShading.hlsli"
 
 struct VSInput {
   float4 Position : SV_Position;

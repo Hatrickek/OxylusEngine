@@ -184,14 +184,14 @@ void BlockerSearchAndFilter(out float occludedCount,
                             const uint layer,
                             const float2 filterRadii,
                             const float2x2 R,
-                            const float shadowBias,
+                            const float2 dz_duv,
                             const uint tapCount) {
   occludedCount = 0.0f;
   z_occSum = 0.0f;
 
   for (uint i = 0u; i < tapCount; i++) {
     float2 duv = mul(R, (PoissonDisk[i] * filterRadii));
-    float2 tc = clamp(uv + duv, 0.f, 1.f);
+    float2 tc = clamp(uv + duv, scissorNormalized.xy, scissorNormalized.zw);
 
     float z_occ = map.Sample(NEAREST_CLAMPED_SAMPLER, float3(uv + duv, layer)).r;
 
@@ -203,8 +203,9 @@ void BlockerSearchAndFilter(out float occludedCount,
     // becomes: z_occSum / occludedCount.
 
     // receiver plane depth bias
-    //float dz = z_occ - z_rec;// dz>0 when blocker is between receiver and light
-    float occluded = step(z_rec - shadowBias, z_occ);
+    float z_bias = dot(dz_duv, duv);
+    float dz = z_occ - z_rec; // dz>0 when blocker is between receiver and light
+    float occluded = step(z_bias, dz);
     occludedCount += occluded;
     z_occSum += z_occ * occluded;
   }
@@ -240,14 +241,24 @@ float GetPenumbraLs(const bool DIRECTIONAL, const int index, const float zLight)
 
 #define DPCF_SHADOW_TAP_COUNT 12
 
+float2 ComputeReceiverPlaneDepthBias(const float3 position) {
+  // see: GDC '06: Shadow Mapping: GPU-based Tips and Techniques
+  // Chain rule to compute dz/du and dz/dv
+  // |dz/du|   |du/dx du/dy|^-T   |dz/dx|
+  // |dz/dv| = |dv/dx dv/dy|    * |dz/dy|
+  float3 duvz_dx = ddx(position);
+  float3 duvz_dy = ddy(position);
+  float2 dz_duv = mul(inverse(transpose(float2x2(duvz_dx.xy, duvz_dy.xy))), float2(duvz_dx.z, duvz_dy.z));
+  return dz_duv;
+}
+
 float ShadowSample_DPCF(const float2 pixelPosition,
                         const bool directional,
-                        const Texture2DArray map,
+                        const Texture2DArray<> map,
                         const float4 scissorNormalized,
                         const uint layer,
                         const int index,
-                        const float4 shadowPosition,
-                        const float shadowBias) {
+                        const float4 shadowPosition) {
   int width, height, element, numlevels;
   map.GetDimensions(0, width, height, element, numlevels);
   float2 texelSize = float2(1.0f, 1.0f) / float2(width, height);
@@ -256,6 +267,8 @@ float ShadowSample_DPCF(const float2 pixelPosition,
   float penumbra = GetPenumbraLs(directional, index, 0.0f);
 
   float2x2 R = GetRandomRotationMatrix(pixelPosition.xy);
+
+  float2 dz_duv = ComputeReceiverPlaneDepthBias(position);
 
   float occludedCount = 0.0f;
   float z_occSum = 0.0f;
@@ -269,7 +282,7 @@ float ShadowSample_DPCF(const float2 pixelPosition,
                          layer,
                          texelSize * penumbra,
                          R,
-                         shadowBias,
+                         dz_duv,
                          DPCF_SHADOW_TAP_COUNT);
 
   // early exit if there is no occluders at all, also avoids a divide-by-zero below.
@@ -291,8 +304,7 @@ float Shadow(float2 pixelPosition,
              const Texture2DArray shadowMap,
              const int index,
              float4 shadowPosition,
-             float4 scissorNormalized,
-             float shadowBias) {
+             float4 scissorNormalized) {
   uint layer = index;
   return ShadowSample_DPCF(pixelPosition,
                            directional,
@@ -300,8 +312,7 @@ float Shadow(float2 pixelPosition,
                            scissorNormalized,
                            layer,
                            index,
-                           shadowPosition,
-                           shadowBias);
+                           shadowPosition);
 }
 
 #endif

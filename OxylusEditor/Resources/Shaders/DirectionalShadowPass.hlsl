@@ -17,7 +17,7 @@ VSLayout VSmain(uint vertexIndex : SV_VertexID) {
 
   VSLayout output;
   output.Position = mul(mul(GetScene().CascadeViewProjections[PushConst.CascadeIndex], PushConst.ModelMatrix), float4(vertexPosition.xyz, 1.0));
-
+  
   return output;
 }
 

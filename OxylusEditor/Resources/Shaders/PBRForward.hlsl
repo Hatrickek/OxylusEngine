@@ -318,31 +318,23 @@ inline void ApplyLighting(Surface surface, Lighting lighting, inout float4 color
 static const float4x4 BiasMatrix = float4x4(0.5f, 0.0f, 0.0f, 0.0f, 0.0f, 0.5f, 0.0f, 0.0f, 0.0f, 0.0f, 1.0f, 0.0f, 0.5f, 0.5f, 0.0f, 1.0f);
 
 float4 GetShadowPosition(float3 wsPos, int cascadeIndex) {
-  return mul(mul(BiasMatrix, GetScene().CascadeViewProjections[cascadeIndex]), float4(wsPos, 1.0));
-}
-
-float GetShadowBias(const float3 lightDirection, const float3 normal) {
-  const float minBias = 0.0023f;
-  return max(minBias * (1.0f - dot(normal, lightDirection)), minBias);
+  return mul(mul(transpose(BiasMatrix), GetScene().CascadeViewProjections[cascadeIndex]), float4(wsPos, 1.0));
 }
 
 void LightDirectional(Light light, Surface surface, inout Lighting lighting) {
   float3 L = normalize(light.Rotation);
-  L.z = 0;
 
   SurfaceToLight surfaceToLight = (SurfaceToLight)0;
   surfaceToLight.Create(surface, L);
 
   int cascadeIndex = GetCascadeIndex(GetScene().CascadeSplits, surface.ViewPos, SHADOW_MAP_CASCADE_COUNT);
   float4 shadowPosition = GetShadowPosition(surface.P, cascadeIndex);
-  float shadowBias = GetShadowBias(L, surface.N);
   float3 shadow = 1.0 - Shadow(surface.PixelPosition,
                                true,
                                GetSunShadowArrayTexture(),
                                cascadeIndex,
                                shadowPosition,
-                               GetScene().ScissorNormalized,
-                               shadowBias);
+                               GetScene().ScissorNormalized);
 
 #if 0
     // shadowFarAttenuation
@@ -488,7 +480,7 @@ float3 GetAmbient(float3 worldNormal) {
     saturate(worldNormal.y * 0.5 + 0.5)
   );
 
-  // TODO: ambient += GetAmbientColor();
+  ambient += float3(0.19608, 0.19608, 0.19608); // GetScene().AmbientColor;
 
   return ambient;
 }
