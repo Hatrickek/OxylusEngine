@@ -11,6 +11,7 @@ namespace Ox {
 void LuaBindings::bind_tag_component(const Shared<sol::state>& state) {
   auto name_component_type = state->new_usertype<TagComponent>("NameComponent");
   SET_TYPE_FIELD(name_component_type, TagComponent, tag);
+  SET_TYPE_FIELD(name_component_type, TagComponent, enabled);
   REGISTER_COMPONENT_WITH_ECS(state, TagComponent)
 }
 

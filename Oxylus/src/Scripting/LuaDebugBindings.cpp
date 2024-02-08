@@ -11,8 +11,8 @@ namespace Ox::LuaBindings {
 void bind_debug_renderer(const Shared<sol::state>& state) {
   auto debug_table = state->create_table("Debug");
   debug_table.set_function("draw_point",
-                           [](const Vec3& point) -> void {
-                             DebugRenderer::draw_point(point, 1.0f);
+                           [](const Vec3& point, Vec3 color) -> void {
+                             DebugRenderer::draw_point(point, 1.0f, Vec4(color, 1.0f));
                            });
   debug_table.set_function("draw_line",
                            [](const Vec3& start, const Vec3& end, const Vec3& color = Vec3(1)) -> void {
@@ -22,7 +22,6 @@ void bind_debug_renderer(const Shared<sol::state>& state) {
                            [](const RayCast& ray, const Vec3& color = Vec3(1)) -> void {
                              DebugRenderer::draw_line(ray.get_origin(), ray.get_direction(), 1.0f, Vec4(color, 1.0f));
                            });
-  // TODO: bind AABB type
   debug_table.set_function("draw_aabb",
                            [](const AABB& aabb, const Vec3& color = Vec3(1)) -> void {
                              DebugRenderer::draw_aabb(aabb, Vec4(color, 1.0f));

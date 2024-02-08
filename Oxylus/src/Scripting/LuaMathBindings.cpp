@@ -8,6 +8,8 @@
 
 #include "Core/Types.h"
 
+#include "Render/BoundingVolume.h"
+
 #include "Utils/Profiler.h"
 
 namespace Ox::LuaBindings {
@@ -79,5 +81,28 @@ void bind_math(const Shared<sol::state>& state) {
                             [](const Mat4& a, const Mat4& b) { return a + b; },
                             sol::meta_function::subtraction,
                             [](const Mat4& a, const Mat4& b) { return a - b; });
+
+  auto aabb = state->new_usertype<AABB>("AABB", sol::constructors<Vec3(), Vec3()>());
+  SET_TYPE_FUNCTION(aabb, AABB, get_center);
+  SET_TYPE_FUNCTION(aabb, AABB, get_extents);
+  SET_TYPE_FUNCTION(aabb, AABB, get_size);
+  SET_TYPE_FUNCTION(aabb, AABB, translate);
+  SET_TYPE_FUNCTION(aabb, AABB, scale);
+  SET_TYPE_FUNCTION(aabb, AABB, transform);
+  SET_TYPE_FUNCTION(aabb, AABB, get_transformed);
+  SET_TYPE_FUNCTION(aabb, AABB, merge);
+  // TODO: Bind frustum and Plane
+  //SET_TYPE_FUNCTION(aabb, AABB, is_on_frustum);
+  //SET_TYPE_FUNCTION(aabb, AABB, is_on_or_forward_plane);
+
+  const std::initializer_list<std::pair<std::string_view, Intersection>> intersection = {
+    {"Outside", Outside},
+    {"Intersects", Intersects},
+    {"Inside", Inside}
+  };
+  state->new_enum("Intersection", intersection);
+  SET_TYPE_FUNCTION(aabb, AABB, is_aabb_inside);
+  SET_TYPE_FUNCTION(aabb, AABB, is_aabb_inside_fast);
+  SET_TYPE_FUNCTION(aabb, AABB, is_point_inside);
 }
 }

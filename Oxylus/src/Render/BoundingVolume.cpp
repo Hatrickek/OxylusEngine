@@ -90,4 +90,24 @@ bool AABB::is_on_frustum(const Frustum& frustum) const {
          is_on_or_forward_plane(frustum.near_face) &&
          is_on_or_forward_plane(frustum.far_face);
 }
+
+Intersection AABB::is_point_inside(const Vec3& point) const {
+  if (point.x < min.x || point.x > max.x || point.y < min.y || point.y > max.y || point.z < min.z || point.z > max.z)
+    return Outside;
+  return Inside;
+}
+
+Intersection AABB::is_aabb_inside(const AABB& box) const {
+  if (box.max.x < min.x || box.min.x > max.x || box.max.y < min.y || box.min.y > max.y || box.max.z < min.z || box.min.z > max.z)
+    return Outside;
+  if (box.min.x < min.x || box.max.x > max.x || box.min.y < min.y || box.max.y > max.y || box.min.z < min.z || box.max.z > max.z)
+    return Intersects;
+  return Inside;
+}
+
+bool AABB::is_aabb_inside_fast(const AABB& box) const {
+  if (box.max.x < min.x || box.min.x > max.x || box.max.y < min.y || box.min.y > max.y || box.max.z < min.z || box.min.z > max.z)
+    return false;
+  return true;
+}
 }

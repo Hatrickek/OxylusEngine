@@ -5,16 +5,20 @@ namespace Ox {
 struct Plane;
 struct Frustum;
 
+enum Intersection {
+  Outside    = 0,
+  Intersects = 1,
+  Inside     = 2
+};
+
 struct AABB {
   Vec3 min = {};
   Vec3 max = {};
 
   AABB() = default;
   AABB(const AABB& other);
-    
-  AABB(const Vec3 min, const Vec3 max) :
-    min(min),
-    max(max) {}
+
+  AABB(const Vec3 min, const Vec3 max) : min(min), max(max) {}
 
   Vec3 get_center() const { return (max + min) * 0.5f; }
   Vec3 get_extents() const { return max - min; }
@@ -30,5 +34,8 @@ struct AABB {
 
   bool is_on_or_forward_plane(const Plane& plane) const;
   bool is_on_frustum(const Frustum& frustum) const;
+  Intersection is_point_inside(const Vec3& point) const;
+  Intersection is_aabb_inside(const AABB& box) const;
+  bool is_aabb_inside_fast(const AABB& box) const;
 };
 }

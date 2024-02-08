@@ -4,6 +4,7 @@
 #include <vector>
 #include <span>
 #include <vuk/Image.hpp>
+#include <vuk/Future.hpp>
 
 namespace vuk {
 struct ImageAttachment;
