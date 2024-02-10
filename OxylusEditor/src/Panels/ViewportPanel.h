@@ -76,12 +76,13 @@ private:
   SceneHierarchyPanel* m_scene_hierarchy_panel = nullptr;
 
   Vec2 m_viewport_size = {};
-  Vec2 m_viewport_bounds[2] = {};
+  Vec2 viewport_bounds[2] = {};
   Vec2 viewport_panel_size = {};
+  Vec2 viewport_position = {};
   Vec2 viewport_offset = {};
   Vec2 m_gizmo_position = Vec2(1.0f, 1.0f);
-  bool m_viewport_focused = {};
-  bool m_viewport_hovered = {};
+  bool is_viewport_focused = {};
+  bool is_viewport_hovered = {};
   int m_gizmo_type = -1;
   int m_gizmo_mode = 0;
 

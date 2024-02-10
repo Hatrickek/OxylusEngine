@@ -38,7 +38,7 @@ public:
   virtual void enqueue_future(vuk::Future&& fut);
   virtual void wait_for_futures(vuk::Allocator& allocator);
 
-  virtual void detach_swapchain(vuk::Dimension3D dim);
+  virtual void detach_swapchain(vuk::Dimension3D dim, Vec2 offset = {});
   virtual bool is_swapchain_attached() { return attach_swapchain; }
 
   virtual Shared<vuk::SampledImage> get_final_image() { return final_image; }
@@ -55,6 +55,7 @@ public:
 
   virtual const std::string& get_name() { return m_name; }
   virtual vuk::Dimension3D get_dimension() { return dimension; }
+  virtual Vec2 get_viewport_offset() { return viewport_offset; }
 
   virtual void submit_rg_future(vuk::Future&& future) { rg_futures.emplace_back(future); }
   virtual std::vector<vuk::Future>& get_rg_futures() { return rg_futures; }
@@ -64,6 +65,7 @@ protected:
   std::string m_name = {};
   bool attach_swapchain = false;
   vuk::Dimension3D dimension = {};
+  Vec2 viewport_offset = {};
   Shared<vuk::SampledImage> final_image = nullptr;
   Shared<vuk::RenderGraph> frame_render_graph = nullptr;
   vuk::Name final_attachment_name;

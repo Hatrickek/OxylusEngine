@@ -17,8 +17,9 @@ void RenderPipeline::wait_for_futures(vuk::Allocator& allocator) {
   futures.clear();
 }
 
-void RenderPipeline::detach_swapchain(const vuk::Dimension3D dim) {
+void RenderPipeline::detach_swapchain(const vuk::Dimension3D dim, Vec2 offset) {
   attach_swapchain = false;
   dimension = dim;
+  viewport_offset = offset;
 }
 }

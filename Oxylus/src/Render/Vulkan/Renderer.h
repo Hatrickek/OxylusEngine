@@ -24,6 +24,7 @@ public:
     // currently this gets filled at scene creation 
     Shared<RenderPipeline> render_pipeline = nullptr;
     UVec2 viewport_size = {1600, 900};
+    Vec2 viewport_offset = {};
   } renderer_context;
 
   struct RendererStats {
@@ -48,6 +49,7 @@ public:
                                           size_t first_instance);
 
   static UVec2 get_viewport_size() { return renderer_context.viewport_size; }
+  static Vec2 get_viewport_offset() { return renderer_context.viewport_offset; }
   static unsigned get_viewport_width() { return renderer_context.viewport_size.x; }
   static unsigned get_viewport_height() { return renderer_context.viewport_size.y; }
 

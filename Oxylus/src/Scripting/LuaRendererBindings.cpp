@@ -27,5 +27,6 @@ void bind_renderer(const Shared<sol::state>& state) {
   SET_TYPE_FUNCTION(renderer_table, Renderer, get_viewport_width);
   SET_TYPE_FUNCTION(renderer_table, Renderer, get_viewport_height);
   SET_TYPE_FUNCTION(renderer_table, Renderer, get_viewport_size);
+  SET_TYPE_FUNCTION(renderer_table, Renderer, get_viewport_offset);
 }
 }

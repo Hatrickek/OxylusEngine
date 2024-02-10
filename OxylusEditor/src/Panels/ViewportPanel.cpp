@@ -278,12 +278,12 @@ void ViewportPanel::on_imgui_render() {
 
     const auto viewport_min_region = ImGui::GetWindowContentRegionMin();
     const auto viewport_max_region = ImGui::GetWindowContentRegionMax();
-    viewport_offset = Vec2(ImGui::GetWindowPos().x, ImGui::GetWindowPos().y);
-    m_viewport_bounds[0] = {viewport_min_region.x + viewport_offset.x, viewport_min_region.y + viewport_offset.y};
-    m_viewport_bounds[1] = {viewport_max_region.x + viewport_offset.x, viewport_max_region.y + viewport_offset.y};
+    viewport_position = Vec2(ImGui::GetWindowPos().x, ImGui::GetWindowPos().y);
+    viewport_bounds[0] = {viewport_min_region.x + viewport_position.x, viewport_min_region.y + viewport_position.y};
+    viewport_bounds[1] = {viewport_max_region.x + viewport_position.x, viewport_max_region.y + viewport_position.y};
 
-    m_viewport_focused = ImGui::IsWindowFocused();
-    m_viewport_hovered = ImGui::IsWindowHovered();
+    is_viewport_focused = ImGui::IsWindowFocused();
+    is_viewport_hovered = ImGui::IsWindowHovered();
 
     viewport_panel_size = Vec2(ImGui::GetContentRegionAvail().x, ImGui::GetContentRegionAvail().y);
     if ((int)m_viewport_size.x != (int)viewport_panel_size.x || (int)m_viewport_size.y != (int)viewport_panel_size.y) {
@@ -296,7 +296,11 @@ void ViewportPanel::on_imgui_render() {
 
     const auto dim = vuk::Dimension3D::absolute((uint32_t)fixed_width, (uint32_t)viewport_panel_size.y);
     const auto rp = m_scene->get_renderer()->get_render_pipeline();
-    rp->detach_swapchain(dim);
+
+    const auto off = (viewport_panel_size.x - fixed_width) * 0.5f; // add offset since we render image with fixed aspect ratio
+    viewport_offset = {viewport_bounds[0].x + off * 0.5f, viewport_bounds[0].y};
+
+    rp->detach_swapchain(dim, viewport_offset);
     auto final_image = rp->get_final_image();
 
     if (final_image) {
@@ -338,7 +342,7 @@ void ViewportPanel::on_imgui_render() {
       const ImVec2 frame_padding = ImGui::GetStyle().FramePadding;
       const ImVec2 button_size = {frame_height, frame_height};
       constexpr float button_count = 7.0f;
-      const ImVec2 gizmo_position = {m_viewport_bounds[0].x + m_gizmo_position.x, m_viewport_bounds[0].y + m_gizmo_position.y};
+      const ImVec2 gizmo_position = {viewport_bounds[0].x + m_gizmo_position.x, viewport_bounds[0].y + m_gizmo_position.y};
       const ImRect bb(gizmo_position.x, gizmo_position.y, gizmo_position.x + button_size.x + 8, gizmo_position.y + (button_size.y + 2) * (button_count + 0.5f));
       ImVec4 frame_color = ImGui::GetStyleColorVec4(ImGuiCol_Tab);
       frame_color.w = 0.5f;
@@ -393,7 +397,7 @@ void ViewportPanel::on_imgui_render() {
       const ImVec2 button_size = {frame_height, frame_height};
       constexpr float button_count = 3.0f;
       constexpr float y_pad = 8.0f;
-      const ImVec2 gizmo_position = {m_viewport_bounds[0].x + m_viewport_size.x * 0.5f, m_viewport_bounds[0].y + y_pad};
+      const ImVec2 gizmo_position = {viewport_bounds[0].x + m_viewport_size.x * 0.5f, viewport_bounds[0].y + y_pad};
       const auto width = gizmo_position.x + button_size.x * button_count + 50.0f;
       const ImRect bb(gizmo_position.x - 5.0f, gizmo_position.y, width, gizmo_position.y + button_size.y + 8);
       ImVec4 frame_color = ImGui::GetStyleColorVec4(ImGuiCol_Tab);
@@ -539,11 +543,10 @@ void ViewportPanel::mouse_picking_pass(const Shared<RenderPipeline>& rp, const v
   rg->attach_buffer("entity_id_buffer_to_copy", *id_buffers[VulkanContext::get()->current_frame]); // current frame buffer
 
   auto [mx, my] = ImGui::GetMousePos();
-  auto off = (viewport_panel_size.x - fixed_width) * 0.5f; // add offset since we render image with fixed aspect ratio
-  mx -= m_viewport_bounds[0].x + off;
-  my -= m_viewport_bounds[0].y;
-  Vec2 viewport_size = m_viewport_bounds[1] - m_viewport_bounds[0];
-  my = viewport_size.y - my;
+  mx -= viewport_offset.x;
+  my -= viewport_offset.y;
+  my = viewport_panel_size.y - my;
+
   int32_t mouse_x = glm::max(0, (int32_t)mx);
   int32_t mouse_y = glm::max(0, (int32_t)my);
 
@@ -577,9 +580,9 @@ void ViewportPanel::mouse_picking_pass(const Shared<RenderPipeline>& rp, const v
     m_hovered_entity = id <= 0 ? Entity() : Entity(entt::entity{id - 1u}, m_scene.get());
 
     if (!ImGuizmo::IsUsing() && !ImGuizmo::IsOver()) {
-      if (m_hovered_entity && ImGui::IsMouseClicked(ImGuiMouseButton_Left) && m_viewport_hovered)
+      if (m_hovered_entity && ImGui::IsMouseClicked(ImGuiMouseButton_Left) && is_viewport_hovered)
         m_scene_hierarchy_panel->set_selected_entity(m_hovered_entity);
-      else if (ImGui::IsMouseClicked(ImGuiMouseButton_Left) && m_viewport_hovered)
+      else if (ImGui::IsMouseClicked(ImGuiMouseButton_Left) && is_viewport_hovered)
         m_scene_hierarchy_panel->set_selected_entity({});
     }
   }
@@ -591,7 +594,7 @@ void ViewportPanel::set_context(const Shared<Scene>& scene, SceneHierarchyPanel&
 }
 
 void ViewportPanel::on_update() {
-  if (m_viewport_hovered && !m_scene->is_running() && m_use_editor_camera) {
+  if (is_viewport_hovered && !m_scene->is_running() && m_use_editor_camera) {
     const Vec3& position = m_camera.get_position();
     const Vec2 yaw_pitch = Vec2(m_camera.get_yaw(), m_camera.get_pitch());
     Vec3 final_position = position;
@@ -678,7 +681,7 @@ void ViewportPanel::on_update() {
 void ViewportPanel::draw_performance_overlay() {
   if (!performance_overlay_visible)
     return;
-  OxUI::draw_framerate_overlay(ImVec2(viewport_offset.x, viewport_offset.y), ImVec2(viewport_panel_size.x, viewport_panel_size.y), {15, 55}, &performance_overlay_visible);
+  OxUI::draw_framerate_overlay(ImVec2(viewport_position.x, viewport_position.y), ImVec2(viewport_panel_size.x, viewport_panel_size.y), {15, 55}, &performance_overlay_visible);
 }
 
 void ViewportPanel::draw_gizmos() {
@@ -686,10 +689,10 @@ void ViewportPanel::draw_gizmos() {
   if (selected_entity && m_gizmo_type != -1 && selected_entity.has_component<TransformComponent>()) {
     ImGuizmo::SetOrthographic(false);
     ImGuizmo::SetDrawlist();
-    ImGuizmo::SetRect(m_viewport_bounds[0].x,
-                      m_viewport_bounds[0].y,
-                      m_viewport_bounds[1].x - m_viewport_bounds[0].x,
-                      m_viewport_bounds[1].y - m_viewport_bounds[0].y);
+    ImGuizmo::SetRect(viewport_bounds[0].x,
+                      viewport_bounds[0].y,
+                      viewport_bounds[1].x - viewport_bounds[0].x,
+                      viewport_bounds[1].y - viewport_bounds[0].y);
 
     const Mat4& camera_projection = m_camera.get_projection_matrix_flipped();
     const Mat4& camera_view = m_camera.get_view_matrix();

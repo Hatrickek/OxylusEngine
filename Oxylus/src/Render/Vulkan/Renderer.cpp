@@ -103,6 +103,8 @@ void Renderer::draw(VulkanContext* context, ImGuiLayer* imgui_layer, LayerStack&
     renderer_context.viewport_size.x = dim.extent.width;
     renderer_context.viewport_size.y = dim.extent.height;
 
+    renderer_context.viewport_offset = rp->get_viewport_offset();
+
     rgx->attach_and_clear_image(
       "_img",
       vuk::ImageAttachment{
