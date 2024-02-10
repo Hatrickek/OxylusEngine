@@ -4,6 +4,8 @@
 
 #include "Core.h"
 #include "Layer.h"
+#include "Project.h"
+
 #include "Render/Window.h"
 #include "Render/Vulkan/Renderer.h"
 #include "Render/Vulkan/VulkanContext.h"
@@ -114,5 +116,20 @@ void Application::update_timestep() {
 
 void Application::close() {
   is_running = false;
+}
+
+std::string Application::get_asset_directory() {
+  if (Project::get_active())
+    return Project::get_asset_directory().string();
+  return get_resources_path();
+}
+
+std::string Application::get_asset_directory_absolute() {
+  if (Project::get_active()) {
+    const auto p = absolute(Project::get_asset_directory());
+    return p.string();
+  }
+  const auto p = absolute(std::filesystem::path(get_resources_path()));
+  return p.string();
 }
 }

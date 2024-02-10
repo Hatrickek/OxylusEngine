@@ -8,6 +8,14 @@
 #include "Scripting/Sol2Helpers.h"
 
 namespace Ox {
+void LuaBindings::bind_components(const Shared<sol::state>& state) {
+  bind_tag_component(state);
+  bind_transform_component(state);
+  bind_light_component(state);
+  bind_mesh_component(state);
+  bind_camera_component(state);
+}
+
 void LuaBindings::bind_tag_component(const Shared<sol::state>& state) {
   auto name_component_type = state->new_usertype<TagComponent>("NameComponent");
   SET_TYPE_FIELD(name_component_type, TagComponent, tag);
