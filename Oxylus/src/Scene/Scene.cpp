@@ -614,7 +614,7 @@ void Scene::on_runtime_update(const Timestep& delta_time) {
 
   // Scripting
   {
-    OX_SCOPED_ZONE_N("Lua Scripting Systems");
+    OX_SCOPED_ZONE_N("LuaScripting/on_update");
     const auto script_view = m_registry.view<LuaScriptComponent>();
     for (auto&& [e, script_component] : script_view.each()) {
       if (script_component.lua_system) {
@@ -659,6 +659,16 @@ void Scene::on_imgui_render(const Timestep& delta_time) {
   OX_SCOPED_ZONE;
   for (const auto& system : systems)
     system->on_imgui_render(this, delta_time);
+
+  {
+    OX_SCOPED_ZONE_N("LuaScripting/on_imgui_render");
+    const auto script_view = m_registry.view<LuaScriptComponent>();
+    for (auto&& [e, script_component] : script_view.each()) {
+      if (script_component.lua_system) {
+        script_component.lua_system->on_imgui_render(delta_time);
+      }
+    }
+  }
 }
 
 void Scene::on_editor_update(const Timestep& delta_time, Camera& camera) {

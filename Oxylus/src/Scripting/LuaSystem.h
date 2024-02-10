@@ -20,6 +20,7 @@ public:
   void on_init(Scene* scene, entt::entity entity);
   void on_update(const Timestep& delta_time);
   void on_release(Scene* scene, entt::entity entity);
+  void on_imgui_render(const Timestep& delta_time);
 
   const std::string& get_path() const { return file_path; }
 
@@ -31,6 +32,7 @@ private:
   Unique<sol::protected_function> on_init_func = nullptr;
   Unique<sol::protected_function> on_release_func = nullptr;
   Unique<sol::protected_function> on_update_func = nullptr;
+  Unique<sol::protected_function> on_imgui_render_func = nullptr;
   Unique<sol::protected_function> on_fixed_update_func = nullptr;
 
   void init_script(const std::string& path);

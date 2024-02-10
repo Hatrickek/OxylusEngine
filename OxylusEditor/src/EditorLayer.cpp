@@ -238,7 +238,7 @@ void EditorLayer::on_imgui_render() {
           ImGui::EndMenu();
         }
         if (ImGui::BeginMenu("Help")) {
-          if (ImGui::MenuItem("About")) { }
+          if (ImGui::MenuItem("About")) {}
           OxUI::tooltip("WIP");
           ImGui::EndMenu();
         }
@@ -299,6 +299,10 @@ void EditorLayer::on_imgui_render() {
     ImGui::PopStyleVar();
 
     draw_panels();
+
+    // TODO: temporary until scenes are more global and handled in the renderer directly
+    if (const auto active_scene = get_active_scene(); active_scene)
+      active_scene->on_imgui_render(Application::get_timestep());
 
     static bool dock_layout_initalized = false;
     if (!dock_layout_initalized) {

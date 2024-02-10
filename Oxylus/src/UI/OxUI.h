@@ -24,8 +24,9 @@ public:
   static void push_id();
   static void pop_id();
 
-  static bool begin_properties(ImGuiTableFlags flags = ImGuiTableFlags_Resizable | ImGuiTableFlags_SizingStretchSame |
-                                                       ImGuiTableFlags_BordersInner | ImGuiTableFlags_BordersOuterH);
+  static constexpr ImGuiTableFlags default_properties_flags = ImGuiTableFlags_Resizable | ImGuiTableFlags_SizingStretchSame |
+                                                              ImGuiTableFlags_BordersInner | ImGuiTableFlags_BordersOuterH;
+  static bool begin_properties(ImGuiTableFlags flags = default_properties_flags);
 
   static void end_properties();
 

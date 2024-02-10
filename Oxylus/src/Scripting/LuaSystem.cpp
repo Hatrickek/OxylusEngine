@@ -64,6 +64,10 @@ void LuaSystem::init_script(const std::string& path) {
   if (!on_update_func->valid())
     on_update_func.reset();
 
+  on_imgui_render_func = create_unique<sol::protected_function>((*environment)["on_imgui_render"]);
+  if (!on_imgui_render_func->valid())
+    on_imgui_render_func.reset();
+
   on_release_func = create_unique<sol::protected_function>((*environment)["on_release"]);
   if (!on_release_func->valid())
     on_release_func.reset();
@@ -96,6 +100,14 @@ void LuaSystem::on_release(Scene* scene, entt::entity entity) {
     (*environment)["scene"] = scene;
     (*environment)["this"] = Entity(entity, scene);
     check_result(result, "on_release");
+  }
+}
+
+void LuaSystem::on_imgui_render(const Timestep& delta_time) {
+  OX_SCOPED_ZONE;
+  if (on_imgui_render_func) {
+    const auto result = on_imgui_render_func->call(delta_time.get_millis());
+    check_result(result, "on_imgui_render");
   }
 }
 
