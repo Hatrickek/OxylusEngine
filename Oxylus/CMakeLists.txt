@@ -93,13 +93,23 @@ target_compile_definitions(${PROJECT_NAME} PRIVATE
   "GLM_FORCE_DEPTH_ZERO_TO_ONE"
   )
 
+if (CMAKE_CXX_COMPILER_ID STREQUAL "Clang")
+    target_compile_definitions(${PROJECT_NAME} PRIVATE "OX_COMPILER_CLANG")
+elseif (CMAKE_CXX_COMPILER_ID STREQUAL "GNU")
+    target_compile_definitions(${PROJECT_NAME} PRIVATE "OX_COMPILER_GCC")
+elseif (CMAKE_CXX_COMPILER_ID STREQUAL "Intel")
+    target_compile_definitions(${PROJECT_NAME} PRIVATE "OX_COMPILER_INTEL")
+elseif (CMAKE_CXX_COMPILER_ID STREQUAL "MSVC")
+    target_compile_definitions(${PROJECT_NAME} PRIVATE "OX_COMPILER_MSVC")
+endif()
+
 #-------------
 # MSVC Specific
 #-------------
 
 # Compile and link options
 if (MSVC)
-  target_compile_options(${PROJECT_NAME} PRIVATE /std:c++20 /permissive-) 
+  target_compile_options(${PROJECT_NAME} PRIVATE /std:c++20 /permissive- /W3) 
   set(CMAKE_SHARED_LINKER_FLAGS_DISTRIBUTION ${CMAKE_SHARED_LINKER_FLAGS})
   set(CMAKE_EXE_LINKER_FLAGS_DISTRIBUTION ${CMAKE_EXE_LINKER_FLAGS})
 endif ()
@@ -139,13 +149,6 @@ endif()
 include(${CMAKE_CURRENT_SOURCE_DIR}/vendor/CMake-Utils/CMakeUtils.cmake)
 include(${CMAKE_SOURCE_DIR}/cpm.cmake)
 set_property(GLOBAL PROPERTY CTEST_TARGETS_ADDED 1) # hack for removing auto generated ctest targets
-
-# Suppress all warnings from dependencies.
-if(MSVC)
-    set_property(DIRECTORY APPEND PROPERTY COMPILE_OPTIONS /W0)
-else()
-    set_property(DIRECTORY APPEND PROPERTY COMPILE_OPTIONS -w)
-endif()
 
 set(CMAKE_C_COMPILER_AR "${CMAKE_AR}")
 set(CMAKE_CXX_COMPILER_AR "${CMAKE_AR}")

@@ -3,6 +3,11 @@
 #include <string>
 #include <sol/sol.hpp>
 
+#include "Utils/Warnings.h"
+
+OX_CLANG_SUPPRESS_WARNING("-Wformat-security")
+OX_MSVC_SUPPRESS_WARNING(4244)
+
 namespace Ox::LuaImGuiBindings {
 // Windows
 inline bool Begin(const std::string& name) { return ImGui::Begin(name.c_str()); }
@@ -37,11 +42,11 @@ inline std::tuple<bool, bool> Begin(const std::string& name, bool open, int flag
 inline void End() { ImGui::End(); }
 
 // Child Windows
-inline bool BeginChild(const std::string_view name) { return ImGui::BeginChild(name.data()); }
-inline bool BeginChild(const std::string_view name, float sizeX) { return ImGui::BeginChild(name.data(), {sizeX, 0}); }
-inline bool BeginChild(const std::string_view name, float sizeX, float sizeY) { return ImGui::BeginChild(name.data(), {sizeX, sizeY}); }
-inline bool BeginChild(const std::string_view name, float sizeX, float sizeY, bool border) { return ImGui::BeginChild(name.data(), {sizeX, sizeY}, border); }
-inline bool BeginChild(const std::string_view name, float sizeX, float sizeY, bool border, int flags) { return ImGui::BeginChild(name.data(), {sizeX, sizeY}, border, static_cast<ImGuiWindowFlags>(flags)); }
+inline bool BeginChild(const std::string& name) { return ImGui::BeginChild(name.c_str()); }
+inline bool BeginChild(const std::string& name, float sizeX) { return ImGui::BeginChild(name.c_str(), {sizeX, 0}); }
+inline bool BeginChild(const std::string& name, float sizeX, float sizeY) { return ImGui::BeginChild(name.c_str(), {sizeX, sizeY}); }
+inline bool BeginChild(const std::string& name, float sizeX, float sizeY, bool border) { return ImGui::BeginChild(name.c_str(), {sizeX, sizeY}, border); }
+inline bool BeginChild(const std::string& name, float sizeX, float sizeY, bool border, int flags) { return ImGui::BeginChild(name.c_str(), {sizeX, sizeY}, border, static_cast<ImGuiWindowFlags>(flags)); }
 inline void EndChild() { ImGui::EndChild(); }
 
 // Windows Utilities
@@ -229,30 +234,30 @@ inline float GetFrameHeight() { return ImGui::GetFrameHeight(); }
 inline float GetFrameHeightWithSpacing() { return ImGui::GetFrameHeightWithSpacing(); }
 
 // ID stack / scopes
-inline void PushID(std::string_view stringID) { ImGui::PushID(stringID.data()); }
-inline void PushID(std::string_view stringIDBegin, std::string_view stringIDEnd) { ImGui::PushID(stringIDBegin.data(), stringIDEnd.data()); }
+inline void PushID(const std::string& stringID) { ImGui::PushID(stringID.c_str()); }
+inline void PushID(const std::string& stringIDBegin, const std::string& stringIDEnd) { ImGui::PushID(stringIDBegin.c_str(), stringIDEnd.c_str()); }
 
 inline void PushID(int intID) { ImGui::PushID(intID); }
 inline void PopID() { ImGui::PopID(); }
-inline int GetID(std::string_view stringID) { return ImGui::GetID(stringID.data()); }
-inline int GetID(std::string_view stringIDBegin, std::string_view stringIDEnd) { return ImGui::GetID(stringIDBegin.data(), stringIDEnd.data()); }
+inline int GetID(const std::string& stringID) { return ImGui::GetID(stringID.c_str()); }
+inline int GetID(const std::string& stringIDBegin, const std::string& stringIDEnd) { return ImGui::GetID(stringIDBegin.c_str(), stringIDEnd.c_str()); }
 
 // Widgets: Text
-inline void TextUnformatted(std::string_view text) { ImGui::TextUnformatted(text.data()); }
-inline void TextUnformatted(std::string_view text, std::string_view textEnd) { ImGui::TextUnformatted(text.data(), textEnd.data()); }
-inline void Text(std::string_view text) { ImGui::Text(text.data()); }
-inline void TextColored(float colR, float colG, float colB, float colA, std::string_view text) { ImGui::TextColored({colR, colG, colB, colA}, text.data()); }
-inline void TextDisabled(std::string_view text) { ImGui::TextDisabled(text.data()); }
-inline void TextWrapped(std::string_view text) { ImGui::TextWrapped(text.data()); }
-inline void LabelText(std::string_view label, std::string_view text) { ImGui::LabelText(label.data(), text.data()); }
-inline void BulletText(std::string_view text) { ImGui::BulletText(text.data()); }
+inline void TextUnformatted(const std::string& text) { ImGui::TextUnformatted(text.c_str()); }
+inline void TextUnformatted(const std::string& text, const std::string& textEnd) { ImGui::TextUnformatted(text.c_str(), textEnd.c_str()); }
+inline void Text(const std::string& text) { ImGui::Text(text.c_str()); }
+inline void TextColored(float colR, float colG, float colB, float colA, const std::string& text) { ImGui::TextColored({colR, colG, colB, colA}, text.c_str()); }
+inline void TextDisabled(const std::string& text) { ImGui::TextDisabled(text.c_str()); }
+inline void TextWrapped(const std::string text) { ImGui::TextWrapped(text.c_str()); }
+inline void LabelText(const std::string& label, const std::string& text) { ImGui::LabelText(label.c_str(), text.c_str()); }
+inline void BulletText(const std::string& text) { ImGui::BulletText(text.c_str()); }
 
 // Widgets: Main
-inline bool Button(std::string_view label) { return ImGui::Button(label.data()); }
-inline bool Button(std::string_view label, float sizeX, float sizeY) { return ImGui::Button(label.data(), {sizeX, sizeY}); }
-inline bool SmallButton(std::string_view label) { return ImGui::SmallButton(label.data()); }
-inline bool InvisibleButton(std::string_view stringID, float sizeX, float sizeY) { return ImGui::InvisibleButton(stringID.data(), {sizeX, sizeY}); }
-inline bool ArrowButton(std::string_view stringID, int dir) { return ImGui::ArrowButton(stringID.data(), static_cast<ImGuiDir>(dir)); }
+inline bool Button(const std::string& label) { return ImGui::Button(label.c_str()); }
+inline bool Button(const std::string& label, float sizeX, float sizeY) { return ImGui::Button(label.c_str(), {sizeX, sizeY}); }
+inline bool SmallButton(const std::string& label) { return ImGui::SmallButton(label.c_str()); }
+inline bool InvisibleButton(const std::string& stringID, float sizeX, float sizeY) { return ImGui::InvisibleButton(stringID.c_str(), {sizeX, sizeY}); }
+inline bool ArrowButton(const std::string& stringID, int dir) { return ImGui::ArrowButton(stringID.c_str(), static_cast<ImGuiDir>(dir)); }
 
 inline void Image() {
   /* TODO: Image(...) ==> UNSUPPORTED */
@@ -2686,11 +2691,11 @@ inline void init(sol::state* lua) {
 #pragma region Child Windows
   ImGui.set_function("BeginChild",
                      sol::overload(
-                       sol::resolve<bool(std::string_view)>(BeginChild),
-                       sol::resolve<bool(std::string_view, float)>(BeginChild),
-                       sol::resolve<bool(std::string_view, float, float)>(BeginChild),
-                       sol::resolve<bool(std::string_view, float, float, bool)>(BeginChild),
-                       sol::resolve<bool(std::string_view, float, float, bool, int)>(BeginChild)
+                       sol::resolve<bool(const std::string&)>(BeginChild),
+                       sol::resolve<bool(const std::string&, float)>(BeginChild),
+                       sol::resolve<bool(const std::string&, float, float)>(BeginChild),
+                       sol::resolve<bool(const std::string&, float, float, bool)>(BeginChild),
+                       sol::resolve<bool(const std::string&, float, float, bool, int)>(BeginChild)
                      ));
   ImGui.set_function("EndChild", EndChild);
 #pragma endregion Child Windows
@@ -2887,23 +2892,23 @@ inline void init(sol::state* lua) {
 #pragma region ID stack / scopes
   ImGui.set_function("PushID",
                      sol::overload(
-                       sol::resolve<void(std::string_view)>(PushID),
-                       sol::resolve<void(std::string_view, std::string_view)>(PushID),
+                       sol::resolve<void(const std::string&)>(PushID),
+                       sol::resolve<void(const std::string&, const std::string&)>(PushID),
                        sol::resolve<void(int)>(PushID)
                      ));
   ImGui.set_function("PopID", PopID);
   ImGui.set_function("GetID",
                      sol::overload(
-                       sol::resolve<int(std::string_view)>(GetID),
-                       sol::resolve<int(std::string_view, std::string_view)>(GetID)
+                       sol::resolve<int(const std::string&)>(GetID),
+                       sol::resolve<int(const std::string&, const std::string&)>(GetID)
                      ));
 #pragma endregion ID stack / scopes
 
 #pragma region Widgets: Text
   ImGui.set_function("TextUnformatted",
                      sol::overload(
-                       sol::resolve<void(std::string_view)>(TextUnformatted),
-                       sol::resolve<void(std::string_view, std::string_view)>(TextUnformatted)
+                       sol::resolve<void(const std::string&)>(TextUnformatted),
+                       sol::resolve<void(const std::string&, const std::string&)>(TextUnformatted)
                      ));
   ImGui.set_function("Text", Text);
   ImGui.set_function("TextColored", TextColored);
@@ -2916,8 +2921,8 @@ inline void init(sol::state* lua) {
 #pragma region Widgets: Main
   ImGui.set_function("Button",
                      sol::overload(
-                       sol::resolve<bool(std::string_view)>(Button),
-                       sol::resolve<bool(std::string_view, float, float)>(Button)
+                       sol::resolve<bool(const std::string&)>(Button),
+                       sol::resolve<bool(const std::string&, float, float)>(Button)
                      ));
   ImGui.set_function("SmallButton", SmallButton);
   ImGui.set_function("InvisibleButton", InvisibleButton);
@@ -3536,3 +3541,5 @@ inline void init(sol::state* lua) {
 #pragma endregion Clipboard Utilities
 }
 }
+
+OX_SUPPRESS_WARNING_POP

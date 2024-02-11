@@ -162,6 +162,7 @@ static void open_file(const std::filesystem::path& path) {
         break;
       }
       case FileType::Shader: break;
+      case FileType::Script: break;
     }
   }
   else {
