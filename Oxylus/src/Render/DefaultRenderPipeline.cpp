@@ -82,7 +82,7 @@ void DefaultRenderPipeline::init(vuk::Allocator& allocator) {
   scene_lights.reserve(MAX_NUM_LIGHTS);
 
   // Mesh data
-  mesh_draw_list.reserve(MAX_NUM_MESHES);
+  mesh_component_list.reserve(MAX_NUM_MESHES);
 
   create_static_textures(allocator);
 
@@ -134,41 +134,13 @@ void DefaultRenderPipeline::load_pipelines(vuk::Allocator& allocator) {
     bindless_pci.add_hlsl(FileUtils::read_shader_file("PBRForward.hlsl"), FileUtils::get_shader_path("PBRForward.hlsl"), vuk::HlslShaderStage::ePixel, "PSmain");
     allocator.get_context().create_named_pipeline("pbr_pipeline", bindless_pci);
   );
-#if 0
   ADD_TASK_TO_PIPE(
-    &allocator,
-    vuk::PipelineBaseCreateInfo pci;
-    pci.add_glsl(FileUtils::read_shader_file("PBRForward.vert"), FileUtils::get_shader_path("PBRForward.vert"));
-    pci.add_glsl(FileUtils::read_shader_file("PBRForward.frag"), FileUtils::get_shader_path("PBRForward.frag"));
-    pci.define("CUBEMAP_PIPELINE", "");
-    allocator.get_context().create_named_pipeline("pbr_cubemap_pipeline", pci);
+    =,
+    bindless_pci.add_hlsl(FileUtils::read_shader_file("PBRForward.hlsl"), FileUtils::get_shader_path("PBRForward.hlsl"), vuk::HlslShaderStage::eVertex, "VSmain");
+    bindless_pci.add_hlsl(FileUtils::read_shader_file("PBRForward.hlsl"), FileUtils::get_shader_path("PBRForward.hlsl"), vuk::HlslShaderStage::ePixel, "PSmain");
+    bindless_pci.define("TRANSPARENT", "");
+    allocator.get_context().create_named_pipeline("pbr_transparency_pipeline", bindless_pci);
   );
-  ADD_TASK_TO_PIPE(
-    &allocator,
-    vuk::PipelineBaseCreateInfo pci;
-    pci.add_glsl(FileUtils::read_shader_file("PBRForward.vert"), FileUtils::get_shader_path("PBRForward.vert"));
-    pci.add_glsl(FileUtils::read_shader_file("PBRForward.frag"), FileUtils::get_shader_path("PBRForward.frag"));
-    pci.define("BLEND_MODE", "");
-    allocator.get_context().create_named_pipeline("pbr_transparency_pipeline", pci);
-  );
-  ADD_TASK_TO_PIPE(
-    &allocator,
-    vuk::PipelineBaseCreateInfo pci;
-    pci.add_glsl(FileUtils::read_shader_file("PBRForward.vert"), FileUtils::get_shader_path("PBRForward.vert"));
-    pci.add_glsl(FileUtils::read_shader_file("PBRForward.frag"), FileUtils::get_shader_path("PBRForward.frag"));
-    pci.define("BLEND_MODE", "");
-    allocator.get_context().create_named_pipeline("pbr_transparency_pipeline", pci);
-  );
-  ADD_TASK_TO_PIPE(
-    &allocator,
-    vuk::PipelineBaseCreateInfo pci;
-    pci.add_glsl(FileUtils::read_shader_file("PBRForward.vert"), FileUtils::get_shader_path("PBRForward.vert"));
-    pci.add_glsl(FileUtils::read_shader_file("PBRForward.frag"), FileUtils::get_shader_path("PBRForward.frag"));
-    pci.define("CUBEMAP_PIPELINE", "");
-    pci.define("BLEND_MODE", "");
-    allocator.get_context().create_named_pipeline("pbr_transparency_cubemap_pipeline", pci);
-  );
-#endif
   ADD_TASK_TO_PIPE(
     =,
     bindless_pci.add_hlsl(FileUtils::read_shader_file("PostProcess/SSR.hlsl"), FileUtils::get_shader_path("PostProcess/SSR.hlsl"), vuk::HlslShaderStage::eCompute);
@@ -378,7 +350,7 @@ void DefaultRenderPipeline::commit_descriptor_sets(vuk::Allocator& allocator) {
   auto ssr_buffer = *ssr_buff;
 
   std::vector<Material::Parameters> material_parameters = {};
-  for (auto& mesh : mesh_draw_list) {
+  for (auto& mesh : mesh_component_list) {
     auto materials = mesh.mesh_base->get_materials(mesh.node_index);
     for (auto& mat : materials) {
       material_parameters.emplace_back(mat->parameters);
@@ -506,7 +478,8 @@ void DefaultRenderPipeline::on_dispatcher_events(EventDispatcher& dispatcher) {
 
 void DefaultRenderPipeline::on_register_render_object(const MeshComponent& render_object) {
   OX_SCOPED_ZONE;
-  mesh_draw_list.emplace_back(render_object);
+  render_queue.add((uint32_t)mesh_component_list.size(), 0, distance(current_camera->get_position(), render_object.aabb.get_center()), 0);
+  mesh_component_list.emplace_back(render_object);
 }
 
 void DefaultRenderPipeline::on_register_light(const TransformComponent& transform, const LightComponent& light) {
@@ -524,7 +497,6 @@ void DefaultRenderPipeline::on_register_light(const TransformComponent& transfor
   );
   if (light.type == LightComponent::LightType::Directional)
     dir_light_data = &light_emplaced;
-  light_buffer_dispatcher.trigger(LightChangeEvent{});
 }
 
 void DefaultRenderPipeline::on_register_camera(Camera* camera) {
@@ -564,11 +536,11 @@ Unique<vuk::Future> DefaultRenderPipeline::on_render(vuk::Allocator& frame_alloc
     OX_SCOPED_ZONE_N("Frustum culling");
     // frustum cull 
     std::erase_if(
-      mesh_draw_list,
-      [this](const MeshComponent& mesh_component) {
+      render_queue.batches,
+      [this](const RenderBatch& batch) {
         const auto camera_frustum = current_camera->get_frustum();
-        const auto* node = mesh_component.mesh_base->linear_nodes[mesh_component.node_index];
-        if (!mesh_component.aabb.is_on_frustum(camera_frustum)) {
+        const auto* node = mesh_component_list[batch.mesh_index].mesh_base->linear_nodes[mesh_component_list[batch.mesh_index].node_index];
+        if (!mesh_component_list[batch.mesh_index].aabb.is_on_frustum(camera_frustum)) {
           Renderer::get_stats().drawcall_culled_count += (uint32_t)node->mesh_data->primitives.size();
           return true;
         }
@@ -576,10 +548,15 @@ Unique<vuk::Future> DefaultRenderPipeline::on_render(vuk::Allocator& frame_alloc
       });
   }
 
+  {
+    OX_SCOPED_ZONE_N("Mesh Opaque Sorting")
+    render_queue.sort_opaque();
+  }
+
   std::unordered_map<uint32_t, uint32_t> material_map; //mesh, material
 
-  for (uint32_t mesh_index = 0; mesh_index < mesh_draw_list.size(); mesh_index++) {
-    material_map.emplace(mesh_index, mesh_draw_list[mesh_index].mesh_base->get_material_count());
+  for (auto& batch : render_queue.batches) {
+    material_map.emplace(batch.mesh_index, mesh_component_list[batch.mesh_index].mesh_base->get_material_count());
   }
 
   cumulated_material_map = cumulate_material_map(material_map);
@@ -685,7 +662,8 @@ Unique<vuk::Future> DefaultRenderPipeline::on_render(vuk::Allocator& frame_alloc
     .name = "final_pass",
     .resources = std::move(final_resources),
     .execute = [this, final_buffer, bloom_name, pbr_image_name](vuk::CommandBuffer& command_buffer) {
-      this->mesh_draw_list.clear();
+      render_queue.clear();
+      mesh_component_list.clear();
 
       command_buffer.bind_graphics_pipeline("final_pipeline")
                     .set_dynamic_state(vuk::DynamicStateFlagBits::eScissor | vuk::DynamicStateFlagBits::eViewport)
@@ -768,9 +746,8 @@ void DefaultRenderPipeline::depth_pre_pass(const Shared<vuk::RenderGraph>& rg) {
       "depth_image"_image >> vuk::eDepthStencilRW >> "depth_output"
     },
     .execute = [this](vuk::CommandBuffer& command_buffer) {
-      command_buffer.bind_persistent(0, *descriptor_set_00);
-
-      command_buffer.set_dynamic_state(vuk::DynamicStateFlagBits::eScissor | vuk::DynamicStateFlagBits::eViewport)
+      command_buffer.bind_persistent(0, *descriptor_set_00)
+                    .set_dynamic_state(vuk::DynamicStateFlagBits::eScissor | vuk::DynamicStateFlagBits::eViewport)
                     .set_viewport(0, vuk::Rect2D::framebuffer())
                     .set_scissor(0, vuk::Rect2D::framebuffer())
                     .broadcast_color_blend(vuk::BlendPreset::eOff)
@@ -782,18 +759,17 @@ void DefaultRenderPipeline::depth_pre_pass(const Shared<vuk::RenderGraph>& rg) {
                      })
                     .bind_graphics_pipeline("depth_pre_pass_pipeline");
 
-      for (uint32_t i = 0; i < mesh_draw_list.size(); i++) {
-        const auto& mesh = mesh_draw_list[i];
+      for (const auto& batch : render_queue.batches) {
+        const auto& mesh = mesh_component_list[batch.mesh_index];
         mesh.mesh_base->bind_index_buffer(command_buffer);
 
         const auto node = mesh.mesh_base->linear_nodes[mesh.node_index];
         for (const auto primitive : node->mesh_data->primitives) {
-          if (primitive->material->parameters.alpha_mode == (uint32_t)Material::AlphaMode::Mask
-              || primitive->material->parameters.alpha_mode == (uint32_t)Material::AlphaMode::Blend) {
+          if (primitive->material->parameters.alpha_mode == (uint32_t)Material::AlphaMode::Blend) {
             continue;
           }
 
-          const auto material_index = get_material_index(i, primitive->material_index);
+          const auto material_index = get_material_index(batch.mesh_index, primitive->material_index);
           const auto pc = ShaderPC{mesh.transform, mesh.mesh_base->vertex_buffer->device_address, material_index};
           command_buffer.push_constants(vuk::ShaderStageFlagBits::eVertex | vuk::ShaderStageFlagBits::eFragment, 0, pc);
 
@@ -852,49 +828,51 @@ void DefaultRenderPipeline::geometry_pass(const Shared<vuk::RenderGraph>& rg) {
                        .depthCompareOp = vuk::CompareOp::eLessOrEqual,
                      });
 
-      for (uint32_t i = 0; i < mesh_draw_list.size(); i++) {
-        auto& mesh = mesh_draw_list[i];
+      for (const auto& batch : render_queue.batches) {
+        const auto& mesh = mesh_component_list[batch.mesh_index];
 
         mesh.mesh_base->bind_index_buffer(command_buffer);
 
-        std::vector<Mesh::Primitive*> transparent_primitives = {};
-
         const auto node = mesh.mesh_base->linear_nodes[mesh.node_index];
-        for (auto primitive : node->mesh_data->primitives) {
+        for (const auto primitive : node->mesh_data->primitives) {
           if (primitive->material->parameters.alpha_mode == (uint32_t)Material::AlphaMode::Blend) {
-            transparent_primitives.emplace_back(primitive);
-            break;
+            continue;
           }
 
-          const auto material_index = get_material_index(i, primitive->material_index);
+          const auto material_index = get_material_index(batch.mesh_index, primitive->material_index);
           const auto pc = ShaderPC{mesh.transform, mesh.mesh_base->vertex_buffer->device_address, material_index};
 
           command_buffer.push_constants(vuk::ShaderStageFlagBits::eVertex | vuk::ShaderStageFlagBits::eFragment, 0, pc);
 
           Renderer::draw_indexed(command_buffer, primitive->index_count, 1, primitive->first_index, 0, 0);
         }
-#if 0
-        // Transparency pass
-        if (is_cube_map_pipeline) {
-          command_buffer.bind_graphics_pipeline("pbr_transparency_cubemap_pipeline");
-        }
-        else {
-          command_buffer.bind_graphics_pipeline("pbr_transparency_pipeline");
-        }
+      }
 
-        command_buffer.broadcast_color_blend(vuk::BlendPreset::eAlphaBlend);
+      command_buffer.bind_graphics_pipeline("pbr_transparency_pipeline")
+                    .broadcast_color_blend(vuk::BlendPreset::eAlphaBlend)
+                    .set_rasterization({.cullMode = vuk::CullModeFlagBits::eNone});
+      {
+        OX_SCOPED_ZONE_N("Mesh Transparent Sorting")
+        render_queue.sort_transparent();
+      }
 
-        for (const auto& primitive : transparent_primitives) {
-          const auto material_index = get_material_index(material_map, i, primitive->material_index);
+      for (const auto& batch : render_queue.batches) {
+        const auto& mesh = mesh_component_list[batch.mesh_index];
 
-          command_buffer.push_constants(vuk::ShaderStageFlagBits::eVertex | vuk::ShaderStageFlagBits::eFragment, 0, mesh.transform)
-                        .push_constants(vuk::ShaderStageFlagBits::eFragment, sizeof(glm::mat4), material_index);
+        mesh.mesh_base->bind_index_buffer(command_buffer);
 
-          primitive->material->bind_textures(command_buffer);
+        const auto node = mesh.mesh_base->linear_nodes[mesh.node_index];
+        for (const auto primitive : node->mesh_data->primitives) {
+          if (primitive->material->parameters.alpha_mode != (uint32_t)Material::AlphaMode::Blend) {
+            continue;
+          }
+          const auto material_index = get_material_index(batch.mesh_index, primitive->material_index);
+          const auto pc = ShaderPC{mesh.transform, mesh.mesh_base->vertex_buffer->device_address, material_index};
+
+          command_buffer.push_constants(vuk::ShaderStageFlagBits::eVertex | vuk::ShaderStageFlagBits::eFragment, 0, pc);
 
           Renderer::draw_indexed(command_buffer, primitive->index_count, 1, primitive->first_index, 0, 0);
         }
-#endif
       }
     }
   });
@@ -1215,7 +1193,8 @@ void DefaultRenderPipeline::cascaded_shadow_pass(const Shared<vuk::RenderGraph>&
                       .set_viewport(0, vuk::Rect2D::framebuffer())
                       .set_scissor(0, vuk::Rect2D::framebuffer());
 
-        for (const auto& mesh : mesh_draw_list) {
+        for (const auto& batch : render_queue.batches) {
+          const auto& mesh = mesh_component_list[batch.mesh_index];
           if (!mesh.cast_shadows)
             continue;
 

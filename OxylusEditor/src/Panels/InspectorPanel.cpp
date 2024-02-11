@@ -132,7 +132,9 @@ bool InspectorPanel::draw_material_properties(Shared<Material>& material, const 
   }
 
   OxUI::begin_properties();
-  OxUI::text("Alpha mode: ", material->alpha_mode_to_string());
+  //OxUI::text("Alpha mode: ", material->alpha_mode_to_string());
+  const char* alpha_modes[] = {"Opaque", "Blend", "Mask"};
+  OxUI::property("Alpha mode", (int*)&material->parameters.alpha_mode, alpha_modes, 3);
   OxUI::property("UV Scale", &material->parameters.uv_scale);
 
   if (OxUI::property("Albedo", material->get_albedo_texture()))

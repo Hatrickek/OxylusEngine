@@ -175,22 +175,106 @@ private:
   vuk::Texture irradiance_texture;
   vuk::Texture prefiltered_texture;
 
-  // Mesh
-  std::vector<MeshComponent> mesh_draw_list;
-  bool m_should_merge_render_objects = false;
-  vuk::Buffer m_merged_index_buffer;
-  vuk::Buffer m_merged_vertex_buffer;
+  struct RenderBatch {
+    uint32_t mesh_index;
+    uint32_t instance_index;
+    uint16_t distance;
+    uint16_t camera_mask;
+    uint32_t sort_bits; // an additional bitmask for sorting only, it should be used to reduce pipeline changes
+
+    void create(const uint32_t p_mesh_index, const uint32_t p_instance_index, const float p_distance, const uint32_t p_sort_bits, const uint16_t p_camera_mask = 0xFFFF) {
+      this->mesh_index = p_mesh_index;
+      this->instance_index = p_instance_index;
+      this->distance = uint16_t(glm::floatBitsToUint(p_distance));
+      this->sort_bits = p_sort_bits;
+      this->camera_mask = p_camera_mask;
+    }
+
+    float get_distance() const { return glm::uintBitsToFloat(distance); }
+    uint32_t get_mesh_index() const { return mesh_index; }
+    uint32_t get_instance_index() const { return instance_index; }
+
+    // opaque sorting
+    // Priority is set to mesh index to have more instancing
+    // distance is second priority (front to back Z-buffering)
+    constexpr bool operator<(const RenderBatch& other) const {
+      union SortKey {
+        struct {
+          // The order of members is important here, it means the sort priority (low to high)!
+          uint64_t distance : 16;
+          uint64_t mesh_index : 16;
+          uint64_t sort_bits : 32;
+        } bits;
+
+        uint64_t value;
+      };
+      static_assert(sizeof(SortKey) == sizeof(uint64_t));
+      const SortKey a = {.bits = {.distance = distance, .mesh_index = mesh_index, .sort_bits = sort_bits}};
+      const SortKey b = {.bits = {.distance = other.distance, .mesh_index = other.mesh_index, .sort_bits = other.sort_bits}};
+      return a.value < b.value;
+    }
+
+    // transparent sorting
+    // Priority is distance for correct alpha blending (back to front rendering)
+    // mesh index is second priority for instancing
+    constexpr bool operator>(const RenderBatch& other) const {
+      union SortKey {
+        struct {
+          // The order of members is important here, it means the sort priority (low to high)!
+          uint64_t mesh_index : 16;
+          uint64_t sort_bits : 32;
+          uint64_t distance : 16;
+        } bits;
+
+        uint64_t value;
+      };
+      static_assert(sizeof(SortKey) == sizeof(uint64_t));
+      const SortKey a = {.bits = {.mesh_index = mesh_index, .sort_bits = sort_bits, .distance = distance}};
+      const SortKey b = {.bits = {.mesh_index = other.mesh_index, .sort_bits = other.sort_bits, .distance = other.distance}};
+      return a.value > b.value;
+    }
+  };
+
+  struct RenderQueue {
+    std::vector<RenderBatch> batches = {};
+
+    void clear() {
+      batches.clear();
+    }
+
+    void add(const uint32_t mesh_index, const uint32_t instance_index, const float distance, const uint32_t sort_bits, const uint16_t camera_mask = 0xFFFF) {
+      batches.emplace_back().create(mesh_index, instance_index, distance, sort_bits, camera_mask);
+    }
+
+    void sort_transparent() {
+      std::sort(batches.begin(), batches.end(), std::greater<RenderBatch>());
+    }
+
+    void sort_opaque() {
+      std::sort(batches.begin(), batches.end(), std::less<RenderBatch>());
+    }
+
+    bool empty() const {
+      return batches.empty();
+    }
+
+    size_t size() const {
+      return batches.size();
+    }
+  };
+
+  std::vector<MeshComponent> mesh_component_list;
+  RenderQueue render_queue;
+  vuk::Buffer merged_index_buffer;
+  vuk::Buffer merged_vertex_buffer;
   Shared<Mesh> m_quad = nullptr;
   Shared<Mesh> m_cube = nullptr;
   Shared<Camera> default_camera;
-
-  struct LightChangeEvent {};
 
   DirectShadowPass::DirectShadowUB direct_shadow_ub = {};
   std::vector<std::pair<LightData, LightComponent>> scene_lights = {};
   std::pair<LightData, LightComponent>* dir_light_data = nullptr;
   LightComponent* dir_light_component = nullptr;
-  EventDispatcher light_buffer_dispatcher;
 
   void commit_descriptor_sets(vuk::Allocator& allocator);
   void create_static_textures(vuk::Allocator& allocator);
