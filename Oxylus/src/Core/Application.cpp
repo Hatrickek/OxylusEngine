@@ -124,6 +124,10 @@ std::string Application::get_asset_directory() {
   return get_resources_path();
 }
 
+std::string Application::get_asset_directory(const std::string_view asset_path) {
+  return get_asset_directory().append("/").append(asset_path);
+}
+
 std::string Application::get_asset_directory_absolute() {
   if (Project::get_active()) {
     const auto p = absolute(Project::get_asset_directory());
@@ -131,5 +135,9 @@ std::string Application::get_asset_directory_absolute() {
   }
   const auto p = absolute(std::filesystem::path(get_resources_path()));
   return p.string();
+}
+
+std::string Application::get_asset_directory_absolute(std::string_view asset_path) {
+  return get_asset_directory_absolute().append("/").append(asset_path);
 }
 }

@@ -10,10 +10,6 @@
 namespace Ox {
 AssetManager::AssetLibrary AssetManager::asset_library;
 
-std::filesystem::path AssetManager::get_asset_file_system_path(const std::filesystem::path& path) {
-  return Project::get_asset_directory() / path;
-}
-
 Shared<TextureAsset> AssetManager::get_texture_asset(const TextureLoadInfo& info) {
   if (asset_library.texture_assets.contains(info.path)) {
     return asset_library.texture_assets[info.path];

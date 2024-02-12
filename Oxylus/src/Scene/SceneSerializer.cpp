@@ -9,6 +9,8 @@
 
 #include <fstream>
 
+#include "Core/Application.h"
+
 namespace Ox {
 SceneSerializer::SceneSerializer(const Shared<Scene>& scene) : m_scene(scene) {}
 
@@ -37,17 +39,9 @@ void SceneSerializer::serialize(const std::string& filePath) const {
 }
 
 bool SceneSerializer::deserialize(const std::string& filePath) const {
-  auto content = FileUtils::read_file(filePath);
+  const auto content = FileUtils::read_file(filePath);
   if (content.empty()) {
     OX_CORE_ASSERT(!content.empty(), fmt::format("Couldn't read scene file: {0}", filePath).c_str());
-
-    // Try to read it again from assets path
-    content = FileUtils::read_file(AssetManager::get_asset_file_system_path(filePath).string());
-    if (!content.empty())
-      OX_CORE_INFO("Could load the file from assets path: {0}", filePath);
-    else {
-      return false;
-    }
   }
 
   toml::table table = toml::parse(content);

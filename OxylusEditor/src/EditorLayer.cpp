@@ -106,8 +106,8 @@ void EditorLayer::on_update(const Timestep& delta_time) {
   }
   if (m_scene_hierarchy_panel.Visible)
     m_scene_hierarchy_panel.on_update();
-  if (m_content_panel.Visible)
-    m_content_panel.on_update();
+  if (content_panel.Visible)
+    content_panel.on_update();
   if (m_inspector_panel.Visible)
     m_inspector_panel.on_update();
 
@@ -450,8 +450,8 @@ void EditorLayer::draw_panels() {
     m_scene_hierarchy_panel.on_imgui_render();
   if (m_inspector_panel.Visible)
     m_inspector_panel.on_imgui_render();
-  if (m_content_panel.Visible)
-    m_content_panel.on_imgui_render();
+  if (content_panel.Visible)
+    content_panel.on_imgui_render();
   if (m_asset_inspector_panel.Visible)
     m_asset_inspector_panel.on_imgui_render();
 }
@@ -488,7 +488,7 @@ void EditorLayer::set_docking_layout(EditorLayout layout) {
     ImGui::DockBuilderDockWindow(m_viewport_panels[0]->get_id(), right_dock);
     ImGui::DockBuilderDockWindow(m_scene_hierarchy_panel.get_id(), left_dock);
     ImGui::DockBuilderDockWindow(m_editor_panels["RenderSettings"]->get_id(), left_split_dock);
-    ImGui::DockBuilderDockWindow(m_content_panel.get_id(), left_split_dock);
+    ImGui::DockBuilderDockWindow(content_panel.get_id(), left_split_dock);
     ImGui::DockBuilderDockWindow(m_console_panel.runtime_console.id.c_str(), left_split_dock);
     ImGui::DockBuilderDockWindow(m_inspector_panel.get_id(), left_dock);
   }
@@ -501,7 +501,7 @@ void EditorLayer::set_docking_layout(EditorLayout layout) {
 
     ImGui::DockBuilderDockWindow(m_scene_hierarchy_panel.get_id(), left_dock);
     ImGui::DockBuilderDockWindow(m_editor_panels["RenderSettings"]->get_id(), left_split_dock);
-    ImGui::DockBuilderDockWindow(m_content_panel.get_id(), bottom_dock);
+    ImGui::DockBuilderDockWindow(content_panel.get_id(), bottom_dock);
     ImGui::DockBuilderDockWindow(m_console_panel.runtime_console.id.c_str(), bottom_dock);
     ImGui::DockBuilderDockWindow(m_inspector_panel.get_id(), right_dock);
     ImGui::DockBuilderDockWindow(m_viewport_panels[0]->get_id(), left_split_vertical_dock);
@@ -518,7 +518,7 @@ void EditorLayer::open_project(const std::filesystem::path& path) {
   if (path.empty())
     return;
   if (Project::load(path)) {
-    const auto& start_scene = AssetManager::get_asset_file_system_path(Project::get_active()->get_config().start_scene);
+    const auto& start_scene = Application::get_asset_directory_absolute(Project::get_active()->get_config().start_scene);
     open_scene(start_scene);
   }
 }

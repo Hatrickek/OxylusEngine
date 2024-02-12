@@ -17,9 +17,6 @@ using AssetID = std::string;
 
 class AssetManager {
 public:
-  // TODO(hatrickek): rethink about the use of this function
-  static std::filesystem::path get_asset_file_system_path(const std::filesystem::path& path);
-
   static Shared<TextureAsset> get_texture_asset(const TextureLoadInfo& info);
   static Shared<TextureAsset> get_texture_asset(const std::string& name, const TextureLoadInfo& info);
   static Shared<Mesh> get_mesh_asset(const std::string& path, uint32_t loadingFlags = 0);

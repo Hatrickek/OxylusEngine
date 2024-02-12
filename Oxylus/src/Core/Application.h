@@ -54,7 +54,9 @@ public:
 
   static const std::string& get_resources_path() { return instance->m_spec.resources_path; }
   static std::string get_asset_directory();
+  static std::string get_asset_directory(std::string_view asset_path); // appends the asset_path at the end
   static std::string get_asset_directory_absolute();
+  static std::string get_asset_directory_absolute(std::string_view asset_path); // appends the asset_path at the end
 
 private:
   static Application* instance;

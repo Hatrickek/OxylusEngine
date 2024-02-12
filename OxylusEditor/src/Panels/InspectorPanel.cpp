@@ -417,7 +417,7 @@ void InspectorPanel::draw_components(Entity entity) const {
 
       auto load_file = [](const std::filesystem::path& path, AudioSourceComponent& comp) {
         if (const std::string ext = path.extension().string(); ext == ".mp3" || ext == ".wav" || ext == ".flac")
-          comp.source = create_shared<AudioSource>(AssetManager::get_asset_file_system_path(path).string().c_str());
+          comp.source = create_shared<AudioSource>(Application::get_asset_directory_absolute(path.string()).c_str());
       };
 
       const float x = ImGui::GetContentRegionAvail().x;

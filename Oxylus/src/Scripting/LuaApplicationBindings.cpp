@@ -9,7 +9,7 @@
 namespace Ox::LuaBindings {
 void bind_application(const Shared<sol::state>& state) {
   auto app_table = state->create_table("Application");
-  SET_TYPE_FUNCTION(app_table, Application, get_asset_directory);
-  SET_TYPE_FUNCTION(app_table, Application, get_asset_directory_absolute);
+  app_table.set_function("get_asset_directory", []() -> std::string { return Application::get_asset_directory(); });
+  app_table.set_function("get_asset_directory_absolute", []() -> std::string { return Application::get_asset_directory_absolute(); });
 }
 }

@@ -144,7 +144,7 @@ ImRect SceneHierarchyPanel::draw_entity_node(Entity entity, uint32_t depth, bool
       }
       else if (const ImGuiPayload* payload = ImGui::AcceptDragDropPayload("CONTENT_BROWSER_ITEM")) {
         std::filesystem::path path = std::filesystem::path((const char*)payload->Data);
-        path = AssetManager::get_asset_file_system_path(path);
+        path = Application::get_asset_directory_absolute(path.string());
         if (path.extension() == ".oxprefab") {
           m_dragged_entity = EntitySerializer::deserialize_entity_as_prefab(path.string().c_str(), m_context.get());
           m_dragged_entity = entity;

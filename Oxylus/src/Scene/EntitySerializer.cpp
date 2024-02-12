@@ -457,14 +457,6 @@ Entity EntitySerializer::deserialize_entity_as_prefab(const char* filepath, Scen
   auto content = FileUtils::read_file(filepath);
   if (content.empty()) {
     OX_CORE_ERROR("Couldn't read prefab file: {0}", filepath);
-
-    // Try to read it again from assets path
-    content = FileUtils::read_file(AssetManager::get_asset_file_system_path(filepath).string());
-    if (!content.empty())
-      OX_CORE_INFO("Could load the prefab file from assets path: {0}", filepath);
-    else {
-      return {};
-    }
   }
 
   const ryml::Tree tree = ryml::parse_in_arena(ryml::to_csubstr(content));

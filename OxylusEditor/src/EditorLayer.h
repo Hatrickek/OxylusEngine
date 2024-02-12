@@ -29,6 +29,9 @@ public:
 
   SceneState scene_state = SceneState::Edit;
 
+  // Panels
+  ContentPanel content_panel;
+
   // Cursors
   GLFWcursor* crosshair_cursor = nullptr;
 
@@ -93,7 +96,6 @@ private:
   ConsolePanel m_console_panel;
   SceneHierarchyPanel m_scene_hierarchy_panel;
   InspectorPanel m_inspector_panel;
-  ContentPanel m_content_panel;
   AssetInspectorPanel m_asset_inspector_panel;
 
   // Config
