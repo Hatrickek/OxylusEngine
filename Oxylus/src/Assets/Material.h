@@ -49,6 +49,7 @@ public:
   std::string path{};
 
   Material() = default;
+  Material(const std::string& material_name);
   ~Material();
 
   void create(const std::string& material_name = "Material");
@@ -56,6 +57,8 @@ public:
   void reset();
 
   void bind_textures(vuk::CommandBuffer& command_buffer) const;
+
+  const std::string& get_name() const { return name; }
 
   Shared<TextureAsset>& get_albedo_texture() { return albedo_texture; }
   Shared<TextureAsset>& get_normal_texture() { return normal_texture; }
@@ -70,10 +73,10 @@ public:
   Material* set_emissive_texture(const Shared<TextureAsset>& texture);
 
   Material* set_color(Vec4 color);
+  Material* set_emissive(Vec4 emissive);
   Material* set_roughness(float roughness);
   Material* set_metallic(float metallic);
   Material* set_reflectance(float reflectance);
-  Material* set_emissive(Vec4 emissive);
 
   Material* set_alpha_mode(AlphaMode alpha_mode);
   Material* set_alpha_cutoff(float cutoff);

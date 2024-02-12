@@ -10,7 +10,7 @@ public:
 
   void on_imgui_render() override;
 
-  static bool draw_material_properties(Shared<Material>& material, bool save_to_current_path = false);
+  static void draw_material_properties(Shared<Material>& material);
 
 private:
   void draw_components(Entity entity) const;

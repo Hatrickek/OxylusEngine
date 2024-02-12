@@ -5,7 +5,6 @@
 #include "SceneRenderer.h"
 
 #include "Assets/AssetManager.h"
-#include "Assets/MaterialSerializer.h"
 
 #include "Scene/Entity.h"
 
@@ -70,17 +69,6 @@ void EntitySerializer::serialize_entity(toml::array* entities, Entity entity) {
 
     entities->push_back(toml::table{{"mesh_component", table}});
   }
-
-#if 0 // TODO:
-  if (entity.has_component<MaterialComponent>()) {
-    const auto& mc = entity.get_component<MaterialComponent>();
-    const auto table = toml::table{
-      {"path", mc.path},
-    };
-
-    entities->push_back(toml::table{{{"material_component", table}}});
-  }
-#endif
 
   if (entity.has_component<LightComponent>()) {
     const auto& light = entity.get_component<LightComponent>();
@@ -310,14 +298,6 @@ UUID EntitySerializer::deserialize_entity(toml::array* entity_arr, Scene* scene,
       mc.node_index = GET_UINT32(mesh_node, "node_index");
       mc.cast_shadows = GET_BOOL(mesh_node, "cast_shadows");
     }
-#if 0 // TODO
-    else if (const auto material_node = ent.as_table()->get("mesh_component")) {
-      auto& mc = deserialized_entity.add_component<MaterialComponent>();
-      mc.mesh_base = AssetManager::get_mesh_asset(mesh_node->as_table()->get("path")->as_string()->get());
-      mc.node_index = mesh_node->as_table()->get("node_index")->as_integer()->get();
-      mc.cast_shadows = mesh_node->as_table()->get("cast_shadows")->as_integer()->get();
-    }
-#endif
     else if (const auto light_node = ent.as_table()->get("light_component")) {
       auto& lc = deserialized_entity.add_component<LightComponent>();
       lc.type = (LightComponent::LightType)GET_UINT32(light_node, "type");

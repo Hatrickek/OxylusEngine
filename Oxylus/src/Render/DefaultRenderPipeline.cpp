@@ -34,7 +34,7 @@ static std::vector<uint32_t> cumulate_material_map(const std::unordered_map<uint
   uint32_t sum = 0;
   for (const auto& entry : material_map) {
     sum += entry.second;
-    cumulative_sums.push_back(sum);
+    cumulative_sums.emplace_back(sum);
   }
   return cumulative_sums;
 }
@@ -78,14 +78,7 @@ void DefaultRenderPipeline::init(vuk::Allocator& allocator) {
     this->m_cube = RendererCommon::generate_cube();
   );
 
-  // Lights data
-  scene_lights.reserve(MAX_NUM_LIGHTS);
-
-  // Mesh data
-  mesh_component_list.reserve(MAX_NUM_MESHES);
-
   create_static_textures(allocator);
-
   create_descriptor_sets(allocator, ctx);
 
   TaskScheduler::wait_for_all();
@@ -351,7 +344,7 @@ void DefaultRenderPipeline::commit_descriptor_sets(vuk::Allocator& allocator) {
 
   std::vector<Material::Parameters> material_parameters = {};
   for (auto& mesh : mesh_component_list) {
-    auto materials = mesh.mesh_base->get_materials(mesh.node_index);
+    auto& materials = mesh.materials; //mesh.mesh_base->get_materials(mesh.node_index);
     for (auto& mat : materials) {
       material_parameters.emplace_back(mat->parameters);
 
@@ -478,6 +471,17 @@ void DefaultRenderPipeline::on_dispatcher_events(EventDispatcher& dispatcher) {
 
 void DefaultRenderPipeline::on_register_render_object(const MeshComponent& render_object) {
   OX_SCOPED_ZONE;
+
+  {
+    OX_SCOPED_ZONE_N("Frustum culling");
+    const auto camera_frustum = current_camera->get_frustum();
+    const auto* node = render_object.mesh_base->linear_nodes[render_object.node_index];
+    if (!render_object.aabb.is_on_frustum(camera_frustum)) {
+      Renderer::get_stats().drawcall_culled_count += (uint32_t)node->mesh_data->primitives.size();
+      return;
+    }
+  }
+
   render_queue.add((uint32_t)mesh_component_list.size(), 0, distance(current_camera->get_position(), render_object.aabb.get_center()), 0);
   mesh_component_list.emplace_back(render_object);
 }
@@ -531,22 +535,6 @@ Unique<vuk::Future> DefaultRenderPipeline::on_render(vuk::Allocator& frame_alloc
   }
 
   auto vk_context = VulkanContext::get();
-
-  {
-    OX_SCOPED_ZONE_N("Frustum culling");
-    // frustum cull 
-    std::erase_if(
-      render_queue.batches,
-      [this](const RenderBatch& batch) {
-        const auto camera_frustum = current_camera->get_frustum();
-        const auto* node = mesh_component_list[batch.mesh_index].mesh_base->linear_nodes[mesh_component_list[batch.mesh_index].node_index];
-        if (!mesh_component_list[batch.mesh_index].aabb.is_on_frustum(camera_frustum)) {
-          Renderer::get_stats().drawcall_culled_count += (uint32_t)node->mesh_data->primitives.size();
-          return true;
-        }
-        return false;
-      });
-  }
 
   {
     OX_SCOPED_ZONE_N("Mesh Opaque Sorting")
@@ -765,7 +753,7 @@ void DefaultRenderPipeline::depth_pre_pass(const Shared<vuk::RenderGraph>& rg) {
 
         const auto node = mesh.mesh_base->linear_nodes[mesh.node_index];
         for (const auto primitive : node->mesh_data->primitives) {
-          if (primitive->material->parameters.alpha_mode == (uint32_t)Material::AlphaMode::Blend) {
+          if (mesh.materials[primitive->material_index]->parameters.alpha_mode != (uint32_t)Material::AlphaMode::Opaque) {
             continue;
           }
 
@@ -835,7 +823,7 @@ void DefaultRenderPipeline::geometry_pass(const Shared<vuk::RenderGraph>& rg) {
 
         const auto node = mesh.mesh_base->linear_nodes[mesh.node_index];
         for (const auto primitive : node->mesh_data->primitives) {
-          if (primitive->material->parameters.alpha_mode == (uint32_t)Material::AlphaMode::Blend) {
+          if (mesh.materials[primitive->material_index]->parameters.alpha_mode == (uint32_t)Material::AlphaMode::Blend) {
             continue;
           }
 
@@ -863,7 +851,7 @@ void DefaultRenderPipeline::geometry_pass(const Shared<vuk::RenderGraph>& rg) {
 
         const auto node = mesh.mesh_base->linear_nodes[mesh.node_index];
         for (const auto primitive : node->mesh_data->primitives) {
-          if (primitive->material->parameters.alpha_mode != (uint32_t)Material::AlphaMode::Blend) {
+          if (mesh.materials[primitive->material_index]->parameters.alpha_mode != (uint32_t)Material::AlphaMode::Blend) {
             continue;
           }
           const auto material_index = get_material_index(batch.mesh_index, primitive->material_index);

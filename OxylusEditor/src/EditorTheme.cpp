@@ -13,7 +13,6 @@ void EditorTheme::init() {
   component_icon_map[typeid(AudioSourceComponent).hash_code()] = ICON_MDI_VOLUME_HIGH;
   component_icon_map[typeid(TransformComponent).hash_code()] = ICON_MDI_VECTOR_LINE;
   component_icon_map[typeid(MeshComponent).hash_code()] = ICON_MDI_VECTOR_SQUARE;
-  component_icon_map[typeid(MaterialComponent).hash_code()] = ICON_MDI_SPRAY;
   component_icon_map[typeid(AnimationComponent).hash_code()] = ICON_MDI_ANIMATION;
   component_icon_map[typeid(SkyLightComponent).hash_code()] = ICON_MDI_WEATHER_SUNNY;
   component_icon_map[typeid(LuaScriptComponent).hash_code()] = ICON_MDI_LANGUAGE_LUA;

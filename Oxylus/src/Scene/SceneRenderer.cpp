@@ -32,8 +32,8 @@ void SceneRenderer::update() const {
   // Mesh System
   {
     OX_SCOPED_ZONE_N("Mesh System");
-    const auto mesh_view = m_scene->m_registry.view<TransformComponent, MeshComponent, MaterialComponent, TagComponent>();
-    for (const auto&& [entity, transform, mesh_component, material, tag] : mesh_view.each()) {
+    const auto mesh_view = m_scene->m_registry.view<TransformComponent, MeshComponent, TagComponent>();
+    for (const auto&& [entity, transform, mesh_component, tag] : mesh_view.each()) {
       if (!tag.enabled)
         continue;
       auto e = Entity(entity, m_scene);

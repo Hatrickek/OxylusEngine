@@ -11,7 +11,6 @@
 #include "Utils/ColorUtils.h"
 
 #include "EditorLayer.h"
-#include "Assets/MaterialSerializer.h"
 #include "Scene/Entity.h"
 #include "UI/OxUI.h"
 #include "Utils/StringUtils.h"
@@ -92,47 +91,12 @@ static void draw_component(const char* name,
   }
 }
 
-bool InspectorPanel::draw_material_properties(Shared<Material>& material, const bool save_to_current_path) {
-  bool load_asset = false;
-
-  if (ImGui::Button("Save")) {
-    std::string path;
-    if (save_to_current_path)
-      path = FileDialogs::save_file({{"Material file", "oxmat"}}, "NewMaterial");
-    else
-      path = material->path;
-    MaterialSerializer(*material).serialize(path);
-  }
-  ImGui::SameLine();
-  if (ImGui::Button("Load")) {
-    const auto& path = FileDialogs::open_file({{"Material file", "oxmat"}});
-    if (!path.empty()) {
-      MaterialSerializer(material).deserialize(path);
-    }
-  }
-  ImGui::SameLine();
+void InspectorPanel::draw_material_properties(Shared<Material>& material) {
   if (ImGui::Button("Reset")) {
     material = create_shared<Material>();
     material->create();
   }
-  ImGui::SameLine();
-  const float x = ImGui::GetContentRegionAvail().x;
-  const float y = ImGui::GetFrameHeight();
-  ImGui::Button("Drop a material file", {x, y});
-  if (ImGui::BeginDragDropTarget()) {
-    if (const ImGuiPayload* payload = ImGui::AcceptDragDropPayload("CONTENT_BROWSER_ITEM")) {
-      const std::filesystem::path path = OxUI::get_path_from_imgui_payload(payload);
-      const std::string ext = path.extension().string();
-      if (ext == ".oxmat") {
-        MaterialSerializer(material).deserialize(path.string());
-        load_asset = true;
-      }
-    }
-    ImGui::EndDragDropTarget();
-  }
-
   OxUI::begin_properties();
-  //OxUI::text("Alpha mode: ", material->alpha_mode_to_string());
   const char* alpha_modes[] = {"Opaque", "Blend", "Mask"};
   OxUI::property("Alpha mode", (int*)&material->parameters.alpha_mode, alpha_modes, 3);
   OxUI::property("UV Scale", &material->parameters.uv_scale);
@@ -158,8 +122,6 @@ bool InspectorPanel::draw_material_properties(Shared<Material>& material, const 
   OxUI::property_vector("Emissive Color", material->parameters.emissive, true, true);
 
   OxUI::end_properties();
-
-  return load_asset;
 }
 
 template <typename T>
@@ -261,7 +223,6 @@ void InspectorPanel::draw_components(Entity entity) const {
   }
   if (ImGui::BeginPopup("Add Component")) {
     draw_add_component<MeshComponent>(m_SelectedEntity, "Mesh Renderer");
-    draw_add_component<MaterialComponent>(m_SelectedEntity, "Material");
     draw_add_component<AudioSourceComponent>(m_SelectedEntity, "Audio Source");
     draw_add_component<AudioListenerComponent>(m_SelectedEntity, "Audio Listener");
     draw_add_component<LightComponent>(m_SelectedEntity, "Light");
@@ -304,23 +265,14 @@ void InspectorPanel::draw_components(Entity entity) const {
       const char* file_name = component.mesh_base->name.empty()
                                 ? "Empty"
                                 : component.mesh_base->name.c_str();
-      ImGui::Text("Loaded Mesh: %s", file_name);
-      ImGui::Text("Material Count: %d", (uint32_t)component.mesh_base->get_materials_as_ref().size());
+      ImGui::Text("Loaded mesh: %s", file_name);
+      ImGui::Text("Node index: %d", (uint32_t)component.node_index);
+      ImGui::Text("Node material count: %d", (uint32_t)component.materials.size());
       OxUI::begin_properties();
       OxUI::property("Cast shadows", &component.cast_shadows);
       OxUI::end_properties();
-    });
 
-  draw_component<MaterialComponent>(
-    " Material Component",
-    entity,
-    [](MaterialComponent& component) {
-      if (component.materials.empty())
-        return;
-
-      constexpr ImGuiTreeNodeFlags flags =
-        ImGuiTreeNodeFlags_OpenOnArrow | ImGuiTreeNodeFlags_SpanFullWidth |
-        ImGuiTreeNodeFlags_FramePadding;
+      ImGui::SeparatorText("Materials");
 
       const float filter_cursor_pos_x = ImGui::GetCursorPosX();
       ImGuiTextFilter name_filter;
@@ -337,14 +289,15 @@ void InspectorPanel::draw_components(Entity entity) const {
         auto& material = component.materials[i];
         if (name_filter.PassFilter(material->name.c_str())) {
           ImGui::PushID(i);
+          constexpr ImGuiTreeNodeFlags flags =
+            ImGuiTreeNodeFlags_OpenOnArrow | ImGuiTreeNodeFlags_SpanFullWidth |
+            ImGuiTreeNodeFlags_FramePadding;
           if (ImGui::TreeNodeEx(material->name.c_str(),
                                 flags,
                                 "%s %s",
                                 StringUtils::from_char8_t(ICON_MDI_CIRCLE),
                                 material->name.c_str())) {
-            if (draw_material_properties(material)) {
-              component.using_material_asset = true;
-            }
+            draw_material_properties(material);
             ImGui::TreePop();
           }
           ImGui::PopID();

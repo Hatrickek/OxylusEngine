@@ -9,12 +9,6 @@
 namespace Ox {
 struct ProbeChangeEvent;
 struct SkyboxLoadEvent;
-constexpr auto MAX_NUM_LIGHTS = 1000;
-constexpr auto MAX_NUM_MESHES = 1000;
-constexpr auto MAX_NUM_LIGHTS_PER_TILE = 128;
-constexpr auto MAX_NUM_FRUSTUMS = 20000;
-constexpr auto PIXELS_PER_TILE = 16;
-constexpr auto TILES_PER_THREADGROUP = 16;
 
 class DefaultRenderPipeline : public RenderPipeline {
 public:

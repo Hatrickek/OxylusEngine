@@ -120,8 +120,10 @@ void LuaSystem::reload() {
   OX_SCOPED_ZONE;
   if (environment) {
     const sol::protected_function releaseFunc = (*environment)["on_release"];
-    if (releaseFunc.valid())
-      releaseFunc.call();
+    if (releaseFunc.valid()) {
+      const auto result = releaseFunc.call();
+      check_result(result, "on_release");
+    }
   }
 
   init_script(file_path);

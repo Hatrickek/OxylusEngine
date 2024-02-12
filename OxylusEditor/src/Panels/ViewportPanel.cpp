@@ -449,9 +449,9 @@ void ViewportPanel::mouse_picking_pass(const Shared<RenderPipeline>& rp, const v
 
   std::vector<SceneMesh> scene_meshes = {};
 
-  const auto mesh_view = m_scene->m_registry.view<TransformComponent, MeshComponent, MaterialComponent, TagComponent>();
-  for (const auto&& [entity, transform, mesh_component, material, tag] : mesh_view.each()) {
-    if (tag.enabled && !material.materials.empty()) {
+  const auto mesh_view = m_scene->m_registry.view<TransformComponent, MeshComponent, TagComponent>();
+  for (const auto&& [entity, transform, mesh_component, tag] : mesh_view.each()) {
+    if (tag.enabled) {
       auto e = Entity(entity, m_scene.get());
       mesh_component.transform = e.get_world_transform();
       const auto id = (uint32_t)entity + 1u; // increment entity id by one so black color and the first entity doesn't get mixed

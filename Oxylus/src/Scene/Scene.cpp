@@ -81,9 +81,7 @@ void Scene::iterate_mesh_node(const Shared<Mesh>& mesh, const Entity base_entity
   auto node_entity = base_entity ? base_entity : create_entity(node->name);
 
   if (node->mesh_data) {
-    auto& mesh_component = node_entity.add_component_internal<MeshComponent>(mesh);
-    mesh_component.node_index = node->index;
-
+    node_entity.get_or_add_component<MeshComponent>(mesh, node->index);
     node_entity.get_transform().set_from_matrix(node->get_matrix());
   }
 
@@ -708,7 +706,7 @@ void Scene::on_component_added<AudioListenerComponent>(Entity entity, AudioListe
 
 template <>
 void Scene::on_component_added<MeshComponent>(Entity entity, MeshComponent& component) {
-  entity.add_component_internal<MaterialComponent>();
+  component.materials = component.mesh_base->get_materials(component.node_index);
   if (!component.mesh_base->animations.empty()) {
     auto& animation_component = entity.add_component_internal<AnimationComponent>();
     animation_component.animations = component.mesh_base->animations;
@@ -717,14 +715,6 @@ void Scene::on_component_added<MeshComponent>(Entity entity, MeshComponent& comp
 
 template <>
 void Scene::on_component_added<SkyLightComponent>(Entity entity, SkyLightComponent& component) {}
-
-template <>
-void Scene::on_component_added<MaterialComponent>(Entity entity, MaterialComponent& component) {
-  if (component.materials.empty()) {
-    if (entity.has_component<MeshComponent>())
-      component.materials = entity.get_component<MeshComponent>().mesh_base->get_materials_as_ref();
-  }
-}
 
 template <>
 void Scene::on_component_added<AnimationComponent>(Entity entity, AnimationComponent& component) {}

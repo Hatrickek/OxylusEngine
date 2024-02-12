@@ -5,7 +5,6 @@
 #include "EditorContext.h"
 #include "../EditorLayer.h"
 #include "Assets/AssetManager.h"
-#include "Assets/MaterialSerializer.h"
 #include "Core/Application.h"
 #include "Core/Project.h"
 #include "Core/Resources.h"
@@ -44,7 +43,6 @@ static const std::unordered_map<FileType, const char*> FILE_TYPES_TO_STRING =
   {FileType::Texture, "Texture"},
   {FileType::Cubemap, "Cubemap"},
   {FileType::Model, "Model"},
-  {FileType::Material, "Material"},
   {FileType::Script, "Script"},
   {FileType::Audio, "Audio"},
 };
@@ -818,16 +816,6 @@ void ContentPanel::draw_context_menu_items(const std::filesystem::path& context,
         }
         EditorLayer::get()->set_context_as_file_with_path(newFolderPath);
         ImGui::CloseCurrentPopup();
-      }
-      if (ImGui::BeginMenu("Asset")) {
-        if (ImGui::MenuItem("Material")) {
-          const auto mat = create_shared<Material>();
-          mat->create();
-          const MaterialSerializer serializer(mat);
-          auto path = (context / "NewMaterial.oxmat").string();
-          serializer.serialize(path);
-        }
-        ImGui::EndMenu();
       }
       ImGui::EndMenu();
     }

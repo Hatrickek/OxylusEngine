@@ -73,24 +73,23 @@ struct TransformComponent {
 };
 
 // Rendering
-struct MaterialComponent {
-  std::vector<Shared<Material>> materials{};
-  bool using_material_asset = false;
-};
-
 struct MeshComponent {
   Shared<Mesh> mesh_base = nullptr;
 
   uint32_t node_index = 0;
-
   bool cast_shadows = true;
 
   // non-serialized data
+  std::vector<Shared<Material>> materials = {}; // node materials
   Mat4 transform = {};
   AABB aabb = {};
 
   MeshComponent() = default;
-  MeshComponent(const Shared<Mesh>& mesh) : mesh_base(mesh) {}
+
+  MeshComponent(const Shared<Mesh>& mesh, const uint32_t p_node_index = 0)
+    : mesh_base(mesh), node_index(p_node_index) {
+    materials = mesh->get_materials(node_index);
+  }
 };
 
 struct CameraComponent {
@@ -227,7 +226,7 @@ struct CylinderColliderComponent {
 
 struct MeshColliderComponent {
   Vec3 offset = {0.0f, 0.0f, 0.0f};
-  float friction = 0.5f; 
+  float friction = 0.5f;
   float restitution = 0.0f;
 };
 
@@ -300,7 +299,7 @@ using AllComponents =
 ComponentGroup<TransformComponent, RelationshipComponent, PrefabComponent, CameraComponent,
 
                // Render
-               LightComponent, MeshComponent, SkyLightComponent, ParticleSystemComponent, MaterialComponent,
+               LightComponent, MeshComponent, SkyLightComponent, ParticleSystemComponent,
 
                //  Physics
                RigidbodyComponent,

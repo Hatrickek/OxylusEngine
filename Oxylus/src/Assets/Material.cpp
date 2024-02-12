@@ -10,6 +10,10 @@
 #include "Utils/Profiler.h"
 
 namespace Ox {
+Material::Material(const std::string& material_name) {
+  create(material_name);
+}
+
 Material::~Material() = default;
 
 void Material::create(const std::string& material_name) {
