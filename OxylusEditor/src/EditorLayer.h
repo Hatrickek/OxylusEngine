@@ -91,7 +91,7 @@ private:
 
   // Panels
   void draw_panels();
-  std::unordered_map<std::string, Unique<EditorPanel>> m_editor_panels;
+  ankerl::unordered_dense::map<std::string, Unique<EditorPanel>> m_editor_panels;
   std::vector<Unique<ViewportPanel>> m_viewport_panels;
   ConsolePanel m_console_panel;
   SceneHierarchyPanel m_scene_hierarchy_panel;

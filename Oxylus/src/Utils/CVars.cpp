@@ -1,9 +1,9 @@
 ﻿#include "Utils/CVars.h"
 
-#include <unordered_map>
-
 #include <mutex>
 #include <shared_mutex>
+
+#include <ankerl/unordered_dense.h>
 
 #include "Log.h"
 #include "Profiler.h"
@@ -50,7 +50,7 @@ public:
 
 private:
   std::shared_mutex mutex_;
-  std::unordered_map<uint32_t, CVarParameter> saved_cvars;
+  ankerl::unordered_dense::map<uint32_t, CVarParameter> saved_cvars;
   std::vector<CVarParameter*> cached_edit_parameters;
 
   CVarParameter* init_cvar(const char* name, const char* description);

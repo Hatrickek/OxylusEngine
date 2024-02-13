@@ -1,7 +1,8 @@
 #pragma once
 
 #include <filesystem>
-#include <unordered_map>
+
+#include <ankerl/unordered_dense.h>
 
 #include "Core/Base.h"
 
@@ -27,9 +28,9 @@ public:
 
 private:
   static struct AssetLibrary {
-    std::unordered_map<AssetID, Shared<TextureAsset>> texture_assets ;
-    std::unordered_map<AssetID, Shared<Mesh>> mesh_assets;
-    std::unordered_map<AssetID, Shared<AudioSource>> audio_assets;
+    ankerl::unordered_dense::map<AssetID, Shared<TextureAsset>> texture_assets ;
+    ankerl::unordered_dense::map<AssetID, Shared<Mesh>> mesh_assets;
+    ankerl::unordered_dense::map<AssetID, Shared<AudioSource>> audio_assets;
   } asset_library;
 
   static Shared<TextureAsset> load_texture_asset(const std::string& path);

@@ -362,3 +362,9 @@ target_include_directories(${PROJECT_NAME} PUBLIC ${enkiTS_SOURCE_DIR}/src)
 target_link_libraries(${PROJECT_NAME} PUBLIC enkiTS)
 set_target_properties(enkiTS PROPERTIES FOLDER "Vendor")
 set_targets_static(enkiTS)
+
+# unordered_dense
+CPMAddPackage("gh:martinus/unordered_dense#main")
+target_link_libraries(${PROJECT_NAME} PUBLIC unordered_dense)
+set_target_properties(unordered_dense PROPERTIES FOLDER "Vendor")
+

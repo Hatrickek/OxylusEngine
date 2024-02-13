@@ -2,6 +2,7 @@
 
 #include <glm/gtc/type_ptr.inl>
 #include <vuk/Partials.hpp>
+#include <ankerl/unordered_dense.h>
 
 #include "DebugRenderer.h"
 #include "RendererCommon.h"
@@ -28,7 +29,7 @@
 namespace Ox {
 static std::vector<uint32_t> cumulated_material_map = {};
 
-static std::vector<uint32_t> cumulate_material_map(const std::unordered_map<uint32_t, uint32_t>& material_map) {
+static std::vector<uint32_t> cumulate_material_map(const ankerl::unordered_dense::map<uint32_t, uint32_t>& material_map) {
   OX_SCOPED_ZONE;
   std::vector<uint32_t> cumulative_sums;
   uint32_t sum = 0;
@@ -541,7 +542,7 @@ Unique<vuk::Future> DefaultRenderPipeline::on_render(vuk::Allocator& frame_alloc
     render_queue.sort_opaque();
   }
 
-  std::unordered_map<uint32_t, uint32_t> material_map; //mesh, material
+  ankerl::unordered_dense::map<uint32_t, uint32_t> material_map; //mesh, material
 
   for (auto& batch : render_queue.batches) {
     material_map.emplace(batch.mesh_index, mesh_component_list[batch.mesh_index].mesh_base->get_material_count());

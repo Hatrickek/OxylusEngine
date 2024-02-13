@@ -7,6 +7,8 @@
 #include <mutex>
 #include <shared_mutex>
 
+#include <ankerl/unordered_dense.h>
+
 #include "Core/Base.h"
 
 #include "Utils/Log.h"
@@ -83,7 +85,7 @@ private:
   std::shared_mutex log_mutex;
 
   // Commands
-  std::unordered_map<std::string, ConsoleCommand> m_command_map;
+  ankerl::unordered_dense::map<std::string, ConsoleCommand> m_command_map;
   void process_command(const std::string& command);
 
   void help_command();

@@ -1,4 +1,6 @@
 ﻿#pragma once
+#include <ankerl/unordered_dense.h>
+
 #include <entt/entity/entity.hpp>
 
 #include <sol/environment.hpp>
@@ -26,7 +28,7 @@ public:
 
 private:
   std::string file_path;
-  std::unordered_map<int, std::string> errors = {};
+  ankerl::unordered_dense::map<int, std::string> errors = {};
 
   Unique<sol::environment> environment = nullptr;
   Unique<sol::protected_function> on_init_func = nullptr;

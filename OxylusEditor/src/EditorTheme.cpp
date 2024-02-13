@@ -5,7 +5,7 @@
 #include "Scene/Components.h"
 
 namespace Ox {
-std::unordered_map<size_t, const char8_t*> EditorTheme::component_icon_map = {};
+ankerl::unordered_dense::map<size_t, const char8_t*> EditorTheme::component_icon_map = {};
 
 void EditorTheme::init() {
   component_icon_map[typeid(LightComponent).hash_code()] = ICON_MDI_LIGHTBULB;

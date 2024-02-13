@@ -1,4 +1,6 @@
 ﻿#pragma once
+#include <ankerl/unordered_dense.h>
+
 #include "Core/Systems/System.h"
 #include "Utils/Log.h"
 #include "Core/Base.h"
@@ -55,7 +57,7 @@ public:
     return m_Systems.contains(typeName);
   }
 
-  std::unordered_map<size_t, Shared<System>>& get_systems() { return m_Systems; }
+  ankerl::unordered_dense::map<size_t, Shared<System>>& get_systems() { return m_Systems; }
 
   void on_update() const {
     for (auto& system : m_Systems)
@@ -73,6 +75,6 @@ public:
   }
 
 private:
-  std::unordered_map<size_t, Shared<System>> m_Systems = {};
+  ankerl::unordered_dense::map<size_t, Shared<System>> m_Systems = {};
 };
 }

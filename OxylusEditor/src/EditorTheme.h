@@ -1,10 +1,10 @@
 ﻿#pragma once
-#include <unordered_map>
+#include <ankerl/unordered_dense.h>
 
 namespace Ox {
 class EditorTheme {
 public:
-  static std::unordered_map<size_t, const char8_t*> component_icon_map;
+  static ankerl::unordered_dense::map<size_t, const char8_t*> component_icon_map;
 
   static void init();
 };

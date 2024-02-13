@@ -1,5 +1,7 @@
 #pragma once
 
+#include <ankerl/unordered_dense.h>
+
 #include "EntitySerializer.h"
 #include "Scene/Components.h"
 
@@ -11,8 +13,6 @@
 #include "Render/Mesh.h"
 #include <entt/entity/registry.hpp>
 
-#include "Core/Keycodes.h"
-
 namespace Ox {
 class RenderPipeline;
 class SceneRenderer;
@@ -22,7 +22,7 @@ class Scene {
 public:
   std::string scene_name = "Untitled";
   entt::registry m_registry;
-  std::unordered_map<UUID, entt::entity> entity_map;
+  ankerl::unordered_dense::map<UUID, entt::entity> entity_map;
 
   Scene();
   Scene(std::string name);

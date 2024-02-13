@@ -6,7 +6,8 @@
 
 #include <imgui.h>
 #include <mutex>
-#include <unordered_map>
+
+#include <ankerl/unordered_dense.h>
 
 #include "EditorPanel.h"
 
@@ -80,7 +81,7 @@ private:
   ImGuiTextFilter m_filter;
   float m_elapsed_time = 0.0f;
 
-  std::unordered_map<std::string, Shared<TextureAsset>> thumbnail_cache;
+  ankerl::unordered_dense::map<std::string, Shared<TextureAsset>> thumbnail_cache;
 
   Shared<TextureAsset> m_white_texture;
   std::filesystem::path m_directory_to_delete;

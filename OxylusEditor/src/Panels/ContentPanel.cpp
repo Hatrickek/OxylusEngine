@@ -33,7 +33,7 @@
 #endif
 
 namespace Ox {
-static const std::unordered_map<FileType, const char*> FILE_TYPES_TO_STRING =
+static const ankerl::unordered_dense::map<FileType, const char*> FILE_TYPES_TO_STRING =
 {
   {FileType::Unknown, "Unknown"},
 
@@ -47,7 +47,7 @@ static const std::unordered_map<FileType, const char*> FILE_TYPES_TO_STRING =
   {FileType::Audio, "Audio"},
 };
 
-static const std::unordered_map<std::string, FileType> FILE_TYPES =
+static const ankerl::unordered_dense::map<std::string, FileType> FILE_TYPES =
 {
   {".oxscene", FileType::Scene},
   {".oxprefab", FileType::Prefab},
@@ -81,7 +81,7 @@ static const std::unordered_map<std::string, FileType> FILE_TYPES =
   {".lua", FileType::Script},
 };
 
-static const std::unordered_map<FileType, ImVec4> TYPE_COLORS =
+static const ankerl::unordered_dense::map<FileType, ImVec4> TYPE_COLORS =
 {
   {FileType::Scene, {0.75f, 0.35f, 0.20f, 1.00f}},
   {FileType::Prefab, {0.10f, 0.50f, 0.80f, 1.00f}},
@@ -94,7 +94,7 @@ static const std::unordered_map<FileType, ImVec4> TYPE_COLORS =
   {FileType::Script, {0.0f, 16.0f, 121.0f, 1.00f}},
 };
 
-static const std::unordered_map<FileType, const char8_t*> FILE_TYPES_TO_ICON =
+static const ankerl::unordered_dense::map<FileType, const char8_t*> FILE_TYPES_TO_ICON =
 {
   {FileType::Unknown, ICON_MDI_FILE},
 

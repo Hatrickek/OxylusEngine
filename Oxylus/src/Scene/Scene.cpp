@@ -7,7 +7,8 @@
 
 #include <glm/glm.hpp>
 
-#include <unordered_map>
+#include <ankerl/unordered_dense.h>
+
 #include <glm/gtc/type_ptr.hpp>
 
 #include "SceneRenderer.h"
@@ -215,7 +216,7 @@ void Scene::destroy_entity(const Entity entity) {
 template <typename... Component>
 static void copy_component(entt::registry& dst,
                            entt::registry& src,
-                           const std::unordered_map<UUID, entt::entity>& entt_map) {
+                           const ankerl::unordered_dense::map<UUID, entt::entity>& entt_map) {
   ([&] {
     auto view = src.view<Component>();
     for (auto src_entity : view) {
@@ -231,7 +232,7 @@ template <typename... Component>
 static void copy_component(ComponentGroup<Component...>,
                            entt::registry& dst,
                            entt::registry& src,
-                           const std::unordered_map<UUID, entt::entity>& entt_map) {
+                           const ankerl::unordered_dense::map<UUID, entt::entity>& entt_map) {
   copy_component<Component...>(dst, src, entt_map);
 }
 

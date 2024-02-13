@@ -1,7 +1,7 @@
 #pragma once
 
 #include <cstdint>
-#include <unordered_map>
+#include <ankerl/unordered_dense.h>
 
 namespace Ox {
 class UUID {
@@ -12,17 +12,15 @@ public:
 
   UUID(const UUID&) = default;
 
-  operator uint64_t() const {
-    return m_UUID;
-  }
+  operator uint64_t() const { return _uuid; }
 
 private:
-  uint64_t m_UUID;
+  uint64_t _uuid;
 };
 }
 
 template <>
-struct std::hash<Ox::UUID> {
+struct ankerl::unordered_dense::hash<Ox::UUID> {
   size_t operator()(const Ox::UUID& uuid) const noexcept {
     return uuid;
   }
