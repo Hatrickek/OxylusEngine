@@ -44,13 +44,51 @@ Scene::~Scene() {
 
 Scene::Scene(const Scene& scene) {
   this->scene_name = scene.scene_name;
-  const auto pack = this->m_registry.storage<entt::entity>().data();
-  const auto pack_size = this->m_registry.storage<entt::entity>().size();
-  this->m_registry.storage<entt::entity>().push(pack, pack + pack_size);
+  const auto pack = this->registry.storage<entt::entity>().data();
+  const auto pack_size = this->registry.storage<entt::entity>().size();
+  this->registry.storage<entt::entity>().push(pack, pack + pack_size);
+}
+
+void Scene::mesh_component_ctor(entt::registry& reg, entt::entity entity) {
+  auto& component = reg.get<MeshComponent>(entity);
+  if (component.mesh_base) {
+    component.materials = component.mesh_base->get_materials(component.node_index);
+    if (!component.mesh_base->animations.empty()) {
+      auto& animation_component = reg.emplace_or_replace<AnimationComponent>(entity);
+      animation_component.animations = component.mesh_base->animations;
+    }
+  }
+}
+
+void Scene::rigidbody_component_ctor(entt::registry& reg, entt::entity entity) {
+  auto& component = reg.get<RigidbodyComponent>(entity);
+  create_rigidbody(entity, reg.get<TransformComponent>(entity), component);
+}
+
+void Scene::collider_component_ctor(entt::registry& reg, entt::entity entity) {
+  if (reg.any_of<RigidbodyComponent>(entity))
+    create_rigidbody(entity, reg.get<TransformComponent>(entity), reg.get<RigidbodyComponent>(entity));
+}
+
+void Scene::character_controller_component_ctor(entt::registry& reg, entt::entity entity) const {
+  auto& component = reg.get<CharacterControllerComponent>(entity);
+  create_character_controller(reg.get<TransformComponent>(entity), component);
 }
 
 void Scene::init(const Shared<RenderPipeline>& render_pipeline) {
   OX_SCOPED_ZONE;
+
+  // ctors
+  registry.on_construct<MeshComponent>().connect<&Scene::mesh_component_ctor>(this);
+  registry.on_construct<RigidbodyComponent>().connect<&Scene::rigidbody_component_ctor>(this);
+  registry.on_construct<BoxColliderComponent>().connect<&Scene::collider_component_ctor>(this);
+  registry.on_construct<SphereColliderComponent>().connect<&Scene::collider_component_ctor>(this);
+  registry.on_construct<CapsuleColliderComponent>().connect<&Scene::collider_component_ctor>(this);
+  registry.on_construct<TaperedCapsuleColliderComponent>().connect<&Scene::collider_component_ctor>(this);
+  registry.on_construct<CylinderColliderComponent>().connect<&Scene::collider_component_ctor>(this);
+  registry.on_construct<MeshColliderComponent>().connect<&Scene::collider_component_ctor>(this);
+  registry.on_construct<CharacterControllerComponent>().connect<&Scene::character_controller_component_ctor>(this);
+
   // Renderer
   scene_renderer = create_shared<SceneRenderer>(this);
 
@@ -69,12 +107,12 @@ Entity Scene::create_entity(const std::string& name) {
 
 Entity Scene::create_entity_with_uuid(UUID uuid, const std::string& name) {
   OX_SCOPED_ZONE;
-  Entity entity = {m_registry.create(), this};
+  Entity entity = {registry.create(), this};
   entity_map.emplace(uuid, entity);
-  entity.add_component_internal<IDComponent>(uuid);
-  entity.add_component_internal<RelationshipComponent>();
-  entity.add_component_internal<TransformComponent>();
-  entity.add_component_internal<TagComponent>().tag = name.empty() ? "Entity" : name;
+  entity.add_component<IDComponent>(uuid);
+  entity.add_component<RelationshipComponent>();
+  entity.add_component<TransformComponent>();
+  entity.add_component<TagComponent>().tag = name.empty() ? "Entity" : name;
   return entity;
 }
 
@@ -93,13 +131,13 @@ void Scene::iterate_mesh_node(const Shared<Mesh>& mesh, const Entity base_entity
     iterate_mesh_node(mesh, {}, node_entity, child);
 }
 
-Entity Scene::load_mesh(const Shared<Mesh>& mesh) {
+entt::entity Scene::load_mesh(const Shared<Mesh>& mesh) {
   const auto base_entity = create_entity(mesh->nodes[0]->name);
   for (const auto* node : mesh->nodes) {
     iterate_mesh_node(mesh, base_entity, {}, node);
   }
 
-  return base_entity;
+  return base_entity.get_handle();
 }
 
 void Scene::update_physics(const Timestep& delta_time) {
@@ -128,7 +166,7 @@ void Scene::update_physics(const Timestep& delta_time) {
   const float interpolation_factor = physics_frame_accumulator / physics_ts;
 
   const auto& body_interface = Physics::get_physics_system()->GetBodyInterface();
-  const auto view = m_registry.group<RigidbodyComponent>(entt::get<TransformComponent>);
+  const auto view = registry.group<RigidbodyComponent>(entt::get<TransformComponent>);
   for (auto&& [e, rb, tc] : view.each()) {
     if (!rb.runtime_body)
       continue;
@@ -167,7 +205,7 @@ void Scene::update_physics(const Timestep& delta_time) {
 
   // Character
   {
-    const auto ch_view = m_registry.view<TransformComponent, CharacterControllerComponent>();
+    const auto ch_view = registry.view<TransformComponent, CharacterControllerComponent>();
     for (auto&& [e, tc, ch] : ch_view.each()) {
       ch.character->PostSimulation(ch.collision_tolerance);
       if (ch.interpolation) {
@@ -210,7 +248,7 @@ void Scene::destroy_entity(const Entity entity) {
   }
 
   entity_map.erase(entity.get_uuid());
-  m_registry.destroy(entity);
+  registry.destroy(entity);
 }
 
 template <typename... Component>
@@ -276,17 +314,17 @@ void Scene::on_runtime_start() {
 
     // Rigidbodies
     {
-      const auto group = m_registry.group<RigidbodyComponent>(entt::get<TransformComponent>);
+      const auto group = registry.group<RigidbodyComponent>(entt::get<TransformComponent>);
       for (auto&& [e, rb, tc] : group.each()) {
         rb.previous_translation = rb.translation = tc.position;
         rb.previous_rotation = rb.rotation = tc.rotation;
-        create_rigidbody({e, this}, tc, rb);
+        create_rigidbody(e, tc, rb);
       }
     }
 
     // Characters
     {
-      const auto group = m_registry.group<CharacterControllerComponent>(entt::get<TransformComponent>);
+      const auto group = registry.group<CharacterControllerComponent>(entt::get<TransformComponent>);
       for (auto&& [e, ch, tc] : group.each()) {
         create_character_controller(tc, ch);
       }
@@ -296,7 +334,7 @@ void Scene::on_runtime_start() {
   }
 
   // Lua scripts
-  const auto script_view = m_registry.view<LuaScriptComponent>();
+  const auto script_view = registry.view<LuaScriptComponent>();
   for (auto&& [e, script_component] : script_view.each()) {
     if (script_component.lua_system) {
       script_component.lua_system->on_init(this, e);
@@ -312,7 +350,7 @@ void Scene::on_runtime_stop() {
   // Physics
   {
     JPH::BodyInterface& body_interface = Physics::get_physics_system()->GetBodyInterface();
-    const auto rb_view = m_registry.view<RigidbodyComponent>();
+    const auto rb_view = registry.view<RigidbodyComponent>();
     for (auto&& [e, rb] : rb_view.each()) {
       if (rb.runtime_body) {
         const auto* body = static_cast<const JPH::Body*>(rb.runtime_body);
@@ -320,7 +358,7 @@ void Scene::on_runtime_stop() {
         body_interface.DestroyBody(body->GetID());
       }
     }
-    const auto ch_view = m_registry.view<CharacterControllerComponent>();
+    const auto ch_view = registry.view<CharacterControllerComponent>();
     for (auto&& [e, ch] : ch_view.each()) {
       if (ch.character) {
         body_interface.RemoveBody(ch.character->GetBodyID());
@@ -335,7 +373,7 @@ void Scene::on_runtime_stop() {
   }
 
   // Lua scripts
-  const auto script_view = m_registry.view<LuaScriptComponent>();
+  const auto script_view = registry.view<LuaScriptComponent>();
   for (auto&& [e, script_component] : script_view.each()) {
     if (script_component.lua_system) {
       script_component.lua_system->on_release(this, e);
@@ -345,7 +383,7 @@ void Scene::on_runtime_stop() {
 
 Entity Scene::find_entity(const std::string_view& name) {
   OX_SCOPED_ZONE;
-  const auto group = m_registry.view<TagComponent>();
+  const auto group = registry.view<TagComponent>();
   for (const auto& entity : group) {
     auto& tag = group.get<TagComponent>(entity);
     if (tag.tag == name) {
@@ -373,8 +411,8 @@ Shared<Scene> Scene::copy(const Shared<Scene>& other) {
   OX_SCOPED_ZONE;
   Shared<Scene> new_scene = create_shared<Scene>();
 
-  auto& src_scene_registry = other->m_registry;
-  auto& dst_scene_registry = new_scene->m_registry;
+  auto& src_scene_registry = other->registry;
+  auto& dst_scene_registry = new_scene->registry;
 
   // Create entities in new scene
   const auto view = src_scene_registry.view<IDComponent, TagComponent>();
@@ -410,7 +448,7 @@ void Scene::on_contact_persisted(const JPH::Body& body1, const JPH::Body& body2,
     system->on_contact_persisted(this, body1, body2, manifold, settings);
 }
 
-void Scene::create_rigidbody(Entity entity, const TransformComponent& transform, RigidbodyComponent& component) const {
+void Scene::create_rigidbody(entt::entity ent, const TransformComponent& transform, RigidbodyComponent& component) {
   OX_SCOPED_ZONE;
   if (!running)
     return;
@@ -425,6 +463,8 @@ void Scene::create_rigidbody(Entity entity, const TransformComponent& transform,
 
   JPH::MutableCompoundShapeSettings compound_shape_settings;
   float max_scale_component = glm::max(glm::max(transform.scale.x, transform.scale.y), transform.scale.z);
+
+  auto entity = Entity(ent, this);
 
   const auto& entity_name = entity.get_component<TagComponent>().tag;
 
@@ -587,7 +627,7 @@ void Scene::on_runtime_update(const Timestep& delta_time) {
   // Camera
   {
     OX_SCOPED_ZONE_N("Camera System");
-    const auto camera_view = m_registry.view<TransformComponent, CameraComponent>();
+    const auto camera_view = registry.view<TransformComponent, CameraComponent>();
     for (const auto entity : camera_view) {
       auto [transform, camera] = camera_view.get<TransformComponent, CameraComponent>(entity);
       camera.camera.update(transform.position, transform.rotation);
@@ -614,7 +654,7 @@ void Scene::on_runtime_update(const Timestep& delta_time) {
   // Scripting
   {
     OX_SCOPED_ZONE_N("LuaScripting/on_update");
-    const auto script_view = m_registry.view<LuaScriptComponent>();
+    const auto script_view = registry.view<LuaScriptComponent>();
     for (auto&& [e, script_component] : script_view.each()) {
       if (script_component.lua_system) {
         script_component.lua_system->bind_globals(this, e, delta_time);
@@ -626,7 +666,7 @@ void Scene::on_runtime_update(const Timestep& delta_time) {
   // Audio
   {
     OX_SCOPED_ZONE_N("Audio Systems");
-    const auto listener_view = m_registry.group<AudioListenerComponent>(entt::get<TransformComponent>);
+    const auto listener_view = registry.group<AudioListenerComponent>(entt::get<TransformComponent>);
     for (auto&& [e, ac, tc] : listener_view.each()) {
       ac.listener = create_shared<AudioListener>();
       if (ac.active) {
@@ -639,7 +679,7 @@ void Scene::on_runtime_update(const Timestep& delta_time) {
       }
     }
 
-    const auto source_view = m_registry.group<AudioSourceComponent>(entt::get<TransformComponent>);
+    const auto source_view = registry.group<AudioSourceComponent>(entt::get<TransformComponent>);
     for (auto&& [e, ac, tc] : source_view.each()) {
       if (ac.source) {
         const Mat4 inverted = glm::inverse(Entity(e, this).get_world_transform());
@@ -661,7 +701,7 @@ void Scene::on_imgui_render(const Timestep& delta_time) {
 
   {
     OX_SCOPED_ZONE_N("LuaScripting/on_imgui_render");
-    const auto script_view = m_registry.view<LuaScriptComponent>();
+    const auto script_view = registry.view<LuaScriptComponent>();
     for (auto&& [e, script_component] : script_view.each()) {
       if (script_component.lua_system) {
         script_component.lua_system->on_imgui_render(delta_time);
@@ -675,107 +715,4 @@ void Scene::on_editor_update(const Timestep& delta_time, Camera& camera) {
   scene_renderer->get_render_pipeline()->on_register_camera(&camera);
   scene_renderer->update();
 }
-
-template <typename T>
-void Scene::on_component_added(Entity entity, T& component) {
-  static_assert(sizeof(T) == 0);
-}
-
-template <>
-void Scene::on_component_added<TagComponent>(Entity entity, TagComponent& component) {}
-
-template <>
-void Scene::on_component_added<IDComponent>(Entity entity, IDComponent& component) {}
-
-template <>
-void Scene::on_component_added<RelationshipComponent>(Entity entity, RelationshipComponent& component) {}
-
-template <>
-void Scene::on_component_added<PrefabComponent>(Entity entity, PrefabComponent& component) {}
-
-template <>
-void Scene::on_component_added<TransformComponent>(Entity entity, TransformComponent& component) {}
-
-template <>
-void Scene::on_component_added<CameraComponent>(Entity entity, CameraComponent& component) {}
-
-template <>
-void Scene::on_component_added<AudioSourceComponent>(Entity entity, AudioSourceComponent& component) {}
-
-template <>
-void Scene::on_component_added<AudioListenerComponent>(Entity entity, AudioListenerComponent& component) {}
-
-template <>
-void Scene::on_component_added<MeshComponent>(Entity entity, MeshComponent& component) {
-  component.materials = component.mesh_base->get_materials(component.node_index);
-  if (!component.mesh_base->animations.empty()) {
-    auto& animation_component = entity.add_component_internal<AnimationComponent>();
-    animation_component.animations = component.mesh_base->animations;
-  }
-}
-
-template <>
-void Scene::on_component_added<SkyLightComponent>(Entity entity, SkyLightComponent& component) {}
-
-template <>
-void Scene::on_component_added<AnimationComponent>(Entity entity, AnimationComponent& component) {}
-
-template <>
-void Scene::on_component_added<LightComponent>(Entity entity, LightComponent& component) {}
-
-template <>
-void Scene::on_component_added<PostProcessProbe>(Entity entity, PostProcessProbe& component) {}
-
-template <>
-void Scene::on_component_added<ParticleSystemComponent>(Entity entity,
-                                                        ParticleSystemComponent& component) {}
-
-template <>
-void Scene::on_component_added<RigidbodyComponent>(Entity entity, RigidbodyComponent& component) {
-  create_rigidbody(entity, entity.get_component<TransformComponent>(), component);
-}
-
-template <>
-void Scene::on_component_added<BoxColliderComponent>(Entity entity, BoxColliderComponent& component) {
-  if (entity.has_component<RigidbodyComponent>())
-    create_rigidbody(entity, entity.get_component<TransformComponent>(), entity.get_component<RigidbodyComponent>());
-}
-
-template <>
-void Scene::on_component_added<SphereColliderComponent>(Entity entity, SphereColliderComponent& component) {
-  if (entity.has_component<RigidbodyComponent>())
-    create_rigidbody(entity, entity.get_component<TransformComponent>(), entity.get_component<RigidbodyComponent>());
-}
-
-template <>
-void Scene::on_component_added<CapsuleColliderComponent>(Entity entity, CapsuleColliderComponent& component) {
-  if (entity.has_component<RigidbodyComponent>())
-    create_rigidbody(entity, entity.get_component<TransformComponent>(), entity.get_component<RigidbodyComponent>());
-}
-
-template <>
-void Scene::on_component_added<TaperedCapsuleColliderComponent>(Entity entity, TaperedCapsuleColliderComponent& component) {
-  if (entity.has_component<RigidbodyComponent>())
-    create_rigidbody(entity, entity.get_component<TransformComponent>(), entity.get_component<RigidbodyComponent>());
-}
-
-template <>
-void Scene::on_component_added<CylinderColliderComponent>(Entity entity, CylinderColliderComponent& component) {
-  if (entity.has_component<RigidbodyComponent>())
-    create_rigidbody(entity, entity.get_component<TransformComponent>(), entity.get_component<RigidbodyComponent>());
-}
-
-template <>
-void Scene::on_component_added<MeshColliderComponent>(Entity entity, MeshColliderComponent& component) {
-  if (entity.has_component<RigidbodyComponent>())
-    create_rigidbody(entity, entity.get_component<TransformComponent>(), entity.get_component<RigidbodyComponent>());
-}
-
-template <>
-void Scene::on_component_added<CharacterControllerComponent>(Entity entity, CharacterControllerComponent& component) {
-  create_character_controller(entity.get_component<TransformComponent>(), component);
-}
-
-template <>
-void Scene::on_component_added<LuaScriptComponent>(Entity entity, LuaScriptComponent& component) {}
 }

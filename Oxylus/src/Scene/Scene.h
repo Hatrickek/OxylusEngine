@@ -21,7 +21,7 @@ class Entity;
 class Scene {
 public:
   std::string scene_name = "Untitled";
-  entt::registry m_registry;
+  entt::registry registry;
   ankerl::unordered_dense::map<UUID, entt::entity> entity_map;
 
   Scene();
@@ -35,7 +35,7 @@ public:
   Entity create_entity_with_uuid(UUID uuid, const std::string& name = std::string());
 
   void iterate_mesh_node(const Shared<Mesh>& mesh, const Entity base_entity, Entity parent_entity, const Mesh::Node* node);
-  Entity load_mesh(const Shared<Mesh>& mesh);
+  entt::entity load_mesh(const Shared<Mesh>& mesh);
 
   template <typename T, typename... Args>
   Scene* add_system(Args&&... args) {
@@ -69,7 +69,7 @@ public:
   // Renderer
   Shared<SceneRenderer> get_renderer() { return scene_renderer; }
 
-  entt::registry& get_registry() { return m_registry; }
+  entt::registry& get_registry() { return registry; }
 
 private:
   bool running = false;
@@ -88,13 +88,15 @@ private:
 
   void init(const Shared<RenderPipeline>& render_pipeline = nullptr);
 
+  void mesh_component_ctor(entt::registry& reg, entt::entity entity);
+  void rigidbody_component_ctor(entt::registry& reg, entt::entity entity);
+  void collider_component_ctor(entt::registry& reg, entt::entity entity);
+  void character_controller_component_ctor(entt::registry& reg, entt::entity entity) const;
+
   // Physics
   void update_physics(const Timestep& delta_time);
-  void create_rigidbody(Entity entity, const TransformComponent& transform, RigidbodyComponent& component) const;
+  void create_rigidbody(entt::entity ent, const TransformComponent& transform, RigidbodyComponent& component);
   void create_character_controller(const TransformComponent& transform, CharacterControllerComponent& component) const;
-
-  template <typename T>
-  void on_component_added(Entity entity, T& component);
 
   friend class Entity;
   friend class SceneSerializer;

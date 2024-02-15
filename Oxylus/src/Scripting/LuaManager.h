@@ -14,7 +14,6 @@ public:
 
   static LuaManager* get();
   sol::state* get_state() const { return m_state.get(); }
-
 private:
   Shared<sol::state> m_state = nullptr;
 

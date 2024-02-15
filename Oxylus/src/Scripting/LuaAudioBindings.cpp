@@ -2,7 +2,7 @@
 
 #include <sol/state.hpp>
 
-#include "Sol2Helpers.h"
+#include "LuaHelpers.h"
 
 #include "Assets/AssetManager.h"
 
@@ -38,9 +38,10 @@ void bind_audio(const Shared<sol::state>& state) {
   SET_TYPE_FUNCTION(audio_source, AudioSource, set_velocity);
 
   auto audio_source_component_type = state->new_usertype<AudioSourceComponent>("AudioSourceComponent");
+  SET_COMPONENT_TYPE_ID(audio_source_component_type, AudioSourceComponent);
   SET_TYPE_FIELD(audio_source_component_type, AudioSourceComponent, config);
   SET_TYPE_FIELD(audio_source_component_type, AudioSourceComponent, source);
-  REGISTER_COMPONENT_WITH_ECS(state, AudioSourceComponent)
+  register_meta_component<AudioSourceComponent>();
 
   auto audio_source_config_type = state->new_usertype<AudioSourceConfig>("AudioSourceConfig");
   const std::initializer_list<std::pair<sol::string_view, AttenuationModelType>> attenuation_model_type = {
@@ -67,10 +68,11 @@ void bind_audio(const Shared<sol::state>& state) {
   SET_TYPE_FIELD(audio_source_config_type, AudioSourceConfig, doppler_factor);
 
   sol::usertype<AudioListenerComponent> audio_listener_component_type = state->new_usertype<AudioListenerComponent>("AudioListenerComponent");
+  SET_COMPONENT_TYPE_ID(audio_listener_component_type, AudioListenerComponent);
   SET_TYPE_FIELD(audio_listener_component_type, AudioListenerComponent, active);
   SET_TYPE_FIELD(audio_listener_component_type, AudioListenerComponent, config);
   SET_TYPE_FIELD(audio_listener_component_type, AudioListenerComponent, listener);
-  REGISTER_COMPONENT_WITH_ECS(state, AudioListenerComponent)
+  register_meta_component<AudioListenerComponent>();
   sol::usertype<AudioListenerConfig> audio_listener_config_type = state->new_usertype<AudioListenerConfig>("AudioListenerConfig");
   SET_TYPE_FIELD(audio_listener_config_type, AudioListenerConfig, cone_inner_angle);
   SET_TYPE_FIELD(audio_listener_config_type, AudioListenerConfig, cone_outer_angle);

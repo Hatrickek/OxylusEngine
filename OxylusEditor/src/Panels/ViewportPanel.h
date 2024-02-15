@@ -43,7 +43,7 @@ private:
                             const Frustum& frustum,
                             Scene* scene) {
     if (m_show_gizmo_image_map[typeid(T).hash_code()]) {
-      auto view = scene->m_registry.view<TransformComponent, T>();
+      auto view = scene->registry.view<TransformComponent, T>();
 
       for (const auto&& [entity, transform, component] : view.each()) {
         Vec3 pos = Entity(entity, scene).get_world_transform()[3];
@@ -64,7 +64,7 @@ private:
 
         ImGui::PopStyleColor(2);
 
-        std::string name_s = typeid(T).name();
+        auto name_s = std::string(entt::type_id<T>().name());
 
         OxUI::tooltip(name_s.c_str());
       }

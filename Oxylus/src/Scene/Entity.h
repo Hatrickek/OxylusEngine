@@ -13,19 +13,6 @@ public:
 
   Entity(entt::entity handle, Scene* scene);
 
-  // Add component for Internal components which calls OnComponentAdded for them.
-  template <typename T, typename... Args>
-  T& add_component_internal(Args&&... args) {
-    OX_SCOPED_ZONE;
-    if (has_component<T>()) {
-      OX_CORE_ERROR("Entity already has {0}!", typeid(T).name());
-    }
-
-    T& component = scene->m_registry.emplace<T>(entity_handle, std::forward<Args>(args)...);
-    scene->on_component_added<T>(*this, component);
-    return component;
-  }
-
   template <typename T, typename... Args>
   T& add_component(Args&&... args) {
     OX_SCOPED_ZONE;
@@ -33,7 +20,7 @@ public:
       OX_CORE_ERROR("Entity already has {0}!", typeid(T).name());
     }
 
-    T& component = scene->m_registry.emplace<T>(entity_handle, std::forward<Args>(args)...);
+    T& component = scene->registry.emplace<T>(entity_handle, std::forward<Args>(args)...);
     return component;
   }
 
@@ -43,13 +30,13 @@ public:
     if (!has_component<T>()) {
       OX_CORE_ERROR("Entity doesn't have {0}!", typeid(T).name());
     }
-    return scene->m_registry.get<T>(entity_handle);
+    return scene->registry.get<T>(entity_handle);
   }
 
   template <typename T>
   bool has_component() const {
     OX_SCOPED_ZONE;
-    return scene->m_registry.all_of<T>(entity_handle);
+    return scene->registry.all_of<T>(entity_handle);
   }
 
   template <typename T>
@@ -58,27 +45,26 @@ public:
     if (!has_component<T>()) {
       OX_CORE_ERROR("Entity does not have {0} to remove!", typeid(T).name());
     }
-    scene->m_registry.remove<T>(entity_handle);
+    scene->registry.remove<T>(entity_handle);
   }
 
   template <typename T, typename... Args>
   T& add_or_replace_component(Args&&... args) {
     OX_SCOPED_ZONE;
-    T& component = scene->m_registry.emplace_or_replace<T>(entity_handle, std::forward<Args>(args)...);
-    scene->on_component_added<T>(*this, component);
+    T& component = scene->registry.emplace_or_replace<T>(entity_handle, std::forward<Args>(args)...);
     return component;
   }
 
   template <typename T, typename... Args>
   T& get_or_add_component(Args&&... args) {
     OX_SCOPED_ZONE;
-    return scene->m_registry.get_or_emplace<T>(entity_handle, std::forward<Args>(args)...);
+    return scene->registry.get_or_emplace<T>(entity_handle, std::forward<Args>(args)...);
   }
 
   template <typename T>
   T* try_get_component() {
     OX_SCOPED_ZONE;
-    return scene->m_registry.try_get<T>(entity_handle);
+    return scene->registry.try_get<T>(entity_handle);
   }
 
   RelationshipComponent& get_relationship() const { return get_component<RelationshipComponent>(); }
@@ -150,7 +136,6 @@ public:
     transform.parent = 0;
   }
 
-
   Mat4 get_world_transform() const {
     OX_SCOPED_ZONE;
     const auto& transform = get_transform();
@@ -169,6 +154,8 @@ public:
   }
 
   Scene* get_scene() const { return scene; }
+
+  entt::entity get_handle() const { return entity_handle; }
 
   operator entt::entity() const {
     return entity_handle;

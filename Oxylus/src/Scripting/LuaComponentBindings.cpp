@@ -5,7 +5,7 @@
 #include "Assets/AssetManager.h"
 
 #include "Scene/Entity.h"
-#include "Scripting/Sol2Helpers.h"
+#include "LuaHelpers.h"
 
 namespace Ox {
 void LuaBindings::bind_components(const Shared<sol::state>& state) {
@@ -17,26 +17,29 @@ void LuaBindings::bind_components(const Shared<sol::state>& state) {
 }
 
 void LuaBindings::bind_tag_component(const Shared<sol::state>& state) {
-  auto name_component_type = state->new_usertype<TagComponent>("NameComponent");
+  auto name_component_type = state->new_usertype<TagComponent>("TagComponent");
+  SET_COMPONENT_TYPE_ID(name_component_type, TagComponent);
   SET_TYPE_FIELD(name_component_type, TagComponent, tag);
   SET_TYPE_FIELD(name_component_type, TagComponent, enabled);
-  REGISTER_COMPONENT_WITH_ECS(state, TagComponent)
+  register_meta_component<TagComponent>();
 }
 
 void LuaBindings::bind_transform_component(const Shared<sol::state>& state) {
   auto transform_component_type = state->new_usertype<TransformComponent>("TransformComponent");
+  SET_COMPONENT_TYPE_ID(transform_component_type, TransformComponent);
   SET_TYPE_FIELD(transform_component_type, TransformComponent, position);
   SET_TYPE_FIELD(transform_component_type, TransformComponent, rotation);
   SET_TYPE_FIELD(transform_component_type, TransformComponent, scale);
-  REGISTER_COMPONENT_WITH_ECS(state, TransformComponent)
+  register_meta_component<TransformComponent>();
 }
 
 void LuaBindings::bind_light_component(const Shared<sol::state>& state) {
   // TODO:
   auto light_component_type = state->new_usertype<LightComponent>("LightComponent");
+  SET_COMPONENT_TYPE_ID(light_component_type, LightComponent);
   SET_TYPE_FIELD(light_component_type, LightComponent, color);
   SET_TYPE_FIELD(light_component_type, LightComponent, intensity);
-  REGISTER_COMPONENT_WITH_ECS(state, LightComponent)
+  register_meta_component<LightComponent>();
 }
 
 void LuaBindings::bind_mesh_component(const Shared<sol::state>& state) {
@@ -64,11 +67,13 @@ void LuaBindings::bind_mesh_component(const Shared<sol::state>& state) {
   state->new_usertype<Mesh>("Mesh");
 
   auto mesh_component_type = state->new_usertype<MeshComponent>("MeshComponent");
+  SET_COMPONENT_TYPE_ID(mesh_component_type, MeshComponent);
   SET_TYPE_FIELD(mesh_component_type, MeshComponent, mesh_base);
   SET_TYPE_FIELD(mesh_component_type, MeshComponent, node_index);
   SET_TYPE_FIELD(mesh_component_type, MeshComponent, cast_shadows);
   SET_TYPE_FIELD(mesh_component_type, MeshComponent, materials);
-  REGISTER_COMPONENT_WITH_ECS(state, MeshComponent)
+  SET_TYPE_FIELD(mesh_component_type, MeshComponent, aabb);
+  register_meta_component<MeshComponent>();
 }
 
 void LuaBindings::bind_camera_component(const Shared<sol::state>& state) {
@@ -89,7 +94,8 @@ void LuaBindings::bind_camera_component(const Shared<sol::state>& state) {
   SET_TYPE_FIELD(camera_type, Camera, get_screen_ray);
 
   auto camera_component_type = state->new_usertype<CameraComponent>("CameraComponent");
+  SET_COMPONENT_TYPE_ID(camera_component_type, CameraComponent);
   SET_TYPE_FIELD(camera_component_type, CameraComponent, camera);
-  REGISTER_COMPONENT_WITH_ECS(state, CameraComponent)
+  register_meta_component<CameraComponent>();
 }
 }

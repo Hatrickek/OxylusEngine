@@ -1,7 +1,7 @@
 ﻿#include "LuaPhysicsBindings.h"
 
 #include <sol/state.hpp>
-#include "Sol2Helpers.h"
+#include "LuaHelpers.h"
 
 #include "Physics/JoltBuild.h"
 
@@ -53,7 +53,8 @@ void LuaBindings::bind_physics(const Shared<sol::state>& state) {
   SET_TYPE_FIELD(rigidody_component, RigidbodyComponent, continuous);
   SET_TYPE_FIELD(rigidody_component, RigidbodyComponent, interpolation);
   SET_TYPE_FIELD(rigidody_component, RigidbodyComponent, is_sensor);
-  REGISTER_COMPONENT_WITH_ECS(state, RigidbodyComponent)
+  SET_COMPONENT_TYPE_ID(rigidody_component, RigidbodyComponent);
+  register_meta_component<RigidbodyComponent>();
 
   auto box_collider_component = state->new_usertype<BoxColliderComponent>("BoxColliderComponent");
   SET_TYPE_FIELD(box_collider_component, BoxColliderComponent, size);
@@ -61,7 +62,8 @@ void LuaBindings::bind_physics(const Shared<sol::state>& state) {
   SET_TYPE_FIELD(box_collider_component, BoxColliderComponent, density);
   SET_TYPE_FIELD(box_collider_component, BoxColliderComponent, friction);
   SET_TYPE_FIELD(box_collider_component, BoxColliderComponent, restitution);
-  REGISTER_COMPONENT_WITH_ECS(state, BoxColliderComponent)
+  SET_COMPONENT_TYPE_ID(box_collider_component, BoxColliderComponent);
+  register_meta_component<BoxColliderComponent>();
 
   auto sphere_collider_component = state->new_usertype<SphereColliderComponent>("SphereColliderComponent");
   SET_TYPE_FIELD(sphere_collider_component, SphereColliderComponent, radius);
@@ -69,7 +71,8 @@ void LuaBindings::bind_physics(const Shared<sol::state>& state) {
   SET_TYPE_FIELD(sphere_collider_component, SphereColliderComponent, density);
   SET_TYPE_FIELD(sphere_collider_component, SphereColliderComponent, friction);
   SET_TYPE_FIELD(sphere_collider_component, SphereColliderComponent, restitution);
-  REGISTER_COMPONENT_WITH_ECS(state, SphereColliderComponent)
+  SET_COMPONENT_TYPE_ID(sphere_collider_component, SphereColliderComponent);
+  register_meta_component<SphereColliderComponent>();
 
   auto capsule_collider_component = state->new_usertype<CapsuleColliderComponent>("CapsuleColliderComponent");
   SET_TYPE_FIELD(capsule_collider_component, CapsuleColliderComponent, height);
@@ -78,7 +81,8 @@ void LuaBindings::bind_physics(const Shared<sol::state>& state) {
   SET_TYPE_FIELD(capsule_collider_component, CapsuleColliderComponent, density);
   SET_TYPE_FIELD(capsule_collider_component, CapsuleColliderComponent, friction);
   SET_TYPE_FIELD(capsule_collider_component, CapsuleColliderComponent, restitution);
-  REGISTER_COMPONENT_WITH_ECS(state, CapsuleColliderComponent)
+  SET_COMPONENT_TYPE_ID(capsule_collider_component, CapsuleColliderComponent);
+  register_meta_component<CapsuleColliderComponent>();
 
   auto tapered_capsule_collider_component = state->new_usertype<TaperedCapsuleColliderComponent>("TaperedCapsuleColliderComponent");
   SET_TYPE_FIELD(tapered_capsule_collider_component, TaperedCapsuleColliderComponent, height);
@@ -88,7 +92,8 @@ void LuaBindings::bind_physics(const Shared<sol::state>& state) {
   SET_TYPE_FIELD(tapered_capsule_collider_component, TaperedCapsuleColliderComponent, density);
   SET_TYPE_FIELD(tapered_capsule_collider_component, TaperedCapsuleColliderComponent, friction);
   SET_TYPE_FIELD(tapered_capsule_collider_component, TaperedCapsuleColliderComponent, restitution);
-  REGISTER_COMPONENT_WITH_ECS(state, TaperedCapsuleColliderComponent)
+  SET_COMPONENT_TYPE_ID(tapered_capsule_collider_component, TaperedCapsuleColliderComponent);
+  register_meta_component<TaperedCapsuleColliderComponent>();
 
   auto cylinder_collider_component = state->new_usertype<CylinderColliderComponent>("CylinderColliderComponent");
   SET_TYPE_FIELD(cylinder_collider_component, CylinderColliderComponent, height);
@@ -97,12 +102,14 @@ void LuaBindings::bind_physics(const Shared<sol::state>& state) {
   SET_TYPE_FIELD(cylinder_collider_component, CylinderColliderComponent, density);
   SET_TYPE_FIELD(cylinder_collider_component, CylinderColliderComponent, friction);
   SET_TYPE_FIELD(cylinder_collider_component, CylinderColliderComponent, restitution);
-  REGISTER_COMPONENT_WITH_ECS(state, CylinderColliderComponent)
+  SET_COMPONENT_TYPE_ID(cylinder_collider_component, CylinderColliderComponent);
+  register_meta_component<CylinderColliderComponent>();
 
   auto mesh_collider_component = state->new_usertype<MeshColliderComponent>("MeshColliderComponent");
   SET_TYPE_FIELD(mesh_collider_component, MeshColliderComponent, offset);
   SET_TYPE_FIELD(mesh_collider_component, MeshColliderComponent, friction);
   SET_TYPE_FIELD(mesh_collider_component, MeshColliderComponent, restitution);
-  REGISTER_COMPONENT_WITH_ECS(state, MeshColliderComponent)
+  SET_COMPONENT_TYPE_ID(mesh_collider_component, MeshColliderComponent);
+  register_meta_component<MeshColliderComponent>();
 }
 }

@@ -79,7 +79,8 @@ void LuaSystem::on_init(Scene* scene, entt::entity entity) {
   OX_SCOPED_ZONE;
   if (on_init_func) {
     (*environment)["scene"] = scene;
-    (*environment)["this"] = Entity(entity, scene);
+    (*environment)["owner"] = std::ref(scene->registry);
+    (*environment)["this"] = entity;
     const auto result = on_init_func->call();
     check_result(result, "on_init");
   }
@@ -98,7 +99,8 @@ void LuaSystem::on_release(Scene* scene, entt::entity entity) {
   if (on_release_func) {
     const auto result = on_release_func->call();
     (*environment)["scene"] = scene;
-    (*environment)["this"] = Entity(entity, scene);
+    (*environment)["owner"] = std::ref(scene->registry);
+    (*environment)["this"] = entity;
     check_result(result, "on_release");
   }
 }
@@ -131,7 +133,8 @@ void LuaSystem::reload() {
 
 void LuaSystem::bind_globals(Scene* scene, entt::entity entity, const Timestep& timestep) {
   (*environment)["scene"] = scene;
-  (*environment)["this"] = Entity(entity, scene);
+  (*environment)["owner"] = std::ref(scene->registry);
+  (*environment)["this"] = entity;
   (*environment)["current_time"] = timestep.get_elapsed_seconds();
 }
 }

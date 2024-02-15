@@ -294,7 +294,7 @@ UUID EntitySerializer::deserialize_entity(toml::array* entity_arr, Scene* scene,
     }
     else if (const auto mesh_node = ent.as_table()->get("mesh_component")) {
       auto mesh = AssetManager::get_mesh_asset(GET_STRING(mesh_node, "mesh_path"));
-      auto& mc = deserialized_entity.add_component_internal<MeshComponent>(mesh);
+      auto& mc = deserialized_entity.add_component<MeshComponent>(mesh);
       mc.node_index = GET_UINT32(mesh_node, "node_index");
       mc.cast_shadows = GET_BOOL(mesh_node, "cast_shadows");
     }

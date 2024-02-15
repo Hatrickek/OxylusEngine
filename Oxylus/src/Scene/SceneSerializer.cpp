@@ -20,7 +20,7 @@ void SceneSerializer::serialize(const std::string& filePath) const {
 
   tbl.emplace("name", m_scene->scene_name);
 
-  for (const auto [e] : m_scene->m_registry.storage<entt::entity>().each()) {
+  for (const auto [e] : m_scene->registry.storage<entt::entity>().each()) {
     const Entity entity = {e, m_scene.get()};
     if (!entity)
       return;

@@ -197,7 +197,7 @@ template <typename Component>
 void InspectorPanel::draw_add_component(Entity entity, const char* name) {
   if (ImGui::MenuItem(name)) {
     if (!entity.has_component<Component>())
-      entity.add_component_internal<Component>();
+      entity.add_component<Component>();
     else
       OX_CORE_ERROR("Entity already has the {}!", typeid(Component).name());
     ImGui::CloseCurrentPopup();

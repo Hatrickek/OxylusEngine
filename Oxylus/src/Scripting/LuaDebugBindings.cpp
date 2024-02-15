@@ -1,7 +1,7 @@
 ﻿#include "LuaDebugBindings.h"
 
 #include <sol/state.hpp>
-#include "Sol2Helpers.h"
+#include "LuaHelpers.h"
 
 #include "Physics/RayCast.h"
 

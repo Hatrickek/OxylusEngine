@@ -316,22 +316,22 @@ void SceneHierarchyPanel::draw_context_menu() {
 
     if (ImGui::MenuItem("Camera")) {
       to_select = m_context->create_entity("Camera");
-      to_select.add_component_internal<CameraComponent>();
+      to_select.add_component<CameraComponent>();
     }
 
     if (ImGui::MenuItem("Lua Script")) {
       to_select = m_context->create_entity("Script");
-      to_select.add_component_internal<LuaScriptComponent>();
+      to_select.add_component<LuaScriptComponent>();
     }
 
     if (ImGui::BeginMenu("Light")) {
       if (ImGui::MenuItem("Sky Light")) {
         to_select = m_context->create_entity("Sky Light");
-        to_select.add_component_internal<SkyLightComponent>();
+        to_select.add_component<SkyLightComponent>();
       }
       if (ImGui::MenuItem("Light")) {
         to_select = m_context->create_entity("Light");
-        to_select.add_component_internal<LightComponent>();
+        to_select.add_component<LightComponent>();
       }
 
       ImGui::EndMenu();
@@ -342,22 +342,22 @@ void SceneHierarchyPanel::draw_context_menu() {
 
       if (ImGui::MenuItem("Sphere")) {
         to_select = m_context->create_entity("Sphere");
-        to_select.add_component_internal<RigidbodyComponent>();
-        to_select.add_component_internal<SphereColliderComponent>();
-        to_select.add_component_internal<MeshComponent>(AssetManager::get_mesh_asset("Resources/Objects/sphere.glb"));
+        to_select.add_component<RigidbodyComponent>();
+        to_select.add_component<SphereColliderComponent>();
+        to_select.add_component<MeshComponent>(AssetManager::get_mesh_asset("Resources/Objects/sphere.glb"));
       }
 
       if (ImGui::MenuItem("Cube")) {
         to_select = m_context->create_entity("Cube");
-        to_select.add_component_internal<RigidbodyComponent>();
-        to_select.add_component_internal<BoxColliderComponent>();
-        to_select.add_component_internal<MeshComponent>(AssetManager::get_mesh_asset("Resources/Objects/cube.glb"));
+        to_select.add_component<RigidbodyComponent>();
+        to_select.add_component<BoxColliderComponent>();
+        to_select.add_component<MeshComponent>(AssetManager::get_mesh_asset("Resources/Objects/cube.glb"));
       }
 
       if (ImGui::MenuItem("Character Controller")) {
         to_select = m_context->create_entity("Character Controller");
-        to_select.add_component_internal<CharacterControllerComponent>();
-        to_select.add_component_internal<MeshComponent>(AssetManager::get_mesh_asset("Resources/Objects/capsule.glb"));
+        to_select.add_component<CharacterControllerComponent>();
+        to_select.add_component<MeshComponent>(AssetManager::get_mesh_asset("Resources/Objects/capsule.glb"));
       }
 
       ImGui::EndMenu();
@@ -366,12 +366,12 @@ void SceneHierarchyPanel::draw_context_menu() {
     if (ImGui::BeginMenu("Audio")) {
       if (ImGui::MenuItem("Audio Source")) {
         to_select = m_context->create_entity("AudioSource");
-        to_select.add_component_internal<AudioSourceComponent>();
+        to_select.add_component<AudioSourceComponent>();
         ImGui::CloseCurrentPopup();
       }
       if (ImGui::MenuItem("Audio Listener")) {
         to_select = m_context->create_entity("AudioListener");
-        to_select.add_component_internal<AudioListenerComponent>();
+        to_select.add_component<AudioListenerComponent>();
         ImGui::CloseCurrentPopup();
       }
       ImGui::EndMenu();
@@ -380,11 +380,11 @@ void SceneHierarchyPanel::draw_context_menu() {
     if (ImGui::BeginMenu("Effects")) {
       if (ImGui::MenuItem("PostProcess Probe")) {
         to_select = m_context->create_entity("PostProcess Probe");
-        to_select.add_component_internal<PostProcessProbe>();
+        to_select.add_component<PostProcessProbe>();
       }
       if (ImGui::MenuItem("Particle System")) {
         to_select = m_context->create_entity("Particle System");
-        to_select.add_component_internal<ParticleSystemComponent>();
+        to_select.add_component<ParticleSystemComponent>();
       }
       ImGui::EndMenu();
     }
@@ -487,7 +487,7 @@ void SceneHierarchyPanel::on_imgui_render() {
       }
 
       ImGui::PushStyleVar(ImGuiStyleVar_FrameBorderSize, 0.0f);
-      const auto view = m_context->m_registry.view<IDComponent>();
+      const auto view = m_context->registry.view<IDComponent>();
       for (const auto e : view) {
         const Entity entity = {e, m_context.get()};
         if (entity && !entity.get_parent())

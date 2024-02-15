@@ -39,7 +39,7 @@ public:
   vkb::Instance vkb_instance;
   vkb::Device vkb_device;
   uint32_t num_inflight_frames = 3;
-  uint32_t num_frames = 0;
+  uint64_t num_frames = 0;
   uint32_t current_frame = 0;
   vuk::Unique<std::array<VkSemaphore, 3>> present_ready;
   vuk::Unique<std::array<VkSemaphore, 3>> render_complete;

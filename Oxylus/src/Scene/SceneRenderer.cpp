@@ -32,7 +32,7 @@ void SceneRenderer::update() const {
   // Mesh System
   {
     OX_SCOPED_ZONE_N("Mesh System");
-    const auto mesh_view = m_scene->m_registry.view<TransformComponent, MeshComponent, TagComponent>();
+    const auto mesh_view = m_scene->registry.view<TransformComponent, MeshComponent, TagComponent>();
     for (const auto&& [entity, transform, mesh_component, tag] : mesh_view.each()) {
       if (!tag.enabled)
         continue;
@@ -51,7 +51,7 @@ void SceneRenderer::update() const {
   {
     OX_SCOPED_ZONE_N("Draw physics shapes");
     if (RendererCVar::cvar_enable_debug_renderer.get() && RendererCVar::cvar_draw_physics_shapes.get()) {
-      const auto mesh_collider_view = m_scene->m_registry.view<TransformComponent, RigidbodyComponent, TagComponent>();
+      const auto mesh_collider_view = m_scene->registry.view<TransformComponent, RigidbodyComponent, TagComponent>();
       for (const auto&& [entity, transform, rb, tag] : mesh_collider_view.each()) {
         if (!tag.enabled)
           continue;
@@ -69,7 +69,7 @@ void SceneRenderer::update() const {
   // Animation system
   {
     OX_SCOPED_ZONE_N("Animated Mesh System");
-    const auto animation_view = m_scene->m_registry.view<TransformComponent, MeshComponent, AnimationComponent, TagComponent>();
+    const auto animation_view = m_scene->registry.view<TransformComponent, MeshComponent, AnimationComponent, TagComponent>();
     for (const auto&& [entity, transform, mesh_renderer, animation, tag] : animation_view.each()) {
       if (!animation.animations.empty()) {
         animation.animation_timer += Application::get_timestep() * animation.animation_speed;
@@ -84,7 +84,7 @@ void SceneRenderer::update() const {
   // Lighting
   {
     OX_SCOPED_ZONE_N("Lighting System");
-    const auto lighting_view = m_scene->m_registry.view<TransformComponent, LightComponent>();
+    const auto lighting_view = m_scene->registry.view<TransformComponent, LightComponent>();
     for (auto&& [e,tc, lc] : lighting_view.each()) {
       Entity entity = {e, m_scene};
       if (!entity.get_component<TagComponent>().enabled)
@@ -95,7 +95,7 @@ void SceneRenderer::update() const {
 
   // TODO: (very outdated, currently not working)
   // Particle system 
-  const auto particle_system_view = m_scene->m_registry.view<TransformComponent, ParticleSystemComponent>();
+  const auto particle_system_view = m_scene->registry.view<TransformComponent, ParticleSystemComponent>();
   for (auto&& [e, tc, psc] : particle_system_view.each()) {
     psc.system->on_update(Application::get_timestep(), tc.position);
     psc.system->on_render();

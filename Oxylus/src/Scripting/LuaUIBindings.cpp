@@ -3,7 +3,7 @@
 #include <sol/state.hpp>
 
 #include "LuaImGuiBindings.h"
-#include "Sol2Helpers.h"
+#include "LuaHelpers.h"
 
 #include "UI/OxUI.h"
 

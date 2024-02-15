@@ -172,7 +172,7 @@ CPMAddPackage("gh:ocornut/imgui#docking")
 target_include_directories(${PROJECT_NAME} PUBLIC ${imgui_SOURCE_DIR})
 
 file(GLOB ImGuiFiles "${imgui_SOURCE_DIR}/*.h" "${imgui_SOURCE_DIR}/*.cpp")
-target_sources(${PROJECT_NAME} PUBLIC "${ImGuiFiles}")
+target_sources(${PROJECT_NAME} PRIVATE "${ImGuiFiles}")
 source_group("vendor/ImGui" FILES ${ImGuiFiles})
 
 set(ImGui_Backends
@@ -181,11 +181,11 @@ set(ImGui_Backends
     "${imgui_SOURCE_DIR}/backends/imgui_impl_vulkan.cpp"
     "${imgui_SOURCE_DIR}/backends/imgui_impl_vulkan.h"
 )
-target_sources(${PROJECT_NAME} PUBLIC "${ImGui_Backends}")
+target_sources(${PROJECT_NAME} PRIVATE "${ImGui_Backends}")
 source_group("vendor/ImGui" FILES ${ImGui_Backends})
 
 set(ImGui_Misc "${imgui_SOURCE_DIR}/misc/cpp/imgui_stdlib.cpp" "${imgui_SOURCE_DIR}/misc/cpp/imgui_stdlib.h")
-target_sources(${PROJECT_NAME} PUBLIC "${ImGui_Misc}")
+target_sources(${PROJECT_NAME} PRIVATE "${ImGui_Misc}")
 source_group("vendor/ImGui" FILES ${ImGui_Misc})
 
 # entt
@@ -367,4 +367,8 @@ set_targets_static(enkiTS)
 CPMAddPackage("gh:martinus/unordered_dense#main")
 target_link_libraries(${PROJECT_NAME} PUBLIC unordered_dense)
 set_target_properties(unordered_dense PROPERTIES FOLDER "Vendor")
+
+# dylib
+CPMAddPackage("gh:martin-olivier/dylib#main")
+target_include_directories(${PROJECT_NAME} PUBLIC ${dylib_SOURCE_DIR}/include)
 

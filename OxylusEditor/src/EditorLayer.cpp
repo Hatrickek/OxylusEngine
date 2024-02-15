@@ -375,10 +375,10 @@ void EditorLayer::load_default_scene(const std::shared_ptr<Scene>& scene) {
   sun.get_transform().rotation.x = glm::radians(-140.f);
 
   const auto plane = scene->load_mesh(AssetManager::get_mesh_asset("Resources/Objects/plane.glb"));
-  plane.get_transform().scale *= 4.f;
+  scene->registry.get<TransformComponent>(plane).scale *= 4.f;
 
   const auto cube = scene->load_mesh(AssetManager::get_mesh_asset("Resources/Objects/cube.glb"));
-  cube.get_transform().position.y = 0.5f;
+  scene->registry.get<TransformComponent>(plane).position.y = 0.5f;
 }
 
 void EditorLayer::clear_selected_entity() {

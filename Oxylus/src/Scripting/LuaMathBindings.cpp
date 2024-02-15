@@ -4,7 +4,7 @@
 #include <sol/state.hpp>
 #include <sol/types.hpp>
 
-#include "Sol2Helpers.h"
+#include "LuaHelpers.h"
 
 #include "Core/Types.h"
 
@@ -69,7 +69,7 @@ void bind_math(const Shared<sol::state>& state) {
   vec4.set_function(sol::meta_function::multiplication, mult_overloads_vec4);
 
   state->new_usertype<Mat3>("Mat3",
-                            sol::constructors<Mat3(float, float, float, float, float, float, float, float, float), Mat3()>(),
+                            sol::constructors<Mat3(float, float, float, float, float, float, float, float, float), Mat3(float), Mat3()>(),
                             sol::meta_function::multiplication,
                             [](const Mat3& a, const Mat3& b) { return a * b; });
 

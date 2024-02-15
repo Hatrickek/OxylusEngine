@@ -3,7 +3,7 @@
 #include <sol/state.hpp>
 #include <sol/string_view.hpp>
 
-#include "Sol2Helpers.h"
+#include "LuaHelpers.h"
 
 #include "Core/Input.h"
 #include "Core/Keycodes.h"

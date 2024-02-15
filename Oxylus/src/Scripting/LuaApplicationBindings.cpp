@@ -2,7 +2,7 @@
 
 #include <sol/state.hpp>
 
-#include "Sol2Helpers.h"
+#include "LuaHelpers.h"
 
 #include "Core/Application.h"
 

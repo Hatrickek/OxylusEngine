@@ -449,7 +449,7 @@ void ViewportPanel::mouse_picking_pass(const Shared<RenderPipeline>& rp, const v
 
   std::vector<SceneMesh> scene_meshes = {};
 
-  const auto mesh_view = m_scene->m_registry.view<TransformComponent, MeshComponent, TagComponent>();
+  const auto mesh_view = m_scene->registry.view<TransformComponent, MeshComponent, TagComponent>();
   for (const auto&& [entity, transform, mesh_component, tag] : mesh_view.each()) {
     if (tag.enabled) {
       auto e = Entity(entity, m_scene.get());
