@@ -51,10 +51,10 @@ void clear_component(entt::registry* registry) {
 }
 
 template <typename Component>
-void register_meta_component(entt::meta_ctx* ctx = nullptr) {
+void register_meta_component() {
   using namespace entt::literals;
 
-  entt::meta<Component>(ctx ? *ctx : entt::locator<entt::meta_ctx>::value_or())
+  entt::meta<Component>()
    .template func<&is_valid<Component>>("valid"_hs)
    .template func<&emplace_component<Component>>("emplace"_hs)
    .template func<&get_component<Component>>("get"_hs)
@@ -137,3 +137,5 @@ void register_meta_event() {
 #define SET_COMPONENT_TYPE_ID(var, type) var.set("type_id", &entt::type_hash<type>::value)
 #define SET_TYPE_FIELD(var, type, field) var[#field] = &type::field
 #define SET_TYPE_FUNCTION(var, type, function) var.set_function(#function, &type::function)
+#define NEW_TYPE_WITH_CTOR(state, type, factory_func) state->new_usertype<type>(#type, sol::call_constructor, sol::factories(factory_func));
+

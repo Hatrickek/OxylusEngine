@@ -82,7 +82,7 @@ private:
 
   // Sink
   Shared<RuntimeConsoleLogSink> runtime_console_log_sink;
-  std::shared_mutex log_mutex;
+  std::mutex log_mutex;
 
   // Commands
   ankerl::unordered_dense::map<std::string, ConsoleCommand> m_command_map;

@@ -1,6 +1,6 @@
 #include "Core.h"
 
-#include "ModuleManager.h"
+#include "Modules/ModuleRegistry.h"
 #include "Project.h"
 #include "Resources.h"
 
@@ -58,7 +58,8 @@ void Core::shutdown() {
   ThreadManager::get()->wait_all_threads();
   Window::close_window(Window::get_glfw_window());
   TaskScheduler::shutdown();
-  ModuleManager::get()->clear();
+  Project::get_active()->unload_module();
   LuaManager::get()->shutdown();
+  ModuleRegistry::get()->clear();
 }
 }

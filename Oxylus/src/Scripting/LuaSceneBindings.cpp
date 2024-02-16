@@ -115,10 +115,7 @@ void bind_registry(sol::table& entt_module) {
     },
 
     "emplace",
-    [](entt::registry& self,
-       entt::entity entity,
-       const sol::table& comp,
-       sol::this_state s) -> sol::object {
+    [](entt::registry& self, entt::entity entity, const sol::table& comp, sol::this_state s) -> sol::object {
       if (!comp.valid())
         return sol::lua_nil_t{};
       const auto maybe_any = invoke_meta_func(get_type_id(comp), "emplace"_hs, &self, entity, comp, s);

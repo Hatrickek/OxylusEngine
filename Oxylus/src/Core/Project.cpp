@@ -5,8 +5,10 @@
 #include <entt/meta/context.hpp>
 
 #include "Base.h"
-#include "ModuleManager.h"
+#include "Modules/ModuleRegistry.h"
 #include "ProjectSerializer.h"
+
+#include "Modules/ModuleInterface.h"
 
 #include "Scripting/LuaManager.h"
 
@@ -17,21 +19,24 @@ namespace Ox {
 void Project::load_module() {
   if (get_config().module_name.empty())
     return;
+
   const auto module_path = get_project_directory().append(project_config.module_name).string();
-  const auto lib = ModuleManager::get()->add_lib(project_config.module_name, module_path);
+  const auto lib = ModuleRegistry::get()->add_lib(project_config.module_name, module_path);
   if (!lib)
     return;
-  auto* state = LuaManager::get()->get_state();
-  auto& ctx = entt::locator<entt::meta_ctx>::value_or();
 
-  try {
-    const auto func = lib->get_function<void(sol::state*, entt::meta_ctx*)>("bind_components");
-    func(state, &ctx);
-    OX_CORE_INFO("Successfully loaded module: {}", project_config.module_name);
-  }
-  catch (const std::exception& exc) {
-    OX_CORE_ERROR("{}", exc.what());
-  }
+  auto* state = LuaManager::get()->get_state();
+  lib->interface->register_components(state, entt::locator<entt::meta_ctx>::handle());
+  OX_CORE_INFO("Successfully loaded module: {}", project_config.module_name);
+}
+
+void Project::unload_module() {
+  const auto lib = ModuleRegistry::get()->get_lib(project_config.module_name);
+  if (!lib)
+    return;
+
+  auto* state = LuaManager::get()->get_state();
+  lib->interface->unregister_components(state, entt::locator<entt::meta_ctx>::handle());
 }
 
 Shared<Project> Project::create_new() {

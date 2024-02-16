@@ -30,20 +30,9 @@
 namespace Ox {
 ViewportPanel::ViewportPanel() : EditorPanel("Viewport", ICON_MDI_TERRAIN, true) {
   OX_SCOPED_ZONE;
-  ADD_TASK_TO_PIPE(
-    this,
-    m_show_gizmo_image_map[typeid(LightComponent).hash_code()] = create_shared<TextureAsset>(TextureLoadInfo{.path = "Resources/Icons/PointLightIcon.png", .generate_mips = false});
-  );
-
-  ADD_TASK_TO_PIPE(
-    this,
-    m_show_gizmo_image_map[typeid(SkyLightComponent).hash_code()] = create_shared<TextureAsset>(TextureLoadInfo{.path = "Resources/Icons/SkyIcon.png", .generate_mips = false});
-  );
-
-  ADD_TASK_TO_PIPE(
-    this,
-    m_show_gizmo_image_map[typeid(CameraComponent).hash_code()] = create_shared<TextureAsset>(TextureLoadInfo{.path = "Resources/Icons/CameraIcon.png", .generate_mips = false});
-  );
+  m_show_gizmo_image_map[typeid(LightComponent).hash_code()] = create_shared<TextureAsset>(TextureLoadInfo{.path = "Resources/Icons/PointLightIcon.png", .generate_mips = false});
+  m_show_gizmo_image_map[typeid(SkyLightComponent).hash_code()] = create_shared<TextureAsset>(TextureLoadInfo{.path = "Resources/Icons/SkyIcon.png", .generate_mips = false});
+  m_show_gizmo_image_map[typeid(CameraComponent).hash_code()] = create_shared<TextureAsset>(TextureLoadInfo{.path = "Resources/Icons/CameraIcon.png", .generate_mips = false});
 
   auto& superframe_allocator = VulkanContext::get()->superframe_allocator;
   ADD_TASK_TO_PIPE(
