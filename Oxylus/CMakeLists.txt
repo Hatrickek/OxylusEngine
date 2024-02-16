@@ -121,26 +121,6 @@ if (MSVC AND NOT CMAKE_CXX_COMPILER_ID STREQUAL "Clang")
   add_definitions("/bigobj")
 endif()
 
-# MSVC runtime library
-
-get_property(MSVC_RUNTIME_LIBRARY_DEFAULT TARGET ${PROJECT_NAME} PROPERTY MSVC_RUNTIME_LIBRARY)
-string(CONCAT "MSVC_RUNTIME_LIBRARY_STR"
-  $<$<CONFIG:Debug>:
-  MultiThreadedDebug
-  >
-  $<$<CONFIG:Release>:
-  MultiThreaded
-  >
-  $<$<CONFIG:Distribution>:
-  MultiThreaded
-  >
-  $<$<NOT:$<OR:$<CONFIG:Debug>,
-  $<CONFIG:Distribution>,
-  $<CONFIG:Release>
-  >>:${MSVC_RUNTIME_LIBRARY_DEFAULT}>
-  )
-set_target_properties(${PROJECT_NAME} PROPERTIES MSVC_RUNTIME_LIBRARY ${MSVC_RUNTIME_LIBRARY_STR})
-
 #-------------
 # Dependencies
 #-------------
@@ -148,7 +128,6 @@ if (NOT EXISTS ${CMAKE_SOURCE_DIR}/cpm.cmake)
   file(DOWNLOAD https://github.com/cpm-cmake/CPM.cmake/releases/download/v0.38.7/CPM.cmake ${CMAKE_SOURCE_DIR}/cpm.cmake SHOW_PROGRESS)
 endif()
 
-include(${CMAKE_CURRENT_SOURCE_DIR}/vendor/CMake-Utils/CMakeUtils.cmake)
 include(${CMAKE_SOURCE_DIR}/cpm.cmake)
 set_property(GLOBAL PROPERTY CTEST_TARGETS_ADDED 1) # hack for removing auto generated ctest targets
 
@@ -215,8 +194,9 @@ CPMAddPackage(
         "TINYGLTF_BUILD_LOADER_EXAMPLE OFF"
         "TINYGLTF_HEADER_ONLY ON"
 )
-set_targets_static_and_folder(tinygltf)
+set_target_properties(tinygltf PROPERTIES FOLDER "Vendor")
 target_link_libraries(${PROJECT_NAME} PUBLIC tinygltf)
+
 # FMT
 CPMAddPackage("gh:fmtlib/fmt#10.1.1")
 target_link_libraries(${PROJECT_NAME} PUBLIC fmt::fmt)
@@ -238,13 +218,12 @@ if (fmtlog_ADDED)
     target_include_directories(${PROJECT_NAME} PUBLIC ${fmtlog_SOURCE_DIR})
     target_link_libraries(${PROJECT_NAME} PUBLIC fmtlog)
 endif()
-set_targets_static(fmtlog)
-set_target_properties(fmtlog PROPERTIES FOLDER "Vendor/fmtlog")
+set_target_properties(fmtlog PROPERTIES FOLDER "Vendor")
 
 # vk-bootstrap
 CPMAddPackage("gh:charles-lunarg/vk-bootstrap#8e61b2d81c3f5f84339735085ff5651f71bbe1e7")
 target_link_libraries(${PROJECT_NAME} PUBLIC vk-bootstrap)
-set_targets_static_and_folder(vk-bootstrap)
+set_target_properties(vk-bootstrap PROPERTIES FOLDER "Vendor")
 
 # vuk
 CPMAddPackage(
@@ -257,13 +236,15 @@ CPMAddPackage(
         "VUK_USE_DXC ON"
 )
 target_link_libraries(${PROJECT_NAME} PUBLIC vuk)
-set_targets_static_and_folder(vuk)
+set_target_properties(vuk PROPERTIES FOLDER "Vendor")
+set_target_properties(spirv-cross-core PROPERTIES FOLDER "Vendor")
+set_target_properties(spirv-cross-glsl PROPERTIES FOLDER "Vendor")
 
 # NFD
 CPMAddPackage("gh:btzy/nativefiledialog-extended#master")
 target_link_libraries(${PROJECT_NAME} PUBLIC nfd)
 target_include_directories(${PROJECT_NAME} PUBLIC ${NFD_SOURCE_DIR}/src/include)
-set_targets_static_and_folder(nfd)
+set_target_properties(nfd PROPERTIES FOLDER "Vendor")
 
 # GLFW
 CPMAddPackage(
@@ -277,7 +258,7 @@ CPMAddPackage(
 	"GLFW_INSTALL OFF"
 )
 target_link_libraries(${PROJECT_NAME} PUBLIC glfw)
-set_targets_static_and_folder(glfw)
+set_target_properties(glfw PROPERTIES FOLDER "Vendor")
 
 # toml
 CPMAddPackage("gh:marzer/tomlplusplus#master")
@@ -299,14 +280,13 @@ CPMAddPackage(
     VERSION 4.0.2 
     SOURCE_SUBDIR Build
     OPTIONS
-        "COMPILE_AS_SHARED_LIBRARY OFF"
         "ENABLE_ALL_WARNINGS OFF"
-        "USE_STATIC_MSVC_RUNTIME_LIBRARY ON"
+        "USE_STATIC_MSVC_RUNTIME_LIBRARY OFF"
         "INTERPROCEDURAL_OPTIMIZATION OFF"
 )
 target_link_libraries(${PROJECT_NAME} PUBLIC Jolt)
 target_include_directories(${PROJECT_NAME} PUBLIC ${JoltPhysics_SOURCE_DIR}/..)
-set_targets_static_and_folder(Jolt)
+set_target_properties(Jolt PROPERTIES FOLDER "Vendor")
 
 # tracy
 CPMAddPackage(
@@ -321,7 +301,7 @@ CPMAddPackage(
         "TRACY_ON_DEMAND OFF"
 )
 target_link_libraries(${PROJECT_NAME} PUBLIC Tracy::TracyClient)
-set_targets_static_and_folder(TracyClient)
+set_target_properties(TracyClient PROPERTIES FOLDER "Vendor")
 
 CPMAddPackage(
     NAME lua
@@ -348,7 +328,6 @@ CPMAddPackage(
 target_include_directories(${PROJECT_NAME} PUBLIC ${sol2_SOURCE_DIR}/include)
 target_link_libraries(sol2 INTERFACE $<BUILD_INTERFACE:${lua_static}>)
 target_link_libraries(${PROJECT_NAME} PUBLIC sol2 lua_static)
-set_targets_static(lua_static)
 set_target_properties(lua_static PROPERTIES FOLDER "Vendor")
 
 # enkiTS
@@ -363,7 +342,6 @@ CPMAddPackage(
 target_include_directories(${PROJECT_NAME} PUBLIC ${enkiTS_SOURCE_DIR}/src)
 target_link_libraries(${PROJECT_NAME} PUBLIC enkiTS)
 set_target_properties(enkiTS PROPERTIES FOLDER "Vendor")
-set_targets_static(enkiTS)
 
 # unordered_dense
 CPMAddPackage("gh:martinus/unordered_dense#main")

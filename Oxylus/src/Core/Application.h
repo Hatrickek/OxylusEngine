@@ -48,7 +48,7 @@ public:
   const AppSpec& get_specification() const { return m_spec; }
   const std::vector<std::string>& get_command_line_args() const { return command_line_args; }
   ImGuiLayer* get_imgui_layer() const { return imgui_layer; }
-  const LayerStack& get_layer_stack() const { return layer_stack; }
+  const Shared<LayerStack>& get_layer_stack() const { return layer_stack; }
   static Application* get() { return instance; }
   static const Timestep& get_timestep() { return instance->timestep; }
 
@@ -64,7 +64,7 @@ private:
   std::vector<std::string> command_line_args;
   Core core;
   ImGuiLayer* imgui_layer;
-  LayerStack layer_stack;
+  Shared<LayerStack> layer_stack;
 
   Shared<SystemManager> system_manager = nullptr;
   EventDispatcher dispatcher;

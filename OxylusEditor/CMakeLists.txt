@@ -34,25 +34,6 @@ set_target_properties(${PROJECT_NAME} PROPERTIES
     TARGET_NAME_Distribution    "OxylusEditor"
 )
 
-# MSVC runtime library
-get_property(MSVC_RUNTIME_LIBRARY_DEFAULT TARGET ${PROJECT_NAME} PROPERTY MSVC_RUNTIME_LIBRARY)
-string(CONCAT "MSVC_RUNTIME_LIBRARY_STR"
-  $<$<CONFIG:Debug>:
-  MultiThreadedDebug
-  >
-  $<$<CONFIG:Release>:
-  MultiThreaded
-  >
-  $<$<CONFIG:Distribution>:
-  MultiThreaded
-  >
-  $<$<NOT:$<OR:$<CONFIG:Debug>,
-  $<CONFIG:Release>,
-  $<CONFIG:Distribution>
-  >>:${MSVC_RUNTIME_LIBRARY_DEFAULT}>
-  )
-set_target_properties(${PROJECT_NAME} PROPERTIES MSVC_RUNTIME_LIBRARY ${MSVC_RUNTIME_LIBRARY_STR})
-
 # Include directories
 target_include_directories(${PROJECT_NAME} PUBLIC
     "${CMAKE_CURRENT_SOURCE_DIR}/src"

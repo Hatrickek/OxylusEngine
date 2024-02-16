@@ -26,6 +26,7 @@ Application::Application(AppSpec spec) : m_spec(std::move(spec)), system_manager
 
   instance = this;
 
+  layer_stack = create_shared<LayerStack>();
   thread_manager = create_shared<ThreadManager>();
 
   if (m_spec.working_directory.empty())
@@ -63,14 +64,14 @@ void Application::init_systems() {
 }
 
 Application& Application::push_layer(Layer* layer) {
-  layer_stack.push_layer(layer);
+  layer_stack->push_layer(layer);
   layer->on_attach(dispatcher);
 
   return *this;
 }
 
 Application& Application::push_overlay(Layer* layer) {
-  layer_stack.push_overlay(layer);
+  layer_stack->push_overlay(layer);
   layer->on_attach(dispatcher);
 
   return *this;
@@ -93,7 +94,7 @@ void Application::run() {
     }
   }
 
-  layer_stack.~LayerStack();
+  layer_stack.reset();
 
   system_manager->shutdown();
   core.shutdown();
@@ -101,12 +102,12 @@ void Application::run() {
 
 void Application::update_layers(const Timestep& ts) {
   OX_SCOPED_ZONE_N("LayersLoop");
-  for (Layer* layer : layer_stack)
+  for (Layer* layer : *layer_stack.get())
     layer->on_update(ts);
 }
 
 void Application::update_renderer() {
-  Renderer::draw(VulkanContext::get(), imgui_layer, layer_stack, system_manager);
+  Renderer::draw(VulkanContext::get(), imgui_layer, *layer_stack.get(), system_manager);
 }
 
 void Application::update_timestep() {
