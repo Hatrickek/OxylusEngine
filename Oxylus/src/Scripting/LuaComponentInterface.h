@@ -2,7 +2,7 @@
 #include "Core/Base.h"
 
 #define OX_BUILD_DLL
-#include "Core/Linker.h"
+#include "Core/ModuleManager.h"
 
 namespace sol {
 class state;

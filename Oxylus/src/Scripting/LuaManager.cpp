@@ -38,6 +38,11 @@ void LuaManager::init() {
   LuaBindings::bind_ui(m_state);
 }
 
+void LuaManager::shutdown() {
+  m_state->collect_gc();
+  m_state.reset();
+}
+
 LuaManager* LuaManager::get() {
   static LuaManager manager = {};
   return &manager;

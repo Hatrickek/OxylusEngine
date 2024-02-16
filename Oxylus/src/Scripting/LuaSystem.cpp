@@ -13,7 +13,7 @@
 #include "Utils/Log.h"
 
 namespace Ox {
-LuaSystem::LuaSystem(const std::string& path) : file_path(path) {
+LuaSystem::LuaSystem(std::string path) : file_path(std::move(path)) {
   init_script(file_path);
 }
 
@@ -72,7 +72,7 @@ void LuaSystem::init_script(const std::string& path) {
   if (!on_release_func->valid())
     on_release_func.reset();
 
-  state->collect_garbage();
+  state->collect_gc();
 }
 
 void LuaSystem::on_init(Scene* scene, entt::entity entity) {
@@ -103,6 +103,8 @@ void LuaSystem::on_release(Scene* scene, entt::entity entity) {
     (*environment)["this"] = entity;
     check_result(result, "on_release");
   }
+
+  LuaManager::get()->get_state()->collect_gc();
 }
 
 void LuaSystem::on_imgui_render(const Timestep& delta_time) {

@@ -11,7 +11,7 @@
 namespace Ox {
 class LuaSystem {
 public:
-  LuaSystem(const std::string& path);
+  LuaSystem(std::string path);
   ~LuaSystem() = default;
 
   void load(const std::string& path);

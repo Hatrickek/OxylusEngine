@@ -199,6 +199,9 @@ void EditorLayer::on_imgui_render() {
           if (ImGui::MenuItem("Settings")) {
             m_editor_panels["EditorSettings"]->Visible = true;
           }
+          if (ImGui::MenuItem("Reload project module")) {
+            Project::get_active()->load_module();
+          }
           ImGui::EndMenu();
         }
         if (ImGui::BeginMenu("Window")) {
@@ -207,9 +210,6 @@ void EditorLayer::on_imgui_render() {
           }
           if (ImGui::MenuItem("Add viewport", nullptr)) {
             m_viewport_panels.emplace_back(create_unique<ViewportPanel>())->set_context(m_editor_scene, m_scene_hierarchy_panel);
-          }
-          if (ImGui::MenuItem("Framebuffer Viewer", nullptr)) {
-            m_editor_panels["FramebufferViewer"]->Visible = true;
           }
           ImGui::MenuItem("Inspector", nullptr, &m_inspector_panel.Visible);
           ImGui::MenuItem("Scene hierarchy", nullptr, &m_scene_hierarchy_panel.Visible);

@@ -93,6 +93,8 @@ void Application::run() {
     }
   }
 
+  layer_stack.~LayerStack();
+
   system_manager->shutdown();
   core.shutdown();
 }

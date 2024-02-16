@@ -19,6 +19,7 @@ bool ProjectSerializer::serialize(const std::filesystem::path& file_path) const 
         {"name", config.name},
         {"asset_directory", config.asset_directory},
         {"start_scene", config.start_scene},
+        {"module_name", config.module_name}
       }
     }
   };
@@ -35,7 +36,7 @@ bool ProjectSerializer::serialize(const std::filesystem::path& file_path) const 
 }
 
 bool ProjectSerializer::deserialize(const std::filesystem::path& file_path) const {
-  auto& [Name, StartScene, AssetDirectory] = m_project->get_config();
+  auto& [name, start_scene, asset_directory, module_name] = m_project->get_config();
 
   const auto& content = FileUtils::read_file(file_path.string());
   if (content.empty()) {
@@ -46,9 +47,10 @@ bool ProjectSerializer::deserialize(const std::filesystem::path& file_path) cons
   toml::table toml = toml::parse(content);
 
   const auto project_node = toml["project"];
-  Name = project_node["name"].as_string()->get(); 
-  AssetDirectory = project_node["asset_directory"].as_string()->get(); 
-  StartScene = project_node["start_scene"].as_string()->get(); 
+  name = project_node["name"].as_string()->get(); 
+  asset_directory = project_node["asset_directory"].as_string()->get(); 
+  start_scene = project_node["start_scene"].as_string()->get();
+  module_name = project_node["module_name"].as_string()->get();
 
   m_project->set_project_file_path(file_path.string());
 

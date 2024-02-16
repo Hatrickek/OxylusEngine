@@ -1,5 +1,6 @@
 #include "Core.h"
 
+#include "ModuleManager.h"
 #include "Project.h"
 #include "Resources.h"
 
@@ -52,15 +53,12 @@ bool Core::init(const AppSpec& spec) {
 
 void Core::shutdown() {
   FileDialogs::close_nfd();
-
   Renderer::shutdown();
-
   AudioEngine::shutdown();
-
   ThreadManager::get()->wait_all_threads();
-
   Window::close_window(Window::get_glfw_window());
-
   TaskScheduler::shutdown();
+  ModuleManager::get()->clear();
+  LuaManager::get()->shutdown();
 }
 }
