@@ -13,9 +13,7 @@
 #include "Core/Resources.h"
 #include "Panels/ConsolePanel.h"
 #include "Panels/ContentPanel.h"
-#include "Panels/EditorDebugPanel.h"
 #include "Panels/EditorSettingsPanel.h"
-#include "Panels/FramebufferViewerPanel.h"
 #include "Panels/ProjectPanel.h"
 #include "Panels/RendererSettingsPanel.h"
 #include "Panels/SceneHierarchyPanel.h"
@@ -71,10 +69,8 @@ void EditorLayer::on_attach(EventDispatcher& dispatcher) {
   // Initialize panels
   m_editor_panels.emplace("EditorSettings", create_unique<EditorSettingsPanel>());
   m_editor_panels.emplace("RenderSettings", create_unique<RendererSettingsPanel>());
-  m_editor_panels.emplace("FramebufferViewer", create_unique<FramebufferViewerPanel>());
   m_editor_panels.emplace("ProjectPanel", create_unique<ProjectPanel>());
   m_editor_panels.emplace("StatisticsPanel", create_unique<StatisticsPanel>());
-  m_editor_panels.emplace("EditorDebugPanel", create_unique<EditorDebugPanel>());
   const auto& viewport = m_viewport_panels.emplace_back(create_unique<ViewportPanel>());
   viewport->m_camera.set_position({-2, 2, 0});
   viewport->set_context(m_editor_scene, m_scene_hierarchy_panel);
@@ -202,6 +198,9 @@ void EditorLayer::on_imgui_render() {
           if (ImGui::MenuItem("Reload project module")) {
             Project::get_active()->load_module();
           }
+          if (ImGui::MenuItem("Free unused assets")) {
+            AssetManager::free_unused_assets();
+          }
           ImGui::EndMenu();
         }
         if (ImGui::BeginMenu("Window")) {
@@ -216,7 +215,6 @@ void EditorLayer::on_imgui_render() {
           ImGui::MenuItem("Console window", nullptr, &m_console_panel.runtime_console.visible);
           ImGui::MenuItem("Performance Overlay", nullptr, &m_viewport_panels[0]->performance_overlay_visible);
           ImGui::MenuItem("Statistics", nullptr, &m_editor_panels["StatisticsPanel"]->Visible);
-          ImGui::MenuItem("Editor Debug", nullptr, &m_editor_panels["EditorDebugPanel"]->Visible);
           if (ImGui::BeginMenu("Layout")) {
             if (ImGui::MenuItem("Classic")) {
               set_docking_layout(EditorLayout::Classic);
