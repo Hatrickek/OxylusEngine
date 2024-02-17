@@ -64,8 +64,6 @@ void LuaBindings::bind_mesh_component(const Shared<sol::state>& state) {
 
   material.set_function("new", [](const std::string& name) -> Shared<Material> { return create_shared<Material>(name); });
 
-  state->new_usertype<Mesh>("Mesh");
-
   auto mesh_component_type = state->new_usertype<MeshComponent>("MeshComponent");
   SET_COMPONENT_TYPE_ID(mesh_component_type, MeshComponent);
   SET_TYPE_FIELD(mesh_component_type, MeshComponent, mesh_base);
