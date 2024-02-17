@@ -17,16 +17,25 @@ namespace Ox::LuaBindings {
   (var).set_function(sol::meta_function::multiplication, sol::overload([](const type& a, const type& b) { return a * b; }, \
                                                                        [](const type& a, const float b) { return a * b; }, \
                                                                        [](const float a, const type& b) { return a * b; }));
+#define SET_SUBTRACTION_OVERLOADS(var, type) \
+(var).set_function(sol::meta_function::subtraction, sol::overload([](const type& a, const type& b) { return a - b; }, \
+                                                                  [](const type& a, const float b) { return a - b; }, \
+                                                                  [](const float a, const type& b) { return a - b; }));
+
+#define SET_ADDITION_OVERLOADS(var, type) \
+(var).set_function(sol::meta_function::addition, sol::overload([](const type& a, const type& b) { return a + b; }, \
+                                                                  [](const type& a, const float b) { return a + b; }, \
+                                                                  [](const float a, const type& b) { return a + b; }));
+
 #define SET_MATH_META_FUNCTIONS(var, type) \
-  (var).set_function(sol::meta_function::addition, [](const type& a, const type& b) { return a + b; });          \
-  (var).set_function(sol::meta_function::multiplication, [](const type& a, const type& b) { return a * b; });          \
-  (var).set_function(sol::meta_function::subtraction, [](const type& a, const type& b) { return a - b; });       \
   (var).set_function(sol::meta_function::division, [](const type& a, const type& b) { return a / b; });          \
   (var).set_function(sol::meta_function::equal_to, [](const type& a, const type& b) { return a == b; });         \
   (var).set_function(sol::meta_function::unary_minus, [](const type& v) -> type { return -v; });
 #define SET_MATH_FUNCTIONS(var, type)                                                                            \
   SET_MATH_META_FUNCTIONS(var, type)\
   SET_MULTIPLICATION_OVERLOADS(var, type) \
+  SET_SUBTRACTION_OVERLOADS(var, type) \
+  SET_ADDITION_OVERLOADS(var, type) \
   (var).set_function("length", [](const type& v) -> float { return glm::length(v); });                 \
   (var).set_function("distance", [](const type& a, const type& b) -> float { return glm::distance(a, b); });                 \
   (var).set_function("normalize", [](const type& v) -> type { return glm::normalize(v); });
@@ -38,7 +47,7 @@ void bind_math(const Shared<sol::state>& state) {
   SET_TYPE_FIELD(vec2, Vec2, x);
   SET_TYPE_FIELD(vec2, Vec2, y);
 
-  auto uvec2 = state->new_usertype<UVec2>("UVec2", sol::constructors<Vec2(float, float)>());
+  auto uvec2 = state->new_usertype<UVec2>("UVec2", sol::constructors<UVec2(unsigned int, unsigned int)>());
   SET_MATH_META_FUNCTIONS(uvec2, UVec2)
   SET_TYPE_FIELD(uvec2, UVec2, x);
   SET_TYPE_FIELD(uvec2, UVec2, y);

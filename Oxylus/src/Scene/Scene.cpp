@@ -11,6 +11,8 @@
 
 #include <glm/gtc/type_ptr.hpp>
 
+#include <sol/state.hpp>
+
 #include "SceneRenderer.h"
 
 #include "Jolt/Physics/Character/Character.h"
@@ -23,6 +25,8 @@
 #include "Physics/PhysicsMaterial.h"
 
 #include "Render/RenderPipeline.h"
+
+#include "Scripting/LuaManager.h"
 
 namespace Ox {
 Scene::Scene() {
@@ -38,6 +42,7 @@ Scene::Scene(const Shared<RenderPipeline>& render_pipeline) {
 }
 
 Scene::~Scene() {
+  LuaManager::get()->get_state()->collect_gc();
   if (running)
     on_runtime_stop();
 }
@@ -337,6 +342,7 @@ void Scene::on_runtime_start() {
   const auto script_view = registry.view<LuaScriptComponent>();
   for (auto&& [e, script_component] : script_view.each()) {
     if (script_component.lua_system) {
+      script_component.lua_system->reload();
       script_component.lua_system->on_init(this, e);
     }
   }
