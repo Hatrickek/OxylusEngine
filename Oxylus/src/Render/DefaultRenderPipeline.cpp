@@ -1,4 +1,4 @@
-﻿#include "DefaultRenderPipeline.h"
+#include "DefaultRenderPipeline.h"
 
 #include <glm/gtc/type_ptr.inl>
 #include <vuk/Partials.hpp>
@@ -472,6 +472,9 @@ void DefaultRenderPipeline::on_dispatcher_events(EventDispatcher& dispatcher) {
 
 void DefaultRenderPipeline::on_register_render_object(const MeshComponent& render_object) {
   OX_SCOPED_ZONE;
+
+  if (!current_camera)
+    return;
 
   {
     OX_SCOPED_ZONE_N("Frustum culling");
