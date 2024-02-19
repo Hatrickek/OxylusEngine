@@ -1,6 +1,12 @@
 ﻿#pragma once
 
+#include <shared_mutex>
+
+#include <ankerl/unordered_dense.h>
+
 #include <Utils/StringUtils.h>
+
+#include "Log.h"
 
 namespace Ox {
 enum class CVarFlags : uint32_t {
@@ -23,9 +29,7 @@ enum class CVarType : char {
 
 class CVarParameter {
 public:
-  friend class CVarSystemImpl;
-
-  int32_t arrayIndex;
+  uint32_t array_index;
 
   CVarType type;
   CVarFlags flags;
@@ -40,109 +44,82 @@ struct CVarStorage {
   CVarParameter* parameter;
 };
 
-template <typename T>
-struct CVarArray {
-  CVarStorage<T>* cvars{nullptr};
-  int32_t lastCVar{0};
-
-  CVarArray(size_t size) {
-    cvars = new CVarStorage<T>[size]();
-  }
-
-
-  CVarStorage<T>* get_current_storage(int32_t index) {
-    return &cvars[index];
-  }
-
-  T* get_current_ptr(int32_t index) {
-    return &cvars[index].current;
-  }
-
-  T get_current(int32_t index) {
-    return cvars[index].current;
-  }
-
-  void set_current(const T& val, int32_t index) {
-    cvars[index].current = val;
-  }
-
-  int add(const T& value, CVarParameter* param) {
-    int index = lastCVar;
-
-    cvars[index].current = value;
-    cvars[index].initial = value;
-    cvars[index].parameter = param;
-
-    param->arrayIndex = index;
-    lastCVar++;
-    return index;
-  }
-
-  int add(const T& initialValue, const T& currentValue, CVarParameter* param) {
-    int index = lastCVar;
-
-    cvars[index].current = currentValue;
-    cvars[index].initial = initialValue;
-    cvars[index].parameter = param;
-
-    param->arrayIndex = index;
-    lastCVar++;
-
-    return index;
-  }
-};
-
 class CVarSystem {
 public:
-  virtual ~CVarSystem() = default;
-  static CVarSystem* get();
-
-  virtual CVarParameter* get_cvar(StringUtils::StringHash hash) = 0;
-
-  virtual float* get_float_cvar(StringUtils::StringHash hash) = 0;
-  virtual int32_t* get_int_cvar(StringUtils::StringHash hash) = 0;
-  virtual const char* get_string_cvar(StringUtils::StringHash hash) = 0;
-
-  virtual void set_float_cvar(StringUtils::StringHash hash, float value) = 0;
-  virtual void set_int_cvar(StringUtils::StringHash hash, int32_t value) = 0;
-  virtual void set_string_cvar(StringUtils::StringHash hash, const char* value) = 0;
-
-  virtual CVarParameter* create_float_cvar(const char* name, const char* description, float defaultValue, float currentValue) = 0;
-  virtual CVarParameter* create_int_cvar(const char* name, const char* description, int32_t defaultValue, int32_t currentValue) = 0;
-  virtual CVarParameter* create_string_cvar(const char* name, const char* description, const char* defaultValue, const char* currentValue) = 0;
-
   constexpr static int MAX_INT_CVARS = 1000;
-  CVarArray<int32_t> int_cvars2{MAX_INT_CVARS};
-
   constexpr static int MAX_FLOAT_CVARS = 1000;
-  CVarArray<float> float_cvars{MAX_FLOAT_CVARS};
-
   constexpr static int MAX_STRING_CVARS = 200;
-  CVarArray<std::string> string_cvars{MAX_STRING_CVARS};
+
+  std::vector<CVarStorage<int32_t>> int_cvars = {};
+  std::vector<CVarStorage<float>> float_cvars = {};
+  std::vector<CVarStorage<std::string>> string_cvars = {};
+
+  CVarSystem() = default;
+
+  static CVarSystem* get();
+  CVarParameter* get_cvar(StringUtils::StringHash hash);
+
+  CVarParameter* create_float_cvar(const char* name, const char* description, float default_value, float current_value);
+  CVarParameter* create_int_cvar(const char* name, const char* description, int32_t default_value, int32_t current_value);
+  CVarParameter* create_string_cvar(const char* name, const char* description, const char* default_value, const char* current_value);
+
+  float* get_float_cvar(StringUtils::StringHash hash);
+  int32_t* get_int_cvar(StringUtils::StringHash hash);
+  const char* get_string_cvar(StringUtils::StringHash hash);
+
+  void set_float_cvar(StringUtils::StringHash hash, float value);
+  void set_int_cvar(StringUtils::StringHash hash, int32_t value);
+  void set_string_cvar(StringUtils::StringHash hash, const char* value);
 
   template <typename T>
-  CVarArray<T>* get_cvar_array();
+  std::vector<CVarStorage<T>>* get_cvar_array();
 
   template <>
-  CVarArray<int32_t>* get_cvar_array() {
-    return &int_cvars2;
+  std::vector<CVarStorage<int32_t>>* get_cvar_array() {
+    return &int_cvars;
   }
 
   template <>
-  CVarArray<float>* get_cvar_array() {
+  std::vector<CVarStorage<float>>* get_cvar_array() {
     return &float_cvars;
   }
 
   template <>
-  CVarArray<std::string>* get_cvar_array() {
+  std::vector<CVarStorage<std::string>>* get_cvar_array() {
     return &string_cvars;
   }
+
+  //templated get-set cvar versions for syntax sugar
+  template <typename T>
+  T* get_cvar_current(const uint32_t namehash) {
+    CVarParameter* par = get_cvar(namehash);
+    if (!par) {
+      OX_CORE_ERROR("cvar {} doesn't exists!", namehash);
+      return nullptr;
+    }
+    return &get_cvar_array<T>()->at(par->array_index).current;
+  }
+
+  template <typename T>
+  void set_cvar_current(const uint32_t namehash, const T& value) {
+    CVarParameter* cvar = get_cvar(namehash);
+    if (cvar) {
+      get_cvar_array<T>()->at(cvar->array_index).current = value;
+    }
+  }
+
+private:
+  std::shared_mutex mutex_;
+  std::unordered_map<uint32_t, CVarParameter> saved_cvars;
+  std::vector<CVarParameter*> cached_edit_parameters;
+
+  CVarParameter* init_cvar(const char* name, const char* description);
 };
 
 template <typename T>
 struct AutoCVar {
 protected:
-  int index;
+  uint32_t index;
   using CVarType = T;
 };
 

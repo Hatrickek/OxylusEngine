@@ -5,13 +5,14 @@
 
 #include "Panels/AssetInspectorPanel.h"
 #include "Panels/ContentPanel.h"
-#include "Panels/ConsolePanel.h"
 #include "Panels/InspectorPanel.h"
 #include "Panels/SceneHierarchyPanel.h"
 #include "Panels/ViewportPanel.h"
 
 #include "Utils/EditorConfig.h"
 #include "Render/Window.h"
+
+#include "UI/RuntimeConsole.h"
 
 namespace Ox {
 class EditorLayer : public Layer {
@@ -31,9 +32,6 @@ public:
 
   // Panels
   ContentPanel content_panel;
-
-  // Cursors
-  GLFWcursor* crosshair_cursor = nullptr;
 
   // Logo
   Shared<TextureAsset> engine_banner = nullptr;
@@ -58,14 +56,14 @@ public:
   void on_scene_stop();
   void on_scene_simulate();
 
-  static EditorLayer* get() { return s_instance; }
+  static EditorLayer* get() { return instance; }
 
-  void set_context(EditorContextType type, const char* data, size_t size) { m_editor_context.set(type, data, size); }
-  void set_context_as_asset_with_path(const std::string& path) { m_editor_context.set(EditorContextType::Asset, path.c_str(), sizeof(char) * (path.length() + 1)); }
-  void set_context_as_file_with_path(const std::string& path) { m_editor_context.set(EditorContextType::File, path.c_str(), sizeof(char) * (path.length() + 1)); }
+  void set_context(EditorContextType type, const char* data, size_t size) { editor_context.set(type, data, size); }
+  void set_context_as_asset_with_path(const std::string& path) { editor_context.set(EditorContextType::Asset, path.c_str(), sizeof(char) * (path.length() + 1)); }
+  void set_context_as_file_with_path(const std::string& path) { editor_context.set(EditorContextType::File, path.c_str(), sizeof(char) * (path.length() + 1)); }
 
-  void reset_context() { m_editor_context.reset(); }
-  const EditorContext& get_context() const { return m_editor_context; }
+  void reset_context() { editor_context.reset(); }
+  const EditorContext& get_context() const { return editor_context; }
 
   void editor_shortcuts();
   Shared<Scene> get_active_scene();
@@ -73,8 +71,8 @@ public:
   bool open_scene(const std::filesystem::path& path);
   static void load_default_scene(const std::shared_ptr<Scene>& scene);
 
-  Entity get_selected_entity() const { return m_scene_hierarchy_panel.get_selected_entity(); }
-  Shared<Scene> get_selected_scene() const { return m_scene_hierarchy_panel.get_scene(); }
+  Entity get_selected_entity() const { return scene_hierarchy_panel.get_selected_entity(); }
+  Shared<Scene> get_selected_scene() const { return scene_hierarchy_panel.get_scene(); }
   void clear_selected_entity();
 
   void set_scene_state(SceneState state);
@@ -87,25 +85,25 @@ private:
   static void save_project(const std::string& path);
 
   // Scene
-  std::string m_last_save_scene_path{};
+  std::string last_save_scene_path{};
 
   // Panels
   void draw_panels();
-  ankerl::unordered_dense::map<std::string, Unique<EditorPanel>> m_editor_panels;
-  std::vector<Unique<ViewportPanel>> m_viewport_panels;
-  ConsolePanel m_console_panel;
-  SceneHierarchyPanel m_scene_hierarchy_panel;
-  InspectorPanel m_inspector_panel;
+  ankerl::unordered_dense::map<std::string, Unique<EditorPanel>> editor_panels;
+  std::vector<Unique<ViewportPanel>> viewport_panels;
+  RuntimeConsole runtime_console = {};
+  SceneHierarchyPanel scene_hierarchy_panel;
+  InspectorPanel inspector_panel;
   AssetInspectorPanel m_asset_inspector_panel;
 
   // Config
-  EditorConfig m_editor_config;
+  EditorConfig editor_config;
 
   // Context
-  EditorContext m_editor_context = {};
+  EditorContext editor_context = {};
 
-  Shared<Scene> m_editor_scene;
-  Shared<Scene> m_active_scene;
-  static EditorLayer* s_instance;
+  Shared<Scene> editor_scene;
+  Shared<Scene> active_scene;
+  static EditorLayer* instance;
 };
 }

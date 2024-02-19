@@ -34,7 +34,7 @@ public:
   struct ParsedCommandValue {
     std::string str_value = {};
 
-    ParsedCommandValue(std::string str) : str_value(std::move(str)) { }
+    ParsedCommandValue(std::string str) : str_value(std::move(str)) {}
 
     template <typename T = int32_t>
     std::optional<T> as() const {
@@ -45,10 +45,9 @@ public:
     }
   };
 
-  bool render_menu_bar = false;
   bool set_focus_to_keyboard_always = false;
   const char* panel_name = "RuntimeConsole";
-  bool visible = true;
+  bool visible = false;
   std::string id = {};
 
   RuntimeConsole();
@@ -62,7 +61,7 @@ public:
   void add_log(const char* fmt, fmtlog::LogLevel level);
   void clear_log();
 
-  void on_imgui_render(ImGuiWindowFlags window_flags = ImGuiWindowFlags_NoNavInputs | ImGuiWindowFlags_MenuBar | ImGuiWindowFlags_NoCollapse);
+  void on_imgui_render();
 
 private:
   struct ConsoleText {
@@ -85,7 +84,7 @@ private:
   std::mutex log_mutex;
 
   // Commands
-  ankerl::unordered_dense::map<std::string, ConsoleCommand> m_command_map;
+  ankerl::unordered_dense::map<std::string, ConsoleCommand> command_map;
   void process_command(const std::string& command);
 
   void help_command();
@@ -95,10 +94,13 @@ private:
 
   // Input field
   static constexpr uint32_t MAX_TEXT_BUFFER_SIZE = 32;
-  int32_t m_history_position = 0;
-  std::vector<ConsoleText> m_text_buffer = {};
-  std::vector<char*> m_input_log = {};
-  bool m_request_scroll_to_bottom = true;
+  int32_t history_position = 0;
+  std::vector<ConsoleText> text_buffer = {};
+  std::vector<char*> input_log = {};
+  bool request_scroll_to_bottom = true;
   int input_text_callback(ImGuiInputTextCallbackData* data);
+
+  fmtlog::LogLevel text_filter = fmtlog::OFF;
+  float animation_counter = 0.0f;
 };
 }

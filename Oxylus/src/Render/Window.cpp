@@ -7,6 +7,8 @@
 
 #include "Core/ApplicationEvents.h"
 
+#include "GLFW/glfw3.h"
+
 #include "Utils/Profiler.h"
 
 namespace Ox {

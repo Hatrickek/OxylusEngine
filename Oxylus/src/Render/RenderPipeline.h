@@ -4,8 +4,6 @@
 #include "Event/Event.h"
 #include <vuk/Future.hpp>
 
-#include "RendererData.h"
-
 #include "Core/Base.h"
 #include "Scene/Components.h"
 

@@ -2,6 +2,8 @@
 #include "Core/Input.h"
 #include "Core/Application.h"
 
+typedef struct GLFWmonitor GLFWmonitor;
+
 namespace Ox {
 class Window {
 public:

@@ -3,6 +3,8 @@
 #include "stb_image.h"
 #include "Types.h"
 
+#include "GLFW/glfw3.h"
+
 namespace Ox {
 Input::CursorState Input::cursor_state = CursorState::Disabled;
 Input::InputData Input::input_data = {};

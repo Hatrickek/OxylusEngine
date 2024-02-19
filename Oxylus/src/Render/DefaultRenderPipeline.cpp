@@ -317,8 +317,8 @@ void DefaultRenderPipeline::commit_descriptor_sets(vuk::Allocator& allocator) {
     .view_matrix = current_camera->get_view_matrix(),
     .inv_view_matrix = inverse(current_camera->get_view_matrix()),
     .inv_projection_view_matrix = inverse(current_camera->get_projection_matrix() * current_camera->get_view_matrix()),
-    .near = current_camera->get_near(),
-    .far = current_camera->get_far(),
+    .near_clip = current_camera->get_near(),
+    .far_clip = current_camera->get_far(),
     .fov = current_camera->get_fov(),
   };
 

@@ -1,8 +1,6 @@
 #pragma once
 
-#include <functional>
 #include "Keycodes.h"
-#include <GLFW/glfw3.h>
 
 #include "ApplicationEvents.h"
 #include "Types.h"
@@ -11,9 +9,16 @@
 
 #include "glm/vec2.hpp"
 
+typedef struct GLFWcursor GLFWcursor;
+typedef struct GLFWwindow GLFWwindow;
+
 namespace Ox {
 class Input {
 public:
+#define GLFW_CURSOR_NORMAL          0x00034001
+#define GLFW_CURSOR_HIDDEN          0x00034002
+#define GLFW_CURSOR_DISABLED        0x00034003
+
   enum class CursorState {
     Disabled = GLFW_CURSOR_DISABLED,
     Normal   = GLFW_CURSOR_NORMAL,

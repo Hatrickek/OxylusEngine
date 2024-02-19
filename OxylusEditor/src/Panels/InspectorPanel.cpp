@@ -99,20 +99,20 @@ void InspectorPanel::draw_material_properties(Shared<Material>& material) {
   OxUI::begin_properties();
   const char* alpha_modes[] = {"Opaque", "Blend", "Mask"};
   OxUI::property("Alpha mode", (int*)&material->parameters.alpha_mode, alpha_modes, 3);
-  OxUI::property("UV Scale", &material->parameters.uv_scale);
+  OxUI::property("UV Scale", &material->parameters.uv_scale, 0.0f);
 
   if (OxUI::property("Albedo", material->get_albedo_texture()))
     material->set_albedo_texture(material->get_albedo_texture());
   OxUI::property_vector("Color", material->parameters.color, true, true);
 
-  OxUI::property("Reflectance", &material->parameters.reflectance);
+  OxUI::property("Reflectance", &material->parameters.reflectance, 0.0f, 1.0f);
   if (OxUI::property("Normal", material->get_normal_texture()))
     material->set_normal_texture(material->get_normal_texture());
 
   if (OxUI::property("PhysicalMap", material->get_physical_texture()))
     material->set_physical_texture(material->get_physical_texture());
-  OxUI::property("Roughness", &material->parameters.roughness);
-  OxUI::property("Metallic", &material->parameters.metallic);
+  OxUI::property("Roughness", &material->parameters.roughness, 0.0f, 1.0f);
+  OxUI::property("Metallic", &material->parameters.metallic, 0.0f, 1.0f);
 
   if (OxUI::property("AO", material->get_ao_texture()))
     material->set_ao_texture(material->get_ao_texture());

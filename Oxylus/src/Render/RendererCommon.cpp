@@ -9,7 +9,6 @@
 #include <vuk/RenderGraph.hpp>
 
 #include "Mesh.h"
-#include "RendererData.h"
 
 #include "Assets/AssetManager.h"
 

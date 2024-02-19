@@ -11,7 +11,6 @@
 #include "Core/Input.h"
 #include "Core/Project.h"
 #include "Core/Resources.h"
-#include "Panels/ConsolePanel.h"
 #include "Panels/ContentPanel.h"
 #include "Panels/EditorSettingsPanel.h"
 #include "Panels/ProjectPanel.h"
@@ -37,7 +36,7 @@
 #include "Utils/StringUtils.h"
 
 namespace Ox {
-EditorLayer* EditorLayer::s_instance = nullptr;
+EditorLayer* EditorLayer::instance = nullptr;
 
 AutoCVar_Int cvar_show_style_editor("ui.imgui_style_editor", "show imgui style editor", 0, CVarFlags::EditCheckbox);
 AutoCVar_Int cvar_show_imgui_demo("ui.imgui_demo", "show imgui demo window", 0, CVarFlags::EditCheckbox);
@@ -45,44 +44,43 @@ AutoCVar_Int cvar_show_imgui_demo("ui.imgui_demo", "show imgui demo window", 0, 
 static ViewportPanel* fullscreen_viewport_panel = nullptr;
 
 EditorLayer::EditorLayer() : Layer("Editor Layer") {
-  s_instance = this;
+  instance = this;
 }
 
 void EditorLayer::on_attach(EventDispatcher& dispatcher) {
   OX_SCOPED_ZONE;
   EditorTheme::init();
 
-  m_editor_config.load_config();
+  editor_config.load_config();
   Resources::init_editor_resources();
-
-  crosshair_cursor = Input::load_cursor_icon_standard(GLFW_CROSSHAIR_CURSOR);
 
   engine_banner = create_shared<TextureAsset>();
   engine_banner->create_texture(EngineBannerWidth, EngineBannerHeight, EngineBanner);
 
   Input::set_cursor_state(Input::CursorState::Normal);
 
-  m_editor_scene = create_shared<Scene>();
-  load_default_scene(m_editor_scene);
-  set_editor_context(m_editor_scene);
+  editor_scene = create_shared<Scene>();
+  load_default_scene(editor_scene);
+  set_editor_context(editor_scene);
 
   // Initialize panels
-  m_editor_panels.emplace("EditorSettings", create_unique<EditorSettingsPanel>());
-  m_editor_panels.emplace("RenderSettings", create_unique<RendererSettingsPanel>());
-  m_editor_panels.emplace("ProjectPanel", create_unique<ProjectPanel>());
-  m_editor_panels.emplace("StatisticsPanel", create_unique<StatisticsPanel>());
-  const auto& viewport = m_viewport_panels.emplace_back(create_unique<ViewportPanel>());
+  runtime_console.register_command("clear_assets", "Asset cleared.", [] { AssetManager::free_unused_assets(); });
+
+  editor_panels.emplace("EditorSettings", create_unique<EditorSettingsPanel>());
+  editor_panels.emplace("RenderSettings", create_unique<RendererSettingsPanel>());
+  editor_panels.emplace("ProjectPanel", create_unique<ProjectPanel>());
+  editor_panels.emplace("StatisticsPanel", create_unique<StatisticsPanel>());
+  const auto& viewport = viewport_panels.emplace_back(create_unique<ViewportPanel>());
   viewport->m_camera.set_position({-2, 2, 0});
-  viewport->set_context(m_editor_scene, m_scene_hierarchy_panel);
+  viewport->set_context(editor_scene, scene_hierarchy_panel);
 }
 
 void EditorLayer::on_detach() {
-  Input::destroy_cursor(crosshair_cursor);
-  m_editor_config.save_config();
+  editor_config.save_config();
 }
 
 void EditorLayer::on_update(const Timestep& delta_time) {
-  for (const auto& panel : m_viewport_panels) {
+  for (const auto& panel : viewport_panels) {
     if (panel->fullscreen_viewport) {
       fullscreen_viewport_panel = panel.get();
       break;
@@ -90,36 +88,36 @@ void EditorLayer::on_update(const Timestep& delta_time) {
     fullscreen_viewport_panel = nullptr;
   }
 
-  for (const auto& [name, panel] : m_editor_panels) {
+  for (const auto& [name, panel] : editor_panels) {
     if (!panel->Visible)
       continue;
     panel->on_update();
   }
-  for (const auto& panel : m_viewport_panels) {
+  for (const auto& panel : viewport_panels) {
     if (!panel->Visible)
       continue;
     panel->on_update();
   }
-  if (m_scene_hierarchy_panel.Visible)
-    m_scene_hierarchy_panel.on_update();
+  if (scene_hierarchy_panel.Visible)
+    scene_hierarchy_panel.on_update();
   if (content_panel.Visible)
     content_panel.on_update();
-  if (m_inspector_panel.Visible)
-    m_inspector_panel.on_update();
+  if (inspector_panel.Visible)
+    inspector_panel.on_update();
 
   m_asset_inspector_panel.on_update();
 
   switch (scene_state) {
     case SceneState::Edit: {
-      m_editor_scene->on_editor_update(delta_time, m_viewport_panels[0]->m_camera);
+      editor_scene->on_editor_update(delta_time, viewport_panels[0]->m_camera);
       break;
     }
     case SceneState::Play: {
-      m_active_scene->on_runtime_update(delta_time);
+      active_scene->on_runtime_update(delta_time);
       break;
     }
     case SceneState::Simulate: {
-      m_active_scene->on_editor_update(delta_time, m_viewport_panels[0]->m_camera);
+      active_scene->on_editor_update(delta_time, viewport_panels[0]->m_camera);
       break;
     }
   }
@@ -183,7 +181,7 @@ void EditorLayer::on_imgui_render() {
           }
           ImGui::Separator();
           if (ImGui::MenuItem("Launcher...")) {
-            m_editor_panels["ProjectPanel"]->Visible = true;
+            editor_panels["ProjectPanel"]->Visible = true;
           }
           ImGui::Separator();
           if (ImGui::MenuItem("Exit")) {
@@ -193,7 +191,7 @@ void EditorLayer::on_imgui_render() {
         }
         if (ImGui::BeginMenu("Edit")) {
           if (ImGui::MenuItem("Settings")) {
-            m_editor_panels["EditorSettings"]->Visible = true;
+            editor_panels["EditorSettings"]->Visible = true;
           }
           if (ImGui::MenuItem("Reload project module")) {
             Project::get_active()->load_module();
@@ -208,13 +206,13 @@ void EditorLayer::on_imgui_render() {
             Window::is_fullscreen_borderless() ? Window::set_windowed() : Window::set_fullscreen_borderless();
           }
           if (ImGui::MenuItem("Add viewport", nullptr)) {
-            m_viewport_panels.emplace_back(create_unique<ViewportPanel>())->set_context(m_editor_scene, m_scene_hierarchy_panel);
+            viewport_panels.emplace_back(create_unique<ViewportPanel>())->set_context(editor_scene, scene_hierarchy_panel);
           }
-          ImGui::MenuItem("Inspector", nullptr, &m_inspector_panel.Visible);
-          ImGui::MenuItem("Scene hierarchy", nullptr, &m_scene_hierarchy_panel.Visible);
-          ImGui::MenuItem("Console window", nullptr, &m_console_panel.runtime_console.visible);
-          ImGui::MenuItem("Performance Overlay", nullptr, &m_viewport_panels[0]->performance_overlay_visible);
-          ImGui::MenuItem("Statistics", nullptr, &m_editor_panels["StatisticsPanel"]->Visible);
+          ImGui::MenuItem("Inspector", nullptr, &inspector_panel.Visible);
+          ImGui::MenuItem("Scene hierarchy", nullptr, &scene_hierarchy_panel.Visible);
+          ImGui::MenuItem("Console window", nullptr, &runtime_console.visible);
+          ImGui::MenuItem("Performance Overlay", nullptr, &viewport_panels[0]->performance_overlay_visible);
+          ImGui::MenuItem("Statistics", nullptr, &editor_panels["StatisticsPanel"]->Visible);
           if (ImGui::BeginMenu("Layout")) {
             if (ImGui::MenuItem("Classic")) {
               set_docking_layout(EditorLayout::Classic);
@@ -335,9 +333,9 @@ void EditorLayer::editor_shortcuts() {
 
 void EditorLayer::new_scene() {
   const Shared<Scene> new_scene = create_shared<Scene>();
-  m_editor_scene = new_scene;
+  editor_scene = new_scene;
   set_editor_context(new_scene);
-  m_last_save_scene_path.clear();
+  last_save_scene_path.clear();
 }
 
 void EditorLayer::open_scene_file_dialog() {
@@ -358,10 +356,10 @@ bool EditorLayer::open_scene(const std::filesystem::path& path) {
   const Shared<Scene> new_scene = create_shared<Scene>();
   const SceneSerializer serializer(new_scene);
   if (serializer.deserialize(path.string())) {
-    m_editor_scene = new_scene;
+    editor_scene = new_scene;
     set_editor_context(new_scene);
   }
-  m_last_save_scene_path = path.string();
+  last_save_scene_path = path.string();
   return true;
 }
 
@@ -380,13 +378,13 @@ void EditorLayer::load_default_scene(const std::shared_ptr<Scene>& scene) {
 }
 
 void EditorLayer::clear_selected_entity() {
-  m_scene_hierarchy_panel.clear_selection_context();
+  scene_hierarchy_panel.clear_selection_context();
 }
 
 void EditorLayer::save_scene() {
-  if (!m_last_save_scene_path.empty()) {
+  if (!last_save_scene_path.empty()) {
     ThreadManager::get()->asset_thread.queue_job([this] {
-      SceneSerializer(m_editor_scene).serialize(m_last_save_scene_path);
+      SceneSerializer(editor_scene).serialize(last_save_scene_path);
     });
   }
   else {
@@ -398,35 +396,35 @@ void EditorLayer::save_scene_as() {
   const std::string filepath = FileDialogs::save_file({{"Oxylus Scene", "oxscene"}}, "New Scene");
   if (!filepath.empty()) {
     ThreadManager::get()->asset_thread.queue_job([this, filepath] {
-      SceneSerializer(m_editor_scene).serialize(filepath);
+      SceneSerializer(editor_scene).serialize(filepath);
     });
-    m_last_save_scene_path = filepath;
+    last_save_scene_path = filepath;
   }
 }
 
 void EditorLayer::on_scene_play() {
   reset_context();
   set_scene_state(SceneState::Play);
-  m_active_scene = Scene::copy(m_editor_scene);
-  set_editor_context(m_active_scene);
-  m_active_scene->on_runtime_start();
+  active_scene = Scene::copy(editor_scene);
+  set_editor_context(active_scene);
+  active_scene->on_runtime_start();
 }
 
 void EditorLayer::on_scene_stop() {
   reset_context();
   set_scene_state(SceneState::Edit);
-  m_active_scene->on_runtime_stop();
-  m_active_scene = nullptr;
-  set_editor_context(m_editor_scene);
+  active_scene->on_runtime_stop();
+  active_scene = nullptr;
+  set_editor_context(editor_scene);
   // initalize the renderer again manually since this scene was already alive...
-  m_editor_scene->get_renderer()->init();
+  editor_scene->get_renderer()->init();
 }
 
 void EditorLayer::on_scene_simulate() {
   reset_context();
   set_scene_state(SceneState::Simulate);
-  m_active_scene = Scene::copy(m_editor_scene);
-  set_editor_context(m_active_scene);
+  active_scene = Scene::copy(editor_scene);
+  set_editor_context(active_scene);
 }
 
 void EditorLayer::draw_panels() {
@@ -435,19 +433,20 @@ void EditorLayer::draw_panels() {
     return;
   }
 
-  for (const auto& panel : m_viewport_panels)
+  for (const auto& panel : viewport_panels)
     panel->on_imgui_render();
 
-  for (const auto& [name, panel] : m_editor_panels) {
+  for (const auto& [name, panel] : editor_panels) {
     if (panel->Visible)
       panel->on_imgui_render();
   }
 
-  m_console_panel.on_imgui_render();
-  if (m_scene_hierarchy_panel.Visible)
-    m_scene_hierarchy_panel.on_imgui_render();
-  if (m_inspector_panel.Visible)
-    m_inspector_panel.on_imgui_render();
+  runtime_console.on_imgui_render();
+
+  if (scene_hierarchy_panel.Visible)
+    scene_hierarchy_panel.on_imgui_render();
+  if (inspector_panel.Visible)
+    inspector_panel.on_imgui_render();
   if (content_panel.Visible)
     content_panel.on_imgui_render();
   if (m_asset_inspector_panel.Visible)
@@ -455,14 +454,14 @@ void EditorLayer::draw_panels() {
 }
 
 Shared<Scene> EditorLayer::get_active_scene() {
-  return m_active_scene;
+  return active_scene;
 }
 
 void EditorLayer::set_editor_context(const Shared<Scene>& scene) {
-  m_scene_hierarchy_panel.clear_selection_context();
-  m_scene_hierarchy_panel.set_context(scene);
-  for (const auto& panel : m_viewport_panels) {
-    panel->set_context(scene, m_scene_hierarchy_panel);
+  scene_hierarchy_panel.clear_selection_context();
+  scene_hierarchy_panel.set_context(scene);
+  for (const auto& panel : viewport_panels) {
+    panel->set_context(scene, scene_hierarchy_panel);
   }
 }
 
@@ -483,12 +482,11 @@ void EditorLayer::set_docking_layout(EditorLayout layout) {
     ImGuiID left_dock = ImGui::DockBuilderSplitNode(dockspace_id, ImGuiDir_Left, 0.2f, nullptr, &dockspace_id);
     const ImGuiID left_split_dock = ImGui::DockBuilderSplitNode(left_dock, ImGuiDir_Down, 0.4f, nullptr, &left_dock);
 
-    ImGui::DockBuilderDockWindow(m_viewport_panels[0]->get_id(), right_dock);
-    ImGui::DockBuilderDockWindow(m_scene_hierarchy_panel.get_id(), left_dock);
-    ImGui::DockBuilderDockWindow(m_editor_panels["RenderSettings"]->get_id(), left_split_dock);
+    ImGui::DockBuilderDockWindow(viewport_panels[0]->get_id(), right_dock);
+    ImGui::DockBuilderDockWindow(scene_hierarchy_panel.get_id(), left_dock);
+    ImGui::DockBuilderDockWindow(editor_panels["RenderSettings"]->get_id(), left_split_dock);
     ImGui::DockBuilderDockWindow(content_panel.get_id(), left_split_dock);
-    ImGui::DockBuilderDockWindow(m_console_panel.runtime_console.id.c_str(), left_split_dock);
-    ImGui::DockBuilderDockWindow(m_inspector_panel.get_id(), left_dock);
+    ImGui::DockBuilderDockWindow(inspector_panel.get_id(), left_dock);
   }
   else if (layout == EditorLayout::Classic) {
     const ImGuiID right_dock = ImGui::DockBuilderSplitNode(dockspace_id, ImGuiDir_Right, 0.2f, nullptr, &dockspace_id);
@@ -497,12 +495,11 @@ void EditorLayer::set_docking_layout(EditorLayout layout) {
     const ImGuiID bottom_dock = ImGui::DockBuilderSplitNode(left_split_vertical_dock, ImGuiDir_Down, 0.3f, nullptr, &left_split_vertical_dock);
     const ImGuiID left_split_dock = ImGui::DockBuilderSplitNode(left_dock, ImGuiDir_Down, 0.4f, nullptr, &left_dock);
 
-    ImGui::DockBuilderDockWindow(m_scene_hierarchy_panel.get_id(), left_dock);
-    ImGui::DockBuilderDockWindow(m_editor_panels["RenderSettings"]->get_id(), left_split_dock);
+    ImGui::DockBuilderDockWindow(scene_hierarchy_panel.get_id(), left_dock);
+    ImGui::DockBuilderDockWindow(editor_panels["RenderSettings"]->get_id(), left_split_dock);
     ImGui::DockBuilderDockWindow(content_panel.get_id(), bottom_dock);
-    ImGui::DockBuilderDockWindow(m_console_panel.runtime_console.id.c_str(), bottom_dock);
-    ImGui::DockBuilderDockWindow(m_inspector_panel.get_id(), right_dock);
-    ImGui::DockBuilderDockWindow(m_viewport_panels[0]->get_id(), left_split_vertical_dock);
+    ImGui::DockBuilderDockWindow(inspector_panel.get_id(), right_dock);
+    ImGui::DockBuilderDockWindow(viewport_panels[0]->get_id(), left_split_vertical_dock);
   }
 
   ImGui::DockBuilderFinish(dockspace_id);

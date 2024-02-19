@@ -16,6 +16,8 @@
 #include "Core/Application.h"
 #include "Core/Resources.h"
 
+#include "GLFW/glfw3.h"
+
 #include "Render/Window.h"
 #include "Render/Vulkan/VulkanContext.h"
 #include "Utils/Profiler.h"

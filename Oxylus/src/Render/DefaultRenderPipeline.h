@@ -74,8 +74,8 @@ private:
     Mat4 inv_view_matrix;
     Mat4 inv_projection_view_matrix;
 
-    float near;
-    float far;
+    float near_clip;
+    float far_clip;
     float fov;
     float _pad = 0;
   };

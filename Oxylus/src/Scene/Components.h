@@ -1,6 +1,4 @@
 #pragma once
-#define GLM_ENABLE_EXPERIMENTAL
-
 #include <string>
 
 #include "Core/Types.h"

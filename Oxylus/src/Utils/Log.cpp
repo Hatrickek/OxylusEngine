@@ -18,12 +18,12 @@ void Log::init() {
   fmtlog::setLogFile("logs/oxylus_log.txt", true);
   fmtlog::setHeaderPattern("{HMS} | {l} | {s:<16} | ");
   fmtlog::flushOn(fmtlog::DBG);
-  fmtlog::setThreadName("MAIN");
+  fmtlog::setThreadName("main");
   fmtlog::startPollingThread(1);
 }
 
 void Log::force_poll() {
-  fmtlog::poll(true);
+  fmtlog::poll();
 }
 
 void Log::logcb(int64_t ns,
@@ -56,11 +56,14 @@ void Log::logcb(int64_t ns,
     case fmtlog::LogLevel::OFF: break;
   }
 
-  fmt::print(color, "{}\n", msg);
+  // turn it into std::string otherwise the size is ignored
+  const std::string msg_str = fmt::format("{}", msg);
+
+  fmt::print(color, "{}\n", msg_str);
 
   for (uint32_t i = 0; i < (uint32_t)external_sinks.size(); i++) {
     if (external_sinks[i]->user_data)
-      external_sinks[i]->log(ns, level, location, base_pos, thread_name, msg, body_pos, log_file_pos);
+      external_sinks[i]->log(ns, level, location, base_pos, thread_name, msg_str, body_pos, log_file_pos);
     else
       external_sinks.erase(external_sinks.begin() + i);
   }

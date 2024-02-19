@@ -11,6 +11,8 @@
 #include <vuk/RenderGraph.hpp>
 #include <vuk/resources/DeviceFrameResource.hpp>
 
+#include "GLFW/glfw3.h"
+
 namespace Ox {
 VulkanContext* VulkanContext::s_instance = nullptr;
 
