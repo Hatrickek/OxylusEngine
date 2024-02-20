@@ -7,6 +7,7 @@
 #include "LuaHelpers.h"
 
 #include "Scene/Entity.h"
+#include "Scene/Scene.h"
 
 namespace Ox::LuaBindings {
 [[nodiscard]] entt::id_type get_type_id(const sol::table& obj) {
@@ -288,7 +289,7 @@ void bind_scene(const Shared<sol::state>& state) {
   OX_SCOPED_ZONE;
   sol::usertype<Scene> scene_type = state->new_usertype<Scene>("Scene");
   scene_type.set_function("get_registry", &Scene::get_registry);
-  scene_type.set_function("create_entity", [](Scene& self, const std::string& name) { return self.create_entity(name).get_handle(); });
+  scene_type.set_function("create_entity", [](Scene& self, const std::string& name) { return self.create_entity(name); });
   scene_type.set_function("load_mesh", &Scene::load_mesh);
 
   auto entt_module = (*state)["entt"].get_or_create<sol::table>();

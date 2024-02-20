@@ -365,10 +365,10 @@ bool EditorLayer::open_scene(const std::filesystem::path& path) {
 
 void EditorLayer::load_default_scene(const std::shared_ptr<Scene>& scene) {
   OX_SCOPED_ZONE;
-  auto sun = scene->create_entity("Sun");
-  sun.add_component<LightComponent>().type = LightComponent::LightType::Directional;
-  sun.get_transform().rotation.y = glm::radians(60.f);
-  sun.get_transform().rotation.x = glm::radians(-140.f);
+  const auto sun = scene->create_entity("Sun");
+  scene->registry.emplace<LightComponent>(sun).type = LightComponent::LightType::Directional;
+  scene->registry.get<TransformComponent>(sun).rotation.y = glm::radians(60.f);
+  scene->registry.get<TransformComponent>(sun).rotation.x = glm::radians(-140.f);
 
   const auto plane = scene->load_mesh(AssetManager::get_mesh_asset("Resources/Objects/plane.glb"));
   scene->registry.get<TransformComponent>(plane).scale *= 4.f;

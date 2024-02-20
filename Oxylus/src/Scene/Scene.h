@@ -16,13 +16,12 @@
 namespace Ox {
 class RenderPipeline;
 class SceneRenderer;
-class Entity;
 
 class Scene {
 public:
   std::string scene_name = "Untitled";
   entt::registry registry;
-  ankerl::unordered_dense::map<UUID, entt::entity> entity_map;
+  ankerl::unordered_dense::map<UUID, Entity> entity_map;
 
   Scene();
   Scene(std::string name);
@@ -35,7 +34,7 @@ public:
   Entity create_entity_with_uuid(UUID uuid, const std::string& name = std::string());
 
   void iterate_mesh_node(const Shared<Mesh>& mesh, const Entity base_entity, Entity parent_entity, const Mesh::Node* node);
-  entt::entity load_mesh(const Shared<Mesh>& mesh);
+  Entity load_mesh(const Shared<Mesh>& mesh);
 
   template <typename T, typename... Args>
   Scene* add_system(Args&&... args) {
@@ -88,17 +87,16 @@ private:
 
   void init(const Shared<RenderPipeline>& render_pipeline = nullptr);
 
-  void mesh_component_ctor(entt::registry& reg, entt::entity entity);
-  void rigidbody_component_ctor(entt::registry& reg, entt::entity entity);
-  void collider_component_ctor(entt::registry& reg, entt::entity entity);
-  void character_controller_component_ctor(entt::registry& reg, entt::entity entity) const;
+  void mesh_component_ctor(entt::registry& reg, Entity entity);
+  void rigidbody_component_ctor(entt::registry& reg, Entity entity);
+  void collider_component_ctor(entt::registry& reg, Entity entity);
+  void character_controller_component_ctor(entt::registry& reg, Entity entity) const;
 
   // Physics
   void update_physics(const Timestep& delta_time);
-  void create_rigidbody(entt::entity ent, const TransformComponent& transform, RigidbodyComponent& component);
+  void create_rigidbody(Entity ent, const TransformComponent& transform, RigidbodyComponent& component);
   void create_character_controller(const TransformComponent& transform, CharacterControllerComponent& component) const;
 
-  friend class Entity;
   friend class SceneSerializer;
   friend class SceneHPanel;
 };

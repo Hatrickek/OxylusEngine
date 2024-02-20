@@ -30,9 +30,9 @@
 namespace Ox {
 ViewportPanel::ViewportPanel() : EditorPanel("Viewport", ICON_MDI_TERRAIN, true) {
   OX_SCOPED_ZONE;
-  m_show_gizmo_image_map[typeid(LightComponent).hash_code()] = create_shared<TextureAsset>(TextureLoadInfo{.path = "Resources/Icons/PointLightIcon.png", .generate_mips = false});
-  m_show_gizmo_image_map[typeid(SkyLightComponent).hash_code()] = create_shared<TextureAsset>(TextureLoadInfo{.path = "Resources/Icons/SkyIcon.png", .generate_mips = false});
-  m_show_gizmo_image_map[typeid(CameraComponent).hash_code()] = create_shared<TextureAsset>(TextureLoadInfo{.path = "Resources/Icons/CameraIcon.png", .generate_mips = false});
+  gizmo_image_map[typeid(LightComponent).hash_code()] = create_shared<TextureAsset>(TextureLoadInfo{.path = "Resources/Icons/PointLightIcon.png", .generate_mips = false});
+  gizmo_image_map[typeid(SkyLightComponent).hash_code()] = create_shared<TextureAsset>(TextureLoadInfo{.path = "Resources/Icons/SkyIcon.png", .generate_mips = false});
+  gizmo_image_map[typeid(CameraComponent).hash_code()] = create_shared<TextureAsset>(TextureLoadInfo{.path = "Resources/Icons/CameraIcon.png", .generate_mips = false});
 
   auto& superframe_allocator = VulkanContext::get()->superframe_allocator;
   ADD_TASK_TO_PIPE(
@@ -76,9 +76,9 @@ bool ViewportPanel::outline_pass(const Shared<RenderPipeline>& rp, const vuk::Di
 
   if (m_scene_hierarchy_panel) {
     const auto entity = m_scene_hierarchy_panel->get_selected_entity();
-    if (entity && entity.has_component<MeshComponent>()) {
-      const auto& mesh = entity.get_component<MeshComponent>();
-      const auto model_matrix = entity.get_world_transform();
+    const auto mesh_component = context->registry.try_get<MeshComponent>(entity);
+    if (entity != entt::null && mesh_component) {
+      const auto model_matrix = EUtil::get_world_transform(context.get(), entity);
 
       auto attachment = vuk::ImageAttachment{
         .extent = dim,
@@ -98,7 +98,7 @@ bool ViewportPanel::outline_pass(const Shared<RenderPipeline>& rp, const vuk::Di
           "outline_image"_image >> vuk::eColorRW >> "outline_image+",
           "outline_depth"_image >> vuk::eDepthStencilRW
         },
-        .execute = [this, mesh, model_matrix, vs_buffer](vuk::CommandBuffer& command_buffer) {
+        .execute = [this, mesh_component, model_matrix, vs_buffer](vuk::CommandBuffer& command_buffer) {
           constexpr auto stencil_state = vuk::StencilOpState{
             .failOp = vuk::StencilOp::eReplace,
             .passOp = vuk::StencilOp::eReplace,
@@ -126,10 +126,10 @@ bool ViewportPanel::outline_pass(const Shared<RenderPipeline>& rp, const vuk::Di
                         .specialize_constants(0, 0)
                         .bind_buffer(0, 0, vs_buffer);
 
-          mesh.mesh_base->bind_index_buffer(command_buffer);
-          mesh.mesh_base->bind_vertex_buffer(command_buffer);
+          mesh_component->mesh_base->bind_index_buffer(command_buffer);
+          mesh_component->mesh_base->bind_vertex_buffer(command_buffer);
 
-          const auto node = mesh.mesh_base->linear_nodes[mesh.node_index];
+          const auto node = mesh_component->mesh_base->linear_nodes[mesh_component->node_index];
           if (node->mesh_data) {
             for (const auto primitive : node->mesh_data->primitives) {
               struct PushConstant {
@@ -284,7 +284,7 @@ void ViewportPanel::on_imgui_render() {
     ImGui::SetCursorPosX((viewport_panel_size.x - fixed_width) * 0.5f);
 
     const auto dim = vuk::Dimension3D::absolute((uint32_t)fixed_width, (uint32_t)viewport_panel_size.y);
-    const auto rp = m_scene->get_renderer()->get_render_pipeline();
+    const auto rp = context->get_renderer()->get_render_pipeline();
 
     const auto off = (viewport_panel_size.x - fixed_width) * 0.5f; // add offset since we render image with fixed aspect ratio
     viewport_offset = {viewport_bounds[0].x + off * 0.5f, viewport_bounds[0].y};
@@ -293,7 +293,7 @@ void ViewportPanel::on_imgui_render() {
     auto final_image = rp->get_final_image();
 
     if (final_image) {
-      if (!m_scene->is_running()) {
+      if (!context->is_running()) {
         mouse_picking_pass(rp, dim, fixed_width);
         if (outline_pass(rp, dim)) {
           final_image = create_shared<vuk::SampledImage>(
@@ -313,14 +313,14 @@ void ViewportPanel::on_imgui_render() {
     if (m_scene_hierarchy_panel)
       m_scene_hierarchy_panel->drag_drop_target();
 
-    if (!m_scene->is_running()) {
+    if (!context->is_running()) {
       Mat4 view_proj = m_camera.get_projection_matrix_flipped() * m_camera.get_view_matrix();
       const Frustum& frustum = m_camera.get_frustum();
-      show_component_gizmo<LightComponent>(fixed_width, viewport_panel_size.y, 0, 0, view_proj, frustum, m_scene.get());
-      show_component_gizmo<SkyLightComponent>(fixed_width, viewport_panel_size.y, 0, 0, view_proj, frustum, m_scene.get());
-      show_component_gizmo<AudioSourceComponent>(fixed_width, viewport_panel_size.y, 0, 0, view_proj, frustum, m_scene.get());
-      show_component_gizmo<AudioListenerComponent>(fixed_width, viewport_panel_size.y, 0, 0, view_proj, frustum, m_scene.get());
-      show_component_gizmo<CameraComponent>(fixed_width, viewport_panel_size.y, 0, 0, view_proj, frustum, m_scene.get());
+      show_component_gizmo<LightComponent>(fixed_width, viewport_panel_size.y, 0, 0, view_proj, frustum, context.get());
+      show_component_gizmo<SkyLightComponent>(fixed_width, viewport_panel_size.y, 0, 0, view_proj, frustum, context.get());
+      show_component_gizmo<AudioSourceComponent>(fixed_width, viewport_panel_size.y, 0, 0, view_proj, frustum, context.get());
+      show_component_gizmo<AudioListenerComponent>(fixed_width, viewport_panel_size.y, 0, 0, view_proj, frustum, context.get());
+      show_component_gizmo<CameraComponent>(fixed_width, viewport_panel_size.y, 0, 0, view_proj, frustum, context.get());
 
       draw_gizmos();
     }
@@ -438,11 +438,10 @@ void ViewportPanel::mouse_picking_pass(const Shared<RenderPipeline>& rp, const v
 
   std::vector<SceneMesh> scene_meshes = {};
 
-  const auto mesh_view = m_scene->registry.view<TransformComponent, MeshComponent, TagComponent>();
+  const auto mesh_view = context->registry.view<TransformComponent, MeshComponent, TagComponent>();
   for (const auto&& [entity, transform, mesh_component, tag] : mesh_view.each()) {
     if (tag.enabled) {
-      auto e = Entity(entity, m_scene.get());
-      mesh_component.transform = e.get_world_transform();
+      mesh_component.transform = EUtil::get_world_transform(context.get(), entity);
       const auto id = (uint32_t)entity + 1u; // increment entity id by one so black color and the first entity doesn't get mixed
       scene_meshes.emplace_back(id, mesh_component);
     }
@@ -566,11 +565,11 @@ void ViewportPanel::mouse_picking_pass(const Shared<RenderPipeline>& rp, const v
     uint32_t id = 0;
     memcpy(&id, &buffer->mapped_ptr[buf_pos], sizeof(uint32_t));
 
-    m_hovered_entity = id <= 0 ? Entity() : Entity(entt::entity{id - 1u}, m_scene.get());
+    hovered_entity = id <= 0 ? entt::null : entt::entity{id - 1u};
 
     if (!ImGuizmo::IsUsing() && !ImGuizmo::IsOver()) {
-      if (m_hovered_entity && ImGui::IsMouseClicked(ImGuiMouseButton_Left) && is_viewport_hovered)
-        m_scene_hierarchy_panel->set_selected_entity(m_hovered_entity);
+      if (hovered_entity != entt::null && ImGui::IsMouseClicked(ImGuiMouseButton_Left) && is_viewport_hovered)
+        m_scene_hierarchy_panel->set_selected_entity(hovered_entity);
       else if (ImGui::IsMouseClicked(ImGuiMouseButton_Left) && is_viewport_hovered)
         m_scene_hierarchy_panel->set_selected_entity({});
     }
@@ -579,11 +578,11 @@ void ViewportPanel::mouse_picking_pass(const Shared<RenderPipeline>& rp, const v
 
 void ViewportPanel::set_context(const Shared<Scene>& scene, SceneHierarchyPanel& scene_hierarchy_panel) {
   m_scene_hierarchy_panel = &scene_hierarchy_panel;
-  m_scene = scene;
+  context = scene;
 }
 
 void ViewportPanel::on_update() {
-  if (is_viewport_hovered && !m_scene->is_running() && m_use_editor_camera) {
+  if (is_viewport_hovered && !context->is_running() && m_use_editor_camera) {
     const Vec3& position = m_camera.get_position();
     const Vec2 yaw_pitch = Vec2(m_camera.get_yaw(), m_camera.get_pitch());
     Vec3 final_position = position;
@@ -675,7 +674,8 @@ void ViewportPanel::draw_performance_overlay() {
 
 void ViewportPanel::draw_gizmos() {
   const Entity selected_entity = m_scene_hierarchy_panel->get_selected_entity();
-  if (selected_entity && m_gizmo_type != -1 && selected_entity.has_component<TransformComponent>()) {
+  auto tc = context->registry.try_get<TransformComponent>(selected_entity);
+  if (selected_entity != entt::null && m_gizmo_type != -1 && tc) {
     ImGuizmo::SetOrthographic(false);
     ImGuizmo::SetDrawlist();
     ImGuizmo::SetRect(viewport_bounds[0].x,
@@ -686,8 +686,7 @@ void ViewportPanel::draw_gizmos() {
     const Mat4& camera_projection = m_camera.get_projection_matrix_flipped();
     const Mat4& camera_view = m_camera.get_view_matrix();
 
-    auto& tc = selected_entity.get_component<TransformComponent>();
-    Mat4 transform = selected_entity.get_world_transform();
+    Mat4 transform = EUtil::get_world_transform(context.get(), selected_entity);
 
     // Snapping
     const bool snap = Input::get_key_held(KeyCode::LeftControl);
@@ -707,14 +706,14 @@ void ViewportPanel::draw_gizmos() {
                snap ? snap_values : nullptr);
 
     if (ImGuizmo::IsUsing()) {
-      const Entity parent = selected_entity.get_parent();
-      const Mat4& parent_world_transform = parent ? parent.get_world_transform() : Mat4(1.0f);
+      const Entity parent = EUtil::get_parent(context.get(), selected_entity);
+      const Mat4& parent_world_transform = parent != entt::null ? EUtil::get_world_transform(context.get(), parent) : Mat4(1.0f);
       Vec3 translation, rotation, scale;
       if (Math::decompose_transform(inverse(parent_world_transform) * transform, translation, rotation, scale)) {
-        tc.position = translation;
-        const Vec3 delta_rotation = rotation - tc.rotation;
-        tc.rotation += delta_rotation;
-        tc.scale = scale;
+        tc->position = translation;
+        const Vec3 delta_rotation = rotation - tc->rotation;
+        tc->rotation += delta_rotation;
+        tc->scale = scale;
       }
     }
   }

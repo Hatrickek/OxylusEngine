@@ -7,6 +7,8 @@
 #include "Scene/Entity.h"
 #include "LuaHelpers.h"
 
+#include "Scene/Components.h"
+
 namespace Ox {
 void LuaBindings::bind_components(const Shared<sol::state>& state) {
   bind_tag_component(state);

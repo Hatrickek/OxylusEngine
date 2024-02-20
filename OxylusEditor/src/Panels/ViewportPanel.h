@@ -42,11 +42,11 @@ private:
                             const Mat4& view_proj,
                             const Frustum& frustum,
                             Scene* scene) {
-    if (m_show_gizmo_image_map[typeid(T).hash_code()]) {
+    if (gizmo_image_map[typeid(T).hash_code()]) {
       auto view = scene->registry.view<TransformComponent, T>();
 
       for (const auto&& [entity, transform, component] : view.each()) {
-        Vec3 pos = Entity(entity, scene).get_world_transform()[3];
+        Vec3 pos = EUtil::get_world_transform(scene, entity)[3];
 
         const auto inside = frustum.is_inside(pos);
 
@@ -58,8 +58,8 @@ private:
         ImGui::PushStyleColor(ImGuiCol_Button, ImVec4(0.7f, 0.7f, 0.7f, 0.0f));
         ImGui::PushStyleColor(ImGuiCol_ButtonHovered, ImVec4(0.1f, 0.1f, 0.1f, 0.1f));
 
-        if (OxUI::image_button("##", m_show_gizmo_image_map[typeid(T).hash_code()]->get_texture(), {40.f, 40.f})) {
-          m_scene_hierarchy_panel->set_selected_entity(Entity(entity, scene));
+        if (OxUI::image_button("##", gizmo_image_map[typeid(T).hash_code()]->get_texture(), {40.f, 40.f})) {
+          m_scene_hierarchy_panel->set_selected_entity(entity);
         }
 
         ImGui::PopStyleColor(2);
@@ -71,8 +71,8 @@ private:
     }
   }
 
-  Shared<Scene> m_scene = {};
-  Entity m_hovered_entity = {};
+  Shared<Scene> context = {};
+  Entity hovered_entity = {};
   SceneHierarchyPanel* m_scene_hierarchy_panel = nullptr;
 
   Vec2 m_viewport_size = {};
@@ -86,7 +86,7 @@ private:
   int m_gizmo_type = -1;
   int m_gizmo_mode = 0;
 
-  ankerl::unordered_dense::map<size_t, Shared<TextureAsset>> m_show_gizmo_image_map;
+  ankerl::unordered_dense::map<size_t, Shared<TextureAsset>> gizmo_image_map;
 
   std::vector<vuk::Unique<vuk::Buffer>> id_buffers = {};
 

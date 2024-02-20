@@ -36,8 +36,7 @@ void SceneRenderer::update() const {
     for (const auto&& [entity, transform, mesh_component, tag] : mesh_view.each()) {
       if (!tag.enabled)
         continue;
-      auto e = Entity(entity, m_scene);
-      const auto world_transform = e.get_world_transform();
+      const auto world_transform = EUtil::get_world_transform(m_scene, entity);
       mesh_component.transform = world_transform;
       mesh_component.aabb = mesh_component.mesh_base->linear_nodes[mesh_component.node_index]->aabb.get_transformed(world_transform);
       m_render_pipeline->on_register_render_object(mesh_component);
@@ -86,8 +85,7 @@ void SceneRenderer::update() const {
     OX_SCOPED_ZONE_N("Lighting System");
     const auto lighting_view = m_scene->registry.view<TransformComponent, LightComponent>();
     for (auto&& [e,tc, lc] : lighting_view.each()) {
-      Entity entity = {e, m_scene};
-      if (!entity.get_component<TagComponent>().enabled)
+      if (!m_scene->registry.get<TagComponent>(e).enabled)
         continue;
       m_render_pipeline->on_register_light(tc, lc);
     }

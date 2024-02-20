@@ -71,7 +71,7 @@ void Scene::rigidbody_component_ctor(entt::registry& reg, entt::entity entity) {
 }
 
 void Scene::collider_component_ctor(entt::registry& reg, entt::entity entity) {
-  if (reg.any_of<RigidbodyComponent>(entity))
+  if (reg.all_of<RigidbodyComponent>(entity))
     create_rigidbody(entity, reg.get<TransformComponent>(entity), reg.get<RigidbodyComponent>(entity));
 }
 
@@ -110,39 +110,39 @@ Entity Scene::create_entity(const std::string& name) {
   return create_entity_with_uuid(UUID(), name);
 }
 
-Entity Scene::create_entity_with_uuid(UUID uuid, const std::string& name) {
+entt::entity Scene::create_entity_with_uuid(UUID uuid, const std::string& name) {
   OX_SCOPED_ZONE;
-  Entity entity = {registry.create(), this};
-  entity_map.emplace(uuid, entity);
-  entity.add_component<IDComponent>(uuid);
-  entity.add_component<RelationshipComponent>();
-  entity.add_component<TransformComponent>();
-  entity.add_component<TagComponent>().tag = name.empty() ? "Entity" : name;
-  return entity;
+  entt::entity ent = registry.create();
+  entity_map.emplace(uuid, ent);
+  registry.emplace<IDComponent>(ent, uuid);
+  registry.emplace<RelationshipComponent>(ent);
+  registry.emplace<TransformComponent>(ent);
+  registry.emplace<TagComponent>(ent).tag = name.empty() ? "Entity" : name;
+  return ent;
 }
 
 void Scene::iterate_mesh_node(const Shared<Mesh>& mesh, const Entity base_entity, const Entity parent_entity, const Mesh::Node* node) {
-  auto node_entity = base_entity ? base_entity : create_entity(node->name);
+  const auto node_entity = base_entity != entt::null ? base_entity : create_entity(node->name);
 
   if (node->mesh_data) {
-    node_entity.get_or_add_component<MeshComponent>(mesh, node->index);
-    node_entity.get_transform().set_from_matrix(node->get_matrix());
+    registry.emplace_or_replace<MeshComponent>(node_entity, mesh, node->index);
+    registry.get<TransformComponent>(node_entity).set_from_matrix(node->get_matrix());
   }
 
-  if (parent_entity)
-    node_entity.set_parent(parent_entity);
+  if (parent_entity != entt::null)
+    EUtil::set_parent(this, node_entity, parent_entity);
 
   for (const auto& child : node->children)
-    iterate_mesh_node(mesh, {}, node_entity, child);
+    iterate_mesh_node(mesh, entt::null, node_entity, child);
 }
 
-entt::entity Scene::load_mesh(const Shared<Mesh>& mesh) {
+Entity Scene::load_mesh(const Shared<Mesh>& mesh) {
   const auto base_entity = create_entity(mesh->nodes[0]->name);
   for (const auto* node : mesh->nodes) {
-    iterate_mesh_node(mesh, base_entity, {}, node);
+    iterate_mesh_node(mesh, base_entity, entt::null, node);
   }
 
-  return base_entity.get_handle();
+  return base_entity;
 }
 
 void Scene::update_physics(const Timestep& delta_time) {
@@ -244,15 +244,16 @@ void Scene::update_physics(const Timestep& delta_time) {
 
 void Scene::destroy_entity(const Entity entity) {
   OX_SCOPED_ZONE;
-  entity.deparent();
-  const auto children = entity.get_component<RelationshipComponent>().children;
+  EUtil::deparent(this, entity);
+  const auto children = registry.get<RelationshipComponent>(entity).children;
 
   for (size_t i = 0; i < children.size(); i++) {
-    if (const Entity child_entity = get_entity_by_uuid(children[i]))
+    const Entity child_entity = get_entity_by_uuid(children[i]);
+    if (child_entity != entt::null)
       destroy_entity(child_entity);
   }
 
-  entity_map.erase(entity.get_uuid());
+  entity_map.erase(EUtil::get_uuid(registry, entity));
   registry.destroy(entity);
 }
 
@@ -263,7 +264,7 @@ static void copy_component(entt::registry& dst,
   ([&] {
     auto view = src.view<Component>();
     for (auto src_entity : view) {
-      entt::entity dst_entity = entt_map.at(src.get<IDComponent>(src_entity).ID);
+      entt::entity dst_entity = entt_map.at(src.get<IDComponent>(src_entity).uuid);
 
       Component& src_component = src.get<Component>(src_entity);
       dst.emplace_or_replace<Component>(dst_entity, src_component);
@@ -280,24 +281,25 @@ static void copy_component(ComponentGroup<Component...>,
 }
 
 template <typename... Component>
-static void copy_component_if_exists(Entity dst, Entity src) {
+static void copy_component_if_exists(Entity dst, Entity src, entt::registry& registry) {
   ([&] {
-    if (src.has_component<Component>())
-      dst.add_or_replace_component<Component>(src.get_component<Component>());
+    if (registry.all_of<Component>(src))
+      registry.emplace_or_replace<Component>(dst, registry.get<Component>(src));
   }(), ...);
 }
 
 template <typename... Component>
 static void copy_component_if_exists(ComponentGroup<Component...>,
                                      Entity dst,
-                                     Entity src) {
-  copy_component_if_exists<Component...>(dst, src);
+                                     Entity src,
+                                     entt::registry& registry) {
+  copy_component_if_exists<Component...>(dst, src, registry);
 }
 
 void Scene::duplicate_entity(Entity entity) {
   OX_SCOPED_ZONE;
-  const Entity new_entity = create_entity(entity.get_name());
-  copy_component_if_exists(AllComponents{}, new_entity, entity);
+  const Entity new_entity = create_entity(EUtil::get_name(registry, entity));
+  copy_component_if_exists(AllComponents{}, new_entity, entity, registry);
 }
 
 void Scene::on_runtime_start() {
@@ -389,14 +391,13 @@ void Scene::on_runtime_stop() {
 
 Entity Scene::find_entity(const std::string_view& name) {
   OX_SCOPED_ZONE;
-  const auto group = registry.view<TagComponent>();
-  for (const auto& entity : group) {
-    auto& tag = group.get<TagComponent>(entity);
+  const auto view = registry.view<TagComponent>();
+  for (auto&& [e, tag] : view.each()) {
     if (tag.tag == name) {
-      return Entity{entity, this};
+      return e;
     }
   }
-  return {};
+  return entt::null;
 }
 
 bool Scene::has_entity(UUID uuid) const {
@@ -406,18 +407,16 @@ bool Scene::has_entity(UUID uuid) const {
 
 Entity Scene::get_entity_by_uuid(UUID uuid) {
   OX_SCOPED_ZONE;
-  const auto& it = entity_map.find(uuid);
-  if (it != entity_map.end())
-    return {it->second, this};
-
-  return {};
+  if (entity_map.contains(uuid))
+    return entity_map.at(uuid);
+  return entt::null;
 }
 
-Shared<Scene> Scene::copy(const Shared<Scene>& other) {
+Shared<Scene> Scene::copy(const Shared<Scene>& src_scene) {
   OX_SCOPED_ZONE;
   Shared<Scene> new_scene = create_shared<Scene>();
 
-  auto& src_scene_registry = other->registry;
+  auto& src_scene_registry = src_scene->registry;
   auto& dst_scene_registry = new_scene->registry;
 
   // Create entities in new scene
@@ -425,15 +424,17 @@ Shared<Scene> Scene::copy(const Shared<Scene>& other) {
   for (const auto e : view) {
     auto [id, tag] = view.get<IDComponent, TagComponent>(e);
     const auto& name = tag.tag;
-    Entity new_entity = new_scene->create_entity_with_uuid(id.ID, name);
-    new_entity.get_component<TagComponent>().enabled = tag.enabled;
+    const Entity new_entity = new_scene->create_entity_with_uuid(id.uuid, name);
+    dst_scene_registry.get<TagComponent>(new_entity).enabled = tag.enabled;
   }
 
   for (const auto e : view) {
-    Entity src = {e, other.get()};
-    Entity dst = new_scene->get_entity_by_uuid(view.get<IDComponent>(e).ID);
-    if (Entity src_parent = src.get_parent())
-      dst.set_parent(new_scene->get_entity_by_uuid(src_parent.get_uuid()));
+    const Entity src_parent = EUtil::get_parent(src_scene.get(), e);
+    if (src_parent != entt::null) {
+      const Entity dst = new_scene->get_entity_by_uuid(view.get<IDComponent>(e).uuid);
+      const auto parent_uuid = EUtil::get_uuid(src_scene_registry, src_parent);
+      EUtil::set_parent(new_scene.get(), dst, new_scene->get_entity_by_uuid(parent_uuid));
+    }
   }
 
   // Copy components (except IDComponent and TagComponent)
@@ -454,7 +455,7 @@ void Scene::on_contact_persisted(const JPH::Body& body1, const JPH::Body& body2,
     system->on_contact_persisted(this, body1, body2, manifold, settings);
 }
 
-void Scene::create_rigidbody(entt::entity ent, const TransformComponent& transform, RigidbodyComponent& component) {
+void Scene::create_rigidbody(entt::entity entity, const TransformComponent& transform, RigidbodyComponent& component) {
   OX_SCOPED_ZONE;
   if (!running)
     return;
@@ -470,12 +471,10 @@ void Scene::create_rigidbody(entt::entity ent, const TransformComponent& transfo
   JPH::MutableCompoundShapeSettings compound_shape_settings;
   float max_scale_component = glm::max(glm::max(transform.scale.x, transform.scale.y), transform.scale.z);
 
-  auto entity = Entity(ent, this);
+  const auto& entity_name = EUtil::get_name(registry, entity);
 
-  const auto& entity_name = entity.get_component<TagComponent>().tag;
-
-  if (entity.has_component<BoxColliderComponent>()) {
-    const auto& bc = entity.get_component<BoxColliderComponent>();
+  if (registry.all_of<BoxColliderComponent>(entity)) {
+    const auto& bc = registry.get<BoxColliderComponent>(entity);
     const auto* mat = new PhysicsMaterial3D(entity_name, JPH::ColorArg(255, 0, 0), bc.friction, bc.restitution);
 
     Vec3 scale = bc.size;
@@ -485,8 +484,8 @@ void Scene::create_rigidbody(entt::entity ent, const TransformComponent& transfo
     compound_shape_settings.AddShape({bc.offset.x, bc.offset.y, bc.offset.z}, JPH::Quat::sIdentity(), shape_settings.Create().Get());
   }
 
-  if (entity.has_component<SphereColliderComponent>()) {
-    const auto& sc = entity.get_component<SphereColliderComponent>();
+  if (registry.all_of<SphereColliderComponent>(entity)) {
+    const auto& sc = registry.get<SphereColliderComponent>(entity);
     const auto* mat = new PhysicsMaterial3D(entity_name, JPH::ColorArg(255, 0, 0), sc.friction, sc.restitution);
 
     float radius = 2.0f * sc.radius * max_scale_component;
@@ -496,8 +495,8 @@ void Scene::create_rigidbody(entt::entity ent, const TransformComponent& transfo
     compound_shape_settings.AddShape({sc.offset.x, sc.offset.y, sc.offset.z}, JPH::Quat::sIdentity(), shape_settings.Create().Get());
   }
 
-  if (entity.has_component<CapsuleColliderComponent>()) {
-    const auto& cc = entity.get_component<CapsuleColliderComponent>();
+  if (registry.all_of<CapsuleColliderComponent>(entity)) {
+    const auto& cc = registry.get<CapsuleColliderComponent>(entity);
     const auto* mat = new PhysicsMaterial3D(entity_name, JPH::ColorArg(255, 0, 0), cc.friction, cc.restitution);
 
     float radius = 2.0f * cc.radius * max_scale_component;
@@ -507,8 +506,8 @@ void Scene::create_rigidbody(entt::entity ent, const TransformComponent& transfo
     compound_shape_settings.AddShape({cc.offset.x, cc.offset.y, cc.offset.z}, JPH::Quat::sIdentity(), shape_settings.Create().Get());
   }
 
-  if (entity.has_component<TaperedCapsuleColliderComponent>()) {
-    const auto& tcc = entity.get_component<TaperedCapsuleColliderComponent>();
+  if (registry.all_of<TaperedCapsuleColliderComponent>(entity)) {
+    const auto& tcc = registry.get<TaperedCapsuleColliderComponent>(entity);
     const auto* mat = new PhysicsMaterial3D(entity_name, JPH::ColorArg(255, 0, 0), tcc.friction, tcc.restitution);
 
     float top_radius = 2.0f * tcc.top_radius * max_scale_component;
@@ -519,8 +518,8 @@ void Scene::create_rigidbody(entt::entity ent, const TransformComponent& transfo
     compound_shape_settings.AddShape({tcc.offset.x, tcc.offset.y, tcc.offset.z}, JPH::Quat::sIdentity(), shape_settings.Create().Get());
   }
 
-  if (entity.has_component<CylinderColliderComponent>()) {
-    const auto& cc = entity.get_component<CylinderColliderComponent>();
+  if (registry.all_of<CylinderColliderComponent>(entity)) {
+    const auto& cc = registry.get<CylinderColliderComponent>(entity);
     const auto* mat = new PhysicsMaterial3D(entity_name, JPH::ColorArg(255, 0, 0), cc.friction, cc.restitution);
 
     float radius = 2.0f * cc.radius * max_scale_component;
@@ -530,18 +529,18 @@ void Scene::create_rigidbody(entt::entity ent, const TransformComponent& transfo
     compound_shape_settings.AddShape({cc.offset.x, cc.offset.y, cc.offset.z}, JPH::Quat::sIdentity(), shape_settings.Create().Get());
   }
 
-  if (entity.has_component<MeshColliderComponent>() && entity.has_component<MeshComponent>()) {
-    const auto& mc = entity.get_component<MeshColliderComponent>();
+  if (registry.all_of<MeshColliderComponent>(entity) && registry.all_of<MeshComponent>(entity)) {
+    const auto& mc = registry.get<MeshColliderComponent>(entity);
     const auto* mat = new PhysicsMaterial3D(entity_name, JPH::ColorArg(255, 0, 0), mc.friction, mc.restitution);
 
     // TODO: We should only get the vertices and indices for this particular MeshComponent using MeshComponent::node_index
 
-    const auto& mesh_component = entity.get_component<MeshComponent>();
+    const auto& mesh_component = registry.get<MeshComponent>(entity);
     auto vertices = mesh_component.mesh_base->vertices;
     const auto& indices = mesh_component.mesh_base->indices;
 
     // scale vertices
-    const auto world_transform = entity.get_world_transform();
+    const auto world_transform = EUtil::get_world_transform(this, entity);
     for (auto& vert : vertices) {
       Vec4 scaled_pos = world_transform * Vec4(vert.position, 1.0);
       vert.position = Vec3(scaled_pos);
@@ -578,7 +577,7 @@ void Scene::create_rigidbody(entt::entity ent, const TransformComponent& transfo
   // Body
   auto rotation = glm::quat(transform.rotation);
 
-  auto layer = entity.get_component<TagComponent>().layer;
+  auto layer = registry.get<TagComponent>(entity).layer;
   uint8_t layer_index = 1; // Default Layer
   auto collision_mask_it = Physics::layer_collision_mask.find(layer);
   if (collision_mask_it != Physics::layer_collision_mask.end())
@@ -676,7 +675,7 @@ void Scene::on_runtime_update(const Timestep& delta_time) {
     for (auto&& [e, ac, tc] : listener_view.each()) {
       ac.listener = create_shared<AudioListener>();
       if (ac.active) {
-        const Mat4 inverted = inverse(Entity(e, this).get_world_transform());
+        const Mat4 inverted = inverse(EUtil::get_world_transform(this, e));
         const Vec3 forward = normalize(Vec3(inverted[2]));
         ac.listener->set_config(ac.config);
         ac.listener->set_position(tc.position);
@@ -688,7 +687,7 @@ void Scene::on_runtime_update(const Timestep& delta_time) {
     const auto source_view = registry.group<AudioSourceComponent>(entt::get<TransformComponent>);
     for (auto&& [e, ac, tc] : source_view.each()) {
       if (ac.source) {
-        const Mat4 inverted = glm::inverse(Entity(e, this).get_world_transform());
+        const Mat4 inverted = inverse(EUtil::get_world_transform(this, e));
         const Vec3 forward = normalize(Vec3(inverted[2]));
         ac.source->set_config(ac.config);
         ac.source->set_position(tc.position);

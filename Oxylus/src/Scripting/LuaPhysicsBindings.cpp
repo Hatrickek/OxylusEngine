@@ -9,6 +9,7 @@
 
 #include "Physics/RayCast.h"
 
+#include "Scene/Components.h"
 #include "Scene/Entity.h"
 
 namespace Ox {

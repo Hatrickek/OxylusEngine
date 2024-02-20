@@ -21,11 +21,8 @@ void SceneSerializer::serialize(const std::string& filePath) const {
   tbl.emplace("name", m_scene->scene_name);
 
   for (const auto [e] : m_scene->registry.storage<entt::entity>().each()) {
-    const Entity entity = {e, m_scene.get()};
-    if (!entity)
-      return;
     toml::array entity_array = {};
-    EntitySerializer::serialize_entity(&entity_array, entity);
+    EntitySerializer::serialize_entity(&entity_array, m_scene.get(), e);
     entities->emplace_back(toml::table{{"entity", entity_array}});
   }
 

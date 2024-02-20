@@ -3,9 +3,12 @@
 #include <vuk/Partials.hpp>
 
 #include "Core/Application.h"
-#include "Scene/Entity.h"
+
+#include "Render/Camera.h"
 
 #include "Render/RendererConfig.h"
+
+#include "Utils/Profiler.h"
 
 namespace Ox {
 void DirectShadowPass::update_cascades(const Vec3& dir_light_transform, Camera* camera, DirectShadowUB* cascades_ubo) {

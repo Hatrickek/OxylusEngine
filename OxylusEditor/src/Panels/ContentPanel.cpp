@@ -112,10 +112,14 @@ static const ankerl::unordered_dense::map<FileType, const char8_t*> FILE_TYPES_T
 
 static bool drag_drop_target(const std::filesystem::path& drop_path) {
   if (ImGui::BeginDragDropTarget()) {
-    if (const ImGuiPayload* payload = ImGui::AcceptDragDropPayload("Entity")) {
-      const Entity entity = *static_cast<Entity*>(payload->Data);
-      const std::filesystem::path path = drop_path / std::string(entity.get_component<TagComponent>().tag + ".oxprefab");
-      EntitySerializer::serialize_entity_as_prefab(path.string().c_str(), entity);
+    const ImGuiPayload* payload1 = ImGui::AcceptDragDropPayload("Registry");
+    const ImGuiPayload* payload2 = ImGui::AcceptDragDropPayload("Entity");
+    if (payload1 && payload2) {
+      const auto* registry = static_cast<entt::registry*>(payload1->Data);
+      const auto* entity = static_cast<Entity*>(payload1->Data);
+      auto entity_name = registry->get<TagComponent>(*entity).tag;
+      const std::filesystem::path path = drop_path / entity_name.append(".oxprefab");
+      EntitySerializer::serialize_entity_as_prefab(path.string().c_str(), *entity);
       return true;
     }
 

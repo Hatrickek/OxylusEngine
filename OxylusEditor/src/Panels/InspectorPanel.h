@@ -2,6 +2,7 @@
 
 #include "EditorPanel.h"
 #include "Scene/Entity.h"
+#include "Assets/Material.h"
 
 namespace Ox {
 class InspectorPanel : public EditorPanel {
@@ -16,11 +17,9 @@ private:
   void draw_components(Entity entity) const;
 
   template <typename Component>
-  static void draw_add_component(Entity entity, const char* name);
+  static void draw_add_component(entt::registry& reg, Entity entity, const char* name);
 
-  void pp_probe_property(bool value, const PostProcessProbe& component) const;
-
-  Entity m_SelectedEntity;
-  Scene* m_Scene;
+  Entity selected_entity = entt::null;
+  Scene* context;
 };
 }

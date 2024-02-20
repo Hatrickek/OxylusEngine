@@ -20,13 +20,13 @@ class TextureAsset;
 class Material;
 
 struct IDComponent {
-  UUID ID;
+  UUID uuid;
 
   IDComponent() = default;
 
   IDComponent(const IDComponent&) = default;
 
-  IDComponent(UUID id) : ID(id) {}
+  IDComponent(UUID id) : uuid(id) {}
 };
 
 struct TagComponent {
@@ -34,6 +34,7 @@ struct TagComponent {
   uint16_t layer = BIT(1);
   bool enabled = true;
 
+  // non-serialized data
   bool handled = true;
 
   TagComponent() = default;

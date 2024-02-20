@@ -23,15 +23,15 @@
 namespace Ox {
 static bool s_rename_entity = false;
 
-InspectorPanel::InspectorPanel() : EditorPanel("Inspector", ICON_MDI_INFORMATION, true), m_Scene(nullptr) {}
+InspectorPanel::InspectorPanel() : EditorPanel("Inspector", ICON_MDI_INFORMATION, true), context(nullptr) {}
 
 void InspectorPanel::on_imgui_render() {
-  m_SelectedEntity = EditorLayer::get()->get_selected_entity();
-  m_Scene = EditorLayer::get()->get_selected_scene().get();
+  selected_entity = EditorLayer::get()->get_selected_entity();
+  context = EditorLayer::get()->get_selected_scene().get();
 
   on_begin();
-  if (m_SelectedEntity) {
-    draw_components(m_SelectedEntity);
+  if (selected_entity != entt::null) {
+    draw_components(selected_entity);
   }
 
   //OxUI::draw_gradient_shadow_bottom();
@@ -40,17 +40,17 @@ void InspectorPanel::on_imgui_render() {
 }
 
 template <typename T, typename UIFunction>
-static void draw_component(const char* name,
-                           Entity entity,
-                           UIFunction ui_function,
-                           const bool removable = true) {
-  if (entity.has_component<T>()) {
+void draw_component(const char* name,
+                    entt::registry& reg,
+                    Entity entity,
+                    UIFunction ui_function,
+                    const bool removable = true) {
+  auto component = reg.try_get<T>(entity);
+  if (component) {
     static constexpr ImGuiTreeNodeFlags TREE_FLAGS = ImGuiTreeNodeFlags_DefaultOpen
                                                      | ImGuiTreeNodeFlags_SpanAvailWidth |
                                                      ImGuiTreeNodeFlags_AllowItemOverlap | ImGuiTreeNodeFlags_Framed |
                                                      ImGuiTreeNodeFlags_FramePadding;
-
-    auto& component = entity.get_component<T>();
 
     const float line_height = GImGui->Font->FontSize + GImGui->Style.FramePadding.y * 2.0f;
 
@@ -82,12 +82,12 @@ static void draw_component(const char* name,
     }
 
     if (open) {
-      ui_function(component);
+      ui_function(*component);
       ImGui::TreePop();
     }
 
     if (remove_component)
-      entity.remove_component<T>();
+      reg.remove<T>(entity);
   }
 }
 
@@ -194,10 +194,10 @@ static void draw_particle_by_speed_module(const std::string_view module_name,
 }
 
 template <typename Component>
-void InspectorPanel::draw_add_component(Entity entity, const char* name) {
+void InspectorPanel::draw_add_component(entt::registry& reg, Entity entity, const char* name) {
   if (ImGui::MenuItem(name)) {
-    if (!entity.has_component<Component>())
-      entity.add_component<Component>();
+    if (!reg.all_of<Component>(entity))
+      reg.emplace<Component>(entity);
     else
       OX_CORE_ERROR("Entity already has the {}!", typeid(Component).name());
     ImGui::CloseCurrentPopup();
@@ -205,8 +205,9 @@ void InspectorPanel::draw_add_component(Entity entity, const char* name) {
 }
 
 void InspectorPanel::draw_components(Entity entity) const {
-  if (entity.has_component<TagComponent>()) {
-    auto& tag = entity.get_component<TagComponent>().tag;
+  TagComponent* tag_component = context->registry.try_get<TagComponent>(entity);
+  if (tag_component) {
+    auto& tag = tag_component->tag;
     char buffer[256] = {};
     tag.copy(buffer, sizeof buffer);
     if (s_rename_entity)
@@ -222,29 +223,32 @@ void InspectorPanel::draw_components(Entity entity) const {
     ImGui::OpenPopup("Add Component");
   }
   if (ImGui::BeginPopup("Add Component")) {
-    draw_add_component<MeshComponent>(m_SelectedEntity, "Mesh Renderer");
-    draw_add_component<AudioSourceComponent>(m_SelectedEntity, "Audio Source");
-    draw_add_component<AudioListenerComponent>(m_SelectedEntity, "Audio Listener");
-    draw_add_component<LightComponent>(m_SelectedEntity, "Light");
-    draw_add_component<ParticleSystemComponent>(m_SelectedEntity, "Particle System");
-    draw_add_component<CameraComponent>(m_SelectedEntity, "Camera");
-    draw_add_component<PostProcessProbe>(m_SelectedEntity, "PostProcess Probe");
-    draw_add_component<RigidbodyComponent>(m_SelectedEntity, "Rigidbody");
-    draw_add_component<BoxColliderComponent>(entity, "Box Collider");
-    draw_add_component<SphereColliderComponent>(entity, "Sphere Collider");
-    draw_add_component<CapsuleColliderComponent>(entity, "Capsule Collider");
-    draw_add_component<TaperedCapsuleColliderComponent>(entity, "Tapered Capsule Collider");
-    draw_add_component<CylinderColliderComponent>(entity, "Cylinder Collider");
-    draw_add_component<MeshColliderComponent>(entity, "Mesh Collider");
-    draw_add_component<CharacterControllerComponent>(entity, "Character Controller");
-    draw_add_component<LuaScriptComponent>(entity, "Lua Script Component");
+    draw_add_component<MeshComponent>(context->registry, selected_entity, "Mesh Renderer");
+    draw_add_component<AudioSourceComponent>(context->registry, selected_entity, "Audio Source");
+    draw_add_component<AudioListenerComponent>(context->registry, selected_entity, "Audio Listener");
+    draw_add_component<LightComponent>(context->registry, selected_entity, "Light");
+    draw_add_component<ParticleSystemComponent>(context->registry, selected_entity, "Particle System");
+    draw_add_component<CameraComponent>(context->registry, selected_entity, "Camera");
+    draw_add_component<PostProcessProbe>(context->registry, selected_entity, "PostProcess Probe");
+    draw_add_component<RigidbodyComponent>(context->registry, selected_entity, "Rigidbody");
+    draw_add_component<BoxColliderComponent>(context->registry, entity, "Box Collider");
+    draw_add_component<SphereColliderComponent>(context->registry, entity, "Sphere Collider");
+    draw_add_component<CapsuleColliderComponent>(context->registry, entity, "Capsule Collider");
+    draw_add_component<TaperedCapsuleColliderComponent>(context->registry, entity, "Tapered Capsule Collider");
+    draw_add_component<CylinderColliderComponent>(context->registry, entity, "Cylinder Collider");
+    draw_add_component<MeshColliderComponent>(context->registry, entity, "Mesh Collider");
+    draw_add_component<CharacterControllerComponent>(context->registry, entity, "Character Controller");
+    draw_add_component<LuaScriptComponent>(context->registry, entity, "Lua Script Component");
 
     ImGui::EndPopup();
   }
   ImGui::PopItemWidth();
 
+  ImGui::Text("UUID: %lu", (uint64_t)context->registry.get<IDComponent>(entity).uuid);
+
   draw_component<TransformComponent>(
     " Transform Component",
+    context->registry,
     entity,
     [](TransformComponent& component) {
       OxUI::begin_properties();
@@ -258,6 +262,7 @@ void InspectorPanel::draw_components(Entity entity) const {
 
   draw_component<MeshComponent>(
     " Mesh Component",
+    context->registry,
     entity,
     [](MeshComponent& component) {
       if (!component.mesh_base)
@@ -285,7 +290,7 @@ void InspectorPanel::draw_components(Entity entity) const {
         ImGui::TextUnformatted(StringUtils::from_char8_t(ICON_MDI_MAGNIFY " Search..."));
       }
 
-      for (auto i = 0; i < (uint32_t)component.materials.size(); i++) {
+      for (uint32_t i = 0; i < (uint32_t)component.materials.size(); i++) {
         auto& material = component.materials[i];
         if (name_filter.PassFilter(material->name.c_str())) {
           ImGui::PushID(i);
@@ -307,6 +312,7 @@ void InspectorPanel::draw_components(Entity entity) const {
 
   draw_component<AnimationComponent>(
     " Animation Component",
+    context->registry,
     entity,
     [](AnimationComponent& component) {
       constexpr ImGuiTreeNodeFlags flags = ImGuiTreeNodeFlags_OpenOnArrow | ImGuiTreeNodeFlags_SpanFullWidth |
@@ -338,6 +344,7 @@ void InspectorPanel::draw_components(Entity entity) const {
 
   draw_component<SkyLightComponent>(
     " Sky Light Component",
+    context->registry,
     entity,
     [this](SkyLightComponent& component) {
       const std::string name = component.cubemap
@@ -356,60 +363,62 @@ void InspectorPanel::draw_components(Entity entity) const {
       const float y = ImGui::GetFrameHeight();
       if (ImGui::Button(name.c_str(), {x - 60.f, y})) {
         const std::string file_path = FileDialogs::open_file({{"HDR File", "hdr"}});
-        load_cube_map(m_Scene, file_path, component);
+        load_cube_map(context, file_path, component);
       }
       if (ImGui::BeginDragDropTarget()) {
         if (const ImGuiPayload* payload = ImGui::AcceptDragDropPayload("CONTENT_BROWSER_ITEM")) {
           const auto path = OxUI::get_path_from_imgui_payload(payload).string();
-          load_cube_map(m_Scene, path, component);
+          load_cube_map(context, path, component);
         }
         ImGui::EndDragDropTarget();
       }
       ImGui::SameLine(0, 2.f);
       if (ImGui::Button("x", {50.f, 0.f})) {
         component.cubemap = {};
-        m_Scene->get_renderer()->dispatcher.trigger(SkyboxLoadEvent{component.cubemap});
+        context->get_renderer()->dispatcher.trigger(SkyboxLoadEvent{component.cubemap});
       }
       ImGui::Spacing();
     });
 
   draw_component<PostProcessProbe>(
     " PostProcess Probe Component",
+    context->registry,
     entity,
     [this](PostProcessProbe& component) {
       ImGui::Text("Vignette");
       OxUI::begin_properties();
-      pp_probe_property(OxUI::property("Enable", &component.vignette_enabled), component);
-      pp_probe_property(OxUI::property("Intensity", &component.vignette_intensity), component);
+      OxUI::property("Enable", &component.vignette_enabled);
+      OxUI::property("Intensity", &component.vignette_intensity);
       OxUI::end_properties();
       ImGui::Separator();
 
       ImGui::Text("FilmGrain");
       OxUI::begin_properties();
-      pp_probe_property(OxUI::property("Enable", &component.film_grain_enabled), component);
-      pp_probe_property(OxUI::property("Intensity", &component.film_grain_intensity), component);
+      OxUI::property("Enable", &component.film_grain_enabled);
+      OxUI::property("Intensity", &component.film_grain_intensity);
       OxUI::end_properties();
       ImGui::Separator();
 
       ImGui::Text("ChromaticAberration");
       OxUI::begin_properties();
-      pp_probe_property(OxUI::property("Enable", &component.chromatic_aberration_enabled), component);
-      pp_probe_property(OxUI::property("Intensity", &component.chromatic_aberration_intensity), component);
+      OxUI::property("Enable", &component.chromatic_aberration_enabled);
+      OxUI::property("Intensity", &component.chromatic_aberration_intensity);
       OxUI::end_properties();
       ImGui::Separator();
 
       ImGui::Text("Sharpen");
       OxUI::begin_properties();
-      pp_probe_property(OxUI::property("Enable", &component.sharpen_enabled), component);
-      pp_probe_property(OxUI::property("Intensity", &component.sharpen_intensity), component);
+      OxUI::property("Enable", &component.sharpen_enabled);
+      OxUI::property("Intensity", &component.sharpen_intensity);
       OxUI::end_properties();
       ImGui::Separator();
     });
 
   draw_component<AudioSourceComponent>(
     " Audio Source Component",
+    context->registry,
     entity,
-    [&entity](AudioSourceComponent& component) {
+    [&entity, this](AudioSourceComponent& component) {
       auto& config = component.config;
       const char* filepath = component.source
                                ? component.source->get_path()
@@ -488,16 +497,17 @@ void InspectorPanel::draw_components(Entity entity) const {
       OxUI::end_properties();
 
       if (component.source) {
-        const glm::mat4 inverted = glm::inverse(entity.get_world_transform());
+        const glm::mat4 inverted = glm::inverse(EUtil::get_world_transform(context, entity));
         const Vec3 forward = normalize(Vec3(inverted[2]));
         component.source->set_config(config);
-        component.source->set_position(entity.get_transform().position);
+        component.source->set_position(context->registry.get<TransformComponent>(entity).position);
         component.source->set_direction(-forward);
       }
     });
 
   draw_component<AudioListenerComponent>(
     " Audio Listener Component",
+    context->registry,
     entity,
     [](AudioListenerComponent& component) {
       auto& config = component.config;
@@ -515,6 +525,7 @@ void InspectorPanel::draw_components(Entity entity) const {
 
   draw_component<LightComponent>(
     " Light Component",
+    context->registry,
     entity,
     [](LightComponent& component) {
       OxUI::begin_properties();
@@ -577,6 +588,7 @@ void InspectorPanel::draw_components(Entity entity) const {
 
   draw_component<RigidbodyComponent>(
     " Rigidbody Component",
+    context->registry,
     entity,
     [this](RigidbodyComponent& component) {
       OxUI::begin_properties();
@@ -606,6 +618,7 @@ void InspectorPanel::draw_components(Entity entity) const {
 
   draw_component<BoxColliderComponent>(
     " Box Collider",
+    context->registry,
     entity,
     [](BoxColliderComponent& component) {
       OxUI::begin_properties();
@@ -621,6 +634,7 @@ void InspectorPanel::draw_components(Entity entity) const {
 
   draw_component<SphereColliderComponent>(
     " Sphere Collider",
+    context->registry,
     entity,
     [](SphereColliderComponent& component) {
       OxUI::begin_properties();
@@ -636,6 +650,7 @@ void InspectorPanel::draw_components(Entity entity) const {
 
   draw_component<CapsuleColliderComponent>(
     " Capsule Collider",
+    context->registry,
     entity,
     [](CapsuleColliderComponent& component) {
       OxUI::begin_properties();
@@ -652,6 +667,7 @@ void InspectorPanel::draw_components(Entity entity) const {
 
   draw_component<TaperedCapsuleColliderComponent>(
     " Tapered Capsule Collider",
+    context->registry,
     entity,
     [](TaperedCapsuleColliderComponent& component) {
       OxUI::begin_properties();
@@ -669,6 +685,7 @@ void InspectorPanel::draw_components(Entity entity) const {
 
   draw_component<CylinderColliderComponent>(
     " Cylinder Collider",
+    context->registry,
     entity,
     [](CylinderColliderComponent& component) {
       OxUI::begin_properties();
@@ -685,6 +702,7 @@ void InspectorPanel::draw_components(Entity entity) const {
 
   draw_component<MeshColliderComponent>(
     " Mesh Collider",
+    context->registry,
     entity,
     [](MeshColliderComponent& component) {
       OxUI::begin_properties();
@@ -696,6 +714,7 @@ void InspectorPanel::draw_components(Entity entity) const {
 
   draw_component<CharacterControllerComponent>(
     " Character Controller",
+    context->registry,
     entity,
     [](CharacterControllerComponent& component) {
       OxUI::begin_properties();
@@ -715,6 +734,7 @@ void InspectorPanel::draw_components(Entity entity) const {
 
   draw_component<CameraComponent>(
     "Camera Component",
+    context->registry,
     entity,
     [](CameraComponent& component) {
       OxUI::begin_properties();
@@ -735,6 +755,7 @@ void InspectorPanel::draw_components(Entity entity) const {
 
   draw_component<LuaScriptComponent>(
     "Lua Script Component",
+    context->registry,
     entity,
     [](LuaScriptComponent& component) {
       const std::string name = component.lua_system
@@ -769,6 +790,7 @@ void InspectorPanel::draw_components(Entity entity) const {
 
   draw_component<ParticleSystemComponent>(
     "Particle System Component",
+    context->registry,
     entity,
     [](const ParticleSystemComponent& component) {
       auto& props = component.system->get_properties();
@@ -824,11 +846,5 @@ void InspectorPanel::draw_components(Entity entity) const {
       draw_particle_over_lifetime_module("Rotation Over Lifetime", props.rotation_over_lifetime, false, true);
       draw_particle_by_speed_module("Rotation By Speed", props.rotation_by_speed, false, true);
     });
-}
-
-void InspectorPanel::pp_probe_property(const bool value, const PostProcessProbe& component) const {
-  if (value) {
-    m_SelectedEntity.get_scene()->get_renderer()->dispatcher.trigger(ProbeChangeEvent{component});
-  }
 }
 }
