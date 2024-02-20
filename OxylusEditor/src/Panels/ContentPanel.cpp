@@ -289,6 +289,7 @@ ContentPanel::ContentPanel() : EditorPanel("Contents", ICON_MDI_FOLDER_STAR, tru
 }
 
 void ContentPanel::init() {
+  const auto a = Project::get_asset_directory();
   m_assets_directory = Project::get_asset_directory();
   m_current_directory = m_assets_directory;
   refresh();

@@ -81,7 +81,6 @@ public:
 private:
   // Project
   static void new_project();
-  void open_project(const std::filesystem::path& path);
   static void save_project(const std::string& path);
 
   // Scene

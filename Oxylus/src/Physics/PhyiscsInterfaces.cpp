@@ -1,6 +1,9 @@
 ﻿#include "PhysicsInterfaces.h"
 
 #include "PhysicsMaterial.h"
+
+#include "Jolt/Physics/Body/Body.h"
+
 #include "Scene/Scene.h"
 #include "Utils/Log.h"
 #include "Utils/Profiler.h"

@@ -5,11 +5,12 @@
 #include "Utils/Toml.h"
 
 #include <fstream>
+#include <sstream>
 
 namespace Ox {
 ProjectSerializer::ProjectSerializer(Shared<Project> project) : m_project(std::move(project)) {}
 
-bool ProjectSerializer::serialize(const std::filesystem::path& file_path) const {
+bool ProjectSerializer::serialize(const std::string& file_path) const {
   const auto& config = m_project->get_config();
 
   const auto root = toml::table{
@@ -30,17 +31,17 @@ bool ProjectSerializer::serialize(const std::filesystem::path& file_path) const 
   std::ofstream filestream(file_path);
   filestream << ss.str();
 
-  m_project->set_project_file_path(file_path.string());
+  m_project->set_project_file_path(file_path);
 
   return true;
 }
 
-bool ProjectSerializer::deserialize(const std::filesystem::path& file_path) const {
+bool ProjectSerializer::deserialize(const std::string& file_path) const {
   auto& [name, start_scene, asset_directory, module_name] = m_project->get_config();
 
-  const auto& content = FileUtils::read_file(file_path.string());
+  const auto& content = FileUtils::read_file(file_path);
   if (content.empty()) {
-    OX_CORE_ASSERT(!content.empty(), fmt::format("Couldn't load project file: {0}", file_path.string()).c_str());
+    OX_CORE_ASSERT(!content.empty(), fmt::format("Couldn't load project file: {0}", file_path).c_str());
     return false;
   }
 
@@ -52,7 +53,7 @@ bool ProjectSerializer::deserialize(const std::filesystem::path& file_path) cons
   start_scene = project_node["start_scene"].as_string()->get();
   module_name = project_node["module_name"].as_string()->get();
 
-  m_project->set_project_file_path(file_path.string());
+  m_project->set_project_file_path(file_path);
 
   return true;
 }

@@ -1,5 +1,7 @@
 #include "AssetManager.h"
 
+#include <filesystem>
+
 #include "Audio/AudioSource.h"
 #include "Core/Project.h"
 #include "Render/Mesh.h"

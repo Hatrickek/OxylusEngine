@@ -16,11 +16,15 @@
 #include "Utils/Profiler.h"
 
 namespace Ox {
+std::string Project::get_asset_directory() {
+  return FileSystem::append_paths(get_project_directory(), active_project->project_config.asset_directory);
+}
+
 void Project::load_module() {
   if (get_config().module_name.empty())
     return;
 
-  const auto module_path = get_project_directory().append(project_config.module_name).string();
+  const auto module_path = FileSystem::append_paths(get_project_directory(), project_config.module_name);
   const auto lib = ModuleRegistry::get()->add_lib(project_config.module_name, module_path);
   if (!lib)
     return;
@@ -30,7 +34,7 @@ void Project::load_module() {
   OX_CORE_INFO("Successfully loaded module: {}", project_config.module_name);
 }
 
-void Project::unload_module() {
+void Project::unload_module() const {
   const auto lib = ModuleRegistry::get()->get_lib(project_config.module_name);
   if (!lib)
     return;
@@ -68,12 +72,12 @@ Shared<Project> Project::new_project(const std::string& project_dir, const std::
   return project;
 }
 
-Shared<Project> Project::load(const std::filesystem::path& path) {
+Shared<Project> Project::load(const std::string& path) {
   const Shared<Project> project = create_shared<Project>();
 
   const ProjectSerializer serializer(project);
   if (serializer.deserialize(path)) {
-    project->set_project_dir(path.parent_path().string());
+    project->set_project_dir(std::filesystem::path(path).parent_path().string());
     active_project = project;
     active_project->load_module();
     OX_CORE_INFO("Project loaded: {0}", project->get_config().name);
@@ -83,10 +87,10 @@ Shared<Project> Project::load(const std::filesystem::path& path) {
   return nullptr;
 }
 
-bool Project::save_active(const std::filesystem::path& path) {
+bool Project::save_active(const std::string& path) {
   const ProjectSerializer serializer(active_project);
   if (serializer.serialize(path)) {
-    active_project->set_project_dir(path.parent_path().string());
+    active_project->set_project_dir(std::filesystem::path(path).parent_path().string());
     return true;
   }
   return false;

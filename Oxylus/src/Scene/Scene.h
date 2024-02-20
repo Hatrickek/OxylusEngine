@@ -7,11 +7,9 @@
 
 #include "Core/UUID.h"
 #include "Core/Systems/System.h"
-#include "Jolt/Physics/PhysicsSystem.h"
-#include "Jolt/Physics/Body/BodyInterface.h"
-#include "Physics/PhysicsInterfaces.h"
 #include "Render/Mesh.h"
 #include <entt/entity/registry.hpp>
+#include <Physics/PhysicsInterfaces.h>
 
 namespace Ox {
 class RenderPipeline;

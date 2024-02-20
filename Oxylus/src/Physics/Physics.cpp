@@ -7,6 +7,7 @@
 
 #include "Core/Base.h"
 
+#include "Jolt/RegisterTypes.h"
 #include "Jolt/Physics/Collision/CastResult.h"
 #include "Jolt/Physics/Collision/RayCast.h"
 

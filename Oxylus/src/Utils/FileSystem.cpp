@@ -25,9 +25,12 @@ std::string FileSystem::get_name_with_extension(const std::string_view filepath)
 }
 
 std::string FileSystem::append_paths(const std::string_view path, const std::string_view second_path) {
+  if (path.empty() || second_path.empty())
+    return {};
+
   std::string new_path(path);
   new_path.append("/").append(second_path);
-  return new_path;
+  return preferred_path(new_path);
 }
 
 std::string FileSystem::preferred_path(const std::string_view path) {

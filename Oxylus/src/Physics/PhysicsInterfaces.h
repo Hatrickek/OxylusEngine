@@ -1,7 +1,9 @@
 ﻿#pragma once
-#include <tracy/Tracy.hpp>
-
-#include "JoltBuild.h"
+#include "Jolt/Jolt.h"
+#include "Jolt/Physics/Body/BodyActivationListener.h"
+#include "Jolt/Physics/Collision/ContactListener.h"
+#include "Jolt/Physics/Collision/ObjectLayer.h"
+#include "Jolt/Physics/Collision/BroadPhase/BroadPhaseLayer.h"
 
 namespace Ox {
 class Scene;

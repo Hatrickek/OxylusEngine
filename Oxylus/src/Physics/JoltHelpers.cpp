@@ -1,6 +1,7 @@
 ﻿#include "JoltHelpers.h"
 
-#include "JoltBuild.h"
+#include "Jolt/Jolt.h"
+#include "Jolt/Geometry/AABox.h"
 
 namespace Ox {
 Vec3 convert_from_jolt_vec3(const JPH::Vec3& vec) { return {vec.GetX(), vec.GetY(), vec.GetZ()}; }

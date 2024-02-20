@@ -367,7 +367,7 @@ void InspectorPanel::draw_components(Entity entity) const {
       }
       if (ImGui::BeginDragDropTarget()) {
         if (const ImGuiPayload* payload = ImGui::AcceptDragDropPayload("CONTENT_BROWSER_ITEM")) {
-          const auto path = OxUI::get_path_from_imgui_payload(payload).string();
+          const auto path = OxUI::get_path_from_imgui_payload(payload);
           load_cube_map(context, path, component);
         }
         ImGui::EndDragDropTarget();
@@ -777,7 +777,7 @@ void InspectorPanel::draw_components(Entity entity) const {
       }
       if (ImGui::BeginDragDropTarget()) {
         if (const ImGuiPayload* payload = ImGui::AcceptDragDropPayload("CONTENT_BROWSER_ITEM")) {
-          const auto path = OxUI::get_path_from_imgui_payload(payload).string();
+          const auto path = OxUI::get_path_from_imgui_payload(payload);
           load_script(path, component);
         }
         ImGui::EndDragDropTarget();

@@ -1,12 +1,14 @@
 ﻿#include "LuaPhysicsBindings.h"
 
 #include <sol/state.hpp>
+
 #include "LuaHelpers.h"
 
-#include "Physics/JoltBuild.h"
-
+#include "Jolt/Jolt.h"
 #include "Jolt/Physics/Collision/CastResult.h"
+#include "Jolt/Physics/Collision/BroadPhase/BroadPhaseQuery.h"
 
+#include "Physics/Physics.h"
 #include "Physics/RayCast.h"
 
 #include "Scene/Components.h"

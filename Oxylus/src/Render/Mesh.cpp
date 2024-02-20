@@ -72,7 +72,7 @@ bool Mesh::export_as_binary(const std::string& in_path, const std::string& out_p
   std::string error, warning;
 
   bool file_loaded;
-  if (std::filesystem::path(in_path).extension() == ".gltf")
+  if (FileSystem::get_file_extension(in_path) == "gltf")
     file_loaded = gltf_context.LoadASCIIFromFile(&gltf_model, &error, &warning, in_path);
   else
     file_loaded = gltf_context.LoadBinaryFromFile(&gltf_model, &error, &warning, in_path);
@@ -101,7 +101,7 @@ void Mesh::load_from_file(const std::string& file_path, int file_loading_flags, 
 
   std::string error, warning;
   bool file_loaded = false;
-  if (std::filesystem::path(file_path).extension() == ".gltf") {
+  if (FileSystem::get_file_extension(file_path) == "gltf") {
     file_loaded = gltf_context.LoadASCIIFromFile(&gltf_model, &error, &warning, file_path);
   }
   else {

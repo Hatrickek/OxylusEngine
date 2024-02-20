@@ -7,13 +7,15 @@
 #include "Audio/AudioListener.h"
 #include "Audio/AudioSource.h"
 
-#include "Physics/Physics.h"
-
 #include "Render/Camera.h"
 #include "Render/Mesh.h"
 #include "Render/ParticleSystem.h"
 
 #include "Scripting/LuaSystem.h"
+
+namespace JPH {
+class Character;
+}
 
 namespace Ox {
 class TextureAsset;
@@ -230,7 +232,7 @@ struct MeshColliderComponent {
 };
 
 struct CharacterControllerComponent {
-  JPH::Ref<JPH::Character> character = nullptr;
+  Shared<JPH::Character> character = nullptr;
 
   // Size
   float character_height_standing = 1.35f;
@@ -250,7 +252,6 @@ struct CharacterControllerComponent {
 
   bool interpolation = true;
 
-  JPH::Vec3 current_velocity = {};
   bool control_movement_during_jump = true;
   float jump_force = 8.0f;
   bool auto_bunny_hop = true;

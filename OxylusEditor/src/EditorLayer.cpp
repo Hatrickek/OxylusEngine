@@ -509,15 +509,6 @@ void EditorLayer::new_project() {
   Project::create_new();
 }
 
-void EditorLayer::open_project(const std::filesystem::path& path) {
-  if (path.empty())
-    return;
-  if (Project::load(path)) {
-    const auto& start_scene = Application::get_asset_directory_absolute(Project::get_active()->get_config().start_scene);
-    open_scene(start_scene);
-  }
-}
-
 void EditorLayer::save_project(const std::string& path) {
   Project::save_active(path);
 }

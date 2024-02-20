@@ -1,7 +1,5 @@
 #pragma once
 
-#include <filesystem>
-
 #include <ankerl/unordered_dense.h>
 
 #include "Core/Base.h"

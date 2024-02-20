@@ -15,13 +15,20 @@
 
 #include "SceneRenderer.h"
 
+#include "Jolt/Jolt.h"
+#include "Jolt/Physics/Body/BodyCreationSettings.h"
+
 #include "Jolt/Physics/Character/Character.h"
+#include "Jolt/Physics/Collision/Shape/BoxShape.h"
 #include "Jolt/Physics/Collision/Shape/CapsuleShape.h"
 #include "Jolt/Physics/Collision/Shape/CylinderShape.h"
 #include "Jolt/Physics/Collision/Shape/MeshShape.h"
 #include "Jolt/Physics/Collision/Shape/MutableCompoundShape.h"
 #include "Jolt/Physics/Collision/Shape/RotatedTranslatedShape.h"
+#include "Jolt/Physics/Collision/Shape/SphereShape.h"
 #include "Jolt/Physics/Collision/Shape/TaperedCapsuleShape.h"
+
+#include "Physics/Physics.h"
 #include "Physics/PhysicsMaterial.h"
 
 #include "Render/RenderPipeline.h"
@@ -622,7 +629,7 @@ void Scene::create_character_controller(const TransformComponent& transform, Cha
   settings->mShape = capsule_shape;
   settings->mFriction = 0.0f;                                                                          // For now this is not set. 
   settings->mSupportingVolume = JPH::Plane(JPH::Vec3::sAxisY(), -component.character_radius_standing); // Accept contacts that touch the lower sphere of the capsule
-  component.character = new JPH::Character(settings.get(), position, JPH::Quat::sIdentity(), 0, Physics::get_physics_system());
+  component.character = create_shared<JPH::Character>(settings.get(), position, JPH::Quat::sIdentity(), 0, Physics::get_physics_system());
   component.character->AddToPhysicsSystem(JPH::EActivation::Activate);
 }
 

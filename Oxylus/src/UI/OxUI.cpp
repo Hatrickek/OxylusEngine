@@ -152,7 +152,7 @@ bool OxUI::property(const char* label, Shared<TextureAsset>& texture, const char
   if (ImGui::BeginDragDropTarget()) {
     if (const ImGuiPayload* payload = ImGui::AcceptDragDropPayload("CONTENT_BROWSER_ITEM")) {
       const auto path = get_path_from_imgui_payload(payload);
-      texture = AssetManager::get_texture_asset({path.string()});
+      texture = AssetManager::get_texture_asset({path});
       changed = true;
     }
     ImGui::EndDragDropTarget();
@@ -397,7 +397,7 @@ void OxUI::spacing(const uint32_t count) {
     ImGui::Spacing();
 }
 
-std::filesystem::path OxUI::get_path_from_imgui_payload(const ImGuiPayload* payload) {
+std::string OxUI::get_path_from_imgui_payload(const ImGuiPayload* payload) {
   return std::string(static_cast<const char*>(payload->Data));
 }
 

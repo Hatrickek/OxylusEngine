@@ -15,8 +15,9 @@
 #include "LuaUIBindings.h"
 
 #include "Scene/Scene.h"
-#include "Scene/Entity.h"
 #include "Core/Input.h"
+
+#include "Utils/Log.h"
 
 namespace Ox {
 void LuaManager::init() {

@@ -1,7 +1,7 @@
 #pragma once
 
 #include <cstdint>
-#include <filesystem>
+#include <string>
 
 #include <imgui.h>
 #include <imgui_internal.h>
@@ -209,7 +209,7 @@ public:
 
   static void spacing(uint32_t count = 1);
 
-  static std::filesystem::path get_path_from_imgui_payload(const ImGuiPayload* payload);
+  static std::string get_path_from_imgui_payload(const ImGuiPayload* payload);
 
   // bigger scale = smaller gradient
   static void draw_gradient_shadow_bottom(float scale = 600.f);
