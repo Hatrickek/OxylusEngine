@@ -57,7 +57,8 @@ void Core::shutdown() {
   ThreadManager::get()->wait_all_threads();
   Window::close_window(Window::get_glfw_window());
   TaskScheduler::shutdown();
-  Project::get_active()->unload_module();
+  if (Project::get_active())
+    Project::get_active()->unload_module();
   LuaManager::get()->shutdown();
   ModuleRegistry::get()->clear();
 }

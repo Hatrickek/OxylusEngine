@@ -5,7 +5,7 @@
 #include "Utils/Log.h"
 
 namespace Ox {
-Module* ModuleRegistry::add_lib(std::string_view name, std::string_view path) {
+Module* ModuleRegistry::add_lib(const std::string& name, std::string_view path) {
   try {
     auto lib = create_unique<dylib>(path);
 
@@ -25,7 +25,7 @@ Module* ModuleRegistry::add_lib(std::string_view name, std::string_view path) {
   }
 }
 
-Module* ModuleRegistry::get_lib(std::string_view name) {
+Module* ModuleRegistry::get_lib(const std::string& name) {
   try {
     return libs.at(name).get();
   }

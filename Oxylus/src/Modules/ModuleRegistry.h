@@ -17,13 +17,13 @@ struct Module {
 
 class ModuleRegistry {
 public:
-  Module* add_lib(std::string_view name, std::string_view path);
-  Module* get_lib(std::string_view name);
+  Module* add_lib(const std::string& name, std::string_view path);
+  Module* get_lib(const std::string& name);
   void clear();
 
   static ModuleRegistry* get();
 
 private:
-  ankerl::unordered_dense::map<std::string_view, Unique<Module>> libs = {};
+  ankerl::unordered_dense::map<std::string, Unique<Module>> libs = {};
 };
 }
