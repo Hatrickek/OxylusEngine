@@ -1322,29 +1322,43 @@ void DefaultRenderPipeline::debug_pass(const Shared<vuk::RenderGraph>& rg, const
   const auto& lines = DebugRenderer::get_instance()->get_lines(false);
   auto [vertices, index_count] = DebugRenderer::get_vertices_from_lines(lines);
 
-  // fill in if empty
   if (vertices.empty())
     vertices.emplace_back(Vertex{});
 
   auto [v_buff, v_buff_fut] = create_cpu_buffer(frame_allocator, std::span(vertices));
   auto& vertex_buffer = *v_buff;
 
+  const auto& lines_dt = DebugRenderer::get_instance()->get_lines(true);
+  auto [vertices_dt, index_count_dt] = DebugRenderer::get_vertices_from_lines(lines_dt);
+
+  if (vertices_dt.empty())
+    vertices_dt.emplace_back(Vertex{});
+
+  auto [vd_buff, vd_buff_fut] = create_cpu_buffer(frame_allocator, std::span(vertices_dt));
+  auto& vertex_buffer_dt = *vd_buff;
+
   auto& index_buffer = *DebugRenderer::get_instance()->get_global_index_buffer();
 
-  // not depth tested
   rg->add_pass({
     .name = "debug_shapes_pass",
     .resources = {
       vuk::Resource(dst, vuk::Resource::Type::eImage, vuk::eColorWrite, dst.append("+")),
+      vuk::Resource(depth, vuk::Resource::Type::eImage, vuk::eDepthStencilRead)
     },
-    .execute = [this, buffer, index_count, vertex_buffer, index_buffer](vuk::CommandBuffer& command_buffer) {
+    .execute = [this, buffer, index_count, index_count_dt, vertex_buffer, vertex_buffer_dt, index_buffer](vuk::CommandBuffer& command_buffer) {
       const auto vertex_layout = vuk::Packed{
         vuk::Format::eR32G32B32A32Sfloat,
         vuk::Format::eR32G32B32A32Sfloat,
         vuk::Ignore{sizeof(Vertex) - (sizeof(Vec4) + sizeof(Vec4))}
       };
 
+      // not depth tested
       command_buffer.bind_graphics_pipeline("unlit_pipeline")
+                    .set_depth_stencil(vuk::PipelineDepthStencilStateCreateInfo{
+                       .depthTestEnable = false,
+                       .depthWriteEnable = false,
+                       .depthCompareOp = vuk::CompareOp::eLessOrEqual,
+                     })
                     .set_dynamic_state(vuk::DynamicStateFlagBits::eScissor | vuk::DynamicStateFlagBits::eViewport)
                     .broadcast_color_blend({})
                     .set_rasterization({.polygonMode = vuk::PolygonMode::eLine, .cullMode = vuk::CullModeFlagBits::eNone})
@@ -1357,10 +1371,27 @@ void DefaultRenderPipeline::debug_pass(const Shared<vuk::RenderGraph>& rg, const
                     .bind_index_buffer(index_buffer, vuk::IndexType::eUint32);
 
       Renderer::draw_indexed(command_buffer, index_count, 1, 0, 0, 0);
+
+      command_buffer.bind_graphics_pipeline("unlit_pipeline")
+                    .set_depth_stencil(vuk::PipelineDepthStencilStateCreateInfo{
+                       .depthTestEnable = true,
+                       .depthWriteEnable = false,
+                       .depthCompareOp = vuk::CompareOp::eLessOrEqual,
+                     })
+                    .set_dynamic_state(vuk::DynamicStateFlagBits::eScissor | vuk::DynamicStateFlagBits::eViewport)
+                    .broadcast_color_blend({})
+                    .set_rasterization({.polygonMode = vuk::PolygonMode::eLine, .cullMode = vuk::CullModeFlagBits::eNone})
+                    .set_primitive_topology(vuk::PrimitiveTopology::eLineList)
+                    .set_viewport(0, vuk::Rect2D::framebuffer())
+                    .set_scissor(0, vuk::Rect2D::framebuffer())
+                    .bind_buffer(0, 0, buffer)
+                    .push_constants(vuk::ShaderStageFlagBits::eVertex, 0, 0)
+                    .bind_vertex_buffer(0, vertex_buffer_dt, 0, vertex_layout)
+                    .bind_index_buffer(index_buffer, vuk::IndexType::eUint32);
+
+      Renderer::draw_indexed(command_buffer, index_count_dt, 1, 0, 0, 0);
     }
   });
-
-  // TODO: depth tested 
 
   DebugRenderer::reset(true);
 }

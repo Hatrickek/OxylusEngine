@@ -562,16 +562,16 @@ void ViewportPanel::mouse_picking_pass(const Shared<RenderPipeline>& rp, const v
   const auto buf_pos = (mouse_y * dim.extent.width + mouse_x) * 4;
 
   if (buf_pos + sizeof(uint32_t) <= buffer->size) {
-    uint32_t id = 0;
+    uint32_t id = entt::null;
     memcpy(&id, &buffer->mapped_ptr[buf_pos], sizeof(uint32_t));
 
-    hovered_entity = id <= 0 ? entt::null : entt::entity{id - 1u};
+    hovered_entity = id == entt::null ? entt::null : entt::entity{id - 1u};
 
     if (!ImGuizmo::IsUsing() && !ImGuizmo::IsOver()) {
       if (hovered_entity != entt::null && ImGui::IsMouseClicked(ImGuiMouseButton_Left) && is_viewport_hovered)
         m_scene_hierarchy_panel->set_selected_entity(hovered_entity);
       else if (ImGui::IsMouseClicked(ImGuiMouseButton_Left) && is_viewport_hovered)
-        m_scene_hierarchy_panel->set_selected_entity({});
+        m_scene_hierarchy_panel->set_selected_entity(entt::null);
     }
   }
 }

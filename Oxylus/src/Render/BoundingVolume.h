@@ -16,8 +16,8 @@ struct AABB {
   Vec3 max = {};
 
   AABB() = default;
-  AABB(const AABB& other);
-
+  ~AABB() = default;
+  AABB(const AABB& other) = default;
   AABB(const Vec3 min, const Vec3 max) : min(min), max(max) {}
 
   Vec3 get_center() const { return (max + min) * 0.5f; }

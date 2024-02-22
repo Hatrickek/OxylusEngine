@@ -23,8 +23,8 @@ void bind_debug_renderer(const Shared<sol::state>& state) {
                              DebugRenderer::draw_line(ray.get_origin(), ray.get_direction(), 1.0f, Vec4(color, 1.0f));
                            });
   debug_table.set_function("draw_aabb",
-                           [](const AABB& aabb, const Vec3& color = Vec3(1)) -> void {
-                             DebugRenderer::draw_aabb(aabb, Vec4(color, 1.0f));
+                           [](const AABB& aabb, const Vec3& color, const bool depth_tested) -> void {
+                             DebugRenderer::draw_aabb(aabb, Vec4(color, 1.0f), false, 1.0f, depth_tested);
                            });
 }
 }

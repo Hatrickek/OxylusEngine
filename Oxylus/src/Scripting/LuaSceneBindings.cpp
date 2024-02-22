@@ -86,6 +86,18 @@ void bind_registry(sol::table& entt_module) {
         return {};
       }
       return *self.begin();
+    },
+    "exclude",
+    [](entt::runtime_view& self, entt::registry& reg, const sol::variadic_args& va) {
+      const auto types = collect_types(va);
+
+      for (auto&& [componentId, storage] : reg.storage()) {
+        if (types.contains(componentId)) {
+          return self.exclude(storage);
+        }
+      }
+
+      return self;
     }
   );
 
@@ -112,6 +124,8 @@ void bind_registry(sol::table& entt_module) {
     [](entt::registry& self) { return self.create(); },
     "destroy",
     [](entt::registry& self, entt::entity entity) {
+      if (!self.valid(entity))
+        return (uint16_t)0;
       return self.destroy(entity);
     },
 

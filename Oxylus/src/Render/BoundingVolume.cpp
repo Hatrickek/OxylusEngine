@@ -5,11 +5,6 @@
 #include "Utils/Profiler.h"
 
 namespace Ox {
-AABB::AABB(const AABB& other) {
-  min = other.min;
-  max = other.max;
-}
-
 void AABB::translate(const Vec3& translation) {
   OX_SCOPED_ZONE;
   min += translation;

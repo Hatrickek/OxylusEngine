@@ -19,7 +19,9 @@ class Scene {
 public:
   std::string scene_name = "Untitled";
   entt::registry registry;
-  ankerl::unordered_dense::map<UUID, Entity> entity_map;
+  // TODO: We are keeping this only for serializing relationship of entities.
+  // Check how we can do that with entt id's instead.
+  ankerl::unordered_dense::map<UUID, Entity> entity_map; 
 
   Scene();
   Scene(std::string name);
@@ -70,7 +72,6 @@ public:
 
 private:
   bool running = false;
-
 
   // Renderer
   Shared<SceneRenderer> scene_renderer;
