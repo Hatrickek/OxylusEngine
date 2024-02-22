@@ -51,6 +51,8 @@ void EditorLayer::on_attach(EventDispatcher& dispatcher) {
   OX_SCOPED_ZONE;
   EditorTheme::init();
 
+  Project::create_new();
+
   editor_config.load_config();
   Resources::init_editor_resources();
 

@@ -36,7 +36,6 @@ bool Core::init(const AppSpec& spec) {
   TaskScheduler::init();
 
   FileDialogs::init_nfd();
-  Project::create_new();
   Window::init_window(spec);
 
   VulkanContext::init();
