@@ -6,6 +6,8 @@
 
 #include "LuaManager.h"
 
+#include "Core/App.h"
+
 #include "Scene/Entity.h"
 #include "Scene/Scene.h"
 
@@ -31,7 +33,7 @@ void LuaSystem::init_script(const std::string& path) {
     return;
   }
 
-  const auto state = LuaManager::get()->get_state();
+  const auto state = App::get_system<LuaManager>()->get_state();
   environment = create_unique<sol::environment>(*state, sol::create, state->globals());
 
   const auto load_file_result = state->script_file(file_path, *environment, sol::script_pass_on_error);
@@ -104,7 +106,7 @@ void LuaSystem::on_release(Scene* scene, entt::entity entity) {
     check_result(result, "on_release");
   }
 
-  LuaManager::get()->get_state()->collect_gc();
+  App::get_system<LuaManager>()->get_state()->collect_gc();
 }
 
 void LuaSystem::on_imgui_render(const Timestep& delta_time) {

@@ -3,15 +3,27 @@
 #include <fstream>
 #include <sstream>
 
+#include "Core/App.h"
+#include "Thread/TaskScheduler.h"
+
 #include "Utils/FileUtils.h"
 #include "Utils/Profiler.h"
 #include "Utils/Toml.h"
 
 namespace Ox {
-RendererConfig* RendererConfig::s_instance = nullptr;
+void RendererConfig::init() {
+  // TODO: Use pinned tasks instead
+  ADD_TASK_TO_PIPE(
+    this,
+    if (!load_config("renderer_config.toml"))
+    save_config("renderer_config.toml");
+  );
 
-RendererConfig::RendererConfig() {
-  s_instance = this;
+  App::get_system<TaskScheduler>()->wait_for_all();
+}
+
+void RendererConfig::deinit() {
+  save_config("renderer_config.toml");
 }
 
 void RendererConfig::save_config(const char* path) const {

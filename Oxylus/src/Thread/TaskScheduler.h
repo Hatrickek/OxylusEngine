@@ -1,6 +1,8 @@
 ﻿#pragma once
 #include <TaskScheduler.h>
 
+#include "Core/ESystem.h"
+
 #define COMBINE(X,Y) X##Y
 #define VAR_NAME(X,Y) COMBINE(X,Y)
 
@@ -9,24 +11,22 @@
     [closure](enki::TaskSetPartition, uint32_t) mutable { \
       func\
     }); \
-  TaskScheduler::get()->AddTaskSetToPipe(&VAR_NAME(task, __LINE__))
+  App::get_system<TaskScheduler>()->get()->AddTaskSetToPipe(&VAR_NAME(task, __LINE__))
 
 namespace Ox {
-class TaskScheduler {
+class TaskScheduler : public ESystem {
 public:
   TaskScheduler() = default;
   ~TaskScheduler() = default;
 
-  static void init();
-  static void shutdown();
+  void init() override;
+  void deinit() override;
 
-  static void wait_for_all();
+  Unique<enki::TaskScheduler>& get() { return task_scheduler; }
 
-  static enki::TaskScheduler* get() { return instance->task_scheduler; }
+  void wait_for_all();
 
 private:
-  static TaskScheduler* instance;
-
-  enki::TaskScheduler* task_scheduler;
+  Unique<enki::TaskScheduler> task_scheduler;
 };
 }

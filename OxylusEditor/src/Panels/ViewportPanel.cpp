@@ -58,7 +58,7 @@ ViewportPanel::ViewportPanel() : EditorPanel("Viewport", ICON_MDI_TERRAIN, true)
     superframe_allocator->get_context().create_named_pipeline("fullscreen_pipeline", pci_fullscreen);
   );
 
-  TaskScheduler::wait_for_all();
+  App::get_system<TaskScheduler>()->wait_for_all();
 }
 
 bool ViewportPanel::outline_pass(const Shared<RenderPipeline>& rp, const vuk::Dimension3D& dim) const {
@@ -650,13 +650,13 @@ void ViewportPanel::on_update() {
                                                    m_translation_velocity,
                                                    m_translation_dampening,
                                                    10000.0f,
-                                                   (float)Application::get_timestep().get_seconds());
+                                                   (float)App::get_timestep().get_seconds());
     const Vec2 damped_yaw_pitch = Math::smooth_damp(yaw_pitch,
                                                     final_yaw_pitch,
                                                     m_rotation_velocity,
                                                     m_rotation_dampening,
                                                     1000.0f,
-                                                    (float)Application::get_timestep().get_seconds());
+                                                    (float)App::get_timestep().get_seconds());
 
     m_camera.set_position(EditorCVar::cvar_camera_smooth.get() ? damped_position : final_position);
     m_camera.set_yaw(EditorCVar::cvar_camera_smooth.get() ? damped_yaw_pitch.x : final_yaw_pitch.x);

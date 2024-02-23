@@ -13,7 +13,7 @@
 
 #include "imgui_frag.h"
 #include "imgui_vert.h"
-#include "Core/Application.h"
+#include "Core/App.h"
 #include "Core/Resources.h"
 
 #include "GLFW/glfw3.h"

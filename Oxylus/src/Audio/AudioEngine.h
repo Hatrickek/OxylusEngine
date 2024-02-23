@@ -1,17 +1,16 @@
 #pragma once
+#include "Core/ESystem.h"
 struct ma_engine;
 
 namespace Ox {
-using AudioEngineInternal = void*;
-
-class AudioEngine {
+class AudioEngine : public ESystem {
 public:
-  static void init();
-  static void shutdown();
+  void init() override;
+  void deinit() override;
 
-  static AudioEngineInternal get_engine();
+  ma_engine* get_engine() const;
 
 private:
-  static ma_engine* s_engine;
+  ma_engine* engine = nullptr;
 };
 }

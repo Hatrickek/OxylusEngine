@@ -1,4 +1,4 @@
-#include "UIUtils.h"
+#include "FileDialogs.h"
 
 #include "Profiler.h"
 
@@ -13,12 +13,12 @@
 #endif
 
 namespace Ox {
-void FileDialogs::init_nfd() {
+void FileDialogs::init() {
   OX_SCOPED_ZONE;
   NFD_Init();
 }
 
-void FileDialogs::close_nfd() {
+void FileDialogs::deinit() {
   NFD_Quit();
 }
 
@@ -51,7 +51,7 @@ std::string FileDialogs::save_file(const std::vector<nfdfilteritem_t>& filter, c
 
 std::string FileDialogs::open_dir() {
   nfdchar_t* out_path;
-  const nfdchar_t* default_dir = Application::get()->get_specification().working_directory.c_str();
+  const nfdchar_t* default_dir = App::get()->get_specification().working_directory.c_str();
   const nfdresult_t result = NFD_PickFolder(&out_path, default_dir);
   if (result == NFD_OKAY) {
     return out_path;

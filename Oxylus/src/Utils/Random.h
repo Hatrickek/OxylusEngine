@@ -2,12 +2,16 @@
 #include <cstdint>
 #include <random>
 
+#include "Core/ESystem.h"
 #include "Core/Types.h"
 
 namespace Ox {
-class Random {
+class Random : public ESystem {
 public:
-  static void init();
+  Random() = default;
+
+  void init() override;
+  void deinit() override;
 
   static uint32_t get_uint();
   static uint32_t get_uint(uint32_t min, uint32_t max);

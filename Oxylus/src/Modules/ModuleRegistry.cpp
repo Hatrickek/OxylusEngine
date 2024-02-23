@@ -5,6 +5,12 @@
 #include "Utils/Log.h"
 
 namespace Ox {
+void ModuleRegistry::init() {}
+
+void ModuleRegistry::deinit() {
+  clear();
+}
+
 Module* ModuleRegistry::add_lib(const std::string& name, std::string_view path) {
   try {
     auto lib = create_unique<dylib>(path);
@@ -41,10 +47,5 @@ void ModuleRegistry::clear() {
     module->lib.reset();
   }
   libs.clear();
-}
-
-ModuleRegistry* ModuleRegistry::get() {
-  static ModuleRegistry manager{};
-  return &manager;
 }
 }

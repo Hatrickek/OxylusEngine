@@ -2,8 +2,6 @@
 
 #include <vuk/CommandBuffer.hpp>
 
-#include "Core/Application.h"
-
 #include "Render/Vulkan/VukUtils.h"
 #include "Render/Vulkan/VulkanContext.h"
 

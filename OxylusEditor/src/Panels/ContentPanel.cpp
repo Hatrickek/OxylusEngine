@@ -5,7 +5,7 @@
 #include "EditorContext.h"
 #include "../EditorLayer.h"
 #include "Assets/AssetManager.h"
-#include "Core/Application.h"
+#include "Core/App.h"
 #include "Core/Project.h"
 #include "Core/Resources.h"
 
@@ -16,7 +16,7 @@
 #include "Utils/FileWatch.h"
 #include "Utils/StringUtils.h"
 #include "Utils/Timestep.h"
-#include "Utils/UIUtils.h"
+#include "Utils/FileDialogs.h"
 #include "Utils/Profiler.h"
 
 #if defined(__clang__) || defined(__llvm__)
@@ -160,7 +160,7 @@ static void open_file(const std::filesystem::path& path) {
         break;
       }
       case FileType::Audio: {
-        FileDialogs::open_file_with_program(filepath);
+        App::get_system<FileDialogs>()->open_file_with_program(filepath);
         break;
       }
       case FileType::Shader: break;
@@ -168,7 +168,7 @@ static void open_file(const std::filesystem::path& path) {
     }
   }
   else {
-    FileDialogs::open_file_with_program(filepath);
+    App::get_system<FileDialogs>()->open_file_with_program(filepath);
   }
 }
 
@@ -289,12 +289,11 @@ ContentPanel::ContentPanel() : EditorPanel("Contents", ICON_MDI_FOLDER_STAR, tru
 }
 
 void ContentPanel::init() {
-  const auto a = Project::get_asset_directory();
   m_assets_directory = Project::get_asset_directory();
   m_current_directory = m_assets_directory;
   refresh();
 
-  static filewatch::FileWatch<std::string> watch(
+  [[maybe_unused]] static filewatch::FileWatch<std::string> watch(
     m_assets_directory.string(),
     [this](const auto&, const filewatch::Event) {
       ThreadManager::get()->asset_thread.queue_job([this] {
@@ -305,7 +304,7 @@ void ContentPanel::init() {
 }
 
 void ContentPanel::on_update() {
-  m_elapsed_time += Application::get_timestep();
+  m_elapsed_time += App::get_timestep();
 }
 
 void ContentPanel::on_imgui_render() {
@@ -826,11 +825,11 @@ void ContentPanel::draw_context_menu_items(const std::filesystem::path& context,
     }
   }
   if (ImGui::MenuItem("Show in Explorer")) {
-    FileDialogs::open_folder_and_select_item(context.string().c_str());
+    App::get_system<FileDialogs>()->open_folder_and_select_item(context.string().c_str());
     ImGui::CloseCurrentPopup();
   }
   if (ImGui::MenuItem("Open")) {
-    FileDialogs::open_file_with_program(context.string().c_str());
+    App::get_system<FileDialogs>()->open_file_with_program(context.string().c_str());
     ImGui::CloseCurrentPopup();
   }
   if (ImGui::MenuItem("Copy Path")) {

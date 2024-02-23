@@ -5,21 +5,23 @@
 
 #include <ankerl/unordered_dense.h>
 
+#include <entt/core/hashed_string.hpp>
+
 #include "Log.h"
 #include "Profiler.h"
 
 namespace Ox {
-float* CVarSystem::get_float_cvar(const StringUtils::StringHash hash) {
+float* CVarSystem::get_float_cvar(const uint32_t hash) {
   OX_SCOPED_ZONE;
   return get_cvar_current<float>(hash);
 }
 
-int32_t* CVarSystem::get_int_cvar(const StringUtils::StringHash hash) {
+int32_t* CVarSystem::get_int_cvar(const uint32_t hash) {
   OX_SCOPED_ZONE;
   return get_cvar_current<int32_t>(hash);
 }
 
-const char* CVarSystem::get_string_cvar(const StringUtils::StringHash hash) {
+const char* CVarSystem::get_string_cvar(const uint32_t hash) {
   OX_SCOPED_ZONE;
   return get_cvar_current<std::string>(hash)->c_str();
 }
@@ -30,7 +32,7 @@ CVarSystem* CVarSystem::get() {
   return &cvar_sys;
 }
 
-CVarParameter* CVarSystem::get_cvar(const StringUtils::StringHash hash) {
+CVarParameter* CVarSystem::get_cvar(const uint32_t hash) {
   std::shared_lock lock(mutex_);
 
   if (saved_cvars.contains(hash))
@@ -39,15 +41,15 @@ CVarParameter* CVarSystem::get_cvar(const StringUtils::StringHash hash) {
   return nullptr;
 }
 
-void CVarSystem::set_float_cvar(const StringUtils::StringHash hash, const float value) {
+void CVarSystem::set_float_cvar(const uint32_t hash, const float value) {
   set_cvar_current<float>(hash, value);
 }
 
-void CVarSystem::set_int_cvar(const StringUtils::StringHash hash, const int32_t value) {
+void CVarSystem::set_int_cvar(const uint32_t hash, const int32_t value) {
   set_cvar_current<int32_t>(hash, value);
 }
 
-void CVarSystem::set_string_cvar(const StringUtils::StringHash hash, const char* value) {
+void CVarSystem::set_string_cvar(const uint32_t hash, const char* value) {
   set_cvar_current<std::string>(hash, value);
 }
 
@@ -85,7 +87,7 @@ CVarParameter* CVarSystem::create_string_cvar(const char* name, const char* desc
 }
 
 CVarParameter* CVarSystem::init_cvar(const char* name, const char* description) {
-  const uint32_t namehash = StringUtils::StringHash{name};
+  const uint32_t namehash = entt::hashed_string(name);
   saved_cvars.emplace(namehash, CVarParameter{.name = std::string(name), .description = std::string(description)});
 
   return &saved_cvars[namehash];

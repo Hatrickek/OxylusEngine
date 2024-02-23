@@ -1,23 +1,35 @@
-#include "Application.h"
+#include "App.h"
 
 #include <filesystem>
 
-#include "Core.h"
 #include "Layer.h"
+#include "LayerStack.h"
 #include "Project.h"
+#include "Resources.h"
+
+#include "Audio/AudioEngine.h"
+
+#include "Modules/ModuleRegistry.h"
 
 #include "Render/Window.h"
 #include "Render/Vulkan/Renderer.h"
 #include "Render/Vulkan/VulkanContext.h"
 
+#include "Scripting/LuaManager.h"
+
+#include "Thread/TaskScheduler.h"
 #include "Thread/ThreadManager.h"
-#include "Systems/SystemManager.h"
+
+#include "UI/ImGuiLayer.h"
+
+#include "Utils/FileDialogs.h"
 #include "Utils/Profiler.h"
+#include "Utils/Random.h"
 
 namespace Ox {
-Application* Application::instance = nullptr;
+App* App::instance = nullptr;
 
-Application::Application(AppSpec spec) : m_spec(std::move(spec)), system_manager(create_shared<SystemManager>()) {
+App::App(AppSpec spec) : m_spec(std::move(spec)) {
   OX_SCOPED_ZONE;
   if (instance) {
     OX_CORE_ERROR("Application already exists!");
@@ -41,48 +53,64 @@ Application::Application(AppSpec spec) : m_spec(std::move(spec)), system_manager
     }
   }
 
-  if (!core.init(m_spec))
+  if (!Resources::resources_path_exists()) {
+    OX_CORE_ERROR("Resources path doesn't exists. Make sure the working directory is correct!");
+    close();
     return;
+  }
 
+  register_system<Random>();
+  register_system<TaskScheduler>();
+  register_system<FileDialogs>();
+  register_system<AudioEngine>();
+  register_system<LuaManager>();
+  register_system<ModuleRegistry>();
+  register_system<RendererConfig>();
+
+  Window::init_window(m_spec);
   Window::set_dispatcher(&dispatcher);
+  Input::init();
   Input::set_dispatcher_events(dispatcher);
 
-  imgui_layer = new ImGuiLayer();
-  push_overlay(imgui_layer);
+  for (auto& [_, system] : system_registry) {
+    system->set_dispatcher(&dispatcher);
+    system->init();
+  }
+
+  VulkanContext::init();
+  VulkanContext::get()->create_context(m_spec);
+  Renderer::init();
+
+  imgui_layer = create_unique<ImGuiLayer>();
+  push_overlay(imgui_layer.get());
 }
 
-Application::~Application() {
+App::~App() {
   close();
 }
 
-void Application::init_systems() {
-  OX_SCOPED_ZONE;
-  for (const auto& system : system_manager->get_systems()) {
-    system.second->set_dispatcher(&dispatcher);
-    system.second->on_init();
-  }
-}
-
-Application& Application::push_layer(Layer* layer) {
+App& App::push_layer(Layer* layer) {
   layer_stack->push_layer(layer);
   layer->on_attach(dispatcher);
 
   return *this;
 }
 
-Application& Application::push_overlay(Layer* layer) {
+App& App::push_overlay(Layer* layer) {
   layer_stack->push_overlay(layer);
   layer->on_attach(dispatcher);
 
   return *this;
 }
 
-void Application::run() {
+void App::run() {
   while (is_running) {
     update_timestep();
 
     update_layers(timestep);
-    system_manager->on_update();
+
+    for (auto& [_, system] : system_registry)
+      system->update();
 
     update_renderer();
 
@@ -96,42 +124,49 @@ void Application::run() {
 
   layer_stack.reset();
 
-  system_manager->shutdown();
-  core.shutdown();
+  if (Project::get_active())
+    Project::get_active()->unload_module();
+
+  for (auto& [_, system] : system_registry)
+    system->deinit();
+
+  Renderer::deinit();
+  ThreadManager::get()->wait_all_threads();
+  Window::close_window(Window::get_glfw_window());
 }
 
-void Application::update_layers(const Timestep& ts) {
+void App::update_layers(const Timestep& ts) {
   OX_SCOPED_ZONE_N("LayersLoop");
   for (Layer* layer : *layer_stack.get())
     layer->on_update(ts);
 }
 
-void Application::update_renderer() {
-  Renderer::draw(VulkanContext::get(), imgui_layer, *layer_stack.get(), system_manager);
+void App::update_renderer() {
+  Renderer::draw(VulkanContext::get(), imgui_layer.get(), *layer_stack.get());
 }
 
-void Application::update_timestep() {
+void App::update_timestep() {
   timestep.on_update();
 
   ImGuiIO& io = ImGui::GetIO();
   io.DeltaTime = (float)timestep.get_seconds();
 }
 
-void Application::close() {
+void App::close() {
   is_running = false;
 }
 
-std::string Application::get_asset_directory() {
+std::string App::get_asset_directory() {
   if (Project::get_active())
     return Project::get_asset_directory();
   return get_resources_path();
 }
 
-std::string Application::get_asset_directory(const std::string_view asset_path) {
+std::string App::get_asset_directory(const std::string_view asset_path) {
   return get_asset_directory().append("/").append(asset_path);
 }
 
-std::string Application::get_asset_directory_absolute() {
+std::string App::get_asset_directory_absolute() {
   if (Project::get_active()) {
     const auto p = std::filesystem::absolute(Project::get_asset_directory());
     return p.string();
@@ -140,7 +175,7 @@ std::string Application::get_asset_directory_absolute() {
   return p.string();
 }
 
-std::string Application::get_asset_directory_absolute(std::string_view asset_path) {
+std::string App::get_asset_directory_absolute(std::string_view asset_path) {
   return FileSystem::append_paths(get_asset_directory_absolute(), asset_path);
 }
 }

@@ -3,18 +3,22 @@
 #include <miniaudio.h>
 
 #include "AudioEngine.h"
+
+#include "Core/App.h"
+
 #include "Utils/Log.h"
 
 namespace Ox {
 AudioSource::AudioSource(const std::string& filepath) : m_path(filepath) {
   m_sound = create_unique<ma_sound>();
 
-  const ma_result result = ma_sound_init_from_file(static_cast<ma_engine*>(AudioEngine::get_engine()),
-    filepath.c_str(),
-    MA_SOUND_FLAG_NO_SPATIALIZATION,
-    nullptr,
-    nullptr,
-    m_sound.get());
+  auto* engine = App::get_system<AudioEngine>()->get_engine();
+  const ma_result result = ma_sound_init_from_file(engine,
+                                                   filepath.c_str(),
+                                                   MA_SOUND_FLAG_NO_SPATIALIZATION,
+                                                   nullptr,
+                                                   nullptr,
+                                                   m_sound.get());
   if (result != MA_SUCCESS)
     OX_CORE_ERROR("Failed to load sound: {}", filepath);
 }

@@ -39,14 +39,9 @@ void LuaManager::init() {
   LuaBindings::bind_ui(m_state);
 }
 
-void LuaManager::shutdown() {
+void LuaManager::deinit() {
   m_state->collect_gc();
   m_state.reset();
-}
-
-LuaManager* LuaManager::get() {
-  static LuaManager manager = {};
-  return &manager;
 }
 
 #define SET_LOG_FUNCTIONS(table, name, log_func) \

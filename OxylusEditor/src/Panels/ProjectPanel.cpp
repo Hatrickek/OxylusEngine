@@ -5,14 +5,12 @@
 #include <misc/cpp/imgui_stdlib.h>
 
 #include "EditorLayer.h"
-#include "Assets/AssetManager.h"
 #include "Core/Project.h"
-#include "Core/ProjectSerializer.h"
 
 #include "UI/OxUI.h"
 #include "Utils/EditorConfig.h"
 #include "Utils/StringUtils.h"
-#include "Utils/UIUtils.h"
+#include "Utils/FileDialogs.h"
 
 namespace Ox {
 ProjectPanel::ProjectPanel() : EditorPanel("Projects", ICON_MDI_ACCOUNT_BADGE, true) { }
@@ -21,7 +19,7 @@ void ProjectPanel::on_update() { }
 
 void ProjectPanel::load_project_for_editor(const std::string& filepath) {
   if (Project::load(filepath)) {
-    const auto startScene = Application::get_asset_directory_absolute(Project::get_active()->get_config().start_scene);
+    const auto startScene = App::get_asset_directory_absolute(Project::get_active()->get_config().start_scene);
     EditorLayer::get()->open_scene(startScene);
     EditorConfig::get()->add_recent_project(Project::get_active().get());
     EditorLayer::get()->content_panel.invalidate();
@@ -68,7 +66,7 @@ void ProjectPanel::on_imgui_render() {
         ImGui::InputText("##Directory", &project_dir, flags);
         ImGui::SameLine();
         if (ImGui::Button(StringUtils::from_char8_t(ICON_MDI_FOLDER), {ImGui::GetContentRegionAvail().x, 0})) {
-          project_dir = FileDialogs::open_dir();
+          project_dir = App::get_system<FileDialogs>()->open_dir();
           project_dir = FileSystem::append_paths(project_dir, project_name);
         }
         OxUI::end_property_grid();
@@ -104,7 +102,7 @@ void ProjectPanel::on_imgui_render() {
       }
       ImGui::SetNextItemWidth(x);
       if (ImGui::Button(StringUtils::from_char8_t(ICON_MDI_UPLOAD " Load Project"), {x, y})) {
-        const std::string filepath = FileDialogs::open_file({{"Oxylus Project", "oxproj"}});
+        const std::string filepath = App::get_system<FileDialogs>()->open_file({{"Oxylus Project", "oxproj"}});
         if (!filepath.empty()) {
           load_project_for_editor(filepath);
         }

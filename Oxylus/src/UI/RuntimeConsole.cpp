@@ -2,7 +2,9 @@
 
 #include <icons/IconsMaterialDesignIcons.h>
 
-#include "Core/Application.h"
+#include "ImGuiLayer.h"
+
+#include "Core/App.h"
 
 #include "Utils/CVars.h"
 #include "Utils/StringUtils.h"
@@ -46,7 +48,7 @@ RuntimeConsole::RuntimeConsole() {
   Log::register_sink<RuntimeConsoleLogSink>(this);
 
   // Default commands
-  register_command("quit", "", [] { Application::get()->close(); });
+  register_command("quit", "", [] { App::get()->close(); });
   register_command("clear", "", [this] { clear_log(); });
   register_command("help", "", [this] { help_command(); });
 
@@ -91,7 +93,7 @@ void RuntimeConsole::on_imgui_render() {
     constexpr auto animation_duration = 0.5f;
     constexpr auto animation_speed = 3.0f;
 
-    animation_counter += (float)Application::get_timestep().get_seconds() * animation_speed;
+    animation_counter += (float)App::get_timestep().get_seconds() * animation_speed;
     animation_counter = std::clamp(animation_counter, 0.0f, animation_duration);
 
     ImGui::SetNextWindowPos(ImGui::GetMainViewport()->WorkPos, ImGuiCond_Always);
@@ -234,7 +236,7 @@ void RuntimeConsole::process_command(const std::string& command) {
 
   bool is_cvar_variable = false;
 
-  const auto cvar = CVarSystem::get()->get_cvar(parsed_command.c_str());
+  const auto cvar = CVarSystem::get()->get_cvar(entt::hashed_string(parsed_command.c_str()));
   if (cvar) {
     is_cvar_variable = true;
     switch (cvar->type) {
@@ -244,7 +246,7 @@ void RuntimeConsole::process_command(const std::string& command) {
         if (!value.str_value.empty()) {
           const auto parsed = value.as<int32_t>();
           if (parsed.has_value()) {
-            CVarSystem::get()->set_int_cvar(cvar->name.c_str(), *parsed);
+            CVarSystem::get()->set_int_cvar(entt::hashed_string(cvar->name.c_str()), *parsed);
             current_value = *parsed;
             changed = true;
           }
@@ -258,7 +260,7 @@ void RuntimeConsole::process_command(const std::string& command) {
         if (!value.str_value.empty()) {
           const auto parsed = value.as<float>();
           if (parsed.has_value()) {
-            CVarSystem::get()->set_float_cvar(cvar->name.c_str(), *parsed);
+            CVarSystem::get()->set_float_cvar(entt::hashed_string(cvar->name.c_str()), *parsed);
             current_value = *parsed;
             changed = true;
           }
@@ -270,7 +272,7 @@ void RuntimeConsole::process_command(const std::string& command) {
         auto current_value = get_current_cvar_value<std::string>(cvar->array_index);
         bool changed = false;
         if (!value.str_value.empty()) {
-          CVarSystem::get()->set_string_cvar(cvar->name.c_str(), value.str_value.c_str());
+          CVarSystem::get()->set_string_cvar(entt::hashed_string(cvar->name.c_str()), value.str_value.c_str());
           current_value = value.str_value;
           changed = true;
         }

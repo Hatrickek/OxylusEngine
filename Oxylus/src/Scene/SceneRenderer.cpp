@@ -5,7 +5,7 @@
 
 #include "Scene.h"
 
-#include "Core/Application.h"
+#include "Core/App.h"
 
 #include "Jolt/Physics/Body/Body.h"
 #include "Physics/JoltHelpers.h"
@@ -72,7 +72,7 @@ void SceneRenderer::update() const {
     const auto animation_view = m_scene->registry.view<TransformComponent, MeshComponent, AnimationComponent, TagComponent>();
     for (const auto&& [entity, transform, mesh_renderer, animation, tag] : animation_view.each()) {
       if (!animation.animations.empty()) {
-        animation.animation_timer += Application::get_timestep() * animation.animation_speed;
+        animation.animation_timer += App::get_timestep() * animation.animation_speed;
         if (animation.animation_timer > mesh_renderer.mesh_base->animations[animation.current_animation_index]->end) {
           animation.animation_timer -= mesh_renderer.mesh_base->animations[animation.current_animation_index]->end;
         }
@@ -96,7 +96,7 @@ void SceneRenderer::update() const {
   // Particle system 
   const auto particle_system_view = m_scene->registry.view<TransformComponent, ParticleSystemComponent>();
   for (auto&& [e, tc, psc] : particle_system_view.each()) {
-    psc.system->on_update(Application::get_timestep(), tc.position);
+    psc.system->on_update(App::get_timestep(), tc.position);
     psc.system->on_render();
   }
 }

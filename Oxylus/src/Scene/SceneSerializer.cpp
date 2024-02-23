@@ -9,7 +9,7 @@
 
 #include <fstream>
 
-#include "Core/Application.h"
+#include "Core/App.h"
 
 namespace Ox {
 SceneSerializer::SceneSerializer(const Shared<Scene>& scene) : m_scene(scene) {}

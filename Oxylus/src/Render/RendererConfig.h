@@ -1,6 +1,8 @@
 #pragma once
 #include <cstdint>
 
+#include "Core/ESystem.h"
+
 #include "Utils/CVars.h"
 
 namespace Ox {
@@ -43,7 +45,7 @@ inline AutoCVar_Float cvar_exposure("pp.exposure", "tonemapping exposure", 1.0f)
 inline AutoCVar_Float cvar_gamma("pp.gamma", "screen gamma", 2.2f);
 }
 
-class RendererConfig {
+class RendererConfig : public ESystem {
 public:
   enum Tonemaps {
     TONEMAP_ACES = 0,
@@ -52,15 +54,12 @@ public:
     TONEMAP_REINHARD,
   };
 
-  RendererConfig();
-  ~RendererConfig() = default;
+  RendererConfig() = default;
+
+  void init() override;
+  void deinit() override;
 
   void save_config(const char* path) const;
   bool load_config(const char* path);
-
-  static RendererConfig* get() { return s_instance; }
-
-private:
-  static RendererConfig* s_instance;
 };
 }

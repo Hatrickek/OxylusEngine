@@ -114,7 +114,7 @@ void VulkanContext::create_context(const AppSpec& spec) {
          .set_app_version(0, 1, 0);
 
   bool enable_validation = false;
-  const auto& args = Application::get()->get_command_line_args();
+  const auto& args = App::get()->get_command_line_args();
   for (const auto& arg : args) {
     if (arg == "vulkan-validation") {
       enable_validation = true;

@@ -15,6 +15,8 @@
 
 #include "SceneRenderer.h"
 
+#include "Core/App.h"
+
 #include "Jolt/Jolt.h"
 #include "Jolt/Physics/Body/BodyCreationSettings.h"
 
@@ -49,7 +51,7 @@ Scene::Scene(const Shared<RenderPipeline>& render_pipeline) {
 }
 
 Scene::~Scene() {
-  LuaManager::get()->get_state()->collect_gc();
+  App::get_system<LuaManager>()->get_state()->collect_gc();
   if (running)
     on_runtime_stop();
 }

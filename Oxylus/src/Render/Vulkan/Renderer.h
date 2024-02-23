@@ -11,7 +11,6 @@
 
 namespace Ox {
 class DefaultRenderPipeline;
-class SystemManager;
 class LayerStack;
 class ImGuiLayer;
 class VulkanContext;
@@ -36,10 +35,10 @@ public:
   };
 
   static void init();
-  static void shutdown();
+  static void deinit();
 
   // Drawing
-  static void draw(VulkanContext* context, ImGuiLayer* imgui_layer, LayerStack& layer_stack, const Shared<SystemManager>& system_manager);
+  static void draw(VulkanContext* context, ImGuiLayer* imgui_layer, LayerStack& layer_stack);
 
   static vuk::CommandBuffer& draw_indexed(vuk::CommandBuffer& command_buffer,
                                           size_t index_count,

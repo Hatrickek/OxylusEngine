@@ -1,19 +1,17 @@
 #pragma once
 #include "Core/Base.h"
+#include "Core/ESystem.h"
 
 namespace sol {
 class state;
 }
 
 namespace Ox {
-class LuaManager {
+class LuaManager : public ESystem {
 public:
-  ~LuaManager() = default;
-
-  void init();
-  void shutdown();
+  void init() override;
+  void deinit() override;
     
-  static LuaManager* get();
   sol::state* get_state() const { return m_state.get(); }
 
 private:

@@ -87,7 +87,7 @@ void Window::poll_events() {
 }
 
 void Window::close_window(GLFWwindow*) {
-  Application::get()->close();
+  App::get()->close();
   glfwTerminate();
 }
 

@@ -2,7 +2,7 @@
 
 #include <filesystem>
 
-#include "Application.h"
+#include "App.h"
 #include "EmbeddedLogo.h"
 #include "Assets/TextureAsset.h"
 
@@ -15,10 +15,10 @@ void Resources::init_editor_resources() {
 }
 
 std::string Resources::get_resources_path(const std::string& path) {
-  return (std::filesystem::path(Application::get_resources_path()) / path).string();
+  return (std::filesystem::path(App::get_resources_path()) / path).string();
 }
 
 bool Resources::resources_path_exists() {
-  return std::filesystem::exists(Application::get_resources_path());
+  return std::filesystem::exists(App::get_resources_path());
 }
 }

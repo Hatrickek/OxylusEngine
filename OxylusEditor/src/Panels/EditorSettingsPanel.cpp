@@ -1,8 +1,9 @@
 #include "EditorSettingsPanel.h"
 
 #include "imgui.h"
-#include "Core/Application.h"
 #include "icons/IconsMaterialDesignIcons.h"
+
+#include "UI/ImGuiLayer.h"
 
 namespace Ox {
   EditorSettingsPanel::EditorSettingsPanel() : EditorPanel("Editor Settings", ICON_MDI_COGS, false) { }

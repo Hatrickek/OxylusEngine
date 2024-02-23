@@ -3,7 +3,6 @@
 #include <icons/IconsMaterialDesignIcons.h>
 
 #include "imgui.h"
-#include "Core/Application.h"
 
 #include "Render/RendererConfig.h"
 #include "Render/Vulkan/Renderer.h"

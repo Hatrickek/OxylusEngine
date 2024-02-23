@@ -8,6 +8,8 @@ void Random::init() {
   random_engine.seed(std::random_device()());
 }
 
+void Random::deinit() {}
+
 uint32_t Random::get_uint() {
   return distribution(random_engine);
 }

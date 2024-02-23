@@ -3,12 +3,12 @@
 #include "Core/Project.h"
 
 namespace Ox {
-class OxylusEditor : public Application {
+class OxylusEditor : public App {
 public:
-  OxylusEditor(const AppSpec& spec) : Application(spec) { }
+  OxylusEditor(const AppSpec& spec) : App(spec) { }
 };
 
-Application* create_application(ApplicationCommandLineArgs args) {
+App* create_application(ApplicationCommandLineArgs args) {
   AppSpec spec;
 #ifdef OX_RELEASE
     spec.name = "Oxylus Engine - Editor (Vulkan) - Release";

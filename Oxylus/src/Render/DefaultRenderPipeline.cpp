@@ -8,7 +8,7 @@
 #include "RendererCommon.h"
 #include "SceneRendererEvents.h"
 
-#include "Core/Application.h"
+#include "Core/App.h"
 #include "Assets/AssetManager.h"
 #include "Scene/Entity.h"
 #include "PBR/DirectShadowPass.h"
@@ -82,7 +82,7 @@ void DefaultRenderPipeline::init(vuk::Allocator& allocator) {
   create_static_textures(allocator);
   create_descriptor_sets(allocator, ctx);
 
-  TaskScheduler::wait_for_all();
+  App::get_system<TaskScheduler>()->wait_for_all();
 
   initalized = true;
 
@@ -260,7 +260,7 @@ void DefaultRenderPipeline::load_pipelines(vuk::Allocator& allocator) {
 
   wait_for_futures(allocator);
 
-  TaskScheduler::wait_for_all();
+  App::get_system<TaskScheduler>()->wait_for_all();
 }
 
 void DefaultRenderPipeline::commit_descriptor_sets(vuk::Allocator& allocator) {

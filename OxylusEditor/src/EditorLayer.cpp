@@ -25,7 +25,7 @@
 #include "UI/OxUI.h"
 #include "Utils/EditorConfig.h"
 #include "Utils/ImGuiScoped.h"
-#include "Utils/UIUtils.h"
+#include "Utils/FileDialogs.h"
 
 #include "Scene/SceneSerializer.h"
 
@@ -187,7 +187,7 @@ void EditorLayer::on_imgui_render() {
           }
           ImGui::Separator();
           if (ImGui::MenuItem("Exit")) {
-            Application::get()->close();
+            App::get()->close();
           }
           ImGui::EndMenu();
         }
@@ -300,7 +300,7 @@ void EditorLayer::on_imgui_render() {
 
     // TODO: temporary until scenes are more global and handled in the renderer directly
     if (const auto active_scene = get_active_scene(); active_scene)
-      active_scene->on_imgui_render(Application::get_timestep());
+      active_scene->on_imgui_render(App::get_timestep());
 
     static bool dock_layout_initalized = false;
     if (!dock_layout_initalized) {
@@ -341,7 +341,7 @@ void EditorLayer::new_scene() {
 }
 
 void EditorLayer::open_scene_file_dialog() {
-  const std::string filepath = FileDialogs::open_file({{"Oxylus Scene", "oxscene"}});
+  const std::string filepath = App::get_system<FileDialogs>()->open_file({{"Oxylus Scene", "oxscene"}});
   if (!filepath.empty())
     open_scene(filepath);
 }
@@ -395,7 +395,7 @@ void EditorLayer::save_scene() {
 }
 
 void EditorLayer::save_scene_as() {
-  const std::string filepath = FileDialogs::save_file({{"Oxylus Scene", "oxscene"}}, "New Scene");
+  const std::string filepath = App::get_system<FileDialogs>()->save_file({{"Oxylus Scene", "oxscene"}}, "New Scene");
   if (!filepath.empty()) {
     ThreadManager::get()->asset_thread.queue_job([this, filepath] {
       SceneSerializer(editor_scene).serialize(filepath);

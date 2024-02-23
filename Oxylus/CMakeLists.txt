@@ -57,15 +57,6 @@ set(ALL_FILES
 # Target
 add_library(${PROJECT_NAME} STATIC ${ALL_FILES})
 
-set(ROOT_NAMESPACE Oxylus)
-
-# Target name
-set_target_properties(${PROJECT_NAME} PROPERTIES
-  TARGET_NAME_DEBUG "Oxylus"
-  TARGET_NAME_RELEASE "Oxylus"
-  TARGET_NAME_Distribution "Oxylus"
-  )
-
 # Include directories
 target_include_directories(${PROJECT_NAME} PUBLIC
   "${CMAKE_CURRENT_SOURCE_DIR}/src"
@@ -112,8 +103,6 @@ endif()
 # Compile and link options
 if (MSVC)
   target_compile_options(${PROJECT_NAME} PRIVATE /std:c++20 /permissive- /W3) 
-  set(CMAKE_SHARED_LINKER_FLAGS_DISTRIBUTION ${CMAKE_SHARED_LINKER_FLAGS})
-  set(CMAKE_EXE_LINKER_FLAGS_DISTRIBUTION ${CMAKE_EXE_LINKER_FLAGS})
 endif ()
 
 if (MSVC AND NOT CMAKE_CXX_COMPILER_ID STREQUAL "Clang")
@@ -130,11 +119,6 @@ endif()
 
 include(${CMAKE_SOURCE_DIR}/cpm.cmake)
 set_property(GLOBAL PROPERTY CTEST_TARGETS_ADDED 1) # hack for removing auto generated ctest targets
-
-set(CMAKE_C_COMPILER_AR "${CMAKE_AR}")
-set(CMAKE_CXX_COMPILER_AR "${CMAKE_AR}")
-set(CMAKE_C_COMPILER_RANLIB "${CMAKE_RANLIB}")
-set(CMAKE_CXX_COMPILER_RANLIB "${CMAKE_RANLIB}")
 
 include(FetchContent)
 
@@ -259,6 +243,7 @@ CPMAddPackage(
 )
 target_link_libraries(${PROJECT_NAME} PUBLIC glfw)
 set_target_properties(glfw PROPERTIES FOLDER "Vendor")
+set_target_properties(update_mappings PROPERTIES FOLDER "Vendor")
 
 # toml
 CPMAddPackage("gh:marzer/tomlplusplus#master")

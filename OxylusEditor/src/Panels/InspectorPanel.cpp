@@ -14,7 +14,7 @@
 #include "Scene/Entity.h"
 #include "UI/OxUI.h"
 #include "Utils/StringUtils.h"
-#include "Utils/UIUtils.h"
+#include "Utils/FileDialogs.h"
 
 #include "Render/SceneRendererEvents.h"
 
@@ -362,7 +362,7 @@ void InspectorPanel::draw_components(Entity entity) const {
       const float x = ImGui::GetContentRegionAvail().x;
       const float y = ImGui::GetFrameHeight();
       if (ImGui::Button(name.c_str(), {x - 60.f, y})) {
-        const std::string file_path = FileDialogs::open_file({{"HDR File", "hdr"}});
+        const std::string file_path = App::get_system<FileDialogs>()->open_file({{"HDR File", "hdr"}});
         load_cube_map(context, file_path, component);
       }
       if (ImGui::BeginDragDropTarget()) {
@@ -426,13 +426,13 @@ void InspectorPanel::draw_components(Entity entity) const {
 
       auto load_file = [](const std::filesystem::path& path, AudioSourceComponent& comp) {
         if (const std::string ext = path.extension().string(); ext == ".mp3" || ext == ".wav" || ext == ".flac")
-          comp.source = create_shared<AudioSource>(Application::get_asset_directory_absolute(path.string()).c_str());
+          comp.source = create_shared<AudioSource>(App::get_asset_directory_absolute(path.string()).c_str());
       };
 
       const float x = ImGui::GetContentRegionAvail().x;
       const float y = ImGui::GetFrameHeight();
       if (ImGui::Button(filepath, {x, y})) {
-        const std::string file_path = FileDialogs::open_file({{"Audio file", "mp3, wav, flac"}});
+        const std::string file_path = App::get_system<FileDialogs>()->open_file({{"Audio file", "mp3, wav, flac"}});
         load_file(file_path, component);
       }
       if (ImGui::BeginDragDropTarget()) {
@@ -772,7 +772,7 @@ void InspectorPanel::draw_components(Entity entity) const {
       const float x = ImGui::GetContentRegionAvail().x;
       const float y = ImGui::GetFrameHeight();
       if (ImGui::Button(name.c_str(), {x, y})) {
-        const std::string file_path = FileDialogs::open_file({{"Lua file", "lua"}});
+        const std::string file_path = App::get_system<FileDialogs>()->open_file({{"Lua file", "lua"}});
         load_script(file_path, component);
       }
       if (ImGui::BeginDragDropTarget()) {

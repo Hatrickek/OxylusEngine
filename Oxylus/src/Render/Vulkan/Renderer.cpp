@@ -5,14 +5,14 @@
 
 #include "VulkanContext.h"
 #include "Assets/AssetManager.h"
-#include "Core/Systems/SystemManager.h"
-#include "Render/Mesh.h"
-#include "Render/Window.h"
-#include "Utils/Profiler.h"
+#include "Core/LayerStack.h"
 #include "Render/DebugRenderer.h"
 #include "Render/DefaultRenderPipeline.h"
-
+#include "Render/Mesh.h"
+#include "Render/Window.h"
 #include "Thread/TaskScheduler.h"
+#include "UI/ImGuiLayer.h"
+#include "Utils/Profiler.h"
 
 namespace Ox {
 Renderer::RendererContext Renderer::renderer_context;
@@ -22,25 +22,16 @@ Renderer::RendererStats Renderer::renderer_stats;
 void Renderer::init() {
   OX_SCOPED_ZONE;
 
-  // Save/Load renderer config
-  ADD_TASK_TO_PIPE(,
-    if (!RendererConfig::get()->load_config("renderer_config.toml"))
-    RendererConfig::get()->save_config("renderer_config.toml");
-  );
-
-  ADD_TASK_TO_PIPE(, TextureAsset::create_white_texture(););
-
-  ADD_TASK_TO_PIPE(, DebugRenderer::init(););
-
-  TaskScheduler::wait_for_all();
+  TextureAsset::create_white_texture();
+  DebugRenderer::init();
 }
 
-void Renderer::shutdown() {
-  RendererConfig::get()->save_config("renderer_config.toml");
+void Renderer::deinit() {
+  OX_SCOPED_ZONE;
   DebugRenderer::release();
 }
 
-void Renderer::draw(VulkanContext* context, ImGuiLayer* imgui_layer, LayerStack& layer_stack, const Shared<SystemManager>& system_manager) {
+void Renderer::draw(VulkanContext* context, ImGuiLayer* imgui_layer, LayerStack& layer_stack) {
   OX_SCOPED_ZONE;
 
   const auto rp = renderer_context.render_pipeline;
@@ -78,7 +69,8 @@ void Renderer::draw(VulkanContext* context, ImGuiLayer* imgui_layer, LayerStack&
 
     for (const auto& layer : layer_stack)
       layer->on_imgui_render();
-    system_manager->on_imgui_render();
+    for (auto& [_, system] : App::get_system_registry())
+      system->imgui_update();
     imgui_layer->end();
 
     reset_stats();
@@ -139,7 +131,8 @@ void Renderer::draw(VulkanContext* context, ImGuiLayer* imgui_layer, LayerStack&
     for (const auto& layer : layer_stack)
       layer->on_imgui_render();
 
-    system_manager->on_imgui_render();
+    for (auto& [_, system] : App::get_system_registry())
+      system->imgui_update();
 
     imgui_layer->end();
 
