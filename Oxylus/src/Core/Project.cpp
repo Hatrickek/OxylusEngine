@@ -28,7 +28,8 @@ void Project::load_module() {
 }
 
 void Project::unload_module() const {
-  ModuleUtil::unload_module(project_config.module_name);
+  if (!project_config.module_name.empty())
+    ModuleUtil::unload_module(project_config.module_name);
 }
 
 Shared<Project> Project::create_new() {

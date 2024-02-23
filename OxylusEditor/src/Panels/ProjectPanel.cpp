@@ -88,7 +88,7 @@ void ProjectPanel::on_imgui_render() {
       }
     }
     else {
-      const auto projects = EditorConfig::get()->get_recent_projects(); // since we are modifying it inside the for loop
+      const auto projects = EditorConfig::get()->get_recent_projects();
       for (auto& project : projects) {
         auto project_name = FileSystem::get_file_name(project);
         if (ImGui::Button(project_name.c_str(), {x, y})) {

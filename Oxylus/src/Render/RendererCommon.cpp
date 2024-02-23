@@ -12,7 +12,6 @@
 
 #include "Assets/AssetManager.h"
 
-#include "Core/Resources.h"
 #include "Core/Types.h"
 
 #include "Utils/FileUtils.h"

@@ -24,7 +24,6 @@ public:
   virtual ~System() = default;
 
   /// Scene systems: Called right after when the scene gets initalized.
-  /// Engine systems: Called right before core is initalized.
   virtual void on_init() { }
 
   /// Called when the system is destroyed.

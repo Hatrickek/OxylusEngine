@@ -5,7 +5,6 @@
 #include "Layer.h"
 #include "LayerStack.h"
 #include "Project.h"
-#include "Resources.h"
 
 #include "Audio/AudioEngine.h"
 
@@ -29,7 +28,7 @@
 namespace Ox {
 App* App::instance = nullptr;
 
-App::App(AppSpec spec) : m_spec(std::move(spec)) {
+App::App(AppSpec spec) : app_spec(std::move(spec)) {
   OX_SCOPED_ZONE;
   if (instance) {
     OX_CORE_ERROR("Application already exists!");
@@ -41,19 +40,19 @@ App::App(AppSpec spec) : m_spec(std::move(spec)) {
   layer_stack = create_shared<LayerStack>();
   thread_manager = create_shared<ThreadManager>();
 
-  if (m_spec.working_directory.empty())
-    m_spec.working_directory = std::filesystem::current_path().string();
+  if (app_spec.working_directory.empty())
+    app_spec.working_directory = std::filesystem::current_path().string();
   else
-    std::filesystem::current_path(m_spec.working_directory);
+    std::filesystem::current_path(app_spec.working_directory);
 
-  for (int i = 0; i < m_spec.command_line_args.count; i++) {
-    auto c = m_spec.command_line_args.args[i];
+  for (int i = 0; i < app_spec.command_line_args.count; i++) {
+    auto c = app_spec.command_line_args.args[i];
     if (!std::string(c).empty()) {
       command_line_args.emplace_back(c);
     }
   }
 
-  if (!Resources::resources_path_exists()) {
+  if (!asset_directory_exists()) {
     OX_CORE_ERROR("Resources path doesn't exists. Make sure the working directory is correct!");
     close();
     return;
@@ -67,7 +66,7 @@ App::App(AppSpec spec) : m_spec(std::move(spec)) {
   register_system<ModuleRegistry>();
   register_system<RendererConfig>();
 
-  Window::init_window(m_spec);
+  Window::init_window(app_spec);
   Window::set_dispatcher(&dispatcher);
   Input::init();
   Input::set_dispatcher_events(dispatcher);
@@ -78,11 +77,11 @@ App::App(AppSpec spec) : m_spec(std::move(spec)) {
   }
 
   VulkanContext::init();
-  VulkanContext::get()->create_context(m_spec);
+  VulkanContext::get()->create_context(app_spec);
   Renderer::init();
 
-  imgui_layer = create_unique<ImGuiLayer>();
-  push_overlay(imgui_layer.get());
+  imgui_layer = new ImGuiLayer();
+  push_overlay(imgui_layer);
 }
 
 App::~App() {
@@ -142,7 +141,7 @@ void App::update_layers(const Timestep& ts) {
 }
 
 void App::update_renderer() {
-  Renderer::draw(VulkanContext::get(), imgui_layer.get(), *layer_stack.get());
+  Renderer::draw(VulkanContext::get(), imgui_layer, *layer_stack.get());
 }
 
 void App::update_timestep() {
@@ -156,14 +155,18 @@ void App::close() {
   is_running = false;
 }
 
+bool App::asset_directory_exists() {
+  return std::filesystem::exists(get_asset_directory());
+}
+
 std::string App::get_asset_directory() {
-  if (Project::get_active())
+  if (Project::get_active() && !Project::get_active()->get_config().asset_directory.empty())
     return Project::get_asset_directory();
-  return get_resources_path();
+  return instance->app_spec.assets_path;
 }
 
 std::string App::get_asset_directory(const std::string_view asset_path) {
-  return get_asset_directory().append("/").append(asset_path);
+  return FileSystem::append_paths(get_asset_directory(), asset_path);
 }
 
 std::string App::get_asset_directory_absolute() {
@@ -171,7 +174,7 @@ std::string App::get_asset_directory_absolute() {
     const auto p = std::filesystem::absolute(Project::get_asset_directory());
     return p.string();
   }
-  const auto p = absolute(std::filesystem::path(get_resources_path()));
+  const auto p = absolute(std::filesystem::path(instance->app_spec.assets_path));
   return p.string();
 }
 

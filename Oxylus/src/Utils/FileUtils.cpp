@@ -5,7 +5,8 @@
 
 #include "Log.h"
 #include "Profiler.h"
-#include "Core/Resources.h"
+
+#include "Core/App.h"
 
 namespace Ox {
 std::string FileUtils::read_file(const std::string& file_path) {
@@ -25,7 +26,7 @@ std::string FileUtils::read_shader_file(const std::string& shader_file_name) {
 
 std::string FileUtils::get_shader_path(const std::string& shader_file_name) {
   OX_SCOPED_ZONE;
-  const auto path_str = Resources::get_resources_path("Shaders");
+  const auto path_str = App::get_asset_directory("Shaders");
   const auto path = std::filesystem::path(path_str) / shader_file_name;
   return path.string();
 }

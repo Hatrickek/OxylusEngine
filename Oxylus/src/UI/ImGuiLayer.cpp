@@ -14,7 +14,6 @@
 #include "imgui_frag.h"
 #include "imgui_vert.h"
 #include "Core/App.h"
-#include "Core/Resources.h"
 
 #include "GLFW/glfw3.h"
 
@@ -109,8 +108,8 @@ void ImGuiLayer::init_for_vulkan() {
   ImGui_ImplGlfw_InitForVulkan(Window::get_glfw_window(), true);
 
   // Upload Fonts
-  const auto regular_font_path = Resources::get_resources_path("Fonts/jetbrains-mono/JetBrainsMono-Regular.ttf");
-  const auto bold_font_path = Resources::get_resources_path("Fonts/jetbrains-mono/JetBrainsMono-Bold.ttf");
+  const auto regular_font_path = App::get_asset_directory("Fonts/jetbrains-mono/JetBrainsMono-Regular.ttf");
+  const auto bold_font_path = App::get_asset_directory("Fonts/jetbrains-mono/JetBrainsMono-Bold.ttf");
 
   const ImGuiIO& io = ImGui::GetIO();
   constexpr float font_size = 16.0f;

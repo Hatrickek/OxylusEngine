@@ -30,7 +30,7 @@ struct ApplicationCommandLineArgs {
 struct AppSpec {
   std::string name = "Oxylus App";
   std::string working_directory = {};
-  std::string resources_path = "Resources";
+  std::string assets_path = "Resources";
   uint32_t device_index = 0;
   ApplicationCommandLineArgs command_line_args;
 };
@@ -47,14 +47,14 @@ public:
 
   void close();
 
-  const AppSpec& get_specification() const { return m_spec; }
+  const AppSpec& get_specification() const { return app_spec; }
   const std::vector<std::string>& get_command_line_args() const { return command_line_args; }
-  const Unique<ImGuiLayer>& get_imgui_layer() const { return imgui_layer; }
+  ImGuiLayer* get_imgui_layer() const { return imgui_layer; }
   const Shared<LayerStack>& get_layer_stack() const { return layer_stack; }
   static App* get() { return instance; }
   static const Timestep& get_timestep() { return instance->timestep; }
 
-  static const std::string& get_resources_path() { return instance->m_spec.resources_path; }
+  static bool asset_directory_exists();
   static std::string get_asset_directory();
   static std::string get_asset_directory(std::string_view asset_path); // appends the asset_path at the end
   static std::string get_asset_directory_absolute();
@@ -99,9 +99,9 @@ public:
 
 private:
   static App* instance;
-  AppSpec m_spec;
+  AppSpec app_spec;
   std::vector<std::string> command_line_args;
-  Unique<ImGuiLayer> imgui_layer;
+  ImGuiLayer* imgui_layer;
   Shared<LayerStack> layer_stack;
 
   SystemRegistry system_registry = {};

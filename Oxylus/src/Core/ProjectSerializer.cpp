@@ -8,10 +8,10 @@
 #include <sstream>
 
 namespace Ox {
-ProjectSerializer::ProjectSerializer(Shared<Project> project) : m_project(std::move(project)) {}
+ProjectSerializer::ProjectSerializer(Shared<Project> project) : project(std::move(project)) {}
 
 bool ProjectSerializer::serialize(const std::string& file_path) const {
-  const auto& config = m_project->get_config();
+  const auto& config = project->get_config();
 
   const auto root = toml::table{
     {
@@ -31,29 +31,33 @@ bool ProjectSerializer::serialize(const std::string& file_path) const {
   std::ofstream filestream(file_path);
   filestream << ss.str();
 
-  m_project->set_project_file_path(file_path);
+  project->set_project_file_path(file_path);
 
   return true;
 }
 
-bool ProjectSerializer::deserialize(const std::string& file_path) const {
-  auto& [name, start_scene, asset_directory, module_name] = m_project->get_config();
-
-  const auto& content = FileUtils::read_file(file_path);
+bool ProjectSerializer::deserialize(std::string file_path) const {
+  auto& [name, start_scene, asset_directory, module_name] = project->get_config();
+  const auto content = FileUtils::read_file(file_path);
   if (content.empty()) {
     OX_CORE_ASSERT(!content.empty(), fmt::format("Couldn't load project file: {0}", file_path).c_str());
     return false;
   }
 
-  toml::table toml = toml::parse(content);
+  try {
+    toml::table toml = toml::parse(content);
 
-  const auto project_node = toml["project"];
-  name = project_node["name"].as_string()->get(); 
-  asset_directory = project_node["asset_directory"].as_string()->get(); 
-  start_scene = project_node["start_scene"].as_string()->get();
-  module_name = project_node["module_name"].as_string()->get();
+    const auto project_node = toml["project"];
+    name = project_node["name"].as_string()->get();
+    asset_directory = project_node["asset_directory"].as_string()->get();
+    start_scene = project_node["start_scene"].as_string()->get();
+    module_name = project_node["module_name"].as_string()->get();
+  }
+  catch (const std::exception& exc) {
+    OX_CORE_ERROR("{}", exc.what());
+  }
 
-  m_project->set_project_file_path(file_path);
+  project->set_project_file_path(file_path);
 
   return true;
 }

@@ -10,7 +10,6 @@
 #include "Assets/AssetManager.h"
 #include "Core/Input.h"
 #include "Core/Project.h"
-#include "Core/Resources.h"
 #include "Panels/ContentPanel.h"
 #include "Panels/EditorSettingsPanel.h"
 #include "Panels/ProjectPanel.h"
@@ -54,7 +53,6 @@ void EditorLayer::on_attach(EventDispatcher& dispatcher) {
   Project::create_new();
 
   editor_config.load_config();
-  Resources::init_editor_resources();
 
   engine_banner = create_shared<TextureAsset>();
   engine_banner->create_texture(EngineBannerWidth, EngineBannerHeight, EngineBanner);
@@ -369,6 +367,7 @@ void EditorLayer::load_default_scene(const std::shared_ptr<Scene>& scene) {
   OX_SCOPED_ZONE;
   const auto sun = scene->create_entity("Sun");
   scene->registry.emplace<LightComponent>(sun).type = LightComponent::LightType::Directional;
+  scene->registry.get<LightComponent>(sun).intensity = 10.0f;
   scene->registry.get<TransformComponent>(sun).rotation.y = glm::radians(60.f);
   scene->registry.get<TransformComponent>(sun).rotation.x = glm::radians(-140.f);
 
@@ -376,7 +375,7 @@ void EditorLayer::load_default_scene(const std::shared_ptr<Scene>& scene) {
   scene->registry.get<TransformComponent>(plane).scale *= 4.f;
 
   const auto cube = scene->load_mesh(AssetManager::get_mesh_asset("Resources/Objects/cube.glb"));
-  scene->registry.get<TransformComponent>(plane).position.y = 0.5f;
+  scene->registry.get<TransformComponent>(cube).position.y = 0.5f;
 }
 
 void EditorLayer::clear_selected_entity() {

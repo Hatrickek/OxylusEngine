@@ -35,11 +35,7 @@ std::string FileSystem::append_paths(const std::string_view path, const std::str
 
 std::string FileSystem::preferred_path(const std::string_view path) {
   std::string new_path(path);
-#ifdef OX_PLATFORM_WINDOWS
-  StringUtils::replace_string(new_path, "/", "\\");
-#else
   StringUtils::replace_string(new_path, "\\", "/");
-#endif
   return new_path;
 }
 }

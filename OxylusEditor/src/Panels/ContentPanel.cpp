@@ -7,7 +7,6 @@
 #include "Assets/AssetManager.h"
 #include "Core/App.h"
 #include "Core/Project.h"
-#include "Core/Resources.h"
 
 #include "Thread/ThreadManager.h"
 
@@ -276,15 +275,15 @@ ContentPanel::ContentPanel() : EditorPanel("Contents", ICON_MDI_FOLDER_STAR, tru
   m_white_texture = TextureAsset::get_white_texture();
 
   auto file_icon = create_shared<TextureAsset>();
-  file_icon->load(Resources::get_resources_path("Icons/FileIcon.png"));
+  file_icon->load(App::get_asset_directory("Icons/FileIcon.png"));
   thumbnail_cache.emplace("file_icon", file_icon);
 
   auto directory_icon = create_shared<TextureAsset>();
-  directory_icon->load(Resources::get_resources_path("Icons/FolderIcon.png"));
+  directory_icon->load(App::get_asset_directory("Icons/FolderIcon.png"));
   thumbnail_cache.emplace("folder_icon", directory_icon);
 
   auto mesh_icon = create_shared<TextureAsset>();
-  mesh_icon->load(Resources::get_resources_path("Icons/MeshFileIcon.png"));
+  mesh_icon->load(App::get_asset_directory("Icons/MeshFileIcon.png"));
   thumbnail_cache.emplace("mesh_icon", mesh_icon);
 }
 
