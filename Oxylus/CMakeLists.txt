@@ -16,6 +16,8 @@ file(GLOB_RECURSE Scripting "src/Scripting/*.h" "src/Scripting/*.cpp" )
 source_group("src/Scripting" FILES ${Scripting})
 file(GLOB_RECURSE Modules "src/Modules/*.h" "src/Modules/*.cpp" )
 source_group("src/Modules" FILES ${Modules})
+file(GLOB_RECURSE FileSystem "src/FileSystem/*.h" "src/FileSystem/*.cpp" )
+source_group("src/FileSystem" FILES ${FileSystem})
 
 file(GLOB Render "src/Render/*.h" "src/Render/*.cpp" )
 source_group("src/Render" FILES ${Render})
@@ -39,7 +41,7 @@ source_group("src/UI" FILES ${UI})
 file(GLOB_RECURSE Utils "src/Utils/*.h" "src/Utils/*.cpp" )
 source_group("src/Utils" FILES ${Utils})
 
-set(SOURCE_FILES ${src} ${Core} ${Assets} ${Audio} ${Event} ${Physics} ${Modules} 
+set(SOURCE_FILES ${src} ${Core} ${Assets} ${Audio} ${Event} ${Physics} ${Modules} ${FileSystem}
                   ${RENDERER_FILES} ${Scene} ${Thread} ${UI} ${Utils} ${Scripting})
 
 set(vendor__ImGuizmo "vendor/ImGuizmo/ImGuizmo.cpp" "vendor/ImGuizmo/ImGuizmo.h")

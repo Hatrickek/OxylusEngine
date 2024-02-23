@@ -58,7 +58,8 @@ public:
   static std::string get_asset_directory();
   static std::string get_asset_directory(std::string_view asset_path); // appends the asset_path at the end
   static std::string get_asset_directory_absolute();
-  static std::string get_asset_directory_absolute(std::string_view asset_path); // appends the asset_path at the end
+  static std::string get_relative(const std::string& path);
+  static std::string get_absolute(const std::string& path);
 
   static SystemRegistry& get_system_registry() { return instance->system_registry; }
 

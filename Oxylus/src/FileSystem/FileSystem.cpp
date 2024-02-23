@@ -1,6 +1,6 @@
 ﻿#include "FileSystem.h"
 
-#include "StringUtils.h"
+#include "Utils/StringUtils.h"
 
 #include "Core/PlatformDetection.h"
 

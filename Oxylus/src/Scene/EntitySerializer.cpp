@@ -1,5 +1,6 @@
 #include "EntitySerializer.h"
 
+#include <filesystem>
 #include <fstream>
 
 #include "Scene.h"
@@ -7,9 +8,10 @@
 
 #include "Assets/AssetManager.h"
 
+#include "Core/App.h"
+
 #include "Scene/Entity.h"
 
-#include "Utils/FileUtils.h"
 #include "Utils/Log.h"
 
 namespace Ox {
@@ -64,7 +66,7 @@ void EntitySerializer::serialize_entity(toml::array* entities, Scene* scene, Ent
     const auto& mrc = scene->registry.get<MeshComponent>(entity);
 
     const auto table = toml::table{
-      {"mesh_path", mrc.mesh_base->path},
+      {"mesh_path", App::get_relative(mrc.mesh_base->path)},
       {"node_index", mrc.node_index},
       {"cast_shadows", mrc.cast_shadows}
     };
@@ -95,7 +97,7 @@ void EntitySerializer::serialize_entity(toml::array* entities, Scene* scene, Ent
     const auto& light = scene->registry.get<SkyLightComponent>(entity);
 
     const auto table = toml::table{
-      {"cubemap_path", light.cubemap ? light.cubemap->get_path() : ""},
+      {"cubemap_path", light.cubemap ? App::get_relative(light.cubemap->get_path()) : ""},
       {"intensity", light.intensity},
       {"rotation", light.rotation},
       {"lod_bias", light.lod_bias},
@@ -257,7 +259,7 @@ void EntitySerializer::serialize_entity(toml::array* entities, Scene* scene, Ent
     const auto& system = component.lua_system;
 
     const auto table = toml::table{
-      {"path", system->get_path()},
+      {"path", App::get_relative(system->get_path())},
     };
 
     entities->push_back(toml::table{{"lua_script_component", table}});
@@ -297,7 +299,8 @@ UUID EntitySerializer::deserialize_entity(toml::array* entity_arr, Scene* scene,
       tc.scale = get_vec3_toml_array(GET_ARRAY(transform_node, "scale"));
     }
     else if (const auto mesh_node = ent.as_table()->get("mesh_component")) {
-      auto mesh = AssetManager::get_mesh_asset(GET_STRING(mesh_node, "mesh_path"));
+      const auto path = App::get_absolute(GET_STRING(mesh_node, "mesh_path"));
+      auto mesh = AssetManager::get_mesh_asset(path);
       auto& mc = reg.emplace<MeshComponent>(deserialized_entity, mesh);
       mc.node_index = GET_UINT32(mesh_node, "node_index");
       mc.cast_shadows = GET_BOOL(mesh_node, "cast_shadows");
@@ -317,7 +320,8 @@ UUID EntitySerializer::deserialize_entity(toml::array* entity_arr, Scene* scene,
     }
     else if (const auto sky_node = ent.as_table()->get("sky_light_component")) {
       auto& sc = reg.emplace<SkyLightComponent>(deserialized_entity);
-      sc.cubemap = AssetManager::get_texture_asset({.path = GET_STRING(sky_node, "path")});
+      auto path = App::get_absolute(GET_STRING(sky_node, "path"));
+      sc.cubemap = AssetManager::get_texture_asset({.path = path});
       sc.rotation = GET_FLOAT(sky_node, "rotation");
       sc.intensity = GET_FLOAT(sky_node, "intensity");
       sc.lod_bias = GET_FLOAT(sky_node, "lod_bias");
@@ -415,7 +419,7 @@ UUID EntitySerializer::deserialize_entity(toml::array* entity_arr, Scene* scene,
     }
     else if (const auto lua_node = ent.as_table()->get("lua_script_component")) {
       auto& lsc = reg.emplace<LuaScriptComponent>(deserialized_entity);
-      auto path = GET_STRING(lua_node, "path");
+      auto path = App::get_absolute(GET_STRING(lua_node, "path"));
       if (!path.empty())
         lsc.lua_system = create_shared<LuaSystem>(path);
     }

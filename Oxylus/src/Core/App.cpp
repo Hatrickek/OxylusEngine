@@ -178,7 +178,11 @@ std::string App::get_asset_directory_absolute() {
   return p.string();
 }
 
-std::string App::get_asset_directory_absolute(std::string_view asset_path) {
-  return FileSystem::append_paths(get_asset_directory_absolute(), asset_path);
+std::string App::get_relative(const std::string& path) {
+  return FileSystem::preferred_path(std::filesystem::relative(path, get_asset_directory()).string());
+}
+
+std::string App::get_absolute(const std::string& path) {
+  return FileSystem::append_paths(FileSystem::preferred_path(get_asset_directory_absolute()), path);
 }
 }

@@ -21,7 +21,6 @@ public:
   static Shared<Mesh> get_mesh_asset(const std::string& path, uint32_t loadingFlags = 0);
   static Shared<AudioSource> get_audio_asset(const std::string& path);
 
-  static void package_assets();
   static void free_unused_assets();
 
 private:
