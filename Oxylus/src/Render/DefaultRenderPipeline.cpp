@@ -14,6 +14,8 @@
 #include "PBR/DirectShadowPass.h"
 #include "PBR/Prefilter.h"
 
+#include "Scene/Scene.h"
+
 #include "Thread/TaskScheduler.h"
 
 #include "Utils/CVars.h"
@@ -467,7 +469,6 @@ void DefaultRenderPipeline::create_descriptor_sets(vuk::Allocator& allocator, vu
 
 void DefaultRenderPipeline::on_dispatcher_events(EventDispatcher& dispatcher) {
   dispatcher.sink<SkyboxLoadEvent>().connect<&DefaultRenderPipeline::update_skybox>(*this);
-  dispatcher.sink<ProbeChangeEvent>().connect<&DefaultRenderPipeline::update_parameters>(*this);
 }
 
 void DefaultRenderPipeline::on_register_render_object(const MeshComponent& render_object) {
@@ -540,10 +541,7 @@ Unique<vuk::Future> DefaultRenderPipeline::on_render(vuk::Allocator& frame_alloc
 
   auto vk_context = VulkanContext::get();
 
-  {
-    OX_SCOPED_ZONE_N("Mesh Opaque Sorting")
-    render_queue.sort_opaque();
-  }
+  render_queue.sort_opaque();
 
   ankerl::unordered_dense::map<uint32_t, uint32_t> material_map; //mesh, material
 
@@ -675,46 +673,17 @@ Unique<vuk::Future> DefaultRenderPipeline::on_render(vuk::Allocator& frame_alloc
   return create_unique<vuk::Future>(rg, "final_output");
 }
 
-void DefaultRenderPipeline::sky_transmittance_pass(const Shared<vuk::RenderGraph>& rg) {
-  OX_SCOPED_ZONE;
-
-  IVec2 lut_size = {256, 64};
-
-  rg->attach_and_clear_image("sky_transmittance_lut", vuk::ImageAttachment::from_texture(sky_transmittance_lut), vuk::Black<float>);
-
-  rg->add_pass({
-    .name = "sky_transmittance_lut_pass",
-    .resources = {
-      "sky_transmittance_lut"_image >> vuk::eComputeRW,
-    },
-    .execute = [this, lut_size](vuk::CommandBuffer& command_buffer) {
-      command_buffer.bind_persistent(0, *descriptor_set_00)
-                     //.bind_persistent(1, *descriptor_set_01)
-                    .bind_compute_pipeline("sky_transmittance_pipeline")
-                    .dispatch((lut_size.x + 8 - 1) / 8, (lut_size.y + 8 - 1) / 8);
-    }
-  });
-}
-
-void DefaultRenderPipeline::sky_multiscatter_pass(const Shared<vuk::RenderGraph>& rg) {
-  OX_SCOPED_ZONE;
-
-  IVec2 lut_size = {32, 32};
-
-  rg->attach_and_clear_image("sky_multiscatter_lut", vuk::ImageAttachment::from_texture(sky_multiscatter_lut), vuk::Black<float>);
-
-  rg->add_pass({
-    .name = "sky_multiscatter_lut_pass",
-    .resources = {
-      "sky_multiscatter_lut"_image >> vuk::eComputeRW,
-      "sky_transmittance_lut+"_image >> vuk::eComputeSampled,
-    },
-    .execute = [this, lut_size](vuk::CommandBuffer& command_buffer) {
-      command_buffer.bind_compute_pipeline("sky_multiscatter_pipeline")
-                    .bind_persistent(0, *descriptor_set_00)
-                    .dispatch(lut_size.x, lut_size.y);
-    }
-  });
+void DefaultRenderPipeline::on_update(Scene* scene) {
+  // TODO: Account for the bounding volume of the probe
+  const auto pp_view = scene->registry.view<PostProcessProbe>();
+  for (auto&& [e, component] : pp_view.each()) {
+    scene_data.post_processing_data.film_grain = {component.film_grain_enabled, component.film_grain_intensity};
+    scene_data.post_processing_data.chromatic_aberration = {component.chromatic_aberration_enabled, component.chromatic_aberration_intensity};
+    scene_data.post_processing_data.vignette_offset.w = component.vignette_enabled;
+    scene_data.post_processing_data.vignette_color.a = component.vignette_intensity;
+    scene_data.post_processing_data.sharpen.x = component.sharpen_enabled;
+    scene_data.post_processing_data.sharpen.y = component.sharpen_intensity;
+  }
 }
 
 void DefaultRenderPipeline::update_skybox(const SkyboxLoadEvent& e) {
@@ -723,6 +692,77 @@ void DefaultRenderPipeline::update_skybox(const SkyboxLoadEvent& e) {
 
   if (cube_map)
     generate_prefilter(*VulkanContext::get()->superframe_allocator);
+}
+
+void DefaultRenderPipeline::render_meshes(const RenderQueue& render_queue,
+                                          vuk::CommandBuffer& command_buffer,
+                                          uint32_t filter,
+                                          uint32_t flags,
+                                          uint32_t push_index = -1) const {
+  for (const auto& batch : render_queue.batches) {
+    const auto& mesh = mesh_component_list[batch.mesh_index];
+
+    mesh.mesh_base->bind_index_buffer(command_buffer);
+
+    const auto node = mesh.mesh_base->linear_nodes[mesh.node_index];
+    for (const auto primitive : node->mesh_data->primitives) {
+      if (filter & FILTER_TRANSPARENT) {
+        if (mesh.materials[primitive->material_index]->parameters.alpha_mode == (uint32_t)Material::AlphaMode::Blend) {
+          continue;
+        }
+      }
+      if (filter & FILTER_OPAQUE) {
+        if (mesh.materials[primitive->material_index]->parameters.alpha_mode != (uint32_t)Material::AlphaMode::Blend) {
+          continue;
+        }
+      }
+
+      if (flags & RENDER_FLAGS_USE_PC) {
+        const auto index = flags & RENDER_FLAGS_PUSH_MATERIAL_INDEX ? get_material_index(batch.mesh_index, primitive->material_index) : push_index;
+        const auto pc = ShaderPC{mesh.transform, mesh.mesh_base->vertex_buffer->device_address, index};
+        vuk::ShaderStageFlags stage = vuk::ShaderStageFlagBits::eVertex;
+        if (flags & RENDER_FLAGS_PC_BIND_FRG)
+          stage |= vuk::ShaderStageFlagBits::eFragment;
+        command_buffer.push_constants(stage, 0, pc);
+      }
+
+      Renderer::draw_indexed(command_buffer, primitive->index_count, 1, primitive->first_index, 0, 0);
+    }
+  }
+}
+
+void DefaultRenderPipeline::cascaded_shadow_pass(const Shared<vuk::RenderGraph>& rg) {
+  OX_SCOPED_ZONE;
+  auto [d_cascade_names, d_cascade_name_outputs] = diverge_image_layers(rg, "shadow_map_array", 4);
+
+  for (uint32_t cascade_index = 0; cascade_index < SHADOW_MAP_CASCADE_COUNT; cascade_index++) {
+    rg->add_pass({
+      .name = "direct_shadow_pass",
+      .resources = {
+        vuk::Resource(d_cascade_names[cascade_index], vuk::Resource::Type::eImage, vuk::Access::eDepthStencilRW, d_cascade_name_outputs[cascade_index])
+      },
+      .execute = [this, cascade_index](vuk::CommandBuffer& command_buffer) {
+        command_buffer.bind_persistent(0, *descriptor_set_00)
+                      .bind_graphics_pipeline("shadow_pipeline")
+                      .set_dynamic_state(vuk::DynamicStateFlagBits::eScissor | vuk::DynamicStateFlagBits::eViewport)
+                      .broadcast_color_blend({})
+                      .set_rasterization({.depthClampEnable = true, .cullMode = vuk::CullModeFlagBits::eBack})
+                      .set_depth_stencil(vuk::PipelineDepthStencilStateCreateInfo{
+                         .depthTestEnable = true,
+                         .depthWriteEnable = true,
+                         .depthCompareOp = vuk::CompareOp::eLessOrEqual,
+                       })
+                      .set_viewport(0, vuk::Rect2D::framebuffer())
+                      .set_scissor(0, vuk::Rect2D::framebuffer());
+
+        render_meshes(render_queue, command_buffer, FILTER_TRANSPARENT, RENDER_FLAGS_USE_PC, cascade_index);
+
+        // TODO: Transparent shadows
+      }
+    });
+  }
+
+  rg->converge_image_explicit(d_cascade_name_outputs, "shadow_array_output");
 }
 
 void DefaultRenderPipeline::depth_pre_pass(const Shared<vuk::RenderGraph>& rg) {
@@ -751,23 +791,10 @@ void DefaultRenderPipeline::depth_pre_pass(const Shared<vuk::RenderGraph>& rg) {
                      })
                     .bind_graphics_pipeline("depth_pre_pass_pipeline");
 
-      for (const auto& batch : render_queue.batches) {
-        const auto& mesh = mesh_component_list[batch.mesh_index];
-        mesh.mesh_base->bind_index_buffer(command_buffer);
-
-        const auto node = mesh.mesh_base->linear_nodes[mesh.node_index];
-        for (const auto primitive : node->mesh_data->primitives) {
-          if (mesh.materials[primitive->material_index]->parameters.alpha_mode != (uint32_t)Material::AlphaMode::Opaque) {
-            continue;
-          }
-
-          const auto material_index = get_material_index(batch.mesh_index, primitive->material_index);
-          const auto pc = ShaderPC{mesh.transform, mesh.mesh_base->vertex_buffer->device_address, material_index};
-          command_buffer.push_constants(vuk::ShaderStageFlagBits::eVertex | vuk::ShaderStageFlagBits::eFragment, 0, pc);
-
-          Renderer::draw_indexed(command_buffer, primitive->index_count, 1, primitive->first_index, 0, 0);
-        }
-      }
+      render_meshes(render_queue,
+                    command_buffer,
+                    FILTER_TRANSPARENT,
+                    RENDER_FLAGS_PC_BIND_FRG | RENDER_FLAGS_USE_PC | RENDER_FLAGS_PUSH_MATERIAL_INDEX);
     }
   });
 }
@@ -820,52 +847,22 @@ void DefaultRenderPipeline::geometry_pass(const Shared<vuk::RenderGraph>& rg) {
                        .depthCompareOp = vuk::CompareOp::eLessOrEqual,
                      });
 
-      for (const auto& batch : render_queue.batches) {
-        const auto& mesh = mesh_component_list[batch.mesh_index];
 
-        mesh.mesh_base->bind_index_buffer(command_buffer);
-
-        const auto node = mesh.mesh_base->linear_nodes[mesh.node_index];
-        for (const auto primitive : node->mesh_data->primitives) {
-          if (mesh.materials[primitive->material_index]->parameters.alpha_mode == (uint32_t)Material::AlphaMode::Blend) {
-            continue;
-          }
-
-          const auto material_index = get_material_index(batch.mesh_index, primitive->material_index);
-          const auto pc = ShaderPC{mesh.transform, mesh.mesh_base->vertex_buffer->device_address, material_index};
-
-          command_buffer.push_constants(vuk::ShaderStageFlagBits::eVertex | vuk::ShaderStageFlagBits::eFragment, 0, pc);
-
-          Renderer::draw_indexed(command_buffer, primitive->index_count, 1, primitive->first_index, 0, 0);
-        }
-      }
+      render_meshes(render_queue,
+                    command_buffer,
+                    FILTER_TRANSPARENT,
+                    RENDER_FLAGS_PC_BIND_FRG | RENDER_FLAGS_USE_PC | RENDER_FLAGS_PUSH_MATERIAL_INDEX);
 
       command_buffer.bind_graphics_pipeline("pbr_transparency_pipeline")
                     .broadcast_color_blend(vuk::BlendPreset::eAlphaBlend)
                     .set_rasterization({.cullMode = vuk::CullModeFlagBits::eNone});
-      {
-        OX_SCOPED_ZONE_N("Mesh Transparent Sorting")
-        render_queue.sort_transparent();
-      }
 
-      for (const auto& batch : render_queue.batches) {
-        const auto& mesh = mesh_component_list[batch.mesh_index];
+      render_queue.sort_transparent();
 
-        mesh.mesh_base->bind_index_buffer(command_buffer);
-
-        const auto node = mesh.mesh_base->linear_nodes[mesh.node_index];
-        for (const auto primitive : node->mesh_data->primitives) {
-          if (mesh.materials[primitive->material_index]->parameters.alpha_mode != (uint32_t)Material::AlphaMode::Blend) {
-            continue;
-          }
-          const auto material_index = get_material_index(batch.mesh_index, primitive->material_index);
-          const auto pc = ShaderPC{mesh.transform, mesh.mesh_base->vertex_buffer->device_address, material_index};
-
-          command_buffer.push_constants(vuk::ShaderStageFlagBits::eVertex | vuk::ShaderStageFlagBits::eFragment, 0, pc);
-
-          Renderer::draw_indexed(command_buffer, primitive->index_count, 1, primitive->first_index, 0, 0);
-        }
-      }
+      render_meshes(render_queue,
+                    command_buffer,
+                    FILTER_OPAQUE,
+                    RENDER_FLAGS_PC_BIND_FRG | RENDER_FLAGS_USE_PC | RENDER_FLAGS_PUSH_MATERIAL_INDEX);
     }
   });
 }
@@ -1161,52 +1158,6 @@ void DefaultRenderPipeline::apply_grid(vuk::RenderGraph* rg, const vuk::Name dst
   });
 }
 
-void DefaultRenderPipeline::cascaded_shadow_pass(const Shared<vuk::RenderGraph>& rg) {
-  OX_SCOPED_ZONE;
-  auto [d_cascade_names, d_cascade_name_outputs] = diverge_image_layers(rg, "shadow_map_array", 4);
-
-  for (uint32_t cascade_index = 0; cascade_index < SHADOW_MAP_CASCADE_COUNT; cascade_index++) {
-    rg->add_pass({
-      .name = "direct_shadow_pass",
-      .resources = {
-        vuk::Resource(d_cascade_names[cascade_index], vuk::Resource::Type::eImage, vuk::Access::eDepthStencilRW, d_cascade_name_outputs[cascade_index])
-      },
-      .execute = [this, cascade_index](vuk::CommandBuffer& command_buffer) {
-        command_buffer.bind_persistent(0, *descriptor_set_00)
-                      .bind_graphics_pipeline("shadow_pipeline")
-                      .set_dynamic_state(vuk::DynamicStateFlagBits::eScissor | vuk::DynamicStateFlagBits::eViewport)
-                      .broadcast_color_blend({})
-                      .set_rasterization({.depthClampEnable = true, .cullMode = vuk::CullModeFlagBits::eBack})
-                      .set_depth_stencil(vuk::PipelineDepthStencilStateCreateInfo{
-                         .depthTestEnable = true,
-                         .depthWriteEnable = true,
-                         .depthCompareOp = vuk::CompareOp::eLessOrEqual,
-                       })
-                      .set_viewport(0, vuk::Rect2D::framebuffer())
-                      .set_scissor(0, vuk::Rect2D::framebuffer());
-
-        for (const auto& batch : render_queue.batches) {
-          const auto& mesh = mesh_component_list[batch.mesh_index];
-          if (!mesh.cast_shadows)
-            continue;
-
-          mesh.mesh_base->bind_index_buffer(command_buffer);
-
-          const auto node = mesh.mesh_base->linear_nodes[mesh.node_index];
-          for (const auto primitive : node->mesh_data->primitives) {
-            const ShaderPC pc = {mesh.transform, mesh.mesh_base->vertex_buffer->device_address, cascade_index};
-            command_buffer.push_constants(vuk::ShaderStageFlagBits::eVertex, 0, pc);
-
-            Renderer::draw_indexed(command_buffer, primitive->index_count, 1, primitive->first_index, 0, 0);
-          }
-        }
-      }
-    });
-  }
-
-  rg->converge_image_explicit(d_cascade_name_outputs, "shadow_array_output");
-}
-
 void DefaultRenderPipeline::generate_prefilter(vuk::Allocator& allocator) {
   OX_SCOPED_ZONE;
   vuk::Compiler compiler{};
@@ -1224,15 +1175,45 @@ void DefaultRenderPipeline::generate_prefilter(vuk::Allocator& allocator) {
   prefiltered_texture = std::move(prefilter_img);
 }
 
-void DefaultRenderPipeline::update_parameters(ProbeChangeEvent& e) {
+void DefaultRenderPipeline::sky_transmittance_pass(const Shared<vuk::RenderGraph>& rg) {
   OX_SCOPED_ZONE;
-  auto& ubo = scene_data.post_processing_data;
-  auto& component = e.probe;
-  ubo.film_grain = {component.film_grain_enabled, component.film_grain_intensity};
-  ubo.chromatic_aberration = {component.chromatic_aberration_enabled, component.chromatic_aberration_intensity};
-  ubo.film_grain = {component.film_grain_enabled, component.film_grain_intensity};
-  ubo.vignette_offset.w = component.vignette_enabled;
-  ubo.vignette_color.a = component.vignette_intensity;
+
+  IVec2 lut_size = {256, 64};
+
+  rg->attach_and_clear_image("sky_transmittance_lut", vuk::ImageAttachment::from_texture(sky_transmittance_lut), vuk::Black<float>);
+
+  rg->add_pass({
+    .name = "sky_transmittance_lut_pass",
+    .resources = {
+      "sky_transmittance_lut"_image >> vuk::eComputeRW,
+    },
+    .execute = [this, lut_size](vuk::CommandBuffer& command_buffer) {
+      command_buffer.bind_persistent(0, *descriptor_set_00)
+                    .bind_compute_pipeline("sky_transmittance_pipeline")
+                    .dispatch((lut_size.x + 8 - 1) / 8, (lut_size.y + 8 - 1) / 8);
+    }
+  });
+}
+
+void DefaultRenderPipeline::sky_multiscatter_pass(const Shared<vuk::RenderGraph>& rg) {
+  OX_SCOPED_ZONE;
+
+  IVec2 lut_size = {32, 32};
+
+  rg->attach_and_clear_image("sky_multiscatter_lut", vuk::ImageAttachment::from_texture(sky_multiscatter_lut), vuk::Black<float>);
+
+  rg->add_pass({
+    .name = "sky_multiscatter_lut_pass",
+    .resources = {
+      "sky_multiscatter_lut"_image >> vuk::eComputeRW,
+      "sky_transmittance_lut+"_image >> vuk::eComputeSampled,
+    },
+    .execute = [this, lut_size](vuk::CommandBuffer& command_buffer) {
+      command_buffer.bind_compute_pipeline("sky_multiscatter_pipeline")
+                    .bind_persistent(0, *descriptor_set_00)
+                    .dispatch(lut_size.x, lut_size.y);
+    }
+  });
 }
 
 void DefaultRenderPipeline::sky_envmap_pass(const Shared<vuk::RenderGraph>& rg) {

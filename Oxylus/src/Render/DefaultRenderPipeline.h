@@ -7,7 +7,6 @@
 #include "PBR/GTAO/XeGTAO.h"
 
 namespace Ox {
-struct ProbeChangeEvent;
 struct SkyboxLoadEvent;
 
 class DefaultRenderPipeline : public RenderPipeline {
@@ -22,6 +21,8 @@ public:
   void shutdown() override;
 
   Unique<vuk::Future> on_render(vuk::Allocator& frame_allocator, const vuk::Future& target, vuk::Dimension3D dim) override;
+
+  void on_update(Scene* scene) override;
 
   void on_dispatcher_events(EventDispatcher& dispatcher) override;
   void on_register_render_object(const MeshComponent& render_object) override;
@@ -169,6 +170,32 @@ private:
   vuk::Texture irradiance_texture;
   vuk::Texture prefiltered_texture;
 
+  enum Filter {
+    // Include nothing:
+    FILTER_NONE = 0,
+
+    // Object filtering types:
+    FILTER_OPAQUE          = 1 << 0,
+    FILTER_TRANSPARENT     = 1 << 1,
+    FILTER_WATER           = 1 << 2,
+    FILTER_NAVIGATION_MESH = 1 << 3,
+    FILTER_OBJECT_ALL      = FILTER_OPAQUE | FILTER_TRANSPARENT | FILTER_WATER | FILTER_NAVIGATION_MESH,
+
+    // Include everything:
+    FILTER_ALL = ~0,
+  };
+
+  enum RenderFlags {
+    RENDER_FLAGS_NONE = 0,
+
+    // Use push constant
+    RENDER_FLAGS_USE_PC = 1 << 0,
+
+    RENDER_FLAGS_PUSH_MATERIAL_INDEX = 1 << 1,
+
+    RENDER_FLAGS_PC_BIND_FRG = 1 << 2,
+  };
+
   struct RenderBatch {
     uint32_t mesh_index;
     uint32_t instance_index;
@@ -241,10 +268,12 @@ private:
     }
 
     void sort_transparent() {
+      OX_SCOPED_ZONE;
       std::sort(batches.begin(), batches.end(), std::greater<RenderBatch>());
     }
 
     void sort_opaque() {
+      OX_SCOPED_ZONE;
       std::sort(batches.begin(), batches.end(), std::less<RenderBatch>());
     }
 
@@ -277,13 +306,13 @@ private:
 
   void update_skybox(const SkyboxLoadEvent& e);
   void generate_prefilter(vuk::Allocator& allocator);
-  void update_parameters(ProbeChangeEvent& e);
 
   void sky_envmap_pass(const Shared<vuk::RenderGraph>& rg);
   void sky_view_lut_pass(const Shared<vuk::RenderGraph>& rg);
   void sky_transmittance_pass(const Shared<vuk::RenderGraph>& rg);
   void sky_multiscatter_pass(const Shared<vuk::RenderGraph>& rg);
   void depth_pre_pass(const Shared<vuk::RenderGraph>& rg);
+  void render_meshes(const RenderQueue& render_queue, vuk::CommandBuffer& command_buffer, uint32_t filter, uint32_t flags, uint32_t push_index) const;
   void geometry_pass(const Shared<vuk::RenderGraph>& rg);
   void apply_fxaa(vuk::RenderGraph* rg, vuk::Name src, vuk::Name dst, vuk::Buffer& fxaa_buffer);
   void cascaded_shadow_pass(const Shared<vuk::RenderGraph>& rg);

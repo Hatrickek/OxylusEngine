@@ -252,7 +252,7 @@ void VulkanContext::create_context(const AppSpec& spec) {
   driver_version = properties.driverVersion;
 
 #ifdef TRACY_ENABLE
-  tracy_profiler = create_ref<TracyProfiler>();
+  tracy_profiler = create_shared<TracyProfiler>();
   tracy_profiler->init_tracy_for_vulkan(this);
 #endif
 
