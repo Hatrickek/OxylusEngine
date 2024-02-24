@@ -301,6 +301,7 @@ void DefaultRenderPipeline::commit_descriptor_sets(vuk::Allocator& allocator) {
   scene_data.indices.ssr_buffer_image_index = SSR_BUFFER_IMAGE_INDEX;
   scene_data.indices.lights_buffer_index = LIGHTS_BUFFER_INDEX;
   scene_data.indices.materials_buffer_index = MATERIALS_BUFFER_INDEX;
+  scene_data.indices.mesh_instances_buffer_index = MESH_INSTANCES_BUFFER_INDEX;
 
   scene_data.post_processing_data.tonemapper = RendererCVar::cvar_tonemapper.get();
   scene_data.post_processing_data.exposure = RendererCVar::cvar_exposure.get();
@@ -347,7 +348,7 @@ void DefaultRenderPipeline::commit_descriptor_sets(vuk::Allocator& allocator) {
 
   std::vector<Material::Parameters> material_parameters = {};
   for (auto& mesh : mesh_component_list) {
-    auto& materials = mesh.materials; //mesh.mesh_base->get_materials(mesh.node_index);
+    auto& materials = mesh.materials;
     for (auto& mat : materials) {
       material_parameters.emplace_back(mat->parameters);
 
@@ -370,10 +371,27 @@ void DefaultRenderPipeline::commit_descriptor_sets(vuk::Allocator& allocator) {
   auto [matBuff, matBufferFut] = create_cpu_buffer(allocator, std::span(material_parameters));
   auto& mat_buffer = *matBuff;
 
+  struct MeshInstance {
+    Mat4 transform;
+  };
+
+  std::vector<MeshInstance> mesh_instances = {};
+
+  for (auto& batch : render_queue.batches) {
+    mesh_instances.emplace_back(mesh_component_list[batch.component_index].transform);
+  }
+
+  if (render_queue.batches.empty())
+    mesh_instances.emplace_back();
+
+  auto [miBuff, miBuffFut] = create_cpu_buffer(allocator, std::span(mesh_instances));
+  auto& mesh_instances_buffer = *miBuff;
+
   descriptor_set_00->update_uniform_buffer(0, 0, scene_buffer);
   descriptor_set_00->update_uniform_buffer(1, 0, camera_buffer);
   descriptor_set_00->update_storage_buffer(2, LIGHTS_BUFFER_INDEX, lights_buffer);
   descriptor_set_00->update_storage_buffer(2, MATERIALS_BUFFER_INDEX, mat_buffer);
+  descriptor_set_00->update_storage_buffer(2, MESH_INSTANCES_BUFFER_INDEX, mesh_instances_buffer);
   descriptor_set_00->update_storage_buffer(2, SSR_BUFFER_IMAGE_INDEX, ssr_buffer);
 
   // scene textures
@@ -487,7 +505,7 @@ void DefaultRenderPipeline::on_register_render_object(const MeshComponent& rende
     }
   }
 
-  render_queue.add((uint32_t)mesh_component_list.size(), 0, distance(current_camera->get_position(), render_object.aabb.get_center()), 0);
+  render_queue.add(render_object.mesh_id, (uint32_t)mesh_component_list.size(), 0, distance(current_camera->get_position(), render_object.aabb.get_center()), 0);
   mesh_component_list.emplace_back(render_object);
 }
 
@@ -546,7 +564,7 @@ Unique<vuk::Future> DefaultRenderPipeline::on_render(vuk::Allocator& frame_alloc
   ankerl::unordered_dense::map<uint32_t, uint32_t> material_map; //mesh, material
 
   for (auto& batch : render_queue.batches) {
-    material_map.emplace(batch.mesh_index, mesh_component_list[batch.mesh_index].mesh_base->get_material_count());
+    material_map.emplace(batch.component_index, mesh_component_list[batch.component_index].mesh_base->get_material_count());
   }
 
   cumulated_material_map = cumulate_material_map(material_map);
@@ -699,8 +717,21 @@ void DefaultRenderPipeline::render_meshes(const RenderQueue& render_queue,
                                           uint32_t filter,
                                           uint32_t flags,
                                           uint32_t push_index = -1) const {
-  for (const auto& batch : render_queue.batches) {
-    const auto& mesh = mesh_component_list[batch.mesh_index];
+  struct InstancedBatch {
+    uint32_t mesh_index = 0;
+    uint32_t component_index = 0;
+    uint32_t instance_count = 0;
+    uint32_t data_offset = 0;
+    uint32_t lod = 0;
+  };
+
+  InstancedBatch instanced_batch = {};
+
+  const auto flush_batch = [&] {
+    if (instanced_batch.instance_count == 0)
+      return;
+
+    const auto& mesh = mesh_component_list[instanced_batch.component_index];
 
     mesh.mesh_base->bind_index_buffer(command_buffer);
 
@@ -718,17 +749,35 @@ void DefaultRenderPipeline::render_meshes(const RenderQueue& render_queue,
       }
 
       if (flags & RENDER_FLAGS_USE_PC) {
-        const auto index = flags & RENDER_FLAGS_PUSH_MATERIAL_INDEX ? get_material_index(batch.mesh_index, primitive->material_index) : push_index;
-        const auto pc = ShaderPC{mesh.transform, mesh.mesh_base->vertex_buffer->device_address, index};
+        const auto index = flags & RENDER_FLAGS_PUSH_MATERIAL_INDEX ? get_material_index(instanced_batch.component_index, primitive->material_index) : push_index;
+        const auto pc = ShaderPC{instanced_batch.data_offset, mesh.mesh_base->vertex_buffer->device_address, index};
         vuk::ShaderStageFlags stage = vuk::ShaderStageFlagBits::eVertex;
         if (flags & RENDER_FLAGS_PC_BIND_FRG)
           stage |= vuk::ShaderStageFlagBits::eFragment;
         command_buffer.push_constants(stage, 0, pc);
       }
 
-      Renderer::draw_indexed(command_buffer, primitive->index_count, 1, primitive->first_index, 0, 0);
+      Renderer::draw_indexed(command_buffer, primitive->index_count, instanced_batch.instance_count, primitive->first_index, 0, 0);
     }
+  };
+
+  uint32_t instance_count = 0;
+  for (const auto& batch : render_queue.batches) {
+    // TODO: consider comparing materials too.
+    if (batch.mesh_index != instanced_batch.mesh_index) {
+      flush_batch();
+
+      instanced_batch = {};
+      instanced_batch.mesh_index = batch.mesh_index;
+      instanced_batch.data_offset = instance_count;
+    }
+
+    instanced_batch.component_index = batch.component_index;
+    instanced_batch.instance_count++;
+    instance_count++;
   }
+
+  flush_batch();
 }
 
 void DefaultRenderPipeline::cascaded_shadow_pass(const Shared<vuk::RenderGraph>& rg) {

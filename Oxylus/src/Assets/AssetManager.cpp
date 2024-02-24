@@ -48,6 +48,7 @@ Shared<TextureAsset> AssetManager::load_texture_asset(const std::string& path) {
   OX_SCOPED_ZONE;
 
   Shared<TextureAsset> texture = create_shared<TextureAsset>(path);
+  texture->asset_id = (uint32_t)asset_library.texture_assets.size();
   return asset_library.texture_assets.emplace(path, texture).first->second;
 }
 
@@ -55,13 +56,14 @@ Shared<TextureAsset> AssetManager::load_texture_asset(const std::string& path, c
   OX_SCOPED_ZONE;
 
   Shared<TextureAsset> texture = create_shared<TextureAsset>(info);
-  texture->asset_id = (uint32_t)asset_library.texture_assets.size() + 1;
+  texture->asset_id = (uint32_t)asset_library.texture_assets.size();
   return asset_library.texture_assets.emplace(path, texture).first->second;
 }
 
 Shared<Mesh> AssetManager::load_mesh_asset(const std::string& path, uint32_t loadingFlags) {
   OX_SCOPED_ZONE;
   Shared<Mesh> asset = create_shared<Mesh>(path, loadingFlags);
+  asset->asset_id = (uint32_t)asset_library.mesh_assets.size();
   return asset_library.mesh_assets.emplace(path, asset).first->second;
 }
 

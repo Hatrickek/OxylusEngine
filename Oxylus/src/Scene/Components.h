@@ -77,10 +77,12 @@ struct TransformComponent {
 struct MeshComponent {
   Shared<Mesh> mesh_base = nullptr;
 
+
   uint32_t node_index = 0;
   bool cast_shadows = true;
 
   // non-serialized data
+  uint32_t mesh_id = Asset::INVALID_ID;
   std::vector<Shared<Material>> materials = {}; // node materials
   Mat4 transform = {};
   AABB aabb = {};

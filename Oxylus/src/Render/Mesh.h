@@ -21,7 +21,7 @@ class Model;
 }
 
 namespace Ox {
-class Mesh {
+class Mesh : public Asset {
 public:
   enum FileLoadingFlags : int {
     None = 0,

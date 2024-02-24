@@ -59,6 +59,7 @@ Texture2D<float4> GetMaterialPhysicalTexture(Material material) { return Materia
 Texture2D<float4> GetMaterialAOTexture(Material material) { return MaterialTextureMaps[material.AOMapID]; }
 Texture2D<float4> GetMaterialEmissiveTexture(Material material) { return MaterialTextureMaps[material.EmissiveMapID]; }
 
+MeshInstance GetMeshInstance(int meshIndex) { return Buffers[GetScene().Indices.MeshInstancesBufferIndex].Load<MeshInstance>(meshIndex * sizeof(MeshInstance)); }
 Material GetMaterial(int materialIndex) { return Buffers[GetScene().Indices.MaterialsBufferIndex].Load<Material>(materialIndex * sizeof(Material)); }
 Light GetLight(int lightIndex) { return Buffers[GetScene().Indices.LightsBufferIndex].Load<Light>(lightIndex * sizeof(Light)); }
 SSRData GetSSRData() { return Buffers[GetScene().Indices.SSRBufferImageIndex].Load<SSRData>(0); }

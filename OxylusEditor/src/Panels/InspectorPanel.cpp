@@ -273,6 +273,7 @@ void InspectorPanel::draw_components(Entity entity) const {
       ImGui::Text("Loaded mesh: %s", file_name);
       ImGui::Text("Node index: %d", (uint32_t)component.node_index);
       ImGui::Text("Node material count: %d", (uint32_t)component.materials.size());
+      ImGui::Text("Mesh asset id: %d", (uint32_t)component.mesh_id);
       OxUI::begin_properties();
       OxUI::property("Cast shadows", &component.cast_shadows);
       OxUI::end_properties();

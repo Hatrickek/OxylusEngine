@@ -31,12 +31,12 @@ public:
     float normal = 1.0f;
 
     float ao = 1.0f;
-    uint32_t albedo_map_id = INVALID_ASSET_ID;
-    uint32_t physical_map_id = INVALID_ASSET_ID;
-    uint32_t normal_map_id = INVALID_ASSET_ID;
+    uint32_t albedo_map_id = Asset::INVALID_ID;
+    uint32_t physical_map_id = Asset::INVALID_ID;
+    uint32_t normal_map_id = Asset::INVALID_ID;
 
-    uint32_t ao_map_id = INVALID_ASSET_ID;
-    uint32_t emissive_map_id = INVALID_ASSET_ID;
+    uint32_t ao_map_id = Asset::INVALID_ID;
+    uint32_t emissive_map_id = Asset::INVALID_ID;
     float alpha_cutoff = 0.0f;
     int double_sided = false;
 
@@ -85,6 +85,8 @@ public:
 
   bool is_opaque() const;
   const char* alpha_mode_to_string() const;
+
+  bool operator==(const Material& other) const;
 
 private:
   Shared<TextureAsset> albedo_texture = nullptr;

@@ -50,6 +50,7 @@ private:
   // buffers and buffer/image combined indices
   static constexpr auto LIGHTS_BUFFER_INDEX = 0;
   static constexpr auto MATERIALS_BUFFER_INDEX = 1;
+  static constexpr auto MESH_INSTANCES_BUFFER_INDEX = 2;
   static constexpr auto GTAO_BUFFER_IMAGE_INDEX = 3;
   static constexpr auto SSR_BUFFER_IMAGE_INDEX = 6;
 
@@ -101,7 +102,7 @@ private:
       int pbr_image_index;
       int normal_image_index;
       int depth_image_index;
-      int _pad;
+      int mesh_instances_buffer_index;
 
       int sky_envmap_index;
       int sky_transmittance_lut_index;
@@ -136,7 +137,7 @@ private:
   } scene_data;
 
   struct ShaderPC {
-    Mat4 model_matrix;
+    uint32_t mesh_index;
     uint64_t vertex_buffer_ptr;
     uint32_t material_index;
   };
@@ -198,17 +199,19 @@ private:
 
   struct RenderBatch {
     uint32_t mesh_index;
+    uint32_t component_index;
     uint32_t instance_index;
     uint16_t distance;
     uint16_t camera_mask;
     uint32_t sort_bits; // an additional bitmask for sorting only, it should be used to reduce pipeline changes
 
-    void create(const uint32_t p_mesh_index, const uint32_t p_instance_index, const float p_distance, const uint32_t p_sort_bits, const uint16_t p_camera_mask = 0xFFFF) {
-      this->mesh_index = p_mesh_index;
-      this->instance_index = p_instance_index;
-      this->distance = uint16_t(glm::floatBitsToUint(p_distance));
-      this->sort_bits = p_sort_bits;
-      this->camera_mask = p_camera_mask;
+    void create(const uint32_t mesh_idx, const uint32_t component_idx, const uint32_t instance_idx, const float distance, const uint32_t sort_bits, const uint16_t camera_mask = 0xFFFF) {
+      this->mesh_index = mesh_idx;
+      this->component_index = component_idx;
+      this->instance_index = instance_idx;
+      this->distance = uint16_t(glm::floatBitsToUint(distance));
+      this->sort_bits = sort_bits;
+      this->camera_mask = camera_mask;
     }
 
     float get_distance() const { return glm::uintBitsToFloat(distance); }
@@ -263,8 +266,8 @@ private:
       batches.clear();
     }
 
-    void add(const uint32_t mesh_index, const uint32_t instance_index, const float distance, const uint32_t sort_bits, const uint16_t camera_mask = 0xFFFF) {
-      batches.emplace_back().create(mesh_index, instance_index, distance, sort_bits, camera_mask);
+    void add(const uint32_t mesh_index, const uint32_t component_index, const uint32_t instance_index, const float distance, const uint32_t sort_bits, const uint16_t camera_mask = 0xFFFF) {
+      batches.emplace_back().create(mesh_index, component_index, instance_index, distance, sort_bits, camera_mask);
     }
 
     void sort_transparent() {

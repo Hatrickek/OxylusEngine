@@ -2,7 +2,7 @@
 
 [[vk::push_constant]]
 struct PushConstant {
-  float4x4 ModelMatrix;
+  uint32_t MeshIndex;
   uint64_t VertexBufferPtr;
   uint32_t MaterialIndex;
   float _pad;
@@ -16,22 +16,24 @@ struct VSLayout {
   float3x3 WorldTangent : WORLD_TANGENT;
 };
 
-VSLayout VSmain(uint vertexIndex : SV_VertexID) {
+VSLayout VSmain(uint vertexIndex : SV_VertexID, uint instanceIndex : SV_InstanceID) {
   uint64_t addressOffset = PushConst.VertexBufferPtr + vertexIndex * sizeof(Vertex);
   const float4 vertexPosition = vk::RawBufferLoad<float4>(addressOffset);
   const float4 vertexNormal = vk::RawBufferLoad<float4>(addressOffset + sizeof(float4));
   const float4 vertexUV = vk::RawBufferLoad<float4>(addressOffset + sizeof(float4) * 2);
   const float4 vertexTangent = vk::RawBufferLoad<float4>(addressOffset + sizeof(float4) * 3);
 
-  const float4 locPos = mul(PushConst.ModelMatrix, float4(vertexPosition.xyz, 1.0));
+  const float4x4 modelMatrix = GetMeshInstance(PushConst.MeshIndex + instanceIndex).Transform;
 
-  float3 T = normalize(mul(PushConst.ModelMatrix, float4(vertexTangent.xyz, 0.0)).xyz);
-  float3 N = normalize(mul(PushConst.ModelMatrix, float4(vertexNormal.xyz, 0.0)).xyz);
+  const float4 locPos = mul(modelMatrix, float4(vertexPosition.xyz, 1.0));
+
+  float3 T = normalize(mul(modelMatrix, float4(vertexTangent.xyz, 0.0)).xyz);
+  float3 N = normalize(mul(modelMatrix, float4(vertexNormal.xyz, 0.0)).xyz);
   T = normalize(T - dot(T, N) * N);
   float3 B = cross(N, T);
 
   VSLayout output;
-  output.Normal = normalize(mul(transpose((float3x3)PushConst.ModelMatrix), vertexNormal));
+  output.Normal = normalize(mul(transpose((float3x3) modelMatrix), vertexNormal));
   output.WorldPos = locPos.xyz / locPos.w;
   output.UV = vertexUV.xy;
   output.Position = mul(mul(GetCamera().ProjectionMatrix, GetCamera().ViewMatrix), float4(output.WorldPos, 1.0));

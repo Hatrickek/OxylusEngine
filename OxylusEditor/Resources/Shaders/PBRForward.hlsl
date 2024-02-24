@@ -2,7 +2,7 @@
 #include "Atmosphere/SkyCommonShading.hlsli"
 
 [[vk::push_constant]] struct PushConstant {
-  float4x4 ModelMatrix;
+  uint32_t MeshIndex;
   uint64_t VertexBufferPtr;
   uint32_t MaterialIndex;
   float _pad;
@@ -17,22 +17,24 @@ struct VSLayout {
   float4 Tangent : TANGENT;
 };
 
-VSLayout VSmain(uint vertexIndex : SV_VertexID) {
+VSLayout VSmain(uint vertexIndex : SV_VertexID, uint instanceIndex : SV_InstanceID) {
   uint64_t addressOffset = PushConst.VertexBufferPtr + vertexIndex * sizeof(Vertex);
   const float4 vertexPosition = vk::RawBufferLoad<float4>(addressOffset);
   const float4 vertexNormal = vk::RawBufferLoad<float4>(addressOffset + sizeof(float4));
   const float4 vertexUV = vk::RawBufferLoad<float4>(addressOffset + sizeof(float4) * 2);
   const float4 tangent = vk::RawBufferLoad<float4>(addressOffset + sizeof(float4) * 3);
 
-  const float4 locPos = mul(PushConst.ModelMatrix, float4(vertexPosition.xyz, 1.0f));
+  const float4x4 modelMatrix = GetMeshInstance(PushConst.MeshIndex + instanceIndex).Transform;
+
+  const float4 locPos = mul(modelMatrix, float4(vertexPosition.xyz, 1.0f));
 
   VSLayout output;
-  output.Normal = normalize(mul(transpose(PushConst.ModelMatrix), vertexNormal)).xyz;
+  output.Normal = normalize(mul(transpose(modelMatrix), vertexNormal)).xyz;
   output.WorldPos = locPos.xyz / locPos.w;
   output.ViewPos = mul(GetCamera().ViewMatrix, float4(locPos.xyz, 1.0f)).xyz;
   output.UV = vertexUV.xy;
   output.Position = mul(mul(GetCamera().ProjectionMatrix, GetCamera().ViewMatrix), float4(output.WorldPos, 1.0f));
-  output.Tangent = mul(PushConst.ModelMatrix, tangent);
+  output.Tangent = mul(modelMatrix, tangent);
 
   return output;
 }

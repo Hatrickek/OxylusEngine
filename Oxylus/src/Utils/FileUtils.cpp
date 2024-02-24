@@ -19,14 +19,15 @@ std::string FileUtils::read_file(const std::string& file_path) {
 
 std::string FileUtils::read_shader_file(const std::string& shader_file_name) {
   OX_SCOPED_ZONE;
-  auto value = read_file(get_shader_path(shader_file_name));
+  auto path = get_shader_path(shader_file_name);
+  auto value = read_file(path);
   OX_CORE_ASSERT(!value.empty(), fmt::format("Shader file doesn't exist: {0}", shader_file_name.c_str()))
   return value;
 }
 
 std::string FileUtils::get_shader_path(const std::string& shader_file_name) {
   OX_SCOPED_ZONE;
-  const auto path_str = App::get_asset_directory("Shaders");
+  const auto path_str = std::filesystem::path(App::get()->get_specification().assets_path) / "Shaders";
   const auto path = std::filesystem::path(path_str) / shader_file_name;
   return path.string();
 }

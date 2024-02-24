@@ -37,7 +37,7 @@ void Material::bind_textures(vuk::CommandBuffer& command_buffer) const {
 
 #define SET_TEXTURE_ID(texture, parameter) \
   if (!texture) \
-    parameter = INVALID_ASSET_ID; \
+    parameter = Asset::INVALID_ID; \
   else \
     parameter = texture->get_id();
 
@@ -124,17 +124,40 @@ const char* Material::alpha_mode_to_string() const {
   }
 }
 
+bool Material::operator==(const Material& other) const {
+  if (parameters.color == other.parameters.color &&
+      parameters.emissive == other.parameters.emissive &&
+      parameters.roughness == other.parameters.roughness &&
+      parameters.metallic == other.parameters.metallic &&
+      parameters.reflectance == other.parameters.reflectance &&
+      parameters.normal == other.parameters.normal &&
+      parameters.ao == other.parameters.ao &&
+      parameters.albedo_map_id == other.parameters.albedo_map_id &&
+      parameters.physical_map_id == other.parameters.physical_map_id &&
+      parameters.normal_map_id == other.parameters.normal_map_id &&
+      parameters.ao_map_id == other.parameters.ao_map_id &&
+      parameters.emissive_map_id == other.parameters.emissive_map_id &&
+      parameters.alpha_cutoff == other.parameters.alpha_cutoff &&
+      parameters.double_sided == other.parameters.double_sided &&
+      parameters.uv_scale == other.parameters.uv_scale &&
+      parameters.alpha_mode == other.parameters.alpha_mode) {
+    return true;
+  }
+
+  return false;
+}
+
 void Material::reset() {
   albedo_texture = nullptr;
-  parameters.albedo_map_id = INVALID_ASSET_ID;
+  parameters.albedo_map_id = Asset::INVALID_ID;
   normal_texture = nullptr;
-  parameters.normal_map_id = INVALID_ASSET_ID;
+  parameters.normal_map_id = Asset::INVALID_ID;
   ao_texture = nullptr;
-  parameters.ao_map_id = INVALID_ASSET_ID;
+  parameters.ao_map_id = Asset::INVALID_ID;
   physical_texture = nullptr;
-  parameters.physical_map_id = INVALID_ASSET_ID;
+  parameters.physical_map_id = Asset::INVALID_ID;
   emissive_texture = nullptr;
-  parameters.emissive_map_id = INVALID_ASSET_ID;
+  parameters.emissive_map_id = Asset::INVALID_ID;
 }
 
 void Material::destroy() {

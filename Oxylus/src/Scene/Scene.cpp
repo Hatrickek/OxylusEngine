@@ -134,7 +134,8 @@ void Scene::iterate_mesh_node(const Shared<Mesh>& mesh, const Entity base_entity
   const auto node_entity = base_entity != entt::null ? base_entity : create_entity(node->name);
 
   if (node->mesh_data) {
-    registry.emplace_or_replace<MeshComponent>(node_entity, mesh, node->index);
+    auto& mc = registry.emplace_or_replace<MeshComponent>(node_entity, mesh, node->index);
+    mc.mesh_id = mesh->get_id();
     registry.get<TransformComponent>(node_entity).set_from_matrix(node->get_matrix());
   }
 
