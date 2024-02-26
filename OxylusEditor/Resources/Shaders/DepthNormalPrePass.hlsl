@@ -2,10 +2,11 @@
 
 [[vk::push_constant]]
 struct PushConstant {
-  uint32_t MeshIndex;
+  uint64_t MeshIntancesBufferPtr;
   uint64_t VertexBufferPtr;
+  uint32_t MeshIndex;
   uint32_t MaterialIndex;
-  float _pad;
+  float2 _pad;
 } PushConst;
 
 struct VSLayout {
@@ -23,7 +24,8 @@ VSLayout VSmain(uint vertexIndex : SV_VertexID, uint instanceIndex : SV_Instance
   const float4 vertexUV = vk::RawBufferLoad<float4>(addressOffset + sizeof(float4) * 2);
   const float4 vertexTangent = vk::RawBufferLoad<float4>(addressOffset + sizeof(float4) * 3);
 
-  const float4x4 modelMatrix = GetMeshInstance(PushConst.MeshIndex + instanceIndex).Transform;
+  addressOffset = PushConst.MeshIntancesBufferPtr + (PushConst.MeshIndex + instanceIndex) * sizeof(MeshInstance);
+  const float4x4 modelMatrix = transpose(vk::RawBufferLoad<float4x4>(addressOffset));
 
   const float4 locPos = mul(modelMatrix, float4(vertexPosition.xyz, 1.0));
 

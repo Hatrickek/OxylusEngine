@@ -76,8 +76,6 @@ struct TransformComponent {
 // Rendering
 struct MeshComponent {
   Shared<Mesh> mesh_base = nullptr;
-
-
   uint32_t node_index = 0;
   bool cast_shadows = true;
 
@@ -89,8 +87,8 @@ struct MeshComponent {
 
   MeshComponent() = default;
 
-  MeshComponent(const Shared<Mesh>& mesh, const uint32_t p_node_index = 0)
-    : mesh_base(mesh), node_index(p_node_index) {
+  MeshComponent(const Shared<Mesh>& mesh, const uint32_t node_idx = 0)
+    : mesh_base(mesh), node_index(node_idx) {
     materials = mesh->get_materials(node_index);
   }
 };

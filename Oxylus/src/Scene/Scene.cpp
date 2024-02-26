@@ -63,17 +63,6 @@ Scene::Scene(const Scene& scene) {
   this->registry.storage<entt::entity>().push(pack, pack + pack_size);
 }
 
-void Scene::mesh_component_ctor(entt::registry& reg, entt::entity entity) {
-  auto& component = reg.get<MeshComponent>(entity);
-  if (component.mesh_base) {
-    component.materials = component.mesh_base->get_materials(component.node_index);
-    if (!component.mesh_base->animations.empty()) {
-      auto& animation_component = reg.emplace_or_replace<AnimationComponent>(entity);
-      animation_component.animations = component.mesh_base->animations;
-    }
-  }
-}
-
 void Scene::rigidbody_component_ctor(entt::registry& reg, entt::entity entity) {
   auto& component = reg.get<RigidbodyComponent>(entity);
   create_rigidbody(entity, reg.get<TransformComponent>(entity), component);
@@ -93,7 +82,6 @@ void Scene::init(const Shared<RenderPipeline>& render_pipeline) {
   OX_SCOPED_ZONE;
 
   // ctors
-  registry.on_construct<MeshComponent>().connect<&Scene::mesh_component_ctor>(this);
   registry.on_construct<RigidbodyComponent>().connect<&Scene::rigidbody_component_ctor>(this);
   registry.on_construct<BoxColliderComponent>().connect<&Scene::collider_component_ctor>(this);
   registry.on_construct<SphereColliderComponent>().connect<&Scene::collider_component_ctor>(this);
@@ -130,8 +118,10 @@ entt::entity Scene::create_entity_with_uuid(UUID uuid, const std::string& name) 
   return ent;
 }
 
-void Scene::iterate_mesh_node(const Shared<Mesh>& mesh, const Entity base_entity, const Entity parent_entity, const Mesh::Node* node) {
-  const auto node_entity = base_entity != entt::null ? base_entity : create_entity(node->name);
+void Scene::iterate_mesh_node(const Shared<Mesh>& mesh, std::vector<Entity>& node_entities, const Entity parent_entity, const Mesh::Node* node) {
+  const auto node_entity = create_entity(node->name); //base_entity != entt::null ? base_entity : create_entity(node->name);
+
+  node_entities.emplace_back(node_entity);
 
   if (node->mesh_data) {
     auto& mc = registry.emplace_or_replace<MeshComponent>(node_entity, mesh, node->index);
@@ -143,16 +133,24 @@ void Scene::iterate_mesh_node(const Shared<Mesh>& mesh, const Entity base_entity
     EUtil::set_parent(this, node_entity, parent_entity);
 
   for (const auto& child : node->children)
-    iterate_mesh_node(mesh, entt::null, node_entity, child);
+    iterate_mesh_node(mesh, node_entities, node_entity, child);
 }
 
 Entity Scene::load_mesh(const Shared<Mesh>& mesh) {
-  const auto base_entity = create_entity(mesh->nodes[0]->name);
+  std::vector<Entity> node_entities = {};
+
   for (const auto* node : mesh->nodes) {
-    iterate_mesh_node(mesh, base_entity, entt::null, node);
+    iterate_mesh_node(mesh, node_entities, entt::null, node);
   }
 
-  return base_entity;
+  Entity parent = entt::null;
+  if (node_entities.size() > 1) {
+    parent = create_entity(FileSystem::get_file_name(mesh->path));
+    for (const auto ent : node_entities)
+      EUtil::set_parent(this, ent, parent);
+  }
+
+  return parent == entt::null ? node_entities.front() : parent;
 }
 
 void Scene::update_physics(const Timestep& delta_time) {

@@ -9,8 +9,6 @@
 #include "SceneRendererEvents.h"
 
 #include "Core/App.h"
-#include "Assets/AssetManager.h"
-#include "Scene/Entity.h"
 #include "PBR/DirectShadowPass.h"
 #include "PBR/Prefilter.h"
 
@@ -265,6 +263,18 @@ void DefaultRenderPipeline::load_pipelines(vuk::Allocator& allocator) {
   App::get_system<TaskScheduler>()->wait_for_all();
 }
 
+void DefaultRenderPipeline::update_mesh_instances(const vuk::Buffer& buffer) {
+  mesh_instances.clear();
+  for (const auto& batch : render_queue.batches) {
+    mesh_instances.emplace_back(mesh_component_list[batch.component_index].transform);
+  }
+
+  if (render_queue.batches.empty())
+    mesh_instances.emplace_back();
+
+  std::memcpy(buffer.mapped_ptr, mesh_instances.data(), mesh_instances.size() * sizeof(MeshInstance));
+}
+
 void DefaultRenderPipeline::commit_descriptor_sets(vuk::Allocator& allocator) {
   OX_SCOPED_ZONE;
   auto& ctx = allocator.get_context();
@@ -301,7 +311,6 @@ void DefaultRenderPipeline::commit_descriptor_sets(vuk::Allocator& allocator) {
   scene_data.indices.ssr_buffer_image_index = SSR_BUFFER_IMAGE_INDEX;
   scene_data.indices.lights_buffer_index = LIGHTS_BUFFER_INDEX;
   scene_data.indices.materials_buffer_index = MATERIALS_BUFFER_INDEX;
-  scene_data.indices.mesh_instances_buffer_index = MESH_INSTANCES_BUFFER_INDEX;
 
   scene_data.post_processing_data.tonemapper = RendererCVar::cvar_tonemapper.get();
   scene_data.post_processing_data.exposure = RendererCVar::cvar_exposure.get();
@@ -371,27 +380,18 @@ void DefaultRenderPipeline::commit_descriptor_sets(vuk::Allocator& allocator) {
   auto [matBuff, matBufferFut] = create_cpu_buffer(allocator, std::span(material_parameters));
   auto& mat_buffer = *matBuff;
 
-  struct MeshInstance {
-    Mat4 transform;
-  };
-
-  std::vector<MeshInstance> mesh_instances = {};
-
-  for (auto& batch : render_queue.batches) {
-    mesh_instances.emplace_back(mesh_component_list[batch.component_index].transform);
-  }
-
-  if (render_queue.batches.empty())
-    mesh_instances.emplace_back();
+  mesh_instances.emplace_back();
 
   auto [miBuff, miBuffFut] = create_cpu_buffer(allocator, std::span(mesh_instances));
-  auto& mesh_instances_buffer = *miBuff;
+  mesh_instances_opaque = *miBuff;
+
+  auto [miBuffT, miBuffFutT] = create_cpu_buffer(allocator, std::span(mesh_instances));
+  mesh_instances_transparent = *miBuffT;
 
   descriptor_set_00->update_uniform_buffer(0, 0, scene_buffer);
   descriptor_set_00->update_uniform_buffer(1, 0, camera_buffer);
   descriptor_set_00->update_storage_buffer(2, LIGHTS_BUFFER_INDEX, lights_buffer);
   descriptor_set_00->update_storage_buffer(2, MATERIALS_BUFFER_INDEX, mat_buffer);
-  descriptor_set_00->update_storage_buffer(2, MESH_INSTANCES_BUFFER_INDEX, mesh_instances_buffer);
   descriptor_set_00->update_storage_buffer(2, SSR_BUFFER_IMAGE_INDEX, ssr_buffer);
 
   // scene textures
@@ -564,7 +564,7 @@ Unique<vuk::Future> DefaultRenderPipeline::on_render(vuk::Allocator& frame_alloc
   ankerl::unordered_dense::map<uint32_t, uint32_t> material_map; //mesh, material
 
   for (auto& batch : render_queue.batches) {
-    material_map.emplace(batch.component_index, mesh_component_list[batch.component_index].mesh_base->get_material_count());
+    material_map.emplace(batch.component_index, (uint32_t)mesh_component_list[batch.component_index].materials.size());
   }
 
   cumulated_material_map = cumulate_material_map(material_map);
@@ -584,6 +584,7 @@ Unique<vuk::Future> DefaultRenderPipeline::on_render(vuk::Allocator& frame_alloc
 
   create_dynamic_textures(*vk_context->superframe_allocator, dim);
   commit_descriptor_sets(frame_allocator);
+  update_mesh_instances(mesh_instances_opaque);
 
   if (dir_light_data && dir_light_data->second.cast_shadows) {
     DirectShadowPass::update_cascades(sun_direction, current_camera, &direct_shadow_ub);
@@ -736,21 +737,31 @@ void DefaultRenderPipeline::render_meshes(const RenderQueue& render_queue,
     mesh.mesh_base->bind_index_buffer(command_buffer);
 
     const auto node = mesh.mesh_base->linear_nodes[mesh.node_index];
+    uint32_t primitive_index = 0;
     for (const auto primitive : node->mesh_data->primitives) {
+      uint64_t instances_ptr = mesh_instances_opaque.device_address;
+
+      auto& material = mesh.materials[primitive_index];
       if (filter & FILTER_TRANSPARENT) {
-        if (mesh.materials[primitive->material_index]->parameters.alpha_mode == (uint32_t)Material::AlphaMode::Blend) {
+        if (material->parameters.alpha_mode == (uint32_t)Material::AlphaMode::Blend) {
+          continue;
+        }
+      }
+      if (filter & FILTER_CLIP) {
+        if (material->parameters.alpha_mode == (uint32_t)Material::AlphaMode::Mask) {
           continue;
         }
       }
       if (filter & FILTER_OPAQUE) {
-        if (mesh.materials[primitive->material_index]->parameters.alpha_mode != (uint32_t)Material::AlphaMode::Blend) {
+        instances_ptr = mesh_instances_transparent.device_address;
+        if (material->parameters.alpha_mode != (uint32_t)Material::AlphaMode::Blend) {
           continue;
         }
       }
 
       if (flags & RENDER_FLAGS_USE_PC) {
-        const auto index = flags & RENDER_FLAGS_PUSH_MATERIAL_INDEX ? get_material_index(instanced_batch.component_index, primitive->material_index) : push_index;
-        const auto pc = ShaderPC{instanced_batch.data_offset, mesh.mesh_base->vertex_buffer->device_address, index};
+        const auto index = flags & RENDER_FLAGS_PUSH_MATERIAL_INDEX ? instanced_batch.component_index + primitive_index : push_index;
+        const auto pc = ShaderPC{instances_ptr, mesh.mesh_base->vertex_buffer->device_address, instanced_batch.data_offset, index};
         vuk::ShaderStageFlags stage = vuk::ShaderStageFlagBits::eVertex;
         if (flags & RENDER_FLAGS_PC_BIND_FRG)
           stage |= vuk::ShaderStageFlagBits::eFragment;
@@ -758,13 +769,27 @@ void DefaultRenderPipeline::render_meshes(const RenderQueue& render_queue,
       }
 
       Renderer::draw_indexed(command_buffer, primitive->index_count, instanced_batch.instance_count, primitive->first_index, 0, 0);
+
+      primitive_index++;
     }
   };
 
   uint32_t instance_count = 0;
   for (const auto& batch : render_queue.batches) {
-    // TODO: consider comparing materials too.
-    if (batch.mesh_index != instanced_batch.mesh_index) {
+    const auto& mats1 = mesh_component_list[batch.component_index].materials;
+    const auto& mats2 = mesh_component_list[instanced_batch.component_index].materials;
+    bool materials_match;
+    if (mats1.size() != mats2.size()) // don't have to check if they are different sized
+      materials_match = false;
+    else
+      materials_match = std::equal(mats1.begin(),
+                                   mats1.end(),
+                                   mats2.begin(),
+                                   [](const Shared<Material>& mat1, const Shared<Material>& mat2) {
+                                     return *mat1.get() == *mat2.get();
+                                   });
+
+    if (batch.mesh_index != instanced_batch.mesh_index || !materials_match) {
       flush_batch();
 
       instanced_batch = {};
@@ -842,7 +867,7 @@ void DefaultRenderPipeline::depth_pre_pass(const Shared<vuk::RenderGraph>& rg) {
 
       render_meshes(render_queue,
                     command_buffer,
-                    FILTER_TRANSPARENT,
+                    FILTER_TRANSPARENT | FILTER_CLIP,
                     RENDER_FLAGS_PC_BIND_FRG | RENDER_FLAGS_USE_PC | RENDER_FLAGS_PUSH_MATERIAL_INDEX);
     }
   });
@@ -856,7 +881,7 @@ void DefaultRenderPipeline::geometry_pass(const Shared<vuk::RenderGraph>& rg) {
   auto [gtao_resource, gtao_name] = get_attachment_or_black_uint("gtao_final_output", RendererCVar::cvar_gtao_enable.get());
 
   const auto resources = std::vector<vuk::Resource>{
-    "pbr_image"_image >> vuk::eColorRW >> "pbr_output",
+    "pbr_image"_image >> vuk::eColorRW >> "pbr_output_opaque",
     "depth_output"_image >> vuk::eDepthStencilRead,
     "shadow_array_output"_image >> vuk::eFragmentSampled,
     "sky_transmittance_lut+"_image >> vuk::eFragmentSampled,
@@ -896,17 +921,32 @@ void DefaultRenderPipeline::geometry_pass(const Shared<vuk::RenderGraph>& rg) {
                        .depthCompareOp = vuk::CompareOp::eLessOrEqual,
                      });
 
-
       render_meshes(render_queue,
                     command_buffer,
                     FILTER_TRANSPARENT,
                     RENDER_FLAGS_PC_BIND_FRG | RENDER_FLAGS_USE_PC | RENDER_FLAGS_PUSH_MATERIAL_INDEX);
+    }
+  });
+
+  rg->add_pass({
+    .name = "geometry_pass_transparent",
+    .resources = {"pbr_output_opaque"_image >> vuk::eColorRW >> "pbr_output"},
+    .execute = [this](vuk::CommandBuffer& command_buffer) {
+      render_queue.sort_transparent();
+      update_mesh_instances(mesh_instances_transparent);
 
       command_buffer.bind_graphics_pipeline("pbr_transparency_pipeline")
+                    .bind_persistent(0, *descriptor_set_00)
+                    .set_dynamic_state(vuk::DynamicStateFlagBits::eScissor | vuk::DynamicStateFlagBits::eViewport)
+                    .set_rasterization({.cullMode = vuk::CullModeFlagBits::eNone}).
+                     set_viewport(0, vuk::Rect2D::framebuffer())
+                    .set_scissor(0, vuk::Rect2D::framebuffer())
                     .broadcast_color_blend(vuk::BlendPreset::eAlphaBlend)
-                    .set_rasterization({.cullMode = vuk::CullModeFlagBits::eNone});
-
-      render_queue.sort_transparent();
+                    .set_depth_stencil(vuk::PipelineDepthStencilStateCreateInfo{
+                       .depthTestEnable = true,
+                       .depthWriteEnable = false,
+                       .depthCompareOp = vuk::CompareOp::eLessOrEqual,
+                     });
 
       render_meshes(render_queue,
                     command_buffer,

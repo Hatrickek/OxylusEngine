@@ -33,7 +33,7 @@ public:
   Entity create_entity(const std::string& name = "New Entity");
   Entity create_entity_with_uuid(UUID uuid, const std::string& name = std::string());
 
-  void iterate_mesh_node(const Shared<Mesh>& mesh, const Entity base_entity, Entity parent_entity, const Mesh::Node* node);
+  void iterate_mesh_node(const Shared<Mesh>& mesh, std::vector<Entity>& node_entities, Entity parent_entity, const Mesh::Node* node);
   Entity load_mesh(const Shared<Mesh>& mesh);
 
   template <typename T, typename... Args>
@@ -86,7 +86,6 @@ private:
 
   void init(const Shared<RenderPipeline>& render_pipeline = nullptr);
 
-  void mesh_component_ctor(entt::registry& reg, Entity entity);
   void rigidbody_component_ctor(entt::registry& reg, Entity entity);
   void collider_component_ctor(entt::registry& reg, Entity entity);
   void character_controller_component_ctor(entt::registry& reg, Entity entity) const;

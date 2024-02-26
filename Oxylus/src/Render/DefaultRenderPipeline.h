@@ -33,6 +33,14 @@ private:
   Camera* current_camera = nullptr;
 
   bool initalized = false;
+  vuk::Buffer mesh_instances_opaque;
+  vuk::Buffer mesh_instances_transparent;
+
+  struct MeshInstance {
+    Mat4 transform;
+  };
+
+  std::vector<MeshInstance> mesh_instances = {};
 
   // scene cubemap textures
   static constexpr auto SKY_ENVMAP_INDEX = 0;
@@ -50,8 +58,7 @@ private:
   // buffers and buffer/image combined indices
   static constexpr auto LIGHTS_BUFFER_INDEX = 0;
   static constexpr auto MATERIALS_BUFFER_INDEX = 1;
-  static constexpr auto MESH_INSTANCES_BUFFER_INDEX = 2;
-  static constexpr auto GTAO_BUFFER_IMAGE_INDEX = 3;
+  static constexpr auto GTAO_BUFFER_IMAGE_INDEX = 2;
   static constexpr auto SSR_BUFFER_IMAGE_INDEX = 6;
 
   // GPU Buffer
@@ -102,7 +109,7 @@ private:
       int pbr_image_index;
       int normal_image_index;
       int depth_image_index;
-      int mesh_instances_buffer_index;
+      int mesh_instances_buffer_index; // not used!
 
       int sky_envmap_index;
       int sky_transmittance_lut_index;
@@ -137,9 +144,11 @@ private:
   } scene_data;
 
   struct ShaderPC {
-    uint32_t mesh_index;
+    uint64_t mesh_instances_ptr;
     uint64_t vertex_buffer_ptr;
+    uint32_t mesh_index;
     uint32_t material_index;
+    float _pad[2];
   };
 
   struct SSRData {
@@ -178,9 +187,10 @@ private:
     // Object filtering types:
     FILTER_OPAQUE          = 1 << 0,
     FILTER_TRANSPARENT     = 1 << 1,
-    FILTER_WATER           = 1 << 2,
-    FILTER_NAVIGATION_MESH = 1 << 3,
-    FILTER_OBJECT_ALL      = FILTER_OPAQUE | FILTER_TRANSPARENT | FILTER_WATER | FILTER_NAVIGATION_MESH,
+    FILTER_CLIP            = 1 << 2,
+    FILTER_WATER           = 1 << 3,
+    FILTER_NAVIGATION_MESH = 1 << 4,
+    FILTER_OBJECT_ALL      = FILTER_OPAQUE | FILTER_TRANSPARENT | FILTER_CLIP | FILTER_WATER | FILTER_NAVIGATION_MESH,
 
     // Include everything:
     FILTER_ALL = ~0,
@@ -302,6 +312,7 @@ private:
   std::pair<LightData, LightComponent>* dir_light_data = nullptr;
   LightComponent* dir_light_component = nullptr;
 
+  void update_mesh_instances(const vuk::Buffer& buffer);
   void commit_descriptor_sets(vuk::Allocator& allocator);
   void create_static_textures(vuk::Allocator& allocator);
   void create_dynamic_textures(vuk::Allocator& allocator, const vuk::Dimension3D& dim);

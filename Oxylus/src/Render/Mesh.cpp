@@ -708,9 +708,7 @@ void Mesh::load_node(Node* parent,
         new_primitive->material_index = 0;
       new_primitive->material = materials[new_primitive->material_index];
 
-      if ((int32_t)new_mesh->materials.size() <= new_primitive->material_index)
-        new_mesh->materials.resize(new_primitive->material_index + 1);
-      new_mesh->materials[new_primitive->material_index] = new_primitive->material;
+      new_mesh->materials.emplace_back(new_primitive->material) = new_primitive->material;
 
       new_primitive->set_bounding_box(pos_min, pos_max);
 
