@@ -22,7 +22,7 @@ void ProjectPanel::load_project_for_editor(const std::string& filepath) {
     const auto startScene = App::get_absolute(Project::get_active()->get_config().start_scene);
     EditorLayer::get()->open_scene(startScene);
     EditorConfig::get()->add_recent_project(Project::get_active().get());
-    EditorLayer::get()->content_panel.invalidate();
+    EditorLayer::get()->get_panel<ContentPanel>()->invalidate();
     Visible = false;
   }
 }

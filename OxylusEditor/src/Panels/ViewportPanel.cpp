@@ -497,11 +497,6 @@ void ViewportPanel::mouse_picking_pass(const Shared<RenderPipeline>& rp, const v
         const auto node = mesh.mesh_component.mesh_base->linear_nodes[mesh.mesh_component.node_index];
         if (node->mesh_data) {
           for (const auto primitive : node->mesh_data->primitives) {
-            if (primitive->material->parameters.alpha_mode == (uint32_t)Material::AlphaMode::Mask
-                || primitive->material->parameters.alpha_mode == (uint32_t)Material::AlphaMode::Blend) {
-              continue;
-            }
-
             struct PushConstant {
               Mat4 model_matrix;
               uint32_t entity_id;

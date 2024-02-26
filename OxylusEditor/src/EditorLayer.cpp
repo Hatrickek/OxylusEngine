@@ -59,20 +59,24 @@ void EditorLayer::on_attach(EventDispatcher& dispatcher) {
 
   Input::set_cursor_state(Input::CursorState::Normal);
 
+  add_panel<SceneHierarchyPanel>();
+  add_panel<ContentPanel>();
+  add_panel<InspectorPanel>();
+  add_panel<AssetInspectorPanel>();
+  add_panel<EditorSettingsPanel>();
+  add_panel<RendererSettingsPanel>();
+  add_panel<ProjectPanel>();
+  add_panel<StatisticsPanel>();
+
+  const auto& viewport = viewport_panels.emplace_back(create_unique<ViewportPanel>());
+  viewport->m_camera.set_position({-2, 2, 0});
+  viewport->set_context(editor_scene, *get_panel<SceneHierarchyPanel>());
+
+  runtime_console.register_command("clear_assets", "Asset cleared.", [] { AssetManager::free_unused_assets(); });
+
   editor_scene = create_shared<Scene>();
   load_default_scene(editor_scene);
   set_editor_context(editor_scene);
-
-  // Initialize panels
-  runtime_console.register_command("clear_assets", "Asset cleared.", [] { AssetManager::free_unused_assets(); });
-
-  editor_panels.emplace("EditorSettings", create_unique<EditorSettingsPanel>());
-  editor_panels.emplace("RenderSettings", create_unique<RendererSettingsPanel>());
-  editor_panels.emplace("ProjectPanel", create_unique<ProjectPanel>());
-  editor_panels.emplace("StatisticsPanel", create_unique<StatisticsPanel>());
-  const auto& viewport = viewport_panels.emplace_back(create_unique<ViewportPanel>());
-  viewport->m_camera.set_position({-2, 2, 0});
-  viewport->set_context(editor_scene, scene_hierarchy_panel);
 }
 
 void EditorLayer::on_detach() {
@@ -98,14 +102,6 @@ void EditorLayer::on_update(const Timestep& delta_time) {
       continue;
     panel->on_update();
   }
-  if (scene_hierarchy_panel.Visible)
-    scene_hierarchy_panel.on_update();
-  if (content_panel.Visible)
-    content_panel.on_update();
-  if (inspector_panel.Visible)
-    inspector_panel.on_update();
-
-  m_asset_inspector_panel.on_update();
 
   switch (scene_state) {
     case SceneState::Edit: {
@@ -181,7 +177,7 @@ void EditorLayer::on_imgui_render() {
           }
           ImGui::Separator();
           if (ImGui::MenuItem("Launcher...")) {
-            editor_panels["ProjectPanel"]->Visible = true;
+            get_panel<ProjectPanel>()->Visible = true;
           }
           ImGui::Separator();
           if (ImGui::MenuItem("Exit")) {
@@ -191,7 +187,7 @@ void EditorLayer::on_imgui_render() {
         }
         if (ImGui::BeginMenu("Edit")) {
           if (ImGui::MenuItem("Settings")) {
-            editor_panels["EditorSettings"]->Visible = true;
+            get_panel<EditorSettingsPanel>()->Visible = true;
           }
           if (ImGui::MenuItem("Reload project module")) {
             Project::get_active()->load_module();
@@ -206,13 +202,13 @@ void EditorLayer::on_imgui_render() {
             Window::is_fullscreen_borderless() ? Window::set_windowed() : Window::set_fullscreen_borderless();
           }
           if (ImGui::MenuItem("Add viewport", nullptr)) {
-            viewport_panels.emplace_back(create_unique<ViewportPanel>())->set_context(editor_scene, scene_hierarchy_panel);
+            viewport_panels.emplace_back(create_unique<ViewportPanel>())->set_context(editor_scene, *get_panel<SceneHierarchyPanel>());
           }
-          ImGui::MenuItem("Inspector", nullptr, &inspector_panel.Visible);
-          ImGui::MenuItem("Scene hierarchy", nullptr, &scene_hierarchy_panel.Visible);
+          ImGui::MenuItem("Inspector", nullptr, &get_panel<InspectorPanel>()->Visible);
+          ImGui::MenuItem("Scene hierarchy", nullptr, &get_panel<SceneHierarchyPanel>()->Visible);
           ImGui::MenuItem("Console window", nullptr, &runtime_console.visible);
           ImGui::MenuItem("Performance Overlay", nullptr, &viewport_panels[0]->performance_overlay_visible);
-          ImGui::MenuItem("Statistics", nullptr, &editor_panels["StatisticsPanel"]->Visible);
+          ImGui::MenuItem("Statistics", nullptr, &get_panel<StatisticsPanel>()->Visible);
           if (ImGui::BeginMenu("Layout")) {
             if (ImGui::MenuItem("Classic")) {
               set_docking_layout(EditorLayout::Classic);
@@ -379,7 +375,7 @@ void EditorLayer::load_default_scene(const std::shared_ptr<Scene>& scene) {
 }
 
 void EditorLayer::clear_selected_entity() {
-  scene_hierarchy_panel.clear_selection_context();
+  get_panel<SceneHierarchyPanel>()->clear_selection_context();
 }
 
 void EditorLayer::save_scene() {
@@ -443,15 +439,6 @@ void EditorLayer::draw_panels() {
   }
 
   runtime_console.on_imgui_render();
-
-  if (scene_hierarchy_panel.Visible)
-    scene_hierarchy_panel.on_imgui_render();
-  if (inspector_panel.Visible)
-    inspector_panel.on_imgui_render();
-  if (content_panel.Visible)
-    content_panel.on_imgui_render();
-  if (m_asset_inspector_panel.Visible)
-    m_asset_inspector_panel.on_imgui_render();
 }
 
 Shared<Scene> EditorLayer::get_active_scene() {
@@ -459,10 +446,11 @@ Shared<Scene> EditorLayer::get_active_scene() {
 }
 
 void EditorLayer::set_editor_context(const Shared<Scene>& scene) {
-  scene_hierarchy_panel.clear_selection_context();
-  scene_hierarchy_panel.set_context(scene);
+  auto* shpanel = get_panel<SceneHierarchyPanel>();
+  shpanel->clear_selection_context();
+  shpanel->set_context(scene);
   for (const auto& panel : viewport_panels) {
-    panel->set_context(scene, scene_hierarchy_panel);
+    panel->set_context(scene, *shpanel);
   }
 }
 
@@ -484,10 +472,10 @@ void EditorLayer::set_docking_layout(EditorLayout layout) {
     const ImGuiID left_split_dock = ImGui::DockBuilderSplitNode(left_dock, ImGuiDir_Down, 0.4f, nullptr, &left_dock);
 
     ImGui::DockBuilderDockWindow(viewport_panels[0]->get_id(), right_dock);
-    ImGui::DockBuilderDockWindow(scene_hierarchy_panel.get_id(), left_dock);
-    ImGui::DockBuilderDockWindow(editor_panels["RenderSettings"]->get_id(), left_split_dock);
-    ImGui::DockBuilderDockWindow(content_panel.get_id(), left_split_dock);
-    ImGui::DockBuilderDockWindow(inspector_panel.get_id(), left_dock);
+    ImGui::DockBuilderDockWindow(get_panel<SceneHierarchyPanel>()->get_id(), left_dock);
+    ImGui::DockBuilderDockWindow(get_panel<RendererSettingsPanel>()->get_id(), left_split_dock);
+    ImGui::DockBuilderDockWindow(get_panel<ContentPanel>()->get_id(), left_split_dock);
+    ImGui::DockBuilderDockWindow(get_panel<InspectorPanel>()->get_id(), left_dock);
   }
   else if (layout == EditorLayout::Classic) {
     const ImGuiID right_dock = ImGui::DockBuilderSplitNode(dockspace_id, ImGuiDir_Right, 0.2f, nullptr, &dockspace_id);
@@ -496,10 +484,10 @@ void EditorLayer::set_docking_layout(EditorLayout layout) {
     const ImGuiID bottom_dock = ImGui::DockBuilderSplitNode(left_split_vertical_dock, ImGuiDir_Down, 0.3f, nullptr, &left_split_vertical_dock);
     const ImGuiID left_split_dock = ImGui::DockBuilderSplitNode(left_dock, ImGuiDir_Down, 0.4f, nullptr, &left_dock);
 
-    ImGui::DockBuilderDockWindow(scene_hierarchy_panel.get_id(), left_dock);
-    ImGui::DockBuilderDockWindow(editor_panels["RenderSettings"]->get_id(), left_split_dock);
-    ImGui::DockBuilderDockWindow(content_panel.get_id(), bottom_dock);
-    ImGui::DockBuilderDockWindow(inspector_panel.get_id(), right_dock);
+    ImGui::DockBuilderDockWindow(get_panel<SceneHierarchyPanel>()->get_id(), left_dock);
+    ImGui::DockBuilderDockWindow(get_panel<RendererSettingsPanel>()->get_id(), left_split_dock);
+    ImGui::DockBuilderDockWindow(get_panel<ContentPanel>()->get_id(), bottom_dock);
+    ImGui::DockBuilderDockWindow(get_panel<InspectorPanel>()->get_id(), right_dock);
     ImGui::DockBuilderDockWindow(viewport_panels[0]->get_id(), left_split_vertical_dock);
   }
 

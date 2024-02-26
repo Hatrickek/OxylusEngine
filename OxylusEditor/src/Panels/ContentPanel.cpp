@@ -3,7 +3,7 @@
 #include <icons/IconsMaterialDesignIcons.h>
 
 #include "EditorContext.h"
-#include "../EditorLayer.h"
+#include "EditorLayer.h"
 #include "Assets/AssetManager.h"
 #include "Core/App.h"
 #include "Core/Project.h"

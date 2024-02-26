@@ -403,13 +403,12 @@ void SceneHierarchyPanel::draw_context_menu() {
 SceneHierarchyPanel::SceneHierarchyPanel() : EditorPanel("Scene Hierarchy", ICON_MDI_VIEW_LIST, true) {}
 
 void SceneHierarchyPanel::on_update() {
-  //Handle shortcut inputs
   if (!selected_entities.empty()) {
     if (ImGui::IsKeyDown(ImGuiKey_LeftCtrl) && ImGui::IsKeyPressed(ImGuiKey_D)) {
       for (const auto& e : selected_entities)
         context->duplicate_entity(e);
     }
-    if (ImGui::IsKeyPressed(ImGuiKey_Delete) && m_table_hovered) {
+    if (ImGui::IsKeyPressed(ImGuiKey_Delete) && (m_table_hovered || EditorLayer::get()->viewport_panels[0]->is_viewport_hovered)) {
       for (const auto& e : selected_entities)
         context->destroy_entity(e);
       clear_selection_context();

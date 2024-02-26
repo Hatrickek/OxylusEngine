@@ -31,7 +31,20 @@ public:
   SceneState scene_state = SceneState::Edit;
 
   // Panels
-  ContentPanel content_panel;
+  ankerl::unordered_dense::map<size_t, Unique<EditorPanel>> editor_panels;
+  std::vector<Unique<ViewportPanel>> viewport_panels;
+
+  template <typename T>
+  void add_panel() {
+    editor_panels.emplace(typeid(T).hash_code(), create_unique<T>());
+  }
+
+  template <typename T>
+  T* get_panel() {
+    const auto hash_code = typeid(T).hash_code();
+    OX_CORE_ASSERT(editor_panels.contains(hash_code));
+    return dynamic_cast<T*>(editor_panels[hash_code].get());
+  }
 
   // Logo
   Shared<TextureAsset> engine_banner = nullptr;
@@ -71,8 +84,8 @@ public:
   bool open_scene(const std::filesystem::path& path);
   static void load_default_scene(const std::shared_ptr<Scene>& scene);
 
-  Entity get_selected_entity() const { return scene_hierarchy_panel.get_selected_entity(); }
-  Shared<Scene> get_selected_scene() const { return scene_hierarchy_panel.get_scene(); }
+  Entity get_selected_entity() { return get_panel<SceneHierarchyPanel>()->get_selected_entity(); }
+  Shared<Scene> get_selected_scene() { return get_panel<SceneHierarchyPanel>()->get_scene(); }
   void clear_selected_entity();
 
   void set_scene_state(SceneState state);
@@ -86,14 +99,8 @@ private:
   // Scene
   std::string last_save_scene_path{};
 
-  // Panels
   void draw_panels();
-  ankerl::unordered_dense::map<std::string, Unique<EditorPanel>> editor_panels;
-  std::vector<Unique<ViewportPanel>> viewport_panels;
   RuntimeConsole runtime_console = {};
-  SceneHierarchyPanel scene_hierarchy_panel;
-  InspectorPanel inspector_panel;
-  AssetInspectorPanel m_asset_inspector_panel;
 
   // Config
   EditorConfig editor_config;

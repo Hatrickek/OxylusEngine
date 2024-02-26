@@ -18,6 +18,8 @@ public:
   Camera m_camera;
   bool performance_overlay_visible = true;
   bool fullscreen_viewport = false;
+  bool is_viewport_focused = {};
+  bool is_viewport_hovered = {};
 
   ViewportPanel();
   ~ViewportPanel() override = default;
@@ -81,8 +83,6 @@ private:
   Vec2 viewport_position = {};
   Vec2 viewport_offset = {};
   Vec2 m_gizmo_position = Vec2(1.0f, 1.0f);
-  bool is_viewport_focused = {};
-  bool is_viewport_hovered = {};
   int m_gizmo_type = -1;
   int m_gizmo_mode = 0;
 
