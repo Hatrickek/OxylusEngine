@@ -5,6 +5,7 @@
 #include "Audio/AudioSource.h"
 #include "Render/Mesh.h"
 
+#include "Utils/Log.h"
 #include "Utils/Profiler.h"
 
 namespace Ox {
@@ -75,15 +76,18 @@ Shared<AudioSource> AssetManager::load_audio_asset(const std::string& path) {
 
 void AssetManager::free_unused_assets() {
   OX_SCOPED_ZONE;
-  for (auto& [handle, asset] : asset_library.mesh_assets) {
-    if (asset.use_count())
-      return;
-    asset_library.mesh_assets.erase(handle);
-  }
-  for (auto& [handle, asset] : asset_library.texture_assets) {
-    if (asset.use_count())
-      return;
-    asset_library.texture_assets.erase(handle);
-  }
+  const auto m_count = std::erase_if(asset_library.mesh_assets, [](const std::pair<std::string, Shared<Mesh>>& pair) {
+    return pair.second.use_count() <= 1;
+  });
+
+  if (m_count > 0)
+    OX_CORE_INFO("Cleaned up {} mesh assets.", m_count);
+
+  const auto t_count = std::erase_if(asset_library.texture_assets, [](const std::pair<std::string, Shared<TextureAsset>>& pair) {
+    return pair.second.use_count() <= 1;
+  });
+
+  if (t_count > 0)
+    OX_CORE_INFO("Cleaned up {} mesh assets.", t_count);
 }
 }
