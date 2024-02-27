@@ -108,8 +108,8 @@ void ImGuiLayer::init_for_vulkan() {
   ImGui_ImplGlfw_InitForVulkan(Window::get_glfw_window(), true);
 
   // Upload Fonts
-  const auto regular_font_path = App::get_asset_directory("Fonts/jetbrains-mono/JetBrainsMono-Regular.ttf");
-  const auto bold_font_path = App::get_asset_directory("Fonts/jetbrains-mono/JetBrainsMono-Bold.ttf");
+  const auto regular_font_path = App::get_asset_directory("Fonts/FiraSans-Regular.ttf");
+  const auto bold_font_path = App::get_asset_directory("Fonts/FiraSans-Bold.ttf");
 
   const ImGuiIO& io = ImGui::GetIO();
   constexpr float font_size = 16.0f;
@@ -471,7 +471,7 @@ void ImGuiLayer::set_style() {
   style->ChildBorderSize = 0.0f;
   style->PopupBorderSize = 1.5f;
   style->FrameBorderSize = 0.0f;
-  style->TabBorderSize = 0.0f;
+  style->TabBorderSize = 1.0f;
   style->DockingSeparatorSize = 0.0f;
 
   style->WindowRounding = 6.0f;

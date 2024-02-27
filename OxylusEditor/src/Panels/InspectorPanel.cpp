@@ -96,7 +96,7 @@ void InspectorPanel::draw_material_properties(Shared<Material>& material) {
     material = create_shared<Material>();
     material->create();
   }
-  OxUI::begin_properties();
+  OxUI::begin_properties(OxUI::default_properties_flags, true, 0.5f);
   const char* alpha_modes[] = {"Opaque", "Blend", "Mask"};
   OxUI::property("Alpha mode", (int*)&material->parameters.alpha_mode, alpha_modes, 3);
   OxUI::property("UV Scale", &material->parameters.uv_scale, 0.0f);
@@ -204,7 +204,7 @@ void InspectorPanel::draw_add_component(entt::registry& reg, Entity entity, cons
   }
 }
 
-void InspectorPanel::draw_components(Entity entity) const {
+void InspectorPanel::draw_components(Entity entity) {
   TagComponent* tag_component = context->registry.try_get<TagComponent>(entity);
   if (tag_component) {
     auto& tag = tag_component->tag;
@@ -244,14 +244,43 @@ void InspectorPanel::draw_components(Entity entity) const {
   }
   ImGui::PopItemWidth();
 
-  ImGui::Text("UUID: %lu", (uint64_t)context->registry.get<IDComponent>(entity).uuid);
+#if 0
+  if (ImGui::BeginTable("##DbgTbl", 2, ImGuiTableFlags_SizingStretchProp | ImGuiTableFlags_BordersInner)) {
+    ImGui::TableSetupColumn("##", ImGuiTableColumnFlags_None, ImGui::GetWindowWidth() * 0.7f);
+    ImGui::TableNextColumn();
+    const auto fmt = fmt::format("UUID: {} Debug: ", (uint64_t)context->registry.get<IDComponent>(entity).uuid);
+    ImGui::Text(fmt.c_str());
+    ImGui::TableNextColumn();
+    ImGui::Checkbox("##", &debug_mode);
+    ImGui::EndTable();
+  }
+#endif
+
+  if (debug_mode) {
+    draw_component<RelationshipComponent>(
+      "Relationship Component",
+      context->registry,
+      entity,
+      [](const RelationshipComponent& component) {
+        const auto p_fmt = fmt::format("Parent: {}", (uint64_t)component.parent);
+        ImGui::Text(p_fmt.c_str());
+        if (ImGui::BeginTable("Children", 1, ImGuiTableFlags_ScrollY)) {
+          for (const auto& child : component.children) {
+            ImGui::TableNextColumn();
+            const auto c_fmt = fmt::format("{}", (uint64_t)child);
+            ImGui::Text(c_fmt.c_str());
+          }
+          ImGui::EndTable();
+        }
+      });
+  }
 
   draw_component<TransformComponent>(
     " Transform Component",
     context->registry,
     entity,
     [](TransformComponent& component) {
-      OxUI::begin_properties();
+      OxUI::begin_properties(ImGuiTableFlags_SizingFixedFit, false);
       OxUI::draw_vec3_control("Translation", component.position);
       Vec3 rotation = glm::degrees(component.rotation);
       OxUI::draw_vec3_control("Rotation", rotation);
@@ -270,11 +299,11 @@ void InspectorPanel::draw_components(Entity entity) const {
       const char* file_name = component.mesh_base->name.empty()
                                 ? "Empty"
                                 : component.mesh_base->name.c_str();
-      ImGui::Text("Loaded mesh: %s", file_name);
-      ImGui::Text("Node index: %d", (uint32_t)component.node_index);
-      ImGui::Text("Node material count: %d", (uint32_t)component.materials.size());
-      ImGui::Text("Mesh asset id: %d", (uint32_t)component.mesh_id);
       OxUI::begin_properties();
+      OxUI::text("Loaded mesh:", file_name);
+      OxUI::text("Node index:", fmt::format("{}", component.node_index).c_str());
+      OxUI::text("Node material count:", fmt::format("{}", component.materials.size()).c_str());
+      OxUI::text("Mesh asset id:", fmt::format("{}", component.mesh_id).c_str());
       OxUI::property("Cast shadows", &component.cast_shadows);
       OxUI::end_properties();
 
@@ -535,11 +564,11 @@ void InspectorPanel::draw_components(Entity entity) const {
       if (OxUI::property("Light Type", &light_type, light_type_strings, 3))
         component.type = static_cast<LightComponent::LightType>(light_type);
 
-      if (OxUI::property("Use color temperature mode", &component.use_color_temperature_mode) && component.use_color_temperature_mode) {
+      if (OxUI::property("Color Temperature Mode", &component.color_temperature_mode) && component.color_temperature_mode) {
         ColorUtils::TempratureToColor(component.temperature, component.color);
       }
 
-      if (component.use_color_temperature_mode) {
+      if (component.color_temperature_mode) {
         if (OxUI::property<uint32_t>("Temperature (K)",
                                      &component.temperature,
                                      1000,

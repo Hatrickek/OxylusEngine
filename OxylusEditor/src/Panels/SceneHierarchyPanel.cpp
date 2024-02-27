@@ -433,7 +433,7 @@ void SceneHierarchyPanel::on_imgui_render() {
     const float line_height = ImGui::GetTextLineHeight();
 
     const ImVec2 padding = ImGui::GetStyle().FramePadding;
-    constexpr ImGuiTableFlags table_flags = ImGuiTableFlags_RowBg | ImGuiTableFlags_ContextMenuInBody |
+    constexpr ImGuiTableFlags table_flags = ImGuiTableFlags_ContextMenuInBody |
                                             ImGuiTableFlags_BordersInner | ImGuiTableFlags_ScrollY;
 
     const float filter_cursor_pos_x = ImGui::GetCursorPosX();
@@ -467,8 +467,8 @@ void SceneHierarchyPanel::on_imgui_render() {
 
     ImGui::SetCursorPos(cursor_pos);
     if (ImGui::BeginTable("HierarchyTable", 3, table_flags)) {
-      ImGui::TableSetupColumn("  Label", ImGuiTableColumnFlags_NoHide | ImGuiTableColumnFlags_NoClip);
-      ImGui::TableSetupColumn("  Type", ImGuiTableColumnFlags_WidthFixed, line_height * 3.0f);
+      ImGui::TableSetupColumn("Label", ImGuiTableColumnFlags_NoHide | ImGuiTableColumnFlags_NoClip);
+      ImGui::TableSetupColumn("Type", ImGuiTableColumnFlags_WidthFixed, line_height * 3.0f);
       ImGui::TableSetupColumn(StringUtils::from_char8_t("  " ICON_MDI_EYE_OUTLINE),
                               ImGuiTableColumnFlags_WidthFixed,
                               line_height * 2.0f);

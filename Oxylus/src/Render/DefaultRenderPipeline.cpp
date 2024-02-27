@@ -734,6 +734,10 @@ void DefaultRenderPipeline::render_meshes(const RenderQueue& render_queue,
 
     const auto& mesh = mesh_component_list[instanced_batch.component_index];
 
+    if (flags & RENDER_FLAGS_SHADOWS_PASS && !mesh.cast_shadows) {
+      return;
+    }
+
     mesh.mesh_base->bind_index_buffer(command_buffer);
 
     const auto node = mesh.mesh_base->linear_nodes[mesh.node_index];
@@ -829,7 +833,7 @@ void DefaultRenderPipeline::cascaded_shadow_pass(const Shared<vuk::RenderGraph>&
                       .set_viewport(0, vuk::Rect2D::framebuffer())
                       .set_scissor(0, vuk::Rect2D::framebuffer());
 
-        render_meshes(render_queue, command_buffer, FILTER_TRANSPARENT, RENDER_FLAGS_USE_PC, cascade_index);
+        render_meshes(render_queue, command_buffer, FILTER_TRANSPARENT, RENDER_FLAGS_USE_PC | RENDER_FLAGS_SHADOWS_PASS, cascade_index);
 
         // TODO: Transparent shadows
       }

@@ -6,6 +6,8 @@
 
 #include "Log.h"
 
+#include "Core/Base.h"
+
 namespace Ox {
 enum class CVarFlags : uint32_t {
   None         = 0,
@@ -63,52 +65,15 @@ public:
 
   float* get_float_cvar(uint32_t hash);
   int32_t* get_int_cvar(uint32_t hash);
-  const char* get_string_cvar(uint32_t hash);
+  std::string* get_string_cvar(uint32_t hash);
 
   void set_float_cvar(uint32_t hash, float value);
   void set_int_cvar(uint32_t hash, int32_t value);
   void set_string_cvar(uint32_t hash, const char* value);
 
-  template <typename T>
-  std::vector<CVarStorage<T>>* get_cvar_array();
-
-  template <>
-  std::vector<CVarStorage<int32_t>>* get_cvar_array() {
-    return &int_cvars;
-  }
-
-  template <>
-  std::vector<CVarStorage<float>>* get_cvar_array() {
-    return &float_cvars;
-  }
-
-  template <>
-  std::vector<CVarStorage<std::string>>* get_cvar_array() {
-    return &string_cvars;
-  }
-
-  //templated get-set cvar versions for syntax sugar
-  template <typename T>
-  T* get_cvar_current(const uint32_t namehash) {
-    CVarParameter* par = get_cvar(namehash);
-    if (!par) {
-      OX_CORE_ERROR("cvar {} doesn't exists!", namehash);
-      return nullptr;
-    }
-    return &get_cvar_array<T>()->at(par->array_index).current;
-  }
-
-  template <typename T>
-  void set_cvar_current(const uint32_t namehash, const T& value) {
-    CVarParameter* cvar = get_cvar(namehash);
-    if (cvar) {
-      get_cvar_array<T>()->at(cvar->array_index).current = value;
-    }
-  }
-
 private:
   std::shared_mutex mutex_;
-  ankerl::unordered_dense::map<uint32_t, CVarParameter> saved_cvars;
+  ankerl::unordered_dense::map<uint32_t, Unique<CVarParameter>> saved_cvars;
   std::vector<CVarParameter*> cached_edit_parameters;
 
   CVarParameter* init_cvar(const char* name, const char* description);
@@ -126,8 +91,6 @@ struct AutoCVar_Float : AutoCVar<float> {
 
   float get() const;
   float* get_ptr() const;
-  float get_float() const;
-  float* get_float_ptr() const;
   void set(float val) const;
 };
 

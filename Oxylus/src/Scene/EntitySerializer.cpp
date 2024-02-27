@@ -79,7 +79,7 @@ void EntitySerializer::serialize_entity(toml::array* entities, Scene* scene, Ent
 
     const auto table = toml::table{
       {"type", (int)light.type},
-      {"use_color_temperature_mode", light.use_color_temperature_mode},
+      {"color_temperature_mode", light.color_temperature_mode},
       {"temperature", light.temperature},
       {"color", get_toml_array(light.color)},
       {"intensity", light.intensity},
@@ -308,7 +308,7 @@ UUID EntitySerializer::deserialize_entity(toml::array* entity_arr, Scene* scene,
     else if (const auto light_node = ent.as_table()->get("light_component")) {
       auto& lc = reg.emplace<LightComponent>(deserialized_entity);
       lc.type = (LightComponent::LightType)GET_UINT32(light_node, "type");
-      lc.use_color_temperature_mode = GET_BOOL(light_node, "use_color_temperature_mode");
+      lc.color_temperature_mode = GET_BOOL(light_node, "color_temperature_mode");
       lc.temperature = GET_UINT32(light_node, "temperature");
       lc.color = get_vec3_toml_array(GET_ARRAY(light_node, "color"));
       lc.intensity = GET_FLOAT(light_node, "intensity");

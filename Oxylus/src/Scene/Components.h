@@ -123,7 +123,7 @@ struct LightComponent {
   enum class ShadowQualityType { Hard = 0, Soft, UltraSoft };
 
   LightType type = LightType::Point;
-  bool use_color_temperature_mode = false;
+  bool color_temperature_mode = false;
   uint32_t temperature = 6570;
   Vec3 color = Vec3(1.0f);
   float intensity = 1.0f;
@@ -295,24 +295,23 @@ struct LuaScriptComponent {
 template <typename... Component>
 struct ComponentGroup {};
 
-using AllComponents =
-ComponentGroup<TransformComponent, RelationshipComponent, PrefabComponent, CameraComponent,
+using AllComponents = ComponentGroup<TransformComponent, RelationshipComponent, PrefabComponent, CameraComponent,
 
-               // Render
-               LightComponent, MeshComponent, SkyLightComponent, ParticleSystemComponent,
+                                     // Render
+                                     LightComponent, MeshComponent, SkyLightComponent, ParticleSystemComponent,
 
-               //  Physics
-               RigidbodyComponent,
-               BoxColliderComponent,
-               SphereColliderComponent,
-               CapsuleColliderComponent,
-               TaperedCapsuleColliderComponent,
-               CylinderColliderComponent,
-               MeshColliderComponent,
+                                     //  Physics
+                                     RigidbodyComponent,
+                                     BoxColliderComponent,
+                                     SphereColliderComponent,
+                                     CapsuleColliderComponent,
+                                     TaperedCapsuleColliderComponent,
+                                     CylinderColliderComponent,
+                                     MeshColliderComponent,
 
-               // Audio
-               AudioSourceComponent, AudioListenerComponent,
+                                     // Audio
+                                     AudioSourceComponent, AudioListenerComponent,
 
-               // Scripting
-               LuaScriptComponent>;
+                                     // Scripting
+                                     LuaScriptComponent>;
 }

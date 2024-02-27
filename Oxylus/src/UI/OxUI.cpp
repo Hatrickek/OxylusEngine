@@ -20,7 +20,7 @@ inline static int ui_context_id = 0;
 inline static int s_counter = 0;
 char OxUI::id_buffer[16];
 
-bool OxUI::begin_properties(const ImGuiTableFlags flags) {
+bool OxUI::begin_properties(const ImGuiTableFlags flags, bool fixed_width, float width) {
   id_buffer[0] = '#';
   id_buffer[1] = '#';
   memset(id_buffer + 2, 0, 14);
@@ -28,12 +28,15 @@ bool OxUI::begin_properties(const ImGuiTableFlags flags) {
   const std::string buffer = fmt::format("##{}", s_counter);
   std::memcpy(&id_buffer, buffer.data(), 16);
 
-  constexpr ImGuiTableFlags table_flags = ImGuiTableFlags_PadOuterX;
-  if (ImGui::BeginTable(id_buffer, 2, table_flags | flags)) {
-    ImGui::TableSetupColumn("PropertyName", 0, 0.5f);
-    ImGui::TableSetupColumn("Property", ImGuiTableColumnFlags_WidthStretch);
+  if (ImGui::BeginTable(id_buffer, 2, flags)) {
+    ImGui::TableSetupColumn("Name");
+    if (fixed_width)
+      ImGui::TableSetupColumn("Property", ImGuiTableColumnFlags_WidthFixed, ImGui::GetWindowWidth() * width);
+    else
+      ImGui::TableSetupColumn("Property");
     return true;
   }
+
   return false;
 }
 
@@ -43,7 +46,6 @@ void OxUI::end_properties() {
 
 void OxUI::text(const char* text1, const char* text2, const char* tooltip) {
   begin_property_grid(text1, tooltip);
-  ImGui::SetCursorPosY(ImGui::GetCursorPosY() + ImGui::GetStyle().FramePadding.y * 0.5f);
   ImGui::Text("%s", text2);
   end_property_grid();
 }
@@ -207,12 +209,12 @@ bool OxUI::image_button(const char* id, const vuk::SampledImage& texture, const 
 bool OxUI::draw_vec3_control(const char* label, glm::vec3& values, const char* tooltip, const float reset_value) {
   bool changed = false;
 
-  begin_property_grid(label, tooltip, false);
+  begin_property_grid(label, tooltip);
 
   const ImGuiIO& io = ImGui::GetIO();
   const auto bold_font = io.Fonts->Fonts[1];
 
-  ImGui::PushMultiItemsWidths(3, ImGui::CalcItemWidth());
+  ImGui::PushMultiItemsWidths(3, 100.0f);
 
   const float frame_height = ImGui::GetFrameHeight();
   const ImVec2 button_size = {frame_height + 3.0f, frame_height};
@@ -424,15 +426,23 @@ void OxUI::pop_id() {
   --ui_context_id;
 }
 
-void OxUI::begin_property_grid(const char* label, const char* tooltip, const bool right_align_next_column) {
+void OxUI::begin_property_grid(const char* label, const char* tooltip, const bool align_text_right) {
   push_id();
 
   ImGui::TableNextRow();
+  if (align_text_right)
+    ImGui::SetNextItemWidth(-1.0f);
   ImGui::TableNextColumn();
 
   ImGui::PushID(label);
-  ImGui::SetCursorPosY(ImGui::GetCursorPosY() + ImGui::GetStyle().FramePadding.y * 0.5f);
+  if (align_text_right) {
+    const auto posX = ImGui::GetCursorPosX() + ImGui::GetColumnWidth() - ImGui::CalcTextSize(label).x
+                      - ImGui::GetScrollX();
+    if (posX > ImGui::GetCursorPosX())
+      ImGui::SetCursorPosX(posX);
+  }
   ImGui::TextUnformatted(label);
+
   if (tooltip && ImGui::IsItemHovered(ImGuiHoveredFlags_DelayNormal | ImGuiHoveredFlags_NoSharedDelay)) {
     ImGui::BeginTooltip();
     ImGui::TextUnformatted(tooltip);
@@ -440,9 +450,7 @@ void OxUI::begin_property_grid(const char* label, const char* tooltip, const boo
   }
 
   ImGui::TableNextColumn();
-
-  if (right_align_next_column)
-    ImGui::SetNextItemWidth(-1);
+  ImGui::SetNextItemWidth(-1.0f);
 
   id_buffer[0] = '#';
   id_buffer[1] = '#';

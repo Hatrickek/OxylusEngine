@@ -217,11 +217,6 @@ void RuntimeConsole::render_console_text(std::string text, fmtlog::LogLevel leve
 }
 
 template <typename T>
-T get_current_cvar_value(uint32_t cvar_array_index) {
-  return CVarSystem::get()->get_cvar_array<T>()->at(cvar_array_index).current;
-}
-
-template <typename T>
 void log_cvar_change(RuntimeConsole* console, const char* cvar_name, T current_value, bool changed) {
   const std::string log_text = changed
                                  ? fmt::format("Changed {} to {}", cvar_name, current_value)
@@ -236,17 +231,18 @@ void RuntimeConsole::process_command(const std::string& command) {
 
   bool is_cvar_variable = false;
 
-  const auto cvar = CVarSystem::get()->get_cvar(entt::hashed_string(parsed_command.c_str()));
+  auto* cvar_system = CVarSystem::get();
+  const auto cvar = cvar_system->get_cvar(entt::hashed_string(parsed_command.c_str()));
   if (cvar) {
     is_cvar_variable = true;
     switch (cvar->type) {
       case CVarType::INT: {
-        auto current_value = get_current_cvar_value<int32_t>(cvar->array_index);
+        auto current_value = cvar_system->int_cvars.at(cvar->array_index).current;
         bool changed = false;
         if (!value.str_value.empty()) {
           const auto parsed = value.as<int32_t>();
           if (parsed.has_value()) {
-            CVarSystem::get()->set_int_cvar(entt::hashed_string(cvar->name.c_str()), *parsed);
+            cvar_system->set_int_cvar(entt::hashed_string(cvar->name.c_str()), *parsed);
             current_value = *parsed;
             changed = true;
           }
@@ -255,12 +251,12 @@ void RuntimeConsole::process_command(const std::string& command) {
         break;
       }
       case CVarType::FLOAT: {
-        auto current_value = get_current_cvar_value<float>(cvar->array_index);
+        auto current_value = cvar_system->float_cvars.at(cvar->array_index).current;
         bool changed = false;
         if (!value.str_value.empty()) {
           const auto parsed = value.as<float>();
           if (parsed.has_value()) {
-            CVarSystem::get()->set_float_cvar(entt::hashed_string(cvar->name.c_str()), *parsed);
+            cvar_system->set_float_cvar(entt::hashed_string(cvar->name.c_str()), *parsed);
             current_value = *parsed;
             changed = true;
           }
@@ -269,10 +265,10 @@ void RuntimeConsole::process_command(const std::string& command) {
         break;
       }
       case CVarType::STRING: {
-        auto current_value = get_current_cvar_value<std::string>(cvar->array_index);
+        auto current_value = cvar_system->string_cvars.at(cvar->array_index).current;
         bool changed = false;
         if (!value.str_value.empty()) {
-          CVarSystem::get()->set_string_cvar(entt::hashed_string(cvar->name.c_str()), value.str_value.c_str());
+          cvar_system->set_string_cvar(entt::hashed_string(cvar->name.c_str()), value.str_value.c_str());
           current_value = value.str_value;
           changed = true;
         }
@@ -357,12 +353,13 @@ void RuntimeConsole::help_command() {
     available_commands.append(fmt::format("\t{0} \n", commandStr));
   }
 
-  for (const auto& var : *CVarSystem::get()->get_cvar_array<int32_t>()) {
+  const auto system = CVarSystem::get();
+  for (const auto& var : system->int_cvars) {
     const auto c = fmt::format("\t{0} \n", var.parameter->name);
     available_commands.append(c);
   }
 
-  for (const auto& var : *CVarSystem::get()->get_cvar_array<float>()) {
+  for (const auto& var : system->float_cvars) {
     const auto c = fmt::format("\t{0} \n", var.parameter->name);
     available_commands.append(c);
   }

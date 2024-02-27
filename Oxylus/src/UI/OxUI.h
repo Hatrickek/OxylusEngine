@@ -24,9 +24,8 @@ public:
   static void push_id();
   static void pop_id();
 
-  static constexpr ImGuiTableFlags default_properties_flags = ImGuiTableFlags_Resizable | ImGuiTableFlags_SizingStretchSame |
-                                                              ImGuiTableFlags_BordersInner | ImGuiTableFlags_BordersOuterH;
-  static bool begin_properties(ImGuiTableFlags flags = default_properties_flags);
+  static constexpr ImGuiTableFlags default_properties_flags = ImGuiTableFlags_BordersInnerV |  ImGuiTableFlags_SizingStretchProp;
+  static bool begin_properties(ImGuiTableFlags flags = default_properties_flags, bool fixed_width = true, float width = 0.4f);
 
   static void end_properties();
 
@@ -78,7 +77,7 @@ public:
     }
 
     if (max > min)
-      modified = ImGui::SliderScalar(id_buffer, data_type, value, &min, &max);
+      modified = ImGui::DragScalar(id_buffer, data_type, value, 1.0f, &min, &max);
     else
       modified = ImGui::DragScalar(id_buffer, data_type, value);
 
@@ -102,7 +101,7 @@ public:
       data_type = ImGuiDataType_Double;
 
     if (max > min)
-      modified = ImGui::SliderScalar(id_buffer, data_type, value, &min, &max, fmt);
+      modified = ImGui::DragScalar(id_buffer, data_type, value, delta, &min, &max, fmt);
     else
       modified = ImGui::DragScalar(id_buffer, data_type, value, delta, nullptr, nullptr, fmt);
 
@@ -214,7 +213,7 @@ public:
   // bigger scale = smaller gradient
   static void draw_gradient_shadow_bottom(float scale = 600.f);
 
-  static void begin_property_grid(const char* label, const char* tooltip, bool right_align_next_column = true);
+  static void begin_property_grid(const char* label, const char* tooltip, bool align_text_right = true);
   static void end_property_grid();
 
   static void center_next_window();

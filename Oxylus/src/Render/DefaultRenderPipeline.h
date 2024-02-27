@@ -199,12 +199,10 @@ private:
   enum RenderFlags {
     RENDER_FLAGS_NONE = 0,
 
-    // Use push constant
     RENDER_FLAGS_USE_PC = 1 << 0,
-
     RENDER_FLAGS_PUSH_MATERIAL_INDEX = 1 << 1,
-
     RENDER_FLAGS_PC_BIND_FRG = 1 << 2,
+    RENDER_FLAGS_SHADOWS_PASS = 1 << 3,
   };
 
   struct RenderBatch {
