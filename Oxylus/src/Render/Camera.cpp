@@ -70,7 +70,7 @@ void Camera::update_aspect_ratio(const VkExtent2D& size) {
   update_aspect_ratio(static_cast<float>(size.width) / static_cast<float>(size.height));
 }
 
-Vec3 Camera::get_front() const {
+Vec3 Camera::get_forward() const {
   return m_forward;
 }
 
@@ -83,7 +83,7 @@ const Vec3& Camera::get_position() const {
 }
 
 void Camera::translate(const Vec3& delta) {
-  const Vec3 cam_front = get_front();
+  const Vec3 cam_front = get_forward();
   Vec3 cam_up = Vec3(0.0f, 1.0f, 0.0f);
   const Vec3 cam_left = glm::cross(cam_front, cam_up);
   cam_up = glm::cross(cam_front, cam_left);

@@ -89,7 +89,7 @@ void LuaBindings::bind_camera_component(const Shared<sol::state>& state) {
   SET_TYPE_FIELD(camera_type, Camera, get_fov);
   SET_TYPE_FIELD(camera_type, Camera, set_fov);
   SET_TYPE_FIELD(camera_type, Camera, get_aspect);
-  SET_TYPE_FIELD(camera_type, Camera, get_front);
+  SET_TYPE_FIELD(camera_type, Camera, get_forward);
   SET_TYPE_FIELD(camera_type, Camera, get_right);
   SET_TYPE_FIELD(camera_type, Camera, get_screen_ray);
 

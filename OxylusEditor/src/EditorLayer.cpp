@@ -325,6 +325,17 @@ void EditorLayer::editor_shortcuts() {
       save_scene_as();
     }
   }
+
+  if (Input::get_key_pressed(KeyCode::F)) {
+    const auto entity = get_selected_entity();
+    if (entity != entt::null) {
+      const auto tc = editor_scene->get_registry().get<TransformComponent>(entity);
+      auto& camera = viewport_panels[0]->m_camera;
+      auto final_pos = tc.position + camera.get_forward();
+      final_pos += (-5.0f * camera.get_forward() * Vec3(1.0f));
+      camera.set_position(final_pos);
+    }
+  }
 }
 
 void EditorLayer::new_scene() {

@@ -601,9 +601,9 @@ void ViewportPanel::on_update() {
 
       const float max_move_speed = EditorCVar::cvar_camera_speed.get() * (ImGui::IsKeyDown(ImGuiKey_LeftShift) ? 3.0f : 1.0f);
       if (ImGui::IsKeyDown(ImGuiKey_W))
-        final_position += m_camera.get_front() * max_move_speed;
+        final_position += m_camera.get_forward() * max_move_speed;
       else if (ImGui::IsKeyDown(ImGuiKey_S))
-        final_position -= m_camera.get_front() * max_move_speed;
+        final_position -= m_camera.get_forward() * max_move_speed;
       if (ImGui::IsKeyDown(ImGuiKey_D))
         final_position += m_camera.get_right() * max_move_speed;
       else if (ImGui::IsKeyDown(ImGuiKey_A))
@@ -631,7 +631,7 @@ void ViewportPanel::on_update() {
       const Vec2 change = (new_mouse_position - m_locked_mouse_position) * EditorCVar::cvar_camera_sens.get();
 
       const float max_move_speed = EditorCVar::cvar_camera_speed.get() * (ImGui::IsKeyDown(ImGuiKey_LeftShift) ? 3.0f : 1.0f);
-      final_position += m_camera.get_front() * change.y * max_move_speed;
+      final_position += m_camera.get_forward() * change.y * max_move_speed;
       final_position += m_camera.get_right() * change.x * max_move_speed;
     }
     else {

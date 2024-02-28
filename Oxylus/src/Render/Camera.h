@@ -48,7 +48,7 @@ public:
   void translate(const Vec3& delta);
   void update_aspect_ratio(float aspect);
   void update_aspect_ratio(const VkExtent2D& size);
-  Vec3 get_front() const;
+  Vec3 get_forward() const;
   Vec3 get_right() const;
   const Vec3& get_position() const;
 
