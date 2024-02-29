@@ -101,13 +101,13 @@ void DirectShadowPass::update_cascades(const Vec3& dir_light_transform, Camera* 
     _min.z = _center.z - ext;
     _max.z = _center.z + ext;
 
-    Vec3 max_extents = _max; //Vec3(radius);
-    Vec3 min_extents = _min; //-max_extents;
+    Vec3 min_extents = _min; 
+    Vec3 max_extents = _max;
 
     auto direction = -dir_light_transform;
 
     Mat4 light_ortho_matrix = glm::ortho(min_extents.x, max_extents.x, min_extents.y, max_extents.y, 0.0f, max_extents.z - min_extents.z);
-    Mat4 light_view_matrix = lookAt(ceil(frustum_center) - direction * -min_extents.z, frustum_center, Vec3(0.0f, 0.0f, 1.0f));
+    Mat4 light_view_matrix = lookAt(frustum_center - direction * -min_extents.z, frustum_center, Vec3(0.0f, 1.0f, 0.0f));
 
     cascades_ubo->cascade_splits[i] = (camera->get_near() + split_dist * clip_range) * -1.0f;
     cascades_ubo->cascade_view_proj_mat[i] = light_ortho_matrix * light_view_matrix;

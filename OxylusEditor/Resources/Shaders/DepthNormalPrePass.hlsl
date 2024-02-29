@@ -59,14 +59,5 @@ float4 PSmain(VSLayout input) : SV_Target0 {
   normal = lerp(normalize(input.Normal), normal, normalMapStrenght);
   normal = normalize(mul((float3x3)GetCamera().ViewMatrix, normal));
 
-  float invRoughness;
-  if (mat.PhysicalMapID != INVALID_ID) {
-    invRoughness = GetMaterialPhysicalTexture(mat).Sample(LINEAR_REPEATED_SAMPLER, scaledUV).g;
-    invRoughness *= 1.0 - mat.Roughness;
-  }
-  else {
-    invRoughness = 1.0 - mat.Roughness;
-  }
-
-  return float4(normal, invRoughness);
+  return float4(normal, 1.0f);
 }

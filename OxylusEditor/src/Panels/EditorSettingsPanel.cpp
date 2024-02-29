@@ -14,7 +14,7 @@ namespace Ox {
       //Theme
       const char* themes[] = {"Dark", "White"};
       int themeIndex = 0;
-      if (ImGui::Combo("Theme", &themeIndex, themes, OX_ARRAYSIZE(themes))) {
+      if (ImGui::Combo("Theme", &themeIndex, themes, std::size(themes))) {
         ImGuiLayer::apply_theme(!(bool)themeIndex);
       }
       on_end();

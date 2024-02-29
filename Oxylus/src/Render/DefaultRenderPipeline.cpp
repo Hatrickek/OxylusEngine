@@ -871,7 +871,7 @@ void DefaultRenderPipeline::depth_pre_pass(const Shared<vuk::RenderGraph>& rg) {
 
       render_meshes(render_queue,
                     command_buffer,
-                    FILTER_TRANSPARENT | FILTER_CLIP,
+                    FILTER_TRANSPARENT,
                     RENDER_FLAGS_PC_BIND_FRG | RENDER_FLAGS_USE_PC | RENDER_FLAGS_PUSH_MATERIAL_INDEX);
     }
   });

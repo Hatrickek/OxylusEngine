@@ -1,5 +1,4 @@
 #pragma once
-#define OX_ARRAYSIZE(_ARR) ((int)(sizeof(_ARR) / sizeof(*(_ARR))))
 #define BIT(x) (1 << x)
 
 #define DELETE_DEFAULT_CONSTRUCTORS(struct) struct(const struct& other) = delete;\

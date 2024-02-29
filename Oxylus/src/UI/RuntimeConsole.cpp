@@ -171,7 +171,7 @@ void RuntimeConsole::on_imgui_render() {
       };
 
       ImGui::SetKeyboardFocusHere();
-      if (ImGui::InputText("##", s_input_buf,OX_ARRAYSIZE(s_input_buf), input_flags, callback, this)) {
+      if (ImGui::InputText("##", s_input_buf, std::size(s_input_buf), input_flags, callback, this)) {
         process_command(s_input_buf);
         input_log.emplace_back(s_input_buf);
         memset(s_input_buf, 0, sizeof s_input_buf);

@@ -206,6 +206,7 @@ void InspectorPanel::draw_add_component(entt::registry& reg, Entity entity, cons
 
 void InspectorPanel::draw_components(Entity entity) {
   TagComponent* tag_component = context->registry.try_get<TagComponent>(entity);
+  ImGui::PushItemWidth(ImGui::GetContentRegionAvail().x * 0.7f);
   if (tag_component) {
     auto& tag = tag_component->tag;
     char buffer[256] = {};
@@ -216,10 +217,10 @@ void InspectorPanel::draw_components(Entity entity) {
       tag = std::string(buffer);
     }
   }
+  ImGui::PopItemWidth();
   ImGui::SameLine();
-  ImGui::PushItemWidth(-1);
 
-  if (ImGui::Button("Add Component")) {
+  if (ImGui::Button(StringUtils::from_char8_t(ICON_MDI_PLUS))) {
     ImGui::OpenPopup("Add Component");
   }
   if (ImGui::BeginPopup("Add Component")) {
@@ -242,19 +243,13 @@ void InspectorPanel::draw_components(Entity entity) {
 
     ImGui::EndPopup();
   }
-  ImGui::PopItemWidth();
 
-#if 0
-  if (ImGui::BeginTable("##DbgTbl", 2, ImGuiTableFlags_SizingStretchProp | ImGuiTableFlags_BordersInner)) {
-    ImGui::TableSetupColumn("##", ImGuiTableColumnFlags_None, ImGui::GetWindowWidth() * 0.7f);
-    ImGui::TableNextColumn();
-    const auto fmt = fmt::format("UUID: {} Debug: ", (uint64_t)context->registry.get<IDComponent>(entity).uuid);
-    ImGui::Text(fmt.c_str());
-    ImGui::TableNextColumn();
-    ImGui::Checkbox("##", &debug_mode);
-    ImGui::EndTable();
-  }
-#endif
+  ImGui::SameLine();
+
+  ImGui::Checkbox(StringUtils::from_char8_t(ICON_MDI_BUG), &debug_mode);
+
+  const auto uuidstr = fmt::format("UUID: {}", (uint64_t)context->registry.get<IDComponent>(entity).uuid);
+  ImGui::Text(uuidstr.c_str());
 
   if (debug_mode) {
     draw_component<RelationshipComponent>(
@@ -264,10 +259,12 @@ void InspectorPanel::draw_components(Entity entity) {
       [](const RelationshipComponent& component) {
         const auto p_fmt = fmt::format("Parent: {}", (uint64_t)component.parent);
         ImGui::Text(p_fmt.c_str());
-        if (ImGui::BeginTable("Children", 1, ImGuiTableFlags_ScrollY)) {
+        ImGui::Text("Childrens:");
+        if (ImGui::BeginTable("Children", 1, ImGuiTableFlags_Borders | ImGuiTableFlags_SizingFixedFit)) {
           for (const auto& child : component.children) {
+            ImGui::TableNextRow();
             ImGui::TableNextColumn();
-            const auto c_fmt = fmt::format("{}", (uint64_t)child);
+            const auto c_fmt = fmt::format("UUID: {}", (uint64_t)child);
             ImGui::Text(c_fmt.c_str());
           }
           ImGui::EndTable();
