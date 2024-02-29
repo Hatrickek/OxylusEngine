@@ -134,8 +134,15 @@ void register_meta_event() {
    .template func<&update_event<Event>>("update_event"_hs);
 }
 
-#define SET_COMPONENT_TYPE_ID(var, type) var.set("type_id", &entt::type_hash<type>::value)
 #define SET_TYPE_FIELD(var, type, field) var[#field] = &type::field
 #define SET_TYPE_FUNCTION(var, type, function) var.set_function(#function, &type::function)
-#define NEW_TYPE_WITH_CTOR(state, type, factory_func) state->new_usertype<type>(#type, sol::call_constructor, sol::factories(factory_func));
+#define ENUM_FIELD(type, field) {#field, type::field}
 
+#define FIELD(type, field) #field, &type::field
+#define REGISTER_COMPONENT_CTR(state, type, factory_func, ...) \
+  state->new_usertype<type>(#type, "type_id", &entt::type_hash<type>::value, sol::call_constructor, factory_func, __VA_ARGS__)
+
+#define C_NAME(c) #c
+#define REGISTER_COMPONENT(state, type, ...) \
+  state->new_usertype<type>(C_NAME(type), "type_id", &entt::type_hash<type>::value, __VA_ARGS__); \
+  register_meta_component<type>()

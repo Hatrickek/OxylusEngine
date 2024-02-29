@@ -36,83 +36,36 @@ void LuaBindings::bind_physics(const Shared<sol::state>& state) {
                              });
 
   // -- Components ---
-
-  auto rigidody_component = state->new_usertype<RigidbodyComponent>("RigidbodyComponent");
-
   const std::initializer_list<std::pair<sol::string_view, RigidbodyComponent::BodyType>> rigidbody_body_type = {
-    {"Static", RigidbodyComponent::BodyType::Static},
-    {"Kinematic", RigidbodyComponent::BodyType::Kinematic},
-    {"Dynamic", RigidbodyComponent::BodyType::Dynamic}
+    ENUM_FIELD(RigidbodyComponent::BodyType, Static),
+    ENUM_FIELD(RigidbodyComponent::BodyType, Kinematic),
+    ENUM_FIELD(RigidbodyComponent::BodyType, Dynamic),
   };
   state->new_enum<RigidbodyComponent::BodyType, true>("RigidbodyBodyType", rigidbody_body_type);
 
-  SET_TYPE_FIELD(rigidody_component, RigidbodyComponent, type);
-  SET_TYPE_FIELD(rigidody_component, RigidbodyComponent, mass);
-  SET_TYPE_FIELD(rigidody_component, RigidbodyComponent, linear_drag);
-  SET_TYPE_FIELD(rigidody_component, RigidbodyComponent, angular_drag);
-  SET_TYPE_FIELD(rigidody_component, RigidbodyComponent, gravity_scale);
-  SET_TYPE_FIELD(rigidody_component, RigidbodyComponent, allow_sleep);
-  SET_TYPE_FIELD(rigidody_component, RigidbodyComponent, awake);
-  SET_TYPE_FIELD(rigidody_component, RigidbodyComponent, continuous);
-  SET_TYPE_FIELD(rigidody_component, RigidbodyComponent, interpolation);
-  SET_TYPE_FIELD(rigidody_component, RigidbodyComponent, is_sensor);
-  SET_COMPONENT_TYPE_ID(rigidody_component, RigidbodyComponent);
-  register_meta_component<RigidbodyComponent>();
+#define RB RigidbodyComponent
+  REGISTER_COMPONENT(state, RB, FIELD(RB, type), FIELD(RB, mass), FIELD(RB, linear_drag), FIELD(RB, angular_drag), FIELD(RB, gravity_scale),
+                     FIELD(RB, allow_sleep), FIELD(RB, awake), FIELD(RB, continuous), FIELD(RB, interpolation), FIELD(RB, is_sensor));
 
-  auto box_collider_component = state->new_usertype<BoxColliderComponent>("BoxColliderComponent");
-  SET_TYPE_FIELD(box_collider_component, BoxColliderComponent, size);
-  SET_TYPE_FIELD(box_collider_component, BoxColliderComponent, offset);
-  SET_TYPE_FIELD(box_collider_component, BoxColliderComponent, density);
-  SET_TYPE_FIELD(box_collider_component, BoxColliderComponent, friction);
-  SET_TYPE_FIELD(box_collider_component, BoxColliderComponent, restitution);
-  SET_COMPONENT_TYPE_ID(box_collider_component, BoxColliderComponent);
-  register_meta_component<BoxColliderComponent>();
+#define BCC BoxColliderComponent
+  REGISTER_COMPONENT(state, BCC, FIELD(BCC, size), FIELD(BCC, offset), FIELD(BCC, density), FIELD(BCC, friction), FIELD(BCC, restitution));
 
-  auto sphere_collider_component = state->new_usertype<SphereColliderComponent>("SphereColliderComponent");
-  SET_TYPE_FIELD(sphere_collider_component, SphereColliderComponent, radius);
-  SET_TYPE_FIELD(sphere_collider_component, SphereColliderComponent, offset);
-  SET_TYPE_FIELD(sphere_collider_component, SphereColliderComponent, density);
-  SET_TYPE_FIELD(sphere_collider_component, SphereColliderComponent, friction);
-  SET_TYPE_FIELD(sphere_collider_component, SphereColliderComponent, restitution);
-  SET_COMPONENT_TYPE_ID(sphere_collider_component, SphereColliderComponent);
-  register_meta_component<SphereColliderComponent>();
+#define SCC SphereColliderComponent
+  REGISTER_COMPONENT(state, SCC, FIELD(SCC, radius), FIELD(SCC, offset), FIELD(SCC, density), FIELD(SCC, friction), FIELD(SCC, restitution));
 
-  auto capsule_collider_component = state->new_usertype<CapsuleColliderComponent>("CapsuleColliderComponent");
-  SET_TYPE_FIELD(capsule_collider_component, CapsuleColliderComponent, height);
-  SET_TYPE_FIELD(capsule_collider_component, CapsuleColliderComponent, radius);
-  SET_TYPE_FIELD(capsule_collider_component, CapsuleColliderComponent, offset);
-  SET_TYPE_FIELD(capsule_collider_component, CapsuleColliderComponent, density);
-  SET_TYPE_FIELD(capsule_collider_component, CapsuleColliderComponent, friction);
-  SET_TYPE_FIELD(capsule_collider_component, CapsuleColliderComponent, restitution);
-  SET_COMPONENT_TYPE_ID(capsule_collider_component, CapsuleColliderComponent);
-  register_meta_component<CapsuleColliderComponent>();
+#define CCC CapsuleColliderComponent
+  REGISTER_COMPONENT(state, CCC, FIELD(CCC, height), FIELD(CCC, radius), FIELD(CCC, offset), FIELD(CCC, density), FIELD(CCC, friction),
+                     FIELD(CCC, restitution));
 
-  auto tapered_capsule_collider_component = state->new_usertype<TaperedCapsuleColliderComponent>("TaperedCapsuleColliderComponent");
-  SET_TYPE_FIELD(tapered_capsule_collider_component, TaperedCapsuleColliderComponent, height);
-  SET_TYPE_FIELD(tapered_capsule_collider_component, TaperedCapsuleColliderComponent, top_radius);
-  SET_TYPE_FIELD(tapered_capsule_collider_component, TaperedCapsuleColliderComponent, bottom_radius);
-  SET_TYPE_FIELD(tapered_capsule_collider_component, TaperedCapsuleColliderComponent, offset);
-  SET_TYPE_FIELD(tapered_capsule_collider_component, TaperedCapsuleColliderComponent, density);
-  SET_TYPE_FIELD(tapered_capsule_collider_component, TaperedCapsuleColliderComponent, friction);
-  SET_TYPE_FIELD(tapered_capsule_collider_component, TaperedCapsuleColliderComponent, restitution);
-  SET_COMPONENT_TYPE_ID(tapered_capsule_collider_component, TaperedCapsuleColliderComponent);
-  register_meta_component<TaperedCapsuleColliderComponent>();
+#define TCCC TaperedCapsuleColliderComponent
+  REGISTER_COMPONENT(state, TCCC, FIELD(TCCC, height), FIELD(TCCC, top_radius), FIELD(TCCC, bottom_radius), FIELD(TCCC, density), FIELD(TCCC, friction),
+                     FIELD(TCCC, restitution));
 
-  auto cylinder_collider_component = state->new_usertype<CylinderColliderComponent>("CylinderColliderComponent");
-  SET_TYPE_FIELD(cylinder_collider_component, CylinderColliderComponent, height);
-  SET_TYPE_FIELD(cylinder_collider_component, CylinderColliderComponent, radius);
-  SET_TYPE_FIELD(cylinder_collider_component, CylinderColliderComponent, offset);
-  SET_TYPE_FIELD(cylinder_collider_component, CylinderColliderComponent, density);
-  SET_TYPE_FIELD(cylinder_collider_component, CylinderColliderComponent, friction);
-  SET_TYPE_FIELD(cylinder_collider_component, CylinderColliderComponent, restitution);
-  SET_COMPONENT_TYPE_ID(cylinder_collider_component, CylinderColliderComponent);
-  register_meta_component<CylinderColliderComponent>();
+#define CYCC CylinderColliderComponent
+  REGISTER_COMPONENT(state, CYCC, FIELD(CYCC, height), FIELD(CYCC, radius), FIELD(CYCC, offset), FIELD(CYCC, density), FIELD(CYCC, friction),
+                     FIELD(CYCC, restitution));
 
-  auto mesh_collider_component = state->new_usertype<MeshColliderComponent>("MeshColliderComponent");
-  SET_TYPE_FIELD(mesh_collider_component, MeshColliderComponent, offset);
-  SET_TYPE_FIELD(mesh_collider_component, MeshColliderComponent, friction);
-  SET_TYPE_FIELD(mesh_collider_component, MeshColliderComponent, restitution);
-  SET_COMPONENT_TYPE_ID(mesh_collider_component, MeshColliderComponent);
-  register_meta_component<MeshColliderComponent>();
+#define MCC MeshColliderComponent
+  REGISTER_COMPONENT(state, MCC, FIELD(MCC, offset), FIELD(MCC, friction), FIELD(MCC, restitution));
 }
 }

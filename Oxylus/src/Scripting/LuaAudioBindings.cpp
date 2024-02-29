@@ -37,20 +37,17 @@ void bind_audio(const Shared<sol::state>& state) {
   SET_TYPE_FUNCTION(audio_source, AudioSource, set_direction);
   SET_TYPE_FUNCTION(audio_source, AudioSource, set_velocity);
 
-  auto audio_source_component_type = state->new_usertype<AudioSourceComponent>("AudioSourceComponent");
-  SET_COMPONENT_TYPE_ID(audio_source_component_type, AudioSourceComponent);
-  SET_TYPE_FIELD(audio_source_component_type, AudioSourceComponent, config);
-  SET_TYPE_FIELD(audio_source_component_type, AudioSourceComponent, source);
-  register_meta_component<AudioSourceComponent>();
+#define ASC AudioSourceComponent
+  REGISTER_COMPONENT(state, ASC, FIELD(ASC, config), FIELD(ASC, source));
 
-  auto audio_source_config_type = state->new_usertype<AudioSourceConfig>("AudioSourceConfig");
   const std::initializer_list<std::pair<sol::string_view, AttenuationModelType>> attenuation_model_type = {
-    {"Inverse", AttenuationModelType::Inverse},
-    {"Linear", AttenuationModelType::Linear},
-    {"Exponential", AttenuationModelType::Exponential}
+    ENUM_FIELD(AttenuationModelType, Inverse),
+    ENUM_FIELD(AttenuationModelType, Linear),
+    ENUM_FIELD(AttenuationModelType, Exponential),
   };
   state->new_enum<AttenuationModelType, true>("AttenuationModelType", attenuation_model_type);
 
+  auto audio_source_config_type = state->new_usertype<AudioSourceConfig>("AudioSourceConfig");
   SET_TYPE_FIELD(audio_source_config_type, AudioSourceConfig, volume_multiplier);
   SET_TYPE_FIELD(audio_source_config_type, AudioSourceConfig, pitch_multiplier);
   SET_TYPE_FIELD(audio_source_config_type, AudioSourceConfig, play_on_awake);
@@ -67,12 +64,9 @@ void bind_audio(const Shared<sol::state>& state) {
   SET_TYPE_FIELD(audio_source_config_type, AudioSourceConfig, cone_outer_gain);
   SET_TYPE_FIELD(audio_source_config_type, AudioSourceConfig, doppler_factor);
 
-  sol::usertype<AudioListenerComponent> audio_listener_component_type = state->new_usertype<AudioListenerComponent>("AudioListenerComponent");
-  SET_COMPONENT_TYPE_ID(audio_listener_component_type, AudioListenerComponent);
-  SET_TYPE_FIELD(audio_listener_component_type, AudioListenerComponent, active);
-  SET_TYPE_FIELD(audio_listener_component_type, AudioListenerComponent, config);
-  SET_TYPE_FIELD(audio_listener_component_type, AudioListenerComponent, listener);
-  register_meta_component<AudioListenerComponent>();
+#define ALC AudioListenerComponent
+  REGISTER_COMPONENT(state, ALC, FIELD(ALC, active), FIELD(ALC, config), FIELD(ALC, listener));
+
   sol::usertype<AudioListenerConfig> audio_listener_config_type = state->new_usertype<AudioListenerConfig>("AudioListenerConfig");
   SET_TYPE_FIELD(audio_listener_config_type, AudioListenerConfig, cone_inner_angle);
   SET_TYPE_FIELD(audio_listener_config_type, AudioListenerConfig, cone_outer_angle);
