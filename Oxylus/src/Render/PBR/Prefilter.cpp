@@ -8,7 +8,7 @@
 
 #include "Render/Mesh.h"
 #include "Render/Vulkan/VulkanContext.h"
-#include "Render/Vulkan/VukUtils.h"
+#include "Render/Utils/VukCommon.h"
 
 #include "Utils/FileUtils.h"
 

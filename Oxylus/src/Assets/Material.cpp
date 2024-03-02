@@ -2,7 +2,7 @@
 
 #include <vuk/CommandBuffer.hpp>
 
-#include "Render/Vulkan/VukUtils.h"
+#include "Render/Utils/VukCommon.h"
 #include "Render/Vulkan/VulkanContext.h"
 
 #include "Utils/Profiler.h"

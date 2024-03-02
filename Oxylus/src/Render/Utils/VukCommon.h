@@ -61,6 +61,7 @@ inline SamplerCreateInfo LinearSamplerClamped = {
   .addressModeU = SamplerAddressMode::eClampToEdge,
   .addressModeV = SamplerAddressMode::eClampToEdge,
   .addressModeW = SamplerAddressMode::eClampToEdge,
+  .borderColor = BorderColor::eFloatOpaqueWhite
 };
 
 template<class T>
@@ -76,5 +77,6 @@ Texture create_texture(Allocator& allocator, const ImageAttachment& attachment);
 std::pair<std::vector<Name>, std::vector<Name>> diverge_image_mips(const std::shared_ptr<RenderGraph>& rg, std::string_view input_name, uint32_t mip_count);
 std::pair<std::vector<Name>, std::vector<Name>> diverge_image_layers(const std::shared_ptr<RenderGraph>& rg, std::string_view input_name, uint32_t layer_count);
 
-void generate_mips(const std::shared_ptr<RenderGraph>& rg, std::string_view input_name, std::string_view output_name, uint32_t mip_count);
+void generate_mips(const std::shared_ptr<RenderGraph>& rg, std::string_view input_name, std::string_view output_name, uint32_t mip_count = 0);
+Future blit_image(Future src, Future dst);
 }

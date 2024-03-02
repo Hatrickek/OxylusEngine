@@ -1,9 +1,12 @@
-﻿#include "VukUtils.h"
+﻿#include "VukCommon.h"
 
+#include <utility>
 #include <vector>
 #include <fmt/format.h>
 #include <vuk/CommandBuffer.hpp>
 #include <vuk/RenderGraph.hpp>
+
+#include "Utils/Log.h"
 
 namespace vuk {
 Texture create_texture(Allocator& allocator, Extent3D extent, Format format, ImageUsageFlags usage_flags, bool generate_mips, int array_layers) {
@@ -25,14 +28,15 @@ Texture create_texture(Allocator& allocator, const ImageAttachment& attachment) 
   ImageCreateInfo ici;
   ici.format = attachment.format;
   ici.extent = attachment.extent.extent;
-  ici.samples = Samples::e1;
-  ici.imageType = ImageType::e2D;
+  ici.samples = attachment.sample_count.count;
+  ici.imageType = attachment.image_type;
   ici.initialLayout = ImageLayout::eUndefined;
-  ici.tiling = ImageTiling::eOptimal;
+  ici.tiling = attachment.tiling;
   ici.usage = attachment.usage;
   ici.mipLevels = attachment.level_count;
   ici.arrayLayers = attachment.layer_count;
-  
+  ici.flags = attachment.image_flags;
+
   return allocator.get_context().allocate_texture(allocator, ici);
 }
 
@@ -114,5 +118,45 @@ void generate_mips(const std::shared_ptr<RenderGraph>& rg, std::string_view inpu
   }
 
   rg->converge_image_explicit(diverged_names, output_name);
+}
+
+Future blit_image(Future src, Future dst) {
+  std::shared_ptr<RenderGraph> rg = std::make_shared<RenderGraph>("blit_image");
+
+  rg->attach_in("src", std::move(src));
+  rg->attach_in("dst", std::move(dst));
+
+  rg->add_pass({
+    .name = "blit_image_pass",
+    .resources = {"src"_image >> eTransferRead, "dst"_image >> eTransferWrite},
+    .execute = [](CommandBuffer& command_buffer) {
+      ImageBlit blit;
+      auto src_ia = *command_buffer.get_resource_image_attachment("src");
+      auto dst_ia = *command_buffer.get_resource_image_attachment("dst");
+      OX_CORE_ASSERT(src_ia.extent.extent == dst_ia.extent.extent)
+      auto src_extent = src_ia.extent.extent;
+      blit.srcSubresource.aspectMask = format_to_aspect(src_ia.format);
+      blit.srcSubresource.baseArrayLayer = src_ia.base_layer;
+      blit.srcSubresource.layerCount = src_ia.layer_count;
+      blit.srcSubresource.mipLevel = src_ia.base_level;
+      blit.srcOffsets[0] = Offset3D{0};
+      blit.srcOffsets[1] = Offset3D{
+        (int32_t)src_extent.width,
+        (int32_t)src_extent.height,
+        (int32_t)src_extent.depth
+      };
+      blit.dstSubresource = blit.srcSubresource;
+      blit.dstSubresource.mipLevel = dst_ia.base_level;
+      blit.dstOffsets[0] = Offset3D{0};
+      blit.dstOffsets[1] = Offset3D{
+        (int32_t)src_extent.width,
+        (int32_t)src_extent.height,
+        (int32_t)src_extent.depth
+      };
+      command_buffer.blit_image("src", "dst", blit, Filter::eLinear);
+    }
+  });
+
+  return {std::move(rg), "dst+"};
 }
 }

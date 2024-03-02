@@ -21,10 +21,11 @@
 #include "Utils/Profiler.h"
 #include "Utils/Timer.h"
 
-#include "Vulkan/VukUtils.h"
 #include "Vulkan/VulkanContext.h"
 
 #include "Vulkan/Renderer.h"
+#include "Render/Utils/SPD.h"
+#include "Render/Utils/VukCommon.h"
 
 namespace Ox {
 static std::vector<uint32_t> cumulated_material_map = {};
@@ -283,14 +284,30 @@ void DefaultRenderPipeline::commit_descriptor_sets(vuk::Allocator& allocator) {
   scene_data.grid_max_distance = RendererCVar::cvar_draw_grid_distance.get();
   scene_data.screen_size = IVec2(Renderer::get_viewport_width(), Renderer::get_viewport_height());
 
-  const auto capture_projection = glm::perspective(glm::radians(90.0f), 1.0f, 0.1f, 10.0f);
+  const auto init_view = [](const Vec4& rotation) {
+    const auto rot = glm::quat(normalize(rotation));
+    const auto to = Vec3(0.0f, -1.0f, 0.0f) * rot;
+    const auto up = Vec3(0.0f, 0.0f, 1.0f) * rot;
+    return lookAt(Vec3(0.f), to, up);
+  };
+
+  const auto capture_projection = glm::perspective(glm::radians(90.0f), 1.0f, current_camera->get_near(), current_camera->get_far());
   const Mat4 capture_views[] = {
+#if 0
+    init_view(Vec4(0.5f, -0.5f, -0.5f, -0.5f)),
+    init_view(Vec4(0.5f, 0.5f, 0.5f, -0.5f)),
+    init_view(Vec4(1, 0, 0, -0)),
+    init_view(Vec4(0, 0, 0, -1)),
+    init_view(Vec4(0.707f, 0, 0, -0.707f)),
+    init_view(Vec4(0, 0.707f, 0.707f, 0)),
+#else
     lookAt(Vec3(0.0f, 0.0f, 0.0f), Vec3(1.0f, 0.0f, 0.0f), Vec3(0.0f, -1.0f, 0.0f)),
     lookAt(Vec3(0.0f, 0.0f, 0.0f), Vec3(-1.0f, 0.0f, 0.0f), Vec3(0.0f, -1.0f, 0.0f)),
     lookAt(Vec3(0.0f, 0.0f, 0.0f), Vec3(0.0f, 1.0f, 0.0f), Vec3(0.0f, 0.0f, 1.0f)),
     lookAt(Vec3(0.0f, 0.0f, 0.0f), Vec3(0.0f, -1.0f, 0.0f), Vec3(0.0f, 0.0f, -1.0f)),
     lookAt(Vec3(0.0f, 0.0f, 0.0f), Vec3(0.0f, 0.0f, 1.0f), Vec3(0.0f, -1.0f, 0.0f)),
     lookAt(Vec3(0.0f, 0.0f, 0.0f), Vec3(0.0f, 0.0f, -1.0f), Vec3(0.0f, -1.0f, 0.0f))
+#endif
   };
 
   for (int i = 0; i < 6; i++)
@@ -407,7 +424,7 @@ void DefaultRenderPipeline::commit_descriptor_sets(vuk::Allocator& allocator) {
   descriptor_set_00->update_sampled_image(4, GTAO_BUFFER_IMAGE_INDEX, *gtao_final_texture.view, vuk::ImageLayout::eReadOnlyOptimalKHR);
 
   // scene cubemap texture array
-  descriptor_set_00->update_sampled_image(5, SKY_ENVMAP_INDEX, *sky_envmap_texture.view, vuk::ImageLayout::eReadOnlyOptimalKHR);
+  descriptor_set_00->update_sampled_image(5, SKY_ENVMAP_INDEX, *sky_envmap_texture_mipped.view, vuk::ImageLayout::eReadOnlyOptimalKHR);
 
   // scene array texture array
   descriptor_set_00->update_sampled_image(6, SHADOW_ARRAY_INDEX, *sun_shadow_texture.view, vuk::ImageLayout::eReadOnlyOptimalKHR);
@@ -429,12 +446,10 @@ void DefaultRenderPipeline::create_static_textures(vuk::Allocator& allocator) {
 
   const auto shadow_size = vuk::Extent3D{(unsigned)RendererCVar::cvar_shadows_size.get(), (unsigned)RendererCVar::cvar_shadows_size.get(), 1};
   const vuk::ImageAttachment shadow_attachment = {
-    .image_flags = vuk::ImageCreateFlagBits::e2DArrayCompatible,
     .usage = DEFAULT_USAGE_FLAGS | vuk::ImageUsageFlagBits::eDepthStencilAttachment,
     .extent = vuk::Dimension3D{vuk::Sizing::eAbsolute, shadow_size, {}},
     .format = vuk::Format::eD32Sfloat,
     .sample_count = vuk::Samples::e1,
-    .view_type = vuk::ImageViewType::e2DArray,
     .base_level = 0,
     .level_count = 1,
     .base_layer = 0,
@@ -443,20 +458,24 @@ void DefaultRenderPipeline::create_static_textures(vuk::Allocator& allocator) {
 
   sun_shadow_texture = create_texture(allocator, shadow_attachment);
 
-  const vuk::ImageAttachment env_attachment = {
+  vuk::ImageAttachment env_attachment = {
     .image_flags = vuk::ImageCreateFlagBits::eCubeCompatible,
-    .usage = DEFAULT_USAGE_FLAGS | vuk::ImageUsageFlagBits::eColorAttachment,
+    .usage = DEFAULT_USAGE_FLAGS | vuk::ImageUsageFlagBits::eColorAttachment | vuk::ImageUsageFlagBits::eStorage,
     .extent = vuk::Dimension3D::absolute(512, 512, 1),
     .format = vuk::Format::eR16G16B16A16Sfloat,
     .sample_count = vuk::Samples::e1,
-    .view_type = vuk::ImageViewType::eCube,
     .base_level = 0,
     .level_count = 1,
     .base_layer = 0,
     .layer_count = 6
   };
 
-  sky_envmap_texture = create_texture(allocator, env_attachment);
+  sky_envmap_render_target = create_texture(allocator, env_attachment);
+
+  const uint32_t mip_count = (uint32_t)log2f((float)std::max(std::max(512, 512), 1)) + 1;
+
+  env_attachment.level_count = mip_count;
+  sky_envmap_texture_mipped = create_texture(allocator, env_attachment);
 }
 
 void DefaultRenderPipeline::create_dynamic_textures(vuk::Allocator& allocator, const vuk::Dimension3D& dim) {
@@ -589,7 +608,6 @@ Unique<vuk::Future> DefaultRenderPipeline::on_render(vuk::Allocator& frame_alloc
   if (dir_light_data && dir_light_data->second.cast_shadows) {
     DirectShadowPass::update_cascades(sun_direction, current_camera, &direct_shadow_ub);
     auto attachment = vuk::ImageAttachment::from_texture(sun_shadow_texture);
-    attachment.image_flags = vuk::ImageCreateFlagBits::e2DArrayCompatible;
     attachment.view_type = vuk::ImageViewType::e2DArray;
     rg->attach_and_clear_image("shadow_map_array", attachment, vuk::DepthOne);
     cascaded_shadow_pass(rg);
@@ -890,7 +908,7 @@ void DefaultRenderPipeline::geometry_pass(const Shared<vuk::RenderGraph>& rg) {
     "shadow_array_output"_image >> vuk::eFragmentSampled,
     "sky_transmittance_lut+"_image >> vuk::eFragmentSampled,
     "sky_multiscatter_lut+"_image >> vuk::eFragmentSampled,
-    "sky_envmap_image+"_image >> vuk::eFragmentSampled,
+    "sky_enmap_image_final"_image >> vuk::eFragmentSampled,
     gtao_resource
   };
 
@@ -1148,7 +1166,7 @@ void DefaultRenderPipeline::gtao_pass(vuk::Allocator& frame_allocator, const Sha
                       .bind_image(0, 2, "gtao_edge_output")
                       .bind_image(0, 3, attachment_name)
                       .bind_sampler(0, 4, {})
-                      .dispatch((Renderer::get_viewport_width() + (XE_GTAO_NUMTHREADS_X * 2) - 1) / (XE_GTAO_NUMTHREADS_X * 2), (Renderer::get_viewport_height() + XE_GTAO_NUMTHREADS_Y - 1) / XE_GTAO_NUMTHREADS_Y, 1);
+                      .dispatch((Renderer::get_viewport_width() + XE_GTAO_NUMTHREADS_X * 2 - 1) / (XE_GTAO_NUMTHREADS_X * 2), (Renderer::get_viewport_height() + XE_GTAO_NUMTHREADS_Y - 1) / XE_GTAO_NUMTHREADS_Y, 1);
       }
     });
   }
@@ -1167,7 +1185,7 @@ void DefaultRenderPipeline::gtao_pass(vuk::Allocator& frame_allocator, const Sha
                     .bind_image(0, 2, "gtao_edge_output")
                     .bind_image(0, 3, "gtao_final_image")
                     .bind_sampler(0, 4, {})
-                    .dispatch((Renderer::get_viewport_width() + (XE_GTAO_NUMTHREADS_X * 2) - 1) / (XE_GTAO_NUMTHREADS_X * 2), (Renderer::get_viewport_height() + XE_GTAO_NUMTHREADS_Y - 1) / XE_GTAO_NUMTHREADS_Y, 1);
+                    .dispatch((Renderer::get_viewport_width() + XE_GTAO_NUMTHREADS_X * 2 - 1) / (XE_GTAO_NUMTHREADS_X * 2), (Renderer::get_viewport_height() + XE_GTAO_NUMTHREADS_Y - 1) / XE_GTAO_NUMTHREADS_Y, 1);
     }
   });
 
@@ -1310,12 +1328,14 @@ void DefaultRenderPipeline::sky_multiscatter_pass(const Shared<vuk::RenderGraph>
 }
 
 void DefaultRenderPipeline::sky_envmap_pass(const Shared<vuk::RenderGraph>& rg) {
-  auto attachment = vuk::ImageAttachment::from_texture(sky_envmap_texture);
+  Shared<vuk::RenderGraph> rgp = create_shared<vuk::RenderGraph>("sky_envmap_pass");
+
+  auto attachment = vuk::ImageAttachment::from_texture(sky_envmap_render_target);
   attachment.image_flags = vuk::ImageCreateFlagBits::eCubeCompatible;
   attachment.view_type = vuk::ImageViewType::eCube;
-  rg->attach_and_clear_image("sky_envmap_image", attachment, vuk::Black<float>);
+  rgp->attach_and_clear_image("sky_envmap_image", attachment, vuk::Black<float>);
 
-  rg->add_pass({
+  rgp->add_pass({
     .name = "sky_envmap_pass",
     .resources = {
       "sky_envmap_image"_image >> vuk::eColorRW,
@@ -1329,11 +1349,21 @@ void DefaultRenderPipeline::sky_envmap_pass(const Shared<vuk::RenderGraph>& rg) 
                     .set_depth_stencil({})
                     .bind_graphics_pipeline("sky_envmap_pipeline");
 
-      m_cube->bind_vertex_buffer(command_buffer);
-      m_cube->bind_index_buffer(command_buffer);
+      m_cube->bind_index_buffer(command_buffer)->bind_vertex_buffer(command_buffer);
       command_buffer.draw_indexed(m_cube->index_count, 6, 0, 0, 0);
     }
   });
+
+  auto attachment_final = vuk::ImageAttachment::from_texture(sky_envmap_texture_mipped);
+  attachment_final.image_flags = vuk::ImageCreateFlagBits::eCubeCompatible;
+  attachment_final.view_type = vuk::ImageViewType::eCube;
+  rgp->attach_and_clear_image("sky_envmap_image_mipped", attachment_final, vuk::Black<float>);
+
+  auto blit_fut = vuk::blit_image({rgp, "sky_envmap_image+"}, {rgp, "sky_envmap_image_mipped"});
+
+  auto mip_fut = vuk::generate_mips(blit_fut, 0, attachment_final.level_count);
+
+  rg->attach_in("sky_enmap_image_final", mip_fut);
 }
 
 void DefaultRenderPipeline::sky_view_lut_pass(const Shared<vuk::RenderGraph>& rg) {

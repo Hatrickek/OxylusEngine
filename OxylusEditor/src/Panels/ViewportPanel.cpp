@@ -13,7 +13,7 @@
 #include "Render/RendererConfig.h"
 #include "Render/RenderPipeline.h"
 #include "Render/Vulkan/Renderer.h"
-#include "Render/Vulkan/VukUtils.h"
+#include "Render/Utils/VukCommon.h"
 #include "Render/Vulkan/VulkanContext.h"
 
 #include "Scene/SceneRenderer.h"

@@ -166,7 +166,8 @@ private:
 
   vuk::Texture sky_transmittance_lut;
   vuk::Texture sky_multiscatter_lut;
-  vuk::Texture sky_envmap_texture;
+  vuk::Texture sky_envmap_render_target;
+  vuk::Texture sky_envmap_texture_mipped;
   vuk::Texture gtao_final_texture;
   vuk::Texture ssr_texture;
   vuk::Texture sun_shadow_texture;

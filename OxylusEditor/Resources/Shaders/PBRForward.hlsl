@@ -93,19 +93,19 @@ struct Surface {
   float3 Albedo;
   float Metallic;
   float Roughness;
-  float Occlusion;		  // occlusion [0 -> 1]
+  float Occlusion; // occlusion [0 -> 1]
   float4 Refraction;
   float3 EmissiveColor;
-  float3 P;             // world space position
-  float3 VP;            // view space position
-  float3 N;             // world space normal
-  float3 V;             // world space view vector
-  float4 T;				      // tangent
-  float3 B;				      // bitangent
+  float3 P;  // world space position
+  float3 VP; // view space position
+  float3 N;  // world space normal
+  float3 V;  // world space view vector
+  float4 T;  // tangent
+  float3 B;  // bitangent
   float H;
-  float3 F0;            // fresnel value
+  float3 F0; // fresnel value
   float2 PixelPosition;
-  float Opacity;			  // opacity for blending operation [0 -> 1]
+  float Opacity; // opacity for blending operation [0 -> 1]
   float3 ViewPos;
   float3 BumpColor;
 
@@ -122,8 +122,8 @@ struct Surface {
 #endif // ANISOTROPIC
 
   float NdotV; // cos(angle between normal and view vector)
-  float3 R; // reflection vector
-  float3 F; // fresnel term computed from NdotV
+  float3 R;    // reflection vector
+  float3 F;    // fresnel term computed from NdotV
 
   void Init() {
     P = 0;
@@ -175,7 +175,7 @@ struct Surface {
     Roughness = saturate(Roughness);
     NdotV = saturate(dot(N, V) + 1e-5);
     F = EnvBRDFApprox(F0, Roughness, NdotV);
-    R = -reflect(V, N);
+    R = reflect(-V, N);
     B = normalize(cross(T.xyz, N) * T.w); // Compute bitangent again after normal mapping
 #ifdef SHEEN
 		sheen.roughness = saturate(sheen.roughness);
@@ -201,13 +201,13 @@ struct Surface {
 };
 
 struct SurfaceToLight {
-  float3 L; // surface to light vector (normalized)
-  float3 H; // half-vector between view vector and light vector
+  float3 L;    // surface to light vector (normalized)
+  float3 H;    // half-vector between view vector and light vector
   float NdotL; // cos angle between normal and light direction
   float NdotH; // cos angle between normal and half vector
   float LdotH; // cos angle between light direction and half vector
   float VdotH; // cos angle between view direction and half vector
-  float3 F; // fresnel term computed from VdotH
+  float3 F;    // fresnel term computed from VdotH
 
 #ifdef ANISOTROPIC
 	float TdotL;
@@ -367,7 +367,7 @@ float AttenuationPointLight(in float dist, in float dist2, in float range, in fl
 
   // Removed pow(x, 4), and avoid zero divisions:
   float dist_per_range = dist2 / max(0.0001, range2); // pow2
-  dist_per_range *= dist_per_range; // pow4
+  dist_per_range *= dist_per_range;                   // pow4
   return saturate(1 - dist_per_range) / max(0.0001, dist2);
 }
 
@@ -612,9 +612,9 @@ float4 PSmain(VSLayout input, float4 pixelPosition : SV_Position) : SV_Target {
   uint mips;
   cubemap.GetDimensions(0, dim.x, dim.y, mips);
 
-  float MIP = surface.Roughness * mips;
-  float3 envColor = cubemap.SampleLevel(LINEAR_CLAMPED_SAMPLER, surface.R, 0).rgb * surface.F;
-   
+  float mip = surface.Roughness * mips;
+  float3 envColor = cubemap.SampleLevel(LINEAR_CLAMPED_SAMPLER, surface.R, mip).rgb * surface.F;
+
   Lighting lighting;
   lighting.Create(0, 0, ambient, max(0, envColor));
 

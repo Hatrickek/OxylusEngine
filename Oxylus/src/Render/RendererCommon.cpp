@@ -16,9 +16,8 @@
 
 #include "Utils/FileUtils.h"
 #include "Utils/Log.h"
-#include "Utils/Profiler.h"
 
-#include "Vulkan/VukUtils.h"
+#include "Render/Utils/VukCommon.h"
 #include "Vulkan/VulkanContext.h"
 
 namespace Ox {

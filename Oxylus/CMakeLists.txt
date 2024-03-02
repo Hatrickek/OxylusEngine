@@ -27,10 +27,10 @@ file(GLOB GTAO "src/Render/PBR/GTAO/*.h" "src/Render/PBR/GTAO/*.cpp" )
 source_group("src/Render/PBR/GTAO" FILES ${GTAO})
 file(GLOB Vulkan "src/Render/Vulkan/*.h" "src/Render/Vulkan/*.cpp" )
 source_group("src/Render/Vulkan" FILES ${Vulkan})
-file(GLOB VulkanUtils "src/Render/Vulkan/Utils/*.h" "src/Render/Vulkan/Utils/*.cpp" )
-source_group("src/Render/Vulkan/Utils" FILES ${VulkanUtils})
+file(GLOB RenderUtils "src/Render/Utils/*.h" "src/Render/Utils/*.cpp" )
+source_group("src/Render/Utils" FILES ${RenderUtils})
 
-set(RENDERER_FILES ${Render} ${PBR} ${GTAO} ${Vulkan} ${VulkanUtils})
+set(RENDERER_FILES ${Render} ${PBR} ${GTAO} ${Vulkan} ${RenderUtils})
 
 file(GLOB_RECURSE Scene "src/Scene/*.h" "src/Scene/*.cpp" )
 source_group("src/Scene" FILES ${Scene})
