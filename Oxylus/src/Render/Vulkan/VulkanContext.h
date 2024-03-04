@@ -31,7 +31,6 @@ public:
   std::optional<vuk::Context> context;
   std::optional<vuk::DeviceSuperFrameResource> superframe_resource;
   std::optional<vuk::Allocator> superframe_allocator;
-  bool has_rt = false;
   bool suspend = false;
   vuk::PresentModeKHR present_mode = vuk::PresentModeKHR::eFifo;
   vuk::SwapchainRef swapchain = nullptr;
@@ -46,7 +45,6 @@ public:
   Shared<TracyProfiler> tracy_profiler = {};
 
   std::string device_name = {};
-  uint32_t driver_version = {};
 
   VulkanContext() = default;
 

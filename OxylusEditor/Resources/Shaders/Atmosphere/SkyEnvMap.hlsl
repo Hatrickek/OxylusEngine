@@ -7,10 +7,10 @@ struct VertexOutput {
 };
 
 VertexOutput VSmain(Vertex inVertex, uint vid : SV_VERTEXID, uint instanceID : SV_INSTANCEID) {
-  VertexOutput output = (VertexOutput)0;
+  VertexOutput output;
   output.RTIndex = instanceID;
   output.pos = mul(GetScene().CubemapViewProjections[output.RTIndex], float4(inVertex.Position, 1.0));
-  output.nor = inVertex.Normal;
+  output.nor = inVertex.Position;
   return output;
 }
 

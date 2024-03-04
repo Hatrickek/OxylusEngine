@@ -284,30 +284,20 @@ void DefaultRenderPipeline::commit_descriptor_sets(vuk::Allocator& allocator) {
   scene_data.grid_max_distance = RendererCVar::cvar_draw_grid_distance.get();
   scene_data.screen_size = IVec2(Renderer::get_viewport_width(), Renderer::get_viewport_height());
 
-  const auto init_view = [](const Vec4& rotation) {
-    const auto rot = glm::quat(normalize(rotation));
-    const auto to = Vec3(0.0f, -1.0f, 0.0f) * rot;
-    const auto up = Vec3(0.0f, 0.0f, 1.0f) * rot;
-    return lookAt(Vec3(0.f), to, up);
-  };
-
-  const auto capture_projection = glm::perspective(glm::radians(90.0f), 1.0f, current_camera->get_near(), current_camera->get_far());
-  const Mat4 capture_views[] = {
-#if 0
-    init_view(Vec4(0.5f, -0.5f, -0.5f, -0.5f)),
-    init_view(Vec4(0.5f, 0.5f, 0.5f, -0.5f)),
-    init_view(Vec4(1, 0, 0, -0)),
-    init_view(Vec4(0, 0, 0, -1)),
-    init_view(Vec4(0.707f, 0, 0, -0.707f)),
-    init_view(Vec4(0, 0.707f, 0.707f, 0)),
-#else
-    lookAt(Vec3(0.0f, 0.0f, 0.0f), Vec3(1.0f, 0.0f, 0.0f), Vec3(0.0f, -1.0f, 0.0f)),
-    lookAt(Vec3(0.0f, 0.0f, 0.0f), Vec3(-1.0f, 0.0f, 0.0f), Vec3(0.0f, -1.0f, 0.0f)),
-    lookAt(Vec3(0.0f, 0.0f, 0.0f), Vec3(0.0f, 1.0f, 0.0f), Vec3(0.0f, 0.0f, 1.0f)),
-    lookAt(Vec3(0.0f, 0.0f, 0.0f), Vec3(0.0f, -1.0f, 0.0f), Vec3(0.0f, 0.0f, -1.0f)),
-    lookAt(Vec3(0.0f, 0.0f, 0.0f), Vec3(0.0f, 0.0f, 1.0f), Vec3(0.0f, -1.0f, 0.0f)),
-    lookAt(Vec3(0.0f, 0.0f, 0.0f), Vec3(0.0f, 0.0f, -1.0f), Vec3(0.0f, -1.0f, 0.0f))
-#endif
+  const auto capture_projection = glm::perspective(glm::radians(90.0f), 1.0f, 0.1f, 90.0f);
+  std::vector capture_views = {
+    // POSITIVE_X
+    rotate(rotate(Mat4(1.0f), glm::radians(90.0f), Vec3(0.0f, 1.0f, 0.0f)), glm::radians(180.0f), Vec3(1.0f, 0.0f, 0.0f)),
+    // NEGATIVE_X
+    rotate(rotate(Mat4(1.0f), glm::radians(-90.0f), Vec3(0.0f, 1.0f, 0.0f)), glm::radians(180.0f), Vec3(1.0f, 0.0f, 0.0f)),
+    // POSITIVE_Y
+    rotate(Mat4(1.0f), glm::radians(-90.0f), Vec3(1.0f, 0.0f, 0.0f)),
+    // NEGATIVE_Y
+    rotate(Mat4(1.0f), glm::radians(90.0f), Vec3(1.0f, 0.0f, 0.0f)),
+    // POSITIVE_Z
+    rotate(Mat4(1.0f), glm::radians(180.0f), Vec3(1.0f, 0.0f, 0.0f)),
+    // NEGATIVE_Z
+    rotate(Mat4(1.0f), glm::radians(180.0f), Vec3(0.0f, 0.0f, 1.0f)),
   };
 
   for (int i = 0; i < 6; i++)
@@ -908,7 +898,7 @@ void DefaultRenderPipeline::geometry_pass(const Shared<vuk::RenderGraph>& rg) {
     "shadow_array_output"_image >> vuk::eFragmentSampled,
     "sky_transmittance_lut+"_image >> vuk::eFragmentSampled,
     "sky_multiscatter_lut+"_image >> vuk::eFragmentSampled,
-    "sky_enmap_image_final"_image >> vuk::eFragmentSampled,
+    "sky_envmap_image_final"_image >> vuk::eFragmentSampled,
     gtao_resource
   };
 
@@ -1136,9 +1126,6 @@ void DefaultRenderPipeline::gtao_pass(vuk::Allocator& frame_allocator, const Sha
     }
   });
 
-  // if bent normals used -> R32Uint
-  // else R8Uint
-
   rg->attach_and_clear_image("gtao_main_image", {.format = vuk::Format::eR8Uint, .sample_count = vuk::SampleCountFlagBits::e1, .view_type = vuk::ImageViewType::e2D, .level_count = 1, .layer_count = 1}, vuk::Black<float>);
   rg->attach_and_clear_image("gtao_edge_image", {.format = vuk::Format::eR8Unorm, .sample_count = vuk::SampleCountFlagBits::e1, .view_type = vuk::ImageViewType::e2D, .level_count = 1, .layer_count = 1}, vuk::Black<float>);
   rg->inference_rule("gtao_main_image", vuk::same_extent_as("final_image"));
@@ -1188,9 +1175,6 @@ void DefaultRenderPipeline::gtao_pass(vuk::Allocator& frame_allocator, const Sha
                     .dispatch((Renderer::get_viewport_width() + XE_GTAO_NUMTHREADS_X * 2 - 1) / (XE_GTAO_NUMTHREADS_X * 2), (Renderer::get_viewport_height() + XE_GTAO_NUMTHREADS_Y - 1) / XE_GTAO_NUMTHREADS_Y, 1);
     }
   });
-
-  // if bent normals used -> R32Uint
-  // else R8Uint
 
   rg->attach_and_clear_image("gtao_final_image", vuk::ImageAttachment::from_texture(gtao_final_texture), vuk::Black<float>);
   rg->inference_rule("gtao_final_image", vuk::same_extent_as("final_image"));
@@ -1363,7 +1347,7 @@ void DefaultRenderPipeline::sky_envmap_pass(const Shared<vuk::RenderGraph>& rg) 
 
   auto mip_fut = vuk::generate_mips(blit_fut, 0, attachment_final.level_count);
 
-  rg->attach_in("sky_enmap_image_final", mip_fut);
+  rg->attach_in("sky_envmap_image_final", mip_fut);
 }
 
 void DefaultRenderPipeline::sky_view_lut_pass(const Shared<vuk::RenderGraph>& rg) {

@@ -5,7 +5,7 @@
 
 #include "Core/PlatformDetection.h"
 
-#include "FileSystem/FileSystem.h"
+#include "Core/FileSystem.h"
 
 namespace Ox {
 class ExternalSink {
