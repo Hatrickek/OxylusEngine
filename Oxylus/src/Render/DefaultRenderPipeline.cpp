@@ -103,7 +103,7 @@ void DefaultRenderPipeline::load_pipelines(vuk::Allocator& allocator) {
     bindless_binding(6, vuk::DescriptorType::eSampledImage, 8),
     bindless_binding(7, vuk::DescriptorType::eStorageImage),
     bindless_binding(8, vuk::DescriptorType::eSampledImage),
-    bindless_binding(9, vuk::DescriptorType::eSampler, 4),
+    bindless_binding(9, vuk::DescriptorType::eSampler, 5),
   };
   bindless_dslci_00.index = 0;
   for (int i = 0; i < 10; i++)
@@ -486,12 +486,14 @@ void DefaultRenderPipeline::create_descriptor_sets(vuk::Allocator& allocator, vu
 
   const vuk::Sampler linear_sampler_clamped = ctx.acquire_sampler(vuk::LinearSamplerClamped, ctx.get_frame_count());
   const vuk::Sampler linear_sampler_repeated = ctx.acquire_sampler(vuk::LinearSamplerRepeated, ctx.get_frame_count());
+  const vuk::Sampler linear_sampler_repeated_anisotropy = ctx.acquire_sampler(vuk::LinearSamplerRepeatedAnisotropy, ctx.get_frame_count());
   const vuk::Sampler nearest_sampler_clamped = ctx.acquire_sampler(vuk::NearestSamplerClamped, ctx.get_frame_count());
   const vuk::Sampler nearest_sampler_repeated = ctx.acquire_sampler(vuk::NearestSamplerRepeated, ctx.get_frame_count());
   descriptor_set_00->update_sampler(9, 0, linear_sampler_clamped);
   descriptor_set_00->update_sampler(9, 1, linear_sampler_repeated);
-  descriptor_set_00->update_sampler(9, 2, nearest_sampler_clamped);
-  descriptor_set_00->update_sampler(9, 3, nearest_sampler_repeated);
+  descriptor_set_00->update_sampler(9, 2, linear_sampler_repeated_anisotropy);
+  descriptor_set_00->update_sampler(9, 3, nearest_sampler_clamped);
+  descriptor_set_00->update_sampler(9, 4, nearest_sampler_repeated);
 }
 
 void DefaultRenderPipeline::on_dispatcher_events(EventDispatcher& dispatcher) {

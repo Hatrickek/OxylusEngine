@@ -21,6 +21,12 @@ public:
     Mask,
   };
 
+  enum class Sampler : uint32_t {
+    Bilinear,
+    Trilinear,
+    Anisotropy
+  };
+
   struct Parameters {
     Vec4 color = Vec4(1.0f);
     Vec4 emissive = Vec4(0);
@@ -42,7 +48,8 @@ public:
 
     float uv_scale = 1;
     uint32_t alpha_mode = (uint32_t)AlphaMode::Opaque;
-    Vec2 _pad;
+    uint32_t sampling_mode = 2;
+    uint32_t _pad;
   } parameters;
 
   std::string name = "Material";

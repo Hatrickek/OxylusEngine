@@ -497,8 +497,10 @@ float4 PSmain(VSLayout input, float4 pixelPosition : SV_Position) : SV_Target {
 
   float4 baseColor;
 
+  SamplerState materialSampler = Samplers[material.Sampler];
+
   if (material.AlbedoMapID != INVALID_ID) {
-    baseColor = GetMaterialAlbedoTexture(material).Sample(LINEAR_REPEATED_SAMPLER, scaledUV) * material.Color;
+    baseColor = GetMaterialAlbedoTexture(material).Sample(materialSampler, scaledUV) * material.Color;
   }
   else {
     baseColor = material.Color;
@@ -509,7 +511,7 @@ float4 PSmain(VSLayout input, float4 pixelPosition : SV_Position) : SV_Target {
 
   float3 emissive = float3(0.0, 0.0, 0.0);
   if (material.EmissiveMapID != INVALID_ID) {
-    float3 value = GetMaterialEmissiveTexture(material).Sample(LINEAR_REPEATED_SAMPLER, scaledUV).rgb;
+    float3 value = GetMaterialEmissiveTexture(material).Sample(materialSampler, scaledUV).rgb;
     emissive += value;
   }
   else {
@@ -528,7 +530,7 @@ float4 PSmain(VSLayout input, float4 pixelPosition : SV_Position) : SV_Target {
   surface.Create(material, baseColor, scaledUV);
 
   if (material.NormalMapID != INVALID_ID) {
-    surface.BumpColor = float3(GetMaterialNormalTexture(material).Sample(LINEAR_REPEATED_SAMPLER, scaledUV).rg, 1.0);
+    surface.BumpColor = float3(GetMaterialNormalTexture(material).Sample(materialSampler, scaledUV).rg, 1.0);
     surface.BumpColor = surface.BumpColor * 2.f - 1.f;
   }
 

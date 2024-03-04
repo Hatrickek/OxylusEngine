@@ -18,14 +18,16 @@
 
 // 0 - Linear Clamped
 // 1 - Linear Repeated
-// 2 - Nearest Clamped
-// 3 - Nearest Repeated
-[[vk::binding(9, 0)]] SamplerState Samplers[4];
+// 2 - Linear Repeated
+// 3 - Nearest Clamped
+// 4 - Nearest Repeated
+[[vk::binding(9, 0)]] SamplerState Samplers[5];
 
 #define LINEAR_CLAMPED_SAMPLER Samplers[0]
 #define LINEAR_REPEATED_SAMPLER Samplers[1]
-#define NEAREST_CLAMPED_SAMPLER Samplers[2]
-#define NEAREST_REPEATED_SAMPLER Samplers[3]
+#define LINEAR_REPEATED_SAMPLER_ANISOTROPY Samplers[2]
+#define NEAREST_CLAMPED_SAMPLER Samplers[3]
+#define NEAREST_REPEATED_SAMPLER Samplers[4]
 
 SceneData GetScene() { return Scene; }
 CameraData GetCamera() { return Camera; }
@@ -53,6 +55,11 @@ Texture2D<uint> GetGTAOTexture() { return SceneUintTextures[GetScene().Indices.G
 Texture2DArray<float4> GetSunShadowArrayTexture() { return SceneArrayTextures[GetScene().Indices.ShadowArrayIndex]; }
 
 // material textures
+SamplerState GetMaterialSampler(Material material) {
+  uint32_t index = material.Sampler > 1 ? 2 : 1;
+  return Samplers[index];
+}
+
 Texture2D<float4> GetMaterialAlbedoTexture(Material material) { return MaterialTextureMaps[material.AlbedoMapID]; }
 Texture2D<float4> GetMaterialNormalTexture(Material material) { return MaterialTextureMaps[material.NormalMapID]; }
 Texture2D<float4> GetMaterialPhysicalTexture(Material material) { return MaterialTextureMaps[material.PhysicalMapID]; }

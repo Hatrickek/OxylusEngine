@@ -156,6 +156,7 @@ void VulkanContext::create_context(const AppSpec& spec) {
   vk10features.features.shaderStorageImageReadWithoutFormat = true;
   vk10features.features.fillModeNonSolid = true;
   vk10features.features.multiViewport = true;
+  vk10features.features.samplerAnisotropy = true;
   selector.set_required_features(vk10features.features);
   VkPhysicalDeviceVulkan11Features vk11features{.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_VULKAN_1_1_FEATURES};
   vk11features.shaderDrawParameters = true;

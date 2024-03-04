@@ -51,7 +51,18 @@ inline SamplerCreateInfo LinearSamplerRepeated = {
   .mipmapMode = SamplerMipmapMode::eLinear,
   .addressModeU = SamplerAddressMode::eRepeat,
   .addressModeV = SamplerAddressMode::eRepeat,
-  .addressModeW = SamplerAddressMode::eRepeat
+  .addressModeW = SamplerAddressMode::eRepeat,
+};
+
+inline SamplerCreateInfo LinearSamplerRepeatedAnisotropy = {
+  .magFilter = Filter::eLinear,
+  .minFilter = Filter::eLinear,
+  .mipmapMode = SamplerMipmapMode::eLinear,
+  .addressModeU = SamplerAddressMode::eRepeat,
+  .addressModeV = SamplerAddressMode::eRepeat,
+  .addressModeW = SamplerAddressMode::eRepeat,
+  .anisotropyEnable = true,
+  .maxAnisotropy = 16.0f
 };
 
 inline SamplerCreateInfo LinearSamplerClamped = {
@@ -64,7 +75,7 @@ inline SamplerCreateInfo LinearSamplerClamped = {
   .borderColor = BorderColor::eFloatOpaqueWhite
 };
 
-template<class T>
+template <class T>
 std::pair<Unique<Buffer>, Future> create_cpu_buffer(Allocator& allocator, std::span<T> data) {
   return create_buffer(allocator, MemoryUsage::eCPUtoGPU, DomainFlagBits::eTransferOnGraphics, data);
 }
