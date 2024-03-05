@@ -29,7 +29,7 @@ void LuaSystem::check_result(const sol::protected_function_result& result, const
 void LuaSystem::init_script(const std::string& path) {
   OX_SCOPED_ZONE;
   if (!std::filesystem::exists(path)) {
-    OX_CORE_ERROR("Couldn't find the script file!");
+    OX_CORE_ERROR("Couldn't find the script file! {}", path);
     return;
   }
 

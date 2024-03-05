@@ -263,8 +263,8 @@ void EntitySerializer::serialize_entity(toml::array* entities, Scene* scene, Ent
     const auto& systems = component.lua_systems;
 
     toml::array path_array = {};
-    for (auto system : systems)
-      path_array.push_back(system->get_path());
+    for (const auto& system : systems)
+      path_array.push_back(App::get_relative(system->get_path()));
 
     const auto table = toml::table{
       {"paths", path_array}

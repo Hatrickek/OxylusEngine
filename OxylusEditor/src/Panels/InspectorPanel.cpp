@@ -811,8 +811,13 @@ void InspectorPanel::draw_components(Entity entity) {
                                 flags,
                                 "%s",
                                 name.c_str())) {
-            if (ImGui::Button("Reload"))
+            auto rld_str = fmt::format("{} Reload", StringUtils::from_char8_t(ICON_MDI_REFRESH));
+            if (ImGui::Button(rld_str.c_str()))
               system->reload();
+            ImGui::SameLine();
+            auto rmv_str = fmt::format("{} Remove", StringUtils::from_char8_t(ICON_MDI_TRASH_CAN));
+            if (ImGui::Button(rmv_str.c_str()))
+              component.lua_systems.erase(component.lua_systems.begin() + i);
             ImGui::TreePop();
           }
           ImGui::PopID();
