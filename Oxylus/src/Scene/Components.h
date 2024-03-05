@@ -289,7 +289,7 @@ struct AudioListenerComponent {
 
 // Scripting
 struct LuaScriptComponent {
-  Shared<LuaSystem> lua_system = nullptr;
+  std::vector<Shared<LuaSystem>> lua_systems = {};
 };
 
 template <typename... Component>

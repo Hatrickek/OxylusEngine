@@ -99,6 +99,8 @@ void InspectorPanel::draw_material_properties(Shared<Material>& material) {
   OxUI::begin_properties(OxUI::default_properties_flags, true, 0.5f);
   const char* alpha_modes[] = {"Opaque", "Blend", "Mask"};
   OxUI::property("Alpha mode", (int*)&material->parameters.alpha_mode, alpha_modes, 3);
+  const char* samplers[] = {"Bilinear", "Trilinear", "Anisotropy"};
+  OxUI::property("Sampler", (int*)&material->parameters.sampling_mode, samplers, 3);
   OxUI::property("UV Scale", &material->parameters.uv_scale, 0.0f);
 
   if (OxUI::property("Albedo", material->get_albedo_texture()))
@@ -376,7 +378,8 @@ void InspectorPanel::draw_components(Entity entity) {
     [this](SkyLightComponent& component) {
       const std::string name = component.cubemap
                                  ? FileSystem::get_file_name(component.cubemap->get_path())
-                                 : "Drop a hdr file";
+                                 : fmt::format("{} Drop a hdr file", StringUtils::from_char8_t(ICON_MDI_FILE_UPLOAD));
+
       auto load_cube_map = [](Scene* scene, const std::string& path, SkyLightComponent& comp) {
         if (path.empty())
           return;
@@ -447,9 +450,9 @@ void InspectorPanel::draw_components(Entity entity) {
     entity,
     [&entity, this](AudioSourceComponent& component) {
       auto& config = component.config;
-      const char* filepath = component.source
-                               ? component.source->get_path()
-                               : "Drop an audio file";
+      const std::string filepath = component.source
+                                     ? component.source->get_path()
+                                     : fmt::format("{} Drop an audio file", StringUtils::from_char8_t(ICON_MDI_FILE_UPLOAD));
 
       auto load_file = [](const std::filesystem::path& path, AudioSourceComponent& comp) {
         if (const std::string ext = path.extension().string(); ext == ".mp3" || ext == ".wav" || ext == ".flac")
@@ -458,7 +461,7 @@ void InspectorPanel::draw_components(Entity entity) {
 
       const float x = ImGui::GetContentRegionAvail().x;
       const float y = ImGui::GetFrameHeight();
-      if (ImGui::Button(filepath, {x, y})) {
+      if (ImGui::Button(filepath.c_str(), {x, y})) {
         const std::string file_path = App::get_system<FileDialogs>()->open_file({{"Audio file", "mp3, wav, flac"}});
         load_file(file_path, component);
       }
@@ -785,20 +788,49 @@ void InspectorPanel::draw_components(Entity entity) {
     context->registry,
     entity,
     [](LuaScriptComponent& component) {
-      const std::string name = component.lua_system
-                                 ? FileSystem::get_file_name(component.lua_system->get_path())
-                                 : "Drop a lua script file";
+      const float filter_cursor_pos_x = ImGui::GetCursorPosX();
+      ImGuiTextFilter name_filter;
+
+      name_filter.Draw("##scripts_filter", ImGui::GetContentRegionAvail().x - (OxUI::get_icon_button_size(ICON_MDI_PLUS, "").x + 2.0f * ImGui::GetStyle().FramePadding.x));
+
+      if (!name_filter.IsActive()) {
+        ImGui::SameLine();
+        ImGui::SetCursorPosX(filter_cursor_pos_x + ImGui::GetFontSize() * 0.5f);
+        ImGui::TextUnformatted(StringUtils::from_char8_t(ICON_MDI_MAGNIFY " Search..."));
+      }
+
+      for (uint32_t i = 0; i < (uint32_t)component.lua_systems.size(); i++) {
+        const auto& system = component.lua_systems[i];
+        auto name = FileSystem::get_file_name(system->get_path());
+        if (name_filter.PassFilter(name.c_str())) {
+          ImGui::PushID(i);
+          constexpr ImGuiTreeNodeFlags flags =
+            ImGuiTreeNodeFlags_DefaultOpen | ImGuiTreeNodeFlags_SpanFullWidth |
+            ImGuiTreeNodeFlags_FramePadding;
+          if (ImGui::TreeNodeEx(name.c_str(),
+                                flags,
+                                "%s",
+                                name.c_str())) {
+            if (ImGui::Button("Reload"))
+              system->reload();
+            ImGui::TreePop();
+          }
+          ImGui::PopID();
+        }
+      }
+
       auto load_script = [](const std::string& path, LuaScriptComponent& comp) {
         if (path.empty())
           return;
         const auto ext = FileSystem::get_file_extension(path);
         if (ext == "lua") {
-          comp.lua_system = create_shared<LuaSystem>(path);
+          comp.lua_systems.emplace_back(create_shared<LuaSystem>(path));
         }
       };
       const float x = ImGui::GetContentRegionAvail().x;
       const float y = ImGui::GetFrameHeight();
-      if (ImGui::Button(name.c_str(), {x, y})) {
+      const auto btn = fmt::format("{} Drop a script file", StringUtils::from_char8_t(ICON_MDI_FILE_UPLOAD));
+      if (ImGui::Button(btn.c_str(), {x, y})) {
         const std::string file_path = App::get_system<FileDialogs>()->open_file({{"Lua file", "lua"}});
         load_script(file_path, component);
       }
@@ -808,10 +840,6 @@ void InspectorPanel::draw_components(Entity entity) {
           load_script(path, component);
         }
         ImGui::EndDragDropTarget();
-      }
-      if (ImGui::Button("Reload", {x, y})) {
-        if (component.lua_system)
-          component.lua_system->reload();
       }
     });
 

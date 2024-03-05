@@ -351,9 +351,9 @@ void Scene::on_runtime_start() {
   // Lua scripts
   const auto script_view = registry.view<LuaScriptComponent>();
   for (auto&& [e, script_component] : script_view.each()) {
-    if (script_component.lua_system) {
-      script_component.lua_system->reload();
-      script_component.lua_system->on_init(this, e);
+    for (const auto& script : script_component.lua_systems) {
+      script->reload();
+      script->on_init(this, e);
     }
   }
 }
@@ -391,8 +391,8 @@ void Scene::on_runtime_stop() {
   // Lua scripts
   const auto script_view = registry.view<LuaScriptComponent>();
   for (auto&& [e, script_component] : script_view.each()) {
-    if (script_component.lua_system) {
-      script_component.lua_system->on_release(this, e);
+    for (const auto& script : script_component.lua_systems) {
+      script->on_release(this, e);
     }
   }
 }
@@ -669,9 +669,9 @@ void Scene::on_runtime_update(const Timestep& delta_time) {
     OX_SCOPED_ZONE_N("LuaScripting/on_update");
     const auto script_view = registry.view<LuaScriptComponent>();
     for (auto&& [e, script_component] : script_view.each()) {
-      if (script_component.lua_system) {
-        script_component.lua_system->bind_globals(this, e, delta_time);
-        script_component.lua_system->on_update(delta_time);
+      for (const auto& script : script_component.lua_systems) {
+        script->bind_globals(this, e, delta_time);
+        script->on_update(delta_time);
       }
     }
   }
@@ -716,8 +716,8 @@ void Scene::on_imgui_render(const Timestep& delta_time) {
     OX_SCOPED_ZONE_N("LuaScripting/on_imgui_render");
     const auto script_view = registry.view<LuaScriptComponent>();
     for (auto&& [e, script_component] : script_view.each()) {
-      if (script_component.lua_system) {
-        script_component.lua_system->on_imgui_render(delta_time);
+      for (const auto& script : script_component.lua_systems) {
+        script->on_imgui_render(delta_time);
       }
     }
   }
