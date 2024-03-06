@@ -158,16 +158,18 @@ static void open_file(const std::filesystem::path& path) {
         EditorLayer::get()->set_context_as_asset_with_path(path.string());
         break;
       }
-      case FileType::Audio: {
-        App::get_system<FileDialogs>()->open_file_with_program(filepath);
+      case FileType::Audio:
+        [[fallthrough]];
+      case FileType::Shader:
+        [[fallthrough]];
+      case FileType::Script: {
+        FileSystem::open_file_externally(filepath);
         break;
       }
-      case FileType::Shader: break;
-      case FileType::Script: break;
     }
   }
   else {
-    App::get_system<FileDialogs>()->open_file_with_program(filepath);
+    FileSystem::open_file_externally(filepath);
   }
 }
 
@@ -824,11 +826,11 @@ void ContentPanel::draw_context_menu_items(const std::filesystem::path& context,
     }
   }
   if (ImGui::MenuItem("Show in Explorer")) {
-    App::get_system<FileDialogs>()->open_folder_and_select_item(context.string().c_str());
+    FileSystem::open_folder_select_file(context.string().c_str());
     ImGui::CloseCurrentPopup();
   }
   if (ImGui::MenuItem("Open")) {
-    App::get_system<FileDialogs>()->open_file_with_program(context.string().c_str());
+    FileSystem::open_file_externally(context.string().c_str());
     ImGui::CloseCurrentPopup();
   }
   if (ImGui::MenuItem("Copy Path")) {

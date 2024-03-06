@@ -145,7 +145,6 @@ void VulkanContext::create_context(const AppSpec& spec) {
   selector.set_surface(surface)
           .set_minimum_version(1, 2)
           .add_required_extension(VK_KHR_SYNCHRONIZATION_2_EXTENSION_NAME)
-          //.add_required_extension(VK_KHR_DEFERRED_HOST_OPERATIONS_EXTENSION_NAME);
           .add_required_extension(VK_EXT_SHADER_VIEWPORT_INDEX_LAYER_EXTENSION_NAME);
 
   VkPhysicalDeviceFeatures2 vk10features{.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_FEATURES_2};

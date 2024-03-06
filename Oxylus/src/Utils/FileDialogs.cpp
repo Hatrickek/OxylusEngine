@@ -6,12 +6,6 @@
 
 #include "Core/PlatformDetection.h"
 
-#ifdef OX_PLATFORM_WINDOWS
-#include <ShlObj_core.h>
-#include <comdef.h>
-#include <shellapi.h>
-#endif
-
 namespace Ox {
 void FileDialogs::init() {
   OX_SCOPED_ZONE;
@@ -20,15 +14,6 @@ void FileDialogs::init() {
 
 void FileDialogs::deinit() {
   NFD_Quit();
-}
-
-void FileDialogs::open_file_with_program(const char* filepath) {
-#ifdef OX_PLATFORM_WINDOWS
-  const _bstr_t widePath(filepath);
-  ShellExecute(nullptr, LPCSTR(L"open"), widePath, nullptr, nullptr, SW_RESTORE);
-#else
-    OX_CORE_WARN("Not implemented on this platform!");
-#endif
 }
 
 std::string FileDialogs::open_file(const std::vector<nfdfilteritem_t>& filter) {
@@ -57,18 +42,5 @@ std::string FileDialogs::open_dir() {
     return out_path;
   }
   return {};
-}
-
-void FileDialogs::open_folder_and_select_item(const char* path) {
-#ifdef OX_PLATFORM_WINDOWS
-  const auto preferred = FileSystem::preferred_path(path);
-  const _bstr_t widePath(preferred.c_str());
-  if (const auto pidl = ILCreateFromPath(widePath)) {
-    SHOpenFolderAndSelectItems(pidl, 0, nullptr, 0);
-    ILFree(pidl);
-  }
-#else
-    OX_CORE_WARN("Not implemented on this platform!");
-#endif
 }
 }

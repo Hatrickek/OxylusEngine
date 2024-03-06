@@ -12,56 +12,17 @@ float3 F_Schlick(const float3 f0, float VoH) {
   return f0 + (f90 - f0) * pow5(1.0 - VoH);
 }
 
-float Fd_Burley(float roughness, float NoV, float NoL, float LoH) {
-  // Burley 2012, "Physically-Based Shading at Disney"
-  float f90 = 0.5 + 2.0 * roughness * LoH * LoH;
-  float lightScatter = F_Schlick(f90, NoL);
-  float viewScatter = F_Schlick(f90, NoV);
-  return lightScatter * viewScatter * (1.0 / PI);
-}
+float3x3 GetNormalTangent(float3 worldPos, float3 normal, float2 uv) {
+  float3 q1 = ddx(worldPos);
+  float3 q2 = ddy(worldPos);
+  float2 st1 = ddx(uv);
+  float2 st2 = ddy(uv);
 
-float Fd_Lambert() {
-  return 1.0 / PI;
-}
+  float3 T = normalize(q1 * st2.y - q2 * st1.y);
+  float3 B = -normalize(cross(normal, T));
+  float3x3 TBN = float3x3(T, B, normal);
 
-float Diffuse(float roughness, float NoV, float NoL, float LoH) {
-#if QUALITY_LOW
-    return Fd_Lambert();
-#else
-  return Fd_Burley(roughness, NoV, NoL, LoH);
-#endif
-}
-
-float3 ComputeDiffuseColor(const float4 baseColor, float metallic) {
-  return baseColor.rgb * (1.0 - metallic);
-}
-
-float clampNoV(float NoV) {
-  // Neubelt and Pettineo 2013, "Crafting a Next-gen Material Pipeline for The Order: 1886"
-  return max(NoV, MIN_N_DOT_V);
-}
-
-float3 computeF0(const float4 baseColor, float metallic, float reflectance) {
-  return baseColor.rgb * metallic + (reflectance * (1.0 - metallic));
-}
-
-float computeDielectricF0(float reflectance) {
-  return 0.16 * reflectance * reflectance;
-}
-
-float ComputeMicroShadowing(float NoL, float visibility) {
-  // Chan 2018, "Material Advances in Call of Duty: WWII"
-  float aperture = rsqrt(1.0 - min(visibility, 0.9999));
-  float microShadow = saturate(NoL * aperture);
-  return microShadow * microShadow;
-}
-
-float PerceptualRoughnessToRoughness(float perceptualRoughness) {
-  return perceptualRoughness * perceptualRoughness;
-}
-
-float RoughnessToPerceptualRoughness(float roughness) {
-  return sqrt(roughness);
+  return TBN;
 }
 
 int GetCascadeIndex(float4 cascadeSplits, float3 viewPosition, int cascadeCount) {

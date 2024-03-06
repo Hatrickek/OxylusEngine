@@ -8,25 +8,27 @@ void gtao_update_constants(GTAOConstants& consts, const int viewport_width, cons
   consts.ViewportSize = {viewport_width, viewport_height};
   consts.ViewportPixelSize = {1.0f / (float)viewport_width, 1.0f / (float)viewport_height};
 
-  float depth_linearize_mul = camera->get_far() * camera->get_near() / (camera->get_far() - camera->get_near());
-  float depth_linearize_add = camera->get_far() / (camera->get_far() - camera->get_near());
+  auto p = camera->get_projection_matrix();
+  const auto projMatrix = glm::value_ptr(p);
+
+  constexpr auto rowMajor = true;
+
+  float depthLinearizeMul = (rowMajor) ? (-projMatrix[3 * 4 + 2]) : (-projMatrix[3 + 2 * 4]); // float depthLinearizeMul = ( clipFar * clipNear ) / ( clipFar - clipNear );
+  float depthLinearizeAdd = (rowMajor) ? (projMatrix[2 * 4 + 2]) : (projMatrix[2 + 2 * 4]);   // float depthLinearizeAdd = clipFar / ( clipFar - clipNear );
 
   // correct the handedness issue. need to make sure this below is correct, but I think it is.
-  if (depth_linearize_mul * depth_linearize_add < 0)
-    depth_linearize_add = -depth_linearize_add; 
-  consts.DepthUnpackConsts = {depth_linearize_mul, depth_linearize_add};
+  if (depthLinearizeMul * depthLinearizeAdd < 0)
+    depthLinearizeAdd = -depthLinearizeAdd;
+  consts.DepthUnpackConsts = {depthLinearizeMul, depthLinearizeAdd};
 
-  float tan_half_fovy = tanf(camera->get_fov() * 0.5f);
-  float tan_half_fovx = tan_half_fovy * camera->get_aspect();
-  consts.CameraTanHalfFOV = {tan_half_fovx, tan_half_fovy};
+  float tanHalfFOVY = 1.0f / ((rowMajor) ? (projMatrix[1 * 4 + 1]) : (projMatrix[1 + 1 * 4])); // = tanf( drawContext.Camera.GetYFOV( ) * 0.5f );
+  float tanHalfFOVX = 1.0F / ((rowMajor) ? (projMatrix[0 * 4 + 0]) : (projMatrix[0 + 0 * 4])); // = tanHalfFOVY * drawContext.Camera.GetAspect( );
+  consts.CameraTanHalfFOV = {tanHalfFOVX, tanHalfFOVY};
 
   consts.NDCToViewMul = {consts.CameraTanHalfFOV.x * 2.0f, consts.CameraTanHalfFOV.y * -2.0f};
   consts.NDCToViewAdd = {consts.CameraTanHalfFOV.x * -1.0f, consts.CameraTanHalfFOV.y * 1.0f};
 
-  consts.NDCToViewMul_x_PixelSize = {
-    consts.NDCToViewMul.x * consts.ViewportPixelSize.x,
-    consts.NDCToViewMul.y * consts.ViewportPixelSize.y
-  };
+  consts.NDCToViewMul_x_PixelSize = {consts.NDCToViewMul.x * consts.ViewportPixelSize.x, consts.NDCToViewMul.y * consts.ViewportPixelSize.y};
 
   consts.EffectRadius = settings.Radius;
 

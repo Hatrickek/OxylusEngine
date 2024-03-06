@@ -454,19 +454,6 @@ inline void ForwardLighting(inout Surface surface, inout Lighting lighting) {
   }
 }
 
-float3x3 GetNormalTangent(VSLayout vs, float2 uv) {
-  float3 q1 = ddx(vs.WorldPos);
-  float3 q2 = ddy(vs.WorldPos);
-  float2 st1 = ddx(uv);
-  float2 st2 = ddy(uv);
-
-  float3 T = normalize(q1 * st2.y - q2 * st1.y);
-  float3 B = -normalize(cross(vs.Normal, T));
-  float3x3 TBN = float3x3(T, B, vs.Normal);
-
-  return TBN;
-}
-
 float GeometricOcclusion(Surface pixelData, float NoL) {
   float NdotL = NoL;
   float NdotV = pixelData.NdotV;
@@ -536,7 +523,7 @@ float4 PSmain(VSLayout input, float4 pixelPosition : SV_Position) : SV_Target {
 
   surface.T = input.Tangent;
   surface.T.xyz = normalize(surface.T.xyz);
-  float3x3 TBN = GetNormalTangent(input, scaledUV);
+  float3x3 TBN = GetNormalTangent(input.WorldPos, input.Normal, scaledUV);
 
   if (any(surface.BumpColor)) {
     surface.N = normalize(lerp(surface.N, mul(surface.BumpColor, TBN), length(surface.BumpColor)));

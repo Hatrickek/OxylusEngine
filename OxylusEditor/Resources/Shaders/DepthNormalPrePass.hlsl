@@ -1,4 +1,5 @@
 #include "Globals.hlsli"
+#include "PBRCommon.hlsli"
 
 [[vk::push_constant]]
 struct PushConstant {
@@ -14,7 +15,6 @@ struct VSLayout {
   float3 WorldPos : WORLD_POSITION;
   float3 Normal : NORMAL;
   float2 UV : TEXCOORD;
-  float3x3 WorldTangent : WORLD_TANGENT;
 };
 
 VSLayout VSmain(uint vertexIndex : SV_VertexID, uint instanceIndex : SV_InstanceID) {
@@ -35,29 +35,32 @@ VSLayout VSmain(uint vertexIndex : SV_VertexID, uint instanceIndex : SV_Instance
   float3 B = cross(N, T);
 
   VSLayout output;
-  output.Normal = normalize(mul(transpose((float3x3) modelMatrix), vertexNormal));
+  output.Normal = normalize(mul((float3x3)modelMatrix, vertexNormal));
+  output.Normal = mul(GetCamera().ViewMatrix, output.Normal); // normals in viewspace
   output.WorldPos = locPos.xyz / locPos.w;
   output.UV = vertexUV.xy;
   output.Position = mul(mul(GetCamera().ProjectionMatrix, GetCamera().ViewMatrix), float4(output.WorldPos, 1.0));
-  output.WorldTangent = float3x3(T, B, N);
 
   return output;
 }
 
 float4 PSmain(VSLayout input) : SV_Target0 {
-  Material mat = GetMaterial(PushConst.MaterialIndex);
+  Material material = GetMaterial(PushConst.MaterialIndex);
 
   float2 scaledUV = input.UV;
-  scaledUV *= mat.UVScale;
+  scaledUV *= material.UVScale;
 
-  bool useNormalMap = mat.NormalMapID != INVALID_ID;
-  const float normalMapStrenght = useNormalMap ? 1.0 : 0.0;
-  float3 normal = float3(0, 0, 0);
-  if (useNormalMap)
-    normal = GetMaterialNormalTexture(mat).Sample(LINEAR_REPEATED_SAMPLER, scaledUV).rgb;
-  normal = mul(input.WorldTangent, normalize(normal * 2.0 - 1.0));
-  normal = lerp(normalize(input.Normal), normal, normalMapStrenght);
-  normal = normalize(mul((float3x3)GetCamera().ViewMatrix, normal));
+  float3 normal = normalize(input.Normal);
+
+  const bool useNormalMap = material.NormalMapID != INVALID_ID;
+  if (useNormalMap) {
+    const SamplerState materialSampler = Samplers[material.Sampler];
+    float3 bumpColor = GetMaterialNormalTexture(material).Sample(materialSampler, scaledUV).rgb;
+    bumpColor = bumpColor * 2.f - 1.f;
+
+    const float3x3 TBN = GetNormalTangent(input.WorldPos, input.Normal, scaledUV);
+    normal = normalize(lerp(normal, mul(bumpColor, TBN), length(bumpColor)));
+  }
 
   return float4(normal, 1.0f);
 }

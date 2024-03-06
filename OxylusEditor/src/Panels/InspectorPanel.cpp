@@ -807,10 +807,7 @@ void InspectorPanel::draw_components(Entity entity) {
           constexpr ImGuiTreeNodeFlags flags =
             ImGuiTreeNodeFlags_DefaultOpen | ImGuiTreeNodeFlags_SpanFullWidth |
             ImGuiTreeNodeFlags_FramePadding;
-          if (ImGui::TreeNodeEx(name.c_str(),
-                                flags,
-                                "%s",
-                                name.c_str())) {
+          if (ImGui::TreeNodeEx(name.c_str(), flags, "%s", name.c_str())) {
             auto rld_str = fmt::format("{} Reload", StringUtils::from_char8_t(ICON_MDI_REFRESH));
             if (ImGui::Button(rld_str.c_str()))
               system->reload();

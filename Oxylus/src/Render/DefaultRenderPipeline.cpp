@@ -1101,7 +1101,7 @@ void DefaultRenderPipeline::gtao_pass(vuk::Allocator& frame_allocator, const Sha
                     .bind_image(0, 4, diverged_names[2])
                     .bind_image(0, 5, diverged_names[3])
                     .bind_image(0, 6, diverged_names[4])
-                    .bind_sampler(0, 7, vuk::LinearSamplerClamped)
+                    .bind_sampler(0, 7, vuk::NearestSamplerClamped)
                     .dispatch((Renderer::get_viewport_width() + 16 - 1) / 16, (Renderer::get_viewport_height() + 16 - 1) / 16);
     }
   });
@@ -1123,7 +1123,7 @@ void DefaultRenderPipeline::gtao_pass(vuk::Allocator& frame_allocator, const Sha
                     .bind_image(0, 2, "normal_output")
                     .bind_image(0, 3, "gtao_main_image")
                     .bind_image(0, 4, "gtao_edge_image")
-                    .bind_sampler(0, 5, vuk::LinearSamplerClamped)
+                    .bind_sampler(0, 5, vuk::NearestSamplerClamped)
                     .dispatch((Renderer::get_viewport_width() + 8 - 1) / 8, (Renderer::get_viewport_height() + 8 - 1) / 8);
     }
   });
@@ -1154,7 +1154,7 @@ void DefaultRenderPipeline::gtao_pass(vuk::Allocator& frame_allocator, const Sha
                       .bind_image(0, 1, read_input)
                       .bind_image(0, 2, "gtao_edge_output")
                       .bind_image(0, 3, attachment_name)
-                      .bind_sampler(0, 4, {})
+                      .bind_sampler(0, 4, vuk::NearestSamplerClamped)
                       .dispatch((Renderer::get_viewport_width() + XE_GTAO_NUMTHREADS_X * 2 - 1) / (XE_GTAO_NUMTHREADS_X * 2), (Renderer::get_viewport_height() + XE_GTAO_NUMTHREADS_Y - 1) / XE_GTAO_NUMTHREADS_Y, 1);
       }
     });
@@ -1173,7 +1173,7 @@ void DefaultRenderPipeline::gtao_pass(vuk::Allocator& frame_allocator, const Sha
                     .bind_image(0, 1, gtao_denoise_output)
                     .bind_image(0, 2, "gtao_edge_output")
                     .bind_image(0, 3, "gtao_final_image")
-                    .bind_sampler(0, 4, {})
+                    .bind_sampler(0, 4, vuk::NearestSamplerClamped)
                     .dispatch((Renderer::get_viewport_width() + XE_GTAO_NUMTHREADS_X * 2 - 1) / (XE_GTAO_NUMTHREADS_X * 2), (Renderer::get_viewport_height() + XE_GTAO_NUMTHREADS_Y - 1) / XE_GTAO_NUMTHREADS_Y, 1);
     }
   });
