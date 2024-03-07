@@ -4,7 +4,7 @@
 
 #include "Base.h"
 
-namespace Ox {
+namespace ox {
 struct ProjectConfig {
   std::string name = "Untitled";
 

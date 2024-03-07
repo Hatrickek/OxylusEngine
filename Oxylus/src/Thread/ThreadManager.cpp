@@ -1,6 +1,6 @@
 #include "ThreadManager.h"
 
-namespace Ox {
+namespace ox {
 ThreadManager* ThreadManager::instance = nullptr;
 
 ThreadManager::ThreadManager() {

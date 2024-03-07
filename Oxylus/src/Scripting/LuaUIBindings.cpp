@@ -7,7 +7,7 @@
 
 #include "UI/OxUI.h"
 
-namespace Ox::LuaBindings {
+namespace ox::LuaBindings {
 void bind_ui(const Shared<sol::state>& state) {
   LuaImGuiBindings::init(state.get());
 

@@ -8,7 +8,7 @@
 
 #include "Core/App.h"
 
-namespace Ox {
+namespace ox {
 std::string FileUtils::read_file(const std::string& file_path) {
   OX_SCOPED_ZONE;
   std::ostringstream buf;

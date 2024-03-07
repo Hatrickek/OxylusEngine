@@ -7,7 +7,7 @@
 #include <entt/locator/locator.hpp>
 #include <sol/state.hpp>
 
-namespace Ox {
+namespace ox {
 class OX_SHARED ModuleInterface {
 public:
   virtual ~ModuleInterface() = default;

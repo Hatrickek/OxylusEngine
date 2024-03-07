@@ -3,7 +3,7 @@
 #include <glm/gtx/matrix_decompose.hpp>
 
 
-namespace Ox::Math {
+namespace ox::Math {
 bool decompose_transform(const glm::mat4& transform, glm::vec3& translation, glm::vec3& rotation, glm::vec3& scale) {
   OX_SCOPED_ZONE;
   using namespace glm;

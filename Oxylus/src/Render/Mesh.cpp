@@ -31,7 +31,7 @@
 
 #include "Vulkan/VulkanContext.h"
 
-namespace Ox {
+namespace ox {
 Mesh::Mesh(const std::string_view path, const int file_loading_flags, const float scale) {
   load_from_file(path.data(), file_loading_flags, scale);
 }

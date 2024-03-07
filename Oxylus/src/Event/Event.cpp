@@ -1,3 +1,3 @@
 ﻿#include "Event.h"
 
-namespace Ox {}
+namespace ox {}

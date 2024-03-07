@@ -8,7 +8,7 @@
 #include "Core/Base.h"
 #include "Core/Layer.h"
 
-namespace Ox {
+namespace ox {
 class Texture;
 
 class ImGuiLayer : public Layer {

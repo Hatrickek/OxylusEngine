@@ -27,7 +27,7 @@
 #include "Render/Utils/SPD.h"
 #include "Render/Utils/VukCommon.h"
 
-namespace Ox {
+namespace ox {
 static std::vector<uint32_t> cumulated_material_map = {};
 
 static std::vector<uint32_t> cumulate_material_map(const ankerl::unordered_dense::map<uint32_t, uint32_t>& material_map) {

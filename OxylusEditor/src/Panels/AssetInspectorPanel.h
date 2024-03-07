@@ -3,7 +3,7 @@
 #include "EditorPanel.h"
 #include "Core/Base.h"
 
-namespace Ox {
+namespace ox {
   class Material;
 
   class AssetInspectorPanel : public EditorPanel {

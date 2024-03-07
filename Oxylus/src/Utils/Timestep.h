@@ -1,6 +1,6 @@
 #pragma once
 
-namespace Ox {
+namespace ox {
 class Timer;
 
 class Timestep {

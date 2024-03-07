@@ -7,7 +7,7 @@
 
 #include "Render/DebugRenderer.h"
 
-namespace Ox::LuaBindings {
+namespace ox::LuaBindings {
 void bind_debug_renderer(const Shared<sol::state>& state) {
   auto debug_table = state->create_table("Debug");
   debug_table.set_function("draw_point",

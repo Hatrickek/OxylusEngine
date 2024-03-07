@@ -2,7 +2,7 @@
 
 #include "Core/Types.h"
 
-namespace Ox {
+namespace ox {
 class RayCast {
 public:
   RayCast() = default;

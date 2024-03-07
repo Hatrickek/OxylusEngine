@@ -2,7 +2,7 @@
 
 #include "Scene.h"
 
-namespace Ox {
+namespace ox {
 class SceneSerializer {
 public:
   SceneSerializer(const Shared<Scene>& scene);

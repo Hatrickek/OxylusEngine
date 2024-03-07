@@ -1,7 +1,7 @@
 ﻿#pragma once
 #include <cstdint>
 
-namespace Ox {
+namespace ox {
 class AssetManager;
 
 

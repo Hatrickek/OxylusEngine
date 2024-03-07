@@ -14,7 +14,7 @@
 #include "Utils/Log.h"
 #include "Utils/Profiler.h"
 
-namespace Ox {
+namespace ox {
 BPLayerInterfaceImpl Physics::layer_interface;
 JPH::TempAllocatorImpl* Physics::temp_allocator = nullptr;
 ObjectVsBroadPhaseLayerFilterImpl Physics::object_vs_broad_phase_layer_filter_interface;

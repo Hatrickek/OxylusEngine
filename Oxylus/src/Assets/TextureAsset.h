@@ -7,7 +7,7 @@
 
 #include "Core/Base.h"
 
-namespace Ox {
+namespace ox {
 struct TextureLoadInfo {
   std::string path = {};
   uint32_t width = 0;

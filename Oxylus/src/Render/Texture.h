@@ -6,7 +6,7 @@ namespace vuk {
 struct Texture;
 }
 
-namespace Ox {
+namespace ox {
 class Texture {
 public:
   /// Loads the given file using stb. Returned data must be freed manually.

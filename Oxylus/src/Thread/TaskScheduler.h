@@ -13,7 +13,7 @@
     }); \
   App::get_system<TaskScheduler>()->get()->AddTaskSetToPipe(&VAR_NAME(task, __LINE__))
 
-namespace Ox {
+namespace ox {
 class TaskScheduler : public ESystem {
 public:
   TaskScheduler() = default;

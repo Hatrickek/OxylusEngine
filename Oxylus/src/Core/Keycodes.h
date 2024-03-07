@@ -2,7 +2,7 @@
 
 #include <cstdint>
 
-namespace Ox {
+namespace ox {
 
 enum class KeyCode : uint16_t {
   Space      = 32,

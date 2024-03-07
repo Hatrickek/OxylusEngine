@@ -12,7 +12,7 @@
 
 struct VkExtent2D;
 
-namespace Ox {
+namespace ox {
 class Camera {
 public:
   Camera(Vec3 position = Vec3(0.0f, 0.0f, 0.0f));

@@ -5,7 +5,7 @@
 #include "Core/ESystem.h"
 #include "Core/Types.h"
 
-namespace Ox {
+namespace ox {
 class Random : public ESystem {
 public:
   Random() = default;

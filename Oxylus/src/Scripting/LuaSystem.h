@@ -8,7 +8,7 @@
 #include "Core/Base.h"
 #include "Core/Systems/System.h"
 
-namespace Ox {
+namespace ox {
 class LuaSystem {
 public:
   LuaSystem(std::string path);

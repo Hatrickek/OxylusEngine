@@ -5,6 +5,6 @@ namespace sol {
 class state;
 }
 
-namespace Ox::LuaBindings {
+namespace ox::LuaBindings {
 void bind_debug_renderer(const Shared<sol::state>& state);
 }

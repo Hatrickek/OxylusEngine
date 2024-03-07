@@ -2,7 +2,7 @@
 #include "Scene/Components.h"
 #include "Event/Event.h"
 
-namespace Ox {
+namespace ox {
 class RenderPipeline;
 class Scene;
 

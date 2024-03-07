@@ -3,7 +3,7 @@
 #include <cstdint>
 #include <ankerl/unordered_dense.h>
 
-namespace Ox {
+namespace ox {
 class UUID {
 public:
   UUID();
@@ -20,8 +20,8 @@ private:
 }
 
 template <>
-struct ankerl::unordered_dense::hash<Ox::UUID> {
-  size_t operator()(const Ox::UUID& uuid) const noexcept {
+struct ankerl::unordered_dense::hash<ox::UUID> {
+  size_t operator()(const ox::UUID& uuid) const noexcept {
     return uuid;
   }
 };

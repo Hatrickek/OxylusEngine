@@ -13,7 +13,7 @@
 
 #include "Core/Base.h"
 
-namespace Ox {
+namespace ox {
 class TextureAsset;
 
 enum class FileType {

@@ -8,7 +8,7 @@
 
 #include "Render/Mesh.h"
 
-namespace Ox::LuaBindings {
+namespace ox::LuaBindings {
 void bind_asset_manager(const Shared<sol::state>& state) {
   auto asset_table = state->create_table("Assets");
   asset_table.set_function("get_mesh", [](const std::string& path) -> Shared<Mesh> { return AssetManager::get_mesh_asset(path); });

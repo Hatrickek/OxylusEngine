@@ -14,7 +14,7 @@
 #include "UI/ImGuiLayer.h"
 #include "Utils/Profiler.h"
 
-namespace Ox {
+namespace ox {
 Renderer::RendererContext Renderer::renderer_context;
 RendererConfig Renderer::renderer_config;
 Renderer::RendererStats Renderer::renderer_stats;

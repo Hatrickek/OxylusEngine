@@ -17,7 +17,7 @@ namespace JPH {
 class Character;
 }
 
-namespace Ox {
+namespace ox {
 class TextureAsset;
 class Material;
 

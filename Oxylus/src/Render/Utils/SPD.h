@@ -20,7 +20,7 @@ enum class ReductionType : uint32_t {
 inline Future generate_mips_spd(Context& ctx, Future src, Future dst, ReductionType type = ReductionType::Avg) {
   if (!ctx.is_pipeline_available("spd_pipeline")) {
     PipelineBaseCreateInfo spd_pci = {};
-    spd_pci.add_hlsl(Ox::FileUtils::read_shader_file("SPD/SPD.hlsl"), Ox::FileUtils::get_shader_path("SPD/SPD.hlsl"), HlslShaderStage::eCompute);
+    spd_pci.add_hlsl(ox::FileUtils::read_shader_file("SPD/SPD.hlsl"), ox::FileUtils::get_shader_path("SPD/SPD.hlsl"), HlslShaderStage::eCompute);
     ctx.create_named_pipeline("spd_pipeline", spd_pci);
   }
   std::shared_ptr<RenderGraph> rgp = std::make_shared<RenderGraph>("generate_mips_spd");

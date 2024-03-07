@@ -15,7 +15,7 @@
 #include "Assets/TextureAsset.h"
 #include "Core/App.h"
 
-namespace Ox {
+namespace ox {
 inline static int ui_context_id = 0;
 inline static int s_counter = 0;
 char OxUI::id_buffer[16];

@@ -10,7 +10,7 @@
 #include "Utils/FileUtils.h"
 #include "Utils/Toml.h"
 
-namespace Ox {
+namespace ox {
 EditorConfig* EditorConfig::instance = nullptr;
 
 constexpr const char* EDITOR_CONFIG_FILE_NAME = "editor_config.toml";

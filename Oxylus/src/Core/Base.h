@@ -8,7 +8,7 @@
 
 #include <memory>
 
-namespace Ox {
+namespace ox {
 template <typename T> using Shared = std::shared_ptr<T>;
 
 template <typename T, typename... Args>

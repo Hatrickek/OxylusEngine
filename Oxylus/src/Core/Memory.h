@@ -1,5 +1,5 @@
 #pragma once
 
-namespace Ox {
+namespace ox {
 }
 

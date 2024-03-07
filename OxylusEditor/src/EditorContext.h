@@ -2,7 +2,7 @@
 #include <cstring>
 #include <filesystem>
 
-namespace Ox {
+namespace ox {
   enum class EditorContextType {
     None = 0,
     Entity,

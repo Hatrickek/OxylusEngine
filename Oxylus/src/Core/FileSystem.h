@@ -1,7 +1,7 @@
 ﻿#pragma once
 #include <string>
 
-namespace Ox {
+namespace ox {
 /// @brief A lightweight std::filesystem alternative 
 class FileSystem {
 public:

@@ -11,7 +11,7 @@
 
 #include "Utils/Profiler.h"
 
-namespace Ox {
+namespace ox {
 Window::WindowData Window::s_window_data;
 GLFWwindow* Window::s_window_handle;
 

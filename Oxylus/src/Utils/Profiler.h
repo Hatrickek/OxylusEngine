@@ -50,7 +50,7 @@
 #define OX_FREE(ptr)
 #endif
 
-namespace Ox {
+namespace ox {
 class VulkanContext;
 
 #ifdef TRACY_ENABLE

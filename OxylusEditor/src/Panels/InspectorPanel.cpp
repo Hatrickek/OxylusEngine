@@ -20,7 +20,7 @@
 
 #include "Scene/SceneRenderer.h"
 
-namespace Ox {
+namespace ox {
 static bool s_rename_entity = false;
 
 InspectorPanel::InspectorPanel() : EditorPanel("Inspector", ICON_MDI_INFORMATION, true), context(nullptr) {}

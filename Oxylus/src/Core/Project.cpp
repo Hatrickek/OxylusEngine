@@ -14,7 +14,7 @@
 #include "Utils/Log.h"
 #include "Utils/Profiler.h"
 
-namespace Ox {
+namespace ox {
 std::string Project::get_asset_directory() {
   return FileSystem::append_paths(get_project_directory(), active_project->project_config.asset_directory);
 }

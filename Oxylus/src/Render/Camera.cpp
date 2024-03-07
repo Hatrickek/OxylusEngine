@@ -5,7 +5,7 @@
 
 #include "Vulkan/Renderer.h"
 
-namespace Ox {
+namespace ox {
 Camera::Camera(Vec3 position) {
   m_position = position;
   update_view_matrix();

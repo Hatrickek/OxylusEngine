@@ -1,6 +1,6 @@
 #include "LayerStack.h"
 
-namespace Ox {
+namespace ox {
 LayerStack::~LayerStack() {
   for (Layer* layer : m_layers) {
     layer->on_detach();

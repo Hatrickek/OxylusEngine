@@ -2,7 +2,7 @@
 
 #include <string>
 
-namespace Ox {
+namespace ox {
 namespace StringUtils {
 static void replace_string(std::string& subject, std::string_view search, std::string_view replace) {
   size_t pos = 0;

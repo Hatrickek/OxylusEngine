@@ -7,7 +7,7 @@
 #include "Utils/Log.h"
 #include "Utils/Profiler.h"
 
-namespace Ox {
+namespace ox {
 void AudioEngine::init() {
   OX_SCOPED_ZONE;
   ma_engine_config config = ma_engine_config_init();

@@ -3,7 +3,7 @@
 #include "Profiler.h"
 #include "Timer.h"
 
-namespace Ox {
+namespace ox {
 Timestep::Timestep()
   : m_timestep(0.0)
     , m_last_time(0.0)

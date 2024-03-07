@@ -13,7 +13,7 @@
 
 #include "Utils/Log.h"
 
-namespace Ox {
+namespace ox {
 class RuntimeConsoleLogSink : public ExternalSink {
 public:
   explicit RuntimeConsoleLogSink(void* user_data)

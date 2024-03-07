@@ -6,7 +6,7 @@
 #include "Core/Base.h"
 #include "Utils/OxMath.h"
 
-namespace Ox {
+namespace ox {
 class TextureAsset;
 
 struct Particle {

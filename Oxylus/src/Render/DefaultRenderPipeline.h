@@ -6,7 +6,7 @@
 #include "PBR/DirectShadowPass.h"
 #include "PBR/GTAO/XeGTAO.h"
 
-namespace Ox {
+namespace ox {
 struct SkyboxLoadEvent;
 
 class DefaultRenderPipeline : public RenderPipeline {

@@ -1,6 +1,6 @@
 #include "Thread.h"
 
-namespace Ox {
+namespace ox {
 Thread::Thread() {
   worker = std::thread(&Thread::queue_loop, this);
 }

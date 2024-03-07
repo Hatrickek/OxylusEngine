@@ -4,7 +4,7 @@
 
 #include "Core/ESystem.h"
 
-namespace Ox {
+namespace ox {
 struct ReloadSceneEvent {
   ReloadSceneEvent() = default;
 };

@@ -9,7 +9,7 @@
 #include "Render/Window.h"
 #include "Render/Vulkan/Renderer.h"
 
-namespace Ox::LuaBindings {
+namespace ox::LuaBindings {
 void bind_renderer(const Shared<sol::state>& state) {
   auto window_table = state->create_table("Window");
   SET_TYPE_FUNCTION(window_table, Window, get_width);

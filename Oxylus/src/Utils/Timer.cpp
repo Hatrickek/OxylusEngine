@@ -1,6 +1,6 @@
 ﻿#include "Timer.h"
 
-namespace Ox {
+namespace ox {
 float Timer::get_timed_ms() {
   const float time = duration(m_last_time, now(), 1000.0f);
   m_last_time = now();

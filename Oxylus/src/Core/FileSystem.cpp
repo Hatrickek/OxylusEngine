@@ -1,16 +1,18 @@
 ﻿#include "FileSystem.h"
 
-#include "Utils/StringUtils.h"
-
 #include "Core/PlatformDetection.h"
 
+#include "Utils/StringUtils.h"
+
 #ifdef OX_PLATFORM_WINDOWS
-#include <ShlObj_core.h>
 #include <comdef.h>
 #include <shellapi.h>
+#include <ShlObj_core.h>
 #endif
 
-namespace Ox {
+#include "Utils/Log.h"
+
+namespace ox {
 std::string FileSystem::get_file_extension(const std::string_view filepath) {
   const auto lastDot = filepath.find_last_of('.');
   return static_cast<std::string>(filepath.substr(lastDot + 1, filepath.size() - lastDot));

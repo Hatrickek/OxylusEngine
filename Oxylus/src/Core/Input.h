@@ -12,7 +12,7 @@
 typedef struct GLFWcursor GLFWcursor;
 typedef struct GLFWwindow GLFWwindow;
 
-namespace Ox {
+namespace ox {
 class Input {
 public:
 #define GLFW_CURSOR_NORMAL          0x00034001

@@ -7,7 +7,7 @@
 #include <fstream>
 #include <sstream>
 
-namespace Ox {
+namespace ox {
 ProjectSerializer::ProjectSerializer(Shared<Project> project) : project(std::move(project)) {}
 
 bool ProjectSerializer::serialize(const std::string& file_path) const {

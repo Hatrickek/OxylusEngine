@@ -2,7 +2,7 @@
 
 #include <string>
 
-namespace Ox {
+namespace ox {
 class ModuleUtil {
 public:
   static void load_module(const std::string& name, const std::string& path);

@@ -5,6 +5,6 @@ namespace sol {
 class state;
 }
 
-namespace Ox::LuaBindings {
+namespace ox::LuaBindings {
 void bind_asset_manager(const Shared<sol::state>& state);
 }

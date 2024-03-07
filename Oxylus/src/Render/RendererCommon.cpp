@@ -20,7 +20,7 @@
 #include "Render/Utils/VukCommon.h"
 #include "Vulkan/VulkanContext.h"
 
-namespace Ox {
+namespace ox {
 RendererCommon::MeshLib RendererCommon::mesh_lib = {};
 
 std::pair<vuk::Unique<vuk::Image>, vuk::Future> RendererCommon::generate_cubemap_from_equirectangular(const vuk::Texture& cubemap) {

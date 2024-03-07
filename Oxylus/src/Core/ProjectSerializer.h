@@ -3,7 +3,7 @@
 #include "Project.h"
 #include "Base.h"
 
-namespace Ox {
+namespace ox {
 class ProjectSerializer {
 public:
   ProjectSerializer(Shared<Project> project);

@@ -5,7 +5,7 @@
 #include "Core/Types.h"
 #include "Core/UUID.h"
 
-namespace Ox {
+namespace ox {
 using Entity = entt::entity;
 
 class Scene;

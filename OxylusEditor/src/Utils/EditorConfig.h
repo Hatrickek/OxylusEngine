@@ -6,7 +6,7 @@
 
 #include <Utils/CVars.h>
 
-namespace Ox {
+namespace ox {
 class Project;
 
 namespace EditorCVar {

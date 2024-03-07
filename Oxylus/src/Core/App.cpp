@@ -25,7 +25,7 @@
 #include "Utils/Profiler.h"
 #include "Utils/Random.h"
 
-namespace Ox {
+namespace ox {
 App* App::instance = nullptr;
 
 App::App(AppSpec spec) : app_spec(std::move(spec)) {

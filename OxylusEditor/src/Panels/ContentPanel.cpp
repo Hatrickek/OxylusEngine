@@ -31,7 +31,7 @@
 #	pragma warning(pop)
 #endif
 
-namespace Ox {
+namespace ox {
 static const ankerl::unordered_dense::map<FileType, const char*> FILE_TYPES_TO_STRING =
 {
   {FileType::Unknown, "Unknown"},

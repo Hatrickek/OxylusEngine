@@ -12,7 +12,7 @@
 #include "Utils/StringUtils.h"
 #include "Utils/FileDialogs.h"
 
-namespace Ox {
+namespace ox {
 ProjectPanel::ProjectPanel() : EditorPanel("Projects", ICON_MDI_ACCOUNT_BADGE, true) { }
 
 void ProjectPanel::on_update() { }

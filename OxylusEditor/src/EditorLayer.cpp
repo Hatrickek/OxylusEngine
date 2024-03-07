@@ -34,7 +34,7 @@
 #include "Utils/EmbeddedBanner.h"
 #include "Utils/StringUtils.h"
 
-namespace Ox {
+namespace ox {
 EditorLayer* EditorLayer::instance = nullptr;
 
 AutoCVar_Int cvar_show_style_editor("ui.imgui_style_editor", "show imgui style editor", 0, CVarFlags::EditCheckbox);

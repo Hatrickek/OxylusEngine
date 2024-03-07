@@ -9,7 +9,7 @@
 #include "Render/Vulkan/VulkanContext.h"
 #include "UI/OxUI.h"
 
-namespace Ox {
+namespace ox {
 RendererSettingsPanel::RendererSettingsPanel() : EditorPanel("Renderer Settings", ICON_MDI_GPU, true) {}
 
 void RendererSettingsPanel::on_imgui_render() {

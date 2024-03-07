@@ -12,7 +12,7 @@
 
 #include "Utils/Profiler.h"
 
-namespace Ox::LuaBindings {
+namespace ox::LuaBindings {
 #define SET_MATH_FUNCTIONS(var, type, number)                                                                            \
   (var).set_function(sol::meta_function::division, [](const type& a, const type& b) { return a / b; });          \
   (var).set_function(sol::meta_function::equal_to, [](const type& a, const type& b) { return a == b; });         \

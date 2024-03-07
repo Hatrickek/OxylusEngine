@@ -8,7 +8,7 @@
 
 #include "Scene/Components.h"
 
-namespace Ox {
+namespace ox {
 void LuaBindings::bind_components(const Shared<sol::state>& state) {
   REGISTER_COMPONENT(state, TagComponent, FIELD(TagComponent, tag), FIELD(TagComponent, enabled));
 #define TC TransformComponent

@@ -37,7 +37,7 @@
 
 #include "Scripting/LuaManager.h"
 
-namespace Ox {
+namespace ox {
 Scene::Scene() {
   init();
 }
@@ -304,10 +304,35 @@ static void copy_component_if_exists(ComponentGroup<Component...>,
   copy_component_if_exists<Component...>(dst, src, registry);
 }
 
-void Scene::duplicate_entity(Entity entity) {
+void Scene::duplicate_children(const Entity entity) {
+  auto& rc = registry.get<RelationshipComponent>(entity);
+
+  for (auto& child : rc.children) {
+    const auto e = create_entity(EUtil::get_name(registry, get_entity_by_uuid(child)));
+    copy_component_if_exists(AllComponents{}, e, get_entity_by_uuid(child), registry);
+    child = registry.get<IDComponent>(e).uuid;
+
+#if 0
+    auto& rcc = registry.get<RelationshipComponent>(e);
+
+    if (rcc.parent > 0) {
+      const auto p = create_entity(EUtil::get_name(registry, get_entity_by_uuid(child)));
+      copy_component_if_exists(AllComponents{}, p, get_entity_by_uuid(rcc.parent), registry);
+      rcc.parent = registry.get<IDComponent>(p).uuid;
+    }
+#endif
+    //duplicate_children(e);
+  }
+}
+
+Entity Scene::duplicate_entity(Entity entity) {
   OX_SCOPED_ZONE;
   const Entity new_entity = create_entity(EUtil::get_name(registry, entity));
   copy_component_if_exists(AllComponents{}, new_entity, entity, registry);
+
+  duplicate_children(new_entity);
+
+  return new_entity;
 }
 
 void Scene::on_runtime_start() {

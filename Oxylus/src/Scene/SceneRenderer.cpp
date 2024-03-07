@@ -17,7 +17,7 @@
 #include "Render/Vulkan/Renderer.h"
 #include "Render/Vulkan/VulkanContext.h"
 
-namespace Ox {
+namespace ox {
 void SceneRenderer::init() {
   OX_SCOPED_ZONE;
   if (!m_render_pipeline)

@@ -2,7 +2,7 @@
 
 #include <string>
 
-namespace Ox {
+namespace ox {
 class FileUtils {
 public:
   static std::string read_file(const std::string& file_path);

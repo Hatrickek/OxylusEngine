@@ -2,7 +2,7 @@
 #include "EditorLayer.h"
 #include "Core/Project.h"
 
-namespace Ox {
+namespace ox {
 class OxylusEditor : public App {
 public:
   OxylusEditor(const AppSpec& spec) : App(spec) { }

@@ -9,7 +9,7 @@
 
 #include "Vulkan/VulkanContext.h"
 
-namespace Ox {
+namespace ox {
 DebugRenderer* DebugRenderer::instance = nullptr;
 
 void DebugRenderer::init() {

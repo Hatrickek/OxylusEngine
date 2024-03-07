@@ -2,7 +2,7 @@
 #include "Core/ESystem.h"
 struct ma_engine;
 
-namespace Ox {
+namespace ox {
 class AudioEngine : public ESystem {
 public:
   void init() override;

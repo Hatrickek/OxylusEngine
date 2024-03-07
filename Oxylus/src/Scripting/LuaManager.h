@@ -6,7 +6,7 @@ namespace sol {
 class state;
 }
 
-namespace Ox {
+namespace ox {
 class LuaManager : public ESystem {
 public:
   void init() override;

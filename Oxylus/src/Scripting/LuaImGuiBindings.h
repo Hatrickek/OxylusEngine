@@ -8,7 +8,7 @@
 OX_CLANG_SUPPRESS_WARNING("-Wformat-security")
 OX_MSVC_SUPPRESS_WARNING(4244)
 
-namespace Ox::LuaImGuiBindings {
+namespace ox::LuaImGuiBindings {
 // Windows
 inline bool Begin(const std::string& name) { return ImGui::Begin(name.c_str()); }
 

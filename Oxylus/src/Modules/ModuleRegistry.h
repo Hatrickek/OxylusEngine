@@ -8,7 +8,7 @@
 #include "Core/Base.h"
 #include "Core/ESystem.h"
 
-namespace Ox {
+namespace ox {
 class ModuleInterface;
 
 struct Module {

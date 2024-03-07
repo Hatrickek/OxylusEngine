@@ -14,7 +14,7 @@
 #include "Utils/FileUtils.h"
 #include "Utils/Log.h"
 
-namespace Ox {
+namespace ox {
 LuaSystem::LuaSystem(std::string path) : file_path(std::move(path)) {
   init_script(file_path);
 }

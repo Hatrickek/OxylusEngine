@@ -4,7 +4,7 @@
 
 #include "Utils/Profiler.h"
 
-namespace Ox {
+namespace ox {
 void AABB::translate(const Vec3& translation) {
   OX_SCOPED_ZONE;
   min += translation;

@@ -3,7 +3,7 @@
 
 #include "Core/Types.h"
 
-namespace Ox {
+namespace ox {
 struct Vertex {
   Vec3 position;
   int _pad;

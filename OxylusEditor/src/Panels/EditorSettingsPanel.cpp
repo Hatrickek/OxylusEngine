@@ -5,7 +5,7 @@
 
 #include "UI/ImGuiLayer.h"
 
-namespace Ox {
+namespace ox {
   EditorSettingsPanel::EditorSettingsPanel() : EditorPanel("Editor Settings", ICON_MDI_COGS, false) { }
 
   void EditorSettingsPanel::on_imgui_render() {

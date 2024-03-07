@@ -4,7 +4,7 @@
 #include "Core/UUID.h"
 #include "Scene/Entity.h"
 
-namespace Ox {
+namespace ox {
 class Scene;
 
 class EntitySerializer {

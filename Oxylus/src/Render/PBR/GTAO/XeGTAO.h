@@ -29,7 +29,7 @@
 
 #ifdef __cplusplus
 
-namespace Ox {
+namespace ox {
 class Camera;
 }
 
@@ -143,7 +143,7 @@ void gtao_update_constants(GTAOConstants& consts,
                            int viewport_width,
                            int viewport_height,
                            const GTAOSettings& settings,
-                           const Ox::Camera* camera,
+                           const ox::Camera* camera,
                            unsigned int frameCounter);
 }   // close the namespace
 

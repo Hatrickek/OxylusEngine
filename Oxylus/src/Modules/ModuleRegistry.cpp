@@ -4,7 +4,7 @@
 
 #include "Utils/Log.h"
 
-namespace Ox {
+namespace ox {
 void ModuleRegistry::init() {}
 
 void ModuleRegistry::deinit() {

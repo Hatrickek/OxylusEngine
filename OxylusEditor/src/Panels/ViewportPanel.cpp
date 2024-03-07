@@ -27,7 +27,7 @@
 #include "Utils/StringUtils.h"
 #include "Utils/Timestep.h"
 
-namespace Ox {
+namespace ox {
 ViewportPanel::ViewportPanel() : EditorPanel("Viewport", ICON_MDI_TERRAIN, true) {
   OX_SCOPED_ZONE;
   gizmo_image_map[typeid(LightComponent).hash_code()] = create_shared<TextureAsset>(TextureLoadInfo{.path = "Resources/Icons/PointLightIcon.png", .generate_mips = false});

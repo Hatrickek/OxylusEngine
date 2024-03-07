@@ -4,7 +4,7 @@
 #include "Scene/Entity.h"
 #include "Assets/Material.h"
 
-namespace Ox {
+namespace ox {
 class InspectorPanel : public EditorPanel {
 public:
   InspectorPanel();

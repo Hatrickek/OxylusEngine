@@ -8,7 +8,7 @@
 #include "Utils/Log.h"
 #include "Utils/Profiler.h"
 
-namespace Ox {
+namespace ox {
 AssetManager::AssetLibrary AssetManager::asset_library;
 
 Shared<TextureAsset> AssetManager::get_texture_asset(const TextureLoadInfo& info) {

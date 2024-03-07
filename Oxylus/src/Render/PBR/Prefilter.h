@@ -4,7 +4,7 @@
 
 #include "Assets/TextureAsset.h"
 
-namespace Ox {
+namespace ox {
 class Mesh;
 
 class Prefilter {

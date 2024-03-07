@@ -16,7 +16,7 @@
 #include "Utils/ImGuiScoped.h"
 #include "Utils/StringUtils.h"
 
-namespace Ox {
+namespace ox {
 Entity SceneHierarchyPanel::get_selected_entity_front() const {
   if (selected_entities.empty())
     return entt::null;

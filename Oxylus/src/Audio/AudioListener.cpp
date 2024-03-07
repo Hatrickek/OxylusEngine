@@ -5,7 +5,7 @@
 
 #include "Core/App.h"
 
-namespace Ox {
+namespace ox {
 void AudioListener::set_config(const AudioListenerConfig& config) const {
   auto* engine = App::get_system<AudioEngine>()->get_engine();
   ma_engine_listener_set_cone(engine,

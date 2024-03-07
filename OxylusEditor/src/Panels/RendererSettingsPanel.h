@@ -4,7 +4,7 @@
 
 #include "EditorPanel.h"
 
-namespace Ox {
+namespace ox {
   class RendererSettingsPanel : public EditorPanel {
   public:
     RendererSettingsPanel();

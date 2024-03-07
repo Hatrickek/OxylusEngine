@@ -5,7 +5,7 @@
 
 #include "Core/Types.h"
 
-namespace Ox {
+namespace ox {
 inline toml::array get_toml_array(const Vec2& vec) {
   return toml::array{vec.x, vec.y};
 }

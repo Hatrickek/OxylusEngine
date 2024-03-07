@@ -14,7 +14,7 @@
 
 #include "Utils/Log.h"
 
-namespace Ox {
+namespace ox {
 #define GET_STRING(node, component, name) component.name =  node->as_table()->get(#name)->as_string()->get()
 #define GET_STRING2(node, name) node->as_table()->get(name)->as_string()->get()
 #define GET_FLOAT(node, component, name) component.name = (float)node->as_table()->get(#name)->as_floating_point()->get()

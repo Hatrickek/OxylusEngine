@@ -5,7 +5,7 @@
 #include "Scene/Scene.h"
 #include "Scene/Entity.h"
 
-namespace Ox {
+namespace ox {
 class SceneHierarchyPanel : public EditorPanel {
 public:
   SceneHierarchyPanel();

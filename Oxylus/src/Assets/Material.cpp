@@ -7,7 +7,7 @@
 
 #include "Utils/Profiler.h"
 
-namespace Ox {
+namespace ox {
 Material::Material(const std::string& material_name) {
   create(material_name);
 }

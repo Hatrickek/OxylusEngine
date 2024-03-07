@@ -9,7 +9,7 @@
 #include "Scene/Entity.h"
 #include "Scene/Scene.h"
 
-namespace Ox::LuaBindings {
+namespace ox::LuaBindings {
 [[nodiscard]] entt::id_type get_type_id(const sol::table& obj) {
   const auto f = obj["type_id"].get<sol::function>();
   OX_CORE_ASSERT(f.valid() && "type_id not exposed to lua!");

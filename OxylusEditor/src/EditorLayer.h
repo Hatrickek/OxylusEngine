@@ -14,7 +14,7 @@
 
 #include "UI/RuntimeConsole.h"
 
-namespace Ox {
+namespace ox {
 class EditorLayer : public Layer {
 public:
   enum class SceneState {

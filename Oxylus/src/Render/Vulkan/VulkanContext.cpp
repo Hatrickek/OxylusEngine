@@ -13,7 +13,7 @@
 
 #include "GLFW/glfw3.h"
 
-namespace Ox {
+namespace ox {
 VulkanContext* VulkanContext::s_instance = nullptr;
 
 static VkBool32 DebugCallback(const VkDebugUtilsMessageSeverityFlagBitsEXT messageSeverity,

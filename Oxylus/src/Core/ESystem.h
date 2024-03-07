@@ -3,7 +3,7 @@
 
 #include "Event/Event.h"
 
-namespace Ox {
+namespace ox {
 /// Engine systems interface
 class ESystem {
 public:

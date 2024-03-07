@@ -2,7 +2,7 @@
 
 #include "EditorPanel.h"
 
-namespace Ox {
+namespace ox {
 class ProjectPanel : public EditorPanel {
 public:
   ProjectPanel();

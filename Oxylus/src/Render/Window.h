@@ -4,7 +4,7 @@
 
 typedef struct GLFWmonitor GLFWmonitor;
 
-namespace Ox {
+namespace ox {
 class Window {
 public:
   static void init_window(const AppSpec& spec);

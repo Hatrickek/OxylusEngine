@@ -19,7 +19,7 @@
 
 #include "Utils/Log.h"
 
-namespace Ox {
+namespace ox {
 void LuaManager::init() {
   OX_SCOPED_ZONE;
   m_state = create_shared<sol::state>();

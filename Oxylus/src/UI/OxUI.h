@@ -14,7 +14,7 @@ struct SampledImage;
 struct Texture;
 }
 
-namespace Ox {
+namespace ox {
 class TextureAsset;
 
 class OxUI {

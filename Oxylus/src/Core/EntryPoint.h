@@ -4,9 +4,9 @@
 #include "Utils/Log.h"
 
 int main(int argc, char** argv) {
-  Ox::Log::init();
+  ox::Log::init();
 
-  const auto app = Ox::create_application({argc, argv});
+  const auto app = ox::create_application({argc, argv});
 
   app->run();
 

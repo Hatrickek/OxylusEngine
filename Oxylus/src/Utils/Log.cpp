@@ -6,7 +6,7 @@
 
 #include "Profiler.h"
 
-namespace Ox {
+namespace ox {
 std::vector<std::shared_ptr<ExternalSink>> Log::external_sinks = {};
 
 void Log::init() {

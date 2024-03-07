@@ -4,7 +4,7 @@
 
 #include <vector>
 
-namespace Ox {
+namespace ox {
 class LayerStack {
 public:
   LayerStack() = default;

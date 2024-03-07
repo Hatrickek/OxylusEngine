@@ -3,7 +3,7 @@
 #include "Jolt/Jolt.h"
 #include "Jolt/Geometry/AABox.h"
 
-namespace Ox {
+namespace ox {
 Vec3 convert_from_jolt_vec3(const JPH::Vec3& vec) { return {vec.GetX(), vec.GetY(), vec.GetZ()}; }
 JPH::Vec3 convert_to_jolt_vec3(const Vec3& vec) { return {vec.x, vec.y, vec.z}; }
 Vec4 convert_from_jolt_vec4(const JPH::Vec4& vec) { return {vec.GetX(), vec.GetY(), vec.GetZ(), vec.GetW()}; }

@@ -5,7 +5,7 @@
 #include "EditorLayer.h"
 #include "Assets/AssetManager.h"
 
-namespace Ox {
+namespace ox {
   AssetInspectorPanel::AssetInspectorPanel() : EditorPanel("AssetInspector", ICON_MDI_INFORMATION) { }
 
   void AssetInspectorPanel::on_update() { }

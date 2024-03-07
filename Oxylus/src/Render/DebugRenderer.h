@@ -3,7 +3,7 @@
 #include "Mesh.h"
 #include "Core/Types.h"
 
-namespace Ox {
+namespace ox {
 struct LineVertexData {
   Vec3 position = {};
   Vec4 color = {};

@@ -11,7 +11,7 @@
 #include "Scene/Components.h"
 #include "Scene/Entity.h"
 
-namespace Ox::LuaBindings {
+namespace ox::LuaBindings {
 void bind_audio(const Shared<sol::state>& state) {
   auto audio_source = state->new_usertype<AudioSource>("AudioSource");
   SET_TYPE_FUNCTION(audio_source, AudioSource, get_path);

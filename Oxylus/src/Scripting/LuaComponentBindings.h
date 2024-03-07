@@ -5,7 +5,7 @@ namespace sol {
 class state;
 }
 
-namespace Ox::LuaBindings {
+namespace ox::LuaBindings {
 void bind_components(const Shared<sol::state>& state);
 
 void bind_light_component(const Shared<sol::state>& state);

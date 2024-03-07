@@ -12,7 +12,7 @@
 
 #include "Utils/StringUtils.h"
 
-namespace Ox {
+namespace ox {
 class ViewportPanel : public EditorPanel {
 public:
   Camera m_camera;

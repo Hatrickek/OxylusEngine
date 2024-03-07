@@ -1,7 +1,7 @@
 ﻿#pragma once
 #include "Core/Types.h"
 
-namespace Ox {
+namespace ox {
 struct Plane {
   Vec3 normal = {0.f, 1.f, 0.f}; // unit vector
   float distance = 0.f;          // Distance with origin

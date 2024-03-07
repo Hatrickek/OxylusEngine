@@ -1,6 +1,6 @@
 ﻿#pragma once
 #include <entt/signal/dispatcher.hpp>
 
-namespace Ox {
+namespace ox {
 using EventDispatcher = entt::dispatcher;
 }

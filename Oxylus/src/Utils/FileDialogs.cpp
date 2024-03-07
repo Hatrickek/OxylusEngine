@@ -6,7 +6,7 @@
 
 #include "Core/PlatformDetection.h"
 
-namespace Ox {
+namespace ox {
 void FileDialogs::init() {
   OX_SCOPED_ZONE;
   NFD_Init();

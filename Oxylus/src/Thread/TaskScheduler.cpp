@@ -5,7 +5,7 @@
 #include "Utils/Log.h"
 #include "Utils/Profiler.h"
 
-namespace Ox {
+namespace ox {
 void TaskScheduler::init() {
   OX_SCOPED_ZONE;
   task_scheduler = create_unique<enki::TaskScheduler>();

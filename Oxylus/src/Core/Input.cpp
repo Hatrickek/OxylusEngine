@@ -5,7 +5,7 @@
 
 #include "GLFW/glfw3.h"
 
-namespace Ox {
+namespace ox {
 Input::CursorState Input::cursor_state = CursorState::Disabled;
 Input::InputData Input::input_data = {};
 

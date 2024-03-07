@@ -10,7 +10,7 @@
 #include "Log.h"
 #include "Profiler.h"
 
-namespace Ox {
+namespace ox {
 float* CVarSystem::get_float_cvar(const uint32_t hash) {
   OX_SCOPED_ZONE;
   const CVarParameter* par = get_cvar(hash);

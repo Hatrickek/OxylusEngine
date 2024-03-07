@@ -1,7 +1,7 @@
 ﻿#pragma once
 #include "Keycodes.h"
 
-namespace Ox {
+namespace ox {
 class KeyEvent {
 public:
   KeyCode get_key_code() const { return key_code; }

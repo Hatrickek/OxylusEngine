@@ -1,7 +1,7 @@
 ﻿#pragma once
 #include "Core/Types.h"
 
-namespace Ox {
+namespace ox {
 struct Plane;
 struct Frustum;
 

@@ -6,7 +6,7 @@
 
 #include "Core/ESystem.h"
 
-namespace Ox {
+namespace ox {
 class FileDialogs : public ESystem {
 public:
   void init() override;

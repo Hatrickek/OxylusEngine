@@ -5,7 +5,7 @@
 
 #include "Core/Base.h"
 
-namespace Ox {
+namespace ox {
 class Mesh;
 
 class RendererCommon {

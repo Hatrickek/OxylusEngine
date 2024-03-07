@@ -4,7 +4,7 @@
 
 #include "Core/Base.h"
 
-namespace Ox {
+namespace ox {
 struct TextureLoadInfo;
 class TextureAsset;
 struct ImageCreateInfo;

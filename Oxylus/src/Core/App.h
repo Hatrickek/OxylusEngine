@@ -11,7 +11,7 @@
 
 int main(int argc, char** argv);
 
-namespace Ox {
+namespace ox {
 class Layer;
 class LayerStack;
 class ImGuiLayer;

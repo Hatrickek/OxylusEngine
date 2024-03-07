@@ -9,7 +9,7 @@
 
 #include "Utils/Log.h"
 
-namespace Ox {
+namespace ox {
 void ModuleUtil::load_module(const std::string& name, const std::string& path) {
   const auto lib = App::get_system<ModuleRegistry>()->add_lib(name, path);
   if (!lib)

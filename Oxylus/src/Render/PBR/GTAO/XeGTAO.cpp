@@ -4,7 +4,7 @@
 #include <glm/gtc/type_ptr.hpp>
 
 namespace XeGTAO {
-void gtao_update_constants(GTAOConstants& consts, const int viewport_width, const int viewport_height, const GTAOSettings& settings, const Ox::Camera* camera, const unsigned frameCounter) {
+void gtao_update_constants(GTAOConstants& consts, const int viewport_width, const int viewport_height, const GTAOSettings& settings, const ox::Camera* camera, const unsigned frameCounter) {
   consts.ViewportSize = {viewport_width, viewport_height};
   consts.ViewportPixelSize = {1.0f / (float)viewport_width, 1.0f / (float)viewport_height};
 

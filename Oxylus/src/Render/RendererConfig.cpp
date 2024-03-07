@@ -10,7 +10,7 @@
 #include "Utils/Profiler.h"
 #include "Utils/Toml.h"
 
-namespace Ox {
+namespace ox {
 void RendererConfig::init() {
   // TODO: Use pinned tasks instead
   ADD_TASK_TO_PIPE(

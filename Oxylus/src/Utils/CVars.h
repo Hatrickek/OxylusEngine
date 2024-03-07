@@ -8,7 +8,7 @@
 
 #include "Core/Base.h"
 
-namespace Ox {
+namespace ox {
 enum class CVarFlags : uint32_t {
   None         = 0,
   Noedit       = 1 << 1,

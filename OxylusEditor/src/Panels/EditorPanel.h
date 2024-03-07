@@ -3,7 +3,7 @@
 #include <string>
 #include <stdint.h>
 
-namespace Ox {
+namespace ox {
 class EditorPanel {
 public:
   bool Visible;

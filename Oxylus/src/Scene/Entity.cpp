@@ -5,7 +5,7 @@
 
 #include "Components.h"
 
-namespace Ox {
+namespace ox {
 const UUID& EUtil::get_uuid(const entt::registry& reg, entt::entity ent) { return reg.get<IDComponent>(ent).uuid; }
 const std::string& EUtil::get_name(const entt::registry& reg, entt::entity ent) { return reg.get<TagComponent>(ent).tag; }
 

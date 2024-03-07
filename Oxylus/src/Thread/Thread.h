@@ -6,7 +6,7 @@
 #include <condition_variable>
 #include <functional>
 
-namespace Ox {
+namespace ox {
 class Thread {
 public:
   Thread();

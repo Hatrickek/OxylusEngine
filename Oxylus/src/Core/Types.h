@@ -7,7 +7,7 @@
 #include <glm/mat4x4.hpp>
 #include <glm/ext/quaternion_float.hpp>
 
-namespace Ox {
+namespace ox {
 using Vec2 = glm::vec2;
 using DVec2 = glm::dvec2;
 using IVec2 = glm::ivec2;

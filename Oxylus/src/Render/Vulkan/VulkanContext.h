@@ -17,7 +17,7 @@ struct Device;
 struct Instance;
 }
 
-namespace Ox {
+namespace ox {
 class TracyProfiler;
 struct AppSpec;
 

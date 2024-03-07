@@ -20,7 +20,7 @@ class Node;
 class Model;
 }
 
-namespace Ox {
+namespace ox {
 class Mesh : public Asset {
 public:
   enum FileLoadingFlags : int {

@@ -11,7 +11,7 @@
 #include <entt/entity/registry.hpp>
 #include <Physics/PhysicsInterfaces.h>
 
-namespace Ox {
+namespace ox {
 class RenderPipeline;
 class SceneRenderer;
 
@@ -43,7 +43,8 @@ public:
   }
 
   void destroy_entity(Entity entity);
-  void duplicate_entity(Entity entity);
+  void duplicate_children(Entity entity);
+  Entity duplicate_entity(Entity entity);
 
   void on_runtime_start();
   void on_runtime_stop();

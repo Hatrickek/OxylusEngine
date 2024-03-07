@@ -12,7 +12,7 @@ class CommandBuffer;
 struct Texture;
 }
 
-namespace Ox {
+namespace ox {
 class Material {
 public:
   enum class AlphaMode : uint32_t {

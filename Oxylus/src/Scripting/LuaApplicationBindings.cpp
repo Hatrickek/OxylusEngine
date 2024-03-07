@@ -6,7 +6,7 @@
 
 #include "Core/App.h"
 
-namespace Ox::LuaBindings {
+namespace ox::LuaBindings {
 void bind_application(const Shared<sol::state>& state) {
   auto app_table = state->create_table("App");
   app_table.set_function("get_relative", App::get_asset_directory_absolute);

@@ -5,7 +5,7 @@
 
 #include "Utils/CVars.h"
 
-namespace Ox {
+namespace ox {
 namespace RendererCVar {
 inline AutoCVar_Int cvar_vsync("rr.vsync", "toggle vsync", 1);
 

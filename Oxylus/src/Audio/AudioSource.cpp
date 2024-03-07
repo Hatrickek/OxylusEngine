@@ -8,7 +8,7 @@
 
 #include "Utils/Log.h"
 
-namespace Ox {
+namespace ox {
 AudioSource::AudioSource(const std::string& filepath) : m_path(filepath) {
   m_sound = create_unique<ma_sound>();
 

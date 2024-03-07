@@ -3,7 +3,7 @@
 
 #include "EditorPanel.h"
 
-namespace Ox {
+namespace ox {
   class StatisticsPanel : public EditorPanel {
   public:
     StatisticsPanel();

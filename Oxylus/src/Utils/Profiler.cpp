@@ -4,7 +4,7 @@
 #include "Render/Vulkan/VulkanContext.h"
 #include "Core/PlatformDetection.h"
 
-namespace Ox {
+namespace ox {
 #ifdef TRACY_ENABLE
 TracyProfiler::~TracyProfiler() {
 #if GPU_PROFILER_ENABLED

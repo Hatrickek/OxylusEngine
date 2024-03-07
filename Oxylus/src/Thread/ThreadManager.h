@@ -2,7 +2,7 @@
 
 #include "Thread.h"
 
-namespace Ox {
+namespace ox {
 class ThreadManager {
 public:
   Thread asset_thread;

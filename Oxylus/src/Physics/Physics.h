@@ -7,7 +7,7 @@
 #include "Jolt/Physics/PhysicsSystem.h"
 #include "Jolt/Physics/Collision/CollisionCollectorImpl.h"
 
-namespace Ox {
+namespace ox {
 class RayCast;
 
 class Physics {

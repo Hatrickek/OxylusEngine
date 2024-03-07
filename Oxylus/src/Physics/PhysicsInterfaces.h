@@ -5,7 +5,7 @@
 #include "Jolt/Physics/Collision/ObjectLayer.h"
 #include "Jolt/Physics/Collision/BroadPhase/BroadPhaseLayer.h"
 
-namespace Ox {
+namespace ox {
 class Scene;
 }
 
@@ -65,7 +65,7 @@ public:
 
 class Physics3DContactListener : public JPH::ContactListener {
 public:
-  Physics3DContactListener(Ox::Scene* scene) : m_Scene(scene) {}
+  Physics3DContactListener(ox::Scene* scene) : m_Scene(scene) {}
   JPH::ValidateResult OnContactValidate(const JPH::Body& inBody1, const JPH::Body& inBody2, JPH::RVec3Arg inBaseOffset, const JPH::CollideShapeResult& inCollisionResult) override;
 
   void OnContactAdded(const JPH::Body& inBody1, const JPH::Body& inBody2, const JPH::ContactManifold& inManifold, JPH::ContactSettings& ioSettings) override;
@@ -75,7 +75,7 @@ public:
   void OnContactRemoved([[maybe_unused]] const JPH::SubShapeIDPair& inSubShapePair) override;
 
 private:
-  Ox::Scene* m_Scene = nullptr;
+  ox::Scene* m_Scene = nullptr;
   static void GetFrictionAndRestitution(const JPH::Body& inBody, const JPH::SubShapeID& inSubShapeID, float& outFriction, float& outRestitution);
 
   static void OverrideContactSettings(const JPH::Body& inBody1, const JPH::Body& inBody2, const JPH::ContactManifold& inManifold, JPH::ContactSettings& ioSettings);

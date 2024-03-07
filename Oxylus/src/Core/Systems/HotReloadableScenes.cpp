@@ -4,7 +4,7 @@
 #include <chrono>
 #include <fstream>
 
-namespace Ox {
+namespace ox {
 void HotReloadableScenes::init() {
   if (!std::filesystem::exists(scene_path)) {
     OX_CORE_ERROR("System HotReloadableScene: Scene path doesn't exist: {0}", scene_path);

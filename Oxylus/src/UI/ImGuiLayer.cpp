@@ -21,7 +21,7 @@
 #include "Render/Vulkan/VulkanContext.h"
 #include "Utils/Profiler.h"
 
-namespace Ox {
+namespace ox {
 static ImVec4 darken(ImVec4 c, float p) { return {glm::max(0.f, c.x - 1.0f * p), glm::max(0.f, c.y - 1.0f * p), glm::max(0.f, c.z - 1.0f * p), c.w}; }
 static ImVec4 lighten(ImVec4 c, float p) { return {glm::max(0.f, c.x + 1.0f * p), glm::max(0.f, c.y + 1.0f * p), glm::max(0.f, c.z + 1.0f * p), c.w}; }
 

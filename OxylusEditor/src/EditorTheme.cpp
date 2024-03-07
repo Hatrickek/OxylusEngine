@@ -4,7 +4,7 @@
 
 #include "Scene/Components.h"
 
-namespace Ox {
+namespace ox {
 ankerl::unordered_dense::map<size_t, const char8_t*> EditorTheme::component_icon_map = {};
 
 void EditorTheme::init() {

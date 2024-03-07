@@ -4,7 +4,7 @@
 #include "Utils/StringUtils.h"
 #include <fmt/format.h>
 
-namespace Ox {
+namespace ox {
 uint32_t EditorPanel::s_Count = 0;
 
 EditorPanel::EditorPanel(const char* name, const char8_t* icon, bool defaultShow)

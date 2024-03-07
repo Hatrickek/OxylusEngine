@@ -9,7 +9,7 @@
 #include "Core/FileSystem.h"
 #include "Utils/Profiler.h"
 
-namespace Ox {
+namespace ox {
 Shared<TextureAsset> TextureAsset::s_white_texture = nullptr;
 
 TextureAsset::TextureAsset(const std::string& file_path) {

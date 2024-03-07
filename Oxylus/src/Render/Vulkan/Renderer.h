@@ -9,7 +9,7 @@
 #include "Render/RendererConfig.h"
 #include "Render/RenderPipeline.h"
 
-namespace Ox {
+namespace ox {
 class DefaultRenderPipeline;
 class LayerStack;
 class ImGuiLayer;
