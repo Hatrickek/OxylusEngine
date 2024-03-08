@@ -50,6 +50,19 @@ float4 PSmain(VSLayout input) : SV_Target0 {
   float2 scaledUV = input.UV;
   scaledUV *= material.UVScale;
 
+  float4 baseColor;
+  const SamplerState materialSampler = Samplers[material.Sampler];
+  if (material.AlbedoMapID != INVALID_ID) {
+    baseColor = GetMaterialAlbedoTexture(material).Sample(materialSampler, scaledUV) * material.Color;
+  }
+  else {
+    baseColor = material.Color;
+  }
+
+  if (material.AlphaMode == ALPHA_MODE_MASK) {
+    clip(baseColor.a - material.AlphaCutoff);
+  }
+
   float3 normal = normalize(input.Normal);
 
   const bool useNormalMap = material.NormalMapID != INVALID_ID;

@@ -40,7 +40,7 @@ void SceneRenderer::update() const {
       const auto world_transform = EUtil::get_world_transform(m_scene, entity);
       mesh_component.transform = world_transform;
       mesh_component.aabb = mesh_component.mesh_base->linear_nodes[mesh_component.node_index]->aabb.get_transformed(world_transform);
-      m_render_pipeline->on_register_render_object(mesh_component);
+      m_render_pipeline->register_mesh_component(mesh_component);
 
       if (RendererCVar::cvar_enable_debug_renderer.get() && RendererCVar::cvar_draw_bounding_boxes.get()) {
         DebugRenderer::draw_aabb(mesh_component.aabb, Vec4(1, 1, 1, 0.5f));
@@ -88,7 +88,7 @@ void SceneRenderer::update() const {
     for (auto&& [e,tc, lc] : lighting_view.each()) {
       if (!m_scene->registry.get<TagComponent>(e).enabled)
         continue;
-      m_render_pipeline->on_register_light(tc, lc);
+      m_render_pipeline->register_light(tc, lc);
     }
   }
 

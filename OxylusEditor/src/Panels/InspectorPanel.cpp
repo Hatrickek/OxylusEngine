@@ -324,12 +324,10 @@ void InspectorPanel::draw_components(Entity entity) {
         if (name_filter.PassFilter(material->name.c_str())) {
           ImGui::PushID(i);
           constexpr ImGuiTreeNodeFlags flags =
-            ImGuiTreeNodeFlags_OpenOnArrow | ImGuiTreeNodeFlags_SpanFullWidth |
-            ImGuiTreeNodeFlags_FramePadding;
+            ImGuiTreeNodeFlags_SpanFullWidth | ImGuiTreeNodeFlags_FramePadding;
           if (ImGui::TreeNodeEx(material->name.c_str(),
                                 flags,
-                                "%s %s",
-                                StringUtils::from_char8_t(ICON_MDI_CIRCLE),
+                                "%s",
                                 material->name.c_str())) {
             draw_material_properties(material);
             ImGui::TreePop();
@@ -344,8 +342,7 @@ void InspectorPanel::draw_components(Entity entity) {
     context->registry,
     entity,
     [](AnimationComponent& component) {
-      constexpr ImGuiTreeNodeFlags flags = ImGuiTreeNodeFlags_OpenOnArrow | ImGuiTreeNodeFlags_SpanFullWidth |
-                                           ImGuiTreeNodeFlags_FramePadding;
+      constexpr ImGuiTreeNodeFlags flags = ImGuiTreeNodeFlags_SpanFullWidth | ImGuiTreeNodeFlags_FramePadding;
 
       const float filter_cursor_pos_x = ImGui::GetCursorPosX();
       ImGuiTextFilter name_filter;

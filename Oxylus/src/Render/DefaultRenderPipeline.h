@@ -25,9 +25,9 @@ public:
   void on_update(Scene* scene) override;
 
   void on_dispatcher_events(EventDispatcher& dispatcher) override;
-  void on_register_render_object(const MeshComponent& render_object) override;
-  void on_register_light(const TransformComponent& transform, const LightComponent& light) override;
-  void on_register_camera(Camera* camera) override;
+  void register_mesh_component(const MeshComponent& render_object) override;
+  void register_light(const TransformComponent& transform, const LightComponent& light) override;
+  void register_camera(Camera* camera) override;
 
 private:
   Camera* current_camera = nullptr;

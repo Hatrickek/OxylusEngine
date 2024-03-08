@@ -90,10 +90,10 @@ void generate_mips(const std::shared_ptr<RenderGraph>& rg, std::string_view inpu
       .resources = {src_resource, dst_resource},
       .execute = [mip_src_name, mip_dst_name, mip_level](CommandBuffer& command_buffer) {
         ImageBlit blit;
-        auto src_ia = *command_buffer.get_resource_image_attachment(mip_src_name);
-        auto dim = src_ia.extent;
+        const auto src_ia = *command_buffer.get_resource_image_attachment(mip_src_name);
+        const auto dim = src_ia.extent;
         assert(dim.sizing == vuk::Sizing::eAbsolute);
-        auto extent = dim.extent;
+        const auto extent = dim.extent;
         blit.srcSubresource.aspectMask = format_to_aspect(src_ia.format);
         blit.srcSubresource.baseArrayLayer = src_ia.base_layer;
         blit.srcSubresource.layerCount = src_ia.layer_count;
@@ -125,14 +125,29 @@ Future blit_image(Future src, Future dst) {
 
   rg->attach_in("src", std::move(src));
   rg->attach_in("dst", std::move(dst));
+  const std::vector<Resource> resources = {"src"_image >> eTransferRead, "dst"_image >> eTransferWrite};
 
+  blit_image_impl(rg.get(), resources[0], resources[1]);
+
+  return {std::move(rg), "dst+"};
+}
+
+void blit_image(RenderGraph* rg, std::string_view src, std::string_view dst) {
+  const Resource sr = Resource(src, Resource::Type::eImage, eTransferRead);
+  const Resource dr = Resource(dst, Resource::Type::eImage, eTransferWrite, std::string(dst).append("+").c_str());
+
+  blit_image_impl(rg, sr, dr);
+}
+
+void blit_image_impl(RenderGraph* rg, const Resource& src, const Resource& dst) {
+  const auto resources = std::vector{src, dst};
   rg->add_pass({
     .name = "blit_image_pass",
-    .resources = {"src"_image >> eTransferRead, "dst"_image >> eTransferWrite},
-    .execute = [](CommandBuffer& command_buffer) {
+    .resources = resources,
+    .execute = [src, dst](CommandBuffer& command_buffer) {
       ImageBlit blit;
-      auto src_ia = *command_buffer.get_resource_image_attachment("src");
-      auto dst_ia = *command_buffer.get_resource_image_attachment("dst");
+      auto src_ia = *command_buffer.get_resource_image_attachment(src.name.name);
+      auto dst_ia = *command_buffer.get_resource_image_attachment(dst.name.name);
       OX_CORE_ASSERT(src_ia.extent.extent == dst_ia.extent.extent)
       auto src_extent = src_ia.extent.extent;
       blit.srcSubresource.aspectMask = format_to_aspect(src_ia.format);
@@ -153,10 +168,39 @@ Future blit_image(Future src, Future dst) {
         (int32_t)src_extent.height,
         (int32_t)src_extent.depth
       };
-      command_buffer.blit_image("src", "dst", blit, Filter::eLinear);
+      command_buffer.blit_image(src.name.name, dst.name.name, blit, Filter::eLinear);
     }
   });
+}
 
-  return {std::move(rg), "dst+"};
+void copy_image(RenderGraph* rg, std::string_view src, std::string_view dst) {
+  const Resource sr = Resource(src, Resource::Type::eImage, eTransferRead);
+  const Resource dr = Resource(dst, Resource::Type::eImage, eTransferWrite, std::string(dst).append("+").c_str());
+
+  copy_image_impl(rg, sr, dr);
+}
+
+void copy_image_impl(RenderGraph* rg, const Resource& src, const Resource& dst) {
+  const auto resources = std::vector{src, dst};
+  rg->add_pass({
+    .name = "copy_image_pass",
+    .resources = resources,
+    .execute = [src, dst](CommandBuffer& command_buffer) {
+      ImageCopy copy;
+      auto src_ia = *command_buffer.get_resource_image_attachment(src.name.name);
+      auto dst_ia = *command_buffer.get_resource_image_attachment(dst.name.name);
+      OX_CORE_ASSERT(src_ia.extent.extent == dst_ia.extent.extent)
+      copy.srcSubresource.aspectMask = format_to_aspect(src_ia.format);
+      copy.srcSubresource.baseArrayLayer = src_ia.base_layer;
+      copy.srcSubresource.layerCount = src_ia.layer_count;
+      copy.srcSubresource.mipLevel = src_ia.base_level;
+      copy.srcOffsets = Offset3D{0};
+      copy.dstSubresource = copy.srcSubresource;
+      copy.dstSubresource.mipLevel = dst_ia.base_level;
+      copy.dstOffsets = Offset3D{0};
+      copy.imageExtent = src_ia.extent.extent;
+      command_buffer.copy_image(src.name.name, dst.name.name, copy);
+    }
+  });
 }
 }

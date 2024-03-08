@@ -500,7 +500,7 @@ void DefaultRenderPipeline::on_dispatcher_events(EventDispatcher& dispatcher) {
   dispatcher.sink<SkyboxLoadEvent>().connect<&DefaultRenderPipeline::update_skybox>(*this);
 }
 
-void DefaultRenderPipeline::on_register_render_object(const MeshComponent& render_object) {
+void DefaultRenderPipeline::register_mesh_component(const MeshComponent& render_object) {
   OX_SCOPED_ZONE;
 
   if (!current_camera)
@@ -520,7 +520,7 @@ void DefaultRenderPipeline::on_register_render_object(const MeshComponent& rende
   mesh_component_list.emplace_back(render_object);
 }
 
-void DefaultRenderPipeline::on_register_light(const TransformComponent& transform, const LightComponent& light) {
+void DefaultRenderPipeline::register_light(const TransformComponent& transform, const LightComponent& light) {
   OX_SCOPED_ZONE;
   auto& light_emplaced = scene_lights.emplace_back(
     LightData{
@@ -537,7 +537,7 @@ void DefaultRenderPipeline::on_register_light(const TransformComponent& transfor
     dir_light_data = &light_emplaced;
 }
 
-void DefaultRenderPipeline::on_register_camera(Camera* camera) {
+void DefaultRenderPipeline::register_camera(Camera* camera) {
   OX_SCOPED_ZONE;
   current_camera = camera;
 }

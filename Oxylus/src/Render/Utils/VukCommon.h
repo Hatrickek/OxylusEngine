@@ -7,6 +7,7 @@
 #include <vuk/Future.hpp>
 
 namespace vuk {
+struct Resource;
 struct ImageAttachment;
 inline SamplerCreateInfo NearestSamplerClamped = {
   .magFilter = Filter::eNearest,
@@ -89,5 +90,11 @@ std::pair<std::vector<Name>, std::vector<Name>> diverge_image_mips(const std::sh
 std::pair<std::vector<Name>, std::vector<Name>> diverge_image_layers(const std::shared_ptr<RenderGraph>& rg, std::string_view input_name, uint32_t layer_count);
 
 void generate_mips(const std::shared_ptr<RenderGraph>& rg, std::string_view input_name, std::string_view output_name, uint32_t mip_count = 0);
+
 Future blit_image(Future src, Future dst);
+void blit_image(RenderGraph* rg, std::string_view src, std::string_view dst);
+void blit_image_impl(RenderGraph* rg, const Resource& src, const Resource& dst);
+
+void copy_image(RenderGraph* rg, std::string_view src, std::string_view dst);
+void copy_image_impl(RenderGraph* rg, const Resource& src, const Resource& dst);
 }

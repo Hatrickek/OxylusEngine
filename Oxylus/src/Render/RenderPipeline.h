@@ -17,7 +17,7 @@ class Scene;
 
 class RenderPipeline {
 public:
-  RenderPipeline(std::string name) : m_name(std::move(name)), attach_swapchain(true) { }
+  RenderPipeline(std::string name) : m_name(std::move(name)), attach_swapchain(true) {}
 
   virtual ~RenderPipeline() = default;
 
@@ -26,12 +26,12 @@ public:
 
   virtual Unique<vuk::Future> on_render(vuk::Allocator& frame_allocator, const vuk::Future& target, vuk::Dimension3D dim) = 0;
 
-  virtual void on_dispatcher_events(EventDispatcher& dispatcher) { }
+  virtual void on_dispatcher_events(EventDispatcher& dispatcher) {}
 
-  virtual void on_update(Scene* scene) { }
-  virtual void on_register_render_object(const MeshComponent& render_object) { }
-  virtual void on_register_light(const TransformComponent& transform, const LightComponent& light) { }
-  virtual void on_register_camera(Camera* camera) { }
+  virtual void on_update(Scene* scene) {}
+  virtual void register_mesh_component(const MeshComponent& render_object) {}
+  virtual void register_light(const TransformComponent& transform, const LightComponent& light) {}
+  virtual void register_camera(Camera* camera) {}
 
   virtual void enqueue_future(vuk::Future&& fut);
   virtual void wait_for_futures(vuk::Allocator& allocator);
@@ -59,6 +59,9 @@ public:
   virtual std::vector<vuk::Future>& get_rg_futures() { return rg_futures; }
   virtual void clear_rg_futures() { rg_futures.clear(); }
 
+  virtual void set_compiler(vuk::Compiler* compiler) { this->compiler = compiler; }
+  virtual vuk::Compiler* get_compiler() { return compiler; }
+
 protected:
   std::string m_name = {};
   bool attach_swapchain = false;
@@ -68,6 +71,7 @@ protected:
   Shared<vuk::RenderGraph> frame_render_graph = nullptr;
   vuk::Name final_attachment_name;
   vuk::Allocator* m_frame_allocator;
+  vuk::Compiler* compiler = nullptr;
   std::mutex setup_lock;
   std::vector<vuk::Future> futures;
   std::vector<vuk::Future> rg_futures;

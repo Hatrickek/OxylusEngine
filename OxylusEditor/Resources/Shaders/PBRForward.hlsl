@@ -492,8 +492,8 @@ float4 PSmain(VSLayout input, float4 pixelPosition : SV_Position) : SV_Target {
   else {
     baseColor = material.Color;
   }
-  if (baseColor.a < material.AlphaCutoff && material.AlphaMode == ALPHA_MODE_MASK) {
-    discard;
+  if (material.AlphaMode == ALPHA_MODE_MASK) {
+    clip(baseColor.a - material.AlphaCutoff);
   }
 
   float3 emissive = float3(0.0, 0.0, 0.0);

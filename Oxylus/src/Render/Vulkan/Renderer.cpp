@@ -124,6 +124,7 @@ void Renderer::draw(VulkanContext* context, ImGuiLayer* imgui_layer, LayerStack&
     rp->set_frame_render_graph(rp_rg);
     rp->set_frame_allocator(&frame_allocator);
     rp->set_final_attachment_name(attachment_name_out);
+    rp->set_compiler(&compiler);
 
     rg->attach_in(rp->get_rg_futures());
     rp->get_rg_futures().clear();

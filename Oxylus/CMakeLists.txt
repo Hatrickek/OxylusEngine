@@ -220,6 +220,7 @@ CPMAddPackage(
         "VUK_USE_DXC ON"
 )
 target_link_libraries(${PROJECT_NAME} PUBLIC vuk)
+target_include_directories(${PROJECT_NAME} PUBLIC ${vuk_SOURCE_DIR}/src)
 set_target_properties(vuk PROPERTIES FOLDER "Vendor")
 set_target_properties(spirv-cross-core PROPERTIES FOLDER "Vendor")
 set_target_properties(spirv-cross-glsl PROPERTIES FOLDER "Vendor")
