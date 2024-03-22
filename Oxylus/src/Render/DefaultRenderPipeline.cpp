@@ -17,7 +17,6 @@
 #include "Thread/TaskScheduler.h"
 
 #include "Utils/CVars.h"
-#include "Utils/FileUtils.h"
 #include "Utils/Log.h"
 #include "Utils/Profiler.h"
 #include "Utils/Timer.h"
@@ -50,13 +49,14 @@ void DefaultRenderPipeline::init(vuk::Allocator& allocator) {
   if (initalized)
     return;
 
-  ADD_TASK_TO_PIPE(this, this->m_quad = RendererCommon::generate_quad(););
-  ADD_TASK_TO_PIPE(this, this->m_cube = RendererCommon::generate_cube(););
+  const auto task_scheduler = App::get_system<TaskScheduler>();
 
-  create_static_resources(allocator);
-  create_descriptor_sets(allocator);
+  task_scheduler->add_task([this] { this->m_quad = RendererCommon::generate_quad(); });
+  task_scheduler->add_task([this] { this->m_cube = RendererCommon::generate_cube(); });
+  task_scheduler->add_task([this, &allocator] { create_static_resources(allocator); });
+  task_scheduler->add_task([this, &allocator] { create_descriptor_sets(allocator); });
 
-  App::get_system<TaskScheduler>()->wait_for_all();
+  task_scheduler->wait_for_all();
 
   initalized = true;
 
@@ -64,6 +64,8 @@ void DefaultRenderPipeline::init(vuk::Allocator& allocator) {
 }
 
 void DefaultRenderPipeline::load_pipelines(vuk::Allocator& allocator) {
+  OX_SCOPED_ZONE;
+
   vuk::PipelineBaseCreateInfo bindless_pci = {};
   vuk::DescriptorSetLayoutCreateInfo bindless_dslci_00 = {};
   bindless_dslci_00.bindings = {
@@ -83,119 +85,152 @@ void DefaultRenderPipeline::load_pipelines(vuk::Allocator& allocator) {
     bindless_dslci_00.flags.emplace_back(VK_DESCRIPTOR_BINDING_PARTIALLY_BOUND_BIT);
   bindless_pci.explicit_set_layouts.emplace_back(bindless_dslci_00);
 
-  using FU = FileUtils;
+#define SHADER_FILE(path) FU::read_shader_file(path), FU::get_shader_path(path)
+
+  using FU = FileSystem;
   using SS = vuk::HlslShaderStage;
-  ADD_TASK_TO_PIPE(
-    =, bindless_pci.add_hlsl(FU::read_shader_file("DepthNormalPrePass.hlsl"), FU::get_shader_path("DepthNormalPrePass.hlsl"), SS::eVertex, "VSmain");
-    bindless_pci.add_hlsl(FU::read_shader_file("DepthNormalPrePass.hlsl"), FU::get_shader_path("DepthNormalPrePass.hlsl"), SS::ePixel, "PSmain");
-    TRY(allocator.get_context().create_named_pipeline("depth_pre_pass_pipeline", bindless_pci)););
 
-  ADD_TASK_TO_PIPE(=,
-                   bindless_pci.add_hlsl(FU::read_shader_file("DirectionalShadowPass.hlsl"),
-                                         FU::get_shader_path("DirectionalShadowPass.hlsl"),
-                                         SS::eVertex,
-                                         "VSmain");
-                   TRY(allocator.get_context().create_named_pipeline("shadow_pipeline", bindless_pci)););
+  auto* task_scheduler = App::get_system<TaskScheduler>();
 
-  ADD_TASK_TO_PIPE(=, bindless_pci.add_hlsl(FU::read_shader_file("PBRForward.hlsl"), FU::get_shader_path("PBRForward.hlsl"), SS::eVertex, "VSmain");
-                   bindless_pci.add_hlsl(FU::read_shader_file("PBRForward.hlsl"), FU::get_shader_path("PBRForward.hlsl"), SS::ePixel, "PSmain");
-                   TRY(allocator.get_context().create_named_pipeline("pbr_pipeline", bindless_pci)););
-  ADD_TASK_TO_PIPE(=, bindless_pci.add_hlsl(FU::read_shader_file("PBRForward.hlsl"), FU::get_shader_path("PBRForward.hlsl"), SS::eVertex, "VSmain");
-                   bindless_pci.add_hlsl(FU::read_shader_file("PBRForward.hlsl"), FU::get_shader_path("PBRForward.hlsl"), SS::ePixel, "PSmain");
-                   bindless_pci.define("TRANSPARENT", "");
-                   TRY(allocator.get_context().create_named_pipeline("pbr_transparency_pipeline", bindless_pci)););
-  ADD_TASK_TO_PIPE(&allocator, vuk::PipelineBaseCreateInfo pci;
-                   pci.add_hlsl(FU::read_shader_file("FullscreenTriangle.hlsl"), FU::get_shader_path("FullscreenTriangle.hlsl"), SS::eVertex);
-                   pci.add_glsl(FU::read_shader_file("FinalPass.frag"), FU::get_shader_path("FinalPass.frag"));
-                   TRY(allocator.get_context().create_named_pipeline("final_pipeline", pci)););
+  task_scheduler->add_task([=]() mutable {
+    bindless_pci.add_hlsl(SHADER_FILE("DepthNormalPrePass.hlsl"), SS::eVertex, "VSmain");
+    bindless_pci.add_hlsl(SHADER_FILE("DepthNormalPrePass.hlsl"), SS::ePixel, "PSmain");
+    TRY(allocator.get_context().create_named_pipeline("depth_pre_pass_pipeline", bindless_pci));
+  });
+
+  task_scheduler->add_task([=]() mutable {
+    bindless_pci.add_hlsl(SHADER_FILE("DirectionalShadowPass.hlsl"), SS::eVertex, "VSmain");
+    TRY(allocator.get_context().create_named_pipeline("shadow_pipeline", bindless_pci));
+  });
+
+  task_scheduler->add_task([=]() mutable {
+    bindless_pci.add_hlsl(SHADER_FILE("PBRForward.hlsl"), SS::eVertex, "VSmain");
+    bindless_pci.add_hlsl(SHADER_FILE("PBRForward.hlsl"), SS::ePixel, "PSmain");
+    TRY(allocator.get_context().create_named_pipeline("pbr_pipeline", bindless_pci));
+  });
+
+  task_scheduler->add_task([=]() mutable {
+    bindless_pci.add_hlsl(SHADER_FILE("PBRForward.hlsl"), SS::eVertex, "VSmain");
+    bindless_pci.add_hlsl(SHADER_FILE("PBRForward.hlsl"), SS::ePixel, "PSmain");
+    bindless_pci.define("TRANSPARENT", "");
+    TRY(allocator.get_context().create_named_pipeline("pbr_transparency_pipeline", bindless_pci));
+  });
+
+  task_scheduler->add_task([&allocator]() mutable {
+    vuk::PipelineBaseCreateInfo pci;
+    pci.add_hlsl(SHADER_FILE("FullscreenTriangle.hlsl"), SS::eVertex);
+    pci.add_glsl(SHADER_FILE("FinalPass.frag"));
+    TRY(allocator.get_context().create_named_pipeline("final_pipeline", pci));
+  });
 
   // --- GTAO ---
-  ADD_TASK_TO_PIPE(
-    &allocator, vuk::PipelineBaseCreateInfo pci;
-    pci.add_hlsl(FU::read_shader_file("GTAO/GTAO_First.hlsl"), FU::get_shader_path("GTAO/GTAO_First.hlsl"), SS::eCompute, "CSPrefilterDepths16x16");
+  task_scheduler->add_task([&allocator]() mutable {
+    vuk::PipelineBaseCreateInfo pci;
+    pci.add_hlsl(SHADER_FILE("GTAO/GTAO_First.hlsl"), SS::eCompute, "CSPrefilterDepths16x16");
     pci.define("XE_GTAO_FP32_DEPTHS", "");
     pci.define("XE_GTAO_USE_HALF_FLOAT_PRECISION", "0");
     pci.define("XE_GTAO_USE_DEFAULT_CONSTANTS", "0");
-    TRY(allocator.get_context().create_named_pipeline("gtao_first_pipeline", pci)););
-  ADD_TASK_TO_PIPE(&allocator, vuk::PipelineBaseCreateInfo pci;
-                   pci.add_hlsl(FU::read_shader_file("GTAO/GTAO_Main.hlsl"), FU::get_shader_path("GTAO/GTAO_Main.hlsl"), SS::eCompute, "CSGTAOHigh");
-                   pci.define("XE_GTAO_FP32_DEPTHS", "");
-                   pci.define("XE_GTAO_USE_HALF_FLOAT_PRECISION", "0");
-                   pci.define("XE_GTAO_USE_DEFAULT_CONSTANTS", "0");
-                   TRY(allocator.get_context().create_named_pipeline("gtao_main_pipeline", pci)););
-  ADD_TASK_TO_PIPE(
-    &allocator, vuk::PipelineBaseCreateInfo pci;
-    pci.add_hlsl(FU::read_shader_file("GTAO/GTAO_Final.hlsl"), FU::get_shader_path("GTAO/GTAO_Final.hlsl"), SS::eCompute, "CSDenoisePass");
-    pci.define("XE_GTAO_FP32_DEPTHS", "");
-    pci.define("XE_GTAO_USE_HALF_FLOAT_PRECISION", "0");
-    pci.define("XE_GTAO_USE_DEFAULT_CONSTANTS", "0");
-    TRY(allocator.get_context().create_named_pipeline("gtao_denoise_pipeline", pci)););
-  ADD_TASK_TO_PIPE(
-    &allocator, vuk::PipelineBaseCreateInfo pci;
-    pci.add_hlsl(FU::read_shader_file("GTAO/GTAO_Final.hlsl"), FU::get_shader_path("GTAO/GTAO_Final.hlsl"), SS::eCompute, "CSDenoiseLastPass");
-    pci.define("XE_GTAO_FP32_DEPTHS", "");
-    pci.define("XE_GTAO_USE_HALF_FLOAT_PRECISION", "0");
-    pci.define("XE_GTAO_USE_DEFAULT_CONSTANTS", "0");
-    TRY(allocator.get_context().create_named_pipeline("gtao_final_pipeline", pci)););
+    TRY(allocator.get_context().create_named_pipeline("gtao_first_pipeline", pci));
+  });
 
-  ADD_TASK_TO_PIPE(&allocator, vuk::PipelineBaseCreateInfo pci;
-                   pci.add_hlsl(FU::read_shader_file("FullscreenTriangle.hlsl"), FU::get_shader_path("FullscreenTriangle.hlsl"), SS::eVertex);
-                   pci.add_glsl(FU::read_shader_file("PostProcess/FXAA.frag"), FU::get_shader_path("PostProcess/FXAA.frag"));
-                   TRY(allocator.get_context().create_named_pipeline("fxaa_pipeline", pci)););
+  task_scheduler->add_task([&allocator]() mutable {
+    vuk::PipelineBaseCreateInfo pci;
+    pci.add_hlsl(SHADER_FILE("GTAO/GTAO_Main.hlsl"), SS::eCompute, "CSGTAOHigh");
+    pci.define("XE_GTAO_FP32_DEPTHS", "");
+    pci.define("XE_GTAO_USE_HALF_FLOAT_PRECISION", "0");
+    pci.define("XE_GTAO_USE_DEFAULT_CONSTANTS", "0");
+    TRY(allocator.get_context().create_named_pipeline("gtao_main_pipeline", pci));
+  });
+
+  task_scheduler->add_task([&allocator]() mutable {
+    vuk::PipelineBaseCreateInfo pci;
+    pci.add_hlsl(SHADER_FILE("GTAO/GTAO_Final.hlsl"), SS::eCompute, "CSDenoisePass");
+    pci.define("XE_GTAO_FP32_DEPTHS", "");
+    pci.define("XE_GTAO_USE_HALF_FLOAT_PRECISION", "0");
+    pci.define("XE_GTAO_USE_DEFAULT_CONSTANTS", "0");
+    TRY(allocator.get_context().create_named_pipeline("gtao_denoise_pipeline", pci));
+  });
+
+  task_scheduler->add_task([&allocator]() mutable {
+    vuk::PipelineBaseCreateInfo pci;
+    pci.add_hlsl(SHADER_FILE("GTAO/GTAO_Final.hlsl"), SS::eCompute, "CSDenoiseLastPass");
+    pci.define("XE_GTAO_FP32_DEPTHS", "");
+    pci.define("XE_GTAO_USE_HALF_FLOAT_PRECISION", "0");
+    pci.define("XE_GTAO_USE_DEFAULT_CONSTANTS", "0");
+    TRY(allocator.get_context().create_named_pipeline("gtao_final_pipeline", pci));
+  });
+
+  task_scheduler->add_task([&allocator]() mutable {
+    vuk::PipelineBaseCreateInfo pci;
+    pci.add_hlsl(SHADER_FILE("FullscreenTriangle.hlsl"), SS::eVertex);
+    pci.add_glsl(SHADER_FILE("PostProcess/FXAA.frag"));
+    TRY(allocator.get_context().create_named_pipeline("fxaa_pipeline", pci));
+  });
 
   // --- Bloom ---
-  ADD_TASK_TO_PIPE(&allocator, vuk::PipelineBaseCreateInfo pci;
-                   pci.add_glsl(FU::read_shader_file("PostProcess/BloomPrefilter.comp"), FU::get_shader_path("PostProcess/BloomPrefilter.comp"));
-                   TRY(allocator.get_context().create_named_pipeline("bloom_prefilter_pipeline", pci)););
-  ADD_TASK_TO_PIPE(&allocator, vuk::PipelineBaseCreateInfo pci;
-                   pci.add_glsl(FU::read_shader_file("PostProcess/BloomDownsample.comp"), FU::get_shader_path("PostProcess/BloomDownsample.comp"));
-                   TRY(allocator.get_context().create_named_pipeline("bloom_downsample_pipeline", pci)););
-  ADD_TASK_TO_PIPE(&allocator, vuk::PipelineBaseCreateInfo pci;
-                   pci.add_glsl(FU::read_shader_file("PostProcess/BloomUpsample.comp"), FU::get_shader_path("PostProcess/BloomUpsample.comp"));
-                   TRY(allocator.get_context().create_named_pipeline("bloom_upsample_pipeline", pci)););
+  task_scheduler->add_task([&allocator]() mutable {
+    vuk::PipelineBaseCreateInfo pci;
+    pci.add_glsl(SHADER_FILE("PostProcess/BloomPrefilter.comp"));
+    TRY(allocator.get_context().create_named_pipeline("bloom_prefilter_pipeline", pci));
+  });
 
-  ADD_TASK_TO_PIPE(=, bindless_pci.add_hlsl(FU::read_shader_file("Debug/Grid.hlsl"), FU::get_shader_path("Debug/Grid.hlsl"), SS::eVertex);
-                   bindless_pci.add_hlsl(FU::read_shader_file("Debug/Grid.hlsl"), FU::get_shader_path("Debug/Grid.hlsl"), SS::ePixel, "PSmain");
-                   TRY(allocator.get_context().create_named_pipeline("grid_pipeline", bindless_pci)););
-  ADD_TASK_TO_PIPE(&allocator, vuk::PipelineBaseCreateInfo pci;
-                   pci.add_glsl(FU::read_shader_file("Debug/Unlit.vert"), FU::get_shader_path("Debug/Unlit.vert"));
-                   pci.add_glsl(FU::read_shader_file("Debug/Unlit.frag"), FU::get_shader_path("Debug/Unlit.frag"));
-                   TRY(allocator.get_context().create_named_pipeline("unlit_pipeline", pci)););
+  task_scheduler->add_task([&allocator]() mutable {
+    vuk::PipelineBaseCreateInfo pci;
+    pci.add_glsl(SHADER_FILE("PostProcess/BloomDownsample.comp"));
+    TRY(allocator.get_context().create_named_pipeline("bloom_downsample_pipeline", pci));
+  });
+
+  task_scheduler->add_task([&allocator]() mutable {
+    vuk::PipelineBaseCreateInfo pci;
+    pci.add_glsl(SHADER_FILE("PostProcess/BloomUpsample.comp"));
+    TRY(allocator.get_context().create_named_pipeline("bloom_upsample_pipeline", pci));
+  });
+
+  task_scheduler->add_task([=]() mutable {
+    bindless_pci.add_hlsl(SHADER_FILE("Debug/Grid.hlsl"), SS::eVertex);
+    bindless_pci.add_hlsl(SHADER_FILE("Debug/Grid.hlsl"), SS::ePixel, "PSmain");
+    TRY(allocator.get_context().create_named_pipeline("grid_pipeline", bindless_pci));
+  });
+
+  task_scheduler->add_task([&allocator]() mutable {
+    vuk::PipelineBaseCreateInfo pci;
+    pci.add_glsl(SHADER_FILE("Debug/Unlit.vert"));
+    pci.add_glsl(SHADER_FILE("Debug/Unlit.frag"));
+    TRY(allocator.get_context().create_named_pipeline("unlit_pipeline", pci));
+  });
 
   // --- Atmosphere ---
-  ADD_TASK_TO_PIPE(=,
-                   bindless_pci.add_hlsl(FU::read_shader_file("Atmosphere/TransmittanceLUT.hlsl"),
-                                         FU::get_shader_path("Atmosphere/TransmittanceLUT.hlsl"),
-                                         SS::eCompute);
-                   TRY(allocator.get_context().create_named_pipeline("sky_transmittance_pipeline", bindless_pci)););
-  ADD_TASK_TO_PIPE(=,
-                   bindless_pci.add_hlsl(FU::read_shader_file("Atmosphere/MultiScatterLUT.hlsl"),
-                                         FU::get_shader_path("Atmosphere/MultiScatterLUT.hlsl"),
-                                         SS::eCompute);
-                   TRY(allocator.get_context().create_named_pipeline("sky_multiscatter_pipeline", bindless_pci)););
-  ADD_TASK_TO_PIPE(
-    =, bindless_pci.add_hlsl(FU::read_shader_file("FullscreenTriangle.hlsl"), FU::get_shader_path("FullscreenTriangle.hlsl"), SS::eVertex);
-    bindless_pci.add_hlsl(FU::read_shader_file("Atmosphere/SkyView.hlsl"), FU::get_shader_path("Atmosphere/SkyView.hlsl"), SS::ePixel);
-    TRY(allocator.get_context().create_named_pipeline("sky_view_pipeline", bindless_pci)););
-  ADD_TASK_TO_PIPE(=,
-                   bindless_pci.add_hlsl(FU::read_shader_file("Atmosphere/SkyViewFinal.hlsl"),
-                                         FU::get_shader_path("Atmosphere/SkyViewFinal.hlsl"),
-                                         SS::eVertex,
-                                         "VSmain");
-                   bindless_pci.add_hlsl(FU::read_shader_file("Atmosphere/SkyViewFinal.hlsl"),
-                                         FU::get_shader_path("Atmosphere/SkyViewFinal.hlsl"),
-                                         SS::ePixel,
-                                         "PSmain");
-                   TRY(allocator.get_context().create_named_pipeline("sky_view_final_pipeline", bindless_pci)););
-  ADD_TASK_TO_PIPE(
-    =,
-    bindless_pci.add_hlsl(FU::read_shader_file("Atmosphere/SkyEnvMap.hlsl"), FU::get_shader_path("Atmosphere/SkyEnvMap.hlsl"), SS::eVertex, "VSmain");
-    bindless_pci.add_hlsl(FU::read_shader_file("Atmosphere/SkyEnvMap.hlsl"), FU::get_shader_path("Atmosphere/SkyEnvMap.hlsl"), SS::ePixel, "PSmain");
-    TRY(allocator.get_context().create_named_pipeline("sky_envmap_pipeline", bindless_pci)););
+  task_scheduler->add_task([=]() mutable {
+    bindless_pci.add_hlsl(SHADER_FILE("Atmosphere/TransmittanceLUT.hlsl"), SS::eCompute);
+    TRY(allocator.get_context().create_named_pipeline("sky_transmittance_pipeline", bindless_pci));
+  });
+
+  task_scheduler->add_task([=]() mutable {
+    bindless_pci.add_hlsl(SHADER_FILE("Atmosphere/MultiScatterLUT.hlsl"), SS::eCompute);
+    TRY(allocator.get_context().create_named_pipeline("sky_multiscatter_pipeline", bindless_pci));
+  });
+
+  task_scheduler->add_task([=]() mutable {
+    bindless_pci.add_hlsl(SHADER_FILE("FullscreenTriangle.hlsl"), SS::eVertex);
+    bindless_pci.add_hlsl(SHADER_FILE("Atmosphere/SkyView.hlsl"), SS::ePixel);
+    TRY(allocator.get_context().create_named_pipeline("sky_view_pipeline", bindless_pci));
+  });
+
+  task_scheduler->add_task([=]() mutable {
+    bindless_pci.add_hlsl(SHADER_FILE("Atmosphere/SkyViewFinal.hlsl"), SS::eVertex, "VSmain");
+    bindless_pci.add_hlsl(SHADER_FILE("Atmosphere/SkyViewFinal.hlsl"), SS::ePixel, "PSmain");
+    TRY(allocator.get_context().create_named_pipeline("sky_view_final_pipeline", bindless_pci));
+  });
+
+  task_scheduler->add_task([=]() mutable {
+    bindless_pci.add_hlsl(SHADER_FILE("Atmosphere/SkyEnvMap.hlsl"), SS::eVertex, "VSmain");
+    bindless_pci.add_hlsl(SHADER_FILE("Atmosphere/SkyEnvMap.hlsl"), SS::ePixel, "PSmain");
+    TRY(allocator.get_context().create_named_pipeline("sky_envmap_pipeline", bindless_pci));
+  });
 
   wait_for_futures(allocator);
 
-  App::get_system<TaskScheduler>()->wait_for_all();
+  task_scheduler->wait_for_all();
 }
 
 void DefaultRenderPipeline::clear() {
@@ -218,7 +253,7 @@ DefaultRenderPipeline::CameraData DefaultRenderPipeline::get_main_camera_data() 
     .inv_projection_matrix = current_camera->get_inv_projection_matrix(),
     .view_matrix = current_camera->get_view_matrix(),
     .inv_view_matrix = current_camera->get_inv_view_matrix(),
-    .inv_view_projection_matrix = current_camera->get_inv_view_projection_matrix(),
+    .inv_projection_view_matrix = current_camera->get_inverse_projection_view(),
     .projection_view_matrix = current_camera->get_projection_matrix() * current_camera->get_view_matrix(),
     .near_clip = current_camera->get_near(),
     .far_clip = current_camera->get_far(),
@@ -238,7 +273,7 @@ void DefaultRenderPipeline::create_dir_light_cameras(const LightComponent& light
   const auto up = math::transform_normal(Vec4(0.0f, 0.0f, 1.0f, 0.0f), lightRotation);
   auto light_view = glm::lookAt(Vec3{}, Vec3(to), Vec3(up));
 
-  const auto unproj = inverse(camera.get_projection_matrix() * camera.get_view_matrix());
+  const auto unproj = camera.get_inverse_projection_view();
 
   Vec4 frustum_corners[8] = {
     math::transform_coord(Vec4(-1.f, -1.f, 1.f, 1.f), unproj), // near
@@ -370,7 +405,6 @@ void DefaultRenderPipeline::update_frame_data(vuk::Allocator& allocator) {
   auto [matBuff, matBufferFut] = create_cpu_buffer(allocator, std::span(material_parameters));
   auto& mat_buffer = *matBuff;
 
-  // fill it if it's empty. Or we could allow vulkan to bind null buffers with VK_EXT_robustness2 nullDescriptor feature.
   if (scene_lights.empty())
     scene_lights.emplace_back();
 
@@ -428,6 +462,9 @@ void DefaultRenderPipeline::update_frame_data(vuk::Allocator& allocator) {
     mesh_instances.emplace_back(mc.transform);
   }
 
+  if (mesh_instances.empty())
+    mesh_instances.emplace_back();
+
   auto [instBuff, instanceBuffFut] = create_cpu_buffer(allocator, std::span(mesh_instances));
   const auto& mesh_instances_buffer = *instBuff;
 
@@ -459,6 +496,8 @@ void DefaultRenderPipeline::update_frame_data(vuk::Allocator& allocator) {
 }
 
 void DefaultRenderPipeline::create_static_resources(vuk::Allocator& allocator) {
+  OX_SCOPED_ZONE;
+
   constexpr auto transmittance_lut_size = vuk::Extent3D{256, 64, 1};
   sky_transmittance_lut =
     create_texture(allocator, transmittance_lut_size, vuk::Format::eR32G32B32A32Sfloat, DEFAULT_USAGE_FLAGS | vuk::ImageUsageFlagBits::eStorage);
@@ -925,7 +964,7 @@ void DefaultRenderPipeline::render_meshes(const RenderQueue& render_queue,
       if (!(flags & RENDER_FLAGS_SHADOWS_PASS))
         stage = stage | vuk::ShaderStageFlagBits::eFragment;
       command_buffer.push_constants(stage, 0, pc);
-      Renderer::draw_indexed(command_buffer, primitive->index_count, instanced_batch.instance_count, primitive->first_index, 0, 0);
+      command_buffer.draw_indexed(primitive->index_count, instanced_batch.instance_count, primitive->first_index, 0, 0);
 
       primitive_index++;
     }
@@ -1483,7 +1522,7 @@ void DefaultRenderPipeline::apply_grid(vuk::RenderGraph* rg, const vuk::Name dst
 
     m_quad->bind_index_buffer(command_buffer)->bind_vertex_buffer(command_buffer);
 
-    Renderer::draw_indexed(command_buffer, m_quad->index_count, 1, 0, 0, 0);
+    command_buffer.draw_indexed(m_quad->index_count, 1, 0, 0, 0);
   }});
 }
 
@@ -1704,7 +1743,7 @@ void DefaultRenderPipeline::debug_pass(const Shared<vuk::RenderGraph>& rg,
       .bind_vertex_buffer(0, vertex_buffer, 0, vertex_layout)
       .bind_index_buffer(index_buffer, vuk::IndexType::eUint32);
 
-    Renderer::draw_indexed(command_buffer, index_count, 1, 0, 0, 0);
+    command_buffer.draw_indexed(index_count, 1, 0, 0, 0);
 
     command_buffer.bind_graphics_pipeline("unlit_pipeline")
       .set_depth_stencil(vuk::PipelineDepthStencilStateCreateInfo{
@@ -1723,7 +1762,7 @@ void DefaultRenderPipeline::debug_pass(const Shared<vuk::RenderGraph>& rg,
       .bind_vertex_buffer(0, vertex_buffer_dt, 0, vertex_layout)
       .bind_index_buffer(index_buffer, vuk::IndexType::eUint32);
 
-    Renderer::draw_indexed(command_buffer, index_count_dt, 1, 0, 0, 0);
+    command_buffer.draw_indexed(index_count_dt, 1, 0, 0, 0);
   }});
 
   DebugRenderer::reset(true);

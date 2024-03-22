@@ -11,7 +11,6 @@
 #include "Scene/Entity.h"
 #include "Scene/Scene.h"
 
-#include "Utils/FileUtils.h"
 #include "Utils/Log.h"
 
 namespace ox {

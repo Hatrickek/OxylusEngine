@@ -102,7 +102,7 @@ private:
     Mat4 inv_projection_matrix = {};
     Mat4 view_matrix = {};
     Mat4 inv_view_matrix = {};
-    Mat4 inv_view_projection_matrix = {};
+    Mat4 inv_projection_view_matrix = {};
     Mat4 projection_view_matrix = {};
     Vec3 up = {};
     float near_clip = 0;

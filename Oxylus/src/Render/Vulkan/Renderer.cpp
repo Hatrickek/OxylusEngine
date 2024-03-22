@@ -3,7 +3,6 @@
 #include <future>
 #include <vuk/Partials.hpp>
 
-#include "VkContext.h"
 #include "Assets/AssetManager.h"
 #include "Core/LayerStack.h"
 #include "Render/DebugRenderer.h"
@@ -13,11 +12,11 @@
 #include "Thread/TaskScheduler.h"
 #include "UI/ImGuiLayer.h"
 #include "Utils/Profiler.h"
+#include "VkContext.h"
 
 namespace ox {
 Renderer::RendererContext Renderer::renderer_context;
 RendererConfig Renderer::renderer_config;
-Renderer::RendererStats Renderer::renderer_stats;
 
 void Renderer::init() {
   OX_SCOPED_ZONE;
@@ -73,8 +72,6 @@ void Renderer::draw(VkContext* context, ImGuiLayer* imgui_layer, LayerStack& lay
       system->imgui_update();
     imgui_layer->end();
 
-    reset_stats();
-
     fut = imgui_layer->render_draw_data(frame_allocator, fut, ImGui::GetDrawData());
   }
   // Render it into a separate image with given dimension
@@ -99,15 +96,8 @@ void Renderer::draw(VkContext* context, ImGuiLayer* imgui_layer, LayerStack& lay
 
     rgx->attach_and_clear_image(
       "_img",
-      vuk::ImageAttachment{
-        .extent = dim,
-        .format = context->swapchain->format,
-        .sample_count = vuk::Samples::e1,
-        .level_count = 1,
-        .layer_count = 1
-      },
-      vuk::ClearColor(0.0f, 0.0f, 0.0f, 1.f)
-    );
+      vuk::ImageAttachment{.extent = dim, .format = context->swapchain->format, .sample_count = vuk::Samples::e1, .level_count = 1, .layer_count = 1},
+      vuk::ClearColor(0.0f, 0.0f, 0.0f, 1.f));
 
     const auto rp_fut = rp->on_render(frame_allocator, vuk::Future{std::move(rgx), "_img"}, dim);
     const auto attachment_name_out = rp_fut->get_bound_name().name;
@@ -137,25 +127,9 @@ void Renderer::draw(VkContext* context, ImGuiLayer* imgui_layer, LayerStack& lay
 
     imgui_layer->end();
 
-    reset_stats();
-
     fut = imgui_layer->render_draw_data(frame_allocator, vuk::Future{std::move(rg), "target_image"}, ImGui::GetDrawData());
   }
 
   context->end(fut, frame_allocator);
 }
-
-vuk::CommandBuffer& Renderer::draw_indexed(vuk::CommandBuffer& command_buffer,
-                                           const size_t index_count,
-                                           const size_t instance_count,
-                                           const size_t first_index,
-                                           const int32_t vertex_offset,
-                                           const size_t first_instance) {
-  renderer_stats.drawcall_count += 1;
-  return command_buffer.draw_indexed(index_count, instance_count, first_index, vertex_offset, first_instance);
-}
-
-void Renderer::reset_stats() {
-  renderer_stats = {};
-}
-}
+} // namespace ox

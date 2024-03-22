@@ -7,8 +7,8 @@ struct VOutput {
   float3 FarPoint : FAR_POINT;
 };
 
-float3 UnprojectPoint(float x, float y, float z, float4x4 view, float4x4 projection) {
-  float4 unprojectedPoint = mul(mul(view, projection), float4(x, y, z, 1.0));
+float3 UnprojectPoint(float x, float y, float z, float4x4 inv_projection_view_matrix) {
+  float4 unprojectedPoint = mul(inv_projection_view_matrix, float4(x, y, z, 1.0));
   return unprojectedPoint.xyz / unprojectedPoint.w;
 }
 
@@ -17,8 +17,8 @@ VOutput main(Vertex inVertex) {
   output.UV = inVertex.uv;
 
   float3 position = inVertex.position;
-  output.NearPoint = UnprojectPoint(position.x, position.y, 0.0, GetCamera().inv_view_matrix, GetCamera().inv_projection_matrix).xyz;
-  output.FarPoint = UnprojectPoint(position.x, position.y, 1.0, GetCamera().inv_view_matrix, GetCamera().inv_projection_matrix).xyz;
+  output.NearPoint = UnprojectPoint(position.x, position.y, 0.0, GetCamera().inv_projection_view_matrix);
+  output.FarPoint = UnprojectPoint(position.x, position.y, 1.0, GetCamera().inv_projection_view_matrix).xyz;
   output.Position = float4(position.xyz, 1.0);
 
   return output;
@@ -29,34 +29,33 @@ struct PSOut {
   float Depth : SV_Depth;
 };
 
-static const float step = 100.0f;
 static const float subdivisions = 10.0f;
 
-float4 Grid(float3 fragPos3D, float scale, bool drawAxis) {
-  float2 coord = fragPos3D.xz * scale;
+float4 Grid(float3 fragPos3D, float scale) {
+  const float2 coord = fragPos3D.xz * scale;
 
-  float2 derivative = fwidth(coord);
+  const float2 derivative = fwidth(coord);
   float2 grid = abs(frac(coord - 0.5) - 0.5) / derivative;
-  float _line = min(grid.x, grid.y);
-  float minimumz = min(derivative.y, 1);
-  float minimumx = min(derivative.x, 1);
-  float4 colour = float4(0.35, 0.35, 0.35, 1.0 - min(_line, 1.0));
+  const float _line = min(grid.x, grid.y);
+  const float minimumz = 0.1f;
+  const float minimumx = 0.1f;
+  float4 color = float4(0.35f, 0.35f, 0.35f, 1.0f - min(_line, 1.0f));
   // z axis
   if (fragPos3D.x > -0.1 * minimumx && fragPos3D.x < 0.1 * minimumx)
-    colour = float4(0.0, 0.0, 1.0, colour.w);
+    color = float4(0.0, 0.0, 1.0, color.w);
   // x axis
   if (fragPos3D.z > -0.1 * minimumz && fragPos3D.z < 0.1 * minimumz)
-    colour = float4(1.0, 0.0, 0.0, colour.w);
-  return colour;
+    color = float4(1.0, 0.0, 0.0, color.w);
+  return color;
 }
 
 float ComputeDepth(float3 pos) {
-  float4 clipSpacePos = mul(mul(GetCamera().projection_matrix, GetCamera().view_matrix), float4(pos.xyz, 1.0));
+  float4 clipSpacePos = mul(GetCamera().projection_view_matrix, float4(pos.xyz, 1.0));
   return (clipSpacePos.z / clipSpacePos.w);
 }
 
 float ComputeLinearDepth(float3 pos) {
-  float4 clipSpacePos = mul(mul(GetCamera().projection_matrix, GetCamera().view_matrix), float4(pos.xyz, 1.0));
+  float4 clipSpacePos = mul(GetCamera().projection_view_matrix, float4(pos.xyz, 1.0));
   float clipSpaceDepth = (clipSpacePos.z / clipSpacePos.w) * 2.0 - 1.0;                  // put back between -1 and 1
   float linearDepth = (2.0 * GetCamera().near_clip * GetCamera().far_clip) /
                       (GetCamera().far_clip + GetCamera().near_clip -
@@ -73,20 +72,17 @@ PSOut PSmain(VOutput input, float4 pixelPosition : SV_Position) {
   if (t < 0.)
     discard;
 
-  float3 fragPos3D = input.NearPoint + t * (input.FarPoint - input.NearPoint);
-  fragPos3D.y -= 0.1; // depth fighting with zero plane fix
+  float3 pixelPos = input.NearPoint + t * (input.FarPoint - input.NearPoint);
+  pixelPos.y -= 0.1; // depth fighting with zero plane fix
 
-  psOut.Depth = ComputeDepth(fragPos3D);
+  psOut.Depth = ComputeDepth(pixelPos);
 
-  float linearDepth = ComputeLinearDepth(fragPos3D);
+  float linearDepth = ComputeLinearDepth(pixelPos);
   float fading = max(0, (0.5 - linearDepth));
 
-  float decreaseDistance = GetCamera().far_clip * 1.5;
-  float3 pseudoViewPos = float3(GetCamera().position.x, fragPos3D.y, GetCamera().position.z);
-
   float dist, angleFade;
-  if (GetCamera().projection_matrix[3][3] == 0.0) {
-    float3 viewvec = GetCamera().position.xyz - fragPos3D;
+  if (GetCamera().projection_matrix[3][3] - EPSILON < 0.0) {
+    float3 viewvec = GetCamera().position.xyz - pixelPos;
     dist = length(viewvec);
     viewvec /= dist;
 
@@ -103,15 +99,14 @@ PSOut PSmain(VOutput input, float4 pixelPosition : SV_Position) {
     dist = 1.0;                   /* avoid branch after */
   }
 
-  const float distanceToCamera = abs(GetCamera().position.y - fragPos3D.y);
+  const float distanceToCamera = abs(GetCamera().position.y - pixelPos.y);
   const int powerOfTen = max(1, RoundToPowerOfTen(distanceToCamera));
   const float divs = 1.0f / float(powerOfTen);
   const float secondFade = smoothstep(subdivisions / divs, 1 / divs, distanceToCamera);
 
-  float4 grid1 = Grid(fragPos3D, divs / subdivisions, true);
-  float4 grid2 = Grid(fragPos3D, divs, true);
+  float4 grid1 = Grid(pixelPos, divs / subdivisions);
+  float4 grid2 = Grid(pixelPos, divs);
 
-  // secondFade*= smoothstep(GetCamera().FarClip / 0.5, GetCamera().FarClip, distanceToCamera);
   grid2.a *= secondFade;
   grid1.a *= (1 - secondFade);
 

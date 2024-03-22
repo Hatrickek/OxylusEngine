@@ -87,7 +87,7 @@ struct CameraData {
   float4x4 inv_projection_matrix;
   float4x4 view_matrix;
   float4x4 inv_view_matrix;
-  float4x4 inv_view_projection_matrix;
+  float4x4 inv_projection_view_matrix;
   float4x4 projection_view_matrix;
   float3 up;
   float near_clip;

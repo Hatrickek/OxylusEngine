@@ -3,8 +3,6 @@
 #include "EntitySerializer.h"
 #include "Assets/AssetManager.h"
 #include "Core/Project.h"
-#include "Scene/Entity.h"
-#include "Utils/FileUtils.h"
 #include "Utils/Profiler.h"
 
 #include <fstream>
@@ -36,7 +34,7 @@ void SceneSerializer::serialize(const std::string& filePath) const {
 }
 
 bool SceneSerializer::deserialize(const std::string& filePath) const {
-  const auto content = FileUtils::read_file(filePath);
+  const auto content = FileSystem::read_file(filePath);
   if (content.empty()) {
     OX_CORE_ASSERT(!content.empty(), fmt::format("Couldn't read scene file: {0}", filePath).c_str());
   }

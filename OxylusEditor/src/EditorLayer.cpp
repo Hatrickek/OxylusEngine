@@ -10,22 +10,24 @@
 #include "Assets/AssetManager.h"
 #include "Core/Input.h"
 #include "Core/Project.h"
+#include "Panels/AssetInspectorPanel.h"
 #include "Panels/ContentPanel.h"
 #include "Panels/EditorSettingsPanel.h"
+#include "Panels/InspectorPanel.h"
 #include "Panels/ProjectPanel.h"
-#include "Panels/RendererSettingsPanel.h"
 #include "Panels/RenderGraphPanel.h"
+#include "Panels/RendererSettingsPanel.h"
 #include "Panels/SceneHierarchyPanel.h"
 #include "Panels/StatisticsPanel.h"
-#include "Render/Window.h"
 #include "Render/Vulkan/Renderer.h"
+#include "Render/Window.h"
 
 #include "Scene/SceneRenderer.h"
 
 #include "UI/OxUI.h"
 #include "Utils/EditorConfig.h"
-#include "Utils/ImGuiScoped.h"
 #include "Utils/FileDialogs.h"
+#include "Utils/ImGuiScoped.h"
 
 #include "Scene/SceneSerializer.h"
 
@@ -43,15 +45,13 @@ AutoCVar_Int cvar_show_imgui_demo("ui.imgui_demo", "show imgui demo window", 0, 
 
 static ViewportPanel* fullscreen_viewport_panel = nullptr;
 
-EditorLayer::EditorLayer() : Layer("Editor Layer") {
-  instance = this;
-}
+EditorLayer::EditorLayer() : Layer("Editor Layer") { instance = this; }
 
 void EditorLayer::on_attach(EventDispatcher& dispatcher) {
   OX_SCOPED_ZONE;
   EditorTheme::init();
 
-  //Window::maximize();
+  // Window::maximize();
 
   Project::create_new();
 
@@ -74,6 +74,7 @@ void EditorLayer::on_attach(EventDispatcher& dispatcher) {
 
   const auto& viewport = viewport_panels.emplace_back(create_unique<ViewportPanel>());
   viewport->m_camera.set_position({-2, 2, 0});
+  viewport->m_camera.update();
   viewport->set_context(editor_scene, *get_panel<SceneHierarchyPanel>());
 
   runtime_console.register_command("clear_assets", "Asset cleared.", [] { AssetManager::free_unused_assets(); });
@@ -83,9 +84,7 @@ void EditorLayer::on_attach(EventDispatcher& dispatcher) {
   set_editor_context(editor_scene);
 }
 
-void EditorLayer::on_detach() {
-  editor_config.save_config();
-}
+void EditorLayer::on_detach() { editor_config.save_config(); }
 
 void EditorLayer::on_update(const Timestep& delta_time) {
   for (const auto& panel : viewport_panels) {
@@ -133,11 +132,10 @@ void EditorLayer::on_imgui_render() {
 
   constexpr ImGuiDockNodeFlags dockspace_flags = ImGuiDockNodeFlags_PassthruCentralNode;
 
-  constexpr ImGuiWindowFlags window_flags = ImGuiWindowFlags_MenuBar | ImGuiWindowFlags_NoDocking |
-                                            ImGuiWindowFlags_NoBackground | ImGuiWindowFlags_NoNavFocus |
-                                            ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_NoTitleBar |
-                                            ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoResize |
-                                            ImGuiWindowFlags_NoBringToFrontOnFocus | ImGuiWindowFlags_NoSavedSettings;
+  constexpr ImGuiWindowFlags window_flags = ImGuiWindowFlags_MenuBar | ImGuiWindowFlags_NoDocking | ImGuiWindowFlags_NoBackground |
+                                            ImGuiWindowFlags_NoNavFocus | ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_NoTitleBar |
+                                            ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoBringToFrontOnFocus |
+                                            ImGuiWindowFlags_NoSavedSettings;
 
   ImGuiViewport* viewport = ImGui::GetMainViewport();
   ImGui::SetNextWindowPos(viewport->WorkPos);
@@ -158,8 +156,8 @@ void EditorLayer::on_imgui_render() {
 
     const float frame_height = ImGui::GetFrameHeight();
 
-    constexpr ImGuiWindowFlags menu_flags = ImGuiWindowFlags_NoScrollbar | ImGuiWindowFlags_NoSavedSettings |
-                                            ImGuiWindowFlags_MenuBar | ImGuiWindowFlags_NoNavFocus;
+    constexpr ImGuiWindowFlags menu_flags =
+      ImGuiWindowFlags_NoScrollbar | ImGuiWindowFlags_NoSavedSettings | ImGuiWindowFlags_MenuBar | ImGuiWindowFlags_NoNavFocus;
 
     ImVec2 frame_padding = ImGui::GetStyle().FramePadding;
     ImGui::PushStyleVar(ImGuiStyleVar_FramePadding, {frame_padding.x, 4.0f});
@@ -237,13 +235,14 @@ void EditorLayer::on_imgui_render() {
           ImGui::EndMenu();
         }
         if (ImGui::BeginMenu("Help")) {
-          if (ImGui::MenuItem("About")) {}
+          if (ImGui::MenuItem("About")) {
+          }
           OxUI::tooltip("WIP");
           ImGui::EndMenu();
         }
         ImGui::SameLine();
 
-        //TODO:
+        // TODO:
 #if 0
         if (renderAssetManager) {
           if (ImGui::Begin("Asset Manager")) {
@@ -281,11 +280,8 @@ void EditorLayer::on_imgui_render() {
         }
 #endif
         {
-          //Project name text
-          ImGui::SetCursorPos(ImVec2(
-            (float)Window::get_width() - 10 -
-            ImGui::CalcTextSize(Project::get_active()->get_config().name.c_str()).x,
-            0));
+          // Project name text
+          ImGui::SetCursorPos(ImVec2((float)Window::get_width() - 10 - ImGui::CalcTextSize(Project::get_active()->get_config().name.c_str()).x, 0));
           ImGuiScoped::StyleColor b_color1(ImGuiCol_Button, ImVec4(0.2f, 0.2f, 0.2f, 0.7f));
           ImGuiScoped::StyleColor b_color2(ImGuiCol_ButtonHovered, ImVec4(0.2f, 0.2f, 0.2f, 0.7f));
           ImGui::Button(Project::get_active()->get_config().name.c_str());
@@ -391,17 +387,12 @@ void EditorLayer::load_default_scene(const std::shared_ptr<Scene>& scene) {
   scene->registry.get<TransformComponent>(cube).position.y = 0.5f;
 }
 
-void EditorLayer::clear_selected_entity() {
-  get_panel<SceneHierarchyPanel>()->clear_selection_context();
-}
+void EditorLayer::clear_selected_entity() { get_panel<SceneHierarchyPanel>()->clear_selection_context(); }
 
 void EditorLayer::save_scene() {
   if (!last_save_scene_path.empty()) {
-    ThreadManager::get()->asset_thread.queue_job([this] {
-      SceneSerializer(editor_scene).serialize(last_save_scene_path);
-    });
-  }
-  else {
+    ThreadManager::get()->asset_thread.queue_job([this] { SceneSerializer(editor_scene).serialize(last_save_scene_path); });
+  } else {
     save_scene_as();
   }
 }
@@ -409,9 +400,7 @@ void EditorLayer::save_scene() {
 void EditorLayer::save_scene_as() {
   const std::string filepath = App::get_system<FileDialogs>()->save_file({{"Oxylus Scene", "oxscene"}}, "New Scene");
   if (!filepath.empty()) {
-    ThreadManager::get()->asset_thread.queue_job([this, filepath] {
-      SceneSerializer(editor_scene).serialize(filepath);
-    });
+    ThreadManager::get()->asset_thread.queue_job([this, filepath] { SceneSerializer(editor_scene).serialize(filepath); });
     last_save_scene_path = filepath;
   }
 }
@@ -458,9 +447,7 @@ void EditorLayer::draw_panels() {
   runtime_console.on_imgui_render();
 }
 
-Shared<Scene> EditorLayer::get_active_scene() {
-  return active_scene;
-}
+Shared<Scene> EditorLayer::get_active_scene() { return active_scene; }
 
 void EditorLayer::set_editor_context(const Shared<Scene>& scene) {
   auto* shpanel = get_panel<SceneHierarchyPanel>();
@@ -471,9 +458,7 @@ void EditorLayer::set_editor_context(const Shared<Scene>& scene) {
   }
 }
 
-void EditorLayer::set_scene_state(const SceneState state) {
-  scene_state = state;
-}
+void EditorLayer::set_scene_state(const SceneState state) { scene_state = state; }
 
 void EditorLayer::set_docking_layout(EditorLayout layout) {
   current_layout = layout;
@@ -493,8 +478,7 @@ void EditorLayer::set_docking_layout(EditorLayout layout) {
     ImGui::DockBuilderDockWindow(get_panel<RendererSettingsPanel>()->get_id(), left_split_dock);
     ImGui::DockBuilderDockWindow(get_panel<ContentPanel>()->get_id(), left_split_dock);
     ImGui::DockBuilderDockWindow(get_panel<InspectorPanel>()->get_id(), left_dock);
-  }
-  else if (layout == EditorLayout::Classic) {
+  } else if (layout == EditorLayout::Classic) {
     const ImGuiID right_dock = ImGui::DockBuilderSplitNode(dockspace_id, ImGuiDir_Right, 0.2f, nullptr, &dockspace_id);
     ImGuiID left_dock = ImGui::DockBuilderSplitNode(dockspace_id, ImGuiDir_Left, 0.2f, nullptr, &dockspace_id);
     ImGuiID left_split_vertical_dock = ImGui::DockBuilderSplitNode(left_dock, ImGuiDir_Right, 0.8f, nullptr, &left_dock);
@@ -511,11 +495,20 @@ void EditorLayer::set_docking_layout(EditorLayout layout) {
   ImGui::DockBuilderFinish(dockspace_id);
 }
 
-void EditorLayer::new_project() {
-  Project::create_new();
+Archive& EditorLayer::advance_history() {
+  historyPos++;
+
+  while (static_cast<int>(history.size()) > historyPos) {
+    history.pop_back();
+  }
+
+  history.emplace_back();
+  history.back().set_read_mode_and_reset_pos(false);
+
+  return history.back();
 }
 
-void EditorLayer::save_project(const std::string& path) {
-  Project::save_active(path);
-}
-}
+void EditorLayer::new_project() { Project::create_new(); }
+
+void EditorLayer::save_project(const std::string& path) { Project::save_active(path); }
+} // namespace ox

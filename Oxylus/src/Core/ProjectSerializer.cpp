@@ -1,11 +1,7 @@
 #include "ProjectSerializer.h"
 
-#include <Utils/FileUtils.h>
 #include "Utils/Log.h"
 #include "Utils/Toml.h"
-
-#include <fstream>
-#include <sstream>
 
 namespace ox {
 ProjectSerializer::ProjectSerializer(Shared<Project> project) : project(std::move(project)) {}
@@ -13,23 +9,17 @@ ProjectSerializer::ProjectSerializer(Shared<Project> project) : project(std::mov
 bool ProjectSerializer::serialize(const std::string& file_path) const {
   const auto& config = project->get_config();
 
-  const auto root = toml::table{
-    {
-      "project",
-      toml::table{
-        {"name", config.name},
-        {"asset_directory", config.asset_directory},
-        {"start_scene", config.start_scene},
-        {"module_name", config.module_name}
-      }
-    }
-  };
+  const auto root = toml::table{{
+    "project",
+    toml::table{
+      {"name", config.name},
+      {"asset_directory", config.asset_directory},
+      {"start_scene", config.start_scene},
+      {"module_name", config.module_name},
+    },
+  }};
 
-  std::stringstream ss;
-  ss << "# Oxylus project file\n";
-  ss << root;
-  std::ofstream filestream(file_path);
-  filestream << ss.str();
+  FileSystem::write_file(file_path, root, "# Oxylus project file"); // TODO: check for result
 
   project->set_project_file_path(file_path);
 
@@ -38,7 +28,7 @@ bool ProjectSerializer::serialize(const std::string& file_path) const {
 
 bool ProjectSerializer::deserialize(std::string file_path) const {
   auto& [name, start_scene, asset_directory, module_name] = project->get_config();
-  const auto content = FileUtils::read_file(file_path);
+  const auto content = FileSystem::read_file(file_path);
   if (content.empty()) {
     OX_CORE_ASSERT(!content.empty(), fmt::format("Couldn't load project file: {0}", file_path).c_str());
     return false;
@@ -52,8 +42,7 @@ bool ProjectSerializer::deserialize(std::string file_path) const {
     asset_directory = project_node["asset_directory"].as_string()->get();
     start_scene = project_node["start_scene"].as_string()->get();
     module_name = project_node["module_name"].as_string()->get();
-  }
-  catch (const std::exception& exc) {
+  } catch (const std::exception& exc) {
     OX_CORE_ERROR("{}", exc.what());
   }
 
@@ -61,4 +50,4 @@ bool ProjectSerializer::deserialize(std::string file_path) const {
 
   return true;
 }
-}
+} // namespace ox

@@ -6,25 +6,21 @@
 #include "Core/App.h"
 #include "Thread/TaskScheduler.h"
 
-#include "Utils/FileUtils.h"
 #include "Utils/Profiler.h"
 #include "Utils/Toml.h"
 
 namespace ox {
 void RendererConfig::init() {
-  // TODO: Use pinned tasks instead
-  ADD_TASK_TO_PIPE(
-    this,
+  auto* task_scheduler = App::get_system<TaskScheduler>();
+  task_scheduler->add_task([this]() {
     if (!load_config("renderer_config.toml"))
-    save_config("renderer_config.toml");
-  );
+      save_config("renderer_config.toml");
+  });
 
-  App::get_system<TaskScheduler>()->wait_for_all();
+  task_scheduler->wait_for_all();
 }
 
-void RendererConfig::deinit() {
-  save_config("renderer_config.toml");
-}
+void RendererConfig::deinit() { save_config("renderer_config.toml"); }
 
 void RendererConfig::save_config(const char* path) const {
   OX_SCOPED_ZONE;
@@ -34,7 +30,7 @@ void RendererConfig::save_config(const char* path) const {
       "display",
       toml::table{
         {"vsync", (bool)RendererCVar::cvar_vsync.get()},
-      }
+      },
     },
     {
       "debug",
@@ -42,59 +38,51 @@ void RendererConfig::save_config(const char* path) const {
         {"debug_renderer", (bool)RendererCVar::cvar_enable_debug_renderer.get()},
         {"bounding_boxes", (bool)RendererCVar::cvar_draw_bounding_boxes.get()},
         {"physics_shapes", (bool)RendererCVar::cvar_draw_physics_shapes.get()},
-      }
+      },
     },
-    {
-      "color",
-      toml::table{
-        {"tonemapper", RendererCVar::cvar_tonemapper.get()},
-        {"exposure", RendererCVar::cvar_exposure.get()},
-        {"gamma", RendererCVar::cvar_gamma.get()}
-      }
-    },
+    {"color",
+     toml::table{{"tonemapper", RendererCVar::cvar_tonemapper.get()},
+                 {"exposure", RendererCVar::cvar_exposure.get()},
+                 {"gamma", RendererCVar::cvar_gamma.get()}}},
     {
       "gtao",
       toml::table{
         {"enabled", (bool)RendererCVar::cvar_gtao_enable.get()},
-      }
+      },
     },
     {
       "bloom",
       toml::table{
         {"enabled", (bool)RendererCVar::cvar_bloom_enable.get()},
         {"threshold", RendererCVar::cvar_bloom_threshold.get()},
-      }
+      },
     },
     {
       "ssr",
       toml::table{
         {"enabled", (bool)RendererCVar::cvar_ssr_enable.get()},
-      }
+      },
     },
     {
       "shadows",
       toml::table{
         {"size", RendererCVar::cvar_shadows_size.get()},
-      }
+      },
     },
     {
       "fxaa",
       toml::table{
         {"enabled", (bool)RendererCVar::cvar_fxaa_enable.get()},
-      }
-    }
+      },
+    },
   };
 
-  std::stringstream ss;
-  ss << "# Oxylus renderer config file\n";
-  ss << root;
-  std::ofstream filestream(path);
-  filestream << ss.str();
+  FileSystem::write_file(path, root, "# Oxylus renderer config file"); // TODO: check result
 }
 
 bool RendererConfig::load_config(const char* path) {
   OX_SCOPED_ZONE;
-  const auto& content = FileUtils::read_file(path);
+  const auto& content = FileSystem::read_file(path);
   if (content.empty())
     return false;
 
@@ -131,4 +119,4 @@ bool RendererConfig::load_config(const char* path) {
 
   return true;
 }
-}
+} // namespace ox

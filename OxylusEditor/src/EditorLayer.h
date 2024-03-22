@@ -1,32 +1,33 @@
 #pragma once
 
-#include "EditorContext.h"
 #include "Core/Layer.h"
+#include "EditorContext.h"
 
-#include "Panels/AssetInspectorPanel.h"
 #include "Panels/ContentPanel.h"
-#include "Panels/InspectorPanel.h"
 #include "Panels/SceneHierarchyPanel.h"
 #include "Panels/ViewportPanel.h"
 
-#include "Utils/EditorConfig.h"
 #include "Render/Window.h"
+#include "Utils/EditorConfig.h"
 
 #include "UI/RuntimeConsole.h"
+#include "Utils/Archive.h"
 
 namespace ox {
+enum class HistoryOp : uint32_t {
+  Translator,    // translator interaction
+  Selection,     // selection changed
+  Add,           // entity added
+  Delete,        // entity removed
+  ComponentData, // generic component data changed
+  None
+};
+
 class EditorLayer : public Layer {
 public:
-  enum class SceneState {
-    Edit     = 0,
-    Play     = 1,
-    Simulate = 2
-  };
+  enum class SceneState { Edit = 0, Play = 1, Simulate = 2 };
 
-  enum class EditorLayout {
-    Classic = 0,
-    BigViewport
-  };
+  enum class EditorLayout { Classic = 0, BigViewport };
 
   SceneState scene_state = SceneState::Edit;
 
@@ -34,13 +35,9 @@ public:
   ankerl::unordered_dense::map<size_t, Unique<EditorPanel>> editor_panels;
   std::vector<Unique<ViewportPanel>> viewport_panels;
 
-  template <typename T>
-  void add_panel() {
-    editor_panels.emplace(typeid(T).hash_code(), create_unique<T>());
-  }
+  template <typename T> void add_panel() { editor_panels.emplace(typeid(T).hash_code(), create_unique<T>()); }
 
-  template <typename T>
-  T* get_panel() {
+  template <typename T> T* get_panel() {
     const auto hash_code = typeid(T).hash_code();
     OX_CORE_ASSERT(editor_panels.contains(hash_code));
     return dynamic_cast<T*>(editor_panels[hash_code].get());
@@ -72,8 +69,12 @@ public:
   static EditorLayer* get() { return instance; }
 
   void set_context(EditorContextType type, const char* data, size_t size) { editor_context.set(type, data, size); }
-  void set_context_as_asset_with_path(const std::string& path) { editor_context.set(EditorContextType::Asset, path.c_str(), sizeof(char) * (path.length() + 1)); }
-  void set_context_as_file_with_path(const std::string& path) { editor_context.set(EditorContextType::File, path.c_str(), sizeof(char) * (path.length() + 1)); }
+  void set_context_as_asset_with_path(const std::string& path) {
+    editor_context.set(EditorContextType::Asset, path.c_str(), sizeof(char) * (path.length() + 1));
+  }
+  void set_context_as_file_with_path(const std::string& path) {
+    editor_context.set(EditorContextType::File, path.c_str(), sizeof(char) * (path.length() + 1));
+  }
 
   void reset_context() { editor_context.reset(); }
   const EditorContext& get_context() const { return editor_context; }
@@ -91,6 +92,8 @@ public:
   void set_scene_state(SceneState state);
   void set_docking_layout(EditorLayout layout);
 
+  Archive& advance_history();
+
 private:
   // Project
   static void new_project();
@@ -107,9 +110,11 @@ private:
 
   // Context
   EditorContext editor_context = {};
+  std::vector<Archive> history;
+  int historyPos = -1;
 
   Shared<Scene> editor_scene;
   Shared<Scene> active_scene;
   static EditorLayer* instance;
 };
-}
+} // namespace ox

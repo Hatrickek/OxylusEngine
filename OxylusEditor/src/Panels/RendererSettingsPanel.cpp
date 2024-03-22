@@ -32,10 +32,6 @@ void RendererSettingsPanel::on_imgui_render() {
     ImGui::Text("GPU: %s", VkContext::get()->device_name.c_str());
     ImGui::Text("Internal Render Size: [ %u, %u ]", Renderer::get_viewport_width(), Renderer::get_viewport_height());
     OxUI::tooltip("Current viewport resolution");
-    ImGui::Text("Draw Calls: %u", Renderer::get_stats().drawcall_count);
-    OxUI::tooltip("Current amount of draw calls including editor only passes");
-    ImGui::Text("Culled Primitives: %u", Renderer::get_stats().drawcall_culled_count);
-    OxUI::tooltip("Current amount of draw calls culled by frustum culling");
 
     ImGui::Separator();
     if (OxUI::icon_button(ICON_MDI_RELOAD, "Reload render pipeline"))

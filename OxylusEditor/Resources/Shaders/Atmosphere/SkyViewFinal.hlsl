@@ -24,7 +24,7 @@ VSInput VSmain(uint vertexID : SV_VertexID) {
 }
 
 float4 PSmain(VSInput input) : SV_TARGET {
-  float4 unprojected = mul(GetCamera().inv_view_projection_matrix, float4(input.uv, 0.0f, 1.0f));
+  float4 unprojected = mul(GetCamera().inv_projection_view_matrix, float4(input.uv, 0.0f, 1.0f));
   unprojected.xyz /= unprojected.w;
 
   const float3 V = normalize(unprojected.xyz - GetCamera().position);

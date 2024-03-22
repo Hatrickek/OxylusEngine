@@ -26,7 +26,7 @@ public:
   Mat4 get_view_matrix() const;
   Mat4 get_inv_view_matrix() const;
   Mat4 get_world_matrix() const;
-  Mat4 get_inv_view_projection_matrix() const;
+  Mat4 get_inverse_projection_view() const;
 
   void set_yaw(const float value) { m_yaw = value; }
   void set_pitch(const float value) { m_pitch = value; }

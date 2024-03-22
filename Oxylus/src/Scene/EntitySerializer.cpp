@@ -11,22 +11,25 @@
 #include "Core/App.h"
 
 #include "Scene/Entity.h"
+#include "Utils/Archive.h"
 
 #include "Utils/Log.h"
 
 namespace ox {
-#define GET_STRING(node, component, name) component.name =  node->as_table()->get(#name)->as_string()->get()
+#define GET_STRING(node, component, name) component.name = node->as_table()->get(#name)->as_string()->get()
 #define GET_STRING2(node, name) node->as_table()->get(name)->as_string()->get()
 #define GET_FLOAT(node, component, name) component.name = (float)node->as_table()->get(#name)->as_floating_point()->get()
 #define GET_FLOAT2(node, name) (float)node->as_table()->get(name)->as_floating_point()->get()
 #define GET_UINT32(node, component, name) component.name = (uint32_t)node->as_table()->get(#name)->as_integer()->get()
-#define GET_UINT322(node, name) (uint32_t)node->as_table()->get(name)->as_integer()->get()
+#define GET_UINT322(node, name) (uint32_t) node->as_table()->get(name)->as_integer()->get()
 #define GET_BOOL(node, component, name) component.name = node->as_table()->get(#name)->as_boolean()->get()
 #define GET_BOOL2(node, name) node->as_table()->get(name)->as_boolean()->get()
 #define GET_ARRAY(node, name) node->as_table()->get(name)->as_array()
 
-#define TBL_FIELD(c, field) {#field, c.field}
-#define TBL_FIELD_ARR(c, field) {#field, get_toml_array(c.field)}
+#define TBL_FIELD(c, field) \
+  { #field, c.field }
+#define TBL_FIELD_ARR(c, field) \
+  { #field, get_toml_array(c.field) }
 
 void EntitySerializer::serialize_entity(toml::array* entities, Scene* scene, Entity entity) {
   entities->push_back(toml::table{{"uuid", std::to_string((uint64_t)EUtil::get_uuid(scene->registry, entity))}});
@@ -51,7 +54,7 @@ void EntitySerializer::serialize_entity(toml::array* entities, Scene* scene, Ent
 
     const auto table = toml::table{
       {"parent", std::to_string((uint64_t)parent)},
-      {"children", children_array}
+      {"children", children_array},
     };
 
     entities->push_back(toml::table{{"relationship_component", table}});
@@ -72,11 +75,7 @@ void EntitySerializer::serialize_entity(toml::array* entities, Scene* scene, Ent
   if (scene->registry.all_of<MeshComponent>(entity)) {
     const auto& mrc = scene->registry.get<MeshComponent>(entity);
 
-    const auto table = toml::table{
-      {"mesh_path", App::get_relative(mrc.mesh_base->path)},
-      TBL_FIELD(mrc, node_index),
-      TBL_FIELD(mrc, cast_shadows)
-    };
+    const auto table = toml::table{{"mesh_path", App::get_relative(mrc.mesh_base->path)}, TBL_FIELD(mrc, node_index), TBL_FIELD(mrc, cast_shadows)};
 
     entities->push_back(toml::table{{"mesh_component", table}});
   }
@@ -144,7 +143,7 @@ void EntitySerializer::serialize_entity(toml::array* entities, Scene* scene, Ent
       TBL_FIELD(rb, awake),
       TBL_FIELD(rb, continuous),
       TBL_FIELD(rb, interpolation),
-      TBL_FIELD(rb, is_sensor)
+      TBL_FIELD(rb, is_sensor),
     };
 
     entities->push_back(toml::table{{"rigidbody_component", table}});
@@ -158,7 +157,7 @@ void EntitySerializer::serialize_entity(toml::array* entities, Scene* scene, Ent
       TBL_FIELD_ARR(bc, offset),
       TBL_FIELD(bc, density),
       TBL_FIELD(bc, friction),
-      TBL_FIELD(bc, restitution)
+      TBL_FIELD(bc, restitution),
     };
 
     entities->push_back(toml::table{{"box_collider_component", table}});
@@ -256,14 +255,11 @@ void EntitySerializer::serialize_entity(toml::array* entities, Scene* scene, Ent
     for (const auto& system : systems)
       path_array.push_back(App::get_relative(system->get_path()));
 
-    const auto table = toml::table{
-      {"paths", path_array}
-    };
+    const auto table = toml::table{{"paths", path_array}};
 
     entities->push_back(toml::table{{"lua_script_component", table}});
   }
 }
-
 UUID EntitySerializer::deserialize_entity(toml::array* entity_arr, Scene* scene, bool preserve_uuid) {
   // these values are always present
   const uint64_t uuid = std::stoull(entity_arr->get(0)->as_table()->get("uuid")->as_string()->get());
@@ -289,21 +285,18 @@ UUID EntitySerializer::deserialize_entity(toml::array* entity_arr, Scene* scene,
       const auto children_node = relation_node->as_table()->get("children")->as_array();
       for (auto& child : *children_node)
         rc.children.emplace_back(std::stoull(child.as_string()->get()));
-    }
-    else if (const auto transform_node = ent.as_table()->get("transform_component")) {
+    } else if (const auto transform_node = ent.as_table()->get("transform_component")) {
       auto& tc = reg.get_or_emplace<TransformComponent>(deserialized_entity);
       tc.position = get_vec3_toml_array(GET_ARRAY(transform_node, "position"));
       tc.rotation = get_vec3_toml_array(GET_ARRAY(transform_node, "rotation"));
       tc.scale = get_vec3_toml_array(GET_ARRAY(transform_node, "scale"));
-    }
-    else if (const auto mesh_node = ent.as_table()->get("mesh_component")) {
+    } else if (const auto mesh_node = ent.as_table()->get("mesh_component")) {
       const auto path = App::get_absolute(GET_STRING2(mesh_node, "mesh_path"));
       auto mesh = AssetManager::get_mesh_asset(path);
       auto& mc = reg.emplace<MeshComponent>(deserialized_entity, mesh);
       GET_UINT32(mesh_node, mc, node_index);
       GET_BOOL(mesh_node, mc, cast_shadows);
-    }
-    else if (const auto light_node = ent.as_table()->get("light_component")) {
+    } else if (const auto light_node = ent.as_table()->get("light_component")) {
       auto& lc = reg.emplace<LightComponent>(deserialized_entity);
       lc.type = (LightComponent::LightType)GET_UINT322(light_node, "type");
       GET_BOOL(light_node, lc, color_temperature_mode);
@@ -315,8 +308,7 @@ UUID EntitySerializer::deserialize_entity(toml::array* entity_arr, Scene* scene,
       GET_FLOAT(light_node, lc, outer_cut_off_angle);
       GET_BOOL(light_node, lc, cast_shadows);
       GET_UINT32(light_node, lc, shadow_map_res);
-    }
-    else if (const auto pp_node = ent.as_table()->get("post_process_probe")) {
+    } else if (const auto pp_node = ent.as_table()->get("post_process_probe")) {
       auto& pp = reg.emplace<PostProcessProbe>(deserialized_entity);
       GET_BOOL(pp_node, pp, vignette_enabled);
       GET_FLOAT(pp_node, pp, vignette_intensity);
@@ -326,14 +318,12 @@ UUID EntitySerializer::deserialize_entity(toml::array* entity_arr, Scene* scene,
       GET_FLOAT(pp_node, pp, chromatic_aberration_intensity);
       GET_BOOL(pp_node, pp, sharpen_enabled);
       GET_FLOAT(pp_node, pp, sharpen_intensity);
-    }
-    else if (const auto camera_node = ent.as_table()->get("camera_component")) {
+    } else if (const auto camera_node = ent.as_table()->get("camera_component")) {
       auto& cc = reg.emplace<CameraComponent>(deserialized_entity);
       cc.camera.set_fov(GET_FLOAT2(camera_node, "fov"));
       cc.camera.set_near(GET_FLOAT2(camera_node, "near"));
       cc.camera.set_far(GET_FLOAT2(camera_node, "far"));
-    }
-    else if (const auto rb_node = ent.as_table()->get("rigidbody_component")) {
+    } else if (const auto rb_node = ent.as_table()->get("rigidbody_component")) {
       auto& rb = reg.emplace<RigidbodyComponent>(deserialized_entity);
       rb.type = (RigidbodyComponent::BodyType)GET_UINT322(rb_node, "type");
       GET_FLOAT(rb_node, rb, mass);
@@ -345,24 +335,21 @@ UUID EntitySerializer::deserialize_entity(toml::array* entity_arr, Scene* scene,
       GET_BOOL(rb_node, rb, continuous);
       GET_BOOL(rb_node, rb, interpolation);
       GET_BOOL(rb_node, rb, is_sensor);
-    }
-    else if (const auto bc_node = ent.as_table()->get("box_collider_component")) {
+    } else if (const auto bc_node = ent.as_table()->get("box_collider_component")) {
       auto& bc = reg.emplace<BoxColliderComponent>(deserialized_entity);
       bc.size = get_vec3_toml_array(GET_ARRAY(bc_node, "size"));
       bc.offset = get_vec3_toml_array(GET_ARRAY(bc_node, "offset"));
       GET_FLOAT(bc_node, bc, density);
       GET_FLOAT(bc_node, bc, friction);
       GET_FLOAT(bc_node, bc, restitution);
-    }
-    else if (const auto sc_node = ent.as_table()->get("sphere_collider_component")) {
+    } else if (const auto sc_node = ent.as_table()->get("sphere_collider_component")) {
       auto& sc = reg.emplace<SphereColliderComponent>(deserialized_entity);
       GET_FLOAT(sc_node, sc, radius);
       sc.offset = get_vec3_toml_array(GET_ARRAY(sc_node, "offset"));
       GET_FLOAT(sc_node, sc, density);
       GET_FLOAT(sc_node, sc, friction);
       GET_FLOAT(sc_node, sc, restitution);
-    }
-    else if (const auto cc_node = ent.as_table()->get("capsule_collider_component")) {
+    } else if (const auto cc_node = ent.as_table()->get("capsule_collider_component")) {
       auto& cc = reg.emplace<CapsuleColliderComponent>(deserialized_entity);
       GET_FLOAT(cc_node, cc, height);
       GET_FLOAT(cc_node, cc, radius);
@@ -370,8 +357,7 @@ UUID EntitySerializer::deserialize_entity(toml::array* entity_arr, Scene* scene,
       GET_FLOAT(cc_node, cc, density);
       GET_FLOAT(cc_node, cc, friction);
       GET_FLOAT(cc_node, cc, restitution);
-    }
-    else if (const auto tcc_node = ent.as_table()->get("tapered_capsule_collider_component")) {
+    } else if (const auto tcc_node = ent.as_table()->get("tapered_capsule_collider_component")) {
       auto& tcc = reg.emplace<TaperedCapsuleColliderComponent>(deserialized_entity);
       GET_FLOAT(tcc_node, tcc, height);
       GET_FLOAT(tcc_node, tcc, top_radius);
@@ -380,8 +366,7 @@ UUID EntitySerializer::deserialize_entity(toml::array* entity_arr, Scene* scene,
       GET_FLOAT(tcc_node, tcc, density);
       GET_FLOAT(tcc_node, tcc, friction);
       GET_FLOAT(tcc_node, tcc, restitution);
-    }
-    else if (const auto ccc_node = ent.as_table()->get("cylinder_collider_component")) {
+    } else if (const auto ccc_node = ent.as_table()->get("cylinder_collider_component")) {
       auto& ccc = reg.emplace<CylinderColliderComponent>(deserialized_entity);
       GET_FLOAT(ccc_node, ccc, height);
       GET_FLOAT(ccc_node, ccc, radius);
@@ -389,14 +374,12 @@ UUID EntitySerializer::deserialize_entity(toml::array* entity_arr, Scene* scene,
       GET_FLOAT(ccc_node, ccc, density);
       GET_FLOAT(ccc_node, ccc, friction);
       GET_FLOAT(ccc_node, ccc, restitution);
-    }
-    else if (const auto mc_node = ent.as_table()->get("mesh_collider_component")) {
+    } else if (const auto mc_node = ent.as_table()->get("mesh_collider_component")) {
       auto& mc = reg.emplace<MeshColliderComponent>(deserialized_entity);
       mc.offset = get_vec3_toml_array(GET_ARRAY(mc_node, "offset"));
       GET_FLOAT(mc_node, mc, friction);
       GET_FLOAT(mc_node, mc, restitution);
-    }
-    else if (const auto chc_node = ent.as_table()->get("character_controller_component")) {
+    } else if (const auto chc_node = ent.as_table()->get("character_controller_component")) {
       auto& chc = reg.emplace<CharacterControllerComponent>(deserialized_entity);
       GET_FLOAT(chc_node, chc, character_height_standing);
       GET_FLOAT(chc_node, chc, character_radius_standing);
@@ -406,8 +389,7 @@ UUID EntitySerializer::deserialize_entity(toml::array* entity_arr, Scene* scene,
       GET_FLOAT(chc_node, chc, jump_force);
       GET_FLOAT(chc_node, chc, friction);
       GET_FLOAT(chc_node, chc, collision_tolerance);
-    }
-    else if (const auto lua_node = ent.as_table()->get("lua_script_component")) {
+    } else if (const auto lua_node = ent.as_table()->get("lua_script_component")) {
       auto& lsc = reg.emplace<LuaScriptComponent>(deserialized_entity);
       auto paths = GET_ARRAY(lua_node, "paths");
       for (auto& path : *paths) {
@@ -454,7 +436,7 @@ void EntitySerializer::serialize_entity_as_prefab(const char* filepath, Entity e
 
 Entity EntitySerializer::deserialize_entity_as_prefab(const char* filepath, Scene* scene) {
 #if 0 // TODO:
-  auto content = FileUtils::read_file(filepath);
+  auto content = FileSystem::read_file(filepath);
   if (content.empty()) {
     OX_CORE_ERROR("Couldn't read prefab file: {0}", filepath);
   }
@@ -515,4 +497,4 @@ Entity EntitySerializer::deserialize_entity_as_prefab(const char* filepath, Scen
   OX_CORE_ERROR("There are not entities in the prefab to deserialize! {0}", FileSystem::get_file_name(filepath));
   return {};
 }
-}
+} // namespace ox

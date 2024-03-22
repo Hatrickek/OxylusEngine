@@ -33,7 +33,7 @@ Mat4 Camera::get_world_matrix() const {
   return glm::translate(Mat4(1.0f), m_position) * glm::toMat4(glm::quat(Vec3(get_pitch(), get_yaw(), m_tilt)));
 }
 
-Mat4 Camera::get_inv_view_projection_matrix() const { return inverse(get_projection_matrix() * get_view_matrix()); }
+Mat4 Camera::get_inverse_projection_view() const { return inverse(get_projection_matrix() * get_view_matrix()); }
 
 void Camera::set_position(const Vec3 pos) { m_position = pos; }
 

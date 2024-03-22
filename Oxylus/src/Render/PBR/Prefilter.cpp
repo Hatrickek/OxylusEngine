@@ -6,11 +6,10 @@
 #include <vuk/Partials.hpp>
 #include <vuk/Pipeline.hpp>
 
+#include "Core/FileSystem.h"
 #include "Render/Mesh.h"
 #include "Render/Vulkan/VkContext.h"
 #include "Render/Utils/VukCommon.h"
-
-#include "Utils/FileUtils.h"
 
 #define M_PI       3.14159265358979323846
 
@@ -24,8 +23,8 @@ std::pair<vuk::Texture, vuk::Future> Prefilter::generate_brdflut() {
 
   if (!vk_context->context->is_pipeline_available(pipeline_name)) {
     vuk::PipelineBaseCreateInfo pci;
-    pci.add_glsl(FileUtils::read_shader_file("GenBrdfLut.vert"), "GenBrdfLut.vert");
-    pci.add_glsl(FileUtils::read_shader_file("GenBrdfLut.frag"), "GenBrdfLut.frag");
+    pci.add_glsl(FileSystem::read_shader_file("GenBrdfLut.vert"), "GenBrdfLut.vert");
+    pci.add_glsl(FileSystem::read_shader_file("GenBrdfLut.frag"), "GenBrdfLut.frag");
     vk_context->context->create_named_pipeline(pipeline_name, pci);
   }
 
@@ -92,8 +91,8 @@ std::pair<vuk::Texture, vuk::Future> Prefilter::generate_irradiance_cube(const S
 
   if (!vk_context->context->is_pipeline_available(pipeline_name)) {
     vuk::PipelineBaseCreateInfo pci;
-    pci.add_glsl(FileUtils::read_shader_file("Cubemap.vert"), "Cubemap.vert");
-    pci.add_glsl(FileUtils::read_shader_file("IrradianceCube.frag"), "IrradianceCube.frag");
+    pci.add_glsl(FileSystem::read_shader_file("Cubemap.vert"), "Cubemap.vert");
+    pci.add_glsl(FileSystem::read_shader_file("IrradianceCube.frag"), "IrradianceCube.frag");
     vk_context->context->create_named_pipeline(pipeline_name, pci);
   }
 
@@ -153,8 +152,8 @@ std::pair<vuk::Texture, vuk::Future> Prefilter::generate_prefiltered_cube(const 
 
   if (!vk_context->context->is_pipeline_available(pipeline_name)) {
     vuk::PipelineBaseCreateInfo pci;
-    pci.add_glsl(FileUtils::read_shader_file("Cubemap.vert"), "Cubemap.vert");
-    pci.add_glsl(FileUtils::read_shader_file("PrefilterEnvMap.frag"), "PrefilterEnvMap.frag");
+    pci.add_glsl(FileSystem::read_shader_file("Cubemap.vert"), "Cubemap.vert");
+    pci.add_glsl(FileSystem::read_shader_file("PrefilterEnvMap.frag"), "PrefilterEnvMap.frag");
     vk_context->context->create_named_pipeline(pipeline_name, pci);
   }
 

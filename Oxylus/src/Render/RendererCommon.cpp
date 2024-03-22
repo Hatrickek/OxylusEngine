@@ -14,7 +14,6 @@
 
 #include "Core/Types.h"
 
-#include "Utils/FileUtils.h"
 #include "Utils/Log.h"
 
 #include "Render/Utils/VukCommon.h"
@@ -61,8 +60,8 @@ std::pair<vuk::Unique<vuk::Image>, vuk::Future> RendererCommon::generate_cubemap
 
   if (!allocator.get_context().is_pipeline_available("equirectangular_to_cubemap")) {
     vuk::PipelineBaseCreateInfo equirectangular_to_cubemap;
-    equirectangular_to_cubemap.add_glsl(FileUtils::read_shader_file("Cubemap.vert"), "Cubemap.vert");
-    equirectangular_to_cubemap.add_glsl(FileUtils::read_shader_file("EquirectangularToCubemap.frag"), "EquirectangularToCubemap.frag");
+    equirectangular_to_cubemap.add_glsl(FileSystem::read_shader_file("Cubemap.vert"), "Cubemap.vert");
+    equirectangular_to_cubemap.add_glsl(FileSystem::read_shader_file("EquirectangularToCubemap.frag"), "EquirectangularToCubemap.frag");
     allocator.get_context().create_named_pipeline("equirectangular_to_cubemap", equirectangular_to_cubemap);
   }
 
@@ -297,8 +296,8 @@ void RendererCommon::apply_blur(const std::shared_ptr<vuk::RenderGraph>& render_
   auto& allocator = *VkContext::get()->superframe_allocator;
   if (!allocator.get_context().is_pipeline_available("gaussian_blur_pipeline")) {
     vuk::PipelineBaseCreateInfo pci;
-    pci.add_hlsl(FileUtils::read_shader_file("FullscreenTriangle.hlsl"), FileUtils::get_shader_path("FullscreenTriangle.hlsl"), vuk::HlslShaderStage::eVertex);
-    pci.add_glsl(FileUtils::read_shader_file("PostProcess/SinglePassGaussianBlur.frag"), "PostProcess/SinglePassGaussianBlur.frag");
+    pci.add_hlsl(FileSystem::read_shader_file("FullscreenTriangle.hlsl"), FileSystem::get_shader_path("FullscreenTriangle.hlsl"), vuk::HlslShaderStage::eVertex);
+    pci.add_glsl(FileSystem::read_shader_file("PostProcess/SinglePassGaussianBlur.frag"), "PostProcess/SinglePassGaussianBlur.frag");
     allocator.get_context().create_named_pipeline("gaussian_blur_pipeline", pci);
   }
 

@@ -26,37 +26,17 @@ public:
     Vec2 viewport_offset = {};
   } renderer_context;
 
-  struct RendererStats {
-    uint32_t drawcall_count = 0;
-    uint32_t drawcall_culled_count = 0;
-    uint32_t indices_count = 0;
-    uint32_t vertices_count = 0;
-    uint32_t primitives_count = 0;
-  };
-
   static void init();
   static void deinit();
 
-  // Drawing
   static void draw(VkContext* context, ImGuiLayer* imgui_layer, LayerStack& layer_stack);
-
-  static vuk::CommandBuffer& draw_indexed(vuk::CommandBuffer& command_buffer,
-                                          size_t index_count,
-                                          size_t instance_count,
-                                          size_t first_index,
-                                          int32_t vertex_offset,
-                                          size_t first_instance);
 
   static UVec2 get_viewport_size() { return renderer_context.viewport_size; }
   static Vec2 get_viewport_offset() { return renderer_context.viewport_offset; }
   static unsigned get_viewport_width() { return renderer_context.viewport_size.x; }
   static unsigned get_viewport_height() { return renderer_context.viewport_size.y; }
 
-  static RendererStats& get_stats() { return renderer_stats; }
-  static void reset_stats();
-
 private:
-  static RendererStats renderer_stats;
 
   // Config
   static RendererConfig renderer_config;

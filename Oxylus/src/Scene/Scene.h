@@ -58,7 +58,7 @@ public:
 
   Entity find_entity(const std::string_view& name);
   bool has_entity(UUID uuid) const;
-  static Shared<Scene> copy(const Shared<Scene>& other);
+  static Shared<Scene> copy(const Shared<Scene>& src_scene);
 
   // Physics interfaces
   void on_contact_added(const JPH::Body& body1, const JPH::Body& body2, const JPH::ContactManifold& manifold, const JPH::ContactSettings& settings);
