@@ -12,7 +12,7 @@
 
 #include "Render/Window.h"
 #include "Render/Vulkan/Renderer.h"
-#include "Render/Vulkan/VulkanContext.h"
+#include "Render/Vulkan/VkContext.h"
 
 #include "Scripting/LuaManager.h"
 
@@ -76,8 +76,8 @@ App::App(AppSpec spec) : app_spec(std::move(spec)) {
     system->init();
   }
 
-  VulkanContext::init();
-  VulkanContext::get()->create_context(app_spec);
+  VkContext::init();
+  VkContext::get()->create_context(app_spec);
   Renderer::init();
 
   imgui_layer = new ImGuiLayer();
@@ -116,7 +116,7 @@ void App::run() {
     Input::reset_pressed();
 
     Window::poll_events();
-    while (VulkanContext::get()->suspend) {
+    while (VkContext::get()->suspend) {
       Window::wait_for_events();
     }
   }
@@ -141,7 +141,7 @@ void App::update_layers(const Timestep& ts) {
 }
 
 void App::update_renderer() {
-  Renderer::draw(VulkanContext::get(), imgui_layer, *layer_stack.get());
+  Renderer::draw(VkContext::get(), imgui_layer, *layer_stack.get());
 }
 
 void App::update_timestep() {

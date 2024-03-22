@@ -1,4 +1,4 @@
-#include "VulkanContext.h"
+#include "VkContext.h"
 
 #include <sstream>
 
@@ -14,7 +14,7 @@
 #include "GLFW/glfw3.h"
 
 namespace ox {
-VulkanContext* VulkanContext::s_instance = nullptr;
+VkContext* VkContext::s_instance = nullptr;
 
 static VkBool32 DebugCallback(const VkDebugUtilsMessageSeverityFlagBitsEXT messageSeverity,
                               VkDebugUtilsMessageTypeFlagsEXT messageType,
@@ -55,7 +55,7 @@ static VkBool32 DebugCallback(const VkDebugUtilsMessageSeverityFlagBitsEXT messa
   return VK_FALSE;
 }
 
-static vuk::Swapchain make_swapchain(VulkanContext* context, std::optional<VkSwapchainKHR> old_swapchain, vuk::PresentModeKHR present_mode = vuk::PresentModeKHR::eFifo) {
+static vuk::Swapchain make_swapchain(VkContext* context, std::optional<VkSwapchainKHR> old_swapchain, vuk::PresentModeKHR present_mode = vuk::PresentModeKHR::eFifo) {
   context->context->wait_idle();
   vkb::SwapchainBuilder swb(context->vkb_device);
   swb.set_desired_format(vuk::SurfaceFormatKHR{vuk::Format::eR8G8B8A8Unorm, vuk::ColorSpaceKHR::eSrgbNonlinear});
@@ -84,11 +84,11 @@ static vuk::Swapchain make_swapchain(VulkanContext* context, std::optional<VkSwa
   return sw;
 }
 
-void VulkanContext::init() {
+void VkContext::init() {
   if (s_instance)
     return;
 
-  s_instance = new VulkanContext();
+  s_instance = new VkContext();
 }
 
 inline VkSurfaceKHR create_surface_glfw(const VkInstance instance, GLFWwindow* window) {
@@ -105,7 +105,7 @@ inline VkSurfaceKHR create_surface_glfw(const VkInstance instance, GLFWwindow* w
   return surface;
 }
 
-void VulkanContext::create_context(const AppSpec& spec) {
+void VkContext::create_context(const AppSpec& spec) {
   OX_SCOPED_ZONE;
   vkb::InstanceBuilder builder;
   builder.set_app_name("Oxylus")
@@ -156,6 +156,7 @@ void VulkanContext::create_context(const AppSpec& spec) {
   vk10features.features.fillModeNonSolid = true;
   vk10features.features.multiViewport = true;
   vk10features.features.samplerAnisotropy = true;
+  vk10features.features.multiDrawIndirect = true;
   selector.set_required_features(vk10features.features);
   VkPhysicalDeviceVulkan11Features vk11features{.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_VULKAN_1_1_FEATURES};
   vk11features.shaderDrawParameters = true;
@@ -188,7 +189,6 @@ void VulkanContext::create_context(const AppSpec& spec) {
   selector.add_required_extension_features<>(sync_feat);
 
   auto phys_ret = selector.select();
-  vkb::PhysicalDevice vkbphysical_device;
   if (!phys_ret) {
     OX_CORE_ERROR("{}", phys_ret.full_error().type.message());
   }
@@ -246,7 +246,7 @@ void VulkanContext::create_context(const AppSpec& spec) {
   glfwSetWindowSizeCallback(
     Window::get_glfw_window(),
     [](GLFWwindow* window, const int width, const int height) {
-      auto* ctx = reinterpret_cast<VulkanContext*>(glfwGetWindowUserPointer(window));
+      auto* ctx = reinterpret_cast<VkContext*>(glfwGetWindowUserPointer(window));
       if (width == 0 && height == 0) {
         ctx->suspend = true;
       }
@@ -258,7 +258,7 @@ void VulkanContext::create_context(const AppSpec& spec) {
   OX_CORE_INFO("Vulkan context initialized using device: {}", device_name);
 }
 
-void VulkanContext::rebuild_swapchain(const vuk::PresentModeKHR new_present_mode) {
+void VkContext::rebuild_swapchain(const vuk::PresentModeKHR new_present_mode) {
   context->wait_idle();
   superframe_allocator->deallocate(std::span{&swapchain->swapchain, 1});
   superframe_allocator->deallocate(swapchain->image_views);
@@ -272,7 +272,7 @@ void VulkanContext::rebuild_swapchain(const vuk::PresentModeKHR new_present_mode
   present_mode = new_present_mode;
 }
 
-vuk::Allocator VulkanContext::begin() {
+vuk::Allocator VkContext::begin() {
   auto& frame_resource = superframe_resource->get_next_frame();
   context->next_frame();
   const vuk::Allocator frame_allocator(frame_resource);
@@ -281,7 +281,7 @@ vuk::Allocator VulkanContext::begin() {
   return frame_allocator;
 }
 
-void VulkanContext::end(const vuk::Future& src, vuk::Allocator frame_allocator) {
+void VkContext::end(const vuk::Future& src, vuk::Allocator frame_allocator) {
   std::shared_ptr rg_p(std::make_shared<vuk::RenderGraph>("presenter"));
   rg_p->attach_in("_src", src);
   rg_p->release_for_present("_src");

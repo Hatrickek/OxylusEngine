@@ -18,13 +18,13 @@
 #include "Utils/Log.h"
 
 #include "Render/Utils/VukCommon.h"
-#include "Vulkan/VulkanContext.h"
+#include "Vulkan/VkContext.h"
 
 namespace ox {
 RendererCommon::MeshLib RendererCommon::mesh_lib = {};
 
 std::pair<vuk::Unique<vuk::Image>, vuk::Future> RendererCommon::generate_cubemap_from_equirectangular(const vuk::Texture& cubemap) {
-  auto& allocator = *VulkanContext::get()->superframe_allocator;
+  auto& allocator = *VkContext::get()->superframe_allocator;
 
   // blur the hdr texture
   Shared<vuk::RenderGraph> rg = create_shared<vuk::RenderGraph>("cubegen");
@@ -294,7 +294,7 @@ Shared<Mesh> RendererCommon::generate_sphere() {
 }
 
 void RendererCommon::apply_blur(const std::shared_ptr<vuk::RenderGraph>& render_graph, vuk::Name src_attachment, const vuk::Name attachment_name, const vuk::Name attachment_name_output) {
-  auto& allocator = *VulkanContext::get()->superframe_allocator;
+  auto& allocator = *VkContext::get()->superframe_allocator;
   if (!allocator.get_context().is_pipeline_available("gaussian_blur_pipeline")) {
     vuk::PipelineBaseCreateInfo pci;
     pci.add_hlsl(FileUtils::read_shader_file("FullscreenTriangle.hlsl"), FileUtils::get_shader_path("FullscreenTriangle.hlsl"), vuk::HlslShaderStage::eVertex);

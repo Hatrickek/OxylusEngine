@@ -1,7 +1,7 @@
 #include "Profiler.h"
 
 #include "Log.h"
-#include "Render/Vulkan/VulkanContext.h"
+#include "Render/Vulkan/VkContext.h"
 #include "Core/PlatformDetection.h"
 
 namespace ox {
@@ -12,7 +12,7 @@ TracyProfiler::~TracyProfiler() {
 #endif
 }
 
-void TracyProfiler::init_tracy_for_vulkan(VulkanContext* context) {
+void TracyProfiler::init_tracy_for_vulkan(VkContext* context) {
 #if GPU_PROFILER_ENABLED
   VkCommandPoolCreateInfo cpci{.sType = VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO, .flags = VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT};
   cpci.queueFamilyIndex = context->graphics_queue_family_index;

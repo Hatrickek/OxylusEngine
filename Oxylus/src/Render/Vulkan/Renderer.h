@@ -13,7 +13,7 @@ namespace ox {
 class DefaultRenderPipeline;
 class LayerStack;
 class ImGuiLayer;
-class VulkanContext;
+class VkContext;
 
 class Renderer {
 public:
@@ -38,7 +38,7 @@ public:
   static void deinit();
 
   // Drawing
-  static void draw(VulkanContext* context, ImGuiLayer* imgui_layer, LayerStack& layer_stack);
+  static void draw(VkContext* context, ImGuiLayer* imgui_layer, LayerStack& layer_stack);
 
   static vuk::CommandBuffer& draw_indexed(vuk::CommandBuffer& command_buffer,
                                           size_t index_count,

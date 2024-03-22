@@ -1,20 +1,20 @@
 ﻿#include "SkyCommonShading.hlsli"
 
-struct VertexOutput {
+struct VOutput {
   float4 pos : SV_POSITION;
   float3 nor : NORMAL;
   uint RTIndex : SV_RenderTargetArrayIndex;
 };
 
-VertexOutput VSmain(Vertex inVertex, uint vid : SV_VERTEXID, uint instanceID : SV_INSTANCEID) {
-  VertexOutput output;
+VOutput VSmain(Vertex inVertex, uint vid : SV_VERTEXID, uint instanceID : SV_INSTANCEID) {
+  VOutput output;
   output.RTIndex = instanceID;
-  output.pos = mul(GetScene().CubemapViewProjections[output.RTIndex], float4(inVertex.Position, 1.0));
-  output.nor = inVertex.Position;
+  output.pos = mul(GetCamera(output.RTIndex).projection_view_matrix, float4(inVertex.position, 1.0));
+  output.nor = inVertex.position;
   return output;
 }
 
-float4 PSmain(VertexOutput input) : SV_TARGET {
+float4 PSmain(VOutput input) : SV_TARGET {
   const float3 normal = normalize(input.nor);
 
   // No direct sun should be visible inside the probe capture:

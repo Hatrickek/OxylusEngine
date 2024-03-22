@@ -1,4 +1,5 @@
 #include "Mesh.h"
+#include "vuk/Types.hpp"
 
 #define TINYGLTF_IMPLEMENTATION
 #define STB_IMAGE_IMPLEMENTATION
@@ -17,8 +18,8 @@
 #include <vuk/CommandBuffer.hpp>
 #include <vuk/Partials.hpp>
 
-#include "Texture.h"
 #include "Assets/AssetManager.h"
+#include "Texture.h"
 
 #include "Scene/Components.h"
 #include "Scene/Entity.h"
@@ -29,27 +30,27 @@
 #include "Utils/Profiler.h"
 #include "Utils/Timer.h"
 
-#include "Vulkan/VulkanContext.h"
+#include "Vulkan/VkContext.h"
 
 namespace ox {
-Mesh::Mesh(const std::string_view path, const int file_loading_flags, const float scale) {
-  load_from_file(path.data(), file_loading_flags, scale);
-}
+Mesh::Mesh(const std::string_view path, const int file_loading_flags, const float scale) { load_from_file(path.data(), file_loading_flags, scale); }
 
 Mesh::Mesh(const std::vector<Vertex>& vertices, const std::vector<uint32_t>& indices) {
   this->vertices = vertices;
   this->indices = indices;
   this->aabb = {};
 
-  const auto context = VulkanContext::get();
+  const auto context = VkContext::get();
   auto compiler = vuk::Compiler{};
 
-  auto [vBuffer, vBufferFut] = create_buffer(*context->superframe_allocator, vuk::MemoryUsage::eGPUonly, vuk::DomainFlagBits::eTransferOnGraphics, std::span(this->vertices));
+  auto [vBuffer, vBufferFut] =
+    create_buffer(*context->superframe_allocator, vuk::MemoryUsage::eGPUonly, vuk::DomainFlagBits::eTransferOnGraphics, std::span(this->vertices));
 
   vBufferFut.wait(*context->superframe_allocator, compiler);
   vertex_buffer = std::move(vBuffer);
 
-  auto [iBuffer, iBufferFut] = create_buffer(*context->superframe_allocator, vuk::MemoryUsage::eGPUonly, vuk::DomainFlagBits::eTransferOnGraphics, std::span(this->indices));
+  auto [iBuffer, iBufferFut] =
+    create_buffer(*context->superframe_allocator, vuk::MemoryUsage::eGPUonly, vuk::DomainFlagBits::eTransferOnGraphics, std::span(this->indices));
 
   iBufferFut.wait(*context->superframe_allocator, compiler);
   index_buffer = std::move(iBuffer);
@@ -62,9 +63,7 @@ Mesh::Mesh(const std::vector<Vertex>& vertices, const std::vector<uint32_t>& ind
 #endif
 }
 
-Mesh::~Mesh() {
-  destroy();
-}
+Mesh::~Mesh() { destroy(); }
 
 bool Mesh::export_as_binary(const std::string& in_path, const std::string& out_path) {
   tinygltf::TinyGLTF gltf_context;
@@ -103,8 +102,7 @@ void Mesh::load_from_file(const std::string& file_path, int file_loading_flags, 
   bool file_loaded = false;
   if (FileSystem::get_file_extension(file_path) == "gltf") {
     file_loaded = gltf_context.LoadASCIIFromFile(&gltf_model, &error, &warning, file_path);
-  }
-  else {
+  } else {
     file_loaded = gltf_context.LoadBinaryFromFile(&gltf_model, &error, &warning, file_path);
   }
 
@@ -147,15 +145,17 @@ void Mesh::load_from_file(const std::string& file_path, int file_loading_flags, 
 
   get_scene_dimensions();
 
-  auto ctx = VulkanContext::get();
+  auto ctx = VkContext::get();
   auto compiler = vuk::Compiler{};
 
-  auto [vBuffer, vBufferFut] = create_buffer(*ctx->superframe_allocator, vuk::MemoryUsage::eGPUonly, vuk::DomainFlagBits::eTransferOnGraphics, std::span(vertices));
+  auto [vBuffer, vBufferFut] =
+    create_buffer(*ctx->superframe_allocator, vuk::MemoryUsage::eGPUonly, vuk::DomainFlagBits::eTransferOnGraphics, std::span(vertices));
 
   vBufferFut.wait(*ctx->superframe_allocator, compiler);
   vertex_buffer = std::move(vBuffer);
 
-  auto [iBuffer, iBufferFut] = create_buffer(*ctx->superframe_allocator, vuk::MemoryUsage::eGPUonly, vuk::DomainFlagBits::eTransferOnGraphics, std::span(indices));
+  auto [iBuffer, iBufferFut] =
+    create_buffer(*ctx->superframe_allocator, vuk::MemoryUsage::eGPUonly, vuk::DomainFlagBits::eTransferOnGraphics, std::span(indices));
 
   iBufferFut.wait(*ctx->superframe_allocator, compiler);
   index_buffer = std::move(iBuffer);
@@ -167,7 +167,11 @@ void Mesh::load_from_file(const std::string& file_path, int file_loading_flags, 
   vertices.clear();
   indices.clear();
 #endif
-  OX_CORE_INFO("Mesh file loaded: ({}) {}, {} materials, {} animations", timer.get_elapsed_ms(), name.c_str(), gltf_model.materials.size(), animations.size());
+  OX_CORE_INFO("Mesh file loaded: ({}) {}, {} materials, {} animations",
+               timer.get_elapsed_ms(),
+               name.c_str(),
+               gltf_model.materials.size(),
+               animations.size());
 }
 
 const Mesh* Mesh::bind_vertex_buffer(vuk::CommandBuffer& command_buffer) const {
@@ -187,7 +191,7 @@ const Mesh* Mesh::bind_index_buffer(vuk::CommandBuffer& command_buffer) const {
 void Mesh::set_scale(const Vec3& mesh_scale) {
   scale = mesh_scale;
 
-  //TODO:
+  // TODO:
 }
 
 void Mesh::draw_node(const Node* node, vuk::CommandBuffer& command_buffer) const {
@@ -222,12 +226,18 @@ void Mesh::load_textures(tinygltf::Model& model) {
     if (img.component == 3) {
       buffer = Texture::convert_to_four_channels(img.width, img.height, &img.image[0]);
       delete_buffer = true;
-    }
-    else {
+    } else {
       buffer = &img.image[0];
     }
 
-    m_textures[image_index] = AssetManager::get_texture_asset(img.name, TextureLoadInfo{{}, (uint32_t)img.width, (uint32_t)img.height, buffer});
+    const auto ci = TextureLoadInfo{
+      {},
+      (uint32_t)img.width,
+      (uint32_t)img.height,
+      buffer,
+    };
+
+    m_textures[image_index] = AssetManager::get_texture_asset(img.name, ci);
 
     if (delete_buffer)
       delete[] buffer;
@@ -282,8 +292,7 @@ void Mesh::load_materials(tinygltf::Model& model) {
 
     if (mat.alphaMode == "BLEND") {
       material.set_alpha_mode(Material::AlphaMode::Blend);
-    }
-    else if (mat.alphaMode == "MASK") {
+    } else if (mat.alphaMode == "MASK") {
       material.set_alpha_cutoff((float)mat.alphaCutoff);
       material.set_alpha_mode(Material::AlphaMode::Mask);
     }
@@ -425,7 +434,7 @@ void Mesh::update_animation(uint32_t index, const float time) const {
 }
 
 Mesh::MeshData::MeshData() {
-  node_buffer = *allocate_buffer(*VulkanContext::get()->superframe_allocator, {vuk::MemoryUsage::eCPUtoGPU, sizeof(uniform_block), 1});
+  node_buffer = *allocate_buffer(*VkContext::get()->superframe_allocator, {vuk::MemoryUsage::eCPUtoGPU, sizeof(uniform_block), 1});
 }
 
 Mesh::MeshData::~MeshData() {
@@ -517,7 +526,9 @@ void Mesh::load_node(Node* parent,
   }
   if (node.matrix.size() == 16) {
     new_node->transform = glm::make_mat4x4(node.matrix.data());
-    if (globalscale != 1.0f) { new_node->transform = glm::scale(new_node->transform, Vec3(globalscale)); }
+    if (globalscale != 1.0f) {
+      new_node->transform = glm::scale(new_node->transform, Vec3(globalscale));
+    }
   }
 
   // Node with children
@@ -569,13 +580,15 @@ void Mesh::load_node(Node* parent,
         pos_min = Vec3(pos_accessor.minValues[0], pos_accessor.minValues[1], pos_accessor.minValues[2]);
         pos_max = Vec3(pos_accessor.maxValues[0], pos_accessor.maxValues[1], pos_accessor.maxValues[2]);
         vertex_count = static_cast<uint32_t>(pos_accessor.count);
-        pos_byte_stride = pos_accessor.ByteStride(pos_view) ? pos_accessor.ByteStride(pos_view) / sizeof(float) : tinygltf::GetNumComponentsInType(TINYGLTF_TYPE_VEC3);
+        pos_byte_stride = pos_accessor.ByteStride(pos_view) ? pos_accessor.ByteStride(pos_view) / sizeof(float)
+                                                            : tinygltf::GetNumComponentsInType(TINYGLTF_TYPE_VEC3);
 
         if (primitive.attributes.contains("NORMAL")) {
           const tinygltf::Accessor& norm_accessor = model.accessors[primitive.attributes.find("NORMAL")->second];
           const tinygltf::BufferView& norm_view = model.bufferViews[norm_accessor.bufferView];
           buffer_normals = reinterpret_cast<const float*>(&model.buffers[norm_view.buffer].data[norm_accessor.byteOffset + norm_view.byteOffset]);
-          norm_byte_stride = norm_accessor.ByteStride(norm_view) ? norm_accessor.ByteStride(norm_view) / sizeof(float) : tinygltf::GetNumComponentsInType(TINYGLTF_TYPE_VEC3);
+          norm_byte_stride = norm_accessor.ByteStride(norm_view) ? norm_accessor.ByteStride(norm_view) / sizeof(float)
+                                                                 : tinygltf::GetNumComponentsInType(TINYGLTF_TYPE_VEC3);
         }
 
         // UVs
@@ -583,7 +596,8 @@ void Mesh::load_node(Node* parent,
           const tinygltf::Accessor& uv_accessor = model.accessors[primitive.attributes.find("TEXCOORD_0")->second];
           const tinygltf::BufferView& uv_view = model.bufferViews[uv_accessor.bufferView];
           buffer_tex_coord_set0 = reinterpret_cast<const float*>(&model.buffers[uv_view.buffer].data[uv_accessor.byteOffset + uv_view.byteOffset]);
-          uv0_byte_stride = uv_accessor.ByteStride(uv_view) ? uv_accessor.ByteStride(uv_view) / sizeof(float) : tinygltf::GetNumComponentsInType(TINYGLTF_TYPE_VEC2);
+          uv0_byte_stride =
+            uv_accessor.ByteStride(uv_view) ? uv_accessor.ByteStride(uv_view) / sizeof(float) : tinygltf::GetNumComponentsInType(TINYGLTF_TYPE_VEC2);
         }
 
         // Vertex colors
@@ -591,13 +605,15 @@ void Mesh::load_node(Node* parent,
           const tinygltf::Accessor& accessor = model.accessors[primitive.attributes.find("COLOR_0")->second];
           const tinygltf::BufferView& view = model.bufferViews[accessor.bufferView];
           buffer_color_set0 = reinterpret_cast<const float*>(&model.buffers[view.buffer].data[accessor.byteOffset + view.byteOffset]);
-          color0_byte_stride = accessor.ByteStride(view) ? accessor.ByteStride(view) / sizeof(float) : tinygltf::GetNumComponentsInType(TINYGLTF_TYPE_VEC3);
+          color0_byte_stride =
+            accessor.ByteStride(view) ? accessor.ByteStride(view) / sizeof(float) : tinygltf::GetNumComponentsInType(TINYGLTF_TYPE_VEC3);
         }
 
         if (primitive.attributes.contains("TANGENT")) {
           const tinygltf::Accessor& tangent_accessor = model.accessors[primitive.attributes.find("TANGENT")->second];
           const tinygltf::BufferView& tangent_view = model.bufferViews[tangent_accessor.bufferView];
-          buffer_tangents = reinterpret_cast<const float*>(&model.buffers[tangent_view.buffer].data[tangent_accessor.byteOffset + tangent_view.byteOffset]);
+          buffer_tangents =
+            reinterpret_cast<const float*>(&model.buffers[tangent_view.buffer].data[tangent_accessor.byteOffset + tangent_view.byteOffset]);
         }
 
         // Skinning
@@ -607,14 +623,18 @@ void Mesh::load_node(Node* parent,
           const tinygltf::BufferView& joint_view = model.bufferViews[joint_accessor.bufferView];
           buffer_joints = &(model.buffers[joint_view.buffer].data[joint_accessor.byteOffset + joint_view.byteOffset]);
           joint_component_type = joint_accessor.componentType;
-          joint_byte_stride = joint_accessor.ByteStride(joint_view) ? joint_accessor.ByteStride(joint_view) / tinygltf::GetComponentSizeInBytes(joint_component_type) : tinygltf::GetNumComponentsInType(TINYGLTF_TYPE_VEC4);
+          joint_byte_stride = joint_accessor.ByteStride(joint_view)
+                              ? joint_accessor.ByteStride(joint_view) / tinygltf::GetComponentSizeInBytes(joint_component_type)
+                              : tinygltf::GetNumComponentsInType(TINYGLTF_TYPE_VEC4);
         }
 
         if (primitive.attributes.contains("WEIGHTS_0")) {
           const tinygltf::Accessor& weight_accessor = model.accessors[primitive.attributes.find("WEIGHTS_0")->second];
           const tinygltf::BufferView& weight_view = model.bufferViews[weight_accessor.bufferView];
-          buffer_weights = reinterpret_cast<const float*>(&(model.buffers[weight_view.buffer].data[weight_accessor.byteOffset + weight_view.byteOffset]));
-          weight_byte_stride = weight_accessor.ByteStride(weight_view) ? weight_accessor.ByteStride(weight_view) / sizeof(float) : tinygltf::GetNumComponentsInType(TINYGLTF_TYPE_VEC4);
+          buffer_weights =
+            reinterpret_cast<const float*>(&(model.buffers[weight_view.buffer].data[weight_accessor.byteOffset + weight_view.byteOffset]));
+          weight_byte_stride = weight_accessor.ByteStride(weight_view) ? weight_accessor.ByteStride(weight_view) / sizeof(float)
+                                                                       : tinygltf::GetNumComponentsInType(TINYGLTF_TYPE_VEC4);
         }
 
         has_skin = (buffer_joints && buffer_weights);
@@ -647,8 +667,7 @@ void Mesh::load_node(Node* parent,
                 OX_CORE_ERROR("Joint component type {} {}", joint_component_type, " not supported!");
                 break;
             }
-          }
-          else {
+          } else {
             vert.joint0 = Vec4(0.0f);
           }
           vert.weight0 = has_skin ? glm::make_vec4(&buffer_weights[v * weight_byte_stride]) : Vec4(0.0f);
@@ -695,8 +714,7 @@ void Mesh::load_node(Node* parent,
             delete[] buf;
             break;
           }
-          default: OX_CORE_ERROR("Index component type {0} not supported", accessor.componentType);
-            return;
+          default: OX_CORE_ERROR("Index component type {0} not supported", accessor.componentType); return;
         }
       }
 
@@ -729,8 +747,7 @@ void Mesh::load_node(Node* parent,
   }
   if (parent) {
     parent->children.emplace_back(new_node);
-  }
-  else {
+  } else {
     nodes.emplace_back(new_node);
   }
   linear_nodes.emplace_back(new_node);
@@ -784,7 +801,7 @@ void Mesh::load_animations(tinygltf::Model& gltf_model) {
         }
       }
 
-      // Read sampler output T/R/S values 
+      // Read sampler output T/R/S values
       {
         const tinygltf::Accessor& accessor = gltf_model.accessors[samp.output];
         const tinygltf::BufferView& buffer_view = gltf_model.bufferViews[accessor.bufferView];
@@ -904,4 +921,4 @@ Mesh::Node* Mesh::node_from_index(const uint32_t index) {
   }
   return node_found;
 }
-}
+} // namespace ox

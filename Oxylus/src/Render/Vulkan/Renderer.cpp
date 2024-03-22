@@ -3,7 +3,7 @@
 #include <future>
 #include <vuk/Partials.hpp>
 
-#include "VulkanContext.h"
+#include "VkContext.h"
 #include "Assets/AssetManager.h"
 #include "Core/LayerStack.h"
 #include "Render/DebugRenderer.h"
@@ -31,14 +31,14 @@ void Renderer::deinit() {
   DebugRenderer::release();
 }
 
-void Renderer::draw(VulkanContext* context, ImGuiLayer* imgui_layer, LayerStack& layer_stack) {
+void Renderer::draw(VkContext* context, ImGuiLayer* imgui_layer, LayerStack& layer_stack) {
   OX_SCOPED_ZONE;
 
   const auto rp = renderer_context.render_pipeline;
 
   // consume renderer related cvars
   if (RendererCVar::cvar_reload_render_pipeline.get()) {
-    rp->init(*VulkanContext::get()->superframe_allocator);
+    rp->init(*VkContext::get()->superframe_allocator);
     RendererCVar::cvar_reload_render_pipeline.toggle();
   }
 

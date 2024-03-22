@@ -90,7 +90,7 @@ void Scene::init(const Shared<RenderPipeline>& render_pipeline) {
   registry.on_construct<CylinderColliderComponent>().connect<&Scene::collider_component_ctor>(this);
   registry.on_construct<MeshColliderComponent>().connect<&Scene::collider_component_ctor>(this);
   registry.on_construct<CharacterControllerComponent>().connect<&Scene::character_controller_component_ctor>(this);
-
+  
   // Renderer
   scene_renderer = create_shared<SceneRenderer>(this);
 

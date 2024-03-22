@@ -14,7 +14,7 @@
 #include "Render/RenderPipeline.h"
 #include "Render/Vulkan/Renderer.h"
 #include "Render/Utils/VukCommon.h"
-#include "Render/Vulkan/VulkanContext.h"
+#include "Render/Vulkan/VkContext.h"
 
 #include "Scene/SceneRenderer.h"
 
@@ -31,10 +31,9 @@ namespace ox {
 ViewportPanel::ViewportPanel() : EditorPanel("Viewport", ICON_MDI_TERRAIN, true) {
   OX_SCOPED_ZONE;
   gizmo_image_map[typeid(LightComponent).hash_code()] = create_shared<TextureAsset>(TextureLoadInfo{.path = "Resources/Icons/PointLightIcon.png", .generate_mips = false});
-  gizmo_image_map[typeid(SkyLightComponent).hash_code()] = create_shared<TextureAsset>(TextureLoadInfo{.path = "Resources/Icons/SkyIcon.png", .generate_mips = false});
   gizmo_image_map[typeid(CameraComponent).hash_code()] = create_shared<TextureAsset>(TextureLoadInfo{.path = "Resources/Icons/CameraIcon.png", .generate_mips = false});
 
-  auto& superframe_allocator = VulkanContext::get()->superframe_allocator;
+  auto& superframe_allocator = VkContext::get()->superframe_allocator;
   ADD_TASK_TO_PIPE(
     &superframe_allocator,
     vuk::PipelineBaseCreateInfo pci;
@@ -90,7 +89,7 @@ bool ViewportPanel::outline_pass(const Shared<RenderPipeline>& rp, const vuk::Di
 
       rg->attach_and_clear_image("outline_image", attachment, vuk::Black<float>);
       attachment.format = vuk::Format::eD32SfloatS8Uint;
-      rg->attach_and_clear_image("outline_depth", attachment, vuk::ClearDepthStencil{1.0f, 0});
+      rg->attach_and_clear_image("outline_depth", attachment, vuk::ClearDepthStencil{0.0f, 0});
 
       rg->add_pass({
         .name = "outline_stencil_pass",
@@ -117,7 +116,7 @@ bool ViewportPanel::outline_pass(const Shared<RenderPipeline>& rp, const vuk::Di
                         .set_depth_stencil(vuk::PipelineDepthStencilStateCreateInfo{
                            .depthTestEnable = true,
                            .depthWriteEnable = true,
-                           .depthCompareOp = vuk::CompareOp::eLessOrEqual,
+                           .depthCompareOp = vuk::CompareOp::eGreaterOrEqual,
                            .stencilTestEnable = true,
                            .front = stencil_state,
                            .back = stencil_state
@@ -164,7 +163,7 @@ bool ViewportPanel::outline_pass(const Shared<RenderPipeline>& rp, const vuk::Di
                         .set_depth_stencil(vuk::PipelineDepthStencilStateCreateInfo{
                            .depthTestEnable = false,
                            .depthWriteEnable = true,
-                           .depthCompareOp = vuk::CompareOp::eLessOrEqual,
+                           .depthCompareOp = vuk::CompareOp::eGreaterOrEqual,
                            .stencilTestEnable = true,
                            .front = stencil_state2,
                            .back = stencil_state2
@@ -317,7 +316,6 @@ void ViewportPanel::on_imgui_render() {
       Mat4 view_proj = m_camera.get_projection_matrix_flipped() * m_camera.get_view_matrix();
       const Frustum& frustum = m_camera.get_frustum();
       show_component_gizmo<LightComponent>(fixed_width, viewport_panel_size.y, 0, 0, view_proj, frustum, context.get());
-      show_component_gizmo<SkyLightComponent>(fixed_width, viewport_panel_size.y, 0, 0, view_proj, frustum, context.get());
       show_component_gizmo<AudioSourceComponent>(fixed_width, viewport_panel_size.y, 0, 0, view_proj, frustum, context.get());
       show_component_gizmo<AudioListenerComponent>(fixed_width, viewport_panel_size.y, 0, 0, view_proj, frustum, context.get());
       show_component_gizmo<CameraComponent>(fixed_width, viewport_panel_size.y, 0, 0, view_proj, frustum, context.get());
@@ -467,7 +465,7 @@ void ViewportPanel::mouse_picking_pass(const Shared<RenderPipeline>& rp, const v
 
   rg->attach_and_clear_image("id_buffer_image", attachment, vuk::Black<unsigned>);
   attachment.format = vuk::Format::eD32Sfloat;
-  rg->attach_and_clear_image("id_buffer_depth", attachment, vuk::DepthOne);
+  rg->attach_and_clear_image("id_buffer_depth", attachment, vuk::DepthZero);
 
   rg->add_pass({
     .name = "id_buffer_pass",
@@ -485,7 +483,7 @@ void ViewportPanel::mouse_picking_pass(const Shared<RenderPipeline>& rp, const v
                     .set_depth_stencil(vuk::PipelineDepthStencilStateCreateInfo{
                        .depthTestEnable = true,
                        .depthWriteEnable = true,
-                       .depthCompareOp = vuk::CompareOp::eLessOrEqual,
+                       .depthCompareOp = vuk::CompareOp::eGreaterOrEqual,
                      })
                     .bind_graphics_pipeline("id_pipeline")
                     .bind_buffer(0, 0, vs_buffer);
@@ -515,15 +513,15 @@ void ViewportPanel::mouse_picking_pass(const Shared<RenderPipeline>& rp, const v
   });
 
   if (id_buffers.empty()) {
-    id_buffers.reserve(VulkanContext::get()->num_inflight_frames);
-    for (uint32_t i = 0; i < VulkanContext::get()->num_inflight_frames; i++)
-      id_buffers.emplace_back(*allocate_buffer(*VulkanContext::get()->superframe_allocator, {vuk::MemoryUsage::eGPUtoCPU, (uint64_t)(dim.extent.width * dim.extent.height * 4u), 1}));
+    id_buffers.reserve(VkContext::get()->num_inflight_frames);
+    for (uint32_t i = 0; i < VkContext::get()->num_inflight_frames; i++)
+      id_buffers.emplace_back(*allocate_buffer(*VkContext::get()->superframe_allocator, {vuk::MemoryUsage::eGPUtoCPU, (uint64_t)(dim.extent.width * dim.extent.height * 4u), 1}));
   }
 
-  if (VulkanContext::get()->num_frames < VulkanContext::get()->num_inflight_frames)
+  if (VkContext::get()->num_frames < VkContext::get()->num_inflight_frames)
     return;
 
-  rg->attach_buffer("entity_id_buffer_to_copy", *id_buffers[VulkanContext::get()->current_frame]); // current frame buffer
+  rg->attach_buffer("entity_id_buffer_to_copy", *id_buffers[VkContext::get()->current_frame]); // current frame buffer
 
   auto [mx, my] = ImGui::GetMousePos();
   mx -= viewport_offset.x;
@@ -553,7 +551,7 @@ void ViewportPanel::mouse_picking_pass(const Shared<RenderPipeline>& rp, const v
     }
   });
 
-  auto& buffer = id_buffers[VulkanContext::get()->current_frame];
+  auto& buffer = id_buffers[VkContext::get()->current_frame];
   const auto buf_pos = (mouse_y * dim.extent.width + mouse_x) * 4;
 
   if (buf_pos + sizeof(uint32_t) <= buffer->size) {
@@ -640,13 +638,13 @@ void ViewportPanel::on_update() {
       m_using_editor_camera = false;
     }
 
-    const Vec3 damped_position = Math::smooth_damp(position,
+    const Vec3 damped_position = math::smooth_damp(position,
                                                    final_position,
                                                    m_translation_velocity,
                                                    m_translation_dampening,
                                                    10000.0f,
                                                    (float)App::get_timestep().get_seconds());
-    const Vec2 damped_yaw_pitch = Math::smooth_damp(yaw_pitch,
+    const Vec2 damped_yaw_pitch = math::smooth_damp(yaw_pitch,
                                                     final_yaw_pitch,
                                                     m_rotation_velocity,
                                                     m_rotation_dampening,
@@ -704,7 +702,7 @@ void ViewportPanel::draw_gizmos() {
       const Entity parent = EUtil::get_parent(context.get(), selected_entity);
       const Mat4& parent_world_transform = parent != entt::null ? EUtil::get_world_transform(context.get(), parent) : Mat4(1.0f);
       Vec3 translation, rotation, scale;
-      if (Math::decompose_transform(inverse(parent_world_transform) * transform, translation, rotation, scale)) {
+      if (math::decompose_transform(inverse(parent_world_transform) * transform, translation, rotation, scale)) {
         tc->position = translation;
         const Vec3 delta_rotation = rotation - tc->rotation;
         tc->rotation += delta_rotation;

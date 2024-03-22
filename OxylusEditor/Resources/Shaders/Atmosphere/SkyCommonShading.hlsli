@@ -111,10 +111,10 @@ float3 AccurateAtmosphericScattering(float2 pixelPosition,
 float3 GetDynamicSkyColor(in float2 pixel, in float3 V, bool sunEnabled = true, bool darkEnabled = false, bool stationary = false, bool highQuality = false, bool perPixelNoise = false, bool receiveShadow = false) {
   float3 sky = AccurateAtmosphericScattering(
     pixel,
-    GetCamera().Position, // Ray origin
+    GetCamera().position, // Ray origin
     V, // Ray direction
-    GetScene().SunDirection, // Position of the sun
-    GetScene().SunColor, // Sun Color
+    GetScene().sun_direction, // Position of the sun
+    GetScene().sun_color, // Sun Color
     sunEnabled, // Use sun and total
     darkEnabled, // Enable dark mode for light shafts etc.
     stationary, // Fixed position for ambient and environment capture.

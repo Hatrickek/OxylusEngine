@@ -11,7 +11,7 @@ float4 main(VSInput input) : SV_TARGET {
   AtmosphereParameters atmosphere;
   InitAtmosphereParameters(atmosphere);
 
-  const float3 skyRelativePosition = GetCamera().Position;
+  const float3 skyRelativePosition = GetCamera().position;
   float3 worldPosition = GetCameraPlanetPos(atmosphere, skyRelativePosition);
 
   float viewHeight = length(worldPosition);
@@ -21,7 +21,7 @@ float4 main(VSInput input) : SV_TARGET {
   UvToSkyViewLutParams(atmosphere, viewZenithCosAngle, lightViewCosAngle, viewHeight, input.UV);
 
   const float3 upVector = min(worldPosition / viewHeight, 1.0); // Causes flickering without min(x, 1.0) for untouched/edited directional lights
-  float sunZenithCosAngle = dot(upVector, GetScene().SunDirection);
+  float sunZenithCosAngle = dot(upVector, GetScene().sun_direction);
   const float3 sunDirection = normalize(float3(sqrt(1.0 - sunZenithCosAngle * sunZenithCosAngle), 0.0, sunZenithCosAngle));
 
   worldPosition = float3(0.0, 0.0, viewHeight);
@@ -38,7 +38,7 @@ float4 main(VSInput input) : SV_TARGET {
     return float4(0, 0, 0, 1);
   }
 
-  const float3 sunIlluminance = GetScene().SunColor;
+  const float3 sunIlluminance = GetScene().sun_color;
 
   const float tDepth = 0.0;
   const float sampleCountIni = 30.0;

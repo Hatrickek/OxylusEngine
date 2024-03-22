@@ -1,6 +1,6 @@
 ﻿#include "../Globals.hlsli"
 
-struct VSOutput {
+struct VOutput {
   float4 Position : SV_Position;
   float2 UV : TEXCOORD;
   float3 NearPoint : NEAR_POINT;
@@ -12,13 +12,13 @@ float3 UnprojectPoint(float x, float y, float z, float4x4 view, float4x4 project
   return unprojectedPoint.xyz / unprojectedPoint.w;
 }
 
-VSOutput main(Vertex inVertex) {
-  VSOutput output;
-  output.UV = inVertex.UV;
+VOutput main(Vertex inVertex) {
+  VOutput output;
+  output.UV = inVertex.uv;
 
-  float3 position = inVertex.Position;
-  output.NearPoint = UnprojectPoint(position.x, position.y, 0.0, GetCamera().InvViewMatrix, GetCamera().InvProjectionMatrix).xyz;
-  output.FarPoint = UnprojectPoint(position.x, position.y, 1.0, GetCamera().InvViewMatrix, GetCamera().InvProjectionMatrix).xyz;
+  float3 position = inVertex.position;
+  output.NearPoint = UnprojectPoint(position.x, position.y, 0.0, GetCamera().inv_view_matrix, GetCamera().inv_projection_matrix).xyz;
+  output.FarPoint = UnprojectPoint(position.x, position.y, 1.0, GetCamera().inv_view_matrix, GetCamera().inv_projection_matrix).xyz;
   output.Position = float4(position.xyz, 1.0);
 
   return output;
@@ -51,21 +51,22 @@ float4 Grid(float3 fragPos3D, float scale, bool drawAxis) {
 }
 
 float ComputeDepth(float3 pos) {
-  float4 clipSpacePos = mul(mul(GetCamera().ProjectionMatrix, GetCamera().ViewMatrix), float4(pos.xyz, 1.0));
+  float4 clipSpacePos = mul(mul(GetCamera().projection_matrix, GetCamera().view_matrix), float4(pos.xyz, 1.0));
   return (clipSpacePos.z / clipSpacePos.w);
 }
 
 float ComputeLinearDepth(float3 pos) {
-  float4 clipSpacePos = mul(mul(GetCamera().ProjectionMatrix, GetCamera().ViewMatrix), float4(pos.xyz, 1.0));
-  float clipSpaceDepth = (clipSpacePos.z / clipSpacePos.w) * 2.0 - 1.0; // put back between -1 and 1
-  float linearDepth = (2.0 * GetCamera().NearClip * GetCamera().FarClip)
-                      / (GetCamera().FarClip + GetCamera().NearClip - clipSpaceDepth * (GetCamera().FarClip - GetCamera().NearClip)); // get linear value between 0.01 and 100
-  return linearDepth / GetCamera().FarClip;                                                                                           // normalize
+  float4 clipSpacePos = mul(mul(GetCamera().projection_matrix, GetCamera().view_matrix), float4(pos.xyz, 1.0));
+  float clipSpaceDepth = (clipSpacePos.z / clipSpacePos.w) * 2.0 - 1.0;                  // put back between -1 and 1
+  float linearDepth = (2.0 * GetCamera().near_clip * GetCamera().far_clip) /
+                      (GetCamera().far_clip + GetCamera().near_clip -
+                       clipSpaceDepth * (GetCamera().far_clip - GetCamera().near_clip)); // get linear value between 0.01 and 100
+  return linearDepth / GetCamera().far_clip;                                             // normalize
 }
 
 int RoundToPowerOfTen(float n) { return int(pow(10.0, floor((1 / log(10)) * log(n)))); }
 
-PSOut PSmain(VSOutput input, float4 pixelPosition : SV_Position) {
+PSOut PSmain(VOutput input, float4 pixelPosition : SV_Position) {
   PSOut psOut;
 
   const float t = -input.NearPoint.y / (input.FarPoint.y - input.NearPoint.y);
@@ -80,12 +81,12 @@ PSOut PSmain(VSOutput input, float4 pixelPosition : SV_Position) {
   float linearDepth = ComputeLinearDepth(fragPos3D);
   float fading = max(0, (0.5 - linearDepth));
 
-  float decreaseDistance = GetCamera().FarClip * 1.5;
-  float3 pseudoViewPos = float3(GetCamera().Position.x, fragPos3D.y, GetCamera().Position.z);
+  float decreaseDistance = GetCamera().far_clip * 1.5;
+  float3 pseudoViewPos = float3(GetCamera().position.x, fragPos3D.y, GetCamera().position.z);
 
   float dist, angleFade;
-  if (GetCamera().ProjectionMatrix[3][3] == 0.0) {
-    float3 viewvec = GetCamera().Position.xyz - fragPos3D;
+  if (GetCamera().projection_matrix[3][3] == 0.0) {
+    float3 viewvec = GetCamera().position.xyz - fragPos3D;
     dist = length(viewvec);
     viewvec /= dist;
 
@@ -93,17 +94,16 @@ PSOut PSmain(VSOutput input, float4 pixelPosition : SV_Position) {
     angle = 1.0 - abs(angle);
     angle *= angle;
     angleFade = 1.0 - angle * angle;
-    angleFade *= 1.0 - smoothstep(0.0, GetScene().GridMaxDistance, dist - GetScene().GridMaxDistance);
-  }
-  else {
+    angleFade *= 1.0 - smoothstep(0.0, GetScene().grid_max_distance, dist - GetScene().grid_max_distance);
+  } else {
     dist = pixelPosition.z * 2.0 - 1.0;
     /* Avoid fading in +Z direction in camera view (see T70193). */
     dist = clamp(dist, 0.0, 1.0); // abs(dist);
     angleFade = 1.0 - smoothstep(0.0, 0.5, dist - 0.5);
-    dist = 1.0; /* avoid branch after */
+    dist = 1.0;                   /* avoid branch after */
   }
 
-  const float distanceToCamera = abs(GetCamera().Position.y - fragPos3D.y);
+  const float distanceToCamera = abs(GetCamera().position.y - fragPos3D.y);
   const int powerOfTen = max(1, RoundToPowerOfTen(distanceToCamera));
   const float divs = 1.0f / float(powerOfTen);
   const float secondFade = smoothstep(subdivisions / divs, 1 / divs, distanceToCamera);

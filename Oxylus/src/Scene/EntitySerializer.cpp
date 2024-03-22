@@ -25,6 +25,9 @@ namespace ox {
 #define GET_BOOL2(node, name) node->as_table()->get(name)->as_boolean()->get()
 #define GET_ARRAY(node, name) node->as_table()->get(name)->as_array()
 
+#define TBL_FIELD(c, field) {#field, c.field}
+#define TBL_FIELD_ARR(c, field) {#field, get_toml_array(c.field)}
+
 void EntitySerializer::serialize_entity(toml::array* entities, Scene* scene, Entity entity) {
   entities->push_back(toml::table{{"uuid", std::to_string((uint64_t)EUtil::get_uuid(scene->registry, entity))}});
 
@@ -32,8 +35,8 @@ void EntitySerializer::serialize_entity(toml::array* entities, Scene* scene, Ent
     const auto& tag = scene->registry.get<TagComponent>(entity);
 
     const auto table = toml::table{
-      {"tag", tag.tag},
-      {"enabled", tag.enabled}
+      TBL_FIELD(tag, tag),
+      TBL_FIELD(tag, enabled),
     };
 
     entities->push_back(toml::table{{"tag_component", table}});
@@ -58,9 +61,9 @@ void EntitySerializer::serialize_entity(toml::array* entities, Scene* scene, Ent
     const auto& tc = scene->registry.get<TransformComponent>(entity);
 
     const auto table = toml::table{
-      {"position", get_toml_array(tc.position)},
-      {"rotation", get_toml_array(tc.rotation)},
-      {"scale", get_toml_array(tc.scale)}
+      TBL_FIELD_ARR(tc, position),
+      TBL_FIELD_ARR(tc, rotation),
+      TBL_FIELD_ARR(tc, scale),
     };
 
     entities->push_back(toml::table{{"transform_component", table}});
@@ -71,8 +74,8 @@ void EntitySerializer::serialize_entity(toml::array* entities, Scene* scene, Ent
 
     const auto table = toml::table{
       {"mesh_path", App::get_relative(mrc.mesh_base->path)},
-      {"node_index", mrc.node_index},
-      {"cast_shadows", mrc.cast_shadows}
+      TBL_FIELD(mrc, node_index),
+      TBL_FIELD(mrc, cast_shadows)
     };
 
     entities->push_back(toml::table{{"mesh_component", table}});
@@ -83,45 +86,32 @@ void EntitySerializer::serialize_entity(toml::array* entities, Scene* scene, Ent
 
     const auto table = toml::table{
       {"type", (int)light.type},
-      {"color_temperature_mode", light.color_temperature_mode},
-      {"temperature", light.temperature},
-      {"color", get_toml_array(light.color)},
-      {"intensity", light.intensity},
-      {"range", light.range},
-      {"cut_off_angle", light.cut_off_angle},
-      {"outer_cut_off_angle", light.outer_cut_off_angle},
-      {"cast_shadows", light.cast_shadows},
-      {"shadow_quality", (int)light.shadow_quality},
+      TBL_FIELD(light, color_temperature_mode),
+      TBL_FIELD(light, temperature),
+      TBL_FIELD_ARR(light, color),
+      TBL_FIELD(light, intensity),
+      TBL_FIELD(light, range),
+      TBL_FIELD(light, cut_off_angle),
+      TBL_FIELD(light, outer_cut_off_angle),
+      TBL_FIELD(light, cast_shadows),
+      TBL_FIELD(light, shadow_map_res),
     };
 
     entities->push_back(toml::table{{"light_component", table}});
-  }
-
-  if (scene->registry.all_of<SkyLightComponent>(entity)) {
-    const auto& light = scene->registry.get<SkyLightComponent>(entity);
-
-    const auto table = toml::table{
-      {"cubemap_path", light.cubemap ? App::get_relative(light.cubemap->get_path()) : ""},
-      {"intensity", light.intensity},
-      {"rotation", light.rotation},
-      {"lod_bias", light.lod_bias},
-    };
-
-    entities->push_back(toml::table{{"sky_light_component", table}});
   }
 
   if (scene->registry.all_of<PostProcessProbe>(entity)) {
     const auto& probe = scene->registry.get<PostProcessProbe>(entity);
 
     const auto table = toml::table{
-      {"vignette_enabled", probe.vignette_enabled},
-      {"vignette_intensity", probe.vignette_intensity},
-      {"film_grain_enabled", probe.film_grain_enabled},
-      {"film_grain_intensity", probe.film_grain_intensity},
-      {"chromatic_aberration_enabled", probe.chromatic_aberration_enabled},
-      {"chromatic_aberration_intensity", probe.chromatic_aberration_intensity},
-      {"sharpen_enabled", probe.sharpen_enabled},
-      {"sharpen_intensity", probe.sharpen_intensity},
+      TBL_FIELD(probe, vignette_enabled),
+      TBL_FIELD(probe, vignette_intensity),
+      TBL_FIELD(probe, film_grain_enabled),
+      TBL_FIELD(probe, film_grain_intensity),
+      TBL_FIELD(probe, chromatic_aberration_enabled),
+      TBL_FIELD(probe, chromatic_aberration_intensity),
+      TBL_FIELD(probe, sharpen_enabled),
+      TBL_FIELD(probe, sharpen_intensity),
     };
 
     entities->push_back(toml::table{{"post_process_probe", table}});
@@ -146,15 +136,15 @@ void EntitySerializer::serialize_entity(toml::array* entities, Scene* scene, Ent
 
     const auto table = toml::table{
       {"type", (int)rb.type},
-      {"mass", rb.mass},
-      {"linear_drag", rb.linear_drag},
-      {"angular_drag", rb.angular_drag},
-      {"gravity_scale", rb.gravity_scale},
-      {"allow_sleep", rb.allow_sleep},
-      {"awake", rb.awake},
-      {"continuous", rb.continuous},
-      {"interpolation", rb.interpolation},
-      {"is_sensor", rb.is_sensor},
+      TBL_FIELD(rb, mass),
+      TBL_FIELD(rb, linear_drag),
+      TBL_FIELD(rb, angular_drag),
+      TBL_FIELD(rb, gravity_scale),
+      TBL_FIELD(rb, allow_sleep),
+      TBL_FIELD(rb, awake),
+      TBL_FIELD(rb, continuous),
+      TBL_FIELD(rb, interpolation),
+      TBL_FIELD(rb, is_sensor)
     };
 
     entities->push_back(toml::table{{"rigidbody_component", table}});
@@ -164,11 +154,11 @@ void EntitySerializer::serialize_entity(toml::array* entities, Scene* scene, Ent
     const auto& bc = scene->registry.get<BoxColliderComponent>(entity);
 
     const auto table = toml::table{
-      {"size", get_toml_array(bc.size)},
-      {"offset", get_toml_array(bc.offset)},
-      {"density", bc.density},
-      {"friction", bc.friction},
-      {"restitution", bc.restitution},
+      TBL_FIELD_ARR(bc, size),
+      TBL_FIELD_ARR(bc, offset),
+      TBL_FIELD(bc, density),
+      TBL_FIELD(bc, friction),
+      TBL_FIELD(bc, restitution)
     };
 
     entities->push_back(toml::table{{"box_collider_component", table}});
@@ -178,11 +168,11 @@ void EntitySerializer::serialize_entity(toml::array* entities, Scene* scene, Ent
     const auto& sc = scene->registry.get<SphereColliderComponent>(entity);
 
     const auto table = toml::table{
-      {"radius", sc.radius},
-      {"offset", get_toml_array(sc.offset)},
-      {"density", sc.density},
-      {"friction", sc.friction},
-      {"restitution", sc.restitution},
+      TBL_FIELD(sc, radius),
+      TBL_FIELD_ARR(sc, offset),
+      TBL_FIELD(sc, density),
+      TBL_FIELD(sc, friction),
+      TBL_FIELD(sc, restitution),
     };
 
     entities->push_back(toml::table{{"sphere_collider_component", table}});
@@ -191,12 +181,12 @@ void EntitySerializer::serialize_entity(toml::array* entities, Scene* scene, Ent
   if (scene->registry.all_of<CapsuleColliderComponent>(entity)) {
     const auto& cc = scene->registry.get<CapsuleColliderComponent>(entity);
     const auto table = toml::table{
-      {"height", cc.height},
-      {"radius", cc.radius},
-      {"offset", get_toml_array(cc.offset)},
-      {"density", cc.density},
-      {"friction", cc.friction},
-      {"restitution", cc.restitution},
+      TBL_FIELD(cc, height),
+      TBL_FIELD(cc, radius),
+      TBL_FIELD_ARR(cc, offset),
+      TBL_FIELD(cc, density),
+      TBL_FIELD(cc, friction),
+      TBL_FIELD(cc, restitution),
     };
 
     entities->push_back(toml::table{{"capsule_collider_component", table}});
@@ -206,12 +196,12 @@ void EntitySerializer::serialize_entity(toml::array* entities, Scene* scene, Ent
     const auto& tcc = scene->registry.get<TaperedCapsuleColliderComponent>(entity);
 
     const auto table = toml::table{
-      {"height", tcc.height},
-      {"top_radius", tcc.top_radius},
-      {"offset", get_toml_array(tcc.offset)},
-      {"density", tcc.density},
-      {"friction", tcc.friction},
-      {"restitution", tcc.restitution},
+      TBL_FIELD(tcc, height),
+      TBL_FIELD(tcc, top_radius),
+      TBL_FIELD_ARR(tcc, offset),
+      TBL_FIELD(tcc, density),
+      TBL_FIELD(tcc, friction),
+      TBL_FIELD(tcc, restitution),
     };
 
     entities->push_back(toml::table{{"tapered_capsule_collider_component", table}});
@@ -220,12 +210,12 @@ void EntitySerializer::serialize_entity(toml::array* entities, Scene* scene, Ent
   if (scene->registry.all_of<CylinderColliderComponent>(entity)) {
     const auto& cc = scene->registry.get<CylinderColliderComponent>(entity);
     const auto table = toml::table{
-      {"height", cc.height},
-      {"radius", cc.radius},
-      {"offset", get_toml_array(cc.offset)},
-      {"density", cc.density},
-      {"friction", cc.friction},
-      {"restitution", cc.restitution},
+      TBL_FIELD(cc, height),
+      TBL_FIELD(cc, radius),
+      TBL_FIELD_ARR(cc, offset),
+      TBL_FIELD(cc, density),
+      TBL_FIELD(cc, friction),
+      TBL_FIELD(cc, restitution),
     };
 
     entities->push_back(toml::table{{"cylinder_collider_component", table}});
@@ -234,9 +224,9 @@ void EntitySerializer::serialize_entity(toml::array* entities, Scene* scene, Ent
   if (scene->registry.all_of<MeshColliderComponent>(entity)) {
     const auto& mc = scene->registry.get<MeshColliderComponent>(entity);
     const auto table = toml::table{
-      {"offset", get_toml_array(mc.offset)},
-      {"friction", mc.friction},
-      {"restitution", mc.restitution},
+      TBL_FIELD_ARR(mc, offset),
+      TBL_FIELD(mc, friction),
+      TBL_FIELD(mc, restitution),
     };
 
     entities->push_back(toml::table{{"mesh_collider_component", table}});
@@ -245,14 +235,14 @@ void EntitySerializer::serialize_entity(toml::array* entities, Scene* scene, Ent
   if (scene->registry.all_of<CharacterControllerComponent>(entity)) {
     const auto& component = scene->registry.get<CharacterControllerComponent>(entity);
     const auto table = toml::table{
-      {"character_height_standing", component.character_height_standing},
-      {"character_radius_standing", component.character_radius_standing},
-      {"character_radius_crouching", component.character_radius_crouching},
-      {"character_height_crouching", component.character_height_crouching},
-      {"control_movement_during_jump", component.control_movement_during_jump},
-      {"jump_force", component.jump_force},
-      {"friction", component.friction},
-      {"collision_tolerance", component.collision_tolerance},
+      TBL_FIELD(component, character_height_standing),
+      TBL_FIELD(component, character_radius_standing),
+      TBL_FIELD(component, character_radius_crouching),
+      TBL_FIELD(component, character_height_crouching),
+      TBL_FIELD(component, control_movement_during_jump),
+      TBL_FIELD(component, jump_force),
+      TBL_FIELD(component, friction),
+      TBL_FIELD(component, collision_tolerance),
     };
 
     entities->push_back(toml::table{{"character_controller_component", table}});
@@ -324,15 +314,7 @@ UUID EntitySerializer::deserialize_entity(toml::array* entity_arr, Scene* scene,
       GET_FLOAT(light_node, lc, cut_off_angle);
       GET_FLOAT(light_node, lc, outer_cut_off_angle);
       GET_BOOL(light_node, lc, cast_shadows);
-      lc.shadow_quality = (LightComponent::ShadowQualityType)GET_UINT322(light_node, "shadow_quality");
-    }
-    else if (const auto sky_node = ent.as_table()->get("sky_light_component")) {
-      auto& sc = reg.emplace<SkyLightComponent>(deserialized_entity);
-      auto path = App::get_absolute(GET_STRING2(sky_node, "path"));
-      sc.cubemap = AssetManager::get_texture_asset({.path = path});
-      GET_FLOAT(sky_node, sc, rotation);
-      GET_FLOAT(sky_node, sc, intensity);
-      GET_FLOAT(sky_node, sc, lod_bias);
+      GET_UINT32(light_node, lc, shadow_map_res);
     }
     else if (const auto pp_node = ent.as_table()->get("post_process_probe")) {
       auto& pp = reg.emplace<PostProcessProbe>(deserialized_entity);

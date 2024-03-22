@@ -8,7 +8,7 @@
 
 #include "Utils/Profiler.h"
 
-namespace ox::Math {
+namespace ox::math {
 bool decompose_transform(const glm::mat4& transform, Vec3& translation, Vec3& rotation, Vec3& scale);
 
 template <typename T>
@@ -61,4 +61,8 @@ float lerp(float a, float b, float t);
 float inverse_lerp(float a, float b, float value);
 float inverse_lerp_clamped(float a, float b, float value);
 Vec2 world_to_screen(const Vec3& world_pos, const glm::mat4& mvp, float width, float height, float win_pos_x, float win_pos_y);
+
+Vec4 transform(const Vec4& vec, const Mat4& view);
+Vec4 transform_normal(const Vec4& vec, const Mat4& mat);
+Vec4 transform_coord(const Vec4& vec, const Mat4& view);
 }

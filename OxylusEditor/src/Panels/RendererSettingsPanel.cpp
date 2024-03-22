@@ -6,7 +6,7 @@
 
 #include "Render/RendererConfig.h"
 #include "Render/Vulkan/Renderer.h"
-#include "Render/Vulkan/VulkanContext.h"
+#include "Render/Vulkan/VkContext.h"
 #include "UI/OxUI.h"
 
 namespace ox {
@@ -29,7 +29,7 @@ void RendererSettingsPanel::on_imgui_render() {
     avg /= (float)size;
     const double fps = 1.0 / static_cast<double>(avg) * 1000.0;
     ImGui::Text("FPS: %lf / (ms): %lf", static_cast<double>(avg), fps);
-    ImGui::Text("GPU: %s", VulkanContext::get()->device_name.c_str());
+    ImGui::Text("GPU: %s", VkContext::get()->device_name.c_str());
     ImGui::Text("Internal Render Size: [ %u, %u ]", Renderer::get_viewport_width(), Renderer::get_viewport_height());
     OxUI::tooltip("Current viewport resolution");
     ImGui::Text("Draw Calls: %u", Renderer::get_stats().drawcall_count);
@@ -93,4 +93,4 @@ void RendererSettingsPanel::on_imgui_render() {
   }
   on_end();
 }
-}
+} // namespace ox

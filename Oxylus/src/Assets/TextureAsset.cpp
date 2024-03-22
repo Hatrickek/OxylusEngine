@@ -4,7 +4,7 @@
 
 #include "Render/RendererCommon.h"
 #include "Render/Texture.h"
-#include "Render/Vulkan/VulkanContext.h"
+#include "Render/Vulkan/VkContext.h"
 
 #include "Core/FileSystem.h"
 #include "Utils/Profiler.h"
@@ -27,11 +27,11 @@ TextureAsset::~TextureAsset() = default;
 
 void TextureAsset::create_texture(const uint32_t x, const uint32_t y, void* data, const vuk::Format format, bool generate_mips) {
   OX_SCOPED_ZONE;
-  auto [tex, tex_fut] = vuk::create_texture(*VulkanContext::get()->superframe_allocator, format, vuk::Extent3D{x, y, 1u}, data, generate_mips);
+  auto [tex, tex_fut] = vuk::create_texture(*VkContext::get()->superframe_allocator, format, vuk::Extent3D{x, y, 1u}, data, generate_mips);
   texture = std::move(tex);
 
   vuk::Compiler compiler;
-  tex_fut.wait(*VulkanContext::get()->superframe_allocator, compiler);
+  tex_fut.wait(*VkContext::get()->superframe_allocator, compiler);
 }
 
 void TextureAsset::load(const std::string& file_path, const vuk::Format format, const bool generate_cubemap_from_hdr, bool generate_mips) {
@@ -45,7 +45,7 @@ void TextureAsset::load(const std::string& file_path, const vuk::Format format, 
   if (FileSystem::get_file_extension(path) == "hdr" && generate_cubemap_from_hdr) {
     auto [image, future] = RendererCommon::generate_cubemap_from_equirectangular(texture);
     vuk::Compiler compiler;
-    future.wait(*VulkanContext::get()->superframe_allocator, compiler);
+    future.wait(*VkContext::get()->superframe_allocator, compiler);
 
     vuk::ImageViewCreateInfo ivci;
     ivci.format = vuk::Format::eR32G32B32A32Sfloat;
@@ -56,7 +56,7 @@ void TextureAsset::load(const std::string& file_path, const vuk::Format format, 
     ivci.subresourceRange.layerCount = 6;
     ivci.subresourceRange.levelCount = 1;
     ivci.viewType = vuk::ImageViewType::eCube;
-    texture.view = *vuk::allocate_image_view(*VulkanContext::get()->superframe_allocator, ivci);
+    texture.view = *vuk::allocate_image_view(*VkContext::get()->superframe_allocator, ivci);
 
     texture.format = vuk::Format::eR32G32B32A32Sfloat;
     texture.extent = vuk::Dimension3D::absolute(2048, 2048, 1).extent;

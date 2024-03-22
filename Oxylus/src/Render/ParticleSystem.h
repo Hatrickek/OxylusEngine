@@ -41,7 +41,7 @@ template <typename T> struct BySpeedModule {
   BySpeedModule(const T& start, const T& end) : start(start), end(end) {}
 
   T evaluate(float speed) {
-    float factor = Math::inverse_lerp_clamped(min_speed, max_speed, speed);
+    float factor = math::inverse_lerp_clamped(min_speed, max_speed, speed);
     return glm::lerp(end, start, factor);
   }
 };

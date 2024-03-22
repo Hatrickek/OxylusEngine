@@ -21,10 +21,11 @@ namespace ox {
 class TracyProfiler;
 struct AppSpec;
 
-class VulkanContext {
+class VkContext {
 public:
   VkDevice device = nullptr;
   VkPhysicalDevice physical_device = nullptr;
+  vkb::PhysicalDevice vkbphysical_device;
   VkQueue graphics_queue = nullptr;
   uint32_t graphics_queue_family_index = 0;
   VkQueue transfer_queue = nullptr;
@@ -46,9 +47,10 @@ public:
 
   std::string device_name = {};
 
-  VulkanContext() = default;
+  VkContext() = default;
 
   static void init();
+  static VkContext* get() { return s_instance; }
 
   void create_context(const AppSpec& spec);
 
@@ -57,11 +59,11 @@ public:
   vuk::Allocator begin();
   void end(const vuk::Future& src, vuk::Allocator frame_allocator);
 
-  static VulkanContext* get() { return s_instance; }
+  uint32_t get_max_viewport_count() const { return vkbphysical_device.properties.limits.maxViewports; }
 
 private:
   vuk::SingleSwapchainRenderBundle m_bundle = {};
 
-  static VulkanContext* s_instance;
+  static VkContext* s_instance;
 };
 }

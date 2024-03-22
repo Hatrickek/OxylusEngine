@@ -10,6 +10,7 @@
 #include "Render/Camera.h"
 #include "Render/Mesh.h"
 #include "Render/ParticleSystem.h"
+#include "Render/Utils/RectPacker.h"
 
 #include "Scripting/LuaSystem.h"
 
@@ -64,12 +65,12 @@ struct TransformComponent {
 
   TransformComponent(const Mat4& transform_matrix) {
     OX_SCOPED_ZONE;
-    Math::decompose_transform(transform_matrix, position, rotation, scale);
+    math::decompose_transform(transform_matrix, position, rotation, scale);
   }
 
   void set_from_matrix(const Mat4& transform_matrix) {
     OX_SCOPED_ZONE;
-    Math::decompose_transform(transform_matrix, position, rotation, scale);
+    math::decompose_transform(transform_matrix, position, rotation, scale);
   }
 };
 
@@ -87,10 +88,11 @@ struct MeshComponent {
 
   MeshComponent() = default;
 
-  MeshComponent(const Shared<Mesh>& mesh, const uint32_t node_idx = 0)
-    : mesh_base(mesh), node_index(node_idx) {
+  MeshComponent(const Shared<Mesh>& mesh, const uint32_t node_idx = 0) : mesh_base(mesh), node_index(node_idx) {
     materials = mesh->get_materials(node_index);
   }
+
+  constexpr Mesh::Node* get_linear_node() const { return mesh_base->linear_nodes[node_index]; }
 };
 
 struct CameraComponent {
@@ -110,19 +112,10 @@ struct ParticleSystemComponent {
   ParticleSystemComponent() : system(create_shared<ParticleSystem>()) {}
 };
 
-struct SkyLightComponent {
-  Shared<TextureAsset> cubemap = nullptr;
-  float intensity = 0.7f;
-  float rotation = 0.0f;
-  float lod_bias = 0.0f;
-};
-
 struct LightComponent {
-  enum class LightType { Directional = 0, Point, Spot };
+  enum LightType { Directional = 0, Point, Spot };
 
-  enum class ShadowQualityType { Hard = 0, Soft, UltraSoft };
-
-  LightType type = LightType::Point;
+  LightType type = Point;
   bool color_temperature_mode = false;
   uint32_t temperature = 6570;
   Vec3 color = Vec3(1.0f);
@@ -133,7 +126,14 @@ struct LightComponent {
   float outer_cut_off_angle = glm::radians(17.5f);
 
   bool cast_shadows = true;
-  ShadowQualityType shadow_quality = ShadowQualityType::UltraSoft;
+  uint32_t shadow_map_res = 0;
+  std::vector<float> cascade_distances = {8, 80, 800};
+
+  // non-serialized data
+  Vec3 position = {};
+  Vec3 rotation = {};
+  Vec3 direction = {};
+  RectPacker::Rect shadow_rect = {};
 };
 
 struct PostProcessProbe {
@@ -246,8 +246,7 @@ struct CharacterControllerComponent {
     float acceleration;
     float deceleration;
 
-    MovementSettings(const float maxSpeed, float accel, float decel)
-      : max_speed(maxSpeed), acceleration(accel), deceleration(decel) {}
+    MovementSettings(const float maxSpeed, float accel, float decel) : max_speed(maxSpeed), acceleration(accel), deceleration(decel) {}
   };
 
   bool interpolation = true;
@@ -273,7 +272,7 @@ struct CharacterControllerComponent {
   CharacterControllerComponent() = default;
 };
 
-//Audio
+// Audio
 struct AudioSourceComponent {
   AudioSourceConfig config;
 
@@ -292,13 +291,17 @@ struct LuaScriptComponent {
   std::vector<Shared<LuaSystem>> lua_systems = {};
 };
 
-template <typename... Component>
-struct ComponentGroup {};
+template <typename... Component> struct ComponentGroup {};
 
-using AllComponents = ComponentGroup<TransformComponent, RelationshipComponent, PrefabComponent, CameraComponent,
+using AllComponents = ComponentGroup<TransformComponent,
+                                     RelationshipComponent,
+                                     PrefabComponent,
+                                     CameraComponent,
 
                                      // Render
-                                     LightComponent, MeshComponent, SkyLightComponent, ParticleSystemComponent,
+                                     LightComponent,
+                                     MeshComponent,
+                                     ParticleSystemComponent,
 
                                      //  Physics
                                      RigidbodyComponent,
@@ -310,8 +313,9 @@ using AllComponents = ComponentGroup<TransformComponent, RelationshipComponent, 
                                      MeshColliderComponent,
 
                                      // Audio
-                                     AudioSourceComponent, AudioListenerComponent,
+                                     AudioSourceComponent,
+                                     AudioListenerComponent,
 
                                      // Scripting
                                      LuaScriptComponent>;
-}
+} // namespace ox

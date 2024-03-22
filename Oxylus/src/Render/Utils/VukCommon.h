@@ -76,6 +76,19 @@ inline SamplerCreateInfo LinearSamplerClamped = {
   .borderColor = BorderColor::eFloatOpaqueWhite
 };
 
+inline SamplerCreateInfo CmpDepthSampler = {
+  .magFilter = Filter::eLinear,
+  .minFilter = Filter::eLinear,
+  .mipmapMode = SamplerMipmapMode::eNearest,
+  .addressModeU = SamplerAddressMode::eClampToEdge,
+  .addressModeV = SamplerAddressMode::eClampToEdge,
+  .addressModeW = SamplerAddressMode::eClampToEdge,
+  .compareEnable = true,
+  .compareOp = CompareOp::eGreaterOrEqual,
+  .minLod = 0.0f,
+  .maxLod = 0.0f,
+};
+
 template <class T>
 std::pair<Unique<Buffer>, Future> create_cpu_buffer(Allocator& allocator, std::span<T> data) {
   return create_buffer(allocator, MemoryUsage::eCPUtoGPU, DomainFlagBits::eTransferOnGraphics, data);

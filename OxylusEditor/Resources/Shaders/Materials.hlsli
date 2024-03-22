@@ -7,27 +7,27 @@
 #define SAMPELR_ANISOTROPY 2
 
 struct Material {
-  float4 Color;
-  float4 Emissive;
+  float4 color;
+  float4 emissive;
 
-  float Roughness;
-  float Metallic;
-  float Reflectance;
-  float Normal;
+  float roughness;
+  float metallic;
+  float reflectance;
+  float normal;
 
-  float AO;
-  uint32_t AlbedoMapID;
-  uint32_t PhysicalMapID;
-  uint32_t NormalMapID;
+  float ao;
+  uint32_t albedo_map_id;
+  uint32_t physical_map_id;
+  uint32_t normal_map_id;
 
-  uint32_t AOMapID;
-  uint32_t EmissiveMapID;
-  float AlphaCutoff;
-  bool DoubleSided;
+  uint32_t ao_map_id;
+  uint32_t emissive_map_id;
+  float alpha_cutoff;
+  bool double_sided;
 
-  float UVScale;
-  uint32_t AlphaMode;
-  uint32_t Sampler;
+  float uv_scale;
+  uint32_t alpha_mode;
+  uint32_t sampler;
   uint32_t _pad;
 };
 

@@ -7,7 +7,7 @@
 #include "Utils/OxMath.h"
 #include "Utils/Profiler.h"
 
-#include "Vulkan/VulkanContext.h"
+#include "Vulkan/VkContext.h"
 
 namespace ox {
 DebugRenderer* DebugRenderer::instance = nullptr;
@@ -29,10 +29,10 @@ void DebugRenderer::init() {
   instance->debug_renderer_context.cube = RendererCommon::generate_cube();
   instance->debug_renderer_context.sphere = RendererCommon::generate_sphere();
 
-  auto [i_buff, i_buff_fut] = create_buffer(*VulkanContext::get()->superframe_allocator, vuk::MemoryUsage::eCPUtoGPU, vuk::DomainFlagBits::eTransferOnGraphics, std::span(indices));
+  auto [i_buff, i_buff_fut] = create_buffer(*VkContext::get()->superframe_allocator, vuk::MemoryUsage::eCPUtoGPU, vuk::DomainFlagBits::eTransferOnGraphics, std::span(indices));
 
   auto compiler = vuk::Compiler{};
-  i_buff_fut.wait(*VulkanContext::get()->superframe_allocator, compiler);
+  i_buff_fut.wait(*VkContext::get()->superframe_allocator, compiler);
 
   instance->debug_renderer_context.index_buffer = std::move(i_buff);
 }

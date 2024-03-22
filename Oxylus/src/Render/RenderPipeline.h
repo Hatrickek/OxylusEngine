@@ -12,7 +12,7 @@ struct SampledImage;
 }
 
 namespace ox {
-class VulkanContext;
+class VkContext;
 class Scene;
 
 class RenderPipeline {
@@ -30,7 +30,7 @@ public:
 
   virtual void on_update(Scene* scene) {}
   virtual void register_mesh_component(const MeshComponent& render_object) {}
-  virtual void register_light(const TransformComponent& transform, const LightComponent& light) {}
+  virtual void register_light(const LightComponent& light) {}
   virtual void register_camera(Camera* camera) {}
 
   virtual void enqueue_future(vuk::Future&& fut);

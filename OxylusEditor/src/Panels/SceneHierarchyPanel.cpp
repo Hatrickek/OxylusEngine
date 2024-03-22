@@ -326,10 +326,6 @@ void SceneHierarchyPanel::draw_context_menu() {
     }
 
     if (ImGui::BeginMenu("Light")) {
-      if (ImGui::MenuItem("Sky Light")) {
-        to_select = context->create_entity("Sky Light");
-        context->registry.emplace<SkyLightComponent>(to_select);
-      }
       if (ImGui::MenuItem("Light")) {
         to_select = context->create_entity("Light");
         context->registry.emplace<LightComponent>(to_select);

@@ -276,4 +276,55 @@ float Shadow(float2 pixelPosition,
                            shadowPosition);
 }
 
+inline float3 sample_shadow(float2 uv, float cmp) {
+  Texture2D texture_shadowatlas = GetShadowAtlas();
+  float3 shadow = texture_shadowatlas.SampleCmpLevelZero(CMP_DEPTH_SAMPLER, uv, cmp).r;
+
+#ifndef DISABLE_SOFT_SHADOWMAP
+  // sample along a rectangle pattern around center:
+  shadow.x += texture_shadowatlas.SampleCmpLevelZero(CMP_DEPTH_SAMPLER, uv, cmp, int2(-1, -1)).r;
+  shadow.x += texture_shadowatlas.SampleCmpLevelZero(CMP_DEPTH_SAMPLER, uv, cmp, int2(-1, 0)).r;
+  shadow.x += texture_shadowatlas.SampleCmpLevelZero(CMP_DEPTH_SAMPLER, uv, cmp, int2(-1, 1)).r;
+  shadow.x += texture_shadowatlas.SampleCmpLevelZero(CMP_DEPTH_SAMPLER, uv, cmp, int2(0, -1)).r;
+  shadow.x += texture_shadowatlas.SampleCmpLevelZero(CMP_DEPTH_SAMPLER, uv, cmp, int2(0, 1)).r;
+  shadow.x += texture_shadowatlas.SampleCmpLevelZero(CMP_DEPTH_SAMPLER, uv, cmp, int2(1, -1)).r;
+  shadow.x += texture_shadowatlas.SampleCmpLevelZero(CMP_DEPTH_SAMPLER, uv, cmp, int2(1, 0)).r;
+  shadow.x += texture_shadowatlas.SampleCmpLevelZero(CMP_DEPTH_SAMPLER, uv, cmp, int2(1, 1)).r;
+  shadow = shadow.xxx / 9.0;
+#endif // DISABLE_SOFT_SHADOWMAP
+
+#if 0 // DISABLE_TRANSPARENT_SHADOWMAP
+  if (transparent_shadows) {
+    Texture2D texture_shadowatlas_transparent = GetShadowTransparentAtlas();
+    float4 transparent_shadow = texture_shadowatlas_transparent.SampleLevel(LINEAR_CLAMPED_SAMPLER, uv, 0);
+#ifdef TRANSPARENT_SHADOWMAP_SECONDARY_DEPTH_CHECK
+		if (transparent_shadow.a > cmp)
+#endif
+    {
+      shadow *= transparent_shadow.rgb;
+    }
+  }
+#endif //DISABLE_TRANSPARENT_SHADOWMAP
+
+  return shadow;
+}
+
+// This is used to clamp the uvs to last texel center to avoid sampling on the border and overfiltering into a different shadow
+inline void shadow_border_shrink(in Light light, inout float2 shadow_uv) {
+  const float2 shadow_resolution = light.shadow_atlas_mul_add.xy * GetScene().shadow_atlas_res;
+#ifdef DISABLE_SOFT_SHADOWMAP
+	const float border_size = 0.5;
+#else
+  const float border_size = 1.5;
+#endif // DISABLE_SOFT_SHADOWMAP
+  shadow_uv = clamp(shadow_uv * shadow_resolution, border_size, shadow_resolution - border_size) / shadow_resolution;
+}
+
+inline float3 shadow_2D(in Light light, in float3 shadow_pos, in float2 shadow_uv, in uint cascade) {
+  shadow_border_shrink(light, shadow_uv);
+  shadow_uv.x += cascade;
+  shadow_uv = mad(shadow_uv, light.shadow_atlas_mul_add.xy, light.shadow_atlas_mul_add.zw);
+  return sample_shadow(shadow_uv, shadow_pos.z);
+}
+
 #endif

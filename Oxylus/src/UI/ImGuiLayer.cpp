@@ -11,6 +11,7 @@
 #include <vuk/RenderGraph.hpp>
 #include <vuk/Partials.hpp>
 
+#include "ImGuizmo.h"
 #include "imgui_frag.h"
 #include "imgui_vert.h"
 #include "Core/App.h"
@@ -18,7 +19,7 @@
 #include "GLFW/glfw3.h"
 
 #include "Render/Window.h"
-#include "Render/Vulkan/VulkanContext.h"
+#include "Render/Vulkan/VkContext.h"
 #include "Utils/Profiler.h"
 
 namespace ox {
@@ -29,7 +30,7 @@ ImFont* ImGuiLayer::regular_font = nullptr;
 ImFont* ImGuiLayer::small_font = nullptr;
 ImFont* ImGuiLayer::bold_font = nullptr;
 
-ImGuiLayer::ImGuiLayer() : Layer("ImGuiLayer") { }
+ImGuiLayer::ImGuiLayer() : Layer("ImGuiLayer") {}
 
 void ImGuiLayer::on_attach(EventDispatcher&) {
   OX_SCOPED_ZONE;
@@ -138,7 +139,7 @@ void ImGuiLayer::init_for_vulkan() {
     io.Fonts->Build();
   }
 
-  imgui_data = imgui_impl_vuk_init(*VulkanContext::get()->superframe_allocator);
+  imgui_data = imgui_impl_vuk_init(*VkContext::get()->superframe_allocator);
 }
 
 void ImGuiLayer::on_detach() {
@@ -194,15 +195,21 @@ vuk::Future ImGuiLayer::render_draw_data(vuk::Allocator& allocator, vuk::Future 
   }
   std::shared_ptr<vuk::RenderGraph> rg = std::make_shared<vuk::RenderGraph>("imgui");
   rg->attach_in("target", std::move(target));
-  // add rendergraph dependencies to be transitioned
-  // make all rendergraph sampled images available
-  std::vector<vuk::Resource> resources;
+
+  std::vector<vuk::Resource> resources = {};
+  resources.reserve(sampled_images.size() + 1);
   resources.emplace_back("target", vuk::Resource::Type::eImage, vuk::eColorRW, "target+");
   for (auto& si : sampled_images) {
     if (!si.is_global) {
-      resources.emplace_back(si.rg_attachment.reference.rg, si.rg_attachment.reference.name, vuk::Resource::Type::eImage, vuk::Access::eFragmentSampled);
+      resources.emplace_back(
+        si.rg_attachment.reference.rg,
+        si.rg_attachment.reference.name,
+        vuk::Resource::Type::eImage,
+        vuk::Access::eFragmentSampled
+      );
     }
   }
+
   vuk::Pass pass{
     .name = "imgui",
     .resources = std::move(resources),
@@ -274,14 +281,12 @@ vuk::Future ImGuiLayer::render_draw_data(vuk::Allocator& allocator, vuk::Future 
                     command_buffer
                      .bind_image(0,
                                  0,
-                                 *command_buffer.get_resource_image_attachment(si.rg_attachment.reference),
-                                 vuk::ImageLayout::eShaderReadOnlyOptimal)
+                                 *command_buffer.get_resource_image_attachment(si.rg_attachment.reference))
                      .bind_sampler(0, 0, si.rg_attachment.sci);
                   }
                 }
               }
 
-              // Draw
               command_buffer.draw_indexed(pcmd->ElemCount, 1, pcmd->IdxOffset + global_idx_offset, pcmd->VtxOffset + global_vtx_offset, 0);
             }
           }
@@ -450,57 +455,73 @@ void ImGuiLayer::apply_theme(bool dark) {
 }
 
 void ImGuiLayer::set_style() {
-  ImGuiStyle* style = &ImGui::GetStyle();
+  {
+    auto& style = ImGuizmo::GetStyle();
+    style.TranslationLineThickness *= 1.3f;
+    style.TranslationLineArrowSize *= 1.3f;
+    style.RotationLineThickness *= 1.3f;
+    style.RotationOuterLineThickness *= 1.3f;
+    style.ScaleLineThickness *= 1.3f;
+    style.ScaleLineCircleSize *= 1.3f;
+    style.HatchedAxisLineThickness *= 1.3f;
+    style.CenterCircleSize *= 1.3f;
 
-  style->AntiAliasedFill = true;
-  style->AntiAliasedLines = true;
-  style->AntiAliasedLinesUseTex = true;
+    ImGuizmo::SetGizmoSizeClipSpace(0.2f);
+  }
 
-  style->WindowPadding = ImVec2(4.0f, 4.0f);
-  style->FramePadding = ImVec2(4.0f, 4.0f);
-  style->TabMinWidthForCloseButton = 0.1f;
-  style->CellPadding = ImVec2(8.0f, 4.0f);
-  style->ItemSpacing = ImVec2(8.0f, 3.0f);
-  style->ItemInnerSpacing = ImVec2(2.0f, 4.0f);
-  style->TouchExtraPadding = ImVec2(0.0f, 0.0f);
-  style->IndentSpacing = 12;
-  style->ScrollbarSize = 14;
-  style->GrabMinSize = 10;
+  {
+    ImGuiStyle* style = &ImGui::GetStyle();
 
-  style->WindowBorderSize = 0.0f;
-  style->ChildBorderSize = 0.0f;
-  style->PopupBorderSize = 1.5f;
-  style->FrameBorderSize = 0.0f;
-  style->TabBorderSize = 1.0f;
-  style->DockingSeparatorSize = 0.0f;
+    style->AntiAliasedFill = true;
+    style->AntiAliasedLines = true;
+    style->AntiAliasedLinesUseTex = true;
 
-  style->WindowRounding = 6.0f;
-  style->ChildRounding = 0.0f;
-  style->FrameRounding = 2.0f;
-  style->PopupRounding = 2.0f;
-  style->ScrollbarRounding = 3.0f;
-  style->GrabRounding = 2.0f;
-  style->LogSliderDeadzone = 4.0f;
-  style->TabRounding = 3.0f;
+    style->WindowPadding = ImVec2(4.0f, 4.0f);
+    style->FramePadding = ImVec2(4.0f, 4.0f);
+    style->TabMinWidthForCloseButton = 0.1f;
+    style->CellPadding = ImVec2(8.0f, 4.0f);
+    style->ItemSpacing = ImVec2(8.0f, 3.0f);
+    style->ItemInnerSpacing = ImVec2(2.0f, 4.0f);
+    style->TouchExtraPadding = ImVec2(0.0f, 0.0f);
+    style->IndentSpacing = 12;
+    style->ScrollbarSize = 14;
+    style->GrabMinSize = 10;
 
-  style->WindowTitleAlign = ImVec2(0.0f, 0.5f);
-  style->WindowMenuButtonPosition = ImGuiDir_None;
-  style->ColorButtonPosition = ImGuiDir_Left;
-  style->ButtonTextAlign = ImVec2(0.5f, 0.5f);
-  style->SelectableTextAlign = ImVec2(0.0f, 0.0f);
-  style->DisplaySafeAreaPadding = ImVec2(8.0f, 8.0f);
+    style->WindowBorderSize = 0.0f;
+    style->ChildBorderSize = 0.0f;
+    style->PopupBorderSize = 1.5f;
+    style->FrameBorderSize = 0.0f;
+    style->TabBorderSize = 1.0f;
+    style->DockingSeparatorSize = 0.0f;
 
-  ui_frame_padding = ImVec2(4.0f, 2.0f);
-  popup_item_spacing = ImVec2(6.0f, 8.0f);
+    style->WindowRounding = 6.0f;
+    style->ChildRounding = 0.0f;
+    style->FrameRounding = 2.0f;
+    style->PopupRounding = 2.0f;
+    style->ScrollbarRounding = 3.0f;
+    style->GrabRounding = 2.0f;
+    style->LogSliderDeadzone = 4.0f;
+    style->TabRounding = 3.0f;
 
-  constexpr ImGuiColorEditFlags color_edit_flags = ImGuiColorEditFlags_AlphaBar
-                                                   | ImGuiColorEditFlags_AlphaPreviewHalf
-                                                   | ImGuiColorEditFlags_DisplayRGB
-                                                   | ImGuiColorEditFlags_InputRGB
-                                                   | ImGuiColorEditFlags_PickerHueBar
-                                                   | ImGuiColorEditFlags_Uint8;
-  ImGui::SetColorEditOptions(color_edit_flags);
+    style->WindowTitleAlign = ImVec2(0.0f, 0.5f);
+    style->WindowMenuButtonPosition = ImGuiDir_None;
+    style->ColorButtonPosition = ImGuiDir_Left;
+    style->ButtonTextAlign = ImVec2(0.5f, 0.5f);
+    style->SelectableTextAlign = ImVec2(0.0f, 0.0f);
+    style->DisplaySafeAreaPadding = ImVec2(8.0f, 8.0f);
 
-  style->ScaleAllSizes(1.0f);
+    ui_frame_padding = ImVec2(4.0f, 2.0f);
+    popup_item_spacing = ImVec2(6.0f, 8.0f);
+
+    constexpr ImGuiColorEditFlags color_edit_flags = ImGuiColorEditFlags_AlphaBar
+                                                     | ImGuiColorEditFlags_AlphaPreviewHalf
+                                                     | ImGuiColorEditFlags_DisplayRGB
+                                                     | ImGuiColorEditFlags_InputRGB
+                                                     | ImGuiColorEditFlags_PickerHueBar
+                                                     | ImGuiColorEditFlags_Uint8;
+    ImGui::SetColorEditOptions(color_edit_flags);
+
+    style->ScaleAllSizes(1.0f);
+  }
 }
 }

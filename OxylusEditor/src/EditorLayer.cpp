@@ -14,6 +14,7 @@
 #include "Panels/EditorSettingsPanel.h"
 #include "Panels/ProjectPanel.h"
 #include "Panels/RendererSettingsPanel.h"
+#include "Panels/RenderGraphPanel.h"
 #include "Panels/SceneHierarchyPanel.h"
 #include "Panels/StatisticsPanel.h"
 #include "Render/Window.h"
@@ -50,6 +51,8 @@ void EditorLayer::on_attach(EventDispatcher& dispatcher) {
   OX_SCOPED_ZONE;
   EditorTheme::init();
 
+  //Window::maximize();
+
   Project::create_new();
 
   editor_config.load_config();
@@ -67,6 +70,7 @@ void EditorLayer::on_attach(EventDispatcher& dispatcher) {
   add_panel<RendererSettingsPanel>();
   add_panel<ProjectPanel>();
   add_panel<StatisticsPanel>();
+  add_panel<RenderGraphPanel>();
 
   const auto& viewport = viewport_panels.emplace_back(create_unique<ViewportPanel>());
   viewport->m_camera.set_position({-2, 2, 0});
@@ -209,6 +213,9 @@ void EditorLayer::on_imgui_render() {
           ImGui::MenuItem("Console window", nullptr, &runtime_console.visible);
           ImGui::MenuItem("Performance Overlay", nullptr, &viewport_panels[0]->performance_overlay_visible);
           ImGui::MenuItem("Statistics", nullptr, &get_panel<StatisticsPanel>()->Visible);
+          if (ImGui::MenuItem("RenderGraph Panel", nullptr, &get_panel<RenderGraphPanel>()->Visible)) {
+            get_panel<RenderGraphPanel>()->set_context(editor_scene);
+          }
           if (ImGui::BeginMenu("Layout")) {
             if (ImGui::MenuItem("Classic")) {
               set_docking_layout(EditorLayout::Classic);
@@ -353,7 +360,7 @@ void EditorLayer::open_scene_file_dialog() {
 
 bool EditorLayer::open_scene(const std::filesystem::path& path) {
   if (!exists(path)) {
-    OX_CORE_WARN("Could not find {0}", path.filename().string());
+    OX_CORE_WARN("Could not find scene: {0}", path.filename().string());
     return false;
   }
   if (path.extension().string() != ".oxscene") {
@@ -375,8 +382,7 @@ void EditorLayer::load_default_scene(const std::shared_ptr<Scene>& scene) {
   const auto sun = scene->create_entity("Sun");
   scene->registry.emplace<LightComponent>(sun).type = LightComponent::LightType::Directional;
   scene->registry.get<LightComponent>(sun).intensity = 10.0f;
-  scene->registry.get<TransformComponent>(sun).rotation.y = glm::radians(60.f);
-  scene->registry.get<TransformComponent>(sun).rotation.x = glm::radians(-140.f);
+  scene->registry.get<TransformComponent>(sun).rotation.x = glm::radians(25.f);
 
   const auto plane = scene->load_mesh(AssetManager::get_mesh_asset("Resources/Objects/plane.glb"));
   scene->registry.get<TransformComponent>(plane).scale *= 4.f;

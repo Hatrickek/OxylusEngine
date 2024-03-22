@@ -64,6 +64,7 @@ target_include_directories(${PROJECT_NAME} PUBLIC
   "${CMAKE_CURRENT_SOURCE_DIR}/vendor/glm"
   "${CMAKE_CURRENT_SOURCE_DIR}/vendor/ImGuizmo"
   "${CMAKE_CURRENT_SOURCE_DIR}/vendor/miniaudio"
+  "${CMAKE_CURRENT_SOURCE_DIR}/vendor/stb"
   )
 
 # Compile definitions

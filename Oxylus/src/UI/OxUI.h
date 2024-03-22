@@ -50,6 +50,7 @@ public:
                        T* value,
                        T min = 0,
                        T max = 0,
+                       float speed = 1.0f,
                        const char* tooltip = nullptr) {
     begin_property_grid(label, tooltip);
     bool modified;
@@ -77,9 +78,9 @@ public:
     }
 
     if (max > min)
-      modified = ImGui::DragScalar(id_buffer, data_type, value, 1.0f, &min, &max);
+      modified = ImGui::DragScalar(id_buffer, data_type, value, speed, &min, &max);
     else
-      modified = ImGui::DragScalar(id_buffer, data_type, value);
+      modified = ImGui::DragScalar(id_buffer, data_type, value, speed);
 
     end_property_grid();
     return modified;

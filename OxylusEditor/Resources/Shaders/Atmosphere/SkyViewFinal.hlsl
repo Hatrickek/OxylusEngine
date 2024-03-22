@@ -3,39 +3,33 @@
 #include "SkyCommonShading.hlsli"
 
 struct VSInput {
-  float4 Position : SV_Position;
-  float2 UV : TEXCOORD;
+  float4 position : SV_Position;
+  float2 uv : TEXCOORD;
 };
 
-float4 main(VSInput input) : SV_TARGET {
-  const float4 ndc[] = {
-    float4(-1.0f, -1.0f, 1.0f, 1.0f), // bottom-left
-    float4(1.0f, -1.0f, 1.0f, 1.0f),  // bottom-right
-    float4(-1.0f, 1.0f, 1.0f, 1.0f),  // top-left
-    float4(1.0f, 1.0f, 1.0f, 1.0f)    // top-right
-  };
+inline void vertexID_create_fullscreen_triangle(in uint vertexID, out float4 pos) {
+  pos.x = (float)(vertexID / 2) * 4.0 - 1.0;
+  pos.y = (float)(vertexID % 2) * 4.0 - 1.0;
+  pos.z = 0;
+  pos.w = 1;
+}
 
-  const float4x4 invVP = GetCamera().InvProjectionViewMatrix;
+VSInput VSmain(uint vertexID : SV_VertexID) {
+  VSInput input;
+  vertexID_create_fullscreen_triangle(vertexID, input.position);
 
-  float4 inv_corner = mul(invVP, ndc[0]);
-  const float4 frustumX = inv_corner / inv_corner.w;
+  input.uv = input.position.xy;
 
-  inv_corner = mul(invVP, ndc[1]);
-  const float4 frustumY = inv_corner / inv_corner.w;
+  return input;
+}
 
-  inv_corner = mul(invVP, ndc[2]);
-  const float4 frustumZ = inv_corner / inv_corner.w;
+float4 PSmain(VSInput input) : SV_TARGET {
+  float4 unprojected = mul(GetCamera().inv_view_projection_matrix, float4(input.uv, 0.0f, 1.0f));
+  unprojected.xyz /= unprojected.w;
 
-  inv_corner = mul(invVP, ndc[3]);
-  const float4 frustumW = inv_corner / inv_corner.w;
+  const float3 V = normalize(unprojected.xyz - GetCamera().position);
 
-  const float3 direction = normalize(
-    lerp(lerp(frustumX, frustumY, input.UV.x),
-         lerp(frustumZ, frustumW, input.UV.x),
-         input.UV.y)
-  );
-
-  float4 color = float4(GetDynamicSkyColor(input.UV.xy, direction), 1);
+  float4 color = float4(GetDynamicSkyColor(input.uv, V), 1);
 
   color = clamp(color, 0, 65000);
   return color;

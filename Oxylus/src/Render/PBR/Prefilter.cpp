@@ -7,7 +7,7 @@
 #include <vuk/Pipeline.hpp>
 
 #include "Render/Mesh.h"
-#include "Render/Vulkan/VulkanContext.h"
+#include "Render/Vulkan/VkContext.h"
 #include "Render/Utils/VukCommon.h"
 
 #include "Utils/FileUtils.h"
@@ -18,7 +18,7 @@ namespace ox {
 std::pair<vuk::Texture, vuk::Future> Prefilter::generate_brdflut() {
   constexpr uint32_t dim = 512;
 
-  const auto vk_context = VulkanContext::get();
+  const auto vk_context = VkContext::get();
 
   constexpr auto pipeline_name = "BRDFLUTPipeline";
 
@@ -67,7 +67,7 @@ std::pair<vuk::Texture, vuk::Future> Prefilter::generate_brdflut() {
 
 std::pair<vuk::Texture, vuk::Future> Prefilter::generate_irradiance_cube(const Shared<Mesh>& skybox,
                                                                         const Shared<TextureAsset>& cubemap) {
-  const auto vk_context = VulkanContext::get();
+  const auto vk_context = VkContext::get();
   constexpr int32_t dim = 64;
 
   const auto capture_projection = glm::perspective(glm::radians(90.0f), 1.0f, 0.1f, 10.0f);
@@ -146,7 +146,7 @@ std::pair<vuk::Texture, vuk::Future> Prefilter::generate_irradiance_cube(const S
 
 std::pair<vuk::Texture, vuk::Future> Prefilter::generate_prefiltered_cube(const Shared<Mesh>& skybox,
                                                                                      const Shared<TextureAsset>& cubemap) {
-  const auto vk_context = VulkanContext::get();
+  const auto vk_context = VkContext::get();
   constexpr int32_t dim = 512;
 
   constexpr auto pipeline_name = "PrefilterPipeline";

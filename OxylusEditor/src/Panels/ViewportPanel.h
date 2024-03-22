@@ -55,7 +55,7 @@ private:
         if (inside == (uint32_t)Intersection::Outside)
           continue;
 
-        const Vec2 screen_pos = Math::world_to_screen(pos, view_proj, width, height, xpos, ypos);
+        const Vec2 screen_pos = math::world_to_screen(pos, view_proj, width, height, xpos, ypos);
         ImGui::SetCursorPos({screen_pos.x - ImGui::GetFontSize() * 0.5f, screen_pos.y - ImGui::GetFontSize() * 0.5f});
         ImGui::PushStyleColor(ImGuiCol_Button, ImVec4(0.7f, 0.7f, 0.7f, 0.0f));
         ImGui::PushStyleColor(ImGuiCol_ButtonHovered, ImVec4(0.1f, 0.1f, 0.1f, 0.1f));
