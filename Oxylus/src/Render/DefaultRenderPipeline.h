@@ -32,6 +32,7 @@ private:
   Camera* current_camera = nullptr;
 
   bool initalized = false;
+  bool ran_static_passes = false;
 
   struct MeshInstance {
     Mat4 transform;
@@ -340,15 +341,16 @@ private:
   void update_frame_data(vuk::Allocator& allocator);
   void create_static_resources(vuk::Allocator& allocator);
   void create_dynamic_textures(vuk::Allocator& allocator, const vuk::Dimension3D& dim);
-  void create_descriptor_sets(vuk::Allocator& allocator, vuk::Context& ctx);
+  void create_descriptor_sets(vuk::Allocator& allocator);
+  void run_static_passes(vuk::Allocator& allocator);
 
   void update_skybox(const SkyboxLoadEvent& e);
   void generate_prefilter(vuk::Allocator& allocator);
 
   void sky_envmap_pass(const Shared<vuk::RenderGraph>& rg);
   void sky_view_lut_pass(const Shared<vuk::RenderGraph>& rg);
-  void sky_transmittance_pass(const Shared<vuk::RenderGraph>& rg);
-  void sky_multiscatter_pass(const Shared<vuk::RenderGraph>& rg);
+  [[nodiscard]] vuk::Future sky_transmittance_pass();
+  [[nodiscard]] vuk::Future sky_multiscatter_pass();
   void depth_pre_pass(const Shared<vuk::RenderGraph>& rg);
   void render_meshes(const RenderQueue& render_queue,
                      vuk::CommandBuffer& command_buffer,

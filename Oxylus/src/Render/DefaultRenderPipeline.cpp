@@ -31,27 +31,6 @@
 #include "Utils/RectPacker.h"
 
 namespace ox {
-static std::vector<uint32_t> cumulated_material_map = {};
-
-static std::vector<uint32_t> cumulate_material_map(const ankerl::unordered_dense::map<uint32_t, uint32_t>& material_map) {
-  OX_SCOPED_ZONE;
-  std::vector<uint32_t> cumulative_sums;
-  uint32_t sum = 0;
-  for (const auto& entry : material_map) {
-    sum += entry.second;
-    cumulative_sums.emplace_back(sum);
-  }
-  return cumulative_sums;
-}
-
-static uint32_t get_material_index(const uint32_t mesh_index, const uint32_t material_index) {
-  OX_SCOPED_ZONE;
-  if (mesh_index == 0)
-    return material_index;
-
-  return cumulated_material_map[mesh_index - 1] + material_index;
-}
-
 VkDescriptorSetLayoutBinding bindless_binding(uint32_t binding, vuk::DescriptorType descriptor_type, uint32_t count = 1024) {
   return {
     .binding = binding,
@@ -64,9 +43,7 @@ VkDescriptorSetLayoutBinding bindless_binding(uint32_t binding, vuk::DescriptorT
 void DefaultRenderPipeline::init(vuk::Allocator& allocator) {
   OX_SCOPED_ZONE;
 
-  Timer timer = {};
-
-  auto& ctx = allocator.get_context();
+  const Timer timer = {};
 
   load_pipelines(allocator);
 
@@ -74,11 +51,10 @@ void DefaultRenderPipeline::init(vuk::Allocator& allocator) {
     return;
 
   ADD_TASK_TO_PIPE(this, this->m_quad = RendererCommon::generate_quad(););
-
   ADD_TASK_TO_PIPE(this, this->m_cube = RendererCommon::generate_cube(););
 
   create_static_resources(allocator);
-  create_descriptor_sets(allocator, ctx);
+  create_descriptor_sets(allocator);
 
   App::get_system<TaskScheduler>()->wait_for_all();
 
@@ -650,7 +626,8 @@ void DefaultRenderPipeline::create_dynamic_textures(vuk::Allocator& allocator, c
   }
 }
 
-void DefaultRenderPipeline::create_descriptor_sets(vuk::Allocator& allocator, vuk::Context& ctx) {
+void DefaultRenderPipeline::create_descriptor_sets(vuk::Allocator& allocator) {
+  auto& ctx = allocator.get_context();
   descriptor_set_00 = ctx.create_persistent_descriptorset(allocator, *ctx.get_named_pipeline("pbr_pipeline"), 0, 64);
 
   const vuk::Sampler linear_sampler_clamped = ctx.acquire_sampler(vuk::LinearSamplerClamped, ctx.get_frame_count());
@@ -665,6 +642,18 @@ void DefaultRenderPipeline::create_descriptor_sets(vuk::Allocator& allocator, vu
   descriptor_set_00->update_sampler(8, 3, nearest_sampler_clamped);
   descriptor_set_00->update_sampler(8, 4, nearest_sampler_repeated);
   descriptor_set_00->update_sampler(9, 0, cmp_depth_sampler);
+}
+
+void DefaultRenderPipeline::run_static_passes(vuk::Allocator& allocator) {
+  vuk::Compiler compiler{};
+
+  auto transmittance_fut = sky_transmittance_pass();
+  transmittance_fut.wait(allocator, compiler);
+
+  auto multiscatter_fut = sky_multiscatter_pass();
+  multiscatter_fut.wait(allocator, compiler);
+
+  ran_static_passes = true;
 }
 
 void DefaultRenderPipeline::on_dispatcher_events(EventDispatcher& dispatcher) {
@@ -733,8 +722,6 @@ Unique<vuk::Future> DefaultRenderPipeline::on_render(vuk::Allocator& frame_alloc
     material_map.emplace(batch.component_index, (uint32_t)mesh_component_list[batch.component_index].materials.size());
   }
 
-  cumulated_material_map = cumulate_material_map(material_map);
-
   const auto rg = create_shared<vuk::RenderGraph>("DefaultRPRenderGraph");
 
   // dummy images
@@ -745,6 +732,9 @@ Unique<vuk::Future> DefaultRenderPipeline::on_render(vuk::Allocator& frame_alloc
 
   rg->attach_and_clear_image("black_image_uint", {.format = vuk::Format::eR8Uint, .sample_count = vuk::SampleCountFlagBits::e1}, vuk::Black<float>);
   rg->inference_rule("black_image_uint", vuk::same_shape_as("final_image"));
+
+  rg->attach_image("sky_transmittance_lut+", vuk::ImageAttachment::from_texture(sky_transmittance_lut));
+  rg->attach_image("sky_multiscatter_lut+", vuk::ImageAttachment::from_texture(sky_multiscatter_lut));
 
   Vec3 sun_direction = {0, 1, 0};
   Vec3 sun_color = {};
@@ -760,6 +750,10 @@ Unique<vuk::Future> DefaultRenderPipeline::on_render(vuk::Allocator& frame_alloc
   create_dynamic_textures(*vk_context->superframe_allocator, dim);
   update_frame_data(frame_allocator);
 
+  if (!ran_static_passes) {
+    run_static_passes(*vk_context->superframe_allocator);
+  }
+
   if (dir_light_data && dir_light_data->cast_shadows) {
     auto attachment = vuk::ImageAttachment::from_texture(shadow_map_atlas);
     rg->attach_and_clear_image("shadow_map", attachment, vuk::DepthZero);
@@ -773,9 +767,9 @@ Unique<vuk::Future> DefaultRenderPipeline::on_render(vuk::Allocator& frame_alloc
   if (RendererCVar::cvar_gtao_enable.get())
     gtao_pass(frame_allocator, rg);
 
-  sky_transmittance_pass(rg);
-  sky_multiscatter_pass(rg);
+#if 0 // unused
   sky_view_lut_pass(rg);
+#endif
 
   sky_envmap_pass(rg);
 
@@ -1510,41 +1504,47 @@ void DefaultRenderPipeline::generate_prefilter(vuk::Allocator& allocator) {
   prefiltered_texture = std::move(prefilter_img);
 }
 
-void DefaultRenderPipeline::sky_transmittance_pass(const Shared<vuk::RenderGraph>& rg) {
+vuk::Future DefaultRenderPipeline::sky_transmittance_pass() {
   OX_SCOPED_ZONE;
 
   IVec2 lut_size = {256, 64};
 
+  const auto rg = create_shared<vuk::RenderGraph>("sky_transmittance_pass");
+
   rg->attach_and_clear_image("sky_transmittance_lut", vuk::ImageAttachment::from_texture(sky_transmittance_lut), vuk::Black<float>);
 
-  rg->add_pass({.name = "sky_transmittance_lut_pass",
-                .resources =
-                  {
-                    "sky_transmittance_lut"_image >> vuk::eComputeRW,
-                  },
-                .execute = [this, lut_size](vuk::CommandBuffer& command_buffer) {
+  const std::vector<vuk::Resource> resources = {"sky_transmittance_lut"_image >> vuk::eComputeRW};
+
+  rg->add_pass({.name = "sky_transmittance_lut_pass", .resources = resources, .execute = [this, lut_size](vuk::CommandBuffer& command_buffer) {
     command_buffer.bind_persistent(0, *descriptor_set_00)
       .bind_compute_pipeline("sky_transmittance_pipeline")
       .dispatch((lut_size.x + 8 - 1) / 8, (lut_size.y + 8 - 1) / 8);
   }});
+
+  return transition(vuk::Future{rg, "sky_transmittance_lut+"}, vuk::eFragmentSampled);
 }
 
-void DefaultRenderPipeline::sky_multiscatter_pass(const Shared<vuk::RenderGraph>& rg) {
+vuk::Future DefaultRenderPipeline::sky_multiscatter_pass() {
   OX_SCOPED_ZONE;
 
   IVec2 lut_size = {32, 32};
 
+  const auto rg = create_shared<vuk::RenderGraph>("sky_multiscatter_pass");
+
   rg->attach_and_clear_image("sky_multiscatter_lut", vuk::ImageAttachment::from_texture(sky_multiscatter_lut), vuk::Black<float>);
 
-  rg->add_pass({.name = "sky_multiscatter_lut_pass",
-                .resources =
-                  {
-                    "sky_multiscatter_lut"_image >> vuk::eComputeRW,
-                    "sky_transmittance_lut+"_image >> vuk::eComputeSampled,
-                  },
-                .execute = [this, lut_size](vuk::CommandBuffer& command_buffer) {
+  rg->attach_image("sky_transmittance_lut+", vuk::ImageAttachment::from_texture(sky_transmittance_lut));
+
+  const std::vector<vuk::Resource> resources = {
+    "sky_multiscatter_lut"_image >> vuk::eComputeRW,
+    "sky_transmittance_lut+"_image >> vuk::eComputeSampled,
+  };
+
+  rg->add_pass({.name = "sky_multiscatter_lut_pass", .resources = resources, .execute = [this, lut_size](vuk::CommandBuffer& command_buffer) {
     command_buffer.bind_compute_pipeline("sky_multiscatter_pipeline").bind_persistent(0, *descriptor_set_00).dispatch(lut_size.x, lut_size.y);
   }});
+
+  return transition(vuk::Future{rg, "sky_multiscatter_lut+"}, vuk::eFragmentSampled);
 }
 
 void DefaultRenderPipeline::sky_envmap_pass(const Shared<vuk::RenderGraph>& rg) {
@@ -1555,12 +1555,9 @@ void DefaultRenderPipeline::sky_envmap_pass(const Shared<vuk::RenderGraph>& rg) 
   attachment.view_type = vuk::ImageViewType::eCube;
   rgp->attach_and_clear_image("sky_envmap_image", attachment, vuk::Black<float>);
 
-  rgp->add_pass({.name = "sky_envmap_pass",
-                 .resources =
-                   {
-                     "sky_envmap_image"_image >> vuk::eColorRW,
-                   },
-                 .execute = [this](vuk::CommandBuffer& command_buffer) {
+  const std::vector<vuk::Resource> resources = {"sky_envmap_image"_image >> vuk::eColorRW};
+
+  rgp->add_pass({.name = "sky_envmap_pass", .resources = resources, .execute = [this](vuk::CommandBuffer& command_buffer) {
     const auto capture_projection = glm::perspective(glm::radians(90.0f), 1.0f, 0.1f, 90.0f);
     const Mat4 capture_views[] = {
       // POSITIVE_X
