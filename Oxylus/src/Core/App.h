@@ -22,7 +22,7 @@ struct ApplicationCommandLineArgs {
   char** args = nullptr;
 
   const char* operator[](int index) const {
-    OX_CORE_ASSERT(index < count)
+    OX_CHECK_LT(index, count);
     return args[index];
   }
 };
@@ -66,7 +66,7 @@ public:
   template <typename T, typename... Args>
   static void register_system(Args&&... args) {
     auto typeName = typeid(T).hash_code();
-    OX_CORE_ASSERT(!instance->system_registry.contains(typeName), "Registering system more than once.");
+    OX_ASSERT(!instance->system_registry.contains(typeName), "Registering system more than once.");
 
     Shared<T> system = create_shared<T>(std::forward<Args>(args)...);
     instance->system_registry.emplace(typeName, std::move(system));

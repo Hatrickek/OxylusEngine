@@ -11,6 +11,7 @@
 #include "Mesh.h"
 
 #include "Assets/AssetManager.h"
+#include "Core/FileSystem.h"
 
 #include "Core/Types.h"
 

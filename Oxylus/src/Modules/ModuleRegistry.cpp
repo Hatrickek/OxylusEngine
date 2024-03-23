@@ -21,12 +21,12 @@ Module* ModuleRegistry::add_lib(const std::string& name, std::string_view path) 
     auto module = create_unique<Module>(std::move(lib), interface);
     libs.emplace(name, std::move(module));
 
-    OX_CORE_INFO("Successfully loaded module: {}", name);
+    OX_LOG_INFO("Successfully loaded module: {}", name);
 
     return libs[name].get();
   }
   catch (const std::exception& exc) {
-    OX_CORE_ERROR("{}", exc.what());
+    OX_LOG_ERROR("{}", exc.what());
     return nullptr;
   }
 }
@@ -36,7 +36,7 @@ Module* ModuleRegistry::get_lib(const std::string& name) {
     return libs.at(name).get();
   }
   catch ([[maybe_unused]] const std::exception& exc) {
-    OX_CORE_ERROR("Module {} doesn't exists or has not been registered.", name);
+    OX_LOG_ERROR("Module {} doesn't exists or has not been registered.", name);
     return nullptr;
   }
 }

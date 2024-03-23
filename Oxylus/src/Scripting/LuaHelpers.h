@@ -9,7 +9,7 @@
 
 template <typename Component>
 auto is_valid(const entt::registry* registry, entt::entity entity) {
-  OX_CORE_ASSERT(registry);
+  OX_CHECK_NULL(registry);
   return registry->valid(entity);
 }
 
@@ -18,7 +18,7 @@ auto emplace_component(entt::registry* registry,
                        entt::entity entity,
                        const sol::table& instance,
                        sol::this_state s) {
-  OX_CORE_ASSERT(registry);
+  OX_CHECK_NULL(registry);
   auto& comp = registry->emplace_or_replace<Component>(entity, instance.valid() ? instance.as<Component>() : Component{});
   return sol::make_reference(s, std::ref(comp));
 }
@@ -27,26 +27,26 @@ template <typename Component>
 auto get_component(entt::registry* registry,
                    entt::entity entity,
                    sol::this_state s) {
-  OX_CORE_ASSERT(registry);
+  OX_CHECK_NULL(registry);
   auto& comp = registry->get_or_emplace<Component>(entity);
   return sol::make_reference(s, std::ref(comp));
 }
 
 template <typename Component>
 bool has_component(entt::registry* registry, entt::entity entity) {
-  OX_CORE_ASSERT(registry);
+  OX_CHECK_NULL(registry);
   return registry->any_of<Component>(entity);
 }
 
 template <typename Component>
 auto remove_component(entt::registry* registry, entt::entity entity) {
-  OX_CORE_ASSERT(registry);
+  OX_CHECK_NULL(registry);
   return registry->remove<Component>(entity);
 }
 
 template <typename Component>
 void clear_component(entt::registry* registry) {
-  OX_CORE_ASSERT(registry);
+  OX_CHECK_NULL(registry);
   registry->clear<Component>();
 }
 
@@ -67,7 +67,7 @@ void register_meta_component() {
 
 template <typename Event>
 auto connect_listener(entt::dispatcher* dispatcher, const sol::function& f) {
-  OX_CORE_ASSERT(dispatcher && f.valid());
+  OX_ASSERT(dispatcher && f.valid());
 
   struct script_listener {
     script_listener(entt::dispatcher& dispatcher, sol::function f)
@@ -100,25 +100,25 @@ auto connect_listener(entt::dispatcher* dispatcher, const sol::function& f) {
 
 template <typename Event>
 void trigger_event(entt::dispatcher* dispatcher, const sol::table& evt) {
-  OX_CORE_ASSERT(dispatcher && evt.valid());
+  OX_ASSERT(dispatcher && evt.valid());
   dispatcher->trigger(evt.as<Event>());
 }
 
 template <typename Event>
 void enqueue_event(entt::dispatcher* dispatcher, const sol::table& evt) {
-  OX_CORE_ASSERT(dispatcher && evt.valid());
+  OX_ASSERT(dispatcher && evt.valid());
   dispatcher->enqueue(evt.as<Event>());
 }
 
 template <typename Event>
 void clear_event(entt::dispatcher* dispatcher) {
-  OX_CORE_ASSERT(dispatcher);
+  OX_CHECK_NULL(dispatcher);
   dispatcher->clear<Event>();
 }
 
 template <typename Event>
 void update_event(entt::dispatcher* dispatcher) {
-  OX_CORE_ASSERT(dispatcher);
+  OX_CHECK_NULL(dispatcher);
   dispatcher->update<Event>();
 }
 

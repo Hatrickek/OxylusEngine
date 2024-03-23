@@ -7,7 +7,7 @@
 namespace ox {
 void HotReloadableScenes::init() {
   if (!std::filesystem::exists(scene_path)) {
-    OX_CORE_ERROR("System HotReloadableScene: Scene path doesn't exist: {0}", scene_path);
+    OX_LOG_ERROR("System HotReloadableScene: Scene path doesn't exist: {0}", scene_path);
     return;
   }
   m_last_write_time = std::filesystem::last_write_time(scene_path);

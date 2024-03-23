@@ -56,9 +56,8 @@ void LuaManager::bind_log() const {
   OX_SCOPED_ZONE;
   auto log = m_state->create_table("Log");
 
-  SET_LOG_FUNCTIONS(log, "trace", OX_CORE_TRACE)
-  SET_LOG_FUNCTIONS(log, "info", OX_CORE_INFO)
-  SET_LOG_FUNCTIONS(log, "warn", OX_CORE_WARN)
-  SET_LOG_FUNCTIONS(log, "error", OX_CORE_ERROR)
+  SET_LOG_FUNCTIONS(log, "info", OX_LOG_INFO)
+  SET_LOG_FUNCTIONS(log, "warn", OX_LOG_WARN)
+  SET_LOG_FUNCTIONS(log, "error", OX_LOG_ERROR)
 }
 }

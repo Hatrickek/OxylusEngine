@@ -80,8 +80,8 @@ void Renderer::draw(VkContext* context, ImGuiLayer* imgui_layer, LayerStack& lay
 
     auto dim = rp->get_dimension();
 
-    OX_CORE_ASSERT(dim.extent.width > 0)
-    OX_CORE_ASSERT(dim.extent.height > 0)
+    OX_CHECK_GT(dim.extent.width, 0);
+    OX_CHECK_GT(dim.extent.height, 0);
 
     // recover if the size is somehow 0
     if (dim.extent.width <= 0)

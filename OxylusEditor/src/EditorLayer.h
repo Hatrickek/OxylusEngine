@@ -39,7 +39,7 @@ public:
 
   template <typename T> T* get_panel() {
     const auto hash_code = typeid(T).hash_code();
-    OX_CORE_ASSERT(editor_panels.contains(hash_code));
+    OX_ASSERT(editor_panels.contains(hash_code));
     return dynamic_cast<T*>(editor_panels[hash_code].get());
   }
 

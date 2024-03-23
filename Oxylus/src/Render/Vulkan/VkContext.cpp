@@ -39,18 +39,17 @@ static VkBool32 DebugCallback(const VkDebugUtilsMessageSeverityFlagBitsEXT messa
   debug_message << prefix << "[" << pCallbackData->messageIdNumber << "][" << pCallbackData->pMessageIdName << "] : " << pCallbackData->pMessage;
 
   if (messageSeverity & VK_DEBUG_UTILS_MESSAGE_SEVERITY_VERBOSE_BIT_EXT) {
-    OX_CORE_WARN("{}", debug_message.str());
+    OX_LOG_INFO("{}", debug_message.str());
   }
   else if (messageSeverity & VK_DEBUG_UTILS_MESSAGE_SEVERITY_INFO_BIT_EXT) {
-    OX_CORE_INFO("{}", debug_message.str());
+    OX_LOG_INFO("{}", debug_message.str());
   }
   else if (messageSeverity & VK_DEBUG_UTILS_MESSAGE_SEVERITY_WARNING_BIT_EXT) {
-    fmt::println("{}", debug_message.str());
+    OX_LOG_WARN(debug_message.str().c_str());
     OX_DEBUGBREAK();
   }
   else if (messageSeverity & VK_DEBUG_UTILS_MESSAGE_SEVERITY_ERROR_BIT_EXT) {
-    fmt::println("{}", debug_message.str());
-    OX_DEBUGBREAK();
+    OX_LOG_FATAL("{}", debug_message.str());
   }
   return VK_FALSE;
 }
@@ -98,7 +97,7 @@ inline VkSurfaceKHR create_surface_glfw(const VkInstance instance, GLFWwindow* w
     const char* error_msg;
     const int ret = glfwGetError(&error_msg);
     if (ret != 0) {
-      OX_CORE_ERROR("GLFW error: {}", error_msg);
+      OX_LOG_ERROR("GLFW error: {}", error_msg);
     }
     surface = nullptr;
   }
@@ -123,7 +122,7 @@ void VkContext::create_context(const AppSpec& spec) {
   }
 
   if (enable_validation) {
-    OX_CORE_INFO("Vulkan validation layers enabled.");
+    OX_LOG_INFO("Vulkan validation layers enabled.");
     builder.request_validation_layers()
            .set_debug_callback([](const VkDebugUtilsMessageSeverityFlagBitsEXT messageSeverity,
                                   const VkDebugUtilsMessageTypeFlagsEXT messageType,
@@ -135,7 +134,7 @@ void VkContext::create_context(const AppSpec& spec) {
 
   auto inst_ret = builder.build();
   if (!inst_ret) {
-    OX_CORE_ERROR("Couldn't initialise instance");
+    OX_LOG_ERROR("Couldn't initialise instance");
   }
 
   vkb_instance = inst_ret.value();
@@ -190,7 +189,7 @@ void VkContext::create_context(const AppSpec& spec) {
 
   auto phys_ret = selector.select();
   if (!phys_ret) {
-    OX_CORE_ERROR("{}", phys_ret.full_error().type.message());
+    OX_LOG_ERROR("{}", phys_ret.full_error().type.message());
   }
   else {
     vkbphysical_device = phys_ret.value();
@@ -202,7 +201,7 @@ void VkContext::create_context(const AppSpec& spec) {
 
   auto dev_ret = device_builder.build();
   if (!dev_ret) {
-    OX_CORE_ERROR("Couldn't create device");
+    OX_LOG_ERROR("Couldn't create device");
   }
   vkb_device = dev_ret.value();
   graphics_queue = vkb_device.get_queue(vkb::QueueType::graphics).value();
@@ -255,7 +254,7 @@ void VkContext::create_context(const AppSpec& spec) {
       }
     });
 
-  OX_CORE_INFO("Vulkan context initialized using device: {}", device_name);
+  OX_LOG_INFO("Vulkan context initialized using device: {}", device_name);
 }
 
 void VkContext::rebuild_swapchain(const vuk::PresentModeKHR new_present_mode) {

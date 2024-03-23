@@ -21,14 +21,14 @@ LuaSystem::LuaSystem(std::string path) : file_path(std::move(path)) {
 void LuaSystem::check_result(const sol::protected_function_result& result, const char* func_name) {
   if (!result.valid()) {
     const sol::error err = result;
-    OX_CORE_ERROR("Error: {0}", err.what());
+    OX_LOG_ERROR("Error: {0}", err.what());
   }
 }
 
 void LuaSystem::init_script(const std::string& path) {
   OX_SCOPED_ZONE;
   if (!std::filesystem::exists(path)) {
-    OX_CORE_ERROR("Couldn't find the script file! {}", path);
+    OX_LOG_ERROR("Couldn't find the script file! {}", path);
     return;
   }
 
@@ -39,8 +39,8 @@ void LuaSystem::init_script(const std::string& path) {
 
   if (!load_file_result.valid()) {
     const sol::error err = load_file_result;
-    OX_CORE_ERROR("Failed to Execute Lua script {0}", file_path);
-    OX_CORE_ERROR("Error : {0}", err.what());
+    OX_LOG_ERROR("Failed to Execute Lua script {0}", file_path);
+    OX_LOG_ERROR("Error : {0}", err.what());
     std::string error = std::string(err.what());
 
     const auto linepos = error.find(".lua:");
@@ -54,7 +54,7 @@ void LuaSystem::init_script(const std::string& path) {
   }
 
   for (auto [l, e] : errors) {
-    OX_CORE_ERROR("{} {}", l, e);
+    OX_LOG_ERROR("{} {}", l, e);
   }
 
   on_init_func = create_unique<sol::protected_function>((*environment)["on_init"]);

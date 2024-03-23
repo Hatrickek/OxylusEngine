@@ -2,11 +2,12 @@
 
 #include <icons/IconsMaterialDesignIcons.h>
 
-#include "EditorContext.h"
-#include "EditorLayer.h"
 #include "Assets/AssetManager.h"
 #include "Core/App.h"
+#include "Core/FileSystem.h"
 #include "Core/Project.h"
+#include "EditorContext.h"
+#include "EditorLayer.h"
 
 #include "Thread/ThreadManager.h"
 

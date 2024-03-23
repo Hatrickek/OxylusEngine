@@ -15,9 +15,9 @@ void AudioEngine::init() {
 
   engine = new ma_engine();
   const ma_result result = ma_engine_init(&config, engine);
-  OX_CORE_ASSERT(result == MA_SUCCESS, "Failed to initialize audio engine!")
+  OX_CHECK_EQ(result, MA_SUCCESS, "Failed to initialize audio engine!");
 
-  OX_CORE_INFO("Initalized audio engine.");
+  OX_LOG_INFO("Initalized audio engine.");
 }
 
 void AudioEngine::deinit() {

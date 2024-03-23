@@ -10,6 +10,7 @@
 
 #include "Utils/ColorUtils.h"
 
+#include "Core/FileSystem.h"
 #include "EditorLayer.h"
 #include "Scene/Entity.h"
 #include "UI/OxUI.h"
@@ -52,7 +53,7 @@ void draw_component(const char* name, entt::registry& reg, Entity entity, UIFunc
     ImGui::SetCursorPosY(ImGui::GetCursorPosY() + line_height * 0.25f);
 
     const size_t id = entt::type_id<T>().hash();
-    OX_CORE_ASSERT(EditorTheme::component_icon_map.contains(typeid(T).hash_code()));
+    OX_ASSERT(EditorTheme::component_icon_map.contains(typeid(T).hash_code()));
     std::string name_str = StringUtils::from_char8_t(EditorTheme::component_icon_map[typeid(T).hash_code()]);
     name_str = name_str.append(name);
     const bool open = ImGui::TreeNodeEx(reinterpret_cast<void*>(id), TREE_FLAGS, "%s", name_str.c_str());
@@ -187,7 +188,7 @@ template <typename Component> void InspectorPanel::draw_add_component(entt::regi
     if (!reg.all_of<Component>(entity))
       reg.emplace<Component>(entity);
     else
-      OX_CORE_ERROR("Entity already has the {}!", typeid(Component).name());
+      OX_LOG_ERROR("Entity already has the {}!", typeid(Component).name());
     ImGui::CloseCurrentPopup();
   }
 }

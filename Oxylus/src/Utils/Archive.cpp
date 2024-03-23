@@ -74,9 +74,9 @@ size_t Archive::write_unknown_jump_position() {
 }
 
 void Archive::patch_unknown_jump_position(size_t offset) {
-  OX_CORE_ASSERT(!read_mode)
-  OX_CORE_ASSERT(!_data.empty())
-  OX_CORE_ASSERT(offset + sizeof(uint64_t) < _data.size())
+  OX_ASSERT(!read_mode);
+  OX_ASSERT(!_data.empty());
+  OX_ASSERT(offset + sizeof(uint64_t) < _data.size());
   *(uint64_t*)(_data.data() + offset) = uint64_t(pos);
 }
 } // namespace ox

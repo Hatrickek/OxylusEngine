@@ -1,5 +1,6 @@
 #include "ProjectSerializer.h"
 
+#include "FileSystem.h"
 #include "Utils/Log.h"
 #include "Utils/Toml.h"
 
@@ -26,11 +27,11 @@ bool ProjectSerializer::serialize(const std::string& file_path) const {
   return true;
 }
 
-bool ProjectSerializer::deserialize(std::string file_path) const {
+bool ProjectSerializer::deserialize(const std::string& file_path) const {
   auto& [name, start_scene, asset_directory, module_name] = project->get_config();
   const auto content = FileSystem::read_file(file_path);
   if (content.empty()) {
-    OX_CORE_ASSERT(!content.empty(), fmt::format("Couldn't load project file: {0}", file_path).c_str());
+    OX_ASSERT(!content.empty(), "Couldn't load project file: {0}", file_path);
     return false;
   }
 
@@ -43,7 +44,7 @@ bool ProjectSerializer::deserialize(std::string file_path) const {
     start_scene = project_node["start_scene"].as_string()->get();
     module_name = project_node["module_name"].as_string()->get();
   } catch (const std::exception& exc) {
-    OX_CORE_ERROR("{}", exc.what());
+    OX_LOG_ERROR("{}", exc.what());
   }
 
   project->set_project_file_path(file_path);

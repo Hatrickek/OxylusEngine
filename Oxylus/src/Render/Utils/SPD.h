@@ -36,7 +36,7 @@ inline Future generate_mips_spd(Context& ctx, Future src, Future dst, ReductionT
       const auto src_ia = *command_buffer.get_resource_image_attachment("_src");
       const auto extent = src_ia.extent.extent;
       const auto mips = src_ia.level_count;
-      OX_CORE_ASSERT(mips <= 13)
+      OX_ASSERT(mips <= 13);
       std::array<ImageAttachment, 13> mip_ia{};
       for (uint32_t i = 0; i < mips; ++i) {
         auto ia = src_ia;

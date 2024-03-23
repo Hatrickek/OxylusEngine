@@ -10,42 +10,31 @@
 #include "Utils/StringUtils.h"
 
 namespace ox {
-static ImVec4 get_color(const fmtlog::LogLevel level) {
-  switch (level) {
-    case fmtlog::LogLevel::INF: return {0, 1, 0, 1};
-    case fmtlog::LogLevel::WRN: return {0.9f, 0.6f, 0.2f, 1};
-    case fmtlog::LogLevel::ERR: return {1, 0, 0, 1};
-    case fmtlog::LogLevel::DBG: return {1, 1, 1, 1};
-    default: return {1, 1, 1, 1};
+static ImVec4 get_color(const loguru::Verbosity verb) {
+  switch (verb) {
+    case loguru::Verbosity_INFO   : return {0, 1, 0, 1};
+    case loguru::Verbosity_WARNING: return {0.9f, 0.6f, 0.2f, 1};
+    case loguru::Verbosity_ERROR  : return {1, 0, 0, 1};
+    default                       : return {1, 1, 1, 1};
   }
 }
 
-static const char8_t* get_level_icon(fmtlog::LogLevel level) {
+static const char8_t* get_level_icon(const loguru::Verbosity level) {
   switch (level) {
-    case fmtlog::LogLevel::DBG: return ICON_MDI_MESSAGE_TEXT;
-    case fmtlog::LogLevel::INF: return ICON_MDI_INFORMATION;
-    case fmtlog::LogLevel::WRN: return ICON_MDI_ALERT;
-    case fmtlog::LogLevel::ERR: return ICON_MDI_CLOSE_OCTAGON;
-    default: ;
+    case loguru::Verbosity_INFO   : return ICON_MDI_INFORMATION;
+    case loguru::Verbosity_WARNING: return ICON_MDI_ALERT;
+    case loguru::Verbosity_ERROR  : return ICON_MDI_CLOSE_OCTAGON;
+    default                       :;
   }
 
   return u8"Unknown name";
 }
 
-void RuntimeConsoleLogSink::log(int64_t ns,
-                                const fmtlog::LogLevel level,
-                                fmt::string_view location,
-                                size_t base_pos,
-                                fmt::string_view thread_name,
-                                const fmt::string_view msg,
-                                size_t body_pos,
-                                size_t log_file_pos) {
-  const auto console = reinterpret_cast<RuntimeConsole*>(user_data);
-  console->add_log(msg.data(), level);
-}
-
 RuntimeConsole::RuntimeConsole() {
-  Log::register_sink<RuntimeConsoleLogSink>(this);
+  Log::add_callback("runtime_console", [](void* user_data, const loguru::Message& message) {
+    const auto console = reinterpret_cast<RuntimeConsole*>(user_data);
+    console->add_log(message.message, message.verbosity);
+  }, this, loguru::Verbosity_INFO);
 
   // Default commands
   register_command("quit", "", [] { App::get()->close(); });
@@ -55,9 +44,11 @@ RuntimeConsole::RuntimeConsole() {
   request_scroll_to_bottom = true;
 }
 
-void RuntimeConsole::register_command(const std::string& command,
-                                      const std::string& on_succes_log,
-                                      const std::function<void()>& action) {
+RuntimeConsole::~RuntimeConsole() {
+  Log::remove_callback("runtime_console");
+}
+
+void RuntimeConsole::register_command(const std::string& command, const std::string& on_succes_log, const std::function<void()>& action) {
   command_map.emplace(command, ConsoleCommand{nullptr, nullptr, nullptr, action, on_succes_log});
 }
 
@@ -73,17 +64,14 @@ void RuntimeConsole::register_command(const std::string& command, const std::str
   command_map.emplace(command, ConsoleCommand{nullptr, nullptr, value, nullptr, on_succes_log});
 }
 
-void RuntimeConsole::add_log(const char* fmt, fmtlog::LogLevel level) {
-  std::unique_lock lock(log_mutex);
+void RuntimeConsole::add_log(const char* fmt, loguru::Verbosity verb) {
   if ((uint32_t)text_buffer.size() >= MAX_TEXT_BUFFER_SIZE)
     text_buffer.erase(text_buffer.begin());
-  text_buffer.emplace_back(fmt, level);
+  text_buffer.emplace_back(fmt, verb);
   request_scroll_to_bottom = true;
 }
 
-void RuntimeConsole::clear_log() {
-  text_buffer.clear();
-}
+void RuntimeConsole::clear_log() { text_buffer.clear(); }
 
 void RuntimeConsole::on_imgui_render() {
   if (ImGui::IsKeyPressed(ImGuiKey_GraveAccent, false)) {
@@ -100,8 +88,8 @@ void RuntimeConsole::on_imgui_render() {
     ImVec2 size = {ImGui::GetMainViewport()->WorkSize.x, ImGui::GetMainViewport()->WorkSize.y * animation_counter};
     ImGui::SetNextWindowSize(size, ImGuiCond_Always);
 
-    constexpr ImGuiWindowFlags windowFlags = ImGuiWindowFlags_NoNavInputs | ImGuiWindowFlags_NoDecoration |
-                                             ImGuiWindowFlags_MenuBar | ImGuiWindowFlags_NoCollapse;
+    constexpr ImGuiWindowFlags windowFlags =
+      ImGuiWindowFlags_NoNavInputs | ImGuiWindowFlags_NoDecoration | ImGuiWindowFlags_MenuBar | ImGuiWindowFlags_NoCollapse;
     ImGui::PushStyleVar(ImGuiStyleVar_WindowRounding, 0.0f);
     ImGui::PushStyleColor(ImGuiCol_FrameBg, ImVec4(0.000f, 0.000f, 0.000f, 1.000f));
     ImGui::PushStyleColor(ImGuiCol_WindowBg, ImVec4(0.000f, 0.000f, 0.000f, 0.784f));
@@ -113,17 +101,14 @@ void RuntimeConsole::on_imgui_render() {
         if (ImGui::MenuItem(StringUtils::from_char8_t(ICON_MDI_TRASH_CAN))) {
           clear_log();
         }
-        if (ImGui::MenuItem(StringUtils::from_char8_t(ICON_MDI_MESSAGE_TEXT), nullptr, text_filter == fmtlog::DBG)) {
-          text_filter = text_filter == fmtlog::DBG ? fmtlog::OFF : fmtlog::DBG;
+        if (ImGui::MenuItem(StringUtils::from_char8_t(ICON_MDI_INFORMATION), nullptr, text_filter == loguru::Verbosity_INFO)) {
+          text_filter = text_filter == loguru::Verbosity_INFO ? loguru::Verbosity_OFF : loguru::Verbosity_INFO;
         }
-        if (ImGui::MenuItem(StringUtils::from_char8_t(ICON_MDI_INFORMATION), nullptr, text_filter == fmtlog::INF)) {
-          text_filter = text_filter == fmtlog::INF ? fmtlog::OFF : fmtlog::INF;
+        if (ImGui::MenuItem(StringUtils::from_char8_t(ICON_MDI_ALERT), nullptr, text_filter == loguru::Verbosity_WARNING)) {
+          text_filter = text_filter == loguru::Verbosity_WARNING ? loguru::Verbosity_OFF : loguru::Verbosity_WARNING;
         }
-        if (ImGui::MenuItem(StringUtils::from_char8_t(ICON_MDI_ALERT), nullptr, text_filter == fmtlog::WRN)) {
-          text_filter = text_filter == fmtlog::WRN ? fmtlog::OFF : fmtlog::WRN;
-        }
-        if (ImGui::MenuItem(StringUtils::from_char8_t(ICON_MDI_CLOSE_OCTAGON), nullptr, text_filter == fmtlog::ERR)) {
-          text_filter = text_filter == fmtlog::ERR ? fmtlog::OFF : fmtlog::ERR;
+        if (ImGui::MenuItem(StringUtils::from_char8_t(ICON_MDI_CLOSE_OCTAGON), nullptr, text_filter == loguru::Verbosity_ERROR)) {
+          text_filter = text_filter == loguru::Verbosity_ERROR ? loguru::Verbosity_OFF : loguru::Verbosity_ERROR;
         }
 
         ImGui::EndMenuBar();
@@ -131,8 +116,7 @@ void RuntimeConsole::on_imgui_render() {
 
       ImGui::Separator();
 
-      constexpr ImGuiTableFlags table_flags = ImGuiTableFlags_RowBg | ImGuiTableFlags_ContextMenuInBody |
-                                              ImGuiTableFlags_ScrollY;
+      constexpr ImGuiTableFlags table_flags = ImGuiTableFlags_RowBg | ImGuiTableFlags_ContextMenuInBody | ImGuiTableFlags_ScrollY;
 
       float width = 0;
       if (ImGui::BeginChild("TextTable", ImVec2(0, -35))) {
@@ -141,9 +125,9 @@ void RuntimeConsole::on_imgui_render() {
           width = ImGui::GetWindowSize().x;
           ImGui::PushFont(ImGuiLayer::bold_font);
           for (uint32_t i = 0; i < (uint32_t)text_buffer.size(); i++) {
-            if (text_filter != fmtlog::OFF && text_filter != text_buffer[i].level)
+            if (text_filter != loguru::Verbosity_OFF && text_filter != text_buffer[i].verbosity)
               continue;
-            render_console_text(text_buffer[i].text, text_buffer[i].level);
+            render_console_text(text_buffer[i].text, text_buffer[i].verbosity);
           }
 
           ImGui::PopFont();
@@ -159,9 +143,8 @@ void RuntimeConsole::on_imgui_render() {
 
       ImGui::Separator();
       ImGui::PushItemWidth(width - 10);
-      constexpr ImGuiInputTextFlags input_flags = ImGuiInputTextFlags_EnterReturnsTrue |
-                                                  ImGuiInputTextFlags_CallbackHistory |
-                                                  ImGuiInputTextFlags_EscapeClearsAll;
+      constexpr ImGuiInputTextFlags input_flags =
+        ImGuiInputTextFlags_EnterReturnsTrue | ImGuiInputTextFlags_CallbackHistory | ImGuiInputTextFlags_EscapeClearsAll;
       static char s_input_buf[256];
       ImGui::PushFont(ImGuiLayer::bold_font);
 
@@ -177,7 +160,6 @@ void RuntimeConsole::on_imgui_render() {
         memset(s_input_buf, 0, sizeof s_input_buf);
       }
 
-
       ImGui::PopFont();
       ImGui::PopItemWidth();
     }
@@ -185,13 +167,12 @@ void RuntimeConsole::on_imgui_render() {
 
     ImGui::PopStyleVar();
     ImGui::PopStyleColor(3);
-  }
-  else {
+  } else {
     animation_counter = 0.0f;
   }
 }
 
-void RuntimeConsole::render_console_text(std::string text, fmtlog::LogLevel level) {
+void RuntimeConsole::render_console_text(const std::string& text, loguru::Verbosity verb) {
   ImGui::TableNextRow();
   ImGui::TableNextColumn();
 
@@ -202,8 +183,8 @@ void RuntimeConsole::render_console_text(std::string text, fmtlog::LogLevel leve
   flags |= ImGuiTreeNodeFlags_Leaf | ImGuiTreeNodeFlags_NoTreePushOnOpen;
 
   ImGui::PushID(text.c_str());
-  ImGui::PushStyleColor(ImGuiCol_Text, get_color(level));
-  const auto level_icon = get_level_icon(level);
+  ImGui::PushStyleColor(ImGuiCol_Text, get_color(verb));
+  const auto level_icon = get_level_icon(verb);
   ImGui::TreeNodeEx(text.c_str(), flags, "%s  %s", StringUtils::from_char8_t(level_icon), text.c_str());
   ImGui::PopStyleColor();
 
@@ -218,11 +199,8 @@ void RuntimeConsole::render_console_text(std::string text, fmtlog::LogLevel leve
 
 template <typename T>
 void log_cvar_change(RuntimeConsole* console, const char* cvar_name, T current_value, bool changed) {
-  const std::string log_text = changed
-                                 ? fmt::format("Changed {} to {}", cvar_name, current_value)
-                                 : fmt::format("{} {}", cvar_name, current_value);
-  const fmtlog::LogLevel log_level = changed ? fmtlog::LogLevel::INF : fmtlog::LogLevel::DBG;
-  console->add_log(log_text.c_str(), log_level);
+  const std::string log_text = changed ? fmt::format("Changed {} to {}", cvar_name, current_value) : fmt::format("{} {}", cvar_name, current_value);
+  console->add_log(log_text.c_str(), loguru::Verbosity_INFO);
 }
 
 void RuntimeConsole::process_command(const std::string& command) {
@@ -287,14 +265,12 @@ void RuntimeConsole::process_command(const std::string& command) {
     if (!value.str_value.empty()) {
       if (c.str_value != nullptr) {
         *c.str_value = value.str_value;
-      }
-      else if (c.int_value != nullptr) {
+      } else if (c.int_value != nullptr) {
         const auto v = value.as<int32_t>();
         if (v.has_value()) {
           *c.int_value = v.value();
         }
-      }
-      else if (c.bool_value != nullptr) {
+      } else if (c.bool_value != nullptr) {
         const auto v = value.as<int32_t>();
         if (v.has_value()) {
           *c.bool_value = v.value();
@@ -302,11 +278,10 @@ void RuntimeConsole::process_command(const std::string& command) {
       }
     }
     if (!c.on_succes_log.empty())
-      add_log(c.on_succes_log.c_str(), fmtlog::LogLevel::INF);
-  }
-  else {
+      add_log(c.on_succes_log.c_str(), loguru::Verbosity_INFO);
+  } else {
     if (!is_cvar_variable)
-      add_log("Non existent command.", fmtlog::LogLevel::ERR);
+      add_log("Non existent command.", loguru::Verbosity_ERROR);
   }
 }
 
@@ -318,9 +293,7 @@ RuntimeConsole::ParsedCommandValue RuntimeConsole::parse_value(const std::string
   return {value};
 }
 
-std::string RuntimeConsole::parse_command(const std::string& command) {
-  return command.substr(0, command.find(' '));
-}
+std::string RuntimeConsole::parse_command(const std::string& command) { return command.substr(0, command.find(' ')); }
 
 int RuntimeConsole::input_text_callback(ImGuiInputTextCallbackData* data) {
   if (data->EventFlag == ImGuiInputTextFlags_CallbackHistory) {
@@ -330,8 +303,7 @@ int RuntimeConsole::input_text_callback(ImGuiInputTextCallbackData* data) {
         history_position = (int32_t)input_log.size() - 1;
       else if (history_position > 0)
         history_position--;
-    }
-    else if (data->EventKey == ImGuiKey_DownArrow) {
+    } else if (data->EventKey == ImGuiKey_DownArrow) {
       if (history_position != -1)
         if (++history_position >= (int32_t)input_log.size())
           history_position = -1;
@@ -364,6 +336,6 @@ void RuntimeConsole::help_command() {
     available_commands.append(c);
   }
 
-  add_log(available_commands.c_str(), fmtlog::LogLevel::DBG);
+  add_log(available_commands.c_str(), loguru::Verbosity_INFO);
 }
-}
+} // namespace ox

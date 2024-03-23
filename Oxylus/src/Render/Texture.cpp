@@ -11,7 +11,7 @@ uint8_t* Texture::load_stb_image(const std::string& filename, uint32_t* width, u
   const auto filePath = std::filesystem::path(filename);
 
   if (!exists(filePath))
-    OX_CORE_ERROR("Couldn't load image, file doesn't exists. {}", filename);
+    OX_LOG_ERROR("Couldn't load image, file doesn't exists. {}", filename);
 
   int tex_width = 0, tex_height = 0, tex_channels = 0;
   constexpr int size_of_channel = 8;

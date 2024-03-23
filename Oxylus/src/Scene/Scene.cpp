@@ -16,6 +16,7 @@
 #include "SceneRenderer.h"
 
 #include "Core/App.h"
+#include "Core/FileSystem.h"
 
 #include "Jolt/Jolt.h"
 #include "Jolt/Physics/Body/BodyCreationSettings.h"

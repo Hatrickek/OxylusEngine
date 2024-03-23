@@ -12,7 +12,7 @@
 namespace ox::LuaBindings {
 [[nodiscard]] entt::id_type get_type_id(const sol::table& obj) {
   const auto f = obj["type_id"].get<sol::function>();
-  OX_CORE_ASSERT(f.valid() && "type_id not exposed to lua!");
+  OX_ASSERT(f.valid() && "type_id not exposed to lua!");
   return f.valid() ? f().get<entt::id_type>() : -1;
 }
 
@@ -22,7 +22,7 @@ template <typename T>
     case sol::type::number: return obj.template as<entt::id_type>();
     case sol::type::table: return get_type_id(obj);
   }
-  OX_CORE_ASSERT(false, "probably not registered the component");
+  OX_ASSERT(false, "probably not registered the component");
   return -1;
 }
 
@@ -43,7 +43,7 @@ inline auto invoke_meta_func(entt::meta_type meta_type,
                              entt::id_type function_id,
                              Args&&... args) {
   if (!meta_type) {
-    OX_CORE_WARN("Not a meta_type!");
+    OX_LOG_WARN("Not a meta_type!");
   }
   else {
     if (auto&& meta_function = meta_type.func(function_id); meta_function)
@@ -82,7 +82,7 @@ void bind_registry(sol::table& entt_module) {
     "front",
     [](const entt::runtime_view& self) -> entt::entity {
       if (self.size_hint() == 0) {
-        OX_CORE_ERROR("front(): view was empty!");
+        OX_LOG_ERROR("front(): view was empty!");
         return {};
       }
       return *self.begin();
@@ -220,7 +220,7 @@ void bind_dispatcher(const Shared<sol::state>& state, sol::basic_table_core<fals
     }
 
     void receive(const BaseScriptEvent& evt) const {
-      OX_CORE_ASSERT(connection && callback.valid());
+      OX_ASSERT(connection && callback.valid());
       if (auto& [self] = evt; get_key(self) == key)
         callback(self);
     }
@@ -273,7 +273,7 @@ void bind_dispatcher(const Shared<sol::state>& state, sol::basic_table_core<fals
        const sol::function& listener,
        sol::this_state s) {
       if (!listener.valid()) {
-        OX_CORE_ERROR("Connected listener is not valid!");
+        OX_LOG_ERROR("Connected listener is not valid!");
         return entt::meta_any{};
       }
       if (const auto event_id = deduce_type(type_or_id);

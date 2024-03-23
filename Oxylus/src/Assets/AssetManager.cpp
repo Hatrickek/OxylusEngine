@@ -81,13 +81,13 @@ void AssetManager::free_unused_assets() {
   });
 
   if (m_count > 0)
-    OX_CORE_INFO("Cleaned up {} mesh assets.", m_count);
+    OX_LOG_INFO("Cleaned up {} mesh assets.", m_count);
 
   const auto t_count = std::erase_if(asset_library.texture_assets, [](const std::pair<std::string, Shared<TextureAsset>>& pair) {
     return pair.second.use_count() <= 1;
   });
 
   if (t_count > 0)
-    OX_CORE_INFO("Cleaned up {} mesh assets.", t_count);
+    OX_LOG_INFO("Cleaned up {} mesh assets.", t_count);
 }
 }

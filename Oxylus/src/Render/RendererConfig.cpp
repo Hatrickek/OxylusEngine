@@ -4,6 +4,7 @@
 #include <sstream>
 
 #include "Core/App.h"
+#include "Core/FileSystem.h"
 #include "Thread/TaskScheduler.h"
 
 #include "Utils/Profiler.h"

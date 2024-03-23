@@ -19,6 +19,7 @@
 #include <vuk/Partials.hpp>
 
 #include "Assets/AssetManager.h"
+#include "Core/FileSystem.h"
 #include "Texture.h"
 
 #include "Scene/Components.h"
@@ -77,11 +78,11 @@ bool Mesh::export_as_binary(const std::string& in_path, const std::string& out_p
     file_loaded = gltf_context.LoadBinaryFromFile(&gltf_model, &error, &warning, in_path);
 
   if (!file_loaded) {
-    OX_CORE_ERROR("Couldnt load gltf file: {}", error);
+    OX_LOG_ERROR("Couldnt load gltf file: {}", error);
     return false;
   }
   if (!warning.empty()) {
-    OX_CORE_WARN("GLTF loader warning: {}", warning);
+    OX_LOG_WARN("GLTF loader warning: {}", warning);
   }
 
   return gltf_context.WriteGltfSceneToFile(&gltf_model, out_path, true, true, false, true);
@@ -107,11 +108,11 @@ void Mesh::load_from_file(const std::string& file_path, int file_loading_flags, 
   }
 
   if (!file_loaded) {
-    OX_CORE_ERROR("Couldnt load gltf file: {}", error);
+    OX_LOG_ERROR("Couldnt load gltf file: {}", error);
     return;
   }
   if (!warning.empty()) {
-    OX_CORE_WARN("GLTF loader warning: {}", warning);
+    OX_LOG_WARN("GLTF loader warning: {}", warning);
   }
 
   load_textures(gltf_model);
@@ -167,7 +168,7 @@ void Mesh::load_from_file(const std::string& file_path, int file_loading_flags, 
   vertices.clear();
   indices.clear();
 #endif
-  OX_CORE_INFO("Mesh file loaded: ({}) {}, {} materials, {} animations",
+  OX_LOG_INFO("Mesh file loaded: ({}) {}, {} materials, {} animations",
                timer.get_elapsed_ms(),
                name.c_str(),
                gltf_model.materials.size(),
@@ -176,14 +177,12 @@ void Mesh::load_from_file(const std::string& file_path, int file_loading_flags, 
 
 const Mesh* Mesh::bind_vertex_buffer(vuk::CommandBuffer& command_buffer) const {
   OX_SCOPED_ZONE;
-  OX_CORE_ASSERT(vertex_buffer)
   command_buffer.bind_vertex_buffer(0, *vertex_buffer, 0, vertex_pack);
   return this;
 }
 
 const Mesh* Mesh::bind_index_buffer(vuk::CommandBuffer& command_buffer) const {
   OX_SCOPED_ZONE;
-  OX_CORE_ASSERT(index_buffer)
   command_buffer.bind_index_buffer(*index_buffer, vuk::IndexType::eUint32);
   return this;
 }
@@ -314,7 +313,7 @@ void Mesh::load_materials(tinygltf::Model& model) {
 }
 
 Shared<Material> Mesh::get_material(const uint32_t index) const {
-  OX_CORE_ASSERT(index < materials.size())
+  OX_ASSERT(index < materials.size());
   return materials.at(index);
 }
 
@@ -325,7 +324,7 @@ std::vector<Shared<Material>> Mesh::get_materials_as_ref() const {
 
 std::vector<Shared<Material>> Mesh::get_materials(uint32_t node_index) const {
   OX_SCOPED_ZONE;
-  OX_CORE_ASSERT(linear_nodes[node_index]->mesh_data)
+  OX_CHECK_NULL(linear_nodes[node_index]->mesh_data);
   return linear_nodes[node_index]->mesh_data->materials;
 }
 
@@ -374,11 +373,11 @@ void Mesh::get_scene_dimensions() {
 
 void Mesh::update_animation(uint32_t index, const float time) const {
   if (animations.empty()) {
-    OX_CORE_WARN("Mesh does not contain animation!");
+    OX_LOG_WARN("Mesh does not contain animation!");
     return;
   }
   if (index > static_cast<uint32_t>(animations.size()) - 1) {
-    OX_CORE_WARN("No animation with index {} !", index);
+    OX_LOG_WARN("No animation with index {} !", index);
     return;
   }
 
@@ -572,7 +571,7 @@ void Mesh::load_node(Node* parent,
         int joint_component_type = 0;
 
         // Position attribute is required
-        OX_CORE_ASSERT(primitive.attributes.contains("POSITION"))
+        OX_ASSERT(primitive.attributes.contains("POSITION"));
 
         const tinygltf::Accessor& pos_accessor = model.accessors[primitive.attributes.find("POSITION")->second];
         const tinygltf::BufferView& pos_view = model.bufferViews[pos_accessor.bufferView];
@@ -664,7 +663,7 @@ void Mesh::load_node(Node* parent,
               }
               default:
                 // Not supported by spec
-                OX_CORE_ERROR("Joint component type {} {}", joint_component_type, " not supported!");
+                OX_LOG_ERROR("Joint component type {} {}", joint_component_type, " not supported!");
                 break;
             }
           } else {
@@ -714,7 +713,7 @@ void Mesh::load_node(Node* parent,
             delete[] buf;
             break;
           }
-          default: OX_CORE_ERROR("Index component type {0} not supported", accessor.componentType); return;
+          default: OX_LOG_ERROR("Index component type {0} not supported", accessor.componentType); return;
         }
       }
 
@@ -783,7 +782,7 @@ void Mesh::load_animations(tinygltf::Model& gltf_model) {
         const tinygltf::BufferView& buffer_view = gltf_model.bufferViews[accessor.bufferView];
         const tinygltf::Buffer& buffer = gltf_model.buffers[buffer_view.buffer];
 
-        OX_CORE_ASSERT(accessor.componentType == TINYGLTF_COMPONENT_TYPE_FLOAT);
+        OX_ASSERT(accessor.componentType == TINYGLTF_COMPONENT_TYPE_FLOAT);
 
         const void* data_ptr = &buffer.data[accessor.byteOffset + buffer_view.byteOffset];
         const auto* buf = static_cast<const float*>(data_ptr);
@@ -827,7 +826,7 @@ void Mesh::load_animations(tinygltf::Model& gltf_model) {
             break;
           }
           default: {
-            OX_CORE_WARN("unknown type");
+            OX_LOG_WARN("unknown type");
             break;
           }
         }
@@ -850,7 +849,7 @@ void Mesh::load_animations(tinygltf::Model& gltf_model) {
         channel.path = AnimationChannel::PathType::SCALE;
       }
       if (source.target_path == "weights") {
-        OX_CORE_WARN("weights not yet supported, skipping channel...");
+        OX_LOG_WARN("weights not yet supported, skipping channel...");
         continue;
       }
       channel.samplerIndex = source.sampler;

@@ -189,21 +189,16 @@ set_target_properties(fmt PROPERTIES FOLDER "Vendor")
 
 # fmtlog
 CPMAddPackage(
-    NAME fmtlog
-    GITHUB_REPOSITORY Hatrickek/fmtlog
-    GIT_TAG main
-    GIT_SUBMODULES ""
-    DOWNLOAD_ONLY YES
+    NAME loguru
+    GITHUB_REPOSITORY emilk/loguru
+    GIT_TAG master
+    OPTIONS
+        "LOGURU_USE_FMTLIB ON"
+        "LOGURU_BUILD_EXAMPLES ON"
+        "LOGURU_BUILD_TESTS ON"
 )
-if (fmtlog_ADDED)
-    FILE(GLOB fmtlog_sources ${fmtlog_SOURCE_DIR}/*.cc)
-    add_library(fmtlog STATIC ${fmtlog_sources})
-    target_include_directories(fmtlog PUBLIC ${fmtlog_SOURCE_DIR})
-    target_include_directories(fmtlog PUBLIC ${fmt_SOURCE_DIR}/include)
-    target_include_directories(${PROJECT_NAME} PUBLIC ${fmtlog_SOURCE_DIR})
-    target_link_libraries(${PROJECT_NAME} PUBLIC fmtlog)
-endif()
-set_target_properties(fmtlog PROPERTIES FOLDER "Vendor")
+target_link_libraries(${PROJECT_NAME} PUBLIC loguru)
+set_target_properties(loguru PROPERTIES FOLDER "Vendor")
 
 # vk-bootstrap
 CPMAddPackage("gh:charles-lunarg/vk-bootstrap#8e61b2d81c3f5f84339735085ff5651f71bbe1e7")

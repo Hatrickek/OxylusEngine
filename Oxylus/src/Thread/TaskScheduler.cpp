@@ -12,7 +12,7 @@ void TaskScheduler::init() {
   task_scheduler->Initialize();
   task_sets.reserve(100);
 
-  OX_CORE_INFO("TaskScheduler initalized.");
+  OX_LOG_INFO("TaskScheduler initalized.");
 }
 
 void TaskScheduler::deinit() {

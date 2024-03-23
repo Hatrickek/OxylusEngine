@@ -60,7 +60,7 @@ void DefaultRenderPipeline::init(vuk::Allocator& allocator) {
 
   initalized = true;
 
-  OX_CORE_TRACE("DefaultRenderPipeline initialized: {} ms", timer.get_elapsed_ms());
+  OX_LOG_INFO("DefaultRenderPipeline initialized: {} ms", timer.get_elapsed_ms());
 }
 
 void DefaultRenderPipeline::load_pipelines(vuk::Allocator& allocator) {
@@ -746,7 +746,7 @@ get_attachment_or_black_uint(const char* name, const bool enabled, const vuk::Ac
 Unique<vuk::Future> DefaultRenderPipeline::on_render(vuk::Allocator& frame_allocator, const vuk::Future& target, vuk::Dimension3D dim) {
   OX_SCOPED_ZONE;
   if (!current_camera) {
-    OX_CORE_ERROR("No camera is set for rendering!");
+    OX_LOG_ERROR("No camera is set for rendering!");
     // set a temporary one
     if (!default_camera)
       default_camera = create_shared<Camera>();

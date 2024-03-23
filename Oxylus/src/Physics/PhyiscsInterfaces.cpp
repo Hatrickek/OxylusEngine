@@ -15,7 +15,7 @@ bool ObjectLayerPairFilterImpl::ShouldCollide(JPH::ObjectLayer inObject1, JPH::O
     case PhysicsLayers::NON_MOVING: return inObject2 == PhysicsLayers::MOVING; // Non moving only collides with moving
     case PhysicsLayers::MOVING: return true; // Moving collides with everything
     default:
-      OX_CORE_ASSERT(false);
+      OX_ASSERT(false);
       return false;
   }
 }
@@ -32,7 +32,7 @@ JPH::uint BPLayerInterfaceImpl::GetNumBroadPhaseLayers() const {
 
 JPH::BroadPhaseLayer BPLayerInterfaceImpl::GetBroadPhaseLayer(JPH::ObjectLayer inLayer) const {
   using namespace JPH;
-  OX_CORE_ASSERT(inLayer < PhysicsLayers::NUM_LAYERS);
+  OX_ASSERT(inLayer < PhysicsLayers::NUM_LAYERS);
   return mObjectToBroadPhase[inLayer];
 }
 
@@ -42,7 +42,7 @@ const char* BPLayerInterfaceImpl::GetBroadPhaseLayerName(JPH::BroadPhaseLayer in
   switch ((JPH::BroadPhaseLayer::Type)inLayer) {
     case (JPH::BroadPhaseLayer::Type)BroadPhaseLayers::NON_MOVING: return "NON_MOVING";
     case (JPH::BroadPhaseLayer::Type)BroadPhaseLayers::MOVING: return "MOVING";
-    default: OX_CORE_ASSERT(false);
+    default: OX_ASSERT(false);
       return "INVALID";
   }
 }
@@ -54,7 +54,7 @@ bool ObjectVsBroadPhaseLayerFilterImpl::ShouldCollide(JPH::ObjectLayer inLayer1,
     case PhysicsLayers::NON_MOVING: return inLayer2 == BroadPhaseLayers::MOVING;
     case PhysicsLayers::MOVING: return true;
     default:
-      OX_CORE_ASSERT(false);
+      OX_ASSERT(false);
       return false;
   }
 }

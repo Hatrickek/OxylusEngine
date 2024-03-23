@@ -9,6 +9,7 @@
 #include "Assets/AssetManager.h"
 
 #include "Core/App.h"
+#include "Core/FileSystem.h"
 
 #include "Scene/Entity.h"
 #include "Utils/Archive.h"
@@ -260,6 +261,18 @@ void EntitySerializer::serialize_entity(toml::array* entities, Scene* scene, Ent
     entities->push_back(toml::table{{"lua_script_component", table}});
   }
 }
+
+void EntitySerializer::serialize_entity_binary(Archive& archive, Scene* scene, Entity entity) {
+  if (scene->registry.all_of<IDComponent>(entity)) {
+    const auto& component = scene->registry.get<IDComponent>(entity);
+    archive << component.uuid;
+  }
+  if (scene->registry.all_of<TagComponent>(entity)) {
+    const auto& component = scene->registry.get<TagComponent>(entity);
+    archive << component.tag;
+  }
+}
+
 UUID EntitySerializer::deserialize_entity(toml::array* entity_arr, Scene* scene, bool preserve_uuid) {
   // these values are always present
   const uint64_t uuid = std::stoull(entity_arr->get(0)->as_table()->get("uuid")->as_string()->get());
@@ -494,7 +507,7 @@ Entity EntitySerializer::deserialize_entity_as_prefab(const char* filepath, Scen
   }
 
 #endif
-  OX_CORE_ERROR("There are not entities in the prefab to deserialize! {0}", FileSystem::get_file_name(filepath));
+  OX_LOG_ERROR("There are not entities in the prefab to deserialize! {0}", FileSystem::get_file_name(filepath));
   return {};
 }
 } // namespace ox

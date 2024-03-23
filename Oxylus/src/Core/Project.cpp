@@ -5,6 +5,7 @@
 #include <entt/meta/context.hpp>
 
 #include "Base.h"
+#include "FileSystem.h"
 #include "Modules/ModuleRegistry.h"
 #include "ProjectSerializer.h"
 
@@ -69,7 +70,7 @@ Shared<Project> Project::load(const std::string& path) {
     project->set_project_dir(std::filesystem::path(path).parent_path().string());
     active_project = project;
     active_project->load_module();
-    OX_CORE_INFO("Project loaded: {0}", project->get_config().name);
+    OX_LOG_INFO("Project loaded: {0}", project->get_config().name);
     return active_project;
   }
 

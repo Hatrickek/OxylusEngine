@@ -80,7 +80,7 @@ void FileSystem::open_file_externally(std::string_view path) {
   const _bstr_t widePath(path.data());
   ShellExecute(nullptr, LPCSTR(L"open"), widePath, nullptr, nullptr, SW_RESTORE);
 #else
-  OX_CORE_WARN("Not implemented on this platform!");
+  OX_LOG_WARN("Not implemented on this platform!");
 #endif
 }
 
@@ -111,7 +111,7 @@ std::string FileSystem::read_shader_file(const std::string& shader_file_name) {
   OX_SCOPED_ZONE;
   const auto path = get_shader_path(shader_file_name);
   auto value = read_file(path);
-  OX_CORE_ASSERT(!value.empty(), fmt::format("Shader file doesn't exist: {0}", shader_file_name.c_str()))
+  OX_ASSERT(!value.empty(), "Shader file doesn't exist: {0}", shader_file_name);
   return value;
 }
 

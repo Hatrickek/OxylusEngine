@@ -356,11 +356,11 @@ void EditorLayer::open_scene_file_dialog() {
 
 bool EditorLayer::open_scene(const std::filesystem::path& path) {
   if (!exists(path)) {
-    OX_CORE_WARN("Could not find scene: {0}", path.filename().string());
+    OX_LOG_WARN("Could not find scene: {0}", path.filename().string());
     return false;
   }
   if (path.extension().string() != ".oxscene") {
-    OX_CORE_WARN("Could not load {0} - not a scene file", path.filename().string());
+    OX_LOG_WARN("Could not load {0} - not a scene file", path.filename().string());
     return false;
   }
   const Shared<Scene> new_scene = create_shared<Scene>();

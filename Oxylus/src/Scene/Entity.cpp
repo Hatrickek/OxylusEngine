@@ -31,7 +31,7 @@ void EUtil::get_all_children(Scene* scene, entt::entity parent, std::vector<entt
 void EUtil::set_parent(Scene* scene, entt::entity entity, entt::entity parent) {
   auto a = scene->registry.get<IDComponent>(parent);
   auto uuid = get_uuid(scene->registry, parent);
-  OX_CORE_ASSERT(scene->entity_map.contains(uuid), "Parent is not in the same scene as entity")
+  OX_ASSERT(scene->entity_map.contains(uuid), "Parent is not in the same scene as entity");
   deparent(scene, entity);
 
   auto& [parent_uuid, _] = scene->registry.get<RelationshipComponent>(entity);

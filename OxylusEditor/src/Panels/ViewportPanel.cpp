@@ -5,6 +5,7 @@
 #include <vuk/Partials.hpp>
 #include <vuk/RenderGraph.hpp>
 
+#include "Core/FileSystem.h"
 #include "EditorLayer.h"
 #include "ImGuizmo.h"
 #include "glm/gtc/type_ptr.hpp"

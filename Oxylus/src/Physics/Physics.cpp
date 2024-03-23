@@ -37,12 +37,12 @@ static void TraceImpl(const char* inFMT, ...) {
   vsnprintf(buffer, sizeof(buffer), inFMT, list);
   va_end(list);
 
-  OX_CORE_TRACE("{}", buffer);
+  OX_LOG_INFO("{}", buffer);
 }
 
 #ifdef JPH_ENABLE_ASSERTS
 static bool AssertFailedImpl(const char* inExpression, const char* inMessage, const char* inFile, JPH::uint inLine) {
-  OX_CORE_ERROR("{0}:{1}:{2} {3}", inFile, inLine, inExpression, inMessage != nullptr ? inMessage : "");
+  OX_LOG_ERROR("{0}:{1}:{2} {3}", inFile, inLine, inExpression, inMessage != nullptr ? inMessage : "");
   return true;
 };
 #endif
@@ -78,7 +78,7 @@ void Physics::init() {
 void Physics::step(float physicsTs) {
   OX_SCOPED_ZONE;
 
-  OX_CORE_ASSERT(physics_system, "Physics system not initialized")
+  OX_CHECK_NULL(physics_system, "Physics system not initialized");
 
   physics_system->Update(physicsTs, 1, temp_allocator, job_system);
 }
@@ -95,7 +95,7 @@ void Physics::shutdown() {
 JPH::PhysicsSystem* Physics::get_physics_system() {
   OX_SCOPED_ZONE;
 
-  OX_CORE_ASSERT(physics_system, "Physics system not initialized")
+  OX_CHECK_NULL(physics_system, "Physics system not initialized");
 
   return physics_system;
 }

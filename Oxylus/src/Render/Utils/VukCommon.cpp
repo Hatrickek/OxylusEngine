@@ -148,7 +148,7 @@ void blit_image_impl(RenderGraph* rg, const Resource& src, const Resource& dst) 
       ImageBlit blit;
       auto src_ia = *command_buffer.get_resource_image_attachment(src.name.name);
       auto dst_ia = *command_buffer.get_resource_image_attachment(dst.name.name);
-      OX_CORE_ASSERT(src_ia.extent.extent == dst_ia.extent.extent)
+      OX_ASSERT(src_ia.extent.extent == dst_ia.extent.extent);
       auto src_extent = src_ia.extent.extent;
       blit.srcSubresource.aspectMask = format_to_aspect(src_ia.format);
       blit.srcSubresource.baseArrayLayer = src_ia.base_layer;
@@ -189,7 +189,7 @@ void copy_image_impl(RenderGraph* rg, const Resource& src, const Resource& dst) 
       ImageCopy copy;
       auto src_ia = *command_buffer.get_resource_image_attachment(src.name.name);
       auto dst_ia = *command_buffer.get_resource_image_attachment(dst.name.name);
-      OX_CORE_ASSERT(src_ia.extent.extent == dst_ia.extent.extent)
+      OX_ASSERT(src_ia.extent.extent == dst_ia.extent.extent);
       copy.srcSubresource.aspectMask = format_to_aspect(src_ia.format);
       copy.srcSubresource.baseArrayLayer = src_ia.base_layer;
       copy.srcSubresource.layerCount = src_ia.layer_count;

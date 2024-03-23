@@ -219,8 +219,8 @@ private:
   // But these can be used as helper functions inside this class
 
   template <typename T> void _write(const T& data) {
-    OX_CORE_ASSERT(!read_mode)
-    OX_CORE_ASSERT(!_data.empty())
+    OX_ASSERT(!read_mode);
+    OX_ASSERT(!_data.empty());
     const size_t _right = pos + sizeof(data);
     if (_right > _data.size()) {
       _data.resize(_right * 2);
@@ -231,8 +231,8 @@ private:
   }
 
   template <typename T> void _read(T& data) {
-    OX_CORE_ASSERT(read_mode)
-    OX_CORE_ASSERT(data_ptr != nullptr)
+    OX_ASSERT(read_mode);
+    OX_ASSERT(data_ptr != nullptr);
     data = *(const T*)(data_ptr + pos);
     pos += (size_t)(sizeof(data));
   }

@@ -40,7 +40,7 @@ void Window::init_window(const AppSpec& spec) {
     stbi_image_free(image_data);
   }
   if (s_window_handle == nullptr) {
-    OX_CORE_ERROR("Failed to create GLFW WindowHandle");
+    OX_LOG_ERROR("Failed to create GLFW WindowHandle");
     glfwTerminate();
   }
 
@@ -97,7 +97,7 @@ void Window::set_window_user_data(void* data) {
 
 GLFWwindow* Window::get_glfw_window() {
   if (s_window_handle == nullptr) {
-    OX_CORE_ERROR("Glfw WindowHandle is nullptr. Did you call InitWindow() ?");
+    OX_LOG_ERROR("Glfw WindowHandle is nullptr. Did you call InitWindow() ?");
   }
   return s_window_handle;
 }

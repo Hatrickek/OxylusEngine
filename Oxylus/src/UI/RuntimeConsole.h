@@ -5,7 +5,6 @@
 #include <optional>
 #include <charconv>
 #include <mutex>
-#include <shared_mutex>
 
 #include <ankerl/unordered_dense.h>
 
@@ -14,21 +13,6 @@
 #include "Utils/Log.h"
 
 namespace ox {
-class RuntimeConsoleLogSink : public ExternalSink {
-public:
-  explicit RuntimeConsoleLogSink(void* user_data)
-    : ExternalSink(user_data) {}
-
-  void log(int64_t ns,
-           fmtlog::LogLevel level,
-           fmt::string_view location,
-           size_t base_pos,
-           fmt::string_view thread_name,
-           fmt::string_view msg,
-           size_t body_pos,
-           size_t log_file_pos) override;
-};
-
 class RuntimeConsole {
 public:
   struct ParsedCommandValue {
@@ -51,14 +35,14 @@ public:
   std::string id = {};
 
   RuntimeConsole();
-  ~RuntimeConsole() = default;
+  ~RuntimeConsole();
 
   void register_command(const std::string& command, const std::string& on_succes_log, const std::function<void()>& action);
   void register_command(const std::string& command, const std::string& on_succes_log, int32_t* value);
   void register_command(const std::string& command, const std::string& on_succes_log, std::string* value);
   void register_command(const std::string& command, const std::string& on_succes_log, bool* value);
 
-  void add_log(const char* fmt, fmtlog::LogLevel level);
+  void add_log(const char* fmt, loguru::Verbosity verb);
   void clear_log();
 
   void on_imgui_render();
@@ -66,10 +50,10 @@ public:
 private:
   struct ConsoleText {
     std::string text = {};
-    fmtlog::LogLevel level = {};
+    loguru::Verbosity verbosity = {};
   };
 
-  void render_console_text(std::string text, fmtlog::LogLevel level);
+  void render_console_text(const std::string& text, loguru::Verbosity verb);
 
   struct ConsoleCommand {
     int32_t* int_value = nullptr;
@@ -78,10 +62,6 @@ private:
     std::function<void()> action = nullptr;
     std::string on_succes_log = {};
   };
-
-  // Sink
-  Shared<RuntimeConsoleLogSink> runtime_console_log_sink;
-  std::mutex log_mutex;
 
   // Commands
   ankerl::unordered_dense::map<std::string, ConsoleCommand> command_map;
@@ -100,7 +80,7 @@ private:
   bool request_scroll_to_bottom = true;
   int input_text_callback(ImGuiInputTextCallbackData* data);
 
-  fmtlog::LogLevel text_filter = fmtlog::OFF;
+  loguru::Verbosity text_filter = loguru::Verbosity_OFF;
   float animation_counter = 0.0f;
 };
 }

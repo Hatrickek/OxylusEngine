@@ -8,6 +8,7 @@
 #include <fstream>
 
 #include "Core/App.h"
+#include "Core/FileSystem.h"
 
 namespace ox {
 SceneSerializer::SceneSerializer(const Shared<Scene>& scene) : m_scene(scene) {}
@@ -30,19 +31,19 @@ void SceneSerializer::serialize(const std::string& filePath) const {
   std::ofstream filestream(filePath);
   filestream << ss.str();
 
-  OX_CORE_INFO("Saved scene {0}.", m_scene->scene_name);
+  OX_LOG_INFO("Saved scene {0}.", m_scene->scene_name);
 }
 
 bool SceneSerializer::deserialize(const std::string& filePath) const {
   const auto content = FileSystem::read_file(filePath);
   if (content.empty()) {
-    OX_CORE_ASSERT(!content.empty(), fmt::format("Couldn't read scene file: {0}", filePath).c_str());
+    OX_ASSERT(!content.empty(), fmt::format("Couldn't read scene file: {0}", filePath).c_str());
   }
 
   toml::table table = toml::parse(content);
 
   if (table.empty()) {
-    OX_CORE_ERROR("Scene was unable to load from TOML file {0}", filePath);
+    OX_LOG_ERROR("Scene was unable to load from TOML file {0}", filePath);
     return false;
   }
 
@@ -55,7 +56,7 @@ bool SceneSerializer::deserialize(const std::string& filePath) const {
     EntitySerializer::deserialize_entity(entity_arr, m_scene.get(), true);
   }
 
-  OX_CORE_INFO("Scene loaded : {0}", FileSystem::get_file_name(m_scene->scene_name));
+  OX_LOG_INFO("Scene loaded : {0}", FileSystem::get_file_name(m_scene->scene_name));
   return true;
 }
 }

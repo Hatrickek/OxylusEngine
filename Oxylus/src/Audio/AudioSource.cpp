@@ -20,7 +20,7 @@ AudioSource::AudioSource(const std::string& filepath) : m_path(filepath) {
                                                    nullptr,
                                                    m_sound.get());
   if (result != MA_SUCCESS)
-    OX_CORE_ERROR("Failed to load sound: {}", filepath);
+    OX_LOG_ERROR("Failed to load sound: {}", filepath);
 }
 
 AudioSource::~AudioSource() {

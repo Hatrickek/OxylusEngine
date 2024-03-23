@@ -2,6 +2,7 @@
 
 #include <filesystem>
 
+#include "FileSystem.h"
 #include "Layer.h"
 #include "LayerStack.h"
 #include "Project.h"
@@ -10,9 +11,9 @@
 
 #include "Modules/ModuleRegistry.h"
 
-#include "Render/Window.h"
 #include "Render/Vulkan/Renderer.h"
 #include "Render/Vulkan/VkContext.h"
+#include "Render/Window.h"
 
 #include "Scripting/LuaManager.h"
 
@@ -31,7 +32,7 @@ App* App::instance = nullptr;
 App::App(AppSpec spec) : app_spec(std::move(spec)) {
   OX_SCOPED_ZONE;
   if (instance) {
-    OX_CORE_ERROR("Application already exists!");
+    OX_LOG_ERROR("Application already exists!");
     return;
   }
 
@@ -53,7 +54,7 @@ App::App(AppSpec spec) : app_spec(std::move(spec)) {
   }
 
   if (!asset_directory_exists()) {
-    OX_CORE_ERROR("Resources path doesn't exists. Make sure the working directory is correct!");
+    OX_LOG_FATAL("Resources path doesn't exists. Make sure the working directory is correct! Editor should be launched in Oxylus/OxylusEditor.");
     close();
     return;
   }
@@ -84,9 +85,7 @@ App::App(AppSpec spec) : app_spec(std::move(spec)) {
   push_overlay(imgui_layer);
 }
 
-App::~App() {
-  close();
-}
+App::~App() { close(); }
 
 App& App::push_layer(Layer* layer) {
   layer_stack->push_layer(layer);
@@ -140,9 +139,7 @@ void App::update_layers(const Timestep& ts) {
     layer->on_update(ts);
 }
 
-void App::update_renderer() {
-  Renderer::draw(VkContext::get(), imgui_layer, *layer_stack.get());
-}
+void App::update_renderer() { Renderer::draw(VkContext::get(), imgui_layer, *layer_stack.get()); }
 
 void App::update_timestep() {
   timestep.on_update();
@@ -151,13 +148,9 @@ void App::update_timestep() {
   io.DeltaTime = (float)timestep.get_seconds();
 }
 
-void App::close() {
-  is_running = false;
-}
+void App::close() { is_running = false; }
 
-bool App::asset_directory_exists() {
-  return std::filesystem::exists(get_asset_directory());
-}
+bool App::asset_directory_exists() { return std::filesystem::exists(get_asset_directory()); }
 
 std::string App::get_asset_directory() {
   if (Project::get_active() && !Project::get_active()->get_config().asset_directory.empty())
@@ -165,9 +158,7 @@ std::string App::get_asset_directory() {
   return instance->app_spec.assets_path;
 }
 
-std::string App::get_asset_directory(const std::string_view asset_path) {
-  return FileSystem::append_paths(get_asset_directory(), asset_path);
-}
+std::string App::get_asset_directory(const std::string_view asset_path) { return FileSystem::append_paths(get_asset_directory(), asset_path); }
 
 std::string App::get_asset_directory_absolute() {
   if (Project::get_active()) {
@@ -185,4 +176,4 @@ std::string App::get_relative(const std::string& path) {
 std::string App::get_absolute(const std::string& path) {
   return FileSystem::append_paths(FileSystem::preferred_path(get_asset_directory_absolute()), path);
 }
-}
+} // namespace ox

@@ -31,7 +31,7 @@ void EmbedAsset::EmbedTexture(const std::string& texFilePath, const std::string&
   }
   file << "};";
 
-  OX_CORE_INFO("Successfully embedded texture {0} into: {1}", texFilePath, outPath);
+  OX_LOG_INFO("Successfully embedded texture {0} into: {1}", texFilePath, outPath);
 
   file.close();
   delete texture;

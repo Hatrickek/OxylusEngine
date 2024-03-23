@@ -23,7 +23,7 @@ void TracyProfiler::init_tracy_for_vulkan(VkContext* context) {
     context->vkb_instance.instance, context->physical_device, context->device, context->graphics_queue, tracy_cbufai->command_buffer, context->vkb_instance.fp_vkGetInstanceProcAddr, context->vkb_instance.fp_vkGetDeviceProcAddr);
   tracy_transfer_ctx = TracyVkContextCalibrated(
     context->vkb_instance.instance, context->physical_device, context->device, context->graphics_queue, tracy_cbufai->command_buffer, context->vkb_instance.fp_vkGetInstanceProcAddr, context->vkb_instance.fp_vkGetDeviceProcAddr);
-  OX_CORE_INFO("Tracy profiler initialized.");
+  OX_LOG_INFO("Tracy profiler initialized.");
 #endif
 }
 
