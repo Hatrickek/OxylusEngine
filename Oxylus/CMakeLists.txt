@@ -61,7 +61,6 @@ add_library(${PROJECT_NAME} STATIC ${ALL_FILES})
 target_include_directories(${PROJECT_NAME} PUBLIC
   "${CMAKE_CURRENT_SOURCE_DIR}/src"
   "${CMAKE_CURRENT_SOURCE_DIR}/vendor"
-  "${CMAKE_CURRENT_SOURCE_DIR}/vendor/glm"
   "${CMAKE_CURRENT_SOURCE_DIR}/vendor/ImGuizmo"
   "${CMAKE_CURRENT_SOURCE_DIR}/vendor/miniaudio"
   "${CMAKE_CURRENT_SOURCE_DIR}/vendor/stb"
@@ -153,6 +152,14 @@ source_group("vendor/ImGui" FILES ${ImGui_Backends})
 set(ImGui_Misc "${imgui_SOURCE_DIR}/misc/cpp/imgui_stdlib.cpp" "${imgui_SOURCE_DIR}/misc/cpp/imgui_stdlib.h")
 target_sources(${PROJECT_NAME} PRIVATE "${ImGui_Misc}")
 source_group("vendor/ImGui" FILES ${ImGui_Misc})
+
+#glm 
+CPMAddPackage(
+  NAME glm
+  GIT_TAG bf71a834948186f4097caa076cd2663c69a10e1e #refs/tags/1.0.1
+  GITHUB_REPOSITORY g-truc/glm
+)
+target_link_libraries(${PROJECT_NAME} PRIVATE glm::glm)
 
 # entt
 CPMAddPackage(
