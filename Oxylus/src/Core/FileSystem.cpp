@@ -71,7 +71,7 @@ void FileSystem::open_folder_select_file(std::string_view path) {
     ILFree(pidl);
   }
 #else
-  OX_CORE_WARN("Not implemented on this platform!");
+  OX_LOG_WARN("Not implemented on this platform!");
 #endif
 }
 
