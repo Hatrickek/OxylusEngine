@@ -19,16 +19,14 @@ source_group("src/Modules" FILES ${Modules})
 
 file(GLOB Render "src/Render/*.h" "src/Render/*.cpp" )
 source_group("src/Render" FILES ${Render})
-file(GLOB PBR "src/Render/PBR/*.h" "src/Render/PBR/*.cpp" )
-source_group("src/Render/PBR" FILES ${PBR})
-file(GLOB GTAO "src/Render/PBR/GTAO/*.h" "src/Render/PBR/GTAO/*.cpp" )
-source_group("src/Render/PBR/GTAO" FILES ${GTAO})
+file(GLOB Passes "src/Render/Passes/*.h" "src/Render/Passes/*.cpp" )
+source_group("src/Render/Passes" FILES ${Passes})
 file(GLOB Vulkan "src/Render/Vulkan/*.h" "src/Render/Vulkan/*.cpp" )
 source_group("src/Render/Vulkan" FILES ${Vulkan})
 file(GLOB RenderUtils "src/Render/Utils/*.h" "src/Render/Utils/*.cpp" )
 source_group("src/Render/Utils" FILES ${RenderUtils})
 
-set(RENDERER_FILES ${Render} ${PBR} ${GTAO} ${Vulkan} ${RenderUtils})
+set(RENDERER_FILES ${Render} ${Passes} ${Vulkan} ${RenderUtils})
 
 file(GLOB_RECURSE Scene "src/Scene/*.h" "src/Scene/*.cpp" )
 source_group("src/Scene" FILES ${Scene})
@@ -84,6 +82,7 @@ target_compile_definitions(${PROJECT_NAME} PRIVATE
   "GLFW_INCLUDE_NONE"
   "_SILENCE_ALL_CXX20_DEPRECATION_WARNINGS"
   "GLM_FORCE_DEPTH_ZERO_TO_ONE"
+  "GLM_ENABLE_EXPERIMENTAL"
   )
 
 if (CMAKE_CXX_COMPILER_ID STREQUAL "Clang")
@@ -158,8 +157,9 @@ CPMAddPackage(
   NAME glm
   GIT_TAG bf71a834948186f4097caa076cd2663c69a10e1e #refs/tags/1.0.1
   GITHUB_REPOSITORY g-truc/glm
+  GIT_SHALLOW ON
 )
-target_link_libraries(${PROJECT_NAME} PRIVATE glm::glm)
+target_link_libraries(${PROJECT_NAME} PUBLIC glm::glm)
 
 # entt
 CPMAddPackage(
@@ -167,6 +167,7 @@ CPMAddPackage(
   VERSION 3.12.2
   GITHUB_REPOSITORY skypjack/entt
   DOWNLOAD_ONLY YES
+  GIT_SHALLOW ON
 )
 if (EnTT_ADDED)
     add_library(EnTT INTERFACE)
@@ -179,6 +180,7 @@ CPMAddPackage(
     NAME tinygltf
     GIT_TAG release
     GITHUB_REPOSITORY syoyo/tinygltf
+    GIT_SHALLOW ON
     OPTIONS
         "TINYGLTF_NO_INCLUDE_JSON ON"
         "TINYGLTF_USE_RAPIDJSON ON"
@@ -199,6 +201,7 @@ CPMAddPackage(
     NAME loguru
     GITHUB_REPOSITORY emilk/loguru
     GIT_TAG master
+    GIT_SHALLOW ON
     OPTIONS
         "LOGURU_USE_FMTLIB ON"
         "LOGURU_BUILD_EXAMPLES ON"
@@ -217,11 +220,13 @@ CPMAddPackage(
     NAME vuk
     GITHUB_REPOSITORY martty/vuk
     GIT_TAG master
+    GIT_SHALLOW ON
     OPTIONS
         "VUK_LINK_TO_LOADER OFF"
         "VUK_FAIL_FAST ON"
         "VUK_USE_DXC ON"
 )
+target_compile_definitions(vuk PUBLIC VUK_MAX_VIEWPORTS=16 VUK_MAX_SCISSORS=16)
 target_link_libraries(${PROJECT_NAME} PUBLIC vuk)
 target_include_directories(${PROJECT_NAME} PUBLIC ${vuk_SOURCE_DIR}/src)
 set_target_properties(vuk PROPERTIES FOLDER "Vendor")
@@ -239,6 +244,7 @@ CPMAddPackage(
     NAME GLFW
     GITHUB_REPOSITORY glfw/glfw
     GIT_TAG 3.3.8
+    GIT_SHALLOW ON
     OPTIONS
         "GLFW_BUILD_TESTS OFF"
         "GLFW_BUILD_EXAMPLES OFF"
@@ -259,6 +265,7 @@ CPMAddPackage(
     GITHUB_REPOSITORY Tencent/rapidjson
     GIT_TAG master
     DOWNLOAD_ONLY YES
+    GIT_SHALLOW ON
 )
 target_include_directories(${PROJECT_NAME} PUBLIC ${rapidjson_SOURCE_DIR}/include)
 
@@ -268,6 +275,7 @@ CPMAddPackage(
     GITHUB_REPOSITORY jrouwe/JoltPhysics
     VERSION 4.0.2 
     SOURCE_SUBDIR Build
+    GIT_SHALLOW ON
     OPTIONS
         "ENABLE_ALL_WARNINGS OFF"
         "USE_STATIC_MSVC_RUNTIME_LIBRARY OFF"
@@ -282,6 +290,7 @@ CPMAddPackage(
     NAME TracyClient
     GITHUB_REPOSITORY wolfpld/tracy
     VERSION 0.10
+    GIT_SHALLOW ON
     OPTIONS
         "TRACY_ENABLE OFF"
         "TRACY_STATIC ON"
@@ -296,6 +305,7 @@ CPMAddPackage(
     NAME lua
     GITHUB_REPOSITORY walterschell/Lua
     GIT_TAG 88246d621abf7b6fba9332f49229d507f020e450
+    GIT_SHALLOW ON
     OPTIONS
         "LUA_SUPPORT_DL OFF"
         "LUA_BUILD_AS_CXX OFF"
@@ -309,6 +319,7 @@ CPMAddPackage(
     NAME sol2
     GITHUB_REPOSITORY ThePhD/sol2
     VERSION 3.3.0
+    GIT_SHALLOW ON
     OPTIONS
         "SOL2_BUILD_LUA OFF"
         "SOL2_TESTS OFF"
@@ -324,6 +335,7 @@ CPMAddPackage(
     NAME enkiTS
     GITHUB_REPOSITORY dougbinks/enkiTS
     GIT_TAG master
+    GIT_SHALLOW ON
     OPTIONS
         "ENKITS_BUILD_C_INTERFACE OFF"
         "ENKITS_BUILD_EXAMPLES OFF"
@@ -340,4 +352,3 @@ set_target_properties(unordered_dense PROPERTIES FOLDER "Vendor")
 # dylib
 CPMAddPackage("gh:martin-olivier/dylib#main")
 target_include_directories(${PROJECT_NAME} PUBLIC ${dylib_SOURCE_DIR}/include)
-

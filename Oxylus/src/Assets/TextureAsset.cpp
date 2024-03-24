@@ -12,9 +12,7 @@
 namespace ox {
 Shared<TextureAsset> TextureAsset::s_white_texture = nullptr;
 
-TextureAsset::TextureAsset(const std::string& file_path) {
-  load(file_path);
-}
+TextureAsset::TextureAsset(const std::string& file_path) { load(file_path); }
 
 TextureAsset::TextureAsset(const TextureLoadInfo& info) {
   if (!info.path.empty())
@@ -77,9 +75,7 @@ void TextureAsset::load_from_memory(void* initial_data, const size_t size) {
   delete[] data;
 }
 
-vuk::ImageAttachment TextureAsset::as_attachment() const {
-  return vuk::ImageAttachment::from_texture(texture);
-}
+vuk::ImageAttachment TextureAsset::as_attachment() const { return vuk::ImageAttachment::from_texture(texture); }
 
 void TextureAsset::create_white_texture() {
   OX_SCOPED_ZONE;
@@ -88,4 +84,4 @@ void TextureAsset::create_white_texture() {
   memset(white_texture_data, 0xff, 16 * 16 * 4);
   s_white_texture->create_texture(16, 16, white_texture_data, vuk::Format::eR8G8B8A8Unorm, false);
 }
-}
+} // namespace ox

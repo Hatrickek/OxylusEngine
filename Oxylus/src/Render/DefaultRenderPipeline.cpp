@@ -10,7 +10,7 @@
 #include "SceneRendererEvents.h"
 
 #include "Core/App.h"
-#include "PBR/Prefilter.h"
+#include "Passes/Prefilter.h"
 
 #include "Scene/Scene.h"
 
@@ -85,10 +85,9 @@ void DefaultRenderPipeline::load_pipelines(vuk::Allocator& allocator) {
     bindless_dslci_00.flags.emplace_back(VK_DESCRIPTOR_BINDING_PARTIALLY_BOUND_BIT);
   bindless_pci.explicit_set_layouts.emplace_back(bindless_dslci_00);
 
-#define SHADER_FILE(path) FU::read_shader_file(path), FU::get_shader_path(path)
-
-  using FU = FileSystem;
   using SS = vuk::HlslShaderStage;
+
+#define SHADER_FILE(path) FileSystem::read_shader_file(path), FileSystem::get_shader_path(path)
 
   auto* task_scheduler = App::get_system<TaskScheduler>();
 
@@ -908,8 +907,7 @@ void DefaultRenderPipeline::render_meshes(const RenderQueue& render_queue,
                                           uint32_t flags,
                                           uint32_t camera_count) const {
   const size_t alloc_size = render_queue.size() * camera_count * sizeof(MeshInstancePointer);
-  const auto& instances = allocate_buffer(*command_buffer.get_allocator(), {vuk::MemoryUsage::eCPUtoGPU, alloc_size, 1})->get();
-  command_buffer.bind_buffer(1, 1, instances, vuk::DescriptorType::eStorageBuffer);
+  const auto& instances = command_buffer._map_scratch_buffer(1, 1, alloc_size);
 
   struct InstancedBatch {
     uint32_t mesh_index = 0;
@@ -1012,7 +1010,7 @@ void DefaultRenderPipeline::render_meshes(const RenderQueue& render_queue,
 
       MeshInstancePointer poi;
       poi.Create(instance_index, camera_index, 0 /*dither*/);
-      std::memcpy((MeshInstancePointer*)instances.mapped_ptr + instance_count, &poi, sizeof(poi));
+      std::memcpy((MeshInstancePointer*)instances + instance_count, &poi, sizeof(poi));
 
       instanced_batch.component_index = batch.component_index;
       instanced_batch.instance_count++;
@@ -1354,15 +1352,15 @@ void DefaultRenderPipeline::bloom_pass(const Shared<vuk::RenderGraph>& rg) {
 
 void DefaultRenderPipeline::gtao_pass(vuk::Allocator& frame_allocator, const Shared<vuk::RenderGraph>& rg) {
   OX_SCOPED_ZONE;
-  gtao_settings.QualityLevel = RendererCVar::cvar_gtao_quality_level.get();
-  gtao_settings.DenoisePasses = RendererCVar::cvar_gtao_denoise_passes.get();
-  gtao_settings.Radius = RendererCVar::cvar_gtao_radius.get();
-  gtao_settings.RadiusMultiplier = 1.0f;
-  gtao_settings.FalloffRange = RendererCVar::cvar_gtao_falloff_range.get();
-  gtao_settings.SampleDistributionPower = RendererCVar::cvar_gtao_sample_distribution_power.get();
-  gtao_settings.ThinOccluderCompensation = RendererCVar::cvar_gtao_thin_occluder_compensation.get();
-  gtao_settings.FinalValuePower = RendererCVar::cvar_gtao_final_value_power.get();
-  gtao_settings.DepthMIPSamplingOffset = RendererCVar::cvar_gtao_depth_mip_sampling_offset.get();
+  gtao_settings.quality_level = RendererCVar::cvar_gtao_quality_level.get();
+  gtao_settings.denoise_passes = RendererCVar::cvar_gtao_denoise_passes.get();
+  gtao_settings.radius = RendererCVar::cvar_gtao_radius.get();
+  gtao_settings.radius_multiplier = 1.0f;
+  gtao_settings.falloff_range = RendererCVar::cvar_gtao_falloff_range.get();
+  gtao_settings.sample_distribution_power = RendererCVar::cvar_gtao_sample_distribution_power.get();
+  gtao_settings.thin_occluder_compensation = RendererCVar::cvar_gtao_thin_occluder_compensation.get();
+  gtao_settings.final_value_power = RendererCVar::cvar_gtao_final_value_power.get();
+  gtao_settings.depth_mip_sampling_offset = RendererCVar::cvar_gtao_depth_mip_sampling_offset.get();
 
   gtao_update_constants(gtao_constants, (int)Renderer::get_viewport_width(), (int)Renderer::get_viewport_height(), gtao_settings, current_camera, 0);
 
@@ -1430,7 +1428,7 @@ void DefaultRenderPipeline::gtao_pass(vuk::Allocator& frame_allocator, const Sha
   rg->inference_rule("gtao_main_image", vuk::same_extent_as("final_image"));
   rg->inference_rule("gtao_edge_image", vuk::same_extent_as("final_image"));
 
-  const int pass_count = std::max(1, gtao_settings.DenoisePasses); // should be at least one for now.
+  const int pass_count = std::max(1, gtao_settings.denoise_passes); // should be at least one for now.
   auto gtao_denoise_output = vuk::Name(fmt::format("gtao_denoised_image_{}_output", pass_count - 1));
   for (int i = 0; i < pass_count; i++) {
     auto attachment_name = vuk::Name(fmt::format("gtao_denoised_image_{}", i));

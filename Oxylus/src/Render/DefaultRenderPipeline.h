@@ -3,7 +3,7 @@
 #include "RenderPipeline.h"
 #include "RendererConfig.h"
 
-#include "PBR/GTAO/XeGTAO.h"
+#include "Passes/GTAO.h"
 #include "vuk/CommandBuffer.hpp"
 
 namespace ox {
@@ -196,8 +196,8 @@ private:
   vuk::Texture shadow_map_atlas;
   vuk::Texture shadow_map_atlas_transparent;
 
-  XeGTAO::GTAOConstants gtao_constants = {};
-  XeGTAO::GTAOSettings gtao_settings = {};
+  GTAOConstants gtao_constants = {};
+  GTAOSettings gtao_settings = {};
 
   // PBR Resources
   Shared<TextureAsset> cube_map = nullptr;

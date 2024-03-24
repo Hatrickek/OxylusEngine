@@ -96,7 +96,7 @@ std::pair<Unique<Buffer>, Future> create_cpu_buffer(Allocator& allocator, std::s
 
 #define DEFAULT_USAGE_FLAGS vuk::ImageUsageFlagBits::eTransferSrc | vuk::ImageUsageFlagBits::eTransferDst | vuk::ImageUsageFlagBits::eSampled
 
-Texture create_texture(Allocator& allocator, Extent3D extent, Format format, ImageUsageFlags usage_flags, bool generate_mips = false, int array_layers = 1);
+Texture create_texture(Allocator& allocator, Extent3D extent, Format format, ImageUsageFlags usage_flags, bool generate_mips = false, int array_layers = 1, int mip_level = -1);
 Texture create_texture(Allocator& allocator, const ImageAttachment& attachment);
 
 std::pair<std::vector<Name>, std::vector<Name>> diverge_image_mips(const std::shared_ptr<RenderGraph>& rg, std::string_view input_name, uint32_t mip_count);
