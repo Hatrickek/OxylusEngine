@@ -40,10 +40,12 @@ inline AutoCVar_Float cvar_bloom_clamp("pp.bloom_clamp", "bloom clmap", 3);
 
 inline AutoCVar_Int cvar_fxaa_enable("pp.fxaa", "use fxaa", 1);
 
+inline AutoCVar_Int cvar_fsr_enable("pp.fsr", "use FSR", 1);
+
 inline AutoCVar_Int cvar_tonemapper("pp.tonemapper", "tonemapper preset", 0);
 inline AutoCVar_Float cvar_exposure("pp.exposure", "tonemapping exposure", 1.0f);
 inline AutoCVar_Float cvar_gamma("pp.gamma", "screen gamma", 2.2f);
-}
+} // namespace RendererCVar
 
 class RendererConfig : public ESystem {
 public:
@@ -62,4 +64,4 @@ public:
   void save_config(const char* path) const;
   bool load_config(const char* path);
 };
-}
+} // namespace ox

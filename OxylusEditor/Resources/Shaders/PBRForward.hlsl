@@ -481,7 +481,7 @@ float4 PSmain(VertexOutput input, float4 pixelPosition : SV_Position) : SV_Targe
   surface.Init();
   surface.P = input.world_pos.xyz;
   surface.N = normalize(input.normal);
-  surface.V = GetCamera().position.xyz - surface.P;
+  surface.V = get_camera().position.xyz - surface.P;
   surface.V /= length(surface.V);
   surface.PixelPosition = pixelPosition.xy;
   surface.EmissiveColor = emissive;

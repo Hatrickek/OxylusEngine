@@ -48,6 +48,7 @@ BreakBeforeBraces: Custom
 BreakBeforeTernaryOperators: true
 BreakConstructorInitializers: AfterColon
 BreakBeforeConceptDeclarations: Always
+BreakAfterAttributes: Leave
 AlwaysBreakTemplateDeclarations: true
 Cpp11BracedListStyle: true
 ColumnLimit: 150

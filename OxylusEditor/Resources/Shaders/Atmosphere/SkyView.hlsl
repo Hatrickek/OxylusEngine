@@ -11,7 +11,7 @@ float4 main(VSInput input) : SV_TARGET {
   AtmosphereParameters atmosphere;
   InitAtmosphereParameters(atmosphere);
 
-  const float3 skyRelativePosition = GetCamera().position;
+  const float3 skyRelativePosition = get_camera().position;
   float3 worldPosition = GetCameraPlanetPos(atmosphere, skyRelativePosition);
 
   float viewHeight = length(worldPosition);

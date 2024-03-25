@@ -47,6 +47,9 @@ struct VertexOutput {
 #ifdef USE_VIEWPORT
   uint vp_index : SV_ViewportArrayIndex;
 #endif
+#ifdef USE_PREV_POS
+  float4 prev_position : PREV_POSITION;
+#endif
   uint draw_index : DrawIndex;
 };
 
@@ -66,15 +69,15 @@ struct MeshInstancePointer {
   uint data;
 
   void init() { data = 0; }
-  void Create(uint instance_index, uint camera_index = 0, float dither = 0) {
+  void create(uint instance_index, uint camera_index = 0, float dither = 0) {
     data = 0;
     data |= instance_index & 0xFFFFFF;
     data |= (camera_index & 0xF) << 24u;
     data |= (uint(dither * 15.0f) & 0xF) << 28u;
   }
-  uint GetInstanceIndex() { return data & 0xFFFFFF; }
-  uint GetCameraIndex() { return (data >> 24u) & 0xF; }
-  float GetDither() { return float((data >> 28u) & 0xF) / 15.0f; }
+  uint get_instance_index() { return data & 0xFFFFFF; }
+  uint get_camera_index() { return (data >> 24u) & 0xF; }
+  float get_dither() { return float((data >> 28u) & 0xF) / 15.0f; }
 };
 
 struct ShaderEntity {
@@ -83,12 +86,24 @@ struct ShaderEntity {
 
 struct CameraData {
   float4 position;
-  float4x4 projection_matrix;
-  float4x4 inv_projection_matrix;
-  float4x4 view_matrix;
-  float4x4 inv_view_matrix;
-  float4x4 inv_projection_view_matrix;
-  float4x4 projection_view_matrix;
+
+  float4x4 projection;
+  float4x4 inv_projection;
+  float4x4 view;
+  float4x4 inv_view;
+  float4x4 projection_view;
+  float4x4 inv_projection_view;
+
+  float4x4 previous_projection;
+  float4x4 previous_inv_projection;
+  float4x4 previous_view;
+  float4x4 previous_inv_view;
+  float4x4 previous_projection_view;
+  float4x4 previous_inv_projection_view;
+
+  float2 temporalaa_jitter;
+  float2 temporalaa_jitter_prev;
+
   float3 up;
   float near_clip;
   float3 forward;
@@ -126,9 +141,9 @@ struct Light {
 struct SceneData {
   int num_lights;
   float grid_max_distance;
-  int2 screen_size;
+  uint2 screen_size;
 
-  uint2 pad0;
+  float2 screen_size_rcp;
   uint2 shadow_atlas_res;
 
   float3 sun_direction;
@@ -150,7 +165,7 @@ struct SceneData {
     int sky_env_map_index;
     int sky_transmittance_lut_index;
     int sky_multiscatter_lut_index;
-    int _pad1;
+    int velocity_image_index;
 
     int shadow_array_index;
     int gtao_buffer_image_index;
@@ -194,6 +209,7 @@ inline bool is_saturated(float3 a) { return all(a == saturate(a)); }
 inline bool is_saturated(float4 a) { return all(a == saturate(a)); }
 
 inline float3 clipspace_to_uv(in float3 clipspace) { return clipspace * float3(0.5, 0.5, 0.5) + 0.5; }
+inline float2 uv_to_clipspace(in float2 uv) { return uv * 2.0 - 1.0; }
 
 float2x2 inverse(float2x2 mat) {
   float2x2 m;

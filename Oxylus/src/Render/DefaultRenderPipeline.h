@@ -67,6 +67,7 @@ private:
   static constexpr auto SHADOW_ATLAS_INDEX = 3;
   static constexpr auto SKY_TRANSMITTANCE_LUT_INDEX = 4;
   static constexpr auto SKY_MULTISCATTER_LUT_INDEX = 5;
+  static constexpr auto VELOCITY_IMAGE_INDEX = 6;
 
   // buffers and buffer/image combined indices
   static constexpr auto LIGHTS_BUFFER_INDEX = 0;
@@ -92,18 +93,30 @@ private:
   std::vector<LightData> light_datas;
 
   struct CameraSH {
-    Mat4 projection_view_matrix;
+    Mat4 projection_view;
     Frustum frustum;
   };
 
   struct CameraData {
     Vec4 position = {};
-    Mat4 projection_matrix = {};
-    Mat4 inv_projection_matrix = {};
-    Mat4 view_matrix = {};
-    Mat4 inv_view_matrix = {};
-    Mat4 inv_projection_view_matrix = {};
-    Mat4 projection_view_matrix = {};
+
+    Mat4 projection = {};
+    Mat4 inv_projection = {};
+    Mat4 view = {};
+    Mat4 inv_view = {};
+    Mat4 projection_view = {};
+    Mat4 inv_projection_view = {};
+
+    Mat4 previous_projection = {};
+    Mat4 previous_inv_projection = {};
+    Mat4 previous_view = {};
+    Mat4 previous_inv_view = {};
+    Mat4 previous_projection_view = {};
+    Mat4 previous_inv_projection_view = {};
+
+    Vec2 temporalaa_jitter = {};
+    Vec2 temporalaa_jitter_prev = {};
+
     Vec3 up = {};
     float near_clip = 0;
     Vec3 forward = {};
@@ -122,9 +135,9 @@ private:
   struct SceneData {
     int num_lights;
     float grid_max_distance;
-    IVec2 screen_size;
+    UVec2 screen_size;
 
-    UVec2 _pad0;
+    Vec2 screen_size_rcp;
     UVec2 shadow_atlas_res;
 
     Vec3 sun_direction;
@@ -146,7 +159,7 @@ private:
       int sky_env_map_index;
       int sky_transmittance_lut_index;
       int sky_multiscatter_lut_index;
-      int _pad1;
+      int velocity_image_index;
 
       int shadow_array_index;
       int gtao_buffer_image_index;
@@ -186,6 +199,7 @@ private:
   vuk::Texture pbr_texture;
   vuk::Texture normal_texture;
   vuk::Texture depth_texture;
+  vuk::Texture velocity_texture;
 
   vuk::Texture sky_transmittance_lut;
   vuk::Texture sky_multiscatter_lut;
@@ -198,6 +212,8 @@ private:
 
   GTAOConstants gtao_constants = {};
   GTAOSettings gtao_settings = {};
+
+  //FSR fsr = {};
 
   // PBR Resources
   Shared<TextureAsset> cube_map = nullptr;

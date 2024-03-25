@@ -27,14 +27,14 @@ public:
 #define OX_LOG_ERROR(...) LOG_F(ERROR, __VA_ARGS__)
 #define OX_LOG_FATAL(...) LOG_F(FATAL, __VA_ARGS__)
 
-#define OX_ASSERT(test, ...) CHECK_F(test, __VA_ARGS__)
-#define OX_CHECK_NULL(test, ...) CHECK_NOTNULL_F(test, __VA_ARGS__)
-#define OX_CHECK_EQ(a, b, ...) CHECK_EQ_F(a, b, __VA_ARGS__)
-#define OX_CHECK_NE(a, b, ...) CHECK_NE_F(a, b, __VA_ARGS__)
-#define OX_CHECK_LT(a, b, ...) CHECK_LT_F(a, b, __VA_ARGS__)
-#define OX_CHECK_GT(a, b, ...) CHECK_GT_F(a, b, __VA_ARGS__)
-#define OX_CHECK_LE(a, b, ...) CHECK_LE_F(a, b, __VA_ARGS__)
-#define OX_CHECK_GE(a, b, ...) CHECK_GE_F(a, b, __VA_ARGS__)
+#define OX_ASSERT(test, ...) CHECK_F(test, ##__VA_ARGS__)
+#define OX_CHECK_NULL(test, ...) CHECK_NOTNULL_F(test, ##__VA_ARGS__)
+#define OX_CHECK_EQ(a, b, ...) CHECK_EQ_F(a, b, ##__VA_ARGS__)
+#define OX_CHECK_NE(a, b, ...) CHECK_NE_F(a, b, ##__VA_ARGS__)
+#define OX_CHECK_LT(a, b, ...) CHECK_LT_F(a, b, ##__VA_ARGS__)
+#define OX_CHECK_GT(a, b, ...) CHECK_GT_F(a, b, ##__VA_ARGS__)
+#define OX_CHECK_LE(a, b, ...) CHECK_LE_F(a, b, ##__VA_ARGS__)
+#define OX_CHECK_GE(a, b, ...) CHECK_GE_F(a, b, ##__VA_ARGS__)
 
 #ifndef OX_DEBUG
   #define OX_DISABLE_DEBUG_BREAKS
@@ -57,6 +57,8 @@ public:
 
 #define OX_EXPAND_MACRO(x) x
 #define OX_STRINGIFY_MACRO(x) #x
+#define OX_COMBINE_MACRO(a, b) a##b
+#define OX_EXPAND_STRINGIFY(x) OX_STRINGIFY_MACRO(x)
 
 #define TRY(...)                    \
   try {                             \

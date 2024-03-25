@@ -17,8 +17,8 @@ VOutput main(Vertex inVertex) {
   output.UV = inVertex.uv;
 
   float3 position = inVertex.position;
-  output.NearPoint = UnprojectPoint(position.x, position.y, 0.0, GetCamera().inv_projection_view_matrix);
-  output.FarPoint = UnprojectPoint(position.x, position.y, 1.0, GetCamera().inv_projection_view_matrix).xyz;
+  output.NearPoint = UnprojectPoint(position.x, position.y, 0.0, get_camera().inv_projection_view);
+  output.FarPoint = UnprojectPoint(position.x, position.y, 1.0, get_camera().inv_projection_view).xyz;
   output.Position = float4(position.xyz, 1.0);
 
   return output;
@@ -50,17 +50,17 @@ float4 Grid(float3 fragPos3D, float scale) {
 }
 
 float ComputeDepth(float3 pos) {
-  float4 clipSpacePos = mul(GetCamera().projection_view_matrix, float4(pos.xyz, 1.0));
+  float4 clipSpacePos = mul(get_camera().projection_view, float4(pos.xyz, 1.0));
   return (clipSpacePos.z / clipSpacePos.w);
 }
 
 float ComputeLinearDepth(float3 pos) {
-  float4 clipSpacePos = mul(GetCamera().projection_view_matrix, float4(pos.xyz, 1.0));
+  float4 clipSpacePos = mul(get_camera().projection_view, float4(pos.xyz, 1.0));
   float clipSpaceDepth = (clipSpacePos.z / clipSpacePos.w) * 2.0 - 1.0;                  // put back between -1 and 1
-  float linearDepth = (2.0 * GetCamera().near_clip * GetCamera().far_clip) /
-                      (GetCamera().far_clip + GetCamera().near_clip -
-                       clipSpaceDepth * (GetCamera().far_clip - GetCamera().near_clip)); // get linear value between 0.01 and 100
-  return linearDepth / GetCamera().far_clip;                                             // normalize
+  float linearDepth = (2.0 * get_camera().near_clip * get_camera().far_clip) /
+                      (get_camera().far_clip + get_camera().near_clip -
+                       clipSpaceDepth * (get_camera().far_clip - get_camera().near_clip)); // get linear value between 0.01 and 100
+  return linearDepth / get_camera().far_clip;                                             // normalize
 }
 
 int RoundToPowerOfTen(float n) { return int(pow(10.0, floor((1 / log(10)) * log(n)))); }
@@ -81,8 +81,8 @@ PSOut PSmain(VOutput input, float4 pixelPosition : SV_Position) {
   float fading = max(0, (0.5 - linearDepth));
 
   float dist, angleFade;
-  if (GetCamera().projection_matrix[3][3] - EPSILON < 0.0) {
-    float3 viewvec = GetCamera().position.xyz - pixelPos;
+  if (get_camera().projection[3][3] - EPSILON < 0.0) {
+    float3 viewvec = get_camera().position.xyz - pixelPos;
     dist = length(viewvec);
     viewvec /= dist;
 
@@ -99,7 +99,7 @@ PSOut PSmain(VOutput input, float4 pixelPosition : SV_Position) {
     dist = 1.0;                   /* avoid branch after */
   }
 
-  const float distanceToCamera = abs(GetCamera().position.y - pixelPos.y);
+  const float distanceToCamera = abs(get_camera().position.y - pixelPos.y);
   const int powerOfTen = max(1, RoundToPowerOfTen(distanceToCamera));
   const float divs = 1.0f / float(powerOfTen);
   const float secondFade = smoothstep(subdivisions / divs, 1 / divs, distanceToCamera);

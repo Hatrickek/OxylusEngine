@@ -94,32 +94,32 @@ void DefaultRenderPipeline::load_pipelines(vuk::Allocator& allocator) {
   task_scheduler->add_task([=]() mutable {
     bindless_pci.add_hlsl(SHADER_FILE("DepthNormalPrePass.hlsl"), SS::eVertex, "VSmain");
     bindless_pci.add_hlsl(SHADER_FILE("DepthNormalPrePass.hlsl"), SS::ePixel, "PSmain");
-    TRY(allocator.get_context().create_named_pipeline("depth_pre_pass_pipeline", bindless_pci));
+    TRY(allocator.get_context().create_named_pipeline("depth_pre_pass_pipeline", bindless_pci))
   });
 
   task_scheduler->add_task([=]() mutable {
     bindless_pci.add_hlsl(SHADER_FILE("DirectionalShadowPass.hlsl"), SS::eVertex, "VSmain");
-    TRY(allocator.get_context().create_named_pipeline("shadow_pipeline", bindless_pci));
+    TRY(allocator.get_context().create_named_pipeline("shadow_pipeline", bindless_pci))
   });
 
   task_scheduler->add_task([=]() mutable {
     bindless_pci.add_hlsl(SHADER_FILE("PBRForward.hlsl"), SS::eVertex, "VSmain");
     bindless_pci.add_hlsl(SHADER_FILE("PBRForward.hlsl"), SS::ePixel, "PSmain");
-    TRY(allocator.get_context().create_named_pipeline("pbr_pipeline", bindless_pci));
+    TRY(allocator.get_context().create_named_pipeline("pbr_pipeline", bindless_pci))
   });
 
   task_scheduler->add_task([=]() mutable {
     bindless_pci.add_hlsl(SHADER_FILE("PBRForward.hlsl"), SS::eVertex, "VSmain");
     bindless_pci.add_hlsl(SHADER_FILE("PBRForward.hlsl"), SS::ePixel, "PSmain");
     bindless_pci.define("TRANSPARENT", "");
-    TRY(allocator.get_context().create_named_pipeline("pbr_transparency_pipeline", bindless_pci));
+    TRY(allocator.get_context().create_named_pipeline("pbr_transparency_pipeline", bindless_pci))
   });
 
   task_scheduler->add_task([&allocator]() mutable {
     vuk::PipelineBaseCreateInfo pci;
     pci.add_hlsl(SHADER_FILE("FullscreenTriangle.hlsl"), SS::eVertex);
     pci.add_glsl(SHADER_FILE("FinalPass.frag"));
-    TRY(allocator.get_context().create_named_pipeline("final_pipeline", pci));
+    TRY(allocator.get_context().create_named_pipeline("final_pipeline", pci))
   });
 
   // --- GTAO ---
@@ -129,7 +129,7 @@ void DefaultRenderPipeline::load_pipelines(vuk::Allocator& allocator) {
     pci.define("XE_GTAO_FP32_DEPTHS", "");
     pci.define("XE_GTAO_USE_HALF_FLOAT_PRECISION", "0");
     pci.define("XE_GTAO_USE_DEFAULT_CONSTANTS", "0");
-    TRY(allocator.get_context().create_named_pipeline("gtao_first_pipeline", pci));
+    TRY(allocator.get_context().create_named_pipeline("gtao_first_pipeline", pci))
   });
 
   task_scheduler->add_task([&allocator]() mutable {
@@ -138,7 +138,7 @@ void DefaultRenderPipeline::load_pipelines(vuk::Allocator& allocator) {
     pci.define("XE_GTAO_FP32_DEPTHS", "");
     pci.define("XE_GTAO_USE_HALF_FLOAT_PRECISION", "0");
     pci.define("XE_GTAO_USE_DEFAULT_CONSTANTS", "0");
-    TRY(allocator.get_context().create_named_pipeline("gtao_main_pipeline", pci));
+    TRY(allocator.get_context().create_named_pipeline("gtao_main_pipeline", pci))
   });
 
   task_scheduler->add_task([&allocator]() mutable {
@@ -147,7 +147,7 @@ void DefaultRenderPipeline::load_pipelines(vuk::Allocator& allocator) {
     pci.define("XE_GTAO_FP32_DEPTHS", "");
     pci.define("XE_GTAO_USE_HALF_FLOAT_PRECISION", "0");
     pci.define("XE_GTAO_USE_DEFAULT_CONSTANTS", "0");
-    TRY(allocator.get_context().create_named_pipeline("gtao_denoise_pipeline", pci));
+    TRY(allocator.get_context().create_named_pipeline("gtao_denoise_pipeline", pci))
   });
 
   task_scheduler->add_task([&allocator]() mutable {
@@ -156,75 +156,75 @@ void DefaultRenderPipeline::load_pipelines(vuk::Allocator& allocator) {
     pci.define("XE_GTAO_FP32_DEPTHS", "");
     pci.define("XE_GTAO_USE_HALF_FLOAT_PRECISION", "0");
     pci.define("XE_GTAO_USE_DEFAULT_CONSTANTS", "0");
-    TRY(allocator.get_context().create_named_pipeline("gtao_final_pipeline", pci));
+    TRY(allocator.get_context().create_named_pipeline("gtao_final_pipeline", pci))
   });
 
   task_scheduler->add_task([&allocator]() mutable {
     vuk::PipelineBaseCreateInfo pci;
     pci.add_hlsl(SHADER_FILE("FullscreenTriangle.hlsl"), SS::eVertex);
     pci.add_glsl(SHADER_FILE("PostProcess/FXAA.frag"));
-    TRY(allocator.get_context().create_named_pipeline("fxaa_pipeline", pci));
+    TRY(allocator.get_context().create_named_pipeline("fxaa_pipeline", pci))
   });
 
   // --- Bloom ---
   task_scheduler->add_task([&allocator]() mutable {
     vuk::PipelineBaseCreateInfo pci;
     pci.add_glsl(SHADER_FILE("PostProcess/BloomPrefilter.comp"));
-    TRY(allocator.get_context().create_named_pipeline("bloom_prefilter_pipeline", pci));
+    TRY(allocator.get_context().create_named_pipeline("bloom_prefilter_pipeline", pci))
   });
 
   task_scheduler->add_task([&allocator]() mutable {
     vuk::PipelineBaseCreateInfo pci;
     pci.add_glsl(SHADER_FILE("PostProcess/BloomDownsample.comp"));
-    TRY(allocator.get_context().create_named_pipeline("bloom_downsample_pipeline", pci));
+    TRY(allocator.get_context().create_named_pipeline("bloom_downsample_pipeline", pci))
   });
 
   task_scheduler->add_task([&allocator]() mutable {
     vuk::PipelineBaseCreateInfo pci;
     pci.add_glsl(SHADER_FILE("PostProcess/BloomUpsample.comp"));
-    TRY(allocator.get_context().create_named_pipeline("bloom_upsample_pipeline", pci));
+    TRY(allocator.get_context().create_named_pipeline("bloom_upsample_pipeline", pci))
   });
 
   task_scheduler->add_task([=]() mutable {
     bindless_pci.add_hlsl(SHADER_FILE("Debug/Grid.hlsl"), SS::eVertex);
     bindless_pci.add_hlsl(SHADER_FILE("Debug/Grid.hlsl"), SS::ePixel, "PSmain");
-    TRY(allocator.get_context().create_named_pipeline("grid_pipeline", bindless_pci));
+    TRY(allocator.get_context().create_named_pipeline("grid_pipeline", bindless_pci))
   });
 
   task_scheduler->add_task([&allocator]() mutable {
     vuk::PipelineBaseCreateInfo pci;
     pci.add_glsl(SHADER_FILE("Debug/Unlit.vert"));
     pci.add_glsl(SHADER_FILE("Debug/Unlit.frag"));
-    TRY(allocator.get_context().create_named_pipeline("unlit_pipeline", pci));
+    TRY(allocator.get_context().create_named_pipeline("unlit_pipeline", pci))
   });
 
   // --- Atmosphere ---
   task_scheduler->add_task([=]() mutable {
     bindless_pci.add_hlsl(SHADER_FILE("Atmosphere/TransmittanceLUT.hlsl"), SS::eCompute);
-    TRY(allocator.get_context().create_named_pipeline("sky_transmittance_pipeline", bindless_pci));
+    TRY(allocator.get_context().create_named_pipeline("sky_transmittance_pipeline", bindless_pci))
   });
 
   task_scheduler->add_task([=]() mutable {
     bindless_pci.add_hlsl(SHADER_FILE("Atmosphere/MultiScatterLUT.hlsl"), SS::eCompute);
-    TRY(allocator.get_context().create_named_pipeline("sky_multiscatter_pipeline", bindless_pci));
+    TRY(allocator.get_context().create_named_pipeline("sky_multiscatter_pipeline", bindless_pci))
   });
 
   task_scheduler->add_task([=]() mutable {
     bindless_pci.add_hlsl(SHADER_FILE("FullscreenTriangle.hlsl"), SS::eVertex);
     bindless_pci.add_hlsl(SHADER_FILE("Atmosphere/SkyView.hlsl"), SS::ePixel);
-    TRY(allocator.get_context().create_named_pipeline("sky_view_pipeline", bindless_pci));
+    TRY(allocator.get_context().create_named_pipeline("sky_view_pipeline", bindless_pci))
   });
 
   task_scheduler->add_task([=]() mutable {
     bindless_pci.add_hlsl(SHADER_FILE("Atmosphere/SkyViewFinal.hlsl"), SS::eVertex, "VSmain");
     bindless_pci.add_hlsl(SHADER_FILE("Atmosphere/SkyViewFinal.hlsl"), SS::ePixel, "PSmain");
-    TRY(allocator.get_context().create_named_pipeline("sky_view_final_pipeline", bindless_pci));
+    TRY(allocator.get_context().create_named_pipeline("sky_view_final_pipeline", bindless_pci))
   });
 
   task_scheduler->add_task([=]() mutable {
     bindless_pci.add_hlsl(SHADER_FILE("Atmosphere/SkyEnvMap.hlsl"), SS::eVertex, "VSmain");
     bindless_pci.add_hlsl(SHADER_FILE("Atmosphere/SkyEnvMap.hlsl"), SS::ePixel, "PSmain");
-    TRY(allocator.get_context().create_named_pipeline("sky_envmap_pipeline", bindless_pci));
+    TRY(allocator.get_context().create_named_pipeline("sky_envmap_pipeline", bindless_pci))
   });
 
   wait_for_futures(allocator);
@@ -246,19 +246,33 @@ void DefaultRenderPipeline::bind_camera_buffer(vuk::CommandBuffer& command_buffe
 }
 
 DefaultRenderPipeline::CameraData DefaultRenderPipeline::get_main_camera_data() const {
-  return CameraData{
+  CameraData camera_data{
     .position = Vec4(current_camera->get_position(), 0.0f),
-    .projection_matrix = current_camera->get_projection_matrix(),
-    .inv_projection_matrix = current_camera->get_inv_projection_matrix(),
-    .view_matrix = current_camera->get_view_matrix(),
-    .inv_view_matrix = current_camera->get_inv_view_matrix(),
-    .inv_projection_view_matrix = current_camera->get_inverse_projection_view(),
-    .projection_view_matrix = current_camera->get_projection_matrix() * current_camera->get_view_matrix(),
+    .projection = current_camera->get_projection_matrix(),
+    .inv_projection = current_camera->get_inv_projection_matrix(),
+    .view = current_camera->get_view_matrix(),
+    .inv_view = current_camera->get_inv_view_matrix(),
+    .projection_view = current_camera->get_projection_matrix() * current_camera->get_view_matrix(),
+    .inv_projection_view = current_camera->get_inverse_projection_view(),
+    .previous_projection = current_camera->get_projection_matrix(),
+    .previous_inv_projection = current_camera->get_inv_projection_matrix(),
+    .previous_view = current_camera->get_view_matrix(),
+    .previous_inv_view = current_camera->get_inv_view_matrix(),
+    .previous_projection_view = current_camera->get_projection_matrix() * current_camera->get_view_matrix(),
+    .previous_inv_projection_view = current_camera->get_inverse_projection_view(),
     .near_clip = current_camera->get_near(),
     .far_clip = current_camera->get_far(),
     .fov = current_camera->get_fov(),
     .output_index = 0,
   };
+
+  // if (RendererCVar::cvar_fsr_enable.get())
+  // current_camera->set_jitter(fsr.get_jitter());
+
+  camera_data.temporalaa_jitter = current_camera->get_jitter();
+  camera_data.temporalaa_jitter_prev = current_camera->get_previous_jitter();
+
+  return camera_data;
 }
 
 void DefaultRenderPipeline::create_dir_light_cameras(const LightComponent& light,
@@ -337,7 +351,7 @@ void DefaultRenderPipeline::create_dir_light_cameras(const LightComponent& light
     const auto light_projection = glm::ortho(vMin.x, vMax.x, vMin.y, vMax.y, vMax.z, vMin.z); // reversed Z
     const auto view_proj = light_projection * light_view;
 
-    camera_data[cascade].projection_view_matrix = view_proj;
+    camera_data[cascade].projection_view = view_proj;
     camera_data[cascade].frustum = Frustum::from_matrix(view_proj);
   }
 }
@@ -349,19 +363,21 @@ void DefaultRenderPipeline::update_frame_data(vuk::Allocator& allocator) {
   scene_data.num_lights = (int)scene_lights.size();
   scene_data.grid_max_distance = RendererCVar::cvar_draw_grid_distance.get();
   scene_data.screen_size = IVec2(Renderer::get_viewport_width(), Renderer::get_viewport_height());
+  scene_data.screen_size_rcp = {1.0f / (float)std::max(1u, scene_data.screen_size.x), 1.0f / (float)std::max(1u, scene_data.screen_size.y)};
 
   scene_data.indices.pbr_image_index = PBR_IMAGE_INDEX;
   scene_data.indices.normal_image_index = NORMAL_IMAGE_INDEX;
   scene_data.indices.depth_image_index = DEPTH_IMAGE_INDEX;
   scene_data.indices.sky_transmittance_lut_index = SKY_TRANSMITTANCE_LUT_INDEX;
   scene_data.indices.sky_multiscatter_lut_index = SKY_MULTISCATTER_LUT_INDEX;
+  scene_data.indices.velocity_image_index = VELOCITY_IMAGE_INDEX;
   scene_data.indices.sky_env_map_index = SKY_ENVMAP_INDEX;
   scene_data.indices.shadow_array_index = SHADOW_ATLAS_INDEX;
   scene_data.indices.gtao_buffer_image_index = GTAO_BUFFER_IMAGE_INDEX;
   scene_data.indices.lights_buffer_index = LIGHTS_BUFFER_INDEX;
   scene_data.indices.materials_buffer_index = MATERIALS_BUFFER_INDEX;
   scene_data.indices.mesh_instance_buffer_index = MESH_INSTANCES_BUFFER_INDEX;
-  scene_data.indices.entites_buffer_index = ENTITIES_BUFFER_INDEX,
+  scene_data.indices.entites_buffer_index = ENTITIES_BUFFER_INDEX;
 
   scene_data.post_processing_data.tonemapper = RendererCVar::cvar_tonemapper.get();
   scene_data.post_processing_data.exposure = RendererCVar::cvar_exposure.get();
@@ -441,7 +457,7 @@ void DefaultRenderPipeline::update_frame_data(vuk::Allocator& allocator) {
 
       light.matrix_index = (uint32_t)shader_entities.size();
       for (uint32_t cascade = 0; cascade < light.cascade_count; ++cascade) {
-        shader_entities.emplace_back(sh_cameras[cascade].projection_view_matrix);
+        shader_entities.emplace_back(sh_cameras[cascade].projection_view);
       }
     }
   }
@@ -490,6 +506,7 @@ void DefaultRenderPipeline::update_frame_data(vuk::Allocator& allocator) {
   // scene Read/Write textures
   descriptor_set_00->update_storage_image(6, SKY_TRANSMITTANCE_LUT_INDEX, *sky_transmittance_lut.view);
   descriptor_set_00->update_storage_image(6, SKY_MULTISCATTER_LUT_INDEX, *sky_multiscatter_lut.view);
+  descriptor_set_00->update_storage_image(6, VELOCITY_IMAGE_INDEX, *velocity_texture.view);
 
   descriptor_set_00->commit(ctx);
 }
@@ -555,6 +572,8 @@ void DefaultRenderPipeline::create_dynamic_textures(vuk::Allocator& allocator, c
   if (depth_texture.extent != dim.extent)
     depth_texture =
       create_texture(allocator, dim.extent, vuk::Format::eD32Sfloat, DEFAULT_USAGE_FLAGS | vuk::ImageUsageFlagBits::eDepthStencilAttachment);
+  if (velocity_texture.extent != dim.extent)
+    velocity_texture = create_texture(allocator, dim.extent, vuk::Format::eR16G16Sfloat, DEFAULT_USAGE_FLAGS | vuk::ImageUsageFlagBits::eStorage);
 
   // Shadow atlas packing:
   {
@@ -1076,7 +1095,7 @@ void DefaultRenderPipeline::shadow_pass(const Shared<vuk::RenderGraph>& rg) {
 
           if (!shadow_queue.empty()) {
             for (uint32_t cascade = 0; cascade < cascade_count; ++cascade) {
-              cameras[cascade].projection_view_matrix = sh_cameras[cascade].projection_view_matrix;
+              cameras[cascade].projection_view = sh_cameras[cascade].projection_view;
               cameras[cascade].output_index = cascade;
               camera_cb.camera_data[cascade] = cameras[cascade];
 
@@ -1117,9 +1136,11 @@ void DefaultRenderPipeline::depth_pre_pass(const Shared<vuk::RenderGraph>& rg) {
 
   rg->attach_and_clear_image("normal_image", vuk::ImageAttachment::from_texture(normal_texture), vuk::Black<float>);
   rg->attach_and_clear_image("depth_image", vuk::ImageAttachment::from_texture(depth_texture), vuk::DepthZero);
+  rg->attach_and_clear_image("velocity_image", vuk::ImageAttachment::from_texture(velocity_texture), vuk::Black<float>);
 
   const auto resources = std::vector{
     "normal_image"_image >> vuk::eColorRW >> "normal_output",
+    "velocity_image"_image >> vuk::eColorRW >> "velocity_output",
     "depth_image"_image >> vuk::eDepthStencilRW >> "depth_output",
   };
 
@@ -1612,7 +1633,7 @@ void DefaultRenderPipeline::sky_envmap_pass(const Shared<vuk::RenderGraph>& rg) 
     };
 
     for (int i = 0; i < 6; i++)
-      camera_cb.camera_data[i].projection_view_matrix = capture_projection * capture_views[i];
+      camera_cb.camera_data[i].projection_view = capture_projection * capture_views[i];
 
     bind_camera_buffer(command_buffer);
 

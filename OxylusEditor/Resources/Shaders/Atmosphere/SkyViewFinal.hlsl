@@ -24,10 +24,10 @@ VSInput VSmain(uint vertexID : SV_VertexID) {
 }
 
 float4 PSmain(VSInput input) : SV_TARGET {
-  float4 unprojected = mul(GetCamera().inv_projection_view_matrix, float4(input.uv, 0.0f, 1.0f));
+  float4 unprojected = mul(get_camera().inv_projection_view, float4(input.uv, 0.0f, 1.0f));
   unprojected.xyz /= unprojected.w;
 
-  const float3 V = normalize(unprojected.xyz - GetCamera().position);
+  const float3 V = normalize(unprojected.xyz - get_camera().position);
 
   float4 color = float4(GetDynamicSkyColor(input.uv, V), 1);
 

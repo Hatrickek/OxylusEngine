@@ -6,7 +6,6 @@
 
 [[vk::binding(0, 1)]] ConstantBuffer<CameraCB> Camera;
 [[vk::binding(1, 1)]] StructuredBuffer<MeshInstancePointer> MeshInstancePointers;
-//[[vk::binding(1, 2)]] StructuredBuffer<DrawParameter> DrawParameters;
 
 [[vk::binding(0, 0)]] ConstantBuffer<SceneData> Scene;
 
@@ -37,7 +36,7 @@
 
 SceneData GetScene() { return Scene; }
 
-CameraData GetCamera(uint camera_index = 0) { return Camera.camera_data[camera_index]; }
+CameraData get_camera(uint camera_index = 0) { return Camera.camera_data[camera_index]; }
 
 inline MeshInstance load_instance(uint instance_index) {
   return Buffers[GetScene().indices_.mesh_instance_buffer_index].Load<MeshInstance>(instance_index * sizeof(MeshInstance));
@@ -48,26 +47,26 @@ struct VertexInput {
   uint instance_index : SV_InstanceID;
   [[vk::builtin("DrawIndex")]] uint draw_index : DrawIndex;
 
-  MeshInstancePointer GetInstancePointer(const uint instance_offset) { return MeshInstancePointers[instance_offset + instance_index]; }
+  MeshInstancePointer get_instance_pointer(const uint instance_offset) { return MeshInstancePointers[instance_offset + instance_index]; }
 
-  MeshInstance GetInstance(const uint instance_offset) { return load_instance(GetInstancePointer(instance_offset).GetInstanceIndex()); }
+  MeshInstance get_instance(const uint instance_offset) { return load_instance(get_instance_pointer(instance_offset).get_instance_index()); }
 
-  float3 GetVertexPosition(uint64_t ptr) {
+  float3 get_vertex_position(uint64_t ptr) {
     uint64_t addressOffset = ptr + vertex_index * sizeof(Vertex);
     return vk::RawBufferLoad<float4>(addressOffset).xyz;
   }
 
-  float3 GetVertexNormal(uint64_t ptr) {
+  float3 get_vertex_normal(uint64_t ptr) {
     uint64_t addressOffset = ptr + vertex_index * sizeof(Vertex) + sizeof(float4);
     return vk::RawBufferLoad<float4>(addressOffset).xyz;
   }
 
-  float2 GetVertexUV(uint64_t ptr) {
+  float2 get_vertex_uv(uint64_t ptr) {
     uint64_t addressOffset = ptr + vertex_index * sizeof(Vertex) + sizeof(float4) * 2;
     return vk::RawBufferLoad<float4>(addressOffset).xy;
   }
 
-  float4 GetVertexTangent(uint64_t ptr) {
+  float4 get_vertex_tangent(uint64_t ptr) {
     uint64_t addressOffset = ptr + vertex_index * sizeof(Vertex) + sizeof(float4) * 3;
     return vk::RawBufferLoad<float4>(addressOffset);
   }

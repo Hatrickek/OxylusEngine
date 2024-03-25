@@ -297,7 +297,9 @@ void ViewportPanel::on_imgui_render() {
       m_scene_hierarchy_panel->drag_drop_target();
 
     if (!context->is_running()) {
-      Mat4 view_proj = m_camera.get_projection_matrix_flipped() * m_camera.get_view_matrix();
+      auto projection = m_camera.get_projection_matrix();
+      projection[1][1] *= -1;
+      Mat4 view_proj = projection * m_camera.get_view_matrix();
       const Frustum& frustum = m_camera.get_frustum();
       show_component_gizmo<LightComponent>(fixed_width, viewport_panel_size.y, 0, 0, view_proj, frustum, context.get());
       show_component_gizmo<AudioSourceComponent>(fixed_width, viewport_panel_size.y, 0, 0, view_proj, frustum, context.get());
@@ -655,7 +657,9 @@ void ViewportPanel::draw_gizmos() {
                       viewport_bounds[1].x - viewport_bounds[0].x,
                       viewport_bounds[1].y - viewport_bounds[0].y);
 
-    const Mat4& camera_projection = m_camera.get_projection_matrix_flipped();
+    auto camera_projection = m_camera.get_projection_matrix();
+    camera_projection[1][1] *= -1;
+
     const Mat4& camera_view = m_camera.get_view_matrix();
 
     Mat4 transform = EUtil::get_world_transform(context.get(), selected_entity);

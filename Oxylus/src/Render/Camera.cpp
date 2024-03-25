@@ -8,44 +8,13 @@
 namespace ox {
 Camera::Camera(Vec3 position) {
   m_position = position;
-  update_view_matrix();
-  update_projection_matrix();
+  update();
 }
-
-Mat4 Camera::get_projection_matrix() const {
-  OX_SCOPED_ZONE;
-  return m_projection_matrix;
-}
-
-Mat4 Camera::get_inv_projection_matrix() const { return inverse(m_projection_matrix); }
-
-Mat4 Camera::get_projection_matrix_flipped() const { return glm::perspective(glm::radians(m_fov), m_aspect, far_clip, near_clip); }
-
-void Camera::set_near(float new_near) { near_clip = new_near; }
-
-void Camera::set_far(float new_far) { far_clip = new_far; }
-
-Mat4 Camera::get_view_matrix() const { return m_view_matrix; }
-
-Mat4 Camera::get_inv_view_matrix() const { return inverse(m_view_matrix); }
-
-Mat4 Camera::get_world_matrix() const {
-  return glm::translate(Mat4(1.0f), m_position) * glm::toMat4(glm::quat(Vec3(get_pitch(), get_yaw(), m_tilt)));
-}
-
-Mat4 Camera::get_inverse_projection_view() const { return inverse(get_projection_matrix() * get_view_matrix()); }
-
-void Camera::set_position(const Vec3 pos) { m_position = pos; }
-
-void Camera::set_fov(const float fov) { this->m_fov = fov; }
-
-Vec3 Camera::get_forward() const { return m_forward; }
-
-Vec3 Camera::get_right() const { return m_right; }
-
-const Vec3& Camera::get_position() const { return m_position; }
 
 void Camera::update() {
+  jitter_prev = jitter;
+  previous_matrices.projection_matrix = matrices.projection_matrix;
+  previous_matrices.view_matrix = matrices.view_matrix;
   update_projection_matrix();
   update_view_matrix();
 }
@@ -56,8 +25,7 @@ void Camera::update(const Vec3& pos, const Vec3& rotation) {
   set_pitch(rotation.x);
   set_yaw(rotation.y);
   set_tilt(rotation.z);
-  update_projection_matrix();
-  update_view_matrix();
+  update();
 }
 
 void Camera::update_view_matrix() {
@@ -75,18 +43,14 @@ void Camera::update_view_matrix() {
   m_right = glm::normalize(glm::cross(m_forward, {m_tilt, 1, m_tilt}));
   m_up = glm::normalize(glm::cross(m_right, m_forward));
 
-  m_view_matrix = glm::lookAt(m_position, m_position + m_forward, m_up);
+  matrices.view_matrix = glm::lookAt(m_position, m_position + m_forward, m_up);
 
   m_aspect = (float)Renderer::get_viewport_width() / (float)Renderer::get_viewport_height();
 }
 
 void Camera::update_projection_matrix() {
-  m_projection_matrix = glm::perspective(glm::radians(m_fov), m_aspect, far_clip, near_clip); // reversed-z
-  m_projection_matrix[1][1] *= -1.0f;
-}
-
-Mat4 Camera::generate_view_matrix(const Vec3& position, const Vec3& view_dir, const Vec3& up) {
-  return glm::lookAt(position, position + view_dir, up);
+  matrices.projection_matrix = glm::perspective(glm::radians(m_fov), m_aspect, far_clip, near_clip); // reversed-z
+  matrices.projection_matrix[1][1] *= -1.0f;
 }
 
 Frustum Camera::get_frustum() {
