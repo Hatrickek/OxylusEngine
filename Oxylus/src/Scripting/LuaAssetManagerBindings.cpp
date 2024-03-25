@@ -1,10 +1,10 @@
-﻿#include "LuaAssetManagerBindings.h"
+﻿#include "LuaAssetManagerBindings.hpp"
 
 #include <sol/state.hpp>
 
-#include "Assets/AssetManager.h"
+#include "Assets/AssetManager.hpp"
 
-#include "Audio/AudioSource.h"
+#include "Audio/AudioSource.hpp"
 
 #include "Render/Mesh.h"
 

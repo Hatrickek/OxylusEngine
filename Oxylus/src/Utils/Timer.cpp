@@ -1,4 +1,4 @@
-﻿#include "Timer.h"
+﻿#include "Timer.hpp"
 
 namespace ox {
 float Timer::get_timed_ms() {

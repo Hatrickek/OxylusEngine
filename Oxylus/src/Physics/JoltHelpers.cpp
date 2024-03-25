@@ -1,4 +1,4 @@
-﻿#include "JoltHelpers.h"
+﻿#include "JoltHelpers.hpp"
 
 #include "Jolt/Jolt.h"
 #include "Jolt/Geometry/AABox.h"

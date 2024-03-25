@@ -1,13 +1,13 @@
-﻿#include "RuntimeConsole.h"
+﻿#include "RuntimeConsole.hpp"
 
 #include <icons/IconsMaterialDesignIcons.h>
 
-#include "ImGuiLayer.h"
+#include "ImGuiLayer.hpp"
 
-#include "Core/App.h"
+#include "Core/App.hpp"
 
-#include "Utils/CVars.h"
-#include "Utils/StringUtils.h"
+#include "Utils/CVars.hpp"
+#include "Utils/StringUtils.hpp"
 
 namespace ox {
 static ImVec4 get_color(const loguru::Verbosity verb) {

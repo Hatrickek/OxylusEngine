@@ -1,9 +1,9 @@
-#include "Camera.h"
+#include "Camera.hpp"
 
-#include "Utils/OxMath.h"
-#include "Utils/Profiler.h"
+#include "Utils/OxMath.hpp"
+#include "Utils/Profiler.hpp"
 
-#include "Vulkan/Renderer.h"
+#include "Vulkan/Renderer.hpp"
 
 namespace ox {
 Camera::Camera(Vec3 position) {

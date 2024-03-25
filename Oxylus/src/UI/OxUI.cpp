@@ -1,19 +1,19 @@
-#include "OxUI.h"
+#include "OxUI.hpp"
 
-#include "Assets/AssetManager.h"
-#include "Utils/ImGuiScoped.h"
-#include "Utils/StringUtils.h"
-#include "Utils/FileDialogs.h"
+#include "Assets/AssetManager.hpp"
+#include "Utils/FileDialogs.hpp"
+#include "Utils/ImGuiScoped.hpp"
+#include "Utils/StringUtils.hpp"
 
+#include <fmt/format.h>
 #include <imgui_internal.h>
 #include <misc/cpp/imgui_stdlib.h>
-#include <fmt/format.h>
 #include <vuk/SampledImage.hpp>
 
-#include "ImGuiLayer.h"
+#include "ImGuiLayer.hpp"
 
-#include "Assets/TextureAsset.h"
-#include "Core/App.h"
+#include "Assets/TextureAsset.hpp"
+#include "Core/App.hpp"
 
 namespace ox {
 inline static int ui_context_id = 0;

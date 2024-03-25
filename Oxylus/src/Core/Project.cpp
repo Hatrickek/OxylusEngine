@@ -1,19 +1,19 @@
-#include "Project.h"
+#include "Project.hpp"
 
 #include <entt/locator/locator.hpp>
-#include <entt/meta/node.hpp>
 #include <entt/meta/context.hpp>
+#include <entt/meta/node.hpp>
 
-#include "Base.h"
-#include "FileSystem.h"
-#include "Modules/ModuleRegistry.h"
-#include "ProjectSerializer.h"
+#include "Modules/ModuleRegistry.hpp"
+#include "Base.hpp"
+#include "FileSystem.hpp"
+#include "ProjectSerializer.hpp"
 
-#include "Modules/ModuleInterface.h"
-#include "Modules/ModuleUtil.h"
+#include "Modules/ModuleInterface.hpp"
+#include "Modules/ModuleUtil.hpp"
 
-#include "Utils/Log.h"
-#include "Utils/Profiler.h"
+#include "Utils/Log.hpp"
+#include "Utils/Profiler.hpp"
 
 namespace ox {
 std::string Project::get_asset_directory() {

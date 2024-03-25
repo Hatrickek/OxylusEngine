@@ -1,18 +1,18 @@
-﻿#include "LuaPhysicsBindings.h"
+﻿#include "LuaPhysicsBindings.hpp"
 
 #include <sol/state.hpp>
 
-#include "LuaHelpers.h"
+#include "LuaHelpers.hpp"
 
 #include "Jolt/Jolt.h"
-#include "Jolt/Physics/Collision/CastResult.h"
 #include "Jolt/Physics/Collision/BroadPhase/BroadPhaseQuery.h"
+#include "Jolt/Physics/Collision/CastResult.h"
 
-#include "Physics/Physics.h"
-#include "Physics/RayCast.h"
+#include "Physics/Physics.hpp"
+#include "Physics/RayCast.hpp"
 
-#include "Scene/Components.h"
-#include "Scene/Entity.h"
+#include "Scene/Components.hpp"
+#include "Scene/Entity.hpp"
 
 namespace ox {
 void LuaBindings::bind_physics(const Shared<sol::state>& state) {

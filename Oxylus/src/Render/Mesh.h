@@ -5,15 +5,15 @@
 #include <vector>
 #include <glm/detail/type_quat.hpp>
 
-#include "Assets/Material.h"
+#include "Assets/Material.hpp"
 
 #define TINYGLTF_NO_STB_IMAGE_WRITE 
 #include <vuk/Buffer.hpp>
 
-#include "BoundingVolume.h"
+#include "BoundingVolume.hpp"
 #include "MeshVertex.h"
 
-#include "Core/Types.h"
+#include "Core/Types.hpp"
 
 namespace tinygltf {
 class Node;

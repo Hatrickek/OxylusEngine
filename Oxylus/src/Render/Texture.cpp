@@ -4,7 +4,7 @@
 
 #include <stb_image.h>
 
-#include "Utils/Log.h"
+#include "Utils/Log.hpp"
 
 namespace ox {
 uint8_t* Texture::load_stb_image(const std::string& filename, uint32_t* width, uint32_t* height, uint32_t* bits, bool srgb) {

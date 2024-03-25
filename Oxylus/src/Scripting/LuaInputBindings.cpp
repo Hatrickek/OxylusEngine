@@ -1,14 +1,14 @@
-﻿#include "LuaInputBindings.h"
+﻿#include "LuaInputBindings.hpp"
 
 #include <sol/state.hpp>
 #include <sol/string_view.hpp>
 
-#include "LuaHelpers.h"
+#include "LuaHelpers.hpp"
 
-#include "Core/Input.h"
-#include "Core/Keycodes.h"
+#include "Core/Input.hpp"
+#include "Core/Keycodes.hpp"
 
-#include "Utils/Profiler.h"
+#include "Utils/Profiler.hpp"
 
 namespace ox::LuaBindings {
 void bind_input(const Shared<sol::state>& state) {

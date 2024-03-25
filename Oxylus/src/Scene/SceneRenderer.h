@@ -1,6 +1,6 @@
 ﻿#pragma once
-#include "Scene/Components.h"
-#include "Event/Event.h"
+#include "Components.hpp"
+#include "Event/Event.hpp"
 
 namespace ox {
 class RenderPipeline;

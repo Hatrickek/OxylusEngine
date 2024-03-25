@@ -1,7 +1,7 @@
-#include "Input.h"
+#include "Input.hpp"
 #include "Render/Window.h"
+#include "Types.hpp"
 #include "stb_image.h"
-#include "Types.h"
 
 #include "GLFW/glfw3.h"
 

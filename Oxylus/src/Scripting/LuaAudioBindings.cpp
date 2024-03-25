@@ -1,15 +1,15 @@
-﻿#include "LuaAudioBindings.h"
+﻿#include "LuaAudioBindings.hpp"
 
 #include <sol/state.hpp>
 
-#include "LuaHelpers.h"
+#include "LuaHelpers.hpp"
 
-#include "Assets/AssetManager.h"
+#include "Assets/AssetManager.hpp"
 
-#include "Audio/AudioSource.h"
+#include "Audio/AudioSource.hpp"
 
-#include "Scene/Components.h"
-#include "Scene/Entity.h"
+#include "Scene/Components.hpp"
+#include "Scene/Entity.hpp"
 
 namespace ox::LuaBindings {
 void bind_audio(const Shared<sol::state>& state) {

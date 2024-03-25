@@ -1,11 +1,11 @@
-#include "Material.h"
+#include "Material.hpp"
 
 #include <vuk/CommandBuffer.hpp>
 
-#include "Render/Utils/VukCommon.h"
-#include "Render/Vulkan/VkContext.h"
+#include "Render/Utils/VukCommon.hpp"
+#include "Render/Vulkan/VkContext.hpp"
 
-#include "Utils/Profiler.h"
+#include "Utils/Profiler.hpp"
 
 namespace ox {
 Material::Material(const std::string& material_name) {

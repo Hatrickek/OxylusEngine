@@ -1,4 +1,4 @@
-﻿#include "RectPacker.h"
+﻿#include "RectPacker.hpp"
 
 #define STB_RECT_PACK_IMPLEMENTATION
 #include "stb_rect_pack.h"

@@ -1,13 +1,13 @@
-﻿#include "ModuleUtil.h"
+﻿#include "ModuleUtil.hpp"
 
-#include "ModuleInterface.h"
-#include "ModuleRegistry.h"
+#include "ModuleInterface.hpp"
+#include "ModuleRegistry.hpp"
 
-#include "Core/App.h"
+#include "Core/App.hpp"
 
-#include "Scripting/LuaManager.h"
+#include "Scripting/LuaManager.hpp"
 
-#include "Utils/Log.h"
+#include "Utils/Log.hpp"
 
 namespace ox {
 void ModuleUtil::load_module(const std::string& name, const std::string& path) {

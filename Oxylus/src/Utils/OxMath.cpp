@@ -1,4 +1,4 @@
-#include "OxMath.h"
+#include "OxMath.hpp"
 
 #include <glm/gtx/matrix_decompose.hpp>
 

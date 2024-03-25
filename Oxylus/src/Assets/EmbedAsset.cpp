@@ -1,10 +1,10 @@
-﻿#include "EmbedAsset.h"
+﻿#include "EmbedAsset.hpp"
 
 #include <fstream>
 #include <ostream>
 
+#include "Utils/Log.hpp"
 #include "Render/Texture.h"
-#include "Utils/Log.h"
 
 namespace ox {
 void EmbedAsset::EmbedTexture(const std::string& texFilePath, const std::string& outPath, const std::string& arrayName) {

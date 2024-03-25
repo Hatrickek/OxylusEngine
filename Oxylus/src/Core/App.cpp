@@ -1,30 +1,30 @@
-#include "App.h"
+#include "App.hpp"
 
 #include <filesystem>
 
-#include "FileSystem.h"
-#include "Layer.h"
-#include "LayerStack.h"
-#include "Project.h"
+#include "FileSystem.hpp"
+#include "Layer.hpp"
+#include "LayerStack.hpp"
+#include "Project.hpp"
 
-#include "Audio/AudioEngine.h"
+#include "Audio/AudioEngine.hpp"
 
-#include "Modules/ModuleRegistry.h"
+#include "Modules/ModuleRegistry.hpp"
 
-#include "Render/Vulkan/Renderer.h"
-#include "Render/Vulkan/VkContext.h"
+#include "Render/Vulkan/Renderer.hpp"
+#include "Render/Vulkan/VkContext.hpp"
 #include "Render/Window.h"
 
-#include "Scripting/LuaManager.h"
+#include "Scripting/LuaManager.hpp"
 
-#include "Thread/TaskScheduler.h"
-#include "Thread/ThreadManager.h"
+#include "Thread/TaskScheduler.hpp"
+#include "Thread/ThreadManager.hpp"
 
-#include "UI/ImGuiLayer.h"
+#include "UI/ImGuiLayer.hpp"
 
-#include "Utils/FileDialogs.h"
-#include "Utils/Profiler.h"
-#include "Utils/Random.h"
+#include "Utils/FileDialogs.hpp"
+#include "Utils/Profiler.hpp"
+#include "Utils/Random.hpp"
 
 namespace ox {
 App* App::instance = nullptr;

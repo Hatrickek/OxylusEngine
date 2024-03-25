@@ -1,16 +1,16 @@
-﻿#include "LuaMathBindings.h"
+﻿#include "LuaMathBindings.hpp"
 
 #include <sol/overload.hpp>
 #include <sol/state.hpp>
 #include <sol/types.hpp>
 
-#include "LuaHelpers.h"
+#include "LuaHelpers.hpp"
 
-#include "Core/Types.h"
+#include "Core/Types.hpp"
 
-#include "Render/BoundingVolume.h"
+#include "Render/BoundingVolume.hpp"
 
-#include "Utils/Profiler.h"
+#include "Utils/Profiler.hpp"
 
 namespace ox::LuaBindings {
 #define SET_MATH_FUNCTIONS(var, type, number)                                                                            \

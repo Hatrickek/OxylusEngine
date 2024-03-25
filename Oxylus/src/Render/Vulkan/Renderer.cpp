@@ -1,18 +1,18 @@
-#include "Renderer.h"
+#include "Renderer.hpp"
 
 #include <future>
 #include <vuk/Partials.hpp>
 
-#include "Assets/AssetManager.h"
-#include "Core/LayerStack.h"
-#include "Render/DebugRenderer.h"
+#include "Thread/TaskScheduler.hpp"
+#include "UI/ImGuiLayer.hpp"
+#include "Utils/Profiler.hpp"
+#include "Assets/AssetManager.hpp"
+#include "Core/LayerStack.hpp"
+#include "Render/DebugRenderer.hpp"
 #include "Render/DefaultRenderPipeline.h"
 #include "Render/Mesh.h"
 #include "Render/Window.h"
-#include "Thread/TaskScheduler.h"
-#include "UI/ImGuiLayer.h"
-#include "Utils/Profiler.h"
-#include "VkContext.h"
+#include "VkContext.hpp"
 
 namespace ox {
 Renderer::RendererContext Renderer::renderer_context;

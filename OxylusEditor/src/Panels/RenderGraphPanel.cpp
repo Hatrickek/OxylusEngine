@@ -1,4 +1,4 @@
-﻿#include "RenderGraphPanel.h"
+﻿#include "RenderGraphPanel.hpp"
 
 #include <RenderGraphUtil.hpp>
 
@@ -11,15 +11,15 @@
 
 #include "imgui.h"
 
+#include "Render/Utils/VukCommon.hpp"
 #include "Render/RenderPipeline.h"
-#include "Render/Utils/VukCommon.h"
 
-#include "Scene/Scene.h"
+#include "Scene/Scene.hpp"
 #include "Scene/SceneRenderer.h"
 
-#include "UI/OxUI.h"
+#include "UI/OxUI.hpp"
 
-#include "Utils/StringUtils.h"
+#include "Utils/StringUtils.hpp"
 
 namespace ox {
 RenderGraphPanel::RenderGraphPanel() : EditorPanel("RenderGraph", ICON_MDI_CHART_BAR_STACKED, false) {}

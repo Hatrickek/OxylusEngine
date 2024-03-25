@@ -1,11 +1,11 @@
-#include "AudioEngine.h"
+#include "AudioEngine.hpp"
 
 #define MINIAUDIO_IMPLEMENTATION
 
 #include <miniaudio.h>
 
-#include "Utils/Log.h"
-#include "Utils/Profiler.h"
+#include "Utils/Log.hpp"
+#include "Utils/Profiler.hpp"
 
 namespace ox {
 void AudioEngine::init() {

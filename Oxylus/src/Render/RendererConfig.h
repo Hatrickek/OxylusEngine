@@ -1,9 +1,9 @@
 #pragma once
 #include <cstdint>
 
-#include "Core/ESystem.h"
+#include "Core/ESystem.hpp"
 
-#include "Utils/CVars.h"
+#include "Utils/CVars.hpp"
 
 namespace ox {
 namespace RendererCVar {

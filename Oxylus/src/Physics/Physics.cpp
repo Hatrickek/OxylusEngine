@@ -1,18 +1,18 @@
-#include "Physics.h"
+#include "Physics.hpp"
 
 #include <cstdarg>
 
-#include "JoltHelpers.h"
-#include "RayCast.h"
+#include "JoltHelpers.hpp"
+#include "RayCast.hpp"
 
-#include "Core/Base.h"
+#include "Core/Base.hpp"
 
 #include "Jolt/RegisterTypes.h"
 #include "Jolt/Physics/Collision/CastResult.h"
 #include "Jolt/Physics/Collision/RayCast.h"
 
-#include "Utils/Log.h"
-#include "Utils/Profiler.h"
+#include "Utils/Log.hpp"
+#include "Utils/Profiler.hpp"
 
 namespace ox {
 BPLayerInterfaceImpl Physics::layer_interface;

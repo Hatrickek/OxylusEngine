@@ -1,13 +1,13 @@
-#include "RendererSettingsPanel.h"
+#include "RendererSettingsPanel.hpp"
 
 #include <icons/IconsMaterialDesignIcons.h>
 
 #include "imgui.h"
 
+#include "Render/Vulkan/Renderer.hpp"
+#include "Render/Vulkan/VkContext.hpp"
+#include "UI/OxUI.hpp"
 #include "Render/RendererConfig.h"
-#include "Render/Vulkan/Renderer.h"
-#include "Render/Vulkan/VkContext.h"
-#include "UI/OxUI.h"
 
 namespace ox {
 RendererSettingsPanel::RendererSettingsPanel() : EditorPanel("Renderer Settings", ICON_MDI_GPU, true) {}

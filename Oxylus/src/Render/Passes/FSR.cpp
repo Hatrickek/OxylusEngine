@@ -1,4 +1,4 @@
-#include "FSR.h"
+#include "FSR.hpp"
 
 #include <glm/gtc/packing.hpp>
 #include <vuk/Context.hpp>
@@ -6,11 +6,11 @@
 #include <vuk/Pipeline.hpp>
 #include <vuk/ShaderSource.hpp>
 
-#include "Core/App.h"
-#include "Core/FileSystem.h"
-#include "Render/Camera.h"
-#include "Render/Utils/VukCommon.h"
-#include "Thread/TaskScheduler.h"
+#include "Thread/TaskScheduler.hpp"
+#include "Core/App.hpp"
+#include "Core/FileSystem.hpp"
+#include "Render/Camera.hpp"
+#include "Render/Utils/VukCommon.hpp"
 
 #define FFX_CPU
 #include "ffx_common_types.h"

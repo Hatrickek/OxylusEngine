@@ -1,13 +1,13 @@
-﻿#include "LuaRendererBindings.h"
+﻿#include "LuaRendererBindings.hpp"
 
 #include <sol/state.hpp>
 
-#include "LuaHelpers.h"
+#include "LuaHelpers.hpp"
 
-#include "Core/Types.h"
+#include "Core/Types.hpp"
 
+#include "Render/Vulkan/Renderer.hpp"
 #include "Render/Window.h"
-#include "Render/Vulkan/Renderer.h"
 
 namespace ox::LuaBindings {
 void bind_renderer(const Shared<sol::state>& state) {

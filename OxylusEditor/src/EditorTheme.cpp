@@ -1,8 +1,8 @@
-﻿#include "EditorTheme.h"
+﻿#include "EditorTheme.hpp"
 
 #include <icons/IconsMaterialDesignIcons.h>
 
-#include "Scene/Components.h"
+#include "Scene/Components.hpp"
 
 namespace ox {
 ankerl::unordered_dense::map<size_t, const char8_t*> EditorTheme::component_icon_map = {};

@@ -2,7 +2,7 @@
 
 #include <glm/gtx/norm.hpp>
 
-#include "Utils/Profiler.h"
+#include "Utils/Profiler.hpp"
 
 namespace ox {
 ParticleSystem::ParticleSystem() : particles(10000) {

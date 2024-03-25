@@ -1,6 +1,6 @@
-#include "Core/EntryPoint.h"
-#include "EditorLayer.h"
-#include "Core/Project.h"
+#include "Core/EntryPoint.hpp"
+#include "Core/Project.hpp"
+#include "EditorLayer.hpp"
 
 namespace ox {
 class OxylusEditor : public App {

@@ -1,4 +1,4 @@
-﻿#include "Utils/CVars.h"
+﻿#include "CVars.hpp"
 
 #include <mutex>
 #include <shared_mutex>
@@ -7,8 +7,8 @@
 
 #include <entt/core/hashed_string.hpp>
 
-#include "Log.h"
-#include "Profiler.h"
+#include "Log.hpp"
+#include "Profiler.hpp"
 
 namespace ox {
 float* CVarSystem::get_float_cvar(const uint32_t hash) {

@@ -1,7 +1,7 @@
-#include "ImGuiLayer.h"
+#include "ImGuiLayer.hpp"
+#include <backends/imgui_impl_glfw.h>
 #include <imgui.h>
 #include <plf_colony.h>
-#include <backends/imgui_impl_glfw.h>
 
 #include <glm/common.hpp>
 
@@ -11,16 +11,16 @@
 #include <vuk/RenderGraph.hpp>
 #include <vuk/Partials.hpp>
 
+#include "Core/App.hpp"
 #include "ImGuizmo.h"
 #include "imgui_frag.h"
 #include "imgui_vert.h"
-#include "Core/App.h"
 
 #include "GLFW/glfw3.h"
 
+#include "Render/Vulkan/VkContext.hpp"
+#include "Utils/Profiler.hpp"
 #include "Render/Window.h"
-#include "Render/Vulkan/VkContext.h"
-#include "Utils/Profiler.h"
 
 namespace ox {
 static ImVec4 darken(ImVec4 c, float p) { return {glm::max(0.f, c.x - 1.0f * p), glm::max(0.f, c.y - 1.0f * p), glm::max(0.f, c.z - 1.0f * p), c.w}; }

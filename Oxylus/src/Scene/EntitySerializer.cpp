@@ -1,20 +1,20 @@
-#include "EntitySerializer.h"
+#include "EntitySerializer.hpp"
 
 #include <filesystem>
 #include <fstream>
 
-#include "Scene.h"
+#include "Scene.hpp"
 #include "SceneRenderer.h"
 
-#include "Assets/AssetManager.h"
+#include "Assets/AssetManager.hpp"
 
-#include "Core/App.h"
-#include "Core/FileSystem.h"
+#include "Core/App.hpp"
+#include "Core/FileSystem.hpp"
 
-#include "Scene/Entity.h"
-#include "Utils/Archive.h"
+#include "Utils/Archive.hpp"
+#include "Entity.hpp"
 
-#include "Utils/Log.h"
+#include "Utils/Log.hpp"
 
 namespace ox {
 #define GET_STRING(node, component, name) component.name = node->as_table()->get(#name)->as_string()->get()

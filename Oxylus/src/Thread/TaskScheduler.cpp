@@ -1,9 +1,9 @@
-﻿#include "TaskScheduler.h"
+﻿#include "TaskScheduler.hpp"
 
 #include <TaskScheduler.h>
 
-#include "Utils/Log.h"
-#include "Utils/Profiler.h"
+#include "Utils/Log.hpp"
+#include "Utils/Profiler.hpp"
 
 namespace ox {
 void TaskScheduler::init() {

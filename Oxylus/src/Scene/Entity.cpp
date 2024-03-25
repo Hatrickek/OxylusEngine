@@ -1,9 +1,9 @@
-#include "Entity.h"
-#include "Scene.h"
+#include "Entity.hpp"
+#include "Scene.hpp"
 
-#include "Utils/Log.h"
+#include "Utils/Log.hpp"
 
-#include "Components.h"
+#include "Components.hpp"
 
 namespace ox {
 const UUID& EUtil::get_uuid(const entt::registry& reg, entt::entity ent) { return reg.get<IDComponent>(ent).uuid; }

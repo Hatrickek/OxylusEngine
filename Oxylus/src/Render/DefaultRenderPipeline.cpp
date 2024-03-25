@@ -5,29 +5,29 @@
 #include <glm/gtc/type_ptr.inl>
 #include <vuk/Partials.hpp>
 
-#include "DebugRenderer.h"
+#include "DebugRenderer.hpp"
 #include "RendererCommon.h"
 #include "SceneRendererEvents.h"
 
-#include "Core/App.h"
-#include "Passes/Prefilter.h"
+#include "Core/App.hpp"
+#include "Passes/Prefilter.hpp"
 
-#include "Scene/Scene.h"
+#include "Scene/Scene.hpp"
 
-#include "Thread/TaskScheduler.h"
+#include "Thread/TaskScheduler.hpp"
 
-#include "Utils/CVars.h"
-#include "Utils/Log.h"
-#include "Utils/Profiler.h"
-#include "Utils/Timer.h"
+#include "Utils/CVars.hpp"
+#include "Utils/Log.hpp"
+#include "Utils/Profiler.hpp"
+#include "Utils/Timer.hpp"
 
-#include "Vulkan/VkContext.h"
+#include "Vulkan/VkContext.hpp"
 
-#include "Render/Utils/SPD.h"
-#include "Render/Utils/VukCommon.h"
-#include "Vulkan/Renderer.h"
+#include "Utils/SPD.hpp"
+#include "Utils/VukCommon.hpp"
+#include "Vulkan/Renderer.hpp"
 
-#include "Utils/RectPacker.h"
+#include "Utils/RectPacker.hpp"
 
 namespace ox {
 VkDescriptorSetLayoutBinding bindless_binding(uint32_t binding, vuk::DescriptorType descriptor_type, uint32_t count = 1024) {

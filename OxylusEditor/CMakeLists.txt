@@ -1,11 +1,11 @@
 set(PROJECT_NAME OxylusEditor)
 
 # Source groups
-file(GLOB src "src/*.h" "src/*.cpp")
+file(GLOB src "src/*.h" "src/*.hpp" "src/*.cpp")
 source_group("src" FILES ${src})
-file(GLOB_RECURSE Panels "src/Panels/*.h" "src/Panels/*.cpp" )
+file(GLOB_RECURSE Panels "src/Panels/*.h" "src/Panels/*.hpp" "src/Panels/*.cpp" )
 source_group("src/Panels" FILES ${Panels})
-file(GLOB_RECURSE Utils "src/Utils/*.h" "src/Utils/*.cpp" )
+file(GLOB_RECURSE Utils "src/Utils/*.h" "src/Utils/*.hpp" "src/Utils/*.cpp" )
 source_group("src/Utils" FILES ${Utils})
 
 set(EDITOR_SOURCE_FILES ${src} ${Panels} ${Utils})

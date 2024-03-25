@@ -1,8 +1,8 @@
-﻿#include "BoundingVolume.h"
+﻿#include "BoundingVolume.hpp"
 
 #include "Frustum.h"
 
-#include "Utils/Profiler.h"
+#include "Utils/Profiler.hpp"
 
 namespace ox {
 void AABB::translate(const Vec3& translation) {

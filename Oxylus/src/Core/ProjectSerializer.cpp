@@ -1,8 +1,8 @@
-#include "ProjectSerializer.h"
+#include "ProjectSerializer.hpp"
 
-#include "FileSystem.h"
-#include "Utils/Log.h"
-#include "Utils/Toml.h"
+#include "Utils/Log.hpp"
+#include "Utils/Toml.hpp"
+#include "FileSystem.hpp"
 
 namespace ox {
 ProjectSerializer::ProjectSerializer(Shared<Project> project) : project(std::move(project)) {}

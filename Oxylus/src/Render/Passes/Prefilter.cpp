@@ -1,4 +1,4 @@
-#include "Prefilter.h"
+#include "Prefilter.hpp"
 
 #include <glm/gtx/quaternion.hpp>
 
@@ -6,10 +6,10 @@
 #include <vuk/Partials.hpp>
 #include <vuk/Pipeline.hpp>
 
-#include "Core/FileSystem.h"
+#include "Core/FileSystem.hpp"
+#include "Render/Utils/VukCommon.hpp"
+#include "Render/Vulkan/VkContext.hpp"
 #include "Render/Mesh.h"
-#include "Render/Vulkan/VkContext.h"
-#include "Render/Utils/VukCommon.h"
 
 #define M_PI       3.14159265358979323846
 

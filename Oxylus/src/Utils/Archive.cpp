@@ -1,7 +1,7 @@
-﻿#include "Archive.h"
+﻿#include "Archive.hpp"
 
-#include "Core/FileSystem.h"
-#include "Log.h"
+#include "Core/FileSystem.hpp"
+#include "Log.hpp"
 
 namespace ox {
 static constexpr uint64_t ARCHIVE_VERSION = 0;

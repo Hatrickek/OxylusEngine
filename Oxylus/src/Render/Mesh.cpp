@@ -18,20 +18,20 @@
 #include <vuk/CommandBuffer.hpp>
 #include <vuk/Partials.hpp>
 
-#include "Assets/AssetManager.h"
-#include "Core/FileSystem.h"
+#include "Assets/AssetManager.hpp"
+#include "Core/FileSystem.hpp"
 #include "Texture.h"
 
-#include "Scene/Components.h"
-#include "Scene/Entity.h"
+#include "Scene/Components.hpp"
+#include "Scene/Entity.hpp"
 
-#include "Scene/Scene.h"
+#include "Scene/Scene.hpp"
 
-#include "Utils/Log.h"
-#include "Utils/Profiler.h"
-#include "Utils/Timer.h"
+#include "Utils/Log.hpp"
+#include "Utils/Profiler.hpp"
+#include "Utils/Timer.hpp"
 
-#include "Vulkan/VkContext.h"
+#include "Vulkan/VkContext.hpp"
 
 namespace ox {
 Mesh::Mesh(const std::string_view path, const int file_loading_flags, const float scale) { load_from_file(path.data(), file_loading_flags, scale); }

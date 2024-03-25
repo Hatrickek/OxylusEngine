@@ -1,8 +1,8 @@
-﻿#include "ModuleRegistry.h"
+﻿#include "ModuleRegistry.hpp"
 
-#include "ModuleInterface.h"
+#include "ModuleInterface.hpp"
 
-#include "Utils/Log.h"
+#include "Utils/Log.hpp"
 
 namespace ox {
 void ModuleRegistry::init() {}

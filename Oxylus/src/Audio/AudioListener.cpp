@@ -1,9 +1,9 @@
-#include "AudioListener.h"
+#include "AudioListener.hpp"
 
-#include "AudioEngine.h"
 #include <miniaudio.h>
+#include "AudioEngine.hpp"
 
-#include "Core/App.h"
+#include "Core/App.hpp"
 
 namespace ox {
 void AudioListener::set_config(const AudioListenerConfig& config) const {

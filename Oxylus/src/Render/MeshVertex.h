@@ -1,7 +1,7 @@
 ﻿#pragma once
 #include <vuk/CommandBuffer.hpp>
 
-#include "Core/Types.h"
+#include "Core/Types.hpp"
 
 namespace ox {
 struct Vertex {

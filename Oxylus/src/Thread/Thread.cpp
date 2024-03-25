@@ -1,4 +1,4 @@
-#include "Thread.h"
+#include "Thread.hpp"
 
 namespace ox {
 Thread::Thread() {

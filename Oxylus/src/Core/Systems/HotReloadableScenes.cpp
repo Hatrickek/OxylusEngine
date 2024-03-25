@@ -1,5 +1,5 @@
-#include "HotReloadableScenes.h"
-#include "Utils/Log.h"
+#include "HotReloadableScenes.hpp"
+#include "Utils/Log.hpp"
 
 #include <chrono>
 #include <fstream>

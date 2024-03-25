@@ -1,10 +1,10 @@
-#include "FileDialogs.h"
+#include "FileDialogs.hpp"
 
-#include "Profiler.h"
+#include "Profiler.hpp"
 
 #include "Render/Window.h"
 
-#include "Core/PlatformDetection.h"
+#include "Core/PlatformDetection.hpp"
 
 namespace ox {
 void FileDialogs::init() {

@@ -1,4 +1,4 @@
-#include "LayerStack.h"
+#include "LayerStack.hpp"
 
 namespace ox {
 LayerStack::~LayerStack() {

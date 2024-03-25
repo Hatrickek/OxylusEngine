@@ -1,13 +1,13 @@
-﻿#include "TextureAsset.h"
+﻿#include "TextureAsset.hpp"
 
 #include <vuk/Partials.hpp>
 
+#include "Render/Vulkan/VkContext.hpp"
 #include "Render/RendererCommon.h"
 #include "Render/Texture.h"
-#include "Render/Vulkan/VkContext.h"
 
-#include "Core/FileSystem.h"
-#include "Utils/Profiler.h"
+#include "Core/FileSystem.hpp"
+#include "Utils/Profiler.hpp"
 
 namespace ox {
 Shared<TextureAsset> TextureAsset::s_white_texture = nullptr;

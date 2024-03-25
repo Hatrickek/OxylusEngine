@@ -1,10 +1,10 @@
-#include "VkContext.h"
+#include "VkContext.hpp"
 
 #include <sstream>
 
+#include "Utils/Log.hpp"
+#include "Utils/Profiler.hpp"
 #include "Render/Window.h"
-#include "Utils/Log.h"
-#include "Utils/Profiler.h"
 
 #include <vuk/Context.hpp>
 #include <vuk/Future.hpp>

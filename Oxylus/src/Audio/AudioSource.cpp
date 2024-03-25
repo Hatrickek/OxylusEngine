@@ -1,12 +1,12 @@
-#include "AudioSource.h"
+#include "AudioSource.hpp"
 
 #include <miniaudio.h>
 
-#include "AudioEngine.h"
+#include "AudioEngine.hpp"
 
-#include "Core/App.h"
+#include "Core/App.hpp"
 
-#include "Utils/Log.h"
+#include "Utils/Log.hpp"
 
 namespace ox {
 AudioSource::AudioSource(const std::string& filepath) : m_path(filepath) {

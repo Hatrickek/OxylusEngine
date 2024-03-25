@@ -1,4 +1,4 @@
-﻿#include "VukCommon.h"
+﻿#include "VukCommon.hpp"
 
 #include <fmt/format.h>
 #include <utility>
@@ -6,7 +6,7 @@
 #include <vuk/CommandBuffer.hpp>
 #include <vuk/RenderGraph.hpp>
 
-#include "Utils/Log.h"
+#include "Utils/Log.hpp"
 
 namespace vuk {
 Texture create_texture(Allocator& allocator,

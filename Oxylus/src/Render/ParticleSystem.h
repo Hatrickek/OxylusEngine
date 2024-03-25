@@ -3,8 +3,8 @@
 
 #include <glm/gtx/compatibility.hpp>
 
-#include "Core/Base.h"
-#include "Utils/OxMath.h"
+#include "Utils/OxMath.hpp"
+#include "Core/Base.hpp"
 
 namespace ox {
 class TextureAsset;

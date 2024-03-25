@@ -2,7 +2,7 @@
 #include <vuk/Future.hpp>
 #include <vuk/RenderGraph.hpp>
 
-#include "Vulkan/VkContext.h"
+#include "Vulkan/VkContext.hpp"
 
 namespace ox {
 void RenderPipeline::enqueue_future(vuk::Future&& fut) {

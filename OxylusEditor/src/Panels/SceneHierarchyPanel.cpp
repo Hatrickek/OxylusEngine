@@ -1,20 +1,20 @@
-#include "SceneHierarchyPanel.h"
+#include "SceneHierarchyPanel.hpp"
 
-#include <Assets/AssetManager.h>
+#include <Assets/AssetManager.hpp>
 #include <icons/IconsMaterialDesignIcons.h>
 #include <imgui.h>
 #include <imgui_internal.h>
 
 #include <misc/cpp/imgui_stdlib.h>
 
-#include "EditorLayer.h"
+#include "EditorLayer.hpp"
 
 #include "Render/RendererCommon.h"
 
-#include "Scene/EntitySerializer.h"
-#include "UI/OxUI.h"
-#include "Utils/ImGuiScoped.h"
-#include "Utils/StringUtils.h"
+#include "Scene/EntitySerializer.hpp"
+#include "UI/OxUI.hpp"
+#include "Utils/ImGuiScoped.hpp"
+#include "Utils/StringUtils.hpp"
 
 namespace ox {
 SceneHierarchyPanel::SceneHierarchyPanel() : EditorPanel("Scene Hierarchy", ICON_MDI_VIEW_LIST, true) {}

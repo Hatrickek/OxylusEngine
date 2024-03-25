@@ -1,4 +1,4 @@
-#include "InspectorPanel.h"
+#include "InspectorPanel.hpp"
 
 #include <icons/IconsMaterialDesignIcons.h>
 
@@ -6,16 +6,16 @@
 #include <imgui_internal.h>
 #include <misc/cpp/imgui_stdlib.h>
 
-#include <Assets/AssetManager.h>
+#include <Assets/AssetManager.hpp>
 
-#include "Utils/ColorUtils.h"
+#include "Utils/ColorUtils.hpp"
 
-#include "Core/FileSystem.h"
-#include "EditorLayer.h"
-#include "Scene/Entity.h"
-#include "UI/OxUI.h"
-#include "Utils/FileDialogs.h"
-#include "Utils/StringUtils.h"
+#include "Core/FileSystem.hpp"
+#include "Scene/Entity.hpp"
+#include "UI/OxUI.hpp"
+#include "Utils/FileDialogs.hpp"
+#include "Utils/StringUtils.hpp"
+#include "EditorLayer.hpp"
 
 #include "Render/SceneRendererEvents.h"
 

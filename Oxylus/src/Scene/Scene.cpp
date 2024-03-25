@@ -1,9 +1,9 @@
-#include "Scene.h"
+#include "Scene.hpp"
 
-#include "Scene/Entity.h"
-#include "Render/Camera.h"
-#include "Utils/Profiler.h"
-#include "Utils/Timestep.h"
+#include "Utils/Profiler.hpp"
+#include "Utils/Timestep.hpp"
+#include "Entity.hpp"
+#include "Render/Camera.hpp"
 
 #include <glm/glm.hpp>
 
@@ -15,8 +15,8 @@
 
 #include "SceneRenderer.h"
 
-#include "Core/App.h"
-#include "Core/FileSystem.h"
+#include "Core/App.hpp"
+#include "Core/FileSystem.hpp"
 
 #include "Jolt/Jolt.h"
 #include "Jolt/Physics/Body/BodyCreationSettings.h"
@@ -31,12 +31,12 @@
 #include "Jolt/Physics/Collision/Shape/SphereShape.h"
 #include "Jolt/Physics/Collision/Shape/TaperedCapsuleShape.h"
 
-#include "Physics/Physics.h"
-#include "Physics/PhysicsMaterial.h"
+#include "Physics/Physics.hpp"
+#include "Physics/PhysicsMaterial.hpp"
 
 #include "Render/RenderPipeline.h"
 
-#include "Scripting/LuaManager.h"
+#include "Scripting/LuaManager.hpp"
 
 namespace ox {
 Scene::Scene() {

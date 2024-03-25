@@ -1,14 +1,14 @@
-#include "EditorConfig.h"
+#include "EditorConfig.hpp"
 #include <fstream>
 
 #include <Render/RendererConfig.h>
 
-#include "Core/FileSystem.h"
-#include "Core/Project.h"
-#include "EditorLayer.h"
+#include "Core/FileSystem.hpp"
+#include "Core/Project.hpp"
+#include "EditorLayer.hpp"
 
-#include "Utils/Log.h"
-#include "Utils/Toml.h"
+#include "Utils/Log.hpp"
+#include "Utils/Toml.hpp"
 
 namespace ox {
 EditorConfig* EditorConfig::instance = nullptr;

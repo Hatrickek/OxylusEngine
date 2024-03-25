@@ -1,17 +1,17 @@
-﻿#include "LuaSystem.h"
+﻿#include "LuaSystem.hpp"
 
 #include <filesystem>
 
 #include <sol/state.hpp>
 
-#include "LuaManager.h"
+#include "LuaManager.hpp"
 
-#include "Core/App.h"
+#include "Core/App.hpp"
 
-#include "Scene/Entity.h"
-#include "Scene/Scene.h"
+#include "Scene/Entity.hpp"
+#include "Scene/Scene.hpp"
 
-#include "Utils/Log.h"
+#include "Utils/Log.hpp"
 
 namespace ox {
 LuaSystem::LuaSystem(std::string path) : file_path(std::move(path)) {

@@ -1,11 +1,11 @@
-﻿#include "LuaUIBindings.h"
+﻿#include "LuaUIBindings.hpp"
 
 #include <sol/state.hpp>
 
-#include "LuaImGuiBindings.h"
-#include "LuaHelpers.h"
+#include "LuaHelpers.hpp"
+#include "LuaImGuiBindings.hpp"
 
-#include "UI/OxUI.h"
+#include "UI/OxUI.hpp"
 
 namespace ox::LuaBindings {
 void bind_ui(const Shared<sol::state>& state) {

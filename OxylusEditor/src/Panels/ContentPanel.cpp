@@ -1,23 +1,23 @@
-#include "ContentPanel.h"
+#include "ContentPanel.hpp"
 
 #include <icons/IconsMaterialDesignIcons.h>
 
-#include "Assets/AssetManager.h"
-#include "Core/App.h"
-#include "Core/FileSystem.h"
-#include "Core/Project.h"
-#include "EditorContext.h"
-#include "EditorLayer.h"
+#include "Assets/AssetManager.hpp"
+#include "Core/App.hpp"
+#include "Core/FileSystem.hpp"
+#include "Core/Project.hpp"
+#include "EditorContext.hpp"
+#include "EditorLayer.hpp"
 
-#include "Thread/ThreadManager.h"
+#include "Thread/ThreadManager.hpp"
 
-#include "UI/OxUI.h"
-#include "UI/ImGuiLayer.h"
-#include "Utils/FileWatch.h"
-#include "Utils/StringUtils.h"
-#include "Utils/Timestep.h"
-#include "Utils/FileDialogs.h"
-#include "Utils/Profiler.h"
+#include "UI/ImGuiLayer.hpp"
+#include "UI/OxUI.hpp"
+#include "Utils/FileDialogs.hpp"
+#include "Utils/FileWatch.hpp"
+#include "Utils/Profiler.hpp"
+#include "Utils/StringUtils.hpp"
+#include "Utils/Timestep.hpp"
 
 #if defined(__clang__) || defined(__llvm__)
 #	pragma clang diagnostic push

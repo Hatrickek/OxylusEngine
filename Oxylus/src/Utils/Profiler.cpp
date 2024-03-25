@@ -1,8 +1,8 @@
-#include "Profiler.h"
+#include "Profiler.hpp"
 
-#include "Log.h"
-#include "Render/Vulkan/VkContext.h"
-#include "Core/PlatformDetection.h"
+#include "Core/PlatformDetection.hpp"
+#include "Render/Vulkan/VkContext.hpp"
+#include "Log.hpp"
 
 namespace ox {
 #ifdef TRACY_ENABLE

@@ -1,7 +1,7 @@
-﻿#include "Timestep.h"
+﻿#include "Timestep.hpp"
 
-#include "Profiler.h"
-#include "Timer.h"
+#include "Profiler.hpp"
+#include "Timer.hpp"
 
 namespace ox {
 Timestep::Timestep()

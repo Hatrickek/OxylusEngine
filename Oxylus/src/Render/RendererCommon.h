@@ -3,7 +3,7 @@
 
 #include <vuk/Future.hpp>
 
-#include "Core/Base.h"
+#include "Core/Base.hpp"
 
 namespace ox {
 class Mesh;

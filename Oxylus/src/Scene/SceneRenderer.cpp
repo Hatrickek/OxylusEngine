@@ -3,19 +3,19 @@
 #include <execution>
 #include <future>
 
-#include "Scene.h"
+#include "Scene.hpp"
 
-#include "Core/App.h"
+#include "Core/App.hpp"
 
+#include "Physics/JoltHelpers.hpp"
 #include "Jolt/Physics/Body/Body.h"
-#include "Physics/JoltHelpers.h"
 
-#include "Scene/Entity.h"
+#include "Entity.hpp"
 
-#include "Render/DebugRenderer.h"
+#include "Render/DebugRenderer.hpp"
 #include "Render/DefaultRenderPipeline.h"
-#include "Render/Vulkan/Renderer.h"
-#include "Render/Vulkan/VkContext.h"
+#include "Render/Vulkan/Renderer.hpp"
+#include "Render/Vulkan/VkContext.hpp"
 
 namespace ox {
 void SceneRenderer::init() {

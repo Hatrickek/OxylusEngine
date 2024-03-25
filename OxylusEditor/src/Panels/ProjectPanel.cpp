@@ -1,17 +1,17 @@
-#include "ProjectPanel.h"
+#include "ProjectPanel.hpp"
 
 #include <icons/IconsMaterialDesignIcons.h>
 #include <imgui.h>
 #include <misc/cpp/imgui_stdlib.h>
 
-#include "Core/FileSystem.h"
-#include "Core/Project.h"
-#include "EditorLayer.h"
+#include "Core/FileSystem.hpp"
+#include "Core/Project.hpp"
+#include "EditorLayer.hpp"
 
-#include "UI/OxUI.h"
-#include "Utils/EditorConfig.h"
-#include "Utils/StringUtils.h"
-#include "Utils/FileDialogs.h"
+#include "UI/OxUI.hpp"
+#include "Utils/FileDialogs.hpp"
+#include "Utils/StringUtils.hpp"
+#include "Utils/EditorConfig.hpp"
 
 namespace ox {
 ProjectPanel::ProjectPanel() : EditorPanel("Projects", ICON_MDI_ACCOUNT_BADGE, true) { }

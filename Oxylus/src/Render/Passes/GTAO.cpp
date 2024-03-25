@@ -1,7 +1,7 @@
-﻿#include "GTAO.h"
+﻿#include "GTAO.hpp"
 
 #include <glm/gtc/type_ptr.hpp>
-#include "Render/Camera.h"
+#include "Render/Camera.hpp"
 
 namespace ox {
 void gtao_update_constants(GTAOConstants& consts,

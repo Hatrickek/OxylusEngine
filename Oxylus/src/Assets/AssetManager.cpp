@@ -1,12 +1,12 @@
-#include "AssetManager.h"
+#include "AssetManager.hpp"
 
 #include <filesystem>
 
-#include "Audio/AudioSource.h"
+#include "Audio/AudioSource.hpp"
 #include "Render/Mesh.h"
 
-#include "Utils/Log.h"
-#include "Utils/Profiler.h"
+#include "Utils/Log.hpp"
+#include "Utils/Profiler.hpp"
 
 namespace ox {
 AssetManager::AssetLibrary AssetManager::asset_library;

@@ -1,13 +1,13 @@
-﻿#include "LuaSceneBindings.h"
+﻿#include "LuaSceneBindings.hpp"
 
+#include <entt/signal/dispatcher.hpp>
 #include <sol/state.hpp>
 #include <sol/variadic_args.hpp>
-#include <entt/signal/dispatcher.hpp>
 
-#include "LuaHelpers.h"
+#include "LuaHelpers.hpp"
 
-#include "Scene/Entity.h"
-#include "Scene/Scene.h"
+#include "Scene/Entity.hpp"
+#include "Scene/Scene.hpp"
 
 namespace ox::LuaBindings {
 [[nodiscard]] entt::id_type get_type_id(const sol::table& obj) {

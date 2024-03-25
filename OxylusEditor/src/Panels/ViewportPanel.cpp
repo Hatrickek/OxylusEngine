@@ -1,31 +1,31 @@
-#include "ViewportPanel.h"
+#include "ViewportPanel.hpp"
 
 #include <icons/IconsMaterialDesignIcons.h>
 #include <vuk/CommandBuffer.hpp>
 #include <vuk/Partials.hpp>
 #include <vuk/RenderGraph.hpp>
 
-#include "Core/FileSystem.h"
-#include "EditorLayer.h"
+#include "EditorLayer.hpp"
+#include "Core/FileSystem.hpp"
 #include "ImGuizmo.h"
 #include "glm/gtc/type_ptr.hpp"
 
-#include "Render/DebugRenderer.h"
+#include "Render/Utils/VukCommon.hpp"
+#include "Render/Vulkan/Renderer.hpp"
+#include "Render/Vulkan/VkContext.hpp"
+#include "Render/DebugRenderer.hpp"
 #include "Render/RenderPipeline.h"
 #include "Render/RendererConfig.h"
-#include "Render/Utils/VukCommon.h"
-#include "Render/Vulkan/Renderer.h"
-#include "Render/Vulkan/VkContext.h"
 
 #include "Scene/SceneRenderer.h"
 
-#include "Thread/TaskScheduler.h"
+#include "Thread/TaskScheduler.hpp"
 
-#include "UI/OxUI.h"
+#include "UI/OxUI.hpp"
 
-#include "Utils/OxMath.h"
-#include "Utils/StringUtils.h"
-#include "Utils/Timestep.h"
+#include "Utils/OxMath.hpp"
+#include "Utils/StringUtils.hpp"
+#include "Utils/Timestep.hpp"
 
 namespace ox {
 ViewportPanel::ViewportPanel() : EditorPanel("Viewport", ICON_MDI_TERRAIN, true) {

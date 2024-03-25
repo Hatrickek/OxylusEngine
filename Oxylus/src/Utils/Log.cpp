@@ -1,8 +1,8 @@
-#include "Log.h"
+#include "Log.hpp"
 
 #include <filesystem>
 
-#include "Profiler.h"
+#include "Profiler.hpp"
 
 namespace ox {
 void Log::init(int argc, char** argv) {

@@ -1,11 +1,11 @@
 ﻿#pragma once
 #include <mutex>
 
-#include "Event/Event.h"
 #include <vuk/Future.hpp>
+#include "Event/Event.hpp"
 
-#include "Core/Base.h"
-#include "Scene/Components.h"
+#include "Scene/Components.hpp"
+#include "Core/Base.hpp"
 
 namespace vuk {
 struct SampledImage;

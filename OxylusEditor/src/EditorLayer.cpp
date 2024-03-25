@@ -1,41 +1,41 @@
-#include "EditorLayer.h"
+#include "EditorLayer.hpp"
 
 #include <filesystem>
 #include <icons/IconsMaterialDesignIcons.h>
 
 #include <imgui_internal.h>
 
-#include "EditorTheme.h"
+#include "EditorTheme.hpp"
 
-#include "Assets/AssetManager.h"
-#include "Core/Input.h"
-#include "Core/Project.h"
-#include "Panels/AssetInspectorPanel.h"
-#include "Panels/ContentPanel.h"
-#include "Panels/EditorSettingsPanel.h"
-#include "Panels/InspectorPanel.h"
-#include "Panels/ProjectPanel.h"
-#include "Panels/RenderGraphPanel.h"
-#include "Panels/RendererSettingsPanel.h"
-#include "Panels/SceneHierarchyPanel.h"
-#include "Panels/StatisticsPanel.h"
-#include "Render/Vulkan/Renderer.h"
+#include "Assets/AssetManager.hpp"
+#include "Core/Input.hpp"
+#include "Core/Project.hpp"
+#include "Panels/AssetInspectorPanel.hpp"
+#include "Panels/ContentPanel.hpp"
+#include "Panels/EditorSettingsPanel.hpp"
+#include "Panels/InspectorPanel.hpp"
+#include "Panels/ProjectPanel.hpp"
+#include "Panels/RenderGraphPanel.hpp"
+#include "Panels/RendererSettingsPanel.hpp"
+#include "Panels/SceneHierarchyPanel.hpp"
+#include "Panels/StatisticsPanel.hpp"
+#include "Render/Vulkan/Renderer.hpp"
 #include "Render/Window.h"
 
 #include "Scene/SceneRenderer.h"
 
-#include "UI/OxUI.h"
-#include "Utils/EditorConfig.h"
-#include "Utils/FileDialogs.h"
-#include "Utils/ImGuiScoped.h"
+#include "UI/OxUI.hpp"
+#include "Utils/FileDialogs.hpp"
+#include "Utils/ImGuiScoped.hpp"
+#include "Utils/EditorConfig.hpp"
 
-#include "Scene/SceneSerializer.h"
+#include "Scene/SceneSerializer.hpp"
 
-#include "Thread/ThreadManager.h"
+#include "Thread/ThreadManager.hpp"
 
-#include "Utils/CVars.h"
-#include "Utils/EmbeddedBanner.h"
-#include "Utils/StringUtils.h"
+#include "Utils/CVars.hpp"
+#include "Utils/StringUtils.hpp"
+#include "Utils/EmbeddedBanner.hpp"
 
 namespace ox {
 EditorLayer* EditorLayer::instance = nullptr;

@@ -10,15 +10,15 @@
 
 #include "Mesh.h"
 
-#include "Assets/AssetManager.h"
-#include "Core/FileSystem.h"
+#include "Assets/AssetManager.hpp"
+#include "Core/FileSystem.hpp"
 
-#include "Core/Types.h"
+#include "Core/Types.hpp"
 
-#include "Utils/Log.h"
+#include "Utils/Log.hpp"
 
-#include "Render/Utils/VukCommon.h"
-#include "Vulkan/VkContext.h"
+#include "Utils/VukCommon.hpp"
+#include "Vulkan/VkContext.hpp"
 
 namespace ox {
 RendererCommon::MeshLib RendererCommon::mesh_lib = {};

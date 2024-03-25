@@ -1,15 +1,15 @@
 #include "Window.h"
 
-#include "Core/EmbeddedLogo.h"
-#include "Utils/Log.h"
+#include "Utils/Log.hpp"
+#include "Core/EmbeddedLogo.hpp"
 
 #include "stb_image.h"
 
-#include "Core/ApplicationEvents.h"
+#include "Core/ApplicationEvents.hpp"
 
 #include "GLFW/glfw3.h"
 
-#include "Utils/Profiler.h"
+#include "Utils/Profiler.hpp"
 
 namespace ox {
 Window::WindowData Window::s_window_data;

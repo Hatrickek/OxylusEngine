@@ -1,4 +1,4 @@
-﻿#include "StatisticsPanel.h"
+﻿#include "StatisticsPanel.hpp"
 
 #include <icons/IconsMaterialDesignIcons.h>
 #include <imgui.h>

@@ -1,12 +1,12 @@
-﻿#include "LuaComponentBindings.h"
+﻿#include "LuaComponentBindings.hpp"
 
 #include <sol/state.hpp>
 
-#include "Assets/AssetManager.h"
+#include "Assets/AssetManager.hpp"
 
-#include "LuaHelpers.h"
+#include "LuaHelpers.hpp"
 
-#include "Scene/Components.h"
+#include "Scene/Components.hpp"
 
 namespace ox {
 void LuaBindings::bind_components(const Shared<sol::state>& state) {

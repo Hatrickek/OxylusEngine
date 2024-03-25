@@ -3,7 +3,7 @@
 #include "RenderPipeline.h"
 #include "RendererConfig.h"
 
-#include "Passes/GTAO.h"
+#include "Passes/GTAO.hpp"
 #include "vuk/CommandBuffer.hpp"
 
 namespace ox {

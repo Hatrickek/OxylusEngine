@@ -1,14 +1,14 @@
-#include "SceneSerializer.h"
+#include "SceneSerializer.hpp"
 
-#include "EntitySerializer.h"
-#include "Assets/AssetManager.h"
-#include "Core/Project.h"
-#include "Utils/Profiler.h"
+#include "Utils/Profiler.hpp"
+#include "Assets/AssetManager.hpp"
+#include "Core/Project.hpp"
+#include "EntitySerializer.hpp"
 
 #include <fstream>
 
-#include "Core/App.h"
-#include "Core/FileSystem.h"
+#include "Core/App.hpp"
+#include "Core/FileSystem.hpp"
 
 namespace ox {
 SceneSerializer::SceneSerializer(const Shared<Scene>& scene) : m_scene(scene) {}

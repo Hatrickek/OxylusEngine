@@ -3,12 +3,12 @@
 #include <fstream>
 #include <sstream>
 
-#include "Core/App.h"
-#include "Core/FileSystem.h"
-#include "Thread/TaskScheduler.h"
+#include "Thread/TaskScheduler.hpp"
+#include "Core/App.hpp"
+#include "Core/FileSystem.hpp"
 
-#include "Utils/Profiler.h"
-#include "Utils/Toml.h"
+#include "Utils/Profiler.hpp"
+#include "Utils/Toml.hpp"
 
 namespace ox {
 void RendererConfig::init() {

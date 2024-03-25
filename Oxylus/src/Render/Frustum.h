@@ -1,5 +1,5 @@
 ﻿#pragma once
-#include "Core/Types.h"
+#include "Core/Types.hpp"
 
 namespace ox {
 struct Plane {

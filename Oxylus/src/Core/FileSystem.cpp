@@ -1,8 +1,8 @@
-﻿#include "FileSystem.h"
+﻿#include "FileSystem.hpp"
 
-#include "Core/PlatformDetection.h"
+#include "PlatformDetection.hpp"
 
-#include "Utils/StringUtils.h"
+#include "Utils/StringUtils.hpp"
 
 #ifdef OX_PLATFORM_WINDOWS
   #include <ShlObj_core.h>
@@ -12,9 +12,9 @@
 
 #include <filesystem>
 
-#include "App.h"
-#include "Utils/Log.h"
-#include "Utils/Profiler.h"
+#include "Utils/Log.hpp"
+#include "Utils/Profiler.hpp"
+#include "App.hpp"
 
 namespace ox {
 std::pair<std::string, std::string> FileSystem::split_path(std::string_view full_path) {

@@ -1,6 +1,6 @@
 ﻿#pragma once
-#include "Core/Base.h"
-#include "Scene/Components.h"
+#include "Scene/Components.hpp"
+#include "Core/Base.hpp"
 
 namespace ox {
 struct SkyboxLoadEvent {

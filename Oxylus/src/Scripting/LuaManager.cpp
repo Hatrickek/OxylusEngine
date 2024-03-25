@@ -1,23 +1,23 @@
-﻿#include "LuaManager.h"
+﻿#include "LuaManager.hpp"
 
 #include <sol/sol.hpp>
 
-#include "LuaApplicationBindings.h"
-#include "LuaAssetManagerBindings.h"
-#include "LuaAudioBindings.h"
-#include "LuaComponentBindings.h"
-#include "LuaDebugBindings.h"
-#include "LuaSceneBindings.h"
-#include "LuaInputBindings.h"
-#include "LuaMathBindings.h"
-#include "LuaPhysicsBindings.h"
-#include "LuaRendererBindings.h"
-#include "LuaUIBindings.h"
+#include "LuaApplicationBindings.hpp"
+#include "LuaAssetManagerBindings.hpp"
+#include "LuaAudioBindings.hpp"
+#include "LuaComponentBindings.hpp"
+#include "LuaDebugBindings.hpp"
+#include "LuaInputBindings.hpp"
+#include "LuaMathBindings.hpp"
+#include "LuaPhysicsBindings.hpp"
+#include "LuaRendererBindings.hpp"
+#include "LuaSceneBindings.hpp"
+#include "LuaUIBindings.hpp"
 
-#include "Scene/Scene.h"
-#include "Core/Input.h"
+#include "Core/Input.hpp"
+#include "Scene/Scene.hpp"
 
-#include "Utils/Log.h"
+#include "Utils/Log.hpp"
 
 namespace ox {
 void LuaManager::init() {

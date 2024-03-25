@@ -1,6 +1,6 @@
 #pragma once
-#include "Core/Input.h"
-#include "Core/App.h"
+#include "Core/App.hpp"
+#include "Core/Input.hpp"
 
 typedef struct GLFWmonitor GLFWmonitor;
 
