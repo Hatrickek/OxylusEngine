@@ -19,7 +19,7 @@
 #include "Panels/RendererSettingsPanel.hpp"
 #include "Panels/SceneHierarchyPanel.hpp"
 #include "Panels/StatisticsPanel.hpp"
-#include "Render/Vulkan/Renderer.hpp"
+#include "Render/Renderer.hpp"
 #include "Render/Window.h"
 
 #include "Scene/SceneRenderer.h"

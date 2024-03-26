@@ -14,7 +14,7 @@
 
 #include "Render/DebugRenderer.hpp"
 #include "Render/DefaultRenderPipeline.h"
-#include "Render/Vulkan/Renderer.hpp"
+#include "Render/Renderer.hpp"
 #include "Render/Vulkan/VkContext.hpp"
 
 namespace ox {

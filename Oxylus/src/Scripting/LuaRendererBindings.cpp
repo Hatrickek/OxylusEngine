@@ -6,7 +6,7 @@
 
 #include "Core/Types.hpp"
 
-#include "Render/Vulkan/Renderer.hpp"
+#include "Render/Renderer.hpp"
 #include "Render/Window.h"
 
 namespace ox::LuaBindings {

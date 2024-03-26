@@ -12,7 +12,7 @@
 #include "Render/DefaultRenderPipeline.h"
 #include "Render/Mesh.h"
 #include "Render/Window.h"
-#include "VkContext.hpp"
+#include "Vulkan/VkContext.hpp"
 
 namespace ox {
 Renderer::RendererContext Renderer::renderer_context;

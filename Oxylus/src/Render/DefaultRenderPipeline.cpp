@@ -25,7 +25,7 @@
 
 #include "Utils/SPD.hpp"
 #include "Utils/VukCommon.hpp"
-#include "Vulkan/Renderer.hpp"
+#include "Renderer.hpp"
 
 #include "Utils/RectPacker.hpp"
 

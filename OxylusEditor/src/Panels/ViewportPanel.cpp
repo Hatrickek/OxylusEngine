@@ -11,7 +11,7 @@
 #include "glm/gtc/type_ptr.hpp"
 
 #include "Render/Utils/VukCommon.hpp"
-#include "Render/Vulkan/Renderer.hpp"
+#include "Render/Renderer.hpp"
 #include "Render/Vulkan/VkContext.hpp"
 #include "Render/DebugRenderer.hpp"
 #include "Render/RenderPipeline.h"

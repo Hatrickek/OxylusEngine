@@ -11,7 +11,7 @@
 
 #include "Modules/ModuleRegistry.hpp"
 
-#include "Render/Vulkan/Renderer.hpp"
+#include "Render/Renderer.hpp"
 #include "Render/Vulkan/VkContext.hpp"
 #include "Render/Window.h"
 

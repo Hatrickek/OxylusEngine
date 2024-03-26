@@ -3,7 +3,7 @@
 #include "Utils/OxMath.hpp"
 #include "Utils/Profiler.hpp"
 
-#include "Vulkan/Renderer.hpp"
+#include "Renderer.hpp"
 
 namespace ox {
 Camera::Camera(Vec3 position) {
