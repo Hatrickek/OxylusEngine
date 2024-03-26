@@ -219,7 +219,7 @@ set_target_properties(vk-bootstrap PROPERTIES FOLDER "Vendor")
 CPMAddPackage(
     NAME vuk
     GITHUB_REPOSITORY martty/vuk
-    GIT_TAG master
+    GIT_TAG new-FE
     GIT_SHALLOW ON
     OPTIONS
         "VUK_LINK_TO_LOADER OFF"
