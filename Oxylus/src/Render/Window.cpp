@@ -1,35 +1,34 @@
 #include "Window.h"
 
-#include "Core/EmbeddedLogo.h"
-#include "Utils/Log.h"
+#include "Utils/Log.hpp"
+#include "Core/EmbeddedLogo.hpp"
 
 #include "stb_image.h"
 
-#include "Core/ApplicationEvents.h"
+#include "Core/ApplicationEvents.hpp"
 
-#include "Utils/Profiler.h"
+#include "GLFW/glfw3.h"
 
-namespace Oxylus {
+#include "Utils/Profiler.hpp"
+
+namespace ox {
 Window::WindowData Window::s_window_data;
 GLFWwindow* Window::s_window_handle;
 
 void Window::init_window(const AppSpec& spec) {
-  init_vulkan_window(spec);
-}
-
-void Window::init_vulkan_window(const AppSpec& spec) {
+  OX_SCOPED_ZONE;
   glfwInit();
 
-  constexpr auto window_width = 1600;
-  constexpr auto window_height = 900;
+  const auto monitor_size = get_monitor_size();
+
+  const auto window_width = (float)monitor_size.x * 0.8f;
+  const auto window_height = (float)monitor_size.y * 0.8f;
 
   glfwWindowHint(GLFW_CLIENT_API, GLFW_NO_API);
-  if (spec.custom_window_title)
-    glfwWindowHint(GLFW_DECORATED, GLFW_FALSE);
-  s_window_handle = glfwCreateWindow(window_width, window_height, spec.name.c_str(), nullptr, nullptr);
+  s_window_handle = glfwCreateWindow((int)window_width, (int)window_height, spec.name.c_str(), nullptr, nullptr);
 
   // center window
-  const auto center = get_center_pos(window_width, window_height);
+  const auto center = get_center_pos((int)window_width, (int)window_height);
   glfwSetWindowPos(s_window_handle, center.x, center.y);
 
   //Load file icon
@@ -41,7 +40,7 @@ void Window::init_vulkan_window(const AppSpec& spec) {
     stbi_image_free(image_data);
   }
   if (s_window_handle == nullptr) {
-    OX_CORE_ERROR("Failed to create GLFW WindowHandle");
+    OX_LOG_ERROR("Failed to create GLFW WindowHandle");
     glfwTerminate();
   }
 
@@ -88,7 +87,7 @@ void Window::poll_events() {
 }
 
 void Window::close_window(GLFWwindow*) {
-  Application::get()->close();
+  App::get()->close();
   glfwTerminate();
 }
 
@@ -98,7 +97,7 @@ void Window::set_window_user_data(void* data) {
 
 GLFWwindow* Window::get_glfw_window() {
   if (s_window_handle == nullptr) {
-    OX_CORE_ERROR("Glfw WindowHandle is nullptr. Did you call InitWindow() ?");
+    OX_LOG_ERROR("Glfw WindowHandle is nullptr. Did you call InitWindow() ?");
   }
   return s_window_handle;
 }
@@ -113,6 +112,18 @@ uint32_t Window::get_height() {
   int width, height;
   glfwGetWindowSize(s_window_handle, &width, &height);
   return (uint32_t)height;
+}
+
+Vec2 Window::get_content_scale(GLFWmonitor* monitor) {
+  float xscale, yscale;
+  glfwGetMonitorContentScale(monitor == nullptr ? glfwGetPrimaryMonitor() : monitor, &xscale, &yscale);
+  return {xscale, yscale};
+}
+
+IVec2 Window::get_monitor_size(GLFWmonitor* monitor) {
+  int width, height;
+  glfwGetMonitorWorkarea(monitor == nullptr ? glfwGetPrimaryMonitor() : monitor, nullptr, nullptr, &width, &height);
+  return {width, height};
 }
 
 IVec2 Window::get_center_pos(const int width, const int height) {

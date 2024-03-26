@@ -1,4 +1,5 @@
 #include "Mesh.h"
+#include "vuk/Types.hpp"
 
 #define TINYGLTF_IMPLEMENTATION
 #define STB_IMAGE_IMPLEMENTATION
@@ -17,47 +18,53 @@
 #include <vuk/CommandBuffer.hpp>
 #include <vuk/Partials.hpp>
 
+#include "Assets/AssetManager.hpp"
+#include "Core/FileSystem.hpp"
 #include "Texture.h"
-#include "Assets/AssetManager.h"
 
-#include "Core/Components.h"
-#include "Core/Entity.h"
+#include "Scene/Components.hpp"
+#include "Scene/Entity.hpp"
 
-#include "Scene/Scene.h"
+#include "Scene/Scene.hpp"
 
-#include "Utils/Log.h"
-#include "Utils/Profiler.h"
-#include "Utils/Timer.h"
+#include "Utils/Log.hpp"
+#include "Utils/Profiler.hpp"
+#include "Utils/Timer.hpp"
 
-#include "Vulkan/VulkanContext.h"
+#include "Vulkan/VkContext.hpp"
 
-namespace Oxylus {
-Mesh::Mesh(const std::string_view path, const int file_loading_flags, const float scale) {
-  load_from_file(path.data(), file_loading_flags, scale);
-}
+namespace ox {
+Mesh::Mesh(const std::string_view path, const int file_loading_flags, const float scale) { load_from_file(path.data(), file_loading_flags, scale); }
 
 Mesh::Mesh(const std::vector<Vertex>& vertices, const std::vector<uint32_t>& indices) {
   this->vertices = vertices;
   this->indices = indices;
   this->aabb = {};
 
-  const auto context = VulkanContext::get();
+  const auto context = VkContext::get();
   auto compiler = vuk::Compiler{};
 
-  auto [vBuffer, vBufferFut] = create_buffer(*context->superframe_allocator, vuk::MemoryUsage::eGPUonly, vuk::DomainFlagBits::eTransferOnGraphics, std::span(this->vertices));
+  auto [vBuffer, vBufferFut] =
+    create_buffer(*context->superframe_allocator, vuk::MemoryUsage::eGPUonly, vuk::DomainFlagBits::eTransferOnGraphics, std::span(this->vertices));
 
   vBufferFut.wait(*context->superframe_allocator, compiler);
   vertex_buffer = std::move(vBuffer);
 
-  auto [iBuffer, iBufferFut] = create_buffer(*context->superframe_allocator, vuk::MemoryUsage::eGPUonly, vuk::DomainFlagBits::eTransferOnGraphics, std::span(this->indices));
+  auto [iBuffer, iBufferFut] =
+    create_buffer(*context->superframe_allocator, vuk::MemoryUsage::eGPUonly, vuk::DomainFlagBits::eTransferOnGraphics, std::span(this->indices));
 
   iBufferFut.wait(*context->superframe_allocator, compiler);
   index_buffer = std::move(iBuffer);
+
+  index_count = (uint32_t)indices.size();
+
+#if 0
+  this->vertices.clear();
+  this->indices.clear();
+#endif
 }
 
-Mesh::~Mesh() {
-  destroy();
-}
+Mesh::~Mesh() { destroy(); }
 
 bool Mesh::export_as_binary(const std::string& in_path, const std::string& out_path) {
   tinygltf::TinyGLTF gltf_context;
@@ -65,17 +72,17 @@ bool Mesh::export_as_binary(const std::string& in_path, const std::string& out_p
   std::string error, warning;
 
   bool file_loaded;
-  if (std::filesystem::path(in_path).extension() == ".gltf")
+  if (FileSystem::get_file_extension(in_path) == "gltf")
     file_loaded = gltf_context.LoadASCIIFromFile(&gltf_model, &error, &warning, in_path);
   else
     file_loaded = gltf_context.LoadBinaryFromFile(&gltf_model, &error, &warning, in_path);
 
   if (!file_loaded) {
-    OX_CORE_ERROR("Couldnt load gltf file: {}", error);
+    OX_LOG_ERROR("Couldnt load gltf file: {}", error);
     return false;
   }
   if (!warning.empty()) {
-    OX_CORE_WARN("GLTF loader warning: {}", warning);
+    OX_LOG_WARN("GLTF loader warning: {}", warning);
   }
 
   return gltf_context.WriteGltfSceneToFile(&gltf_model, out_path, true, true, false, true);
@@ -94,19 +101,18 @@ void Mesh::load_from_file(const std::string& file_path, int file_loading_flags, 
 
   std::string error, warning;
   bool file_loaded = false;
-  if (std::filesystem::path(file_path).extension() == ".gltf") {
+  if (FileSystem::get_file_extension(file_path) == "gltf") {
     file_loaded = gltf_context.LoadASCIIFromFile(&gltf_model, &error, &warning, file_path);
-  }
-  else {
+  } else {
     file_loaded = gltf_context.LoadBinaryFromFile(&gltf_model, &error, &warning, file_path);
   }
 
   if (!file_loaded) {
-    OX_CORE_ERROR("Couldnt load gltf file: {}", error);
+    OX_LOG_ERROR("Couldnt load gltf file: {}", error);
     return;
   }
   if (!warning.empty()) {
-    OX_CORE_WARN("GLTF loader warning: {}", warning);
+    OX_LOG_WARN("GLTF loader warning: {}", warning);
   }
 
   load_textures(gltf_model);
@@ -140,34 +146,43 @@ void Mesh::load_from_file(const std::string& file_path, int file_loading_flags, 
 
   get_scene_dimensions();
 
-  auto context = VulkanContext::get();
+  auto ctx = VkContext::get();
   auto compiler = vuk::Compiler{};
 
-  auto [vBuffer, vBufferFut] = create_buffer(*context->superframe_allocator, vuk::MemoryUsage::eGPUonly, vuk::DomainFlagBits::eTransferOnGraphics, std::span(vertices));
+  auto [vBuffer, vBufferFut] =
+    create_buffer(*ctx->superframe_allocator, vuk::MemoryUsage::eGPUonly, vuk::DomainFlagBits::eTransferOnGraphics, std::span(vertices));
 
-  vBufferFut.wait(*context->superframe_allocator, compiler);
+  vBufferFut.wait(*ctx->superframe_allocator, compiler);
   vertex_buffer = std::move(vBuffer);
 
-  auto [iBuffer, iBufferFut] = create_buffer(*context->superframe_allocator, vuk::MemoryUsage::eGPUonly, vuk::DomainFlagBits::eTransferOnGraphics, std::span(indices));
+  auto [iBuffer, iBufferFut] =
+    create_buffer(*ctx->superframe_allocator, vuk::MemoryUsage::eGPUonly, vuk::DomainFlagBits::eTransferOnGraphics, std::span(indices));
 
-  iBufferFut.wait(*context->superframe_allocator, compiler);
+  iBufferFut.wait(*ctx->superframe_allocator, compiler);
   index_buffer = std::move(iBuffer);
 
   m_textures.clear();
 
-  OX_CORE_INFO("Mesh file loaded: ({}) {}, {} materials, {} animations", timer.get_elapsed_ms(), name.c_str(), gltf_model.materials.size(), animations.size());
+  index_count = (uint32_t)indices.size();
+#if 0
+  vertices.clear();
+  indices.clear();
+#endif
+  OX_LOG_INFO("Mesh file loaded: ({}) {}, {} materials, {} animations",
+               timer.get_elapsed_ms(),
+               name.c_str(),
+               gltf_model.materials.size(),
+               animations.size());
 }
 
 const Mesh* Mesh::bind_vertex_buffer(vuk::CommandBuffer& command_buffer) const {
   OX_SCOPED_ZONE;
-  OX_CORE_ASSERT(vertex_buffer)
   command_buffer.bind_vertex_buffer(0, *vertex_buffer, 0, vertex_pack);
   return this;
 }
 
 const Mesh* Mesh::bind_index_buffer(vuk::CommandBuffer& command_buffer) const {
   OX_SCOPED_ZONE;
-  OX_CORE_ASSERT(index_buffer)
   command_buffer.bind_index_buffer(*index_buffer, vuk::IndexType::eUint32);
   return this;
 }
@@ -175,7 +190,7 @@ const Mesh* Mesh::bind_index_buffer(vuk::CommandBuffer& command_buffer) const {
 void Mesh::set_scale(const Vec3& mesh_scale) {
   scale = mesh_scale;
 
-  //TODO:
+  // TODO:
 }
 
 void Mesh::draw_node(const Node* node, vuk::CommandBuffer& command_buffer) const {
@@ -210,12 +225,18 @@ void Mesh::load_textures(tinygltf::Model& model) {
     if (img.component == 3) {
       buffer = Texture::convert_to_four_channels(img.width, img.height, &img.image[0]);
       delete_buffer = true;
-    }
-    else {
+    } else {
       buffer = &img.image[0];
     }
 
-    m_textures[image_index] = AssetManager::get_texture_asset(img.name, TextureLoadInfo{{}, (uint32_t)img.width, (uint32_t)img.height, buffer});
+    const auto ci = TextureLoadInfo{
+      {},
+      (uint32_t)img.width,
+      (uint32_t)img.height,
+      buffer,
+    };
+
+    m_textures[image_index] = AssetManager::get_texture_asset(img.name, ci);
 
     if (delete_buffer)
       delete[] buffer;
@@ -226,7 +247,7 @@ void Mesh::load_materials(tinygltf::Model& model) {
   OX_SCOPED_ZONE;
   // Create a empty material if the mesh file doesn't have any.
   if (model.materials.empty()) {
-    materials.emplace_back(create_ref<Material>());
+    materials.emplace_back(create_shared<Material>());
     const bool dont_create_materials = loading_flags & DontCreateMaterials;
     if (!dont_create_materials)
       materials[0]->create();
@@ -238,52 +259,46 @@ void Mesh::load_materials(tinygltf::Model& model) {
     material.create();
     if (!mat.name.empty())
       material.name = mat.name;
-    material.parameters.double_sided = mat.doubleSided;
-    if (mat.values.contains("baseColorTexture")) {
-      material.albedo_texture = m_textures.at(model.textures[mat.values["baseColorTexture"].TextureIndex()].source);
-      material.parameters.use_albedo = true;
-    }
+
+    material.set_double_sided(mat.doubleSided);
+
+    material.set_reflectance(0.04f);
+
+    if (mat.values.contains("baseColorTexture"))
+      material.set_albedo_texture(m_textures.at(model.textures[mat.values["baseColorTexture"].TextureIndex()].source));
+    if (mat.additionalValues.contains("normalTexture"))
+      material.set_normal_texture(m_textures.at(model.textures[mat.additionalValues["normalTexture"].TextureIndex()].source));
     if (mat.values.contains("metallicRoughnessTexture")) {
-      material.metallic_roughness_texture = m_textures.at(model.textures[mat.values["metallicRoughnessTexture"].TextureIndex()].source);
-      material.parameters.use_physical_map = true;
+      material.set_physical_texture(m_textures.at(model.textures[mat.values["metallicRoughnessTexture"].TextureIndex()].source));
+      material.set_metallic(1.0f);
+      material.set_roughness(1.0f);
     }
-    if (mat.values.contains("roughnessFactor")) {
-      material.parameters.roughness = static_cast<float>(mat.values["roughnessFactor"].Factor());
-    }
-    if (mat.values.contains("metallicFactor")) {
-      material.parameters.metallic = static_cast<float>(mat.values["metallicFactor"].Factor());
-    }
-    if (mat.values.contains("specularFactor")) {
-      material.parameters.reflectance = static_cast<float>(mat.values["specularFactor"].Factor());
-    }
-    if (mat.values.contains("baseColorFactor")) {
-      material.parameters.color = glm::make_vec4(mat.values["baseColorFactor"].ColorFactor().data());
-    }
-    if (mat.additionalValues.contains("emissiveFactor")) {
-      material.parameters.emmisive = Vec4(glm::make_vec3(mat.additionalValues["emissiveFactor"].ColorFactor().data()), 1.0);
-    }
-    if (mat.additionalValues.contains("normalTexture")) {
-      material.normal_texture = m_textures.at(model.textures[mat.additionalValues["normalTexture"].TextureIndex()].source);
-      material.parameters.use_normal = true;
-    }
-    if (mat.additionalValues.contains("emissiveTexture")) {
-      material.emissive_texture = m_textures.at(model.textures[mat.additionalValues["emissiveTexture"].TextureIndex()].source);
-      material.parameters.use_emissive = true;
-    }
-    if (mat.additionalValues.contains("occlusionTexture")) {
-      material.ao_texture = m_textures.at(model.textures[mat.additionalValues["occlusionTexture"].TextureIndex()].source);
-      material.parameters.use_ao = true;
-    }
+    if (mat.additionalValues.contains("emissiveTexture"))
+      material.set_emissive_texture(m_textures.at(model.textures[mat.additionalValues["emissiveTexture"].TextureIndex()].source));
+    if (mat.additionalValues.contains("occlusionTexture"))
+      material.set_ao_texture(m_textures.at(model.textures[mat.additionalValues["occlusionTexture"].TextureIndex()].source));
+
+    if (mat.values.contains("baseColorFactor"))
+      material.set_color(glm::make_vec4(mat.values["baseColorFactor"].ColorFactor().data()));
+    if (mat.values.contains("roughnessFactor"))
+      material.set_roughness(static_cast<float>(mat.values["roughnessFactor"].Factor()));
+    if (mat.values.contains("metallicFactor"))
+      material.set_metallic(static_cast<float>(mat.values["metallicFactor"].Factor()));
+    if (mat.values.contains("specularFactor"))
+      material.set_reflectance(static_cast<float>(mat.values["specularFactor"].Factor()));
+    if (mat.additionalValues.contains("emissiveFactor"))
+      material.set_emissive(Vec4(glm::make_vec3(mat.additionalValues["emissiveFactor"].ColorFactor().data()), 1.0));
+
     if (mat.alphaMode == "BLEND") {
-      material.parameters.alpha_mode = (uint32_t)Material::AlphaMode::Blend;
-    }
-    else if (mat.alphaMode == "MASK") {
-      material.parameters.alpha_cutoff = (float)mat.alphaCutoff;
-      material.parameters.alpha_mode = (uint32_t)Material::AlphaMode::Mask;
+      material.set_alpha_mode(Material::AlphaMode::Blend);
+    } else if (mat.alphaMode == "MASK") {
+      material.set_alpha_cutoff((float)mat.alphaCutoff);
+      material.set_alpha_mode(Material::AlphaMode::Mask);
     }
     if (mat.additionalValues.contains("alphaCutoff")) {
-      material.parameters.alpha_cutoff = static_cast<float>(mat.additionalValues["alphaCutoff"].Factor());
+      material.set_alpha_cutoff(static_cast<float>(mat.additionalValues["alphaCutoff"].Factor()));
     }
+
     if (mat.extensions.contains("KHR_materials_ior")) {
       const auto ext = mat.extensions.find("KHR_materials_ior");
       if (ext->second.Has("ior")) {
@@ -293,18 +308,24 @@ void Mesh::load_materials(tinygltf::Model& model) {
       }
     }
 
-    materials.emplace_back(create_ref<Material>(material));
+    materials.emplace_back(create_shared<Material>(material));
   }
 }
 
-Ref<Material> Mesh::get_material(const uint32_t index) const {
-  OX_CORE_ASSERT(index < materials.size())
+Shared<Material> Mesh::get_material(const uint32_t index) const {
+  OX_ASSERT(index < materials.size());
   return materials.at(index);
 }
 
-std::vector<Ref<Material>> Mesh::get_materials_as_ref() const {
+std::vector<Shared<Material>> Mesh::get_materials_as_ref() const {
   OX_SCOPED_ZONE;
   return materials;
+}
+
+std::vector<Shared<Material>> Mesh::get_materials(uint32_t node_index) const {
+  OX_SCOPED_ZONE;
+  OX_CHECK_NULL(linear_nodes[node_index]->mesh_data);
+  return linear_nodes[node_index]->mesh_data->materials;
 }
 
 void Mesh::destroy() {
@@ -321,32 +342,20 @@ void Mesh::destroy() {
   materials.clear();
 }
 
-void Mesh::calculate_bounding_box(Node* node, const Node* parent) {
-  AABB parent_bvh = parent ? parent->bvh : AABB(dimensions.min, dimensions.max);
-
+void Mesh::calculate_node_bounding_box(Node* node) {
   if (node->mesh_data) {
-    if (node->mesh_data) {
-      node->aabb = AABB(node->mesh_data->bb.min, node->mesh_data->bb.max);
-      node->aabb.transform(node->get_matrix());
-      if (node->children.empty()) {
-        node->bvh.min = node->aabb.min;
-        node->bvh.max = node->aabb.max;
-      }
-    }
+    node->aabb = node->mesh_data->aabb;
   }
 
-  parent_bvh.min = min(parent_bvh.min, node->bvh.min);
-  parent_bvh.max = min(parent_bvh.max, node->bvh.max);
-
   for (const auto& child : node->children) {
-    calculate_bounding_box(child, node);
+    calculate_node_bounding_box(child);
   }
 }
 
 void Mesh::get_scene_dimensions() {
   // Calculate binary volume hierarchy for all nodes in the scene
   for (const auto node : linear_nodes) {
-    calculate_bounding_box(node, nullptr);
+    calculate_node_bounding_box(node);
   }
 
   dimensions.min = Vec3(FLT_MAX);
@@ -354,10 +363,8 @@ void Mesh::get_scene_dimensions() {
 
   for (const auto node : linear_nodes) {
     if (node->mesh_data) {
-      for (const auto p : node->mesh_data->primitives) {
-        dimensions.min = min(dimensions.min, p->aabb.min);
-        dimensions.max = max(dimensions.max, p->aabb.max);
-      }
+      dimensions.min = min(dimensions.min, node->mesh_data->aabb.min);
+      dimensions.max = max(dimensions.max, node->mesh_data->aabb.max);
     }
   }
 
@@ -366,15 +373,15 @@ void Mesh::get_scene_dimensions() {
 
 void Mesh::update_animation(uint32_t index, const float time) const {
   if (animations.empty()) {
-    OX_CORE_WARN("Mesh does not contain animation!");
+    OX_LOG_WARN("Mesh does not contain animation!");
     return;
   }
   if (index > static_cast<uint32_t>(animations.size()) - 1) {
-    OX_CORE_WARN("No animation with index {} !", index);
+    OX_LOG_WARN("No animation with index {} !", index);
     return;
   }
 
-  const Ref<Animation>& animation = animations[index];
+  const Shared<Animation>& animation = animations[index];
 
   bool updated = false;
   for (const auto& channel : animation->channels) {
@@ -426,7 +433,7 @@ void Mesh::update_animation(uint32_t index, const float time) const {
 }
 
 Mesh::MeshData::MeshData() {
-  node_buffer = *allocate_buffer(*VulkanContext::get()->superframe_allocator, {vuk::MemoryUsage::eCPUtoGPU, sizeof(uniform_block), 1});
+  node_buffer = *allocate_buffer(*VkContext::get()->superframe_allocator, {vuk::MemoryUsage::eCPUtoGPU, sizeof(uniform_block), 1});
 }
 
 Mesh::MeshData::~MeshData() {
@@ -518,7 +525,9 @@ void Mesh::load_node(Node* parent,
   }
   if (node.matrix.size() == 16) {
     new_node->transform = glm::make_mat4x4(node.matrix.data());
-    if (globalscale != 1.0f) { new_node->transform = glm::scale(new_node->transform, Vec3(globalscale)); }
+    if (globalscale != 1.0f) {
+      new_node->transform = glm::scale(new_node->transform, Vec3(globalscale));
+    }
   }
 
   // Node with children
@@ -562,7 +571,7 @@ void Mesh::load_node(Node* parent,
         int joint_component_type = 0;
 
         // Position attribute is required
-        OX_CORE_ASSERT(primitive.attributes.contains("POSITION"))
+        OX_ASSERT(primitive.attributes.contains("POSITION"));
 
         const tinygltf::Accessor& pos_accessor = model.accessors[primitive.attributes.find("POSITION")->second];
         const tinygltf::BufferView& pos_view = model.bufferViews[pos_accessor.bufferView];
@@ -570,13 +579,15 @@ void Mesh::load_node(Node* parent,
         pos_min = Vec3(pos_accessor.minValues[0], pos_accessor.minValues[1], pos_accessor.minValues[2]);
         pos_max = Vec3(pos_accessor.maxValues[0], pos_accessor.maxValues[1], pos_accessor.maxValues[2]);
         vertex_count = static_cast<uint32_t>(pos_accessor.count);
-        pos_byte_stride = pos_accessor.ByteStride(pos_view) ? pos_accessor.ByteStride(pos_view) / sizeof(float) : tinygltf::GetNumComponentsInType(TINYGLTF_TYPE_VEC3);
+        pos_byte_stride = pos_accessor.ByteStride(pos_view) ? pos_accessor.ByteStride(pos_view) / sizeof(float)
+                                                            : tinygltf::GetNumComponentsInType(TINYGLTF_TYPE_VEC3);
 
         if (primitive.attributes.contains("NORMAL")) {
           const tinygltf::Accessor& norm_accessor = model.accessors[primitive.attributes.find("NORMAL")->second];
           const tinygltf::BufferView& norm_view = model.bufferViews[norm_accessor.bufferView];
           buffer_normals = reinterpret_cast<const float*>(&model.buffers[norm_view.buffer].data[norm_accessor.byteOffset + norm_view.byteOffset]);
-          norm_byte_stride = norm_accessor.ByteStride(norm_view) ? norm_accessor.ByteStride(norm_view) / sizeof(float) : tinygltf::GetNumComponentsInType(TINYGLTF_TYPE_VEC3);
+          norm_byte_stride = norm_accessor.ByteStride(norm_view) ? norm_accessor.ByteStride(norm_view) / sizeof(float)
+                                                                 : tinygltf::GetNumComponentsInType(TINYGLTF_TYPE_VEC3);
         }
 
         // UVs
@@ -584,7 +595,8 @@ void Mesh::load_node(Node* parent,
           const tinygltf::Accessor& uv_accessor = model.accessors[primitive.attributes.find("TEXCOORD_0")->second];
           const tinygltf::BufferView& uv_view = model.bufferViews[uv_accessor.bufferView];
           buffer_tex_coord_set0 = reinterpret_cast<const float*>(&model.buffers[uv_view.buffer].data[uv_accessor.byteOffset + uv_view.byteOffset]);
-          uv0_byte_stride = uv_accessor.ByteStride(uv_view) ? uv_accessor.ByteStride(uv_view) / sizeof(float) : tinygltf::GetNumComponentsInType(TINYGLTF_TYPE_VEC2);
+          uv0_byte_stride =
+            uv_accessor.ByteStride(uv_view) ? uv_accessor.ByteStride(uv_view) / sizeof(float) : tinygltf::GetNumComponentsInType(TINYGLTF_TYPE_VEC2);
         }
 
         // Vertex colors
@@ -592,13 +604,15 @@ void Mesh::load_node(Node* parent,
           const tinygltf::Accessor& accessor = model.accessors[primitive.attributes.find("COLOR_0")->second];
           const tinygltf::BufferView& view = model.bufferViews[accessor.bufferView];
           buffer_color_set0 = reinterpret_cast<const float*>(&model.buffers[view.buffer].data[accessor.byteOffset + view.byteOffset]);
-          color0_byte_stride = accessor.ByteStride(view) ? accessor.ByteStride(view) / sizeof(float) : tinygltf::GetNumComponentsInType(TINYGLTF_TYPE_VEC3);
+          color0_byte_stride =
+            accessor.ByteStride(view) ? accessor.ByteStride(view) / sizeof(float) : tinygltf::GetNumComponentsInType(TINYGLTF_TYPE_VEC3);
         }
 
         if (primitive.attributes.contains("TANGENT")) {
           const tinygltf::Accessor& tangent_accessor = model.accessors[primitive.attributes.find("TANGENT")->second];
           const tinygltf::BufferView& tangent_view = model.bufferViews[tangent_accessor.bufferView];
-          buffer_tangents = reinterpret_cast<const float*>(&model.buffers[tangent_view.buffer].data[tangent_accessor.byteOffset + tangent_view.byteOffset]);
+          buffer_tangents =
+            reinterpret_cast<const float*>(&model.buffers[tangent_view.buffer].data[tangent_accessor.byteOffset + tangent_view.byteOffset]);
         }
 
         // Skinning
@@ -608,14 +622,18 @@ void Mesh::load_node(Node* parent,
           const tinygltf::BufferView& joint_view = model.bufferViews[joint_accessor.bufferView];
           buffer_joints = &(model.buffers[joint_view.buffer].data[joint_accessor.byteOffset + joint_view.byteOffset]);
           joint_component_type = joint_accessor.componentType;
-          joint_byte_stride = joint_accessor.ByteStride(joint_view) ? joint_accessor.ByteStride(joint_view) / tinygltf::GetComponentSizeInBytes(joint_component_type) : tinygltf::GetNumComponentsInType(TINYGLTF_TYPE_VEC4);
+          joint_byte_stride = joint_accessor.ByteStride(joint_view)
+                              ? joint_accessor.ByteStride(joint_view) / tinygltf::GetComponentSizeInBytes(joint_component_type)
+                              : tinygltf::GetNumComponentsInType(TINYGLTF_TYPE_VEC4);
         }
 
         if (primitive.attributes.contains("WEIGHTS_0")) {
           const tinygltf::Accessor& weight_accessor = model.accessors[primitive.attributes.find("WEIGHTS_0")->second];
           const tinygltf::BufferView& weight_view = model.bufferViews[weight_accessor.bufferView];
-          buffer_weights = reinterpret_cast<const float*>(&(model.buffers[weight_view.buffer].data[weight_accessor.byteOffset + weight_view.byteOffset]));
-          weight_byte_stride = weight_accessor.ByteStride(weight_view) ? weight_accessor.ByteStride(weight_view) / sizeof(float) : tinygltf::GetNumComponentsInType(TINYGLTF_TYPE_VEC4);
+          buffer_weights =
+            reinterpret_cast<const float*>(&(model.buffers[weight_view.buffer].data[weight_accessor.byteOffset + weight_view.byteOffset]));
+          weight_byte_stride = weight_accessor.ByteStride(weight_view) ? weight_accessor.ByteStride(weight_view) / sizeof(float)
+                                                                       : tinygltf::GetNumComponentsInType(TINYGLTF_TYPE_VEC4);
         }
 
         has_skin = (buffer_joints && buffer_weights);
@@ -645,11 +663,10 @@ void Mesh::load_node(Node* parent,
               }
               default:
                 // Not supported by spec
-                OX_CORE_ERROR("Joint component type {} {}", joint_component_type, " not supported!");
+                OX_LOG_ERROR("Joint component type {} {}", joint_component_type, " not supported!");
                 break;
             }
-          }
-          else {
+          } else {
             vert.joint0 = Vec4(0.0f);
           }
           vert.weight0 = has_skin ? glm::make_vec4(&buffer_weights[v * weight_byte_stride]) : Vec4(0.0f);
@@ -696,8 +713,7 @@ void Mesh::load_node(Node* parent,
             delete[] buf;
             break;
           }
-          default: OX_CORE_ERROR("Index component type {0} not supported", accessor.componentType);
-            return;
+          default: OX_LOG_ERROR("Index component type {0} not supported", accessor.componentType); return;
         }
       }
 
@@ -709,6 +725,8 @@ void Mesh::load_node(Node* parent,
         new_primitive->material_index = 0;
       new_primitive->material = materials[new_primitive->material_index];
 
+      new_mesh->materials.emplace_back(new_primitive->material) = new_primitive->material;
+
       new_primitive->set_bounding_box(pos_min, pos_max);
 
       new_mesh->primitives.push_back(new_primitive);
@@ -716,19 +734,19 @@ void Mesh::load_node(Node* parent,
       total_primitive_count += 1;
     }
 
+    new_mesh->aabb = {};
+
     // Mesh BB from BBs of primitives
     for (auto& p : new_mesh->primitives) {
-      new_mesh->bb = p->aabb;
-      new_mesh->bb.min = min(new_mesh->bb.min, p->aabb.min);
-      new_mesh->bb.max = max(new_mesh->bb.max, p->aabb.max);
+      new_mesh->aabb.min = min(new_mesh->aabb.min, p->aabb.min);
+      new_mesh->aabb.max = max(new_mesh->aabb.max, p->aabb.max);
     }
 
     new_node->mesh_data = new_mesh;
   }
   if (parent) {
     parent->children.emplace_back(new_node);
-  }
-  else {
+  } else {
     nodes.emplace_back(new_node);
   }
   linear_nodes.emplace_back(new_node);
@@ -764,7 +782,7 @@ void Mesh::load_animations(tinygltf::Model& gltf_model) {
         const tinygltf::BufferView& buffer_view = gltf_model.bufferViews[accessor.bufferView];
         const tinygltf::Buffer& buffer = gltf_model.buffers[buffer_view.buffer];
 
-        OX_CORE_ASSERT(accessor.componentType == TINYGLTF_COMPONENT_TYPE_FLOAT);
+        OX_ASSERT(accessor.componentType == TINYGLTF_COMPONENT_TYPE_FLOAT);
 
         const void* data_ptr = &buffer.data[accessor.byteOffset + buffer_view.byteOffset];
         const auto* buf = static_cast<const float*>(data_ptr);
@@ -782,7 +800,7 @@ void Mesh::load_animations(tinygltf::Model& gltf_model) {
         }
       }
 
-      // Read sampler output T/R/S values 
+      // Read sampler output T/R/S values
       {
         const tinygltf::Accessor& accessor = gltf_model.accessors[samp.output];
         const tinygltf::BufferView& buffer_view = gltf_model.bufferViews[accessor.bufferView];
@@ -808,7 +826,7 @@ void Mesh::load_animations(tinygltf::Model& gltf_model) {
             break;
           }
           default: {
-            OX_CORE_WARN("unknown type");
+            OX_LOG_WARN("unknown type");
             break;
           }
         }
@@ -831,7 +849,7 @@ void Mesh::load_animations(tinygltf::Model& gltf_model) {
         channel.path = AnimationChannel::PathType::SCALE;
       }
       if (source.target_path == "weights") {
-        OX_CORE_WARN("weights not yet supported, skipping channel...");
+        OX_LOG_WARN("weights not yet supported, skipping channel...");
         continue;
       }
       channel.samplerIndex = source.sampler;
@@ -843,7 +861,7 @@ void Mesh::load_animations(tinygltf::Model& gltf_model) {
       animation.channels.emplace_back(channel);
     }
 
-    animations.emplace_back(create_ref<Animation>(std::move(animation)));
+    animations.emplace_back(create_shared<Animation>(std::move(animation)));
   }
 }
 
@@ -902,4 +920,4 @@ Mesh::Node* Mesh::node_from_index(const uint32_t index) {
   }
   return node_found;
 }
-}
+} // namespace ox

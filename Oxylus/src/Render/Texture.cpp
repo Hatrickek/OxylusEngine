@@ -4,14 +4,14 @@
 
 #include <stb_image.h>
 
-#include "Utils/Log.h"
+#include "Utils/Log.hpp"
 
-namespace Oxylus {
+namespace ox {
 uint8_t* Texture::load_stb_image(const std::string& filename, uint32_t* width, uint32_t* height, uint32_t* bits, bool srgb) {
   const auto filePath = std::filesystem::path(filename);
 
   if (!exists(filePath))
-    OX_CORE_ERROR("Couldn't load image, file doesn't exists. {}", filePath.string());
+    OX_LOG_ERROR("Couldn't load image, file doesn't exists. {}", filename);
 
   int tex_width = 0, tex_height = 0, tex_channels = 0;
   constexpr int size_of_channel = 8;

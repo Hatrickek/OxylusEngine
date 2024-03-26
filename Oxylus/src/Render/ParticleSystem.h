@@ -3,10 +3,10 @@
 
 #include <glm/gtx/compatibility.hpp>
 
-#include "Core/Base.h"
-#include "Utils/OxMath.h"
+#include "Utils/OxMath.hpp"
+#include "Core/Base.hpp"
 
-namespace Oxylus {
+namespace ox {
 class TextureAsset;
 
 struct Particle {
@@ -41,7 +41,7 @@ template <typename T> struct BySpeedModule {
   BySpeedModule(const T& start, const T& end) : start(start), end(end) {}
 
   T evaluate(float speed) {
-    float factor = Math::inverse_lerp_clamped(min_speed, max_speed, speed);
+    float factor = math::inverse_lerp_clamped(min_speed, max_speed, speed);
     return glm::lerp(end, start, factor);
   }
 };
@@ -77,7 +77,7 @@ struct ParticleProperties {
   OverLifetimeModule<glm::vec3> rotation_over_lifetime;
   BySpeedModule<glm::vec3> rotation_by_speed;
 
-  Ref<TextureAsset> texture = nullptr;
+  Shared<TextureAsset> texture = nullptr;
 };
 
 class ParticleSystem {

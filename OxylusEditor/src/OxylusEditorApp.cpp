@@ -1,14 +1,14 @@
-#include "Core/EntryPoint.h"
-#include "EditorLayer.h"
-#include "Core/Project.h"
+#include "Core/EntryPoint.hpp"
+#include "Core/Project.hpp"
+#include "EditorLayer.hpp"
 
-namespace Oxylus {
-class OxylusEditor : public Application {
+namespace ox {
+class OxylusEditor : public App {
 public:
-  OxylusEditor(const AppSpec& spec) : Application(spec) { }
+  OxylusEditor(const AppSpec& spec) : App(spec) { }
 };
 
-Application* create_application(ApplicationCommandLineArgs args) {
+App* create_application(ApplicationCommandLineArgs args) {
   AppSpec spec;
 #ifdef OX_RELEASE
     spec.name = "Oxylus Engine - Editor (Vulkan) - Release";
@@ -21,7 +21,6 @@ Application* create_application(ApplicationCommandLineArgs args) {
 #endif
   spec.working_directory = std::filesystem::current_path().string();
   spec.command_line_args = args;
-  spec.custom_window_title = false;
 
   const auto app = new OxylusEditor(spec);
 

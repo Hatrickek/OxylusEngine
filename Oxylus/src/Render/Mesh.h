@@ -5,23 +5,23 @@
 #include <vector>
 #include <glm/detail/type_quat.hpp>
 
-#include "Assets/Material.h"
+#include "Assets/Material.hpp"
 
 #define TINYGLTF_NO_STB_IMAGE_WRITE 
 #include <vuk/Buffer.hpp>
 
-#include "BoundingVolume.h"
+#include "BoundingVolume.hpp"
 #include "MeshVertex.h"
 
-#include "Core/Types.h"
+#include "Core/Types.hpp"
 
 namespace tinygltf {
 class Node;
 class Model;
 }
 
-namespace Oxylus {
-class Mesh {
+namespace ox {
+class Mesh : public Asset {
 public:
   enum FileLoadingFlags : int {
     None = 0,
@@ -37,7 +37,7 @@ public:
 
     AABB aabb = {};
 
-    Ref<Material> material = nullptr;
+    Shared<Material> material = nullptr;
 
     int32_t material_index = 0;
     uint32_t parent_node_index = 0;
@@ -52,9 +52,10 @@ public:
 
   struct MeshData {
     std::vector<Primitive*> primitives = {};
+    std::vector<Shared<Material>> materials = {};
     vuk::Unique<vuk::Buffer> node_buffer;
 
-    AABB bb = {};
+    AABB aabb = {};
 
     struct UniformBlock {
       glm::mat4 joint_matrix[MAX_NUM_JOINTS]{};
@@ -81,7 +82,6 @@ public:
     Vec3 scale = Vec3(1.0f);
     Quat rotation = {};
 
-    AABB bvh;
     AABB aabb;
 
     ~Node();
@@ -122,10 +122,10 @@ public:
     float end = std::numeric_limits<float>::min();
   };
 
-  std::vector<Ref<Animation>> animations = {};
+  std::vector<Shared<Animation>> animations = {};
 
-  std::vector<Ref<TextureAsset>> m_textures;
-  std::vector<Ref<Material>> materials;
+  std::vector<Shared<TextureAsset>> m_textures;
+  std::vector<Shared<Material>> materials;
   std::vector<Node*> nodes;
   std::vector<Node*> linear_nodes;
   std::vector<Node*> linear_mesh_nodes;
@@ -133,6 +133,7 @@ public:
 
   std::vector<uint32_t> indices;
   std::vector<Vertex> vertices;
+  uint32_t index_count = 0;
   vuk::Unique<vuk::Buffer> vertex_buffer;
   vuk::Unique<vuk::Buffer> index_buffer;
 
@@ -164,8 +165,9 @@ public:
   /// Export a mesh file as glb file.
   static bool export_as_binary(const std::string& in_path, const std::string& out_path);
 
-  Ref<Material> get_material(uint32_t index) const;
-  std::vector<Ref<Material>> get_materials_as_ref() const;
+  Shared<Material> get_material(uint32_t index) const;
+  std::vector<Shared<Material>> get_materials_as_ref() const;
+  std::vector<Shared<Material>> get_materials(uint32_t node_index) const;
   uint32_t get_material_count() const { return (uint32_t)materials.size(); }
   size_t get_node_count() const { return nodes.size(); }
   void set_scale(const Vec3& mesh_scale);
@@ -192,7 +194,7 @@ private:
                  float globalscale);
   void load_animations(tinygltf::Model& gltf_model);
   void load_skins(tinygltf::Model& gltf_model);
-  void calculate_bounding_box(Node* node, const Node* parent);
+  void calculate_node_bounding_box(Node* node);
   void get_scene_dimensions();
   Node* find_node(Node* parent, uint32_t index);
   Node* node_from_index(uint32_t index);

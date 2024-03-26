@@ -1,17 +1,46 @@
-#include "Project.h"
+#include "Project.hpp"
 
-#include "Base.h"
-#include "ProjectSerializer.h"
-#include "Utils/Log.h"
+#include <entt/locator/locator.hpp>
+#include <entt/meta/context.hpp>
+#include <entt/meta/node.hpp>
 
-namespace Oxylus {
-Ref<Project> Project::create_new() {
-  s_active_project = create_ref<Project>();
-  return s_active_project;
+#include "Modules/ModuleRegistry.hpp"
+#include "Base.hpp"
+#include "FileSystem.hpp"
+#include "ProjectSerializer.hpp"
+
+#include "Modules/ModuleInterface.hpp"
+#include "Modules/ModuleUtil.hpp"
+
+#include "Utils/Log.hpp"
+#include "Utils/Profiler.hpp"
+
+namespace ox {
+std::string Project::get_asset_directory() {
+  return FileSystem::append_paths(get_project_directory(), active_project->project_config.asset_directory);
 }
 
-Ref<Project> Project::new_project(const std::string& project_dir, const std::string& project_name, const std::string& project_asset_dir) {
-  auto project = create_ref<Project>();
+void Project::load_module() {
+  if (get_config().module_name.empty())
+    return;
+
+  const auto module_path = FileSystem::append_paths(get_project_directory(), project_config.module_name);
+  ModuleUtil::load_module(project_config.module_name, module_path);
+}
+
+void Project::unload_module() const {
+  if (!project_config.module_name.empty())
+    ModuleUtil::unload_module(project_config.module_name);
+}
+
+Shared<Project> Project::create_new() {
+  OX_SCOPED_ZONE;
+  active_project = create_shared<Project>();
+  return active_project;
+}
+
+Shared<Project> Project::new_project(const std::string& project_dir, const std::string& project_name, const std::string& project_asset_dir) {
+  auto project = create_shared<Project>();
   project->get_config().name = project_name;
   project->get_config().asset_directory = project_asset_dir;
 
@@ -33,24 +62,25 @@ Ref<Project> Project::new_project(const std::string& project_dir, const std::str
   return project;
 }
 
-Ref<Project> Project::load(const std::filesystem::path& path) {
-  const Ref<Project> project = create_ref<Project>();
+Shared<Project> Project::load(const std::string& path) {
+  const Shared<Project> project = create_shared<Project>();
 
   const ProjectSerializer serializer(project);
   if (serializer.deserialize(path)) {
-    project->m_project_directory = path.parent_path();
-    s_active_project = project;
-    OX_CORE_INFO("Project loaded: {0}", project->get_config().name);
-    return s_active_project;
+    project->set_project_dir(std::filesystem::path(path).parent_path().string());
+    active_project = project;
+    active_project->load_module();
+    OX_LOG_INFO("Project loaded: {0}", project->get_config().name);
+    return active_project;
   }
 
   return nullptr;
 }
 
-bool Project::save_active(const std::filesystem::path& path) {
-  const ProjectSerializer serializer(s_active_project);
+bool Project::save_active(const std::string& path) {
+  const ProjectSerializer serializer(active_project);
   if (serializer.serialize(path)) {
-    s_active_project->m_project_directory = path.parent_path();
+    active_project->set_project_dir(std::filesystem::path(path).parent_path().string());
     return true;
   }
   return false;

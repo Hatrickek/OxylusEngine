@@ -1,24 +1,26 @@
-#include "OxUI.h"
+#include "OxUI.hpp"
 
-#include "Assets/AssetManager.h"
-#include "Utils/ImGuiScoped.h"
-#include "Utils/StringUtils.h"
-#include "Utils/UIUtils.h"
+#include "Assets/AssetManager.hpp"
+#include "Utils/FileDialogs.hpp"
+#include "Utils/ImGuiScoped.hpp"
+#include "Utils/StringUtils.hpp"
 
+#include <fmt/format.h>
 #include <imgui_internal.h>
 #include <misc/cpp/imgui_stdlib.h>
-#include <fmt/format.h>
 #include <vuk/SampledImage.hpp>
 
-#include "Assets/TextureAsset.h"
-#include "Core/Application.h"
+#include "ImGuiLayer.hpp"
 
-namespace Oxylus {
+#include "Assets/TextureAsset.hpp"
+#include "Core/App.hpp"
+
+namespace ox {
 inline static int ui_context_id = 0;
 inline static int s_counter = 0;
 char OxUI::id_buffer[16];
 
-bool OxUI::begin_properties(const ImGuiTableFlags flags) {
+bool OxUI::begin_properties(const ImGuiTableFlags flags, bool fixed_width, float width) {
   id_buffer[0] = '#';
   id_buffer[1] = '#';
   memset(id_buffer + 2, 0, 14);
@@ -26,12 +28,15 @@ bool OxUI::begin_properties(const ImGuiTableFlags flags) {
   const std::string buffer = fmt::format("##{}", s_counter);
   std::memcpy(&id_buffer, buffer.data(), 16);
 
-  constexpr ImGuiTableFlags table_flags = ImGuiTableFlags_PadOuterX;
-  if (ImGui::BeginTable(id_buffer, 2, table_flags | flags)) {
-    ImGui::TableSetupColumn("PropertyName", 0, 0.5f);
-    ImGui::TableSetupColumn("Property", ImGuiTableColumnFlags_WidthStretch);
+  if (ImGui::BeginTable(id_buffer, 2, flags)) {
+    ImGui::TableSetupColumn("Name");
+    if (fixed_width)
+      ImGui::TableSetupColumn("Property", ImGuiTableColumnFlags_WidthFixed, ImGui::GetWindowWidth() * width);
+    else
+      ImGui::TableSetupColumn("Property");
     return true;
   }
+
   return false;
 }
 
@@ -41,7 +46,6 @@ void OxUI::end_properties() {
 
 void OxUI::text(const char* text1, const char* text2, const char* tooltip) {
   begin_property_grid(text1, tooltip);
-  ImGui::SetCursorPosY(ImGui::GetCursorPosY() + ImGui::GetStyle().FramePadding.y * 0.5f);
   ImGui::Text("%s", text2);
   end_property_grid();
 }
@@ -98,7 +102,7 @@ void OxUI::tooltip(const char* text) {
   ImGui::PopStyleVar();
 }
 
-bool OxUI::property(const char* label, Ref<TextureAsset>& texture, uint64_t override_texture_id, const char* tooltip) {
+bool OxUI::property(const char* label, Shared<TextureAsset>& texture, const char* tooltip) {
   begin_property_grid(label, tooltip);
   bool changed = false;
 
@@ -116,30 +120,43 @@ bool OxUI::property(const char* label, Ref<TextureAsset>& texture, uint64_t over
   ImGui::PushStyleColor(ImGuiCol_ButtonHovered, ImVec4{0.35f, 0.35f, 0.35f, 1.0f});
   ImGui::PushStyleColor(ImGuiCol_ButtonActive, ImVec4{0.25f, 0.25f, 0.25f, 1.0f});
 
-  vuk::SamplerCreateInfo sci;
-  sci.minFilter = sci.magFilter = vuk::Filter::eLinear;
-  sci.mipmapMode = vuk::SamplerMipmapMode::eLinear;
-  sci.addressModeU = sci.addressModeV = sci.addressModeW = vuk::SamplerAddressMode::eRepeat;
-  const vuk::SampledImage sampled_image(vuk::SampledImage::Global{.iv = *texture->get_texture().view, .sci = sci, .image_layout = vuk::ImageLayout::eShaderReadOnlyOptimal});
-
-  if (ImGui::ImageButton(Application::get()->get_imgui_layer()->add_sampled_image(sampled_image), {button_size, button_size}, {1, 1}, {0, 0}, 0)) {
-    const auto& path = FileDialogs::open_file({{"Texture file", "png,jpg"}});
+  auto texture_load_func = [](Shared<TextureAsset>& texture, bool& changed) {
+    const auto& path = App::get_system<FileDialogs>()->open_file({{"Texture file", "png,jpg"}});
     if (!path.empty()) {
       texture = AssetManager::get_texture_asset({path});
       changed = true;
     }
+  };
+
+  if (texture) {
+    vuk::SamplerCreateInfo sci;
+    sci.minFilter = sci.magFilter = vuk::Filter::eLinear;
+    sci.mipmapMode = vuk::SamplerMipmapMode::eLinear;
+    sci.addressModeU = sci.addressModeV = sci.addressModeW = vuk::SamplerAddressMode::eRepeat;
+    const vuk::SampledImage sampled_image(vuk::SampledImage::Global{.iv = *texture->get_texture().view, .sci = sci, .image_layout = vuk::ImageLayout::eShaderReadOnlyOptimal});
+
+    if (ImGui::ImageButton(App::get()->get_imgui_layer()->add_sampled_image(sampled_image), {button_size, button_size}, {1, 1}, {0, 0}, 0)) {
+      texture_load_func(texture, changed);
+    }
+    if (ImGui::IsItemHovered(ImGuiHoveredFlags_DelayNormal | ImGuiHoveredFlags_NoSharedDelay)) {
+      ImGui::BeginTooltip();
+      ImGui::TextUnformatted(texture->get_path().c_str());
+      ImGui::Spacing();
+      ImGui::Image(App::get()->get_imgui_layer()->add_sampled_image(sampled_image), {tooltip_size, tooltip_size}, {1, 1}, {0, 0});
+      ImGui::EndTooltip();
+    }
   }
-  if (texture && ImGui::IsItemHovered(ImGuiHoveredFlags_DelayNormal | ImGuiHoveredFlags_NoSharedDelay)) {
-    ImGui::BeginTooltip();
-    ImGui::TextUnformatted(texture->get_path().c_str());
-    ImGui::Spacing();
-    ImGui::Image(Application::get()->get_imgui_layer()->add_sampled_image(sampled_image), {tooltip_size, tooltip_size}, {1, 1}, {0, 0});
-    ImGui::EndTooltip();
+  else {
+    ImGui::PushFont(ImGuiLayer::bold_font);
+    if (ImGui::Button("NO\nTEXTURE", {button_size, button_size})) {
+      texture_load_func(texture, changed);
+    }
+    ImGui::PopFont();
   }
   if (ImGui::BeginDragDropTarget()) {
     if (const ImGuiPayload* payload = ImGui::AcceptDragDropPayload("CONTENT_BROWSER_ITEM")) {
       const auto path = get_path_from_imgui_payload(payload);
-      texture = AssetManager::get_texture_asset({path.string()});
+      texture = AssetManager::get_texture_asset({path});
       changed = true;
     }
     ImGui::EndDragDropTarget();
@@ -151,7 +168,7 @@ bool OxUI::property(const char* label, Ref<TextureAsset>& texture, uint64_t over
   ImGui::PushStyleColor(ImGuiCol_ButtonHovered, ImVec4{0.3f, 0.3f, 0.3f, 1.0f});
   ImGui::PushStyleColor(ImGuiCol_ButtonActive, ImVec4{0.2f, 0.2f, 0.2f, 1.0f});
   if (ImGui::Button("x", x_button_size)) {
-    texture = TextureAsset::get_purple_texture();
+    texture = nullptr;
     changed = true;
   }
   ImGui::PopStyleColor(3);
@@ -168,11 +185,11 @@ void OxUI::image(const vuk::Texture& texture, const ImVec2 size, const ImVec2& u
   sci.addressModeU = sci.addressModeV = sci.addressModeW = vuk::SamplerAddressMode::eRepeat;
   const vuk::SampledImage sampled_image(vuk::SampledImage::Global{.iv = *texture.view, .sci = sci, .image_layout = vuk::ImageLayout::eShaderReadOnlyOptimal});
 
-  ImGui::Image(Application::get()->get_imgui_layer()->add_sampled_image(sampled_image), size, uv0, uv1, tint_col, border_col);
+  ImGui::Image(App::get()->get_imgui_layer()->add_sampled_image(sampled_image), size, uv0, uv1, tint_col, border_col);
 }
 
 void OxUI::image(const vuk::SampledImage& texture, const ImVec2 size, const ImVec2& uv0, const ImVec2& uv1, const ImVec4& tint_col, const ImVec4& border_col) {
-  ImGui::Image(Application::get()->get_imgui_layer()->add_sampled_image(texture), size, uv0, uv1, tint_col, border_col);
+  ImGui::Image(App::get()->get_imgui_layer()->add_sampled_image(texture), size, uv0, uv1, tint_col, border_col);
 }
 
 bool OxUI::image_button(const char* id, const vuk::Texture& texture, const ImVec2 size, const ImVec2& uv0, const ImVec2& uv1, const ImVec4& tint_col, const ImVec4& bg_col) {
@@ -182,22 +199,22 @@ bool OxUI::image_button(const char* id, const vuk::Texture& texture, const ImVec
   sci.addressModeU = sci.addressModeV = sci.addressModeW = vuk::SamplerAddressMode::eRepeat;
   const vuk::SampledImage sampled_image(vuk::SampledImage::Global{.iv = *texture.view, .sci = sci, .image_layout = vuk::ImageLayout::eShaderReadOnlyOptimal});
 
-  return ImGui::ImageButton(id, Application::get()->get_imgui_layer()->add_sampled_image(sampled_image), size, uv0, uv1, bg_col, tint_col);
+  return ImGui::ImageButton(id, App::get()->get_imgui_layer()->add_sampled_image(sampled_image), size, uv0, uv1, bg_col, tint_col);
 }
 
 bool OxUI::image_button(const char* id, const vuk::SampledImage& texture, const ImVec2 size, const ImVec2& uv0, const ImVec2& uv1, const ImVec4& tint_col, const ImVec4& bg_col) {
-  return ImGui::ImageButton(id, Application::get()->get_imgui_layer()->add_sampled_image(texture), size, uv0, uv1, bg_col, tint_col);
+  return ImGui::ImageButton(id, App::get()->get_imgui_layer()->add_sampled_image(texture), size, uv0, uv1, bg_col, tint_col);
 }
 
 bool OxUI::draw_vec3_control(const char* label, glm::vec3& values, const char* tooltip, const float reset_value) {
   bool changed = false;
 
-  begin_property_grid(label, tooltip, false);
+  begin_property_grid(label, tooltip);
 
   const ImGuiIO& io = ImGui::GetIO();
   const auto bold_font = io.Fonts->Fonts[1];
 
-  ImGui::PushMultiItemsWidths(3, ImGui::CalcItemWidth());
+  ImGui::PushMultiItemsWidths(3, 100.0f);
 
   const float frame_height = ImGui::GetFrameHeight();
   const ImVec2 button_size = {frame_height + 3.0f, frame_height};
@@ -384,7 +401,7 @@ void OxUI::spacing(const uint32_t count) {
     ImGui::Spacing();
 }
 
-std::filesystem::path OxUI::get_path_from_imgui_payload(const ImGuiPayload* payload) {
+std::string OxUI::get_path_from_imgui_payload(const ImGuiPayload* payload) {
   return std::string(static_cast<const char*>(payload->Data));
 }
 
@@ -409,15 +426,23 @@ void OxUI::pop_id() {
   --ui_context_id;
 }
 
-void OxUI::begin_property_grid(const char* label, const char* tooltip, const bool right_align_next_column) {
+void OxUI::begin_property_grid(const char* label, const char* tooltip, const bool align_text_right) {
   push_id();
 
   ImGui::TableNextRow();
+  if (align_text_right)
+    ImGui::SetNextItemWidth(-1.0f);
   ImGui::TableNextColumn();
 
   ImGui::PushID(label);
-  ImGui::SetCursorPosY(ImGui::GetCursorPosY() + ImGui::GetStyle().FramePadding.y * 0.5f);
+  if (align_text_right) {
+    const auto posX = ImGui::GetCursorPosX() + ImGui::GetColumnWidth() - ImGui::CalcTextSize(label).x
+                      - ImGui::GetScrollX();
+    if (posX > ImGui::GetCursorPosX())
+      ImGui::SetCursorPosX(posX);
+  }
   ImGui::TextUnformatted(label);
+
   if (tooltip && ImGui::IsItemHovered(ImGuiHoveredFlags_DelayNormal | ImGuiHoveredFlags_NoSharedDelay)) {
     ImGui::BeginTooltip();
     ImGui::TextUnformatted(tooltip);
@@ -425,9 +450,7 @@ void OxUI::begin_property_grid(const char* label, const char* tooltip, const boo
   }
 
   ImGui::TableNextColumn();
-
-  if (right_align_next_column)
-    ImGui::SetNextItemWidth(-1);
+  ImGui::SetNextItemWidth(-1.0f);
 
   id_buffer[0] = '#';
   id_buffer[1] = '#';

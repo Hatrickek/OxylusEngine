@@ -3,27 +3,25 @@
 
 #include <vuk/Future.hpp>
 
-#include "Core/Base.h"
+#include "Core/Base.hpp"
 
-namespace Oxylus {
+namespace ox {
 class Mesh;
-struct MeshData;
 
 class RendererCommon {
 public:
   static void apply_blur(const std::shared_ptr<vuk::RenderGraph>& render_graph, vuk::Name src_attachment, vuk::Name attachment_name, vuk::Name attachment_name_output);
   static std::pair<vuk::Unique<vuk::Image>, vuk::Future> generate_cubemap_from_equirectangular(const vuk::Texture& cubemap);
-  static std::pair<vuk::Buffer, vuk::Buffer> merge_render_objects(std::vector<MeshData>& draw_list);
 
-  static Ref<Mesh> generate_quad();
-  static Ref<Mesh> generate_cube();
-  static Ref<Mesh> generate_sphere();
+  static Shared<Mesh> generate_quad();
+  static Shared<Mesh> generate_cube();
+  static Shared<Mesh> generate_sphere();
 
 private:
   static struct MeshLib {
-    Ref<Mesh> quad = {};
-    Ref<Mesh> cube = {};
-    Ref<Mesh> sphere = {};
+    Shared<Mesh> quad = {};
+    Shared<Mesh> cube = {};
+    Shared<Mesh> sphere = {};
   } mesh_lib;
 };
 }

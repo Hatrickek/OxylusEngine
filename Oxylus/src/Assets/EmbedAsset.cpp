@@ -1,12 +1,12 @@
-﻿#include "EmbedAsset.h"
+﻿#include "EmbedAsset.hpp"
 
 #include <fstream>
 #include <ostream>
 
+#include "Utils/Log.hpp"
 #include "Render/Texture.h"
-#include "Utils/Log.h"
 
-namespace Oxylus {
+namespace ox {
 void EmbedAsset::EmbedTexture(const std::string& texFilePath, const std::string& outPath, const std::string& arrayName) {
   uint32_t width, height, bits;
   const auto texture = Texture::load_stb_image(texFilePath, &width, &height, &bits);
@@ -31,7 +31,7 @@ void EmbedAsset::EmbedTexture(const std::string& texFilePath, const std::string&
   }
   file << "};";
 
-  OX_CORE_INFO("Successfully embedded texture {0} into: {1}", texFilePath, outPath);
+  OX_LOG_INFO("Successfully embedded texture {0} into: {1}", texFilePath, outPath);
 
   file.close();
   delete texture;

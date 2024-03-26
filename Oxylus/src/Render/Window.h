@@ -1,8 +1,10 @@
 #pragma once
-#include "Core/Input.h"
-#include "Core/Application.h"
+#include "Core/App.hpp"
+#include "Core/Input.hpp"
 
-namespace Oxylus {
+typedef struct GLFWmonitor GLFWmonitor;
+
+namespace ox {
 class Window {
 public:
   static void init_window(const AppSpec& spec);
@@ -14,6 +16,10 @@ public:
   static GLFWwindow* get_glfw_window();
   static uint32_t get_width();
   static uint32_t get_height();
+
+  // ratio between the current DPI and the platform's default DPI
+  static Vec2 get_content_scale(GLFWmonitor* monitor = nullptr);
+  static IVec2 get_monitor_size(GLFWmonitor* monitor = nullptr);
 
   static IVec2 get_center_pos(int width, int height);
 
@@ -47,7 +53,6 @@ private:
     bool is_fullscreen_borderless = false;
   } s_window_data;
 
-  static void init_vulkan_window(const AppSpec& spec);
   static GLFWwindow* s_window_handle;
 };
 }

@@ -1,18 +1,19 @@
-﻿#include "DebugRenderer.h"
+﻿#include "DebugRenderer.hpp"
 
 #include <vuk/Partials.hpp>
 
 #include "RendererCommon.h"
 
-#include "Utils/OxMath.h"
-#include "Utils/Profiler.h"
+#include "Utils/OxMath.hpp"
+#include "Utils/Profiler.hpp"
 
-#include "Vulkan/VulkanContext.h"
+#include "Vulkan/VkContext.hpp"
 
-namespace Oxylus {
+namespace ox {
 DebugRenderer* DebugRenderer::instance = nullptr;
 
 void DebugRenderer::init() {
+  OX_SCOPED_ZONE;
   if (instance)
     return;
 
@@ -28,10 +29,10 @@ void DebugRenderer::init() {
   instance->debug_renderer_context.cube = RendererCommon::generate_cube();
   instance->debug_renderer_context.sphere = RendererCommon::generate_sphere();
 
-  auto [i_buff, i_buff_fut] = create_buffer(*VulkanContext::get()->superframe_allocator, vuk::MemoryUsage::eCPUtoGPU, vuk::DomainFlagBits::eTransferOnGraphics, std::span(indices));
+  auto [i_buff, i_buff_fut] = create_buffer(*VkContext::get()->superframe_allocator, vuk::MemoryUsage::eCPUtoGPU, vuk::DomainFlagBits::eTransferOnGraphics, std::span(indices));
 
   auto compiler = vuk::Compiler{};
-  i_buff_fut.wait(*VulkanContext::get()->superframe_allocator, compiler);
+  i_buff_fut.wait(*VkContext::get()->superframe_allocator, compiler);
 
   instance->debug_renderer_context.index_buffer = std::move(i_buff);
 }
@@ -96,7 +97,7 @@ void DebugRenderer::draw_sphere(const Vec3& pos, const Vec3& scale, const Vec4& 
 
 void DebugRenderer::draw_capsule(const Vec3& pos, const Vec3& scale, const Vec4& color, const Vec3& rotation, bool ndt) { }
 
-void DebugRenderer::draw_mesh(const Ref<Mesh>& mesh, const Vec3& pos, const Vec3& scale, const Vec4& color, const Vec3& rotation, bool depth_tested) {
+void DebugRenderer::draw_mesh(const Shared<Mesh>& mesh, const Vec3& pos, const Vec3& scale, const Vec4& color, const Vec3& rotation, bool depth_tested) {
   const auto transform = translate(Mat4(1.0f), pos) * toMat4(glm::quat(rotation)) * glm::scale(Mat4(1.0f), scale);
   if (depth_tested)
     instance->draw_list_depth_tested.debug_shapes.emplace_back(ShapeInfo{transform, color, mesh});
@@ -104,7 +105,7 @@ void DebugRenderer::draw_mesh(const Ref<Mesh>& mesh, const Vec3& pos, const Vec3
     instance->draw_list.debug_shapes.emplace_back(ShapeInfo{transform, color, mesh});
 }
 
-void DebugRenderer::draw_mesh(const Ref<Mesh>& mesh, const Mat4& model_matrix, const Vec4& color, bool depth_tested) {
+void DebugRenderer::draw_mesh(const Shared<Mesh>& mesh, const Mat4& model_matrix, const Vec4& color, bool depth_tested) {
   if (depth_tested)
     instance->draw_list_depth_tested.debug_shapes.emplace_back(ShapeInfo{model_matrix, color, mesh});
   else

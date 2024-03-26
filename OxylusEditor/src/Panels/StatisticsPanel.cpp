@@ -1,9 +1,9 @@
-﻿#include "StatisticsPanel.h"
+﻿#include "StatisticsPanel.hpp"
 
 #include <icons/IconsMaterialDesignIcons.h>
 #include <imgui.h>
 
-namespace Oxylus {
+namespace ox {
   StatisticsPanel::StatisticsPanel() : EditorPanel("Statistics", ICON_MDI_CLIPBOARD_TEXT, false) {}
 
   void StatisticsPanel::on_imgui_render() {

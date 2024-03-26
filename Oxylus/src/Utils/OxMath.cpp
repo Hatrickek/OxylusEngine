@@ -1,9 +1,8 @@
-#include "OxMath.h"
+#include "OxMath.hpp"
 
 #include <glm/gtx/matrix_decompose.hpp>
 
-
-namespace Oxylus::Math {
+namespace ox::math {
 bool decompose_transform(const glm::mat4& transform, glm::vec3& translation, glm::vec3& rotation, glm::vec3& scale) {
   OX_SCOPED_ZONE;
   using namespace glm;
@@ -16,9 +15,7 @@ bool decompose_transform(const glm::mat4& transform, glm::vec3& translation, glm
     return false;
 
   // First, isolate perspective.  This is the messiest.
-  if (epsilonNotEqual(local_matrix[0][3], static_cast<T>(0), epsilon<T>()) || epsilonNotEqual(local_matrix[1][3],
-        static_cast<T>(0),
-        epsilon<T>()) ||
+  if (epsilonNotEqual(local_matrix[0][3], static_cast<T>(0), epsilon<T>()) || epsilonNotEqual(local_matrix[1][3], static_cast<T>(0), epsilon<T>()) ||
       epsilonNotEqual(local_matrix[2][3], static_cast<T>(0), epsilon<T>())) {
     // Clear the perspective partition
     local_matrix[0][3] = local_matrix[1][3] = local_matrix[2][3] = static_cast<T>(0);
@@ -48,8 +45,7 @@ bool decompose_transform(const glm::mat4& transform, glm::vec3& translation, glm
   if (cos(rotation.y) != 0.0f) {
     rotation.x = atan2(row[1][2], row[2][2]);
     rotation.z = atan2(row[0][1], row[0][0]);
-  }
-  else {
+  } else {
     rotation.x = atan2(-row[2][0], row[1][1]);
     rotation.z = 0;
   }
@@ -57,9 +53,7 @@ bool decompose_transform(const glm::mat4& transform, glm::vec3& translation, glm
   return true;
 }
 
-float lerp(float a, float b, float t) {
-  return a + t * (b - a);
-}
+float lerp(float a, float b, float t) { return a + t * (b - a); }
 
 float inverse_lerp(float a, float b, float value) {
   OX_SCOPED_ZONE;
@@ -88,4 +82,23 @@ Vec2 world_to_screen(const Vec3& world_pos, const glm::mat4& mvp, const float wi
   trans.y += win_pos_y;
   return {trans.x, trans.y};
 }
+Vec4 transform(const Vec4& vec, const Mat4& view) {
+  auto result = Vec4(vec.z) * view[2] + view[3];
+  result = Vec4(vec.y) * view[1] + result;
+  result = Vec4(vec.x) * view[0] + result;
+  return result;
 }
+Vec4 transform_normal(const Vec4& vec, const Mat4& mat) {
+  auto result = Vec4(vec.z) * mat[2];
+  result = Vec4(vec.y) * mat[1] + result;
+  result = Vec4(vec.x) * mat[0] + result;
+  return result;
+}
+Vec4 transform_coord(const Vec4& vec, const Mat4& view) {
+  auto result = Vec4(vec.z) * view[2] + view[3];
+  result = Vec4(vec.y) * view[1] + result;
+  result = Vec4(vec.x) * view[0] + result;
+  result = result / Vec4(result.w);
+  return result;
+}
+} // namespace ox::math

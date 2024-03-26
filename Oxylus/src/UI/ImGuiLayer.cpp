@@ -1,7 +1,7 @@
-#include "ImGuiLayer.h"
+#include "ImGuiLayer.hpp"
+#include <backends/imgui_impl_glfw.h>
 #include <imgui.h>
 #include <plf_colony.h>
-#include <backends/imgui_impl_glfw.h>
 
 #include <glm/common.hpp>
 
@@ -11,16 +11,18 @@
 #include <vuk/RenderGraph.hpp>
 #include <vuk/Partials.hpp>
 
+#include "Core/App.hpp"
+#include "ImGuizmo.h"
 #include "imgui_frag.h"
 #include "imgui_vert.h"
-#include "Core/Application.h"
-#include "Core/Resources.h"
 
+#include "GLFW/glfw3.h"
+
+#include "Render/Vulkan/VkContext.hpp"
+#include "Utils/Profiler.hpp"
 #include "Render/Window.h"
-#include "Render/Vulkan/VulkanContext.h"
-#include "Utils/Profiler.h"
 
-namespace Oxylus {
+namespace ox {
 static ImVec4 darken(ImVec4 c, float p) { return {glm::max(0.f, c.x - 1.0f * p), glm::max(0.f, c.y - 1.0f * p), glm::max(0.f, c.z - 1.0f * p), c.w}; }
 static ImVec4 lighten(ImVec4 c, float p) { return {glm::max(0.f, c.x + 1.0f * p), glm::max(0.f, c.y + 1.0f * p), glm::max(0.f, c.z + 1.0f * p), c.w}; }
 
@@ -28,9 +30,10 @@ ImFont* ImGuiLayer::regular_font = nullptr;
 ImFont* ImGuiLayer::small_font = nullptr;
 ImFont* ImGuiLayer::bold_font = nullptr;
 
-ImGuiLayer::ImGuiLayer() : Layer("ImGuiLayer") { }
+ImGuiLayer::ImGuiLayer() : Layer("ImGuiLayer") {}
 
 void ImGuiLayer::on_attach(EventDispatcher&) {
+  OX_SCOPED_ZONE;
   IMGUI_CHECKVERSION();
   ImGui::CreateContext();
   ImGuiIO& io = ImGui::GetIO();
@@ -41,13 +44,14 @@ void ImGuiLayer::on_attach(EventDispatcher&) {
   io.BackendFlags |= ImGuiBackendFlags_RendererHasVtxOffset;
   /*io.BackendFlags |= ImGuiBackendFlags_RendererHasViewports;*/
 
+  init_for_vulkan();
+
   apply_theme();
   set_style();
-
-  init_for_vulkan();
 }
 
 void ImGuiLayer::add_icon_font(float font_size) {
+  OX_SCOPED_ZONE;
   const ImGuiIO& io = ImGui::GetIO();
   static constexpr ImWchar ICONS_RANGES[] = {ICON_MIN_MDI, ICON_MAX_MDI, 0};
   ImFontConfig icons_config;
@@ -55,9 +59,9 @@ void ImGuiLayer::add_icon_font(float font_size) {
   icons_config.MergeMode = true;
   icons_config.PixelSnapH = true;
   icons_config.GlyphOffset.y = 1.0f;
-  icons_config.OversampleH = icons_config.OversampleV = 1;
+  icons_config.OversampleH = icons_config.OversampleV = 3;
   icons_config.GlyphMinAdvanceX = 4.0f;
-  icons_config.SizePixels = 12.0f;
+  icons_config.SizePixels = font_size;
 
   io.Fonts->AddFontFromMemoryCompressedTTF(MaterialDesign_compressed_data,
                                            MaterialDesign_compressed_size,
@@ -67,6 +71,7 @@ void ImGuiLayer::add_icon_font(float font_size) {
 }
 
 ImGuiLayer::ImGuiData ImGuiLayer::imgui_impl_vuk_init(vuk::Allocator& allocator) const {
+  OX_SCOPED_ZONE;
   vuk::Context& ctx = allocator.get_context();
   auto& io = ImGui::GetIO();
   io.BackendRendererName = "oxylus";
@@ -100,45 +105,41 @@ ImGuiLayer::ImGuiData ImGuiLayer::imgui_impl_vuk_init(vuk::Allocator& allocator)
 
 
 void ImGuiLayer::init_for_vulkan() {
+  OX_SCOPED_ZONE;
   ImGui_ImplGlfw_InitForVulkan(Window::get_glfw_window(), true);
 
   // Upload Fonts
-  const auto regular_font_path = Resources::get_resources_path("Fonts/jetbrains-mono/JetBrainsMono-Regular.ttf");
-  const auto bold_font_path = Resources::get_resources_path("Fonts/jetbrains-mono/JetBrainsMono-Bold.ttf");
+  const auto regular_font_path = App::get_asset_directory("Fonts/FiraSans-Regular.ttf");
+  const auto bold_font_path = App::get_asset_directory("Fonts/FiraSans-Bold.ttf");
 
   const ImGuiIO& io = ImGui::GetIO();
   constexpr float font_size = 16.0f;
   constexpr float font_size_small = 12.0f;
 
-  ImFontConfig icons_config;
-  icons_config.MergeMode = false;
-  icons_config.PixelSnapH = true;
-  icons_config.OversampleH = icons_config.OversampleV = 1;
-  icons_config.GlyphMinAdvanceX = 4.0f;
-  icons_config.SizePixels = 12.0f;
+  ImFontConfig fonts_config;
+  fonts_config.MergeMode = false;
+  fonts_config.PixelSnapH = true;
+  fonts_config.OversampleH = fonts_config.OversampleV = 3;
+  fonts_config.GlyphMinAdvanceX = 4.0f;
+  fonts_config.SizePixels = font_size;
 
-  regular_font = io.Fonts->AddFontFromFileTTF(regular_font_path.c_str(), font_size, &icons_config);
-  add_icon_font(font_size);
-  small_font = io.Fonts->AddFontFromFileTTF(regular_font_path.c_str(), font_size_small, &icons_config);
-  add_icon_font(font_size_small);
-  bold_font = io.Fonts->AddFontFromFileTTF(bold_font_path.c_str(), font_size, &icons_config);
-  add_icon_font(font_size);
-
-  io.Fonts->TexGlyphPadding = 1;
-  for (int n = 0; n < io.Fonts->ConfigData.Size; n++) {
-    ImFontConfig* font_config = &io.Fonts->ConfigData[n];
-    font_config->RasterizerMultiply = 1.0f;
+  {
+    OX_SCOPED_ZONE_N("Font Loading/Building");
+    regular_font = io.Fonts->AddFontFromFileTTF(regular_font_path.c_str(), font_size, &fonts_config);
+    add_icon_font(font_size);
+    small_font = io.Fonts->AddFontFromFileTTF(regular_font_path.c_str(), font_size_small, &fonts_config);
+    add_icon_font(font_size);
+    bold_font = io.Fonts->AddFontFromFileTTF(bold_font_path.c_str(), font_size, &fonts_config);
+    add_icon_font(font_size);
+    io.Fonts->TexGlyphPadding = 1;
+    for (int n = 0; n < io.Fonts->ConfigData.Size; n++) {
+      ImFontConfig* font_config = &io.Fonts->ConfigData[n];
+      font_config->RasterizerMultiply = 1.0f;
+    }
+    io.Fonts->Build();
   }
-  io.Fonts->Build();
 
-  ImGuiStyle* style = &ImGui::GetStyle();
-  style->WindowMenuButtonPosition = ImGuiDir_None;
-
-  uint8_t* pixels;
-  int32_t width, height;
-  io.Fonts->GetTexDataAsRGBA32(&pixels, &width, &height);
-
-  imgui_data = imgui_impl_vuk_init(*VulkanContext::get()->superframe_allocator);
+  imgui_data = imgui_impl_vuk_init(*VkContext::get()->superframe_allocator);
 }
 
 void ImGuiLayer::on_detach() {
@@ -194,15 +195,21 @@ vuk::Future ImGuiLayer::render_draw_data(vuk::Allocator& allocator, vuk::Future 
   }
   std::shared_ptr<vuk::RenderGraph> rg = std::make_shared<vuk::RenderGraph>("imgui");
   rg->attach_in("target", std::move(target));
-  // add rendergraph dependencies to be transitioned
-  // make all rendergraph sampled images available
-  std::vector<vuk::Resource> resources;
+
+  std::vector<vuk::Resource> resources = {};
+  resources.reserve(sampled_images.size() + 1);
   resources.emplace_back("target", vuk::Resource::Type::eImage, vuk::eColorRW, "target+");
   for (auto& si : sampled_images) {
     if (!si.is_global) {
-      resources.emplace_back(si.rg_attachment.reference.rg, si.rg_attachment.reference.name, vuk::Resource::Type::eImage, vuk::Access::eFragmentSampled);
+      resources.emplace_back(
+        si.rg_attachment.reference.rg,
+        si.rg_attachment.reference.name,
+        vuk::Resource::Type::eImage,
+        vuk::Access::eFragmentSampled
+      );
     }
   }
+
   vuk::Pass pass{
     .name = "imgui",
     .resources = std::move(resources),
@@ -274,14 +281,12 @@ vuk::Future ImGuiLayer::render_draw_data(vuk::Allocator& allocator, vuk::Future 
                     command_buffer
                      .bind_image(0,
                                  0,
-                                 *command_buffer.get_resource_image_attachment(si.rg_attachment.reference),
-                                 vuk::ImageLayout::eShaderReadOnlyOptimal)
+                                 *command_buffer.get_resource_image_attachment(si.rg_attachment.reference))
                      .bind_sampler(0, 0, si.rg_attachment.sci);
                   }
                 }
               }
 
-              // Draw
               command_buffer.draw_indexed(pcmd->ElemCount, 1, pcmd->IdxOffset + global_idx_offset, pcmd->VtxOffset + global_vtx_offset, 0);
             }
           }
@@ -450,55 +455,73 @@ void ImGuiLayer::apply_theme(bool dark) {
 }
 
 void ImGuiLayer::set_style() {
-  ImGuiStyle* style = &ImGui::GetStyle();
+  {
+    auto& style = ImGuizmo::GetStyle();
+    style.TranslationLineThickness *= 1.3f;
+    style.TranslationLineArrowSize *= 1.3f;
+    style.RotationLineThickness *= 1.3f;
+    style.RotationOuterLineThickness *= 1.3f;
+    style.ScaleLineThickness *= 1.3f;
+    style.ScaleLineCircleSize *= 1.3f;
+    style.HatchedAxisLineThickness *= 1.3f;
+    style.CenterCircleSize *= 1.3f;
 
-  style->AntiAliasedFill = true;
-  style->AntiAliasedLines = true;
-  style->AntiAliasedLinesUseTex = true;
+    ImGuizmo::SetGizmoSizeClipSpace(0.2f);
+  }
 
-  style->WindowPadding = ImVec2(4.0f, 4.0f);
-  style->FramePadding = ImVec2(4.0f, 4.0f);
-  style->TabMinWidthForCloseButton = 0.1f;
-  style->CellPadding = ImVec2(8.0f, 4.0f);
-  style->ItemSpacing = ImVec2(8.0f, 3.0f);
-  style->ItemInnerSpacing = ImVec2(2.0f, 4.0f);
-  style->TouchExtraPadding = ImVec2(0.0f, 0.0f);
-  style->IndentSpacing = 12;
-  style->ScrollbarSize = 14;
-  style->GrabMinSize = 10;
+  {
+    ImGuiStyle* style = &ImGui::GetStyle();
 
-  style->WindowBorderSize = 0.0f;
-  style->ChildBorderSize = 0.0f;
-  style->PopupBorderSize = 1.5f;
-  style->FrameBorderSize = 0.0f;
-  style->TabBorderSize = 0.0f;
-  style->DockingSeparatorSize = 0.0f;
+    style->AntiAliasedFill = true;
+    style->AntiAliasedLines = true;
+    style->AntiAliasedLinesUseTex = true;
 
-  style->WindowRounding = 6.0f;
-  style->ChildRounding = 0.0f;
-  style->FrameRounding = 2.0f;
-  style->PopupRounding = 2.0f;
-  style->ScrollbarRounding = 3.0f;
-  style->GrabRounding = 2.0f;
-  style->LogSliderDeadzone = 4.0f;
-  style->TabRounding = 3.0f;
+    style->WindowPadding = ImVec2(4.0f, 4.0f);
+    style->FramePadding = ImVec2(4.0f, 4.0f);
+    style->TabMinWidthForCloseButton = 0.1f;
+    style->CellPadding = ImVec2(8.0f, 4.0f);
+    style->ItemSpacing = ImVec2(8.0f, 3.0f);
+    style->ItemInnerSpacing = ImVec2(2.0f, 4.0f);
+    style->TouchExtraPadding = ImVec2(0.0f, 0.0f);
+    style->IndentSpacing = 12;
+    style->ScrollbarSize = 14;
+    style->GrabMinSize = 10;
 
-  style->WindowTitleAlign = ImVec2(0.0f, 0.5f);
-  style->WindowMenuButtonPosition = ImGuiDir_None;
-  style->ColorButtonPosition = ImGuiDir_Left;
-  style->ButtonTextAlign = ImVec2(0.5f, 0.5f);
-  style->SelectableTextAlign = ImVec2(0.0f, 0.0f);
-  style->DisplaySafeAreaPadding = ImVec2(8.0f, 8.0f);
+    style->WindowBorderSize = 0.0f;
+    style->ChildBorderSize = 0.0f;
+    style->PopupBorderSize = 1.5f;
+    style->FrameBorderSize = 0.0f;
+    style->TabBorderSize = 1.0f;
+    style->DockingSeparatorSize = 0.0f;
 
-  ui_frame_padding = ImVec2(4.0f, 2.0f);
-  popup_item_spacing = ImVec2(6.0f, 8.0f);
+    style->WindowRounding = 6.0f;
+    style->ChildRounding = 0.0f;
+    style->FrameRounding = 2.0f;
+    style->PopupRounding = 2.0f;
+    style->ScrollbarRounding = 3.0f;
+    style->GrabRounding = 2.0f;
+    style->LogSliderDeadzone = 4.0f;
+    style->TabRounding = 3.0f;
 
-  constexpr ImGuiColorEditFlags color_edit_flags = ImGuiColorEditFlags_AlphaBar
-                                                   | ImGuiColorEditFlags_AlphaPreviewHalf
-                                                   | ImGuiColorEditFlags_DisplayRGB
-                                                   | ImGuiColorEditFlags_InputRGB
-                                                   | ImGuiColorEditFlags_PickerHueBar
-                                                   | ImGuiColorEditFlags_Uint8;
-  ImGui::SetColorEditOptions(color_edit_flags);
+    style->WindowTitleAlign = ImVec2(0.0f, 0.5f);
+    style->WindowMenuButtonPosition = ImGuiDir_None;
+    style->ColorButtonPosition = ImGuiDir_Left;
+    style->ButtonTextAlign = ImVec2(0.5f, 0.5f);
+    style->SelectableTextAlign = ImVec2(0.0f, 0.0f);
+    style->DisplaySafeAreaPadding = ImVec2(8.0f, 8.0f);
+
+    ui_frame_padding = ImVec2(4.0f, 2.0f);
+    popup_item_spacing = ImVec2(6.0f, 8.0f);
+
+    constexpr ImGuiColorEditFlags color_edit_flags = ImGuiColorEditFlags_AlphaBar
+                                                     | ImGuiColorEditFlags_AlphaPreviewHalf
+                                                     | ImGuiColorEditFlags_DisplayRGB
+                                                     | ImGuiColorEditFlags_InputRGB
+                                                     | ImGuiColorEditFlags_PickerHueBar
+                                                     | ImGuiColorEditFlags_Uint8;
+    ImGui::SetColorEditOptions(color_edit_flags);
+
+    style->ScaleAllSizes(1.0f);
+  }
 }
 }

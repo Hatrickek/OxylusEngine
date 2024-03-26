@@ -1,13 +1,9 @@
 ﻿#pragma once
-#include "Core/Base.h"
-#include "Core/Components.h"
+#include "Scene/Components.hpp"
+#include "Core/Base.hpp"
 
-namespace Oxylus {
+namespace ox {
 struct SkyboxLoadEvent {
-  Ref<TextureAsset> cube_map = nullptr;
-};
-
-struct ProbeChangeEvent {
-  PostProcessProbe probe;
+  Shared<TextureAsset> cube_map = nullptr;
 };
 }

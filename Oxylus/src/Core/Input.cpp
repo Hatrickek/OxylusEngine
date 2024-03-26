@@ -1,9 +1,11 @@
-#include "Input.h"
+#include "Input.hpp"
 #include "Render/Window.h"
+#include "Types.hpp"
 #include "stb_image.h"
-#include "Types.h"
 
-namespace Oxylus {
+#include "GLFW/glfw3.h"
+
+namespace ox {
 Input::CursorState Input::cursor_state = CursorState::Disabled;
 Input::InputData Input::input_data = {};
 
@@ -72,7 +74,7 @@ float Input::get_mouse_scroll_offset_y() {
   return input_data.scroll_offset_y;
 }
 
-void Input::set_cursor_position(const float x, const float y) {
+void Input::set_mouse_position(const float x, const float y) {
   glfwSetCursorPos(Window::get_glfw_window(), x, y);
   input_data.mouse_pos.x = x;
   input_data.mouse_pos.y = y;

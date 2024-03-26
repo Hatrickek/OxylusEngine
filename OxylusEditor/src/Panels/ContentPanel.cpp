@@ -1,24 +1,23 @@
-#include "ContentPanel.h"
+#include "ContentPanel.hpp"
 
 #include <icons/IconsMaterialDesignIcons.h>
 
-#include "EditorContext.h"
-#include "../EditorLayer.h"
-#include "Assets/AssetManager.h"
-#include "Assets/MaterialSerializer.h"
-#include "Core/Application.h"
-#include "Core/Project.h"
-#include "Core/Resources.h"
+#include "Assets/AssetManager.hpp"
+#include "Core/App.hpp"
+#include "Core/FileSystem.hpp"
+#include "Core/Project.hpp"
+#include "EditorContext.hpp"
+#include "EditorLayer.hpp"
 
-#include "Thread/ThreadManager.h"
+#include "Thread/ThreadManager.hpp"
 
-#include "UI/OxUI.h"
-#include "UI/ImGuiLayer.h"
-#include "Utils/FileWatch.h"
-#include "Utils/StringUtils.h"
-#include "Utils/Timestep.h"
-#include "Utils/UIUtils.h"
-#include "Utils/Profiler.h"
+#include "UI/ImGuiLayer.hpp"
+#include "UI/OxUI.hpp"
+#include "Utils/FileDialogs.hpp"
+#include "Utils/FileWatch.hpp"
+#include "Utils/Profiler.hpp"
+#include "Utils/StringUtils.hpp"
+#include "Utils/Timestep.hpp"
 
 #if defined(__clang__) || defined(__llvm__)
 #	pragma clang diagnostic push
@@ -33,28 +32,30 @@
 #	pragma warning(pop)
 #endif
 
-namespace Oxylus {
-static const std::unordered_map<FileType, const char*> FILE_TYPES_TO_STRING =
+namespace ox {
+static const ankerl::unordered_dense::map<FileType, const char*> FILE_TYPES_TO_STRING =
 {
   {FileType::Unknown, "Unknown"},
 
   {FileType::Scene, "Scene"},
   {FileType::Prefab, "Prefab"},
   {FileType::Shader, "Shader"},
-
   {FileType::Texture, "Texture"},
   {FileType::Cubemap, "Cubemap"},
   {FileType::Model, "Model"},
-  {FileType::Material, "Material"},
-
+  {FileType::Script, "Script"},
   {FileType::Audio, "Audio"},
 };
 
-static const std::unordered_map<std::string, FileType> FILE_TYPES =
+static const ankerl::unordered_dense::map<std::string, FileType> FILE_TYPES =
 {
   {".oxscene", FileType::Scene},
   {".oxprefab", FileType::Prefab},
+  {".hlsl", FileType::Shader},
+  {".hlsli", FileType::Shader},
   {".glsl", FileType::Shader},
+  {".frag", FileType::Shader},
+  {".vert", FileType::Shader},
 
   {".png", FileType::Texture},
   {".jpg", FileType::Texture},
@@ -76,23 +77,24 @@ static const std::unordered_map<std::string, FileType> FILE_TYPES =
   {".m4a", FileType::Audio},
   {".wav", FileType::Audio},
   {".ogg", FileType::Audio},
+
+  {".lua", FileType::Script},
 };
 
-static const std::unordered_map<FileType, ImVec4> TYPE_COLORS =
+static const ankerl::unordered_dense::map<FileType, ImVec4> TYPE_COLORS =
 {
   {FileType::Scene, {0.75f, 0.35f, 0.20f, 1.00f}},
   {FileType::Prefab, {0.10f, 0.50f, 0.80f, 1.00f}},
   {FileType::Shader, {0.10f, 0.50f, 0.80f, 1.00f}},
-
   {FileType::Material, {0.80f, 0.20f, 0.30f, 1.00f}},
   {FileType::Texture, {0.80f, 0.20f, 0.30f, 1.00f}},
   {FileType::Cubemap, {0.80f, 0.20f, 0.30f, 1.00f}},
   {FileType::Model, {0.20f, 0.80f, 0.75f, 1.00f}},
-
   {FileType::Audio, {0.20f, 0.80f, 0.50f, 1.00f}},
+  {FileType::Script, {0.0f, 16.0f, 121.0f, 1.00f}},
 };
 
-static const std::unordered_map<FileType, const char8_t*> FILE_TYPES_TO_ICON =
+static const ankerl::unordered_dense::map<FileType, const char8_t*> FILE_TYPES_TO_ICON =
 {
   {FileType::Unknown, ICON_MDI_FILE},
 
@@ -110,10 +112,14 @@ static const std::unordered_map<FileType, const char8_t*> FILE_TYPES_TO_ICON =
 
 static bool drag_drop_target(const std::filesystem::path& drop_path) {
   if (ImGui::BeginDragDropTarget()) {
-    if (const ImGuiPayload* payload = ImGui::AcceptDragDropPayload("Entity")) {
-      const Entity entity = *static_cast<Entity*>(payload->Data);
-      const std::filesystem::path path = drop_path / std::string(entity.get_component<TagComponent>().tag + ".oxprefab");
-      EntitySerializer::serialize_entity_as_prefab(path.string().c_str(), entity);
+    const ImGuiPayload* payload1 = ImGui::AcceptDragDropPayload("Registry");
+    const ImGuiPayload* payload2 = ImGui::AcceptDragDropPayload("Entity");
+    if (payload1 && payload2) {
+      const auto* registry = static_cast<entt::registry*>(payload1->Data);
+      const auto* entity = static_cast<Entity*>(payload1->Data);
+      auto entity_name = registry->get<TagComponent>(*entity).tag;
+      const std::filesystem::path path = drop_path / entity_name.append(".oxprefab");
+      EntitySerializer::serialize_entity_as_prefab(path.string().c_str(), *entity);
       return true;
     }
 
@@ -153,15 +159,18 @@ static void open_file(const std::filesystem::path& path) {
         EditorLayer::get()->set_context_as_asset_with_path(path.string());
         break;
       }
-      case FileType::Audio: {
-        FileDialogs::open_file_with_program(filepath);
+      case FileType::Audio:
+        [[fallthrough]];
+      case FileType::Shader:
+        [[fallthrough]];
+      case FileType::Script: {
+        FileSystem::open_file_externally(filepath);
         break;
       }
-      case FileType::Shader: break;
     }
   }
   else {
-    FileDialogs::open_file_with_program(filepath);
+    FileSystem::open_file_externally(filepath);
   }
 }
 
@@ -262,18 +271,22 @@ std::pair<bool, uint32_t> ContentPanel::directory_tree_view_recursive(const std:
 }
 
 ContentPanel::ContentPanel() : EditorPanel("Contents", ICON_MDI_FOLDER_STAR, true) {
+  const auto scale = Window::get_content_scale();
+  thumbnail_max_limit *= scale.x;
+  thumbnail_size_grid_limit *= scale.x;
+
   m_white_texture = TextureAsset::get_white_texture();
 
-  auto file_icon = create_ref<TextureAsset>();
-  file_icon->load(Resources::get_resources_path("Icons/FileIcon.png"));
+  auto file_icon = create_shared<TextureAsset>();
+  file_icon->load(App::get_asset_directory("Icons/FileIcon.png"));
   thumbnail_cache.emplace("file_icon", file_icon);
 
-  auto directory_icon = create_ref<TextureAsset>();
-  directory_icon->load(Resources::get_resources_path("Icons/FolderIcon.png"));
+  auto directory_icon = create_shared<TextureAsset>();
+  directory_icon->load(App::get_asset_directory("Icons/FolderIcon.png"));
   thumbnail_cache.emplace("folder_icon", directory_icon);
 
-  auto mesh_icon = create_ref<TextureAsset>();
-  mesh_icon->load(Resources::get_resources_path("Icons/MeshFileIcon.png"));
+  auto mesh_icon = create_shared<TextureAsset>();
+  mesh_icon->load(App::get_asset_directory("Icons/MeshFileIcon.png"));
   thumbnail_cache.emplace("mesh_icon", mesh_icon);
 }
 
@@ -282,7 +295,7 @@ void ContentPanel::init() {
   m_current_directory = m_assets_directory;
   refresh();
 
-  static filewatch::FileWatch<std::string> watch(
+  [[maybe_unused]] static filewatch::FileWatch<std::string> watch(
     m_assets_directory.string(),
     [this](const auto&, const filewatch::Event) {
       ThreadManager::get()->asset_thread.queue_job([this] {
@@ -293,7 +306,7 @@ void ContentPanel::init() {
 }
 
 void ContentPanel::on_update() {
-  m_elapsed_time += Application::get_timestep();
+  m_elapsed_time += App::get_timestep();
 }
 
 void ContentPanel::on_imgui_render() {
@@ -307,7 +320,8 @@ void ContentPanel::on_imgui_render() {
     init();
   }
 
-  on_begin(windowFlags); {
+  on_begin(windowFlags);
+  {
     render_header();
     ImGui::Separator();
     const ImVec2 availableRegion = ImGui::GetContentRegionAvail();
@@ -317,7 +331,7 @@ void ContentPanel::on_imgui_render() {
       ImGui::TableNextColumn();
       render_side_view();
       ImGui::TableNextColumn();
-      render_body(m_thumbnail_size >= 96.0f);
+      render_body(EditorCVar::cvar_file_thumbnail_size.get() >= thumbnail_size_grid_limit);
 
       ImGui::EndTable();
     }
@@ -336,8 +350,8 @@ void ContentPanel::render_header() {
     ImGui::OpenPopup("SettingsPopup");
   if (ImGui::BeginPopup("SettingsPopup")) {
     OxUI::begin_properties(ImGuiTableFlags_SizingStretchSame);
-    OxUI::property("Thumbnail Size", &m_thumbnail_size, 95.9f, 256.0f, nullptr, 0.1f, "");
-    OxUI::property("Texture Previews", &m_texture_previews, "Show texture previews (experimental)");
+    OxUI::property("Thumbnail Size", EditorCVar::cvar_file_thumbnail_size.get_ptr(), thumbnail_size_grid_limit - 0.1f, thumbnail_max_limit, nullptr, 0.1f, "");
+    OxUI::property("Show file thumbnails", (bool*)EditorCVar::cvar_file_thumbnails.get_ptr());
     OxUI::end_properties();
     ImGui::EndPopup();
   }
@@ -506,27 +520,27 @@ void ContentPanel::render_body(bool grid) {
   std::filesystem::path directory_to_open;
 
   constexpr float padding = 2.0f;
-  const float scaledThumbnailSize = m_thumbnail_size * ImGui::GetIO().FontGlobalScale;
-  const float scaled_thumbnail_size_x = scaledThumbnailSize * 0.55f;
-  const float cellSize = scaled_thumbnail_size_x + 2 * padding + scaled_thumbnail_size_x * 0.1f;
+  const float scaled_thumbnail_size = EditorCVar::cvar_file_thumbnail_size.get() * ImGui::GetIO().FontGlobalScale;
+  const float scaled_thumbnail_size_x = scaled_thumbnail_size * 0.55f;
+  const float cell_size = scaled_thumbnail_size_x + 2 * padding + scaled_thumbnail_size_x * 0.1f;
 
-  constexpr float overlayPaddingY = 6.0f * padding;
-  constexpr float thumbnail_padding = overlayPaddingY * 0.5f;
-  const float thumbnailSize = scaled_thumbnail_size_x - thumbnail_padding;
+  constexpr float overlay_padding_y = 6.0f * padding;
+  constexpr float thumbnail_padding = overlay_padding_y * 0.5f;
+  const float thumb_image_size = scaled_thumbnail_size_x - thumbnail_padding;
 
-  const ImVec2 background_thumbnail_size = {scaled_thumbnail_size_x + padding * 2, scaledThumbnailSize};
+  const ImVec2 background_thumbnail_size = {scaled_thumbnail_size_x + padding * 2, scaled_thumbnail_size};
 
-  const float panelWidth = ImGui::GetContentRegionAvail().x - ImGui::GetStyle().ScrollbarSize;
-  int columnCount = static_cast<int>(panelWidth / cellSize);
-  if (columnCount < 1)
-    columnCount = 1;
+  const float panel_width = ImGui::GetContentRegionAvail().x - ImGui::GetStyle().ScrollbarSize;
+  int column_count = static_cast<int>(panel_width / cell_size);
+  if (column_count < 1)
+    column_count = 1;
 
-  float lineHeight = ImGui::GetTextLineHeight();
+  float line_height = ImGui::GetTextLineHeight();
   int flags = ImGuiTableFlags_ContextMenuInBody | ImGuiTableFlags_ScrollY;
 
   if (!grid) {
     ImGui::PushStyleVar(ImGuiStyleVar_CellPadding, {0, 0});
-    columnCount = 1;
+    column_count = 1;
     flags |= ImGuiTableFlags_RowBg
       | ImGuiTableFlags_NoPadOuterX
       | ImGuiTableFlags_NoPadInnerX
@@ -544,7 +558,7 @@ void ContentPanel::render_body(bool grid) {
   ImGui::SetItemAllowOverlap();
   ImGui::SetCursorPos(cursor_pos);
 
-  if (ImGui::BeginTable("BodyTable", columnCount, flags)) {
+  if (ImGui::BeginTable("BodyTable", column_count, flags)) {
     bool any_item_hovered = false;
 
     int i = 0;
@@ -560,7 +574,7 @@ void ContentPanel::render_body(bool grid) {
 
       std::string texture_name = "folder_icon";
       if (!is_dir) {
-        if ((file.type == FileType::Texture || file.type == FileType::Cubemap) && m_texture_previews) {
+        if ((file.type == FileType::Texture || file.type == FileType::Cubemap) && EditorCVar::cvar_file_thumbnails.get()) {
           if (thumbnail_cache.contains(file.file_path)) {
             texture_name = file.file_path;
           }
@@ -569,7 +583,7 @@ void ContentPanel::render_body(bool grid) {
             // make sure this runs only if it's not already queued
             if (ThreadManager::get()->asset_thread.get_queue_size() == 0) {
               ThreadManager::get()->asset_thread.queue_job([this, file_path] {
-                auto thumbnail_texture = create_ref<TextureAsset>();
+                auto thumbnail_texture = create_shared<TextureAsset>();
                 thumbnail_texture->load(file_path, vuk::Format::eR8G8B8A8Unorm, false);
                 thumbnail_cache.emplace(file_path, thumbnail_texture);
               });
@@ -650,7 +664,7 @@ void ContentPanel::render_body(bool grid) {
         ImGui::SetCursorPos({cursor_pos.x + thumbnail_padding * 0.75f, cursor_pos.y + thumbnail_padding});
         ImGui::SetItemAllowOverlap();
         if (thumbnail_cache.contains(texture_name))
-          OxUI::image(thumbnail_cache[texture_name]->get_texture(), {thumbnailSize, thumbnailSize});
+          OxUI::image(thumbnail_cache[texture_name]->get_texture(), {thumb_image_size, thumb_image_size});
 
         // Type Color frame
         const ImVec2 type_color_frame_size = {scaled_thumbnail_size_x, scaled_thumbnail_size_x * 0.03f};
@@ -660,11 +674,12 @@ void ContentPanel::render_body(bool grid) {
         const ImVec2 rect_min = ImGui::GetItemRectMin();
         const ImVec2 rect_size = ImGui::GetItemRectSize();
         const ImRect clip_rect = ImRect({rect_min.x + padding * 1.0f, rect_min.y + padding * 2.0f},
-                                        {rect_min.x + rect_size.x, rect_min.y + scaled_thumbnail_size_x - ImGuiLayer::small_font->FontSize - padding * 2.0f});
+                                        {rect_min.x + rect_size.x, rect_min.y + scaled_thumbnail_size_x - ImGuiLayer::regular_font->FontSize * 2.0f});
         OxUI::clipped_text(clip_rect.Min, clip_rect.Max, filename, nullptr, nullptr, {0, 0}, nullptr, clip_rect.GetSize().x);
 
         if (!is_dir) {
-          ImGui::SetCursorPos({cursor_pos.x + padding * 2.0f, cursor_pos.y + background_thumbnail_size.y - ImGuiLayer::small_font->FontSize - padding * 2.0f});
+          constexpr auto y_pos_pad = 10.f;
+          ImGui::SetCursorPos({cursor_pos.x + padding * 2.0f, cursor_pos.y + background_thumbnail_size.y - ImGuiLayer::small_font->FontSize * 2.0f + y_pos_pad});
           ImGui::BeginDisabled();
           ImGui::PushFont(ImGuiLayer::small_font);
           ImGui::TextUnformatted(file.file_type_string.data());
@@ -690,9 +705,9 @@ void ContentPanel::render_body(bool grid) {
         drag_drop_from(file.file_path.c_str());
 
         ImGui::SameLine();
-        ImGui::SetCursorPosX(ImGui::GetCursorPosX() - lineHeight);
+        ImGui::SetCursorPosX(ImGui::GetCursorPosX() - line_height);
         if (thumbnail_cache.contains(texture_name))
-          OxUI::image(thumbnail_cache[texture_name]->get_texture(), {lineHeight, lineHeight});
+          OxUI::image(thumbnail_cache[texture_name]->get_texture(), {line_height, line_height});
         ImGui::SameLine();
         ImGui::TextUnformatted(filename);
 
@@ -759,31 +774,31 @@ void ContentPanel::update_directory_entries(const std::filesystem::path& directo
   if (directory.empty())
     return;
 
-  const auto directoryIt = std::filesystem::directory_iterator(directory);
-  for (auto& directoryEntry : directoryIt) {
-    const auto& path = directoryEntry.path();
-    const auto relativePath = relative(path, m_assets_directory);
-    const std::string filename = relativePath.filename().string();
-    const std::string extension = relativePath.extension().string();
+  const auto directory_it = std::filesystem::directory_iterator(directory);
+  for (auto& directory_entry : directory_it) {
+    const auto& path = directory_entry.path();
+    const auto relative_path = relative(path, m_assets_directory);
+    const std::string filename = relative_path.filename().string();
+    const std::string extension = relative_path.extension().string();
 
-    auto fileType = FileType::Unknown;
-    const auto& fileTypeIt = FILE_TYPES.find(extension);
-    if (fileTypeIt != FILE_TYPES.end())
-      fileType = fileTypeIt->second;
+    auto file_type = FileType::Unknown;
+    const auto& file_type_it = FILE_TYPES.find(extension);
+    if (file_type_it != FILE_TYPES.end())
+      file_type = file_type_it->second;
 
-    std::string_view fileTypeString = FILE_TYPES_TO_STRING.at(FileType::Unknown);
-    const auto& fileStringTypeIt = FILE_TYPES_TO_STRING.find(fileType);
-    if (fileStringTypeIt != FILE_TYPES_TO_STRING.end())
-      fileTypeString = fileStringTypeIt->second;
+    std::string_view file_type_string = FILE_TYPES_TO_STRING.at(FileType::Unknown);
+    const auto& file_string_type_it = FILE_TYPES_TO_STRING.find(file_type);
+    if (file_string_type_it != FILE_TYPES_TO_STRING.end())
+      file_type_string = file_string_type_it->second;
 
-    ImVec4 fileTypeColor = {1.0f, 1.0f, 1.0f, 1.0f};
-    const auto& fileTypeColorIt = TYPE_COLORS.find(fileType);
-    if (fileTypeColorIt != TYPE_COLORS.end())
-      fileTypeColor = fileTypeColorIt->second;
+    ImVec4 file_type_color = {1.0f, 1.0f, 1.0f, 1.0f};
+    const auto& file_type_color_it = TYPE_COLORS.find(file_type);
+    if (file_type_color_it != TYPE_COLORS.end())
+      file_type_color = file_type_color_it->second;
 
     File entry = {
-      filename, path.string(), extension, directoryEntry, nullptr, directoryEntry.is_directory(),
-      fileType, fileTypeString, fileTypeColor
+      filename, path.string(), extension, directory_entry, nullptr, directory_entry.is_directory(),
+      file_type, file_type_string, file_type_color
     };
 
     m_directory_entries.push_back(entry);
@@ -808,25 +823,15 @@ void ContentPanel::draw_context_menu_items(const std::filesystem::path& context,
         EditorLayer::get()->set_context_as_file_with_path(newFolderPath);
         ImGui::CloseCurrentPopup();
       }
-      if (ImGui::BeginMenu("Asset")) {
-        if (ImGui::MenuItem("Material")) {
-          const auto mat = create_ref<Material>();
-          mat->create();
-          const MaterialSerializer serializer(mat);
-          auto path = (context / "NewMaterial.oxmat").string();
-          serializer.serialize(path);
-        }
-        ImGui::EndMenu();
-      }
       ImGui::EndMenu();
     }
   }
   if (ImGui::MenuItem("Show in Explorer")) {
-    FileDialogs::open_folder_and_select_item(context.string().c_str());
+    FileSystem::open_folder_select_file(context.string().c_str());
     ImGui::CloseCurrentPopup();
   }
   if (ImGui::MenuItem("Open")) {
-    FileDialogs::open_file_with_program(context.string().c_str());
+    FileSystem::open_file_externally(context.string().c_str());
     ImGui::CloseCurrentPopup();
   }
   if (ImGui::MenuItem("Copy Path")) {
