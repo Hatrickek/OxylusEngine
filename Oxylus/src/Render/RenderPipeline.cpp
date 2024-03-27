@@ -1,25 +1,13 @@
 ﻿#include "RenderPipeline.h"
-#include <vuk/Future.hpp>
-#include <vuk/RenderGraph.hpp>
 
-#include "Vulkan/VkContext.hpp"
+#include "Utils/Log.hpp"
 
 namespace ox {
-void RenderPipeline::enqueue_future(vuk::Future&& fut) {
-  std::scoped_lock _(setup_lock);
-  futures.emplace_back(std::move(fut));
-}
-
-void RenderPipeline::wait_for_futures(vuk::Allocator& allocator) {
-  OX_SCOPED_ZONE;
-  vuk::Compiler compiler;
-  wait_for_futures_explicit(allocator, compiler, futures);
-  futures.clear();
-}
-
-void RenderPipeline::detach_swapchain(const vuk::Dimension3D dim, Vec2 offset) {
+void RenderPipeline::detach_swapchain(const vuk::Extent3D dim, Vec2 offset) {
   attach_swapchain = false;
-  dimension = dim;
+  OX_CHECK_GT(extent.width, 0);
+  OX_CHECK_GT(extent.height, 0);
+  extent = dim;
   viewport_offset = offset;
 }
 }

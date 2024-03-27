@@ -86,7 +86,7 @@ private:
   int m_gizmo_type = -1;
   int m_gizmo_mode = 0;
 
-  ankerl::unordered_dense::map<size_t, Shared<TextureAsset>> gizmo_image_map;
+  ankerl::unordered_dense::map<size_t, Shared<Texture>> gizmo_image_map;
 
   std::vector<vuk::Unique<vuk::Buffer>> id_buffers = {};
 

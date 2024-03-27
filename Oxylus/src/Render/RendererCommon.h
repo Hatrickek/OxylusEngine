@@ -6,12 +6,15 @@
 #include "Core/Base.hpp"
 
 namespace ox {
+class Texture;
 class Mesh;
 
 class RendererCommon {
 public:
-  static void apply_blur(const std::shared_ptr<vuk::RenderGraph>& render_graph, vuk::Name src_attachment, vuk::Name attachment_name, vuk::Name attachment_name_output);
-  static std::pair<vuk::Unique<vuk::Image>, vuk::Future> generate_cubemap_from_equirectangular(const vuk::Texture& cubemap);
+  /// Apply gaussian blur in a single pass
+  static void apply_blur(const vuk::Value<vuk::ImageAttachment>& src_attachment, const vuk::Value<vuk::ImageAttachment>& dst_attachment);
+
+  static vuk::Value<vuk::ImageAttachment> generate_cubemap_from_equirectangular(const vuk::ImageAttachment& cubemap);
 
   static Shared<Mesh> generate_quad();
   static Shared<Mesh> generate_cube();

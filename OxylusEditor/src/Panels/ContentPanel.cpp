@@ -275,17 +275,17 @@ ContentPanel::ContentPanel() : EditorPanel("Contents", ICON_MDI_FOLDER_STAR, tru
   thumbnail_max_limit *= scale.x;
   thumbnail_size_grid_limit *= scale.x;
 
-  m_white_texture = TextureAsset::get_white_texture();
+  m_white_texture = Texture::get_white_texture();
 
-  auto file_icon = create_shared<TextureAsset>();
+  auto file_icon = create_shared<Texture>();
   file_icon->load(App::get_asset_directory("Icons/FileIcon.png"));
   thumbnail_cache.emplace("file_icon", file_icon);
 
-  auto directory_icon = create_shared<TextureAsset>();
+  auto directory_icon = create_shared<Texture>();
   directory_icon->load(App::get_asset_directory("Icons/FolderIcon.png"));
   thumbnail_cache.emplace("folder_icon", directory_icon);
 
-  auto mesh_icon = create_shared<TextureAsset>();
+  auto mesh_icon = create_shared<Texture>();
   mesh_icon->load(App::get_asset_directory("Icons/MeshFileIcon.png"));
   thumbnail_cache.emplace("mesh_icon", mesh_icon);
 }
@@ -583,7 +583,7 @@ void ContentPanel::render_body(bool grid) {
             // make sure this runs only if it's not already queued
             if (ThreadManager::get()->asset_thread.get_queue_size() == 0) {
               ThreadManager::get()->asset_thread.queue_job([this, file_path] {
-                auto thumbnail_texture = create_shared<TextureAsset>();
+                auto thumbnail_texture = create_shared<Texture>();
                 thumbnail_texture->load(file_path, vuk::Format::eR8G8B8A8Unorm, false);
                 thumbnail_cache.emplace(file_path, thumbnail_texture);
               });

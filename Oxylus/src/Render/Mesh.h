@@ -124,7 +124,7 @@ public:
 
   std::vector<Shared<Animation>> animations = {};
 
-  std::vector<Shared<TextureAsset>> m_textures;
+  std::vector<Shared<Texture>> m_textures;
   std::vector<Shared<Material>> materials;
   std::vector<Node*> nodes;
   std::vector<Node*> linear_nodes;

@@ -23,9 +23,9 @@
 
 #include "Vulkan/VkContext.hpp"
 
+#include "Renderer.hpp"
 #include "Utils/SPD.hpp"
 #include "Utils/VukCommon.hpp"
-#include "Renderer.hpp"
 
 #include "Utils/RectPacker.hpp"
 
@@ -227,8 +227,6 @@ void DefaultRenderPipeline::load_pipelines(vuk::Allocator& allocator) {
     TRY(allocator.get_context().create_named_pipeline("sky_envmap_pipeline", bindless_pci))
   });
 
-  wait_for_futures(allocator);
-
   task_scheduler->wait_for_all();
 }
 
@@ -241,7 +239,7 @@ void DefaultRenderPipeline::clear() {
 }
 
 void DefaultRenderPipeline::bind_camera_buffer(vuk::CommandBuffer& command_buffer) {
-  const auto cb = command_buffer.map_scratch_buffer<CameraCB>(1, 0);
+  const auto cb = command_buffer.scratch_buffer<CameraCB>(1, 0);
   *cb = camera_cb;
 }
 
@@ -402,15 +400,15 @@ void DefaultRenderPipeline::update_frame_data(vuk::Allocator& allocator) {
       const auto& emissive = mat->get_emissive_texture();
 
       if (albedo && albedo->is_valid_id())
-        descriptor_set_00->update_sampled_image(7, albedo->get_id(), *albedo->get_texture().view, vuk::ImageLayout::eReadOnlyOptimalKHR);
+        descriptor_set_00->update_sampled_image(7, albedo->get_id(), *albedo->get_view(), vuk::ImageLayout::eReadOnlyOptimalKHR);
       if (normal && normal->is_valid_id())
-        descriptor_set_00->update_sampled_image(7, normal->get_id(), *normal->get_texture().view, vuk::ImageLayout::eReadOnlyOptimalKHR);
+        descriptor_set_00->update_sampled_image(7, normal->get_id(), *normal->get_view(), vuk::ImageLayout::eReadOnlyOptimalKHR);
       if (physical && physical->is_valid_id())
-        descriptor_set_00->update_sampled_image(7, physical->get_id(), *physical->get_texture().view, vuk::ImageLayout::eReadOnlyOptimalKHR);
+        descriptor_set_00->update_sampled_image(7, physical->get_id(), *physical->get_view(), vuk::ImageLayout::eReadOnlyOptimalKHR);
       if (ao && ao->is_valid_id())
-        descriptor_set_00->update_sampled_image(7, ao->get_id(), *ao->get_texture().view, vuk::ImageLayout::eReadOnlyOptimalKHR);
+        descriptor_set_00->update_sampled_image(7, ao->get_id(), *ao->get_view(), vuk::ImageLayout::eReadOnlyOptimalKHR);
       if (emissive && emissive->is_valid_id())
-        descriptor_set_00->update_sampled_image(7, emissive->get_id(), *emissive->get_texture().view, vuk::ImageLayout::eReadOnlyOptimalKHR);
+        descriptor_set_00->update_sampled_image(7, emissive->get_id(), *emissive->get_view(), vuk::ImageLayout::eReadOnlyOptimalKHR);
     }
   }
 
@@ -425,7 +423,7 @@ void DefaultRenderPipeline::update_frame_data(vuk::Allocator& allocator) {
 
   light_datas.reserve(scene_lights.size());
 
-  const Vec2 atlas_dim_rcp = Vec2(1.0f / float(shadow_map_atlas.extent.width), 1.0f / float(shadow_map_atlas.extent.height));
+  const Vec2 atlas_dim_rcp = Vec2(1.0f / float(shadow_map_atlas.get_extent().width), 1.0f / float(shadow_map_atlas.get_extent().height));
 
   for (auto& lc : scene_lights) {
     auto& light = light_datas.emplace_back(LightData{
@@ -490,23 +488,23 @@ void DefaultRenderPipeline::update_frame_data(vuk::Allocator& allocator) {
   descriptor_set_00->update_storage_buffer(1, ENTITIES_BUFFER_INDEX, shader_entities_buffer);
 
   // scene textures
-  descriptor_set_00->update_sampled_image(2, PBR_IMAGE_INDEX, *pbr_texture.view, vuk::ImageLayout::eReadOnlyOptimalKHR);
-  descriptor_set_00->update_sampled_image(2, NORMAL_IMAGE_INDEX, *normal_texture.view, vuk::ImageLayout::eReadOnlyOptimalKHR);
-  descriptor_set_00->update_sampled_image(2, DEPTH_IMAGE_INDEX, *depth_texture.view, vuk::ImageLayout::eReadOnlyOptimalKHR);
-  descriptor_set_00->update_sampled_image(2, SHADOW_ATLAS_INDEX, *shadow_map_atlas.view, vuk::ImageLayout::eReadOnlyOptimalKHR);
-  descriptor_set_00->update_sampled_image(2, SKY_TRANSMITTANCE_LUT_INDEX, *sky_transmittance_lut.view, vuk::ImageLayout::eReadOnlyOptimalKHR);
-  descriptor_set_00->update_sampled_image(2, SKY_MULTISCATTER_LUT_INDEX, *sky_multiscatter_lut.view, vuk::ImageLayout::eReadOnlyOptimalKHR);
+  descriptor_set_00->update_sampled_image(2, PBR_IMAGE_INDEX, *pbr_texture.get_view(), vuk::ImageLayout::eReadOnlyOptimalKHR);
+  descriptor_set_00->update_sampled_image(2, NORMAL_IMAGE_INDEX, *normal_texture.get_view(), vuk::ImageLayout::eReadOnlyOptimalKHR);
+  descriptor_set_00->update_sampled_image(2, DEPTH_IMAGE_INDEX, *depth_texture.get_view(), vuk::ImageLayout::eReadOnlyOptimalKHR);
+  descriptor_set_00->update_sampled_image(2, SHADOW_ATLAS_INDEX, *shadow_map_atlas.get_view(), vuk::ImageLayout::eReadOnlyOptimalKHR);
+  descriptor_set_00->update_sampled_image(2, SKY_TRANSMITTANCE_LUT_INDEX, *sky_transmittance_lut.get_view(), vuk::ImageLayout::eReadOnlyOptimalKHR);
+  descriptor_set_00->update_sampled_image(2, SKY_MULTISCATTER_LUT_INDEX, *sky_multiscatter_lut.get_view(), vuk::ImageLayout::eReadOnlyOptimalKHR);
 
   // scene uint texture array
-  descriptor_set_00->update_sampled_image(3, GTAO_BUFFER_IMAGE_INDEX, *gtao_final_texture.view, vuk::ImageLayout::eReadOnlyOptimalKHR);
+  descriptor_set_00->update_sampled_image(3, GTAO_BUFFER_IMAGE_INDEX, *gtao_final_texture.get_view(), vuk::ImageLayout::eReadOnlyOptimalKHR);
 
   // scene cubemap texture array
-  descriptor_set_00->update_sampled_image(4, SKY_ENVMAP_INDEX, *sky_envmap_texture_mipped.view, vuk::ImageLayout::eReadOnlyOptimalKHR);
+  descriptor_set_00->update_sampled_image(4, SKY_ENVMAP_INDEX, *sky_envmap_texture_mipped.get_view(), vuk::ImageLayout::eReadOnlyOptimalKHR);
 
   // scene Read/Write textures
-  descriptor_set_00->update_storage_image(6, SKY_TRANSMITTANCE_LUT_INDEX, *sky_transmittance_lut.view);
-  descriptor_set_00->update_storage_image(6, SKY_MULTISCATTER_LUT_INDEX, *sky_multiscatter_lut.view);
-  descriptor_set_00->update_storage_image(6, VELOCITY_IMAGE_INDEX, *velocity_texture.view);
+  descriptor_set_00->update_storage_image(6, SKY_TRANSMITTANCE_LUT_INDEX, *sky_transmittance_lut.get_view());
+  descriptor_set_00->update_storage_image(6, SKY_MULTISCATTER_LUT_INDEX, *sky_multiscatter_lut.get_view());
+  descriptor_set_00->update_storage_image(6, VELOCITY_IMAGE_INDEX, *velocity_texture.get_view());
 
   descriptor_set_00->commit(ctx);
 }
@@ -515,65 +513,33 @@ void DefaultRenderPipeline::create_static_resources(vuk::Allocator& allocator) {
   OX_SCOPED_ZONE;
 
   constexpr auto transmittance_lut_size = vuk::Extent3D{256, 64, 1};
-  sky_transmittance_lut =
-    create_texture(allocator, transmittance_lut_size, vuk::Format::eR32G32B32A32Sfloat, DEFAULT_USAGE_FLAGS | vuk::ImageUsageFlagBits::eStorage);
+  sky_transmittance_lut.create_texture(transmittance_lut_size, vuk::Format::eR32G32B32A32Sfloat);
 
   constexpr auto multi_scatter_lut_size = vuk::Extent3D{32, 32, 1};
-  sky_multiscatter_lut =
-    create_texture(allocator, multi_scatter_lut_size, vuk::Format::eR32G32B32A32Sfloat, DEFAULT_USAGE_FLAGS | vuk::ImageUsageFlagBits::eStorage);
+  sky_multiscatter_lut.create_texture(multi_scatter_lut_size, vuk::Format::eR32G32B32A32Sfloat);
 
   constexpr auto shadow_size = vuk::Extent3D{1u, 1u, 1};
+  shadow_map_atlas.create_texture(shadow_size, vuk::Format::eD32Sfloat);
+  shadow_map_atlas_transparent.create_texture(shadow_size, vuk::Format::eD32Sfloat);
 
-  const vuk::ImageAttachment shadow_attachment = {
-    .usage = DEFAULT_USAGE_FLAGS | vuk::ImageUsageFlagBits::eDepthStencilAttachment,
-    .extent = vuk::Dimension3D{vuk::Sizing::eAbsolute, shadow_size, {}},
-    .format = vuk::Format::eD32Sfloat,
-    .sample_count = vuk::Samples::e1,
-    .base_level = 0,
-    .level_count = 1,
-    .base_layer = 0,
-    .layer_count = 1,
-  };
-
-  shadow_map_atlas = create_texture(allocator, shadow_attachment);
-  shadow_map_atlas_transparent = create_texture(allocator, shadow_attachment);
-
-  vuk::ImageAttachment env_attachment = {
-    .image_flags = vuk::ImageCreateFlagBits::eCubeCompatible,
-    .usage = DEFAULT_USAGE_FLAGS | vuk::ImageUsageFlagBits::eColorAttachment | vuk::ImageUsageFlagBits::eStorage,
-    .extent = vuk::Dimension3D::absolute(512, 512, 1),
-    .format = vuk::Format::eR32G32B32A32Sfloat,
-    .sample_count = vuk::Samples::e1,
-    .base_level = 0,
-    .level_count = 1,
-    .base_layer = 0,
-    .layer_count = 6,
-  };
-
-  sky_envmap_render_target = create_texture(allocator, env_attachment);
-
-  const uint32_t mip_count = (uint32_t)log2f((float)std::max(std::max(512, 512), 1)) + 1;
-
-  env_attachment.level_count = mip_count;
-  sky_envmap_texture_mipped = create_texture(allocator, env_attachment);
+  constexpr auto envmap_size = vuk::Extent3D{512, 512, 1};
+  sky_envmap_render_target.create_texture(envmap_size, vuk::Format::eR32G32B32A32Sfloat, vuk::ImageAttachment::Preset::eMapCube);
+  sky_envmap_texture_mipped.create_texture(envmap_size, vuk::Format::eR32G32B32A32Sfloat, vuk::ImageAttachment::Preset::eMapCube);
 }
 
-void DefaultRenderPipeline::create_dynamic_textures(vuk::Allocator& allocator, const vuk::Dimension3D& dim) {
-  if (gtao_final_texture.extent != dim.extent)
-    gtao_final_texture = create_texture(allocator, dim.extent, vuk::Format::eR8Uint, DEFAULT_USAGE_FLAGS | vuk::ImageUsageFlagBits::eStorage);
-  if (ssr_texture.extent != dim.extent)
-    ssr_texture = create_texture(allocator, dim.extent, vuk::Format::eR32G32B32A32Sfloat, DEFAULT_USAGE_FLAGS | vuk::ImageUsageFlagBits::eStorage);
-  if (pbr_texture.extent != dim.extent)
-    pbr_texture =
-      create_texture(allocator, dim.extent, vuk::Format::eR32G32B32A32Sfloat, DEFAULT_USAGE_FLAGS | vuk::ImageUsageFlagBits::eColorAttachment);
-  if (normal_texture.extent != dim.extent)
-    normal_texture =
-      create_texture(allocator, dim.extent, vuk::Format::eR32G32B32A32Sfloat, DEFAULT_USAGE_FLAGS | vuk::ImageUsageFlagBits::eColorAttachment);
-  if (depth_texture.extent != dim.extent)
-    depth_texture =
-      create_texture(allocator, dim.extent, vuk::Format::eD32Sfloat, DEFAULT_USAGE_FLAGS | vuk::ImageUsageFlagBits::eDepthStencilAttachment);
-  if (velocity_texture.extent != dim.extent)
-    velocity_texture = create_texture(allocator, dim.extent, vuk::Format::eR16G16Sfloat, DEFAULT_USAGE_FLAGS | vuk::ImageUsageFlagBits::eStorage);
+void DefaultRenderPipeline::create_dynamic_textures(vuk::Allocator& allocator, const vuk::Extent3D& ext) {
+  if (gtao_final_texture.get_extent() != ext)
+    gtao_final_texture.create_texture(extent, vuk::Format::eR8Uint);
+  if (ssr_texture.get_extent() != ext)
+    ssr_texture.create_texture(ext, vuk::Format::eR32G32B32A32Sfloat);
+  if (pbr_texture.get_extent() != ext)
+    pbr_texture.create_texture(ext, vuk::Format::eR32G32B32A32Sfloat);
+  if (normal_texture.get_extent() != ext)
+    normal_texture.create_texture(ext, vuk::Format::eR32G32B32A32Sfloat);
+  if (depth_texture.get_extent() != ext)
+    depth_texture.create_texture(ext, vuk::Format::eD32Sfloat);
+  if (velocity_texture.get_extent() != ext)
+    velocity_texture.create_texture(ext, vuk::Format::eR16G16Sfloat);
 
   // Shadow atlas packing:
   {
@@ -652,24 +618,13 @@ void DefaultRenderPipeline::create_dynamic_textures(vuk::Allocator& allocator, c
             }
           }
 
-          if ((int)shadow_map_atlas.extent.width < packer.width || (int)shadow_map_atlas.extent.height < packer.height) {
+          if ((int)shadow_map_atlas.get_extent().width < packer.width || (int)shadow_map_atlas.get_extent().height < packer.height) {
             const auto shadow_size = vuk::Extent3D{(uint32_t)packer.width, (uint32_t)packer.height, 1};
 
-            const vuk::ImageAttachment shadow_attachment = {
-              .usage = DEFAULT_USAGE_FLAGS | vuk::ImageUsageFlagBits::eDepthStencilAttachment,
-              .extent = vuk::Dimension3D{vuk::Sizing::eAbsolute, shadow_size, {}},
-              .format = vuk::Format::eD32Sfloat,
-              .sample_count = vuk::Samples::e1,
-              .base_level = 0,
-              .level_count = 1,
-              .base_layer = 0,
-              .layer_count = 1,
-            };
+            shadow_map_atlas.create_texture(shadow_size, vuk::Format::eD32Sfloat);
+            shadow_map_atlas_transparent.create_texture(shadow_size, vuk::Format::eD32Sfloat);
 
-            shadow_map_atlas = create_texture(allocator, shadow_attachment);
-            shadow_map_atlas_transparent = create_texture(allocator, shadow_attachment);
-
-            scene_data.shadow_atlas_res = UVec2(shadow_map_atlas.extent.width, shadow_map_atlas.extent.height);
+            scene_data.shadow_atlas_res = UVec2(shadow_map_atlas.get_extent().width, shadow_map_atlas.get_extent().height);
           }
 
           break;
@@ -744,22 +699,6 @@ void DefaultRenderPipeline::register_camera(Camera* camera) {
 }
 
 void DefaultRenderPipeline::shutdown() {}
-
-static std::pair<vuk::Resource, vuk::Name>
-get_attachment_or_black(const char* name, const bool enabled, const vuk::Access access = vuk::eFragmentSampled) {
-  if (enabled)
-    return {vuk::Resource(name, vuk::Resource::Type::eImage, access), name};
-
-  return {vuk::Resource("black_image", vuk::Resource::Type::eImage, access), "black_image"};
-}
-
-static std::pair<vuk::Resource, vuk::Name>
-get_attachment_or_black_uint(const char* name, const bool enabled, const vuk::Access access = vuk::eFragmentSampled) {
-  if (enabled)
-    return {vuk::Resource(name, vuk::Resource::Type::eImage, access), name};
-
-  return {vuk::Resource("black_image_uint", vuk::Resource::Type::eImage, access), "black_image_uint"};
-}
 
 Unique<vuk::Future> DefaultRenderPipeline::on_render(vuk::Allocator& frame_allocator, const vuk::Future& target, vuk::Dimension3D dim) {
   OX_SCOPED_ZONE;
@@ -1295,10 +1234,12 @@ void DefaultRenderPipeline::bloom_pass(const Shared<vuk::RenderGraph>& rg) {
 
   constexpr uint32_t bloom_mip_count = 8;
 
-  rg->attach_and_clear_image(
-    "bloom_image",
-    {.format = vuk::Format::eR32G32B32A32Sfloat, .sample_count = vuk::SampleCountFlagBits::e1, .level_count = bloom_mip_count, .layer_count = 1},
-    vuk::Black<float>);
+  rg->attach_and_clear_image("bloom_image",
+                             {.format = vuk::Format::eR32G32B32A32Sfloat,
+                              .sample_count = vuk::SampleCountFlagBits::e1,
+                              .level_count = bloom_mip_count,
+                              .layer_count = 1},
+                             vuk::Black<float>);
   rg->inference_rule("bloom_image", vuk::same_extent_as("final_image"));
 
   auto [down_input_names, down_output_names] = diverge_image_mips(rg, "bloom_image", bloom_mip_count);
@@ -1339,10 +1280,12 @@ void DefaultRenderPipeline::bloom_pass(const Shared<vuk::RenderGraph>& rg) {
   // Upsampling
   // https://www.froyok.fr/blog/2021-12-ue4-custom-bloom/resources/code/bloom_down_up_demo.jpg
 
-  rg->attach_and_clear_image(
-    "bloom_upsample_image",
-    {.format = vuk::Format::eR32G32B32A32Sfloat, .sample_count = vuk::SampleCountFlagBits::e1, .level_count = bloom_mip_count - 1, .layer_count = 1},
-    vuk::Black<float>);
+  rg->attach_and_clear_image("bloom_upsample_image",
+                             {.format = vuk::Format::eR32G32B32A32Sfloat,
+                              .sample_count = vuk::SampleCountFlagBits::e1,
+                              .level_count = bloom_mip_count - 1,
+                              .layer_count = 1},
+                             vuk::Black<float>);
   rg->inference_rule("bloom_upsample_image", vuk::same_extent_as("final_image"));
 
   auto [up_diverged_names, up_output_names] = diverge_image_mips(rg, "bloom_upsample_image", bloom_mip_count - 1);
@@ -1736,13 +1679,14 @@ void DefaultRenderPipeline::debug_pass(const Shared<vuk::RenderGraph>& rg,
 
   auto& index_buffer = *DebugRenderer::get_instance()->get_global_index_buffer();
 
-  rg->add_pass(
-    {.name = "debug_shapes_pass",
-     .resources = {vuk::Resource(dst, vuk::Resource::Type::eImage, vuk::eColorWrite, dst.append("+")),
-                   vuk::Resource(depth, vuk::Resource::Type::eImage, vuk::eDepthStencilRead)},
-     .execute = [this, buffer, index_count, index_count_dt, vertex_buffer, vertex_buffer_dt, index_buffer](vuk::CommandBuffer& command_buffer) {
-    const auto vertex_layout =
-      vuk::Packed{vuk::Format::eR32G32B32A32Sfloat, vuk::Format::eR32G32B32A32Sfloat, vuk::Ignore{sizeof(Vertex) - (sizeof(Vec4) + sizeof(Vec4))}};
+  rg->add_pass({.name = "debug_shapes_pass",
+                .resources = {vuk::Resource(dst, vuk::Resource::Type::eImage, vuk::eColorWrite, dst.append("+")),
+                              vuk::Resource(depth, vuk::Resource::Type::eImage, vuk::eDepthStencilRead)},
+                .execute =
+                  [this, buffer, index_count, index_count_dt, vertex_buffer, vertex_buffer_dt, index_buffer](vuk::CommandBuffer& command_buffer) {
+    const auto vertex_layout = vuk::Packed{vuk::Format::eR32G32B32A32Sfloat,
+                                           vuk::Format::eR32G32B32A32Sfloat,
+                                           vuk::Ignore{sizeof(Vertex) - (sizeof(Vec4) + sizeof(Vec4))}};
 
     // not depth tested
     command_buffer.bind_graphics_pipeline("unlit_pipeline")

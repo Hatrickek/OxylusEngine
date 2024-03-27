@@ -54,7 +54,7 @@ void RenderGraphPanel::on_imgui_render() {
         auto extent = attch.extent.extent;
 
         if (attch.extent.sizing == vuk::Sizing::eRelative)
-          extent = rp->get_dimension().extent;
+          extent = rp->get_extent().extent;
 
         constexpr auto max_height = 300.0f;
         const auto aspect = (float)extent.width / (float)extent.height;

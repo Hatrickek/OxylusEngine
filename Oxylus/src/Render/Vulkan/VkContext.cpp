@@ -2,14 +2,15 @@
 
 #include <sstream>
 
+#include "Render/Window.h"
 #include "Utils/Log.hpp"
 #include "Utils/Profiler.hpp"
-#include "Render/Window.h"
 
 #include <vuk/Context.hpp>
 #include <vuk/Future.hpp>
 #include <vuk/RenderGraph.hpp>
 #include <vuk/resources/DeviceFrameResource.hpp>
+#include <vuk/runtime/ThisThreadExecutor.hpp>
 
 #include "GLFW/glfw3.h"
 
@@ -23,15 +24,11 @@ static VkBool32 DebugCallback(const VkDebugUtilsMessageSeverityFlagBitsEXT messa
   std::string prefix;
   if (messageSeverity & VK_DEBUG_UTILS_MESSAGE_SEVERITY_VERBOSE_BIT_EXT) {
     prefix = "VULKAN VERBOSE: ";
-  }
-  else if (messageSeverity & VK_DEBUG_UTILS_MESSAGE_SEVERITY_INFO_BIT_EXT) {
+  } else if (messageSeverity & VK_DEBUG_UTILS_MESSAGE_SEVERITY_INFO_BIT_EXT) {
     prefix = "VULKAN INFO: ";
-  }
-  else if (messageSeverity &
-           VK_DEBUG_UTILS_MESSAGE_SEVERITY_WARNING_BIT_EXT) {
+  } else if (messageSeverity & VK_DEBUG_UTILS_MESSAGE_SEVERITY_WARNING_BIT_EXT) {
     prefix = "VULKAN WARNING: ";
-  }
-  else if (messageSeverity & VK_DEBUG_UTILS_MESSAGE_SEVERITY_ERROR_BIT_EXT) {
+  } else if (messageSeverity & VK_DEBUG_UTILS_MESSAGE_SEVERITY_ERROR_BIT_EXT) {
     prefix = "VULKAN ERROR: ";
   }
 
@@ -40,47 +37,70 @@ static VkBool32 DebugCallback(const VkDebugUtilsMessageSeverityFlagBitsEXT messa
 
   if (messageSeverity & VK_DEBUG_UTILS_MESSAGE_SEVERITY_VERBOSE_BIT_EXT) {
     OX_LOG_INFO("{}", debug_message.str());
-  }
-  else if (messageSeverity & VK_DEBUG_UTILS_MESSAGE_SEVERITY_INFO_BIT_EXT) {
+  } else if (messageSeverity & VK_DEBUG_UTILS_MESSAGE_SEVERITY_INFO_BIT_EXT) {
     OX_LOG_INFO("{}", debug_message.str());
-  }
-  else if (messageSeverity & VK_DEBUG_UTILS_MESSAGE_SEVERITY_WARNING_BIT_EXT) {
+  } else if (messageSeverity & VK_DEBUG_UTILS_MESSAGE_SEVERITY_WARNING_BIT_EXT) {
     OX_LOG_WARN(debug_message.str().c_str());
     OX_DEBUGBREAK();
-  }
-  else if (messageSeverity & VK_DEBUG_UTILS_MESSAGE_SEVERITY_ERROR_BIT_EXT) {
+  } else if (messageSeverity & VK_DEBUG_UTILS_MESSAGE_SEVERITY_ERROR_BIT_EXT) {
     OX_LOG_FATAL("{}", debug_message.str());
   }
   return VK_FALSE;
 }
 
-static vuk::Swapchain make_swapchain(VkContext* context, std::optional<VkSwapchainKHR> old_swapchain, vuk::PresentModeKHR present_mode = vuk::PresentModeKHR::eFifo) {
-  context->context->wait_idle();
-  vkb::SwapchainBuilder swb(context->vkb_device);
+static vuk::Swapchain make_swapchain(vuk::Allocator allocator,
+                                     vkb::Device vkbdevice,
+                                     VkSurfaceKHR surface,
+                                     std::optional<vuk::Swapchain> old_swapchain,
+                                     vuk::PresentModeKHR present_mode = vuk::PresentModeKHR::eFifo) {
+  vkb::SwapchainBuilder swb(vkbdevice);
   swb.set_desired_format(vuk::SurfaceFormatKHR{vuk::Format::eR8G8B8A8Unorm, vuk::ColorSpaceKHR::eSrgbNonlinear});
-  swb.set_desired_present_mode((VkPresentModeKHR)present_mode);
   swb.set_image_usage_flags(VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT);
-  if (old_swapchain) {
-    swb.set_old_swapchain(*old_swapchain);
-  }
-  auto vkswapchain = swb.build();
+  swb.set_desired_present_mode((VkPresentModeKHR)present_mode);
 
-  vuk::Swapchain sw{};
+  // TODO:
+  // swb.set_desired_format(vuk::SurfaceFormatKHR{ vuk::Format::eR8G8B8A8Srgb, vuk::ColorSpaceKHR::eSrgbNonlinear });
+  // swb.add_fallback_format(vuk::SurfaceFormatKHR{ vuk::Format::eB8G8R8A8Srgb, vuk::ColorSpaceKHR::eSrgbNonlinear });
+
+  bool is_recycle = false;
+  vkb::Result vkswapchain = {vkb::Swapchain{}};
+  if (!old_swapchain) {
+    vkswapchain = swb.build();
+    old_swapchain.emplace(allocator, vkswapchain->image_count);
+  } else {
+    is_recycle = true;
+    swb.set_old_swapchain(old_swapchain->swapchain);
+    vkswapchain = swb.build();
+  }
+
+  if (is_recycle) {
+    allocator.deallocate(std::span{&old_swapchain->swapchain, 1});
+    for (auto& iv : old_swapchain->images) {
+      allocator.deallocate(std::span{&iv.image_view, 1});
+    }
+  }
+
   auto images = *vkswapchain->get_images();
   auto views = *vkswapchain->get_image_views();
 
-  for (auto& i : images) {
-    sw.images.push_back(vuk::Image{i, nullptr});
+  old_swapchain->images.clear();
+
+  for (uint32_t i = 0; i < (uint32_t)images.size(); i++) {
+    vuk::ImageAttachment ia;
+    ia.extent = {vkswapchain->extent.width, vkswapchain->extent.height, 1};
+    ia.format = (vuk::Format)vkswapchain->image_format;
+    ia.image = vuk::Image{images[i], nullptr};
+    ia.image_view = vuk::ImageView{{0}, views[i]};
+    ia.view_type = vuk::ImageViewType::e2D;
+    ia.sample_count = vuk::Samples::e1;
+    ia.base_level = ia.base_layer = 0;
+    ia.level_count = ia.layer_count = 1;
+    old_swapchain->images.push_back(ia);
   }
-  for (auto& i : views) {
-    sw.image_views.emplace_back();
-    sw.image_views.back().payload = i;
-  }
-  sw.extent = vuk::Extent2D{vkswapchain->extent.width, vkswapchain->extent.height};
-  sw.format = vuk::Format(vkswapchain->image_format);
-  sw.surface = context->vkb_device.surface;
-  sw.swapchain = vkswapchain->swapchain;
-  return sw;
+
+  old_swapchain->swapchain = vkswapchain->swapchain;
+  old_swapchain->surface = surface;
+  return std::move(*old_swapchain);
 }
 
 void VkContext::init() {
@@ -107,10 +127,7 @@ inline VkSurfaceKHR create_surface_glfw(const VkInstance instance, GLFWwindow* w
 void VkContext::create_context(const AppSpec& spec) {
   OX_SCOPED_ZONE;
   vkb::InstanceBuilder builder;
-  builder.set_app_name("Oxylus")
-         .set_engine_name("Oxylus")
-         .require_api_version(1, 3, 0)
-         .set_app_version(0, 1, 0);
+  builder.set_app_name("Oxylus").set_engine_name("Oxylus").require_api_version(1, 3, 0).set_app_version(0, 1, 0);
 
   bool enable_validation = false;
   const auto& args = App::get()->get_command_line_args();
@@ -123,13 +140,11 @@ void VkContext::create_context(const AppSpec& spec) {
 
   if (enable_validation) {
     OX_LOG_INFO("Vulkan validation layers enabled.");
-    builder.request_validation_layers()
-           .set_debug_callback([](const VkDebugUtilsMessageSeverityFlagBitsEXT messageSeverity,
-                                  const VkDebugUtilsMessageTypeFlagsEXT messageType,
-                                  const VkDebugUtilsMessengerCallbackDataEXT* pCallbackData,
-                                  void* pUserData) -> VkBool32 {
-              return DebugCallback(messageSeverity, messageType, pCallbackData, pUserData);
-            });
+    builder.request_validation_layers().set_debug_callback(
+      [](const VkDebugUtilsMessageSeverityFlagBitsEXT messageSeverity,
+         const VkDebugUtilsMessageTypeFlagsEXT messageType,
+         const VkDebugUtilsMessengerCallbackDataEXT* pCallbackData,
+         void* pUserData) -> VkBool32 { return DebugCallback(messageSeverity, messageType, pCallbackData, pUserData); });
   }
 
   auto inst_ret = builder.build();
@@ -142,9 +157,9 @@ void VkContext::create_context(const AppSpec& spec) {
   vkb::PhysicalDeviceSelector selector{vkb_instance};
   surface = create_surface_glfw(instance, Window::get_glfw_window());
   selector.set_surface(surface)
-          .set_minimum_version(1, 2)
-          .add_required_extension(VK_KHR_SYNCHRONIZATION_2_EXTENSION_NAME)
-          .add_required_extension(VK_EXT_SHADER_VIEWPORT_INDEX_LAYER_EXTENSION_NAME);
+    .set_minimum_version(1, 2)
+    .add_required_extension(VK_KHR_SYNCHRONIZATION_2_EXTENSION_NAME)
+    .add_required_extension(VK_EXT_SHADER_VIEWPORT_INDEX_LAYER_EXTENSION_NAME);
 
   VkPhysicalDeviceFeatures2 vk10features{.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_FEATURES_2};
   vk10features.features.geometryShader = true;
@@ -180,18 +195,15 @@ void VkContext::create_context(const AppSpec& spec) {
   vk12features.shaderOutputViewportIndex = true;
   selector.set_required_features_12(vk12features);
 
-  VkPhysicalDeviceSynchronization2FeaturesKHR sync_feat{
-    .sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SYNCHRONIZATION_2_FEATURES_KHR,
-    .synchronization2 = true
-  };
+  VkPhysicalDeviceSynchronization2FeaturesKHR sync_feat{.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SYNCHRONIZATION_2_FEATURES_KHR,
+                                                        .synchronization2 = true};
 
   selector.add_required_extension_features<>(sync_feat);
 
   auto phys_ret = selector.select();
   if (!phys_ret) {
     OX_LOG_ERROR("{}", phys_ret.full_error().type.message());
-  }
-  else {
+  } else {
     vkbphysical_device = phys_ret.value();
     device_name = phys_ret.value().name;
   }
@@ -209,114 +221,45 @@ void VkContext::create_context(const AppSpec& spec) {
   transfer_queue = vkb_device.get_queue(vkb::QueueType::transfer).value();
   auto transfer_queue_family_index = vkb_device.get_queue_index(vkb::QueueType::transfer).value();
   device = vkb_device.device;
-  vuk::ContextCreateParameters::FunctionPointers fps;
+  vuk::rtvk::FunctionPointers fps;
   fps.vkGetInstanceProcAddr = vkb_instance.fp_vkGetInstanceProcAddr;
   fps.vkGetDeviceProcAddr = vkb_instance.fp_vkGetDeviceProcAddr;
-  context.emplace(vuk::ContextCreateParameters{
-    instance,
-    device,
-    physical_device,
-    graphics_queue,
-    graphics_queue_family_index,
-    VK_NULL_HANDLE,
-    VK_QUEUE_FAMILY_IGNORED,
-    transfer_queue,
-    transfer_queue_family_index,
-    fps
-  });
+  fps.load_pfns(instance, device, true);
+  std::vector<std::unique_ptr<vuk::Executor>> executors;
+
+  executors.push_back(create_vkqueue_executor(fps, device, graphics_queue, graphics_queue_family_index, vuk::DomainFlagBits::eGraphicsQueue));
+  executors.push_back(create_vkqueue_executor(fps, device, transfer_queue, transfer_queue_family_index, vuk::DomainFlagBits::eTransferQueue));
+  executors.push_back(std::make_unique<vuk::ThisThreadExecutor>());
+
+  context.emplace(vuk::ContextCreateParameters{instance, device, physical_device, std::move(executors), fps});
+
   superframe_resource.emplace(*context, num_inflight_frames);
   superframe_allocator.emplace(*superframe_resource);
-  auto sw = make_swapchain(this, {}, present_mode);
-  swapchain = context->add_swapchain(sw);
+  swapchain = make_swapchain(*superframe_allocator, vkb_device, surface, {});
   present_ready = vuk::Unique<std::array<VkSemaphore, 3>>(*superframe_allocator);
   render_complete = vuk::Unique<std::array<VkSemaphore, 3>>(*superframe_allocator);
 
-  context->set_shader_target_version(VK_API_VERSION_1_2);
+  // context->set_shader_target_version(VK_API_VERSION_1_2);
 
   superframe_allocator->allocate_semaphores(*present_ready);
   superframe_allocator->allocate_semaphores(*render_complete);
 
-#ifdef TRACY_ENABLE
   tracy_profiler = create_shared<TracyProfiler>();
   tracy_profiler->init_tracy_for_vulkan(this);
-#endif
 
   Window::set_window_user_data(this);
-  glfwSetWindowSizeCallback(
-    Window::get_glfw_window(),
-    [](GLFWwindow* window, const int width, const int height) {
-      auto* ctx = reinterpret_cast<VkContext*>(glfwGetWindowUserPointer(window));
-      if (width == 0 && height == 0) {
-        ctx->suspend = true;
+  glfwSetWindowSizeCallback(Window::get_glfw_window(), [](GLFWwindow* window, const int width, const int height) {
+    auto* ctx = reinterpret_cast<VkContext*>(glfwGetWindowUserPointer(window));
+    if (width == 0 && height == 0) {
+      ctx->suspend = true;
+    } else {
+      ctx->swapchain = make_swapchain(*ctx->superframe_allocator, ctx->vkb_device, ctx->swapchain->surface, std::move(ctx->swapchain));
+      for (auto& iv : ctx->swapchain->images) {
+        ctx->context->set_name(iv.image_view.payload, "Swapchain ImageView");
       }
-      else {
-        ctx->rebuild_swapchain();
-      }
-    });
+    }
+  });
 
   OX_LOG_INFO("Vulkan context initialized using device: {}", device_name);
 }
-
-void VkContext::rebuild_swapchain(const vuk::PresentModeKHR new_present_mode) {
-  context->wait_idle();
-  superframe_allocator->deallocate(std::span{&swapchain->swapchain, 1});
-  superframe_allocator->deallocate(swapchain->image_views);
-  context->remove_swapchain(swapchain);
-  auto sw = make_swapchain(this, swapchain->swapchain, new_present_mode);
-  swapchain = context->add_swapchain(sw);
-  for (auto& iv : swapchain->image_views) {
-    context->set_name(iv.payload, "Swapchain ImageView");
-  }
-  suspend = false;
-  present_mode = new_present_mode;
-}
-
-vuk::Allocator VkContext::begin() {
-  auto& frame_resource = superframe_resource->get_next_frame();
-  context->next_frame();
-  const vuk::Allocator frame_allocator(frame_resource);
-  m_bundle = *acquire_one(*context, swapchain, (*present_ready)[context->get_frame_count() % 3], (*render_complete)[context->get_frame_count() % 3]);
-
-  return frame_allocator;
-}
-
-void VkContext::end(const vuk::Future& src, vuk::Allocator frame_allocator) {
-  std::shared_ptr rg_p(std::make_shared<vuk::RenderGraph>("presenter"));
-  rg_p->attach_in("_src", src);
-  rg_p->release_for_present("_src");
-
-  vuk::ProfilingCallbacks cbs;
-#if GPU_PROFILER_ENABLED
-  cbs.on_begin_command_buffer = [](void*, const VkCommandBuffer cbuf) {
-    get()->tracy_profiler->get_graphics_ctx()->Collect(cbuf);
-    get()->tracy_profiler->get_transfer_ctx()->Collect(cbuf);
-    return (void*)nullptr;
-  };
-
-  cbs.on_begin_pass = [](void*, const vuk::Name pass_name, const VkCommandBuffer cmdbuf, const vuk::DomainFlagBits domain) {
-    void* pass_data = new char[sizeof(tracy::VkCtxScope)];
-    if (domain & vuk::DomainFlagBits::eGraphicsQueue) {
-      new(pass_data) OX_TRACE_GPU_TRANSIENT(get()->tracy_profiler->get_graphics_ctx(), cmdbuf, pass_name.c_str())
-    }
-    else if (domain & vuk::DomainFlagBits::eTransferQueue) {
-      new(pass_data) OX_TRACE_GPU_TRANSIENT(get()->tracy_profiler->get_transfer_ctx(), cmdbuf, pass_name.c_str())
-    }
-
-    return pass_data;
-  };
-
-  cbs.on_end_pass = [](void*, void* pass_data) {
-    const auto tracy_scope = reinterpret_cast<tracy::VkCtxScope*>(pass_data);
-    tracy_scope->~VkCtxScope();
-  };
-#endif
-
-  vuk::Compiler compiler;
-  auto erg = *compiler.link(std::span{&rg_p, 1}, {.callbacks = cbs});
-  auto result = *execute_submit(frame_allocator, std::move(erg), std::move(m_bundle));
-  present_to_one(*context, std::move(result));
-
-  current_frame = (current_frame + 1) % num_inflight_frames;
-  num_frames = context->get_frame_count();
-}
-}
+} // namespace ox

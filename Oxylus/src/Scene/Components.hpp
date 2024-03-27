@@ -19,7 +19,7 @@ class Character;
 }
 
 namespace ox {
-class TextureAsset;
+class Texture;
 class Material;
 
 struct IDComponent {

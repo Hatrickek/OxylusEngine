@@ -7,7 +7,7 @@
 #include "Core/Base.hpp"
 
 namespace ox {
-class TextureAsset;
+class Texture;
 
 struct Particle {
   glm::vec3 position = glm::vec3(0.0f);
@@ -77,7 +77,7 @@ struct ParticleProperties {
   OverLifetimeModule<glm::vec3> rotation_over_lifetime;
   BySpeedModule<glm::vec3> rotation_by_speed;
 
-  Shared<TextureAsset> texture = nullptr;
+  Shared<Texture> texture = nullptr;
 };
 
 class ParticleSystem {

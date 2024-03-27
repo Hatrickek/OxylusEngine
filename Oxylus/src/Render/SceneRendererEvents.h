@@ -4,6 +4,6 @@
 
 namespace ox {
 struct SkyboxLoadEvent {
-  Shared<TextureAsset> cube_map = nullptr;
+  Shared<Texture> cube_map = nullptr;
 };
 }

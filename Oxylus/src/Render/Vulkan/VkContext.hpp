@@ -34,7 +34,7 @@ public:
   std::optional<vuk::Allocator> superframe_allocator;
   bool suspend = false;
   vuk::PresentModeKHR present_mode = vuk::PresentModeKHR::eFifo;
-  vuk::SwapchainRef swapchain = nullptr;
+  std::optional<vuk::Swapchain> swapchain;
   VkSurfaceKHR surface;
   vkb::Instance vkb_instance;
   vkb::Device vkb_device;
@@ -54,16 +54,9 @@ public:
 
   void create_context(const AppSpec& spec);
 
-  void rebuild_swapchain(vuk::PresentModeKHR new_present_mode = vuk::PresentModeKHR::eFifo);
-
-  vuk::Allocator begin();
-  void end(const vuk::Future& src, vuk::Allocator frame_allocator);
-
   uint32_t get_max_viewport_count() const { return vkbphysical_device.properties.limits.maxViewports; }
 
 private:
-  vuk::SingleSwapchainRenderBundle m_bundle = {};
-
   static VkContext* s_instance;
 };
 }

@@ -65,7 +65,7 @@ std::pair<vuk::Texture, vuk::Future> Prefilter::generate_brdflut() {
 }
 
 std::pair<vuk::Texture, vuk::Future> Prefilter::generate_irradiance_cube(const Shared<Mesh>& skybox,
-                                                                        const Shared<TextureAsset>& cubemap) {
+                                                                        const Shared<Texture>& cubemap) {
   const auto vk_context = VkContext::get();
   constexpr int32_t dim = 64;
 
@@ -144,7 +144,7 @@ std::pair<vuk::Texture, vuk::Future> Prefilter::generate_irradiance_cube(const S
 }
 
 std::pair<vuk::Texture, vuk::Future> Prefilter::generate_prefiltered_cube(const Shared<Mesh>& skybox,
-                                                                                     const Shared<TextureAsset>& cubemap) {
+                                                                                     const Shared<Texture>& cubemap) {
   const auto vk_context = VkContext::get();
   constexpr int32_t dim = 512;
 

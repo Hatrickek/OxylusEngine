@@ -15,7 +15,7 @@ struct Texture;
 }
 
 namespace ox {
-class TextureAsset;
+class Texture;
 
 class OxUI {
 public:
@@ -139,7 +139,7 @@ public:
 
   // Texture
   static bool property(const char* label,
-                       Shared<TextureAsset>& texture,
+                       Shared<Texture>& texture,
                        const char* tooltip = nullptr);
   // Draw vuk::Texture
   static void image(const vuk::Texture& texture,

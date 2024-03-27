@@ -196,19 +196,19 @@ private:
 
   vuk::Unique<vuk::PersistentDescriptorSet> descriptor_set_00;
 
-  vuk::Texture pbr_texture;
-  vuk::Texture normal_texture;
-  vuk::Texture depth_texture;
-  vuk::Texture velocity_texture;
+  Texture pbr_texture;
+  Texture normal_texture;
+  Texture depth_texture;
+  Texture velocity_texture;
 
-  vuk::Texture sky_transmittance_lut;
-  vuk::Texture sky_multiscatter_lut;
-  vuk::Texture sky_envmap_render_target;
-  vuk::Texture sky_envmap_texture_mipped;
-  vuk::Texture gtao_final_texture;
-  vuk::Texture ssr_texture;
-  vuk::Texture shadow_map_atlas;
-  vuk::Texture shadow_map_atlas_transparent;
+  Texture sky_transmittance_lut;
+  Texture sky_multiscatter_lut;
+  Texture sky_envmap_render_target;
+  Texture sky_envmap_texture_mipped;
+  Texture gtao_final_texture;
+  Texture ssr_texture;
+  Texture shadow_map_atlas;
+  Texture shadow_map_atlas_transparent;
 
   GTAOConstants gtao_constants = {};
   GTAOSettings gtao_settings = {};
@@ -216,10 +216,10 @@ private:
   //FSR fsr = {};
 
   // PBR Resources
-  Shared<TextureAsset> cube_map = nullptr;
-  vuk::Texture brdf_texture;
-  vuk::Texture irradiance_texture;
-  vuk::Texture prefiltered_texture;
+  Shared<Texture> cube_map = nullptr;
+  Texture brdf_texture;
+  Texture irradiance_texture;
+  Texture prefiltered_texture;
 
   enum Filter {
     // Include nothing:
@@ -356,7 +356,7 @@ private:
   void create_dir_light_cameras(const LightComponent& light, Camera& camera, std::vector<CameraSH>& camera_data, uint32_t cascade_count);
   void update_frame_data(vuk::Allocator& allocator);
   void create_static_resources(vuk::Allocator& allocator);
-  void create_dynamic_textures(vuk::Allocator& allocator, const vuk::Dimension3D& dim);
+  void create_dynamic_textures(vuk::Allocator& allocator, const vuk::Extent3D& ext);
   void create_descriptor_sets(vuk::Allocator& allocator);
   void run_static_passes(vuk::Allocator& allocator);
 

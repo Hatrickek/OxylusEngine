@@ -44,7 +44,7 @@ public:
   }
 
   // Logo
-  Shared<TextureAsset> engine_banner = nullptr;
+  Shared<Texture> engine_banner = nullptr;
 
   // Layout
   ImGuiID dockspace_id;

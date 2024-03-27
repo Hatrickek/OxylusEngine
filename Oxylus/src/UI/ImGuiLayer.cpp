@@ -7,9 +7,9 @@
 
 #include <icons/IconsMaterialDesignIcons.h>
 #include <icons/MaterialDesign.inl>
+#include <vuk/Partials.hpp>
 #include <vuk/Pipeline.hpp>
 #include <vuk/RenderGraph.hpp>
-#include <vuk/Partials.hpp>
 
 #include "Core/App.hpp"
 #include "ImGuizmo.h"
@@ -18,13 +18,16 @@
 
 #include "GLFW/glfw3.h"
 
+#include "Render/Utils/VukCommon.hpp"
 #include "Render/Vulkan/VkContext.hpp"
-#include "Utils/Profiler.hpp"
 #include "Render/Window.h"
+#include "Utils/Profiler.hpp"
 
 namespace ox {
 static ImVec4 darken(ImVec4 c, float p) { return {glm::max(0.f, c.x - 1.0f * p), glm::max(0.f, c.y - 1.0f * p), glm::max(0.f, c.z - 1.0f * p), c.w}; }
-static ImVec4 lighten(ImVec4 c, float p) { return {glm::max(0.f, c.x + 1.0f * p), glm::max(0.f, c.y + 1.0f * p), glm::max(0.f, c.z + 1.0f * p), c.w}; }
+static ImVec4 lighten(ImVec4 c, float p) {
+  return {glm::max(0.f, c.x + 1.0f * p), glm::max(0.f, c.y + 1.0f * p), glm::max(0.f, c.z + 1.0f * p), c.w};
+}
 
 ImFont* ImGuiLayer::regular_font = nullptr;
 ImFont* ImGuiLayer::small_font = nullptr;
@@ -38,9 +41,8 @@ void ImGuiLayer::on_attach(EventDispatcher&) {
   ImGui::CreateContext();
   ImGuiIO& io = ImGui::GetIO();
   io.IniFilename = nullptr;
-  io.ConfigFlags |= ImGuiConfigFlags_NavEnableKeyboard /*| ImGuiConfigFlags_ViewportsEnable*/ |
-    ImGuiConfigFlags_DockingEnable | ImGuiConfigFlags_DpiEnableScaleFonts |
-    ImGuiConfigFlags_DpiEnableScaleViewports;
+  io.ConfigFlags |= ImGuiConfigFlags_NavEnableKeyboard /*| ImGuiConfigFlags_ViewportsEnable*/ | ImGuiConfigFlags_DockingEnable |
+                    ImGuiConfigFlags_DpiEnableScaleFonts | ImGuiConfigFlags_DpiEnableScaleViewports;
   io.BackendFlags |= ImGuiBackendFlags_RendererHasVtxOffset;
   /*io.BackendFlags |= ImGuiBackendFlags_RendererHasViewports;*/
 
@@ -63,11 +65,7 @@ void ImGuiLayer::add_icon_font(float font_size) {
   icons_config.GlyphMinAdvanceX = 4.0f;
   icons_config.SizePixels = font_size;
 
-  io.Fonts->AddFontFromMemoryCompressedTTF(MaterialDesign_compressed_data,
-                                           MaterialDesign_compressed_size,
-                                           font_size,
-                                           &icons_config,
-                                           ICONS_RANGES);
+  io.Fonts->AddFontFromMemoryCompressedTTF(MaterialDesign_compressed_data, MaterialDesign_compressed_size, font_size, &icons_config, ICONS_RANGES);
 }
 
 ImGuiLayer::ImGuiData ImGuiLayer::imgui_impl_vuk_init(vuk::Allocator& allocator) const {
@@ -81,28 +79,21 @@ ImGuiLayer::ImGuiData ImGuiLayer::imgui_impl_vuk_init(vuk::Allocator& allocator)
   int width, height;
   io.Fonts->GetTexDataAsRGBA32(&pixels, &width, &height);
 
-  ImGuiData data;
-  auto [tex, stub] = create_texture(allocator, vuk::Format::eR8G8B8A8Srgb, vuk::Extent3D{(unsigned)width, (unsigned)height, 1u}, pixels, false);
-  data.font_texture = std::move(tex);
-  vuk::Compiler comp;
-  stub.wait(allocator, comp);
+  const auto font = create_shared<Texture>();
+  font->create_texture((unsigned)width, (unsigned)height, pixels, vuk::Format::eR8G8B8A8Srgb);
+  ImGuiData data(font);
+
   ctx.set_name(data.font_texture, "ImGui/font");
-  vuk::SamplerCreateInfo sci;
-  sci.minFilter = sci.magFilter = vuk::Filter::eLinear;
-  sci.mipmapMode = vuk::SamplerMipmapMode::eLinear;
-  sci.addressModeU = sci.addressModeV = sci.addressModeW = vuk::SamplerAddressMode::eRepeat;
-  data.font_sci = sci;
-  data.font_si = std::make_unique<vuk::SampledImage>(vuk::SampledImage::Global{*data.font_texture.view, sci, vuk::ImageLayout::eReadOnlyOptimalKHR});
-  io.Fonts->TexID = (ImTextureID)data.font_si.get();
-  {
-    vuk::PipelineBaseCreateInfo pci;
-    pci.add_static_spirv(imgui_vert, sizeof(imgui_vert) / 4, "imgui.vert");
-    pci.add_static_spirv(imgui_frag, sizeof(imgui_frag) / 4, "imgui.frag");
-    ctx.create_named_pipeline("imgui", pci);
-  }
+
+  io.Fonts->TexID = (ImTextureID)&data.font_texture->get_view().get();
+
+  vuk::PipelineBaseCreateInfo pci;
+  pci.add_static_spirv(imgui_vert, sizeof(imgui_vert) / 4, "imgui.vert");
+  pci.add_static_spirv(imgui_frag, sizeof(imgui_frag) / 4, "imgui.frag");
+  ctx.create_named_pipeline("imgui", pci);
+
   return data;
 }
-
 
 void ImGuiLayer::init_for_vulkan() {
   OX_SCOPED_ZONE;
@@ -154,10 +145,10 @@ void ImGuiLayer::begin() {
   sampled_images.clear();
 }
 
-vuk::Future ImGuiLayer::render_draw_data(vuk::Allocator& allocator, vuk::Future target, ImDrawData* im_draw_data) const {
+vuk::Value<vuk::ImageAttachment> ImGuiLayer::render_draw_data(vuk::Allocator& allocator, vuk::Value<vuk::ImageAttachment> target) const {
   OX_SCOPED_ZONE;
-  auto reset_render_state = [](const ImGuiData& data, vuk::CommandBuffer& command_buffer, const ImDrawData* draw_data, const vuk::Buffer& vertex, const vuk::Buffer& index) {
-    command_buffer.bind_image(0, 0, *data.font_texture.view).bind_sampler(0, 0, data.font_sci);
+  auto reset_render_state = [this](const ImGuiData& data, vuk::CommandBuffer& command_buffer, const vuk::Buffer& vertex, const vuk::Buffer& index) {
+    command_buffer.bind_image(0, 0, *data.font_texture->get_view()).bind_sampler(0, 0, vuk::LinearSamplerRepeated);
     if (index.size > 0) {
       command_buffer.bind_index_buffer(index, sizeof(ImDrawIdx) == 2 ? vuk::IndexType::eUint16 : vuk::IndexType::eUint32);
     }
@@ -175,140 +166,132 @@ vuk::Future ImGuiLayer::render_draw_data(vuk::Allocator& allocator, vuk::Future 
     command_buffer.push_constants(vuk::ShaderStageFlagBits::eVertex, 0, pc);
   };
 
-  const size_t vertex_size = im_draw_data->TotalVtxCount * sizeof(ImDrawVert);
-  const size_t index_size = im_draw_data->TotalIdxCount * sizeof(ImDrawIdx);
+  const size_t vertex_size = draw_data->TotalVtxCount * sizeof(ImDrawVert);
+  const size_t index_size = draw_data->TotalIdxCount * sizeof(ImDrawIdx);
   auto imvert = *allocate_buffer(allocator, {vuk::MemoryUsage::eCPUtoGPU, vertex_size, 1});
   auto imind = *allocate_buffer(allocator, {vuk::MemoryUsage::eCPUtoGPU, index_size, 1});
 
   size_t vtx_dst = 0, idx_dst = 0;
   vuk::Compiler comp;
-  for (int n = 0; n < im_draw_data->CmdListsCount; n++) {
-    const ImDrawList* cmd_list = im_draw_data->CmdLists[n];
+  for (int n = 0; n < draw_data->CmdListsCount; n++) {
+    const ImDrawList* cmd_list = draw_data->CmdLists[n];
     const auto imverto = imvert->add_offset(vtx_dst * sizeof(ImDrawVert));
     const auto imindo = imind->add_offset(idx_dst * sizeof(ImDrawIdx));
 
     // TODO:
-    vuk::host_data_to_buffer(allocator, vuk::DomainFlagBits{}, imverto, std::span(cmd_list->VtxBuffer.Data, cmd_list->VtxBuffer.Size)).wait(allocator, comp);
-    vuk::host_data_to_buffer(allocator, vuk::DomainFlagBits{}, imindo, std::span(cmd_list->IdxBuffer.Data, cmd_list->IdxBuffer.Size)).wait(allocator, comp);
+    vuk::host_data_to_buffer(allocator, vuk::DomainFlagBits{}, imverto, std::span(cmd_list->VtxBuffer.Data, cmd_list->VtxBuffer.Size))
+      .wait(allocator, comp);
+    vuk::host_data_to_buffer(allocator, vuk::DomainFlagBits{}, imindo, std::span(cmd_list->IdxBuffer.Data, cmd_list->IdxBuffer.Size))
+      .wait(allocator, comp);
     vtx_dst += cmd_list->VtxBuffer.Size;
     idx_dst += cmd_list->IdxBuffer.Size;
   }
-  std::shared_ptr<vuk::RenderGraph> rg = std::make_shared<vuk::RenderGraph>("imgui");
-  rg->attach_in("target", std::move(target));
-
-  std::vector<vuk::Resource> resources = {};
-  resources.reserve(sampled_images.size() + 1);
-  resources.emplace_back("target", vuk::Resource::Type::eImage, vuk::eColorRW, "target+");
+#if 0
   for (auto& si : sampled_images) {
     if (!si.is_global) {
-      resources.emplace_back(
-        si.rg_attachment.reference.rg,
-        si.rg_attachment.reference.name,
-        vuk::Resource::Type::eImage,
-        vuk::Access::eFragmentSampled
-      );
+      resources.emplace_back(si.rg_attachment.reference.rg,
+                             si.rg_attachment.reference.name,
+                             vuk::Resource::Type::eImage,
+                             vuk::Access::eFragmentSampled);
     }
   }
+#endif
 
-  vuk::Pass pass{
-    .name = "imgui",
-    .resources = std::move(resources),
-    .execute = [this, &allocator, verts = imvert.get(), inds = imind.get(), reset_render_state, im_draw_data](vuk::CommandBuffer& command_buffer) {
-      command_buffer.set_dynamic_state(vuk::DynamicStateFlagBits::eViewport | vuk::DynamicStateFlagBits::eScissor);
-      command_buffer.set_rasterization(vuk::PipelineRasterizationStateCreateInfo{});
-      command_buffer.set_color_blend("target", vuk::BlendPreset::eAlphaBlend);
-      reset_render_state(imgui_data, command_buffer, im_draw_data, verts, inds);
-      // Will project scissor/clipping rectangles into framebuffer space
-      const ImVec2 clip_off = im_draw_data->DisplayPos;         // (0,0) unless using multi-viewports
-      const ImVec2 clip_scale = im_draw_data->FramebufferScale; // (1,1) unless using retina display which are often (2,2)
+  auto imgui_pass = vuk::make_pass("imgui",
+                                   [this, verts = imvert.get(), inds = imind.get(), reset_render_state](vuk::CommandBuffer& command_buffer,
+                                                                                                        VUK_IA(vuk::eColorRW) color_rt) {
+    command_buffer.set_dynamic_state(vuk::DynamicStateFlagBits::eViewport | vuk::DynamicStateFlagBits::eScissor)
+      .set_rasterization(vuk::PipelineRasterizationStateCreateInfo{})
+      .set_color_blend(color_rt, vuk::BlendPreset::eAlphaBlend);
 
-      // Render command lists
-      // (Because we merged all buffers into a single one, we maintain our own offset into them)
-      int global_vtx_offset = 0;
-      int global_idx_offset = 0;
-      for (int n = 0; n < im_draw_data->CmdListsCount; n++) {
-        const ImDrawList* cmd_list = im_draw_data->CmdLists[n];
-        for (int cmd_i = 0; cmd_i < cmd_list->CmdBuffer.Size; cmd_i++) {
-          const ImDrawCmd* pcmd = &cmd_list->CmdBuffer[cmd_i];
-          if (pcmd->UserCallback != nullptr) {
-            // User callback, registered via ImDrawList::AddCallback()
-            // (ImDrawCallback_ResetRenderState is a special callback value used by the user to request the renderer to reset render state.)
-            if (pcmd->UserCallback == ImDrawCallback_ResetRenderState)
-              reset_render_state(imgui_data, command_buffer, im_draw_data, verts, inds);
-            else
-              pcmd->UserCallback(cmd_list, pcmd);
-          }
-          else {
-            // Project scissor/clipping rectangles into framebuffer space
-            ImVec4 clip_rect;
-            clip_rect.x = (pcmd->ClipRect.x - clip_off.x) * clip_scale.x;
-            clip_rect.y = (pcmd->ClipRect.y - clip_off.y) * clip_scale.y;
-            clip_rect.z = (pcmd->ClipRect.z - clip_off.x) * clip_scale.x;
-            clip_rect.w = (pcmd->ClipRect.w - clip_off.y) * clip_scale.y;
+    reset_render_state(imgui_data, command_buffer, verts, inds);
+    // Will project scissor/clipping rectangles into framebuffer space
+    const ImVec2 clip_off = draw_data->DisplayPos;         // (0,0) unless using multi-viewports
+    const ImVec2 clip_scale = draw_data->FramebufferScale; // (1,1) unless using retina display which are often (2,2)
 
-            const auto fb_width = command_buffer.get_ongoing_render_pass().extent.width;
-            const auto fb_height = command_buffer.get_ongoing_render_pass().extent.height;
-            if (clip_rect.x < fb_width && clip_rect.y < fb_height && clip_rect.z >= 0.0f && clip_rect.w >= 0.0f) {
-              // Negative offsets are illegal for vkCmdSetScissor
-              if (clip_rect.x < 0.0f)
-                clip_rect.x = 0.0f;
-              if (clip_rect.y < 0.0f)
-                clip_rect.y = 0.0f;
+    // Render command lists
+    // (Because we merged all buffers into a single one, we maintain our own offset into them)
+    int global_vtx_offset = 0;
+    int global_idx_offset = 0;
+    for (int n = 0; n < draw_data->CmdListsCount; n++) {
+      const ImDrawList* cmd_list = draw_data->CmdLists[n];
+      for (int cmd_i = 0; cmd_i < cmd_list->CmdBuffer.Size; cmd_i++) {
+        const ImDrawCmd* pcmd = &cmd_list->CmdBuffer[cmd_i];
+        if (pcmd->UserCallback != nullptr) {
+          // User callback, registered via ImDrawList::AddCallback()
+          // (ImDrawCallback_ResetRenderState is a special callback value used by the user to request the renderer to reset render state.)
+          if (pcmd->UserCallback == ImDrawCallback_ResetRenderState)
+            reset_render_state(imgui_data, command_buffer, verts, inds);
+          else
+            pcmd->UserCallback(cmd_list, pcmd);
+        } else {
+          // Project scissor/clipping rectangles into framebuffer space
+          ImVec4 clip_rect;
+          clip_rect.x = (pcmd->ClipRect.x - clip_off.x) * clip_scale.x;
+          clip_rect.y = (pcmd->ClipRect.y - clip_off.y) * clip_scale.y;
+          clip_rect.z = (pcmd->ClipRect.z - clip_off.x) * clip_scale.x;
+          clip_rect.w = (pcmd->ClipRect.w - clip_off.y) * clip_scale.y;
 
-              // Apply scissor/clipping rectangle
-              vuk::Rect2D scissor;
-              scissor.offset.x = (int32_t)(clip_rect.x);
-              scissor.offset.y = (int32_t)(clip_rect.y);
-              scissor.extent.width = (uint32_t)(clip_rect.z - clip_rect.x);
-              scissor.extent.height = (uint32_t)(clip_rect.w - clip_rect.y);
-              command_buffer.set_scissor(0, scissor);
+          const auto fb_width = command_buffer.get_ongoing_render_pass().extent.width;
+          const auto fb_height = command_buffer.get_ongoing_render_pass().extent.height;
+          if (clip_rect.x < fb_width && clip_rect.y < fb_height && clip_rect.z >= 0.0f && clip_rect.w >= 0.0f) {
+            // Negative offsets are illegal for vkCmdSetScissor
+            if (clip_rect.x < 0.0f)
+              clip_rect.x = 0.0f;
+            if (clip_rect.y < 0.0f)
+              clip_rect.y = 0.0f;
 
-              // Bind texture
-              if (pcmd->TextureId) {
-                auto& si = *reinterpret_cast<vuk::SampledImage*>(pcmd->TextureId);
-                if (si.is_global) {
-                  command_buffer.bind_image(0, 0, si.global.iv).bind_sampler(0, 0, si.global.sci);
-                }
-                else {
-                  if (si.rg_attachment.ivci) {
-                    auto ivci = *si.rg_attachment.ivci;
-                    const auto res_img = command_buffer.get_resource_image_attachment(si.rg_attachment.reference)->image;
-                    ivci.image = res_img.image;
-                    auto iv = vuk::allocate_image_view(allocator, ivci);
-                    command_buffer.bind_image(0, 0, **iv).bind_sampler(0, 0, si.rg_attachment.sci);
-                  }
-                  else {
-                    command_buffer
-                     .bind_image(0,
-                                 0,
-                                 *command_buffer.get_resource_image_attachment(si.rg_attachment.reference))
-                     .bind_sampler(0, 0, si.rg_attachment.sci);
-                  }
-                }
+            // Apply scissor/clipping rectangle
+            vuk::Rect2D scissor;
+            scissor.offset.x = (int32_t)(clip_rect.x);
+            scissor.offset.y = (int32_t)(clip_rect.y);
+            scissor.extent.width = (uint32_t)(clip_rect.z - clip_rect.x);
+            scissor.extent.height = (uint32_t)(clip_rect.w - clip_rect.y);
+            command_buffer.set_scissor(0, scissor);
+
+            // Bind texture
+            if (pcmd->TextureId) {
+              const auto& view = *reinterpret_cast<vuk::ImageView*>(pcmd->TextureId);
+              command_buffer.bind_image(0, 0, view).bind_sampler(0, 0, vuk::LinearSamplerRepeated);
+#if 0
+              if (si.is_global) {
+                command_buffer.bind_image(0, 0, si.global.iv).bind_sampler(0, 0, si.global.sci);
               }
-
-              command_buffer.draw_indexed(pcmd->ElemCount, 1, pcmd->IdxOffset + global_idx_offset, pcmd->VtxOffset + global_vtx_offset, 0);
+              else {
+                if (si.rg_attachment.ivci) {
+                  auto ivci = *si.rg_attachment.ivci;
+                  const auto res_img = command_buffer.get_resource_image_attachment(si.rg_attachment.reference)->image;
+                  ivci.image = res_img.image;
+                  auto iv = vuk::allocate_image_view(allocator, ivci);
+                  command_buffer.bind_image(0, 0, **iv).bind_sampler(0, 0, si.rg_attachment.sci);
+                } else {
+                  command_buffer.bind_image(0, 0, *command_buffer.get_resource_image_attachment(si.rg_attachment.reference))
+                    .bind_sampler(0, 0, si.rg_attachment.sci);
+                }
             }
+#endif
+            }
+
+            command_buffer.draw_indexed(pcmd->ElemCount, 1, pcmd->IdxOffset + global_idx_offset, pcmd->VtxOffset + global_vtx_offset, 0);
           }
         }
-        global_idx_offset += cmd_list->IdxBuffer.Size;
-        global_vtx_offset += cmd_list->VtxBuffer.Size;
       }
+      global_idx_offset += cmd_list->IdxBuffer.Size;
+      global_vtx_offset += cmd_list->VtxBuffer.Size;
     }
-  };
+    return color_rt;
+  });
 
-  rg->add_pass(std::move(pass));
-
-  return {std::move(rg), "target+"};
+  return imgui_pass(target);
 }
 
-vuk::SampledImage* ImGuiLayer::add_sampled_image(const vuk::SampledImage& sampled_image) {
-  return &*sampled_images.emplace(sampled_image);
-}
+vuk::SampledImage* ImGuiLayer::add_sampled_image(const vuk::SampledImage& sampled_image) { return &*sampled_images.emplace(sampled_image); }
 
 void ImGuiLayer::end() {
   OX_SCOPED_ZONE;
   ImGui::Render();
+
+  draw_data = ImGui::GetDrawData();
 
   const ImGuiIO& io = ImGui::GetIO();
   if (io.ConfigFlags & ImGuiConfigFlags_ViewportsEnable) {
@@ -386,8 +369,7 @@ void ImGuiLayer::apply_theme(bool dark) {
     asset_icon_color = lighten(header_selected_color, 0.9f);
     text_color = colors[ImGuiCol_Text];
     text_disabled_color = colors[ImGuiCol_TextDisabled];
-  }
-  else {
+  } else {
     colors[ImGuiCol_Text] = ImVec4(0.00f, 0.00f, 0.00f, 1.00f);
     colors[ImGuiCol_TextDisabled] = ImVec4(0.60f, 0.60f, 0.60f, 1.00f);
     colors[ImGuiCol_WindowBg] = ImVec4(0.94f, 0.94f, 0.94f, 1.00f);
@@ -513,15 +495,12 @@ void ImGuiLayer::set_style() {
     ui_frame_padding = ImVec2(4.0f, 2.0f);
     popup_item_spacing = ImVec2(6.0f, 8.0f);
 
-    constexpr ImGuiColorEditFlags color_edit_flags = ImGuiColorEditFlags_AlphaBar
-                                                     | ImGuiColorEditFlags_AlphaPreviewHalf
-                                                     | ImGuiColorEditFlags_DisplayRGB
-                                                     | ImGuiColorEditFlags_InputRGB
-                                                     | ImGuiColorEditFlags_PickerHueBar
-                                                     | ImGuiColorEditFlags_Uint8;
+    constexpr ImGuiColorEditFlags color_edit_flags = ImGuiColorEditFlags_AlphaBar | ImGuiColorEditFlags_AlphaPreviewHalf |
+                                                     ImGuiColorEditFlags_DisplayRGB | ImGuiColorEditFlags_InputRGB |
+                                                     ImGuiColorEditFlags_PickerHueBar | ImGuiColorEditFlags_Uint8;
     ImGui::SetColorEditOptions(color_edit_flags);
 
     style->ScaleAllSizes(1.0f);
   }
 }
-}
+} // namespace ox

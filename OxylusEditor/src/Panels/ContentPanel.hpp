@@ -14,7 +14,7 @@
 #include "Core/Base.hpp"
 
 namespace ox {
-class TextureAsset;
+class Texture;
 
 enum class FileType {
   Unknown = 0,
@@ -62,7 +62,7 @@ private:
     std::string file_path;
     std::string extension;
     std::filesystem::directory_entry directory_entry;
-    Shared<TextureAsset> thumbnail = nullptr;
+    Shared<Texture> thumbnail = nullptr;
     bool is_directory = false;
 
     FileType type;
@@ -81,9 +81,9 @@ private:
   ImGuiTextFilter m_filter;
   float m_elapsed_time = 0.0f;
 
-  ankerl::unordered_dense::map<std::string, Shared<TextureAsset>> thumbnail_cache;
+  ankerl::unordered_dense::map<std::string, Shared<Texture>> thumbnail_cache;
 
-  Shared<TextureAsset> m_white_texture;
+  Shared<Texture> m_white_texture;
   std::filesystem::path m_directory_to_delete;
 };
 }

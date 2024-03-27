@@ -4,12 +4,11 @@
 
 #include "Core/Base.hpp"
 #include "Core/Types.hpp"
-#include "TextureAsset.hpp"
+#include "Texture.hpp"
 #include "glm/vec4.hpp"
 
 namespace vuk {
 class CommandBuffer;
-struct Texture;
 } // namespace vuk
 
 namespace ox {
@@ -63,17 +62,17 @@ public:
 
   const std::string& get_name() const { return name; }
 
-  Shared<TextureAsset>& get_albedo_texture() { return albedo_texture; }
-  Shared<TextureAsset>& get_normal_texture() { return normal_texture; }
-  Shared<TextureAsset>& get_physical_texture() { return physical_texture; }
-  Shared<TextureAsset>& get_ao_texture() { return ao_texture; }
-  Shared<TextureAsset>& get_emissive_texture() { return emissive_texture; }
+  Shared<Texture>& get_albedo_texture() { return albedo_texture; }
+  Shared<Texture>& get_normal_texture() { return normal_texture; }
+  Shared<Texture>& get_physical_texture() { return physical_texture; }
+  Shared<Texture>& get_ao_texture() { return ao_texture; }
+  Shared<Texture>& get_emissive_texture() { return emissive_texture; }
 
-  Material* set_albedo_texture(const Shared<TextureAsset>& texture);
-  Material* set_normal_texture(const Shared<TextureAsset>& texture);
-  Material* set_physical_texture(const Shared<TextureAsset>& texture);
-  Material* set_ao_texture(const Shared<TextureAsset>& texture);
-  Material* set_emissive_texture(const Shared<TextureAsset>& texture);
+  Material* set_albedo_texture(const Shared<Texture>& texture);
+  Material* set_normal_texture(const Shared<Texture>& texture);
+  Material* set_physical_texture(const Shared<Texture>& texture);
+  Material* set_ao_texture(const Shared<Texture>& texture);
+  Material* set_emissive_texture(const Shared<Texture>& texture);
 
   Material* set_color(Vec4 color);
   Material* set_emissive(Vec4 emissive);
@@ -92,10 +91,10 @@ public:
   bool operator==(const Material& other) const;
 
 private:
-  Shared<TextureAsset> albedo_texture = nullptr;
-  Shared<TextureAsset> normal_texture = nullptr;
-  Shared<TextureAsset> physical_texture = nullptr;
-  Shared<TextureAsset> ao_texture = nullptr;
-  Shared<TextureAsset> emissive_texture = nullptr;
+  Shared<Texture> albedo_texture = nullptr;
+  Shared<Texture> normal_texture = nullptr;
+  Shared<Texture> physical_texture = nullptr;
+  Shared<Texture> ao_texture = nullptr;
+  Shared<Texture> emissive_texture = nullptr;
 };
 } // namespace ox

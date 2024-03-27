@@ -25,6 +25,7 @@ AllowAllParametersOfDeclarationOnNextLine: false
 AllowShortIfStatementsOnASingleLine: false
 DerivePointerAlignment: false
 PointerAlignment: Left
+QualifierAlignment: Left
 BinPackParameters: false
 BinPackArguments: false
 BraceWrapping:
@@ -45,6 +46,12 @@ BraceWrapping:
   SplitEmptyRecord: false
   SplitEmptyNamespace: false
 BreakBeforeBraces: Custom
+# BreakAfterReturnType: Automatic # clang-format 19 feature
+PenaltyReturnTypeOnItsOwnLine: 5000
+PenaltyBreakAssignment: 5000
+PenaltyBreakBeforeFirstCallParameter: 5000
+PenaltyBreakOpenParenthesis: 5000
+AlwaysBreakAfterReturnType: None
 BreakBeforeTernaryOperators: true
 BreakConstructorInitializers: AfterColon
 BreakBeforeConceptDeclarations: Always

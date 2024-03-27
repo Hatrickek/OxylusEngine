@@ -4,8 +4,8 @@
 #include <vuk/Future.hpp>
 #include "Event/Event.hpp"
 
-#include "Scene/Components.hpp"
 #include "Core/Base.hpp"
+#include "Scene/Components.hpp"
 
 namespace vuk {
 struct SampledImage;
@@ -24,7 +24,9 @@ public:
   virtual void init(vuk::Allocator& allocator) = 0;
   virtual void shutdown() = 0;
 
-  virtual Unique<vuk::Future> on_render(vuk::Allocator& frame_allocator, const vuk::Future& target, vuk::Dimension3D dim) = 0;
+  [[nodiscard]] virtual vuk::Value<vuk::ImageAttachment> on_render(vuk::Allocator& frame_allocator,
+                                                                   vuk::Value<vuk::ImageAttachment> target,
+                                                                   vuk::Extent3D ext) = 0;
 
   virtual void on_dispatcher_events(EventDispatcher& dispatcher) {}
 
@@ -33,10 +35,7 @@ public:
   virtual void register_light(const LightComponent& light) {}
   virtual void register_camera(Camera* camera) {}
 
-  virtual void enqueue_future(vuk::Future&& fut);
-  virtual void wait_for_futures(vuk::Allocator& allocator);
-
-  virtual void detach_swapchain(vuk::Dimension3D dim, Vec2 offset = {});
+  virtual void detach_swapchain(vuk::Extent3D ext, Vec2 offset = {});
   virtual bool is_swapchain_attached() { return attach_swapchain; }
 
   virtual Shared<vuk::SampledImage> get_final_image() { return final_image; }
@@ -52,7 +51,7 @@ public:
   virtual void set_final_attachment_name(const vuk::Name name) { final_attachment_name = name; }
 
   virtual const std::string& get_name() { return m_name; }
-  virtual vuk::Dimension3D get_dimension() { return dimension; }
+  virtual vuk::Extent3D get_extent() { return extent; }
   virtual Vec2 get_viewport_offset() { return viewport_offset; }
 
   virtual void submit_rg_future(vuk::Future&& future) { rg_futures.emplace_back(future); }
@@ -65,7 +64,7 @@ public:
 protected:
   std::string m_name = {};
   bool attach_swapchain = false;
-  vuk::Dimension3D dimension = {};
+  vuk::Extent3D extent = {};
   Vec2 viewport_offset = {};
   Shared<vuk::SampledImage> final_image = nullptr;
   Shared<vuk::RenderGraph> frame_render_graph = nullptr;
@@ -73,7 +72,6 @@ protected:
   vuk::Allocator* m_frame_allocator;
   vuk::Compiler* compiler = nullptr;
   std::mutex setup_lock;
-  std::vector<vuk::Future> futures;
   std::vector<vuk::Future> rg_futures;
 };
-}
+} // namespace ox

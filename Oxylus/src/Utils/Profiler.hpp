@@ -3,14 +3,13 @@
 #include <vuk/Types.hpp>
 
 // Profilers
-#define GPU_PROFILER_ENABLED 0
-#define CPU_PROFILER_ENABLED 0
+#define GPU_PROFILER_ENABLED 1
+#define CPU_PROFILER_ENABLED 1
 #define MEMORY_PROFILER_ENABLED 0
 
 #define TRACY_VK_USE_SYMBOL_TABLE
 
 #include <tracy/Tracy.hpp>
-#include <vulkan/vulkan.h>
 #include <tracy/TracyVulkan.hpp>
 
 #ifdef OX_DISTRIBUTION
@@ -61,8 +60,8 @@ public:
   ~TracyProfiler();
 
   void init_tracy_for_vulkan(VkContext* context);
+  vuk::ProfilingCallbacks setup_vuk_callback(); 
   void destroy_context() const;
-  void collect(tracy::VkCtx* ctx, const VkCommandBuffer& command_buffer);
 
   tracy::VkCtx* get_graphics_ctx() const { return tracy_graphics_ctx; }
   tracy::VkCtx* get_transfer_ctx() const { return tracy_transfer_ctx; }
