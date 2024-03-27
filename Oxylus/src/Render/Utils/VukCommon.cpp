@@ -9,9 +9,8 @@
 #include "Utils/Log.hpp"
 
 namespace vuk {
-std::vector<UntypedValue> generate_mips(vuk::Value<vuk::ImageAttachment>& image, uint32_t mip_count) {
-  std::vector<UntypedValue> futures;
-  futures.reserve(mip_count - 1);
+vuk::Value<vuk::ImageAttachment> generate_mips(vuk::Value<vuk::ImageAttachment>& image, uint32_t mip_count) {
+  auto ia = image;
 
   for (uint32_t mip_level = 1; mip_level < mip_count; mip_level++) {
     auto pass = vuk::make_pass(fmt::format("mip_{}", mip_level).c_str(),
@@ -38,9 +37,9 @@ std::vector<UntypedValue> generate_mips(vuk::Value<vuk::ImageAttachment>& image,
       return dst;
     });
 
-    futures.emplace_back(pass(image.mip(mip_level - 1), image.mip(mip_level)));
+    ia = pass(image.mip(mip_level - 1), image.mip(mip_level));
   }
 
-  return futures;
+  return ia;
 }
 } // namespace vuk

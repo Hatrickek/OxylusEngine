@@ -93,5 +93,5 @@ std::pair<Unique<Buffer>, Value<Buffer>> create_cpu_buffer(Allocator& allocator,
   return create_buffer(allocator, MemoryUsage::eCPUtoGPU, DomainFlagBits::eTransferOnGraphics, data);
 }
 
-std::vector<UntypedValue> generate_mips(vuk::Value<vuk::ImageAttachment>& image, uint32_t mip_count);
+vuk::Value<vuk::ImageAttachment> generate_mips(vuk::Value<vuk::ImageAttachment>& image, uint32_t mip_count);
 }

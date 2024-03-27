@@ -311,7 +311,7 @@ inline float3 sample_shadow(float2 uv, float cmp) {
 
 // This is used to clamp the uvs to last texel center to avoid sampling on the border and overfiltering into a different shadow
 inline void shadow_border_shrink(in Light light, inout float2 shadow_uv) {
-  const float2 shadow_resolution = light.shadow_atlas_mul_add.xy * GetScene().shadow_atlas_res;
+  const float2 shadow_resolution = light.shadow_atlas_mul_add.xy * get_scene().shadow_atlas_res;
 #ifdef DISABLE_SOFT_SHADOWMAP
 	const float border_size = 0.5;
 #else

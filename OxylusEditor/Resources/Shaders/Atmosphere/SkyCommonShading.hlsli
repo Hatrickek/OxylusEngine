@@ -113,8 +113,8 @@ float3 GetDynamicSkyColor(in float2 pixel, in float3 V, bool sunEnabled = true, 
     pixel,
     get_camera().position, // Ray origin
     V, // Ray direction
-    GetScene().sun_direction, // Position of the sun
-    GetScene().sun_color, // Sun Color
+    get_scene().sun_direction, // Position of the sun
+    get_scene().sun_color, // Sun Color
     sunEnabled, // Use sun and total
     darkEnabled, // Enable dark mode for light shafts etc.
     stationary, // Fixed position for ambient and environment capture.

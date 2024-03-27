@@ -90,7 +90,7 @@ PSOut PSmain(VOutput input, float4 pixelPosition : SV_Position) {
     angle = 1.0 - abs(angle);
     angle *= angle;
     angleFade = 1.0 - angle * angle;
-    angleFade *= 1.0 - smoothstep(0.0, GetScene().grid_max_distance, dist - GetScene().grid_max_distance);
+    angleFade *= 1.0 - smoothstep(0.0, get_scene().grid_max_distance, dist - get_scene().grid_max_distance);
   } else {
     dist = pixelPosition.z * 2.0 - 1.0;
     /* Avoid fading in +Z direction in camera view (see T70193). */

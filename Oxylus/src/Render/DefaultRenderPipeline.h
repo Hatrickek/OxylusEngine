@@ -19,8 +19,9 @@ public:
   void load_pipelines(vuk::Allocator& allocator);
   void shutdown() override;
 
-  Unique<vuk::Future> on_render(vuk::Allocator& frame_allocator, const vuk::Future& target, vuk::Dimension3D dim) override;
-
+  [[nodiscard]] vuk::Value<vuk::ImageAttachment> on_render(vuk::Allocator& frame_allocator,
+                                                           vuk::Value<vuk::ImageAttachment> target,
+                                                           vuk::Extent3D ext) override;
   void on_update(Scene* scene) override;
 
   void on_dispatcher_events(EventDispatcher& dispatcher) override;
@@ -61,13 +62,14 @@ private:
   static constexpr auto SKY_ENVMAP_INDEX = 0;
 
   // scene textures
-  static constexpr auto PBR_IMAGE_INDEX = 0;
+  static constexpr auto FORWARD_IMAGE_INDEX = 0;
   static constexpr auto NORMAL_IMAGE_INDEX = 1;
   static constexpr auto DEPTH_IMAGE_INDEX = 2;
   static constexpr auto SHADOW_ATLAS_INDEX = 3;
   static constexpr auto SKY_TRANSMITTANCE_LUT_INDEX = 4;
   static constexpr auto SKY_MULTISCATTER_LUT_INDEX = 5;
   static constexpr auto VELOCITY_IMAGE_INDEX = 6;
+  static constexpr auto BLOOM_IMAGE_INDEX = 7;
 
   // buffers and buffer/image combined indices
   static constexpr auto LIGHTS_BUFFER_INDEX = 0;
@@ -146,15 +148,15 @@ private:
     Vec4 sun_color; // pre-multipled with intensity
 
     struct Indices {
-      int pbr_image_index;
+      int forward_image_index;
       int normal_image_index;
       int depth_image_index;
-      int mesh_instance_buffer_index;
+      int bloom_image_index;
 
+      int mesh_instance_buffer_index;
       int entites_buffer_index;
       int materials_buffer_index;
       int lights_buffer_index;
-      int _pad0;
 
       int sky_env_map_index;
       int sky_transmittance_lut_index;
@@ -196,15 +198,15 @@ private:
 
   vuk::Unique<vuk::PersistentDescriptorSet> descriptor_set_00;
 
-  Texture pbr_texture;
+  Texture forward_texture;
   Texture normal_texture;
   Texture depth_texture;
   Texture velocity_texture;
+  Texture bloom_texture;
 
   Texture sky_transmittance_lut;
   Texture sky_multiscatter_lut;
-  Texture sky_envmap_render_target;
-  Texture sky_envmap_texture_mipped;
+  Texture sky_envmap_texture;
   Texture gtao_final_texture;
   Texture ssr_texture;
   Texture shadow_map_atlas;
@@ -213,7 +215,7 @@ private:
   GTAOConstants gtao_constants = {};
   GTAOSettings gtao_settings = {};
 
-  //FSR fsr = {};
+  // FSR fsr = {};
 
   // PBR Resources
   Shared<Texture> cube_map = nullptr;
@@ -363,22 +365,37 @@ private:
   void update_skybox(const SkyboxLoadEvent& e);
   void generate_prefilter(vuk::Allocator& allocator);
 
-  void sky_envmap_pass(const Shared<vuk::RenderGraph>& rg);
-  void sky_view_lut_pass(const Shared<vuk::RenderGraph>& rg);
-  [[nodiscard]] vuk::Future sky_transmittance_pass();
-  [[nodiscard]] vuk::Future sky_multiscatter_pass();
-  void depth_pre_pass(const Shared<vuk::RenderGraph>& rg);
+  [[nodiscard]] vuk::Value<vuk::ImageAttachment> sky_envmap_pass(vuk::Value<vuk::ImageAttachment>& envmap_image);
+  [[nodiscard]] vuk::Value<vuk::ImageAttachment> sky_transmittance_pass();
+  [[nodiscard]] vuk::Value<vuk::ImageAttachment> sky_multiscatter_pass(vuk::Value<vuk::ImageAttachment>& transmittance_lut);
+  [[nodiscard]] std::tuple<vuk::Value<vuk::ImageAttachment>, vuk::Value<vuk::ImageAttachment>, vuk::Value<vuk::ImageAttachment>>
+  depth_pre_pass(const vuk::Value<vuk::ImageAttachment>& depth_image,
+                 const vuk::Value<vuk::ImageAttachment>& normal_image,
+                 const vuk::Value<vuk::ImageAttachment>& velocity_image);
   void render_meshes(const RenderQueue& render_queue,
                      vuk::CommandBuffer& command_buffer,
                      uint32_t filter,
                      uint32_t flags = 0,
                      uint32_t camera_count = 1) const;
-  void geometry_pass(const Shared<vuk::RenderGraph>& rg);
-  void apply_fxaa(vuk::RenderGraph* rg, vuk::Name src, vuk::Name dst, vuk::Buffer& fxaa_buffer);
-  void shadow_pass(const Shared<vuk::RenderGraph>& rg);
-  void gtao_pass(vuk::Allocator& frame_allocator, const Shared<vuk::RenderGraph>& rg);
-  void bloom_pass(const Shared<vuk::RenderGraph>& rg);
-  void apply_grid(vuk::RenderGraph* rg, const vuk::Name dst, const vuk::Name depth_image_name);
-  void debug_pass(const Shared<vuk::RenderGraph>& rg, vuk::Name dst, const char* depth, vuk::Allocator& frame_allocator) const;
+  [[nodiscard]] vuk::Value<vuk::ImageAttachment> forward_pass(const vuk::Value<vuk::ImageAttachment>& output,
+                                                              const vuk::Value<vuk::ImageAttachment>& depth_input,
+                                                              const vuk::Value<vuk::ImageAttachment>& shadow_map,
+                                                              const vuk::Value<vuk::ImageAttachment>& transmittance_lut,
+                                                              const vuk::Value<vuk::ImageAttachment>& multiscatter_lut,
+                                                              const vuk::Value<vuk::ImageAttachment>& envmap,
+                                                              const vuk::Value<vuk::ImageAttachment>& gtao);
+  [[nodiscard]] vuk::Value<vuk::ImageAttachment> apply_fxaa(vuk::Value<vuk::ImageAttachment>& target, vuk::Value<vuk::ImageAttachment>& input);
+  [[nodiscard]] vuk::Value<vuk::ImageAttachment> shadow_pass(vuk::Value<vuk::ImageAttachment>& shadow_map);
+  [[nodiscard]] vuk::Value<vuk::ImageAttachment> gtao_pass(vuk::Allocator& frame_allocator,
+                                                           vuk::Value<vuk::ImageAttachment>& gtao_final_output,
+                                                           vuk::Value<vuk::ImageAttachment>& depth_input,
+                                                           vuk::Value<vuk::ImageAttachment>& normal_input);
+  [[nodiscard]] vuk::Value<vuk::ImageAttachment> bloom_pass(vuk::Value<vuk::ImageAttachment>& downsample_image,
+                                                            vuk::Value<vuk::ImageAttachment>& upsample_image,
+                                                            vuk::Value<vuk::ImageAttachment>& input);
+  [[nodiscard]] vuk::Value<vuk::ImageAttachment> debug_pass(vuk::Allocator& frame_allocator,
+                                                            vuk::Value<vuk::ImageAttachment>& input,
+                                                            vuk::Value<vuk::ImageAttachment>& depth) const;
+  [[nodiscard]] vuk::Value<vuk::ImageAttachment> apply_grid(vuk::Value<vuk::ImageAttachment>& target, vuk::Value<vuk::ImageAttachment>& depth);
 };
 } // namespace ox

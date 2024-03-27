@@ -412,7 +412,7 @@ inline void LightSpot(Light light, Surface surface, inout Lighting lighting) {
 }
 
 inline void ForwardLighting(inout Surface surface, inout Lighting lighting) {
-  for (int i = 0; i < GetScene().num_lights; i++) {
+  for (int i = 0; i < get_scene().num_lights; i++) {
     Light light = GetLight(i);
 
     switch (light.type) {
@@ -501,11 +501,11 @@ float4 PSmain(VertexOutput input, float4 pixelPosition : SV_Position) : SV_Targe
     surface.N = normalize(lerp(surface.N, mul(surface.BumpColor, TBN), length(surface.BumpColor)));
   }
 
-  float2 screenCoords = pixelPosition.xy / float2(GetScene().screen_size.x, GetScene().screen_size.y);
+  float2 screenCoords = pixelPosition.xy / float2(get_scene().screen_size.x, get_scene().screen_size.y);
 
 #ifndef TRANSPARENT
   // Apply GTAO
-  if (GetScene().post_processing_data.enable_gtao == 1) {
+  if (get_scene().post_processing_data.enable_gtao == 1) {
     uint value = GetGTAOTexture().Sample(NEAREST_REPEATED_SAMPLER, screenCoords).r;
     float aoVisibility = value / 255.0;
     surface.Occlusion *= aoVisibility;

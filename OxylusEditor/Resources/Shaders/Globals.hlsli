@@ -34,12 +34,12 @@
 
 #define CMP_DEPTH_SAMPLER ComparisonSamplers[0]
 
-SceneData GetScene() { return Scene; }
+SceneData get_scene() { return Scene; }
 
 CameraData get_camera(uint camera_index = 0) { return Camera.camera_data[camera_index]; }
 
 inline MeshInstance load_instance(uint instance_index) {
-  return Buffers[GetScene().indices_.mesh_instance_buffer_index].Load<MeshInstance>(instance_index * sizeof(MeshInstance));
+  return Buffers[get_scene().indices_.mesh_instance_buffer_index].Load<MeshInstance>(instance_index * sizeof(MeshInstance));
 }
 
 struct VertexInput {
@@ -73,22 +73,23 @@ struct VertexInput {
 };
 
 // scene textures
-Texture2D<float4> GetPBRTexture() { return SceneTextures[GetScene().indices_.pbr_image_index]; }
-Texture2D<float4> GetNormalTexture() { return SceneTextures[GetScene().indices_.normal_image_index]; }
-Texture2D<float4> GetDepthTexture() { return SceneTextures[GetScene().indices_.depth_image_index]; }
-Texture2D<float4> GetShadowAtlas() { return SceneTextures[GetScene().indices_.shadow_array_index]; }
-Texture2D<float4> GetSkyTransmittanceLUTTexture() { return SceneTextures[GetScene().indices_.sky_transmittance_lut_index]; }
-Texture2D<float4> GetSkyMultiScatterLUTTexture() { return SceneTextures[GetScene().indices_.sky_multiscatter_lut_index]; }
+Texture2D<float4> GetForwardTexture() { return SceneTextures[get_scene().indices_.forward_image_index]; }
+Texture2D<float4> GetNormalTexture() { return SceneTextures[get_scene().indices_.normal_image_index]; }
+Texture2D<float4> GetDepthTexture() { return SceneTextures[get_scene().indices_.depth_image_index]; }
+Texture2D<float4> GetShadowAtlas() { return SceneTextures[get_scene().indices_.shadow_array_index]; }
+Texture2D<float4> GetSkyTransmittanceLUTTexture() { return SceneTextures[get_scene().indices_.sky_transmittance_lut_index]; }
+Texture2D<float4> GetSkyMultiScatterLUTTexture() { return SceneTextures[get_scene().indices_.sky_multiscatter_lut_index]; }
+Texture2D<float4> GetBloomTexture() { return SceneTextures[get_scene().indices_.bloom_image_index]; }
 
 // scene r/w textures
-RWTexture2D<float4> GetSkyTransmittanceLUTRWTexture() { return SceneRWTextures[GetScene().indices_.sky_transmittance_lut_index]; }
-RWTexture2D<float4> GetSkyMultiScatterLUTRWTexture() { return SceneRWTextures[GetScene().indices_.sky_multiscatter_lut_index]; }
+RWTexture2D<float4> GetSkyTransmittanceLUTRWTexture() { return SceneRWTextures[get_scene().indices_.sky_transmittance_lut_index]; }
+RWTexture2D<float4> GetSkyMultiScatterLUTRWTexture() { return SceneRWTextures[get_scene().indices_.sky_multiscatter_lut_index]; }
 
 // scene cube textures
-TextureCube<float4> GetSkyEnvMapTexture() { return SceneCubeTextures[GetScene().indices_.sky_env_map_index]; }
+TextureCube<float4> GetSkyEnvMapTexture() { return SceneCubeTextures[get_scene().indices_.sky_env_map_index]; }
 
 // scene uint textures
-Texture2D<uint> GetGTAOTexture() { return SceneUintTextures[GetScene().indices_.gtao_buffer_image_index]; }
+Texture2D<uint> GetGTAOTexture() { return SceneUintTextures[get_scene().indices_.gtao_buffer_image_index]; }
 
 // material textures
 SamplerState GetMaterialSampler(Material material) {
@@ -102,10 +103,10 @@ Texture2D<float4> GetMaterialPhysicalTexture(Material material) { return Materia
 Texture2D<float4> GetMaterialAOTexture(Material material) { return MaterialTextureMaps[material.ao_map_id]; }
 Texture2D<float4> GetMaterialEmissiveTexture(Material material) { return MaterialTextureMaps[material.emissive_map_id]; }
 
-ShaderEntity GetEntity(uint index) { return Buffers[GetScene().indices_.entites_buffer_index].Load<ShaderEntity>(index * sizeof(ShaderEntity)); }
+ShaderEntity GetEntity(uint index) { return Buffers[get_scene().indices_.entites_buffer_index].Load<ShaderEntity>(index * sizeof(ShaderEntity)); }
 
 Material GetMaterial(int material_index) {
-  return Buffers[GetScene().indices_.materials_buffer_index].Load<Material>(material_index * sizeof(Material));
+  return Buffers[get_scene().indices_.materials_buffer_index].Load<Material>(material_index * sizeof(Material));
 }
-Light GetLight(int lightIndex) { return Buffers[GetScene().indices_.lights_buffer_index].Load<Light>(lightIndex * sizeof(Light)); }
+Light GetLight(int lightIndex) { return Buffers[get_scene().indices_.lights_buffer_index].Load<Light>(lightIndex * sizeof(Light)); }
 #endif // GLOBALS_HLSLI

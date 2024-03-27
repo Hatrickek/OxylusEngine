@@ -152,15 +152,15 @@ struct SceneData {
   float4 sun_color; // pre-multipled with intensity
 
   struct Indices {
-    int pbr_image_index;
+    int forward_image_index;
     int normal_image_index;
     int depth_image_index;
-    int mesh_instance_buffer_index;
+    int bloom_image_index;
 
+    int mesh_instance_buffer_index;
     int entites_buffer_index;
     int materials_buffer_index;
     int lights_buffer_index;
-    int _pad0;
 
     int sky_env_map_index;
     int sky_transmittance_lut_index;
@@ -172,6 +172,7 @@ struct SceneData {
     int2 _pad2;
   } indices_;
 
+  // TODO: use flags
   struct PostProcessingData {
     int tonemapper;
     float exposure;
