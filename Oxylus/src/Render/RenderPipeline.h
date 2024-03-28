@@ -17,7 +17,7 @@ class Scene;
 
 class RenderPipeline {
 public:
-  RenderPipeline(std::string name) : m_name(std::move(name)), attach_swapchain(true) {}
+  RenderPipeline(std::string name) : _name(std::move(name)), attach_swapchain(true) {}
 
   virtual ~RenderPipeline() = default;
 
@@ -38,40 +38,24 @@ public:
   virtual void detach_swapchain(vuk::Extent3D ext, Vec2 offset = {});
   virtual bool is_swapchain_attached() { return attach_swapchain; }
 
-  virtual Shared<vuk::SampledImage> get_final_image() { return final_image; }
-  virtual void set_final_image(Shared<vuk::SampledImage>& image) { final_image = image; }
+  virtual vuk::Value<vuk::ImageAttachment>* get_final_image() { return final_image; }
+  virtual void set_final_image(vuk::Value<vuk::ImageAttachment>* image) { final_image = image; }
 
-  virtual Shared<vuk::RenderGraph> get_frame_render_graph() { return frame_render_graph; }
-  virtual void set_frame_render_graph(Shared<vuk::RenderGraph> render_graph) { frame_render_graph = render_graph; }
+  virtual vuk::Allocator* get_frame_allocator() { return _frame_allocator; }
+  virtual void set_frame_allocator(vuk::Allocator* allocator) { _frame_allocator = allocator; }
 
-  virtual vuk::Allocator* get_frame_allocator() { return m_frame_allocator; }
-  virtual void set_frame_allocator(vuk::Allocator* allocator) { m_frame_allocator = allocator; }
-
-  virtual vuk::Name get_final_attachment_name() { return final_attachment_name; }
-  virtual void set_final_attachment_name(const vuk::Name name) { final_attachment_name = name; }
-
-  virtual const std::string& get_name() { return m_name; }
-  virtual vuk::Extent3D get_extent() { return extent; }
+  virtual const std::string& get_name() { return _name; }
+  virtual vuk::Extent3D get_extent() { return _extent; }
   virtual Vec2 get_viewport_offset() { return viewport_offset; }
 
-  virtual void submit_rg_future(vuk::Future&& future) { rg_futures.emplace_back(future); }
-  virtual std::vector<vuk::Future>& get_rg_futures() { return rg_futures; }
-  virtual void clear_rg_futures() { rg_futures.clear(); }
-
-  virtual void set_compiler(vuk::Compiler* compiler) { this->compiler = compiler; }
-  virtual vuk::Compiler* get_compiler() { return compiler; }
-
 protected:
-  std::string m_name = {};
+  std::string _name = {};
   bool attach_swapchain = false;
-  vuk::Extent3D extent = {};
+  vuk::Extent3D _extent = {};
   Vec2 viewport_offset = {};
-  Shared<vuk::SampledImage> final_image = nullptr;
-  Shared<vuk::RenderGraph> frame_render_graph = nullptr;
-  vuk::Name final_attachment_name;
-  vuk::Allocator* m_frame_allocator;
+  vuk::Value<vuk::ImageAttachment>* final_image = nullptr;
+  vuk::Allocator* _frame_allocator;
   vuk::Compiler* compiler = nullptr;
   std::mutex setup_lock;
-  std::vector<vuk::Future> rg_futures;
 };
 } // namespace ox

@@ -5,9 +5,9 @@
 namespace ox {
 void RenderPipeline::detach_swapchain(const vuk::Extent3D dim, Vec2 offset) {
   attach_swapchain = false;
-  OX_CHECK_GT(extent.width, 0);
-  OX_CHECK_GT(extent.height, 0);
-  extent = dim;
+  OX_CHECK_GT(dim.width, 0u);
+  OX_CHECK_GT(dim.height, 0u);
+  _extent = dim;
   viewport_offset = offset;
 }
 }

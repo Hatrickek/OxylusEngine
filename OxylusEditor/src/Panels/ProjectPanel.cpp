@@ -47,11 +47,11 @@ void ProjectPanel::on_imgui_render() {
     const float x = ImGui::GetContentRegionAvail().x;
     const float y = ImGui::GetFrameHeight();
 
-    const auto banner_size = EditorLayer::get()->engine_banner->get_texture().extent;
+    const auto banner_size = EditorLayer::get()->engine_banner->get_extent();
 
     const auto scale = Window::get_content_scale();
 
-    OxUI::image(EditorLayer::get()->engine_banner->get_texture(), {(float)banner_size.width * scale.x, (float)banner_size.height * scale.y});
+    OxUI::image(*EditorLayer::get()->engine_banner->get_view(), {(float)banner_size.width * scale.x, (float)banner_size.height * scale.y});
     OxUI::spacing(2);
     ImGui::SeparatorText("Projects");
     OxUI::spacing(2);

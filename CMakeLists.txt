@@ -32,6 +32,9 @@ if (NOT MSVC)
 	set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 endif ()
 
+# GIT_SUBMODULE "" policy
+cmake_policy(SET CMP0097 NEW)
+
 # Sub-projects
 add_subdirectory(Oxylus)
 add_subdirectory(OxylusEditor)

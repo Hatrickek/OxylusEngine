@@ -9,8 +9,8 @@ class Mesh;
 
 class Prefilter {
 public:
-  static std::pair<vuk::Texture, vuk::Future> generate_brdflut();
-  static std::pair<vuk::Texture, vuk::Future> generate_irradiance_cube(const Shared<Mesh>& skybox, const Shared<Texture>& cubemap);
-  static std::pair<vuk::Texture, vuk::Future> generate_prefiltered_cube(const Shared<Mesh>& skybox, const Shared<Texture>& cubemap);
+  static vuk::Value<vuk::ImageAttachment> generate_brdflut();
+  static vuk::Value<vuk::ImageAttachment> generate_irradiance_cube(const Shared<Mesh>& skybox, const Shared<Texture>& cubemap);
+  static vuk::Value<vuk::ImageAttachment> generate_prefiltered_cube(const Shared<Mesh>& skybox, const Shared<Texture>& cubemap);
 };
 }

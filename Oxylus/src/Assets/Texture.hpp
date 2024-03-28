@@ -1,4 +1,5 @@
 ﻿#pragma once
+#include <source_location>
 #include <string>
 #include <vuk/Image.hpp>
 #include <vuk/ImageAttachment.hpp>
@@ -18,6 +19,8 @@ struct TextureLoadInfo {
   bool generate_cubemap_from_hdr = true;
 };
 
+using Preset = vuk::ImageAttachment::Preset;
+
 class Texture : public Asset {
 public:
   Texture() = default;
@@ -25,7 +28,7 @@ public:
   Texture(const TextureLoadInfo& info);
   ~Texture();
 
-  void create_texture(vuk::Extent3D extent,
+  void create_texture(const vuk::Extent3D extent,
                       vuk::Format format = vuk::Format::eR8G8B8A8Unorm,
                       vuk::ImageAttachment::Preset preset = vuk::ImageAttachment::Preset::eGeneric2D);
   void create_texture(uint32_t width, uint32_t height, const void* data, vuk::Format format = vuk::Format::eR8G8B8A8Unorm, bool generate_mips = true);
@@ -37,14 +40,14 @@ public:
   vuk::ImageAttachment as_attachment() const;
 
   const std::string& get_path() const { return path; }
-  const vuk::Unique<vuk::Image>& get_image() const { return image; }
-  const vuk::Unique<vuk::ImageView>& get_view() const { return view; }
-  const vuk::Extent3D& get_extent() const { return extent; }
+  const vuk::Unique<vuk::Image>& get_image() const { return _image; }
+  const vuk::Unique<vuk::ImageView>& get_view() const { return _view; }
+  const vuk::Extent3D& get_extent() const { return _extent; }
 
-  explicit operator uint64_t() { return view->id; }
+  explicit operator uint64_t() { return _view->id; }
 
   static void create_white_texture();
-  static Shared<Texture> get_white_texture() { return s_white_texture; }
+  static Shared<Texture> get_white_texture() { return _white_texture; }
 
   /// Loads the given file using stb. Returned data must be freed manually.
   static uint8_t* load_stb_image(const std::string& filename,
@@ -66,11 +69,12 @@ public:
 
 private:
   std::string path = {};
-  vuk::Unique<vuk::Image> image;
-  vuk::Unique<vuk::ImageView> view;
-  vuk::Extent3D extent;
-  vuk::Format format;
+  vuk::Unique<vuk::Image> _image;
+  vuk::Unique<vuk::ImageView> _view;
+  vuk::Extent3D _extent;
+  vuk::Format _format;
+  Preset _preset;
 
-  static Shared<Texture> s_white_texture;
+  static Shared<Texture> _white_texture;
 };
 } // namespace ox

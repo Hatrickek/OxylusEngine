@@ -1,7 +1,7 @@
 #pragma once
 
-#include "EditorTheme.hpp"
 #include "EditorPanel.hpp"
+#include "EditorTheme.hpp"
 
 #include "Render/Camera.hpp"
 #include "Scene/Scene.hpp"
@@ -33,8 +33,10 @@ public:
 private:
   void draw_performance_overlay();
   void draw_gizmos();
-  void mouse_picking_pass(const Shared<RenderPipeline>& rp, const vuk::Dimension3D& dim, float fixed_width);
-  bool outline_pass(const Shared<RenderPipeline>& rp, const vuk::Dimension3D& dim) const;
+  void mouse_picking_pass(vuk::Allocator& frame_allocator, vuk::Compiler& compiler, const vuk::Extent3D& ext);
+  vuk::Value<vuk::ImageAttachment> outline_pass(vuk::Allocator& frame_allocator,
+                                                const vuk::Extent3D& ext,
+                                                vuk::Value<vuk::ImageAttachment>& target) const;
 
   template <typename T>
   void show_component_gizmo(const float width,
@@ -60,7 +62,7 @@ private:
         ImGui::PushStyleColor(ImGuiCol_Button, ImVec4(0.7f, 0.7f, 0.7f, 0.0f));
         ImGui::PushStyleColor(ImGuiCol_ButtonHovered, ImVec4(0.1f, 0.1f, 0.1f, 0.1f));
 
-        if (OxUI::image_button("##", gizmo_image_map[typeid(T).hash_code()]->get_texture(), {40.f, 40.f})) {
+        if (OxUI::image_button("##", *gizmo_image_map[typeid(T).hash_code()]->get_view(), {40.f, 40.f})) {
           m_scene_hierarchy_panel->set_selected_entity(entity);
         }
 
@@ -90,7 +92,7 @@ private:
 
   std::vector<vuk::Unique<vuk::Buffer>> id_buffers = {};
 
-  //Camera
+  // Camera
   bool m_lock_aspect_ratio = true;
   float m_translation_dampening = 0.6f;
   float m_rotation_dampening = 0.3f;
@@ -100,4 +102,4 @@ private:
   Vec3 m_translation_velocity = Vec3(0);
   Vec2 m_rotation_velocity = Vec2(0);
 };
-}
+} // namespace ox

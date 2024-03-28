@@ -658,18 +658,18 @@ void ContentPanel::render_body(bool grid) {
         // Foreground Image
         ImGui::SetCursorPos({cursor_pos.x + padding, cursor_pos.y + padding});
         ImGui::SetItemAllowOverlap();
-        OxUI::image(m_white_texture->get_texture(), {background_thumbnail_size.x - padding * 2.0f, background_thumbnail_size.y - padding * 2.0f}, {}, {}, ImGuiLayer::window_bg_alternative_color);
+        OxUI::image(*m_white_texture->get_view(), {background_thumbnail_size.x - padding * 2.0f, background_thumbnail_size.y - padding * 2.0f}, {}, {}, ImGuiLayer::window_bg_alternative_color);
 
         // Thumbnail Image
         ImGui::SetCursorPos({cursor_pos.x + thumbnail_padding * 0.75f, cursor_pos.y + thumbnail_padding});
         ImGui::SetItemAllowOverlap();
         if (thumbnail_cache.contains(texture_name))
-          OxUI::image(thumbnail_cache[texture_name]->get_texture(), {thumb_image_size, thumb_image_size});
+          OxUI::image(*thumbnail_cache[texture_name]->get_view(), {thumb_image_size, thumb_image_size});
 
         // Type Color frame
         const ImVec2 type_color_frame_size = {scaled_thumbnail_size_x, scaled_thumbnail_size_x * 0.03f};
         ImGui::SetCursorPosX(cursor_pos.x + padding);
-        OxUI::image(m_white_texture->get_texture(), type_color_frame_size, {0, 0}, {1, 1}, is_dir ? ImVec4(0.0f, 0.0f, 0.0f, 0.0f) : file.file_type_indicator_color);
+        OxUI::image(*m_white_texture->get_view(), type_color_frame_size, {0, 0}, {1, 1}, is_dir ? ImVec4(0.0f, 0.0f, 0.0f, 0.0f) : file.file_type_indicator_color);
 
         const ImVec2 rect_min = ImGui::GetItemRectMin();
         const ImVec2 rect_size = ImGui::GetItemRectSize();
@@ -707,7 +707,7 @@ void ContentPanel::render_body(bool grid) {
         ImGui::SameLine();
         ImGui::SetCursorPosX(ImGui::GetCursorPosX() - line_height);
         if (thumbnail_cache.contains(texture_name))
-          OxUI::image(thumbnail_cache[texture_name]->get_texture(), {line_height, line_height});
+          OxUI::image(*thumbnail_cache[texture_name]->get_view(), {line_height, line_height});
         ImGui::SameLine();
         ImGui::TextUnformatted(filename);
 

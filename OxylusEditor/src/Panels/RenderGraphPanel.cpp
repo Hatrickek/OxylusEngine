@@ -28,12 +28,8 @@ void RenderGraphPanel::on_imgui_render() {
   if (!context)
     return;
 
-  const auto rp = context->get_renderer()->get_render_pipeline();
-  const auto rg = rp->get_frame_render_graph();
-  const auto compiler = rp->get_compiler();
-  const auto chain_links = compiler->get_use_chains();
-
   if (on_begin()) {
+    #if 0
     const float filter_cursor_pos_x = ImGui::GetCursorPosX();
     ImGuiTextFilter name_filter;
 
@@ -67,7 +63,7 @@ void RenderGraphPanel::on_imgui_render() {
         ImGui::TreePop();
       }
     }
-
+#endif
     on_end();
   }
 }

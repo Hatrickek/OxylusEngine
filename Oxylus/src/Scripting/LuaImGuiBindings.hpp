@@ -3541,5 +3541,3 @@ inline void init(sol::state* lua) {
 #pragma endregion Clipboard Utilities
 }
 }
-
-OX_SUPPRESS_WARNING_POP

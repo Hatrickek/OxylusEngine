@@ -51,8 +51,8 @@ void DefaultRenderPipeline::init(vuk::Allocator& allocator) {
 
   const auto task_scheduler = App::get_system<TaskScheduler>();
 
-  task_scheduler->add_task([this] { this->m_quad = RendererCommon::generate_quad(); });
-  task_scheduler->add_task([this] { this->m_cube = RendererCommon::generate_cube(); });
+  this->m_quad = RendererCommon::generate_quad();
+  this->m_cube = RendererCommon::generate_cube();
   task_scheduler->add_task([this, &allocator] { create_static_resources(allocator); });
   task_scheduler->add_task([this, &allocator] { create_descriptor_sets(allocator); });
 
@@ -515,34 +515,34 @@ void DefaultRenderPipeline::create_static_resources(vuk::Allocator& allocator) {
   OX_SCOPED_ZONE;
 
   constexpr auto transmittance_lut_size = vuk::Extent3D{256, 64, 1};
-  sky_transmittance_lut.create_texture(transmittance_lut_size, vuk::Format::eR32G32B32A32Sfloat);
+  sky_transmittance_lut.create_texture(transmittance_lut_size, vuk::Format::eR32G32B32A32Sfloat, Preset::eRTT2DUnmipped);
 
   constexpr auto multi_scatter_lut_size = vuk::Extent3D{32, 32, 1};
-  sky_multiscatter_lut.create_texture(multi_scatter_lut_size, vuk::Format::eR32G32B32A32Sfloat);
+  sky_multiscatter_lut.create_texture(multi_scatter_lut_size, vuk::Format::eR32G32B32A32Sfloat, Preset::eRTT2DUnmipped);
 
   constexpr auto shadow_size = vuk::Extent3D{1u, 1u, 1};
-  shadow_map_atlas.create_texture(shadow_size, vuk::Format::eD32Sfloat);
-  shadow_map_atlas_transparent.create_texture(shadow_size, vuk::Format::eD32Sfloat);
+  shadow_map_atlas.create_texture(shadow_size, vuk::Format::eD32Sfloat, Preset::eRTT2DUnmipped);
+  shadow_map_atlas_transparent.create_texture(shadow_size, vuk::Format::eD32Sfloat, Preset::eRTT2DUnmipped);
 
   constexpr auto envmap_size = vuk::Extent3D{512, 512, 1};
-  sky_envmap_texture.create_texture(envmap_size, vuk::Format::eR32G32B32A32Sfloat, vuk::ImageAttachment::Preset::eMapCube);
+  sky_envmap_texture.create_texture(envmap_size, vuk::Format::eR32G32B32A32Sfloat, Preset::eMapCube);
 }
 
 void DefaultRenderPipeline::create_dynamic_textures(vuk::Allocator& allocator, const vuk::Extent3D& ext) {
   if (gtao_final_texture.get_extent() != ext)
-    gtao_final_texture.create_texture(extent, vuk::Format::eR8Uint);
+    gtao_final_texture.create_texture(ext, vuk::Format::eR8Uint, Preset::eRTT2DUnmipped);
   if (ssr_texture.get_extent() != ext)
-    ssr_texture.create_texture(ext, vuk::Format::eR32G32B32A32Sfloat);
+    ssr_texture.create_texture(ext, vuk::Format::eR32G32B32A32Sfloat, Preset::eRTT2DUnmipped);
   if (forward_texture.get_extent() != ext)
-    forward_texture.create_texture(ext, vuk::Format::eR32G32B32A32Sfloat);
+    forward_texture.create_texture(ext, vuk::Format::eR32G32B32A32Sfloat, Preset::eRTT2DUnmipped);
   if (normal_texture.get_extent() != ext)
-    normal_texture.create_texture(ext, vuk::Format::eR32G32B32A32Sfloat);
+    normal_texture.create_texture(ext, vuk::Format::eR32G32B32A32Sfloat, Preset::eRTT2DUnmipped);
   if (depth_texture.get_extent() != ext)
-    depth_texture.create_texture(ext, vuk::Format::eD32Sfloat);
+    depth_texture.create_texture(ext, vuk::Format::eD32Sfloat, Preset::eRTT2DUnmipped);
   if (velocity_texture.get_extent() != ext)
-    velocity_texture.create_texture(ext, vuk::Format::eR16G16Sfloat);
+    velocity_texture.create_texture(ext, vuk::Format::eR16G16Sfloat, Preset::eRTT2DUnmipped);
   if (bloom_texture.get_extent() != ext)
-    bloom_texture.create_texture(ext, vuk::Format::eR32G32B32A32Sfloat);
+    bloom_texture.create_texture(ext, vuk::Format::eR32G32B32A32Sfloat, Preset::eRTT2D);
 
   // Shadow atlas packing:
   {
@@ -624,8 +624,8 @@ void DefaultRenderPipeline::create_dynamic_textures(vuk::Allocator& allocator, c
           if ((int)shadow_map_atlas.get_extent().width < packer.width || (int)shadow_map_atlas.get_extent().height < packer.height) {
             const auto shadow_size = vuk::Extent3D{(uint32_t)packer.width, (uint32_t)packer.height, 1};
 
-            shadow_map_atlas.create_texture(shadow_size, vuk::Format::eD32Sfloat);
-            shadow_map_atlas_transparent.create_texture(shadow_size, vuk::Format::eD32Sfloat);
+            shadow_map_atlas.create_texture(shadow_size, vuk::Format::eD32Sfloat, Preset::eRTT2DUnmipped);
+            shadow_map_atlas_transparent.create_texture(shadow_size, vuk::Format::eD32Sfloat, Preset::eRTT2DUnmipped);
 
             scene_data.shadow_atlas_res = UVec2(shadow_map_atlas.get_extent().width, shadow_map_atlas.get_extent().height);
           }
@@ -788,8 +788,9 @@ vuk::Value<vuk::ImageAttachment> DefaultRenderPipeline::on_render(vuk::Allocator
   if (RendererCVar::cvar_bloom_enable.get())
     bloom_output = bloom_pass(bloom_down_image, bloom_up_image, forward_output);
 
-  auto fxaa_ia = vuk::ImageAttachment{.format = vuk::Format::eR32G32B32A32Sfloat, .sample_count = vuk::Samples::e1};
+  auto fxaa_ia = vuk::ImageAttachment::from_preset(Preset::eGeneric2D, vuk::Format::eR32G32B32A32Sfloat, {}, vuk::Samples::e1);
   auto fxaa_image = vuk::clear_image(vuk::declare_ia("fxaa_image", fxaa_ia), vuk::Black<float>);
+  fxaa_image.same_extent_as(forward_output);
   if (RendererCVar::cvar_fxaa_enable.get())
     fxaa_image = apply_fxaa(fxaa_image, forward_output);
   else
@@ -968,7 +969,7 @@ void DefaultRenderPipeline::render_meshes(const RenderQueue& render_queue,
 vuk::Value<vuk::ImageAttachment> DefaultRenderPipeline::shadow_pass(vuk::Value<vuk::ImageAttachment>& shadow_map) {
   OX_SCOPED_ZONE;
 
-  auto pass = vuk::make_pass("shadow_pass", [this](vuk::CommandBuffer& command_buffer, VUK_IA(vuk::eDepthStencilRead) map) {
+  auto pass = vuk::make_pass("shadow_pass", [this](vuk::CommandBuffer& command_buffer, VUK_IA(vuk::eDepthStencilRW) map) {
     command_buffer.bind_persistent(0, *descriptor_set_00)
       .bind_graphics_pipeline("shadow_pipeline")
       .set_dynamic_state(vuk::DynamicStateFlagBits::eScissor | vuk::DynamicStateFlagBits::eViewport)
@@ -1509,17 +1510,14 @@ void DefaultRenderPipeline::generate_prefilter(vuk::Allocator& allocator) {
   OX_SCOPED_ZONE;
   vuk::Compiler compiler{};
 
-  auto [brdf_img, brdf_fut] = Prefilter::generate_brdflut();
-  brdf_fut.wait(allocator, compiler);
-  brdf_texture = std::move(brdf_img);
+  auto brdf_img = Prefilter::generate_brdflut();
+  brdf_texture = *brdf_img.get(allocator, compiler);
 
-  auto [irradiance_img, irradiance_fut] = Prefilter::generate_irradiance_cube(m_cube, cube_map);
-  irradiance_fut.wait(allocator, compiler);
-  irradiance_texture = std::move(irradiance_img);
+  auto irradiance_img = Prefilter::generate_irradiance_cube(m_cube, cube_map);
+  irradiance_texture = *irradiance_img.get(allocator, compiler);
 
-  auto [prefilter_img, prefilter_fut] = Prefilter::generate_prefiltered_cube(m_cube, cube_map);
-  prefilter_fut.wait(allocator, compiler);
-  prefiltered_texture = std::move(prefilter_img);
+  auto prefilter_img = Prefilter::generate_prefiltered_cube(m_cube, cube_map);
+  prefiltered_texture = *prefilter_img.get(allocator, compiler);
 }
 
 vuk::Value<vuk::ImageAttachment> DefaultRenderPipeline::sky_transmittance_pass() {
@@ -1552,7 +1550,7 @@ vuk::Value<vuk::ImageAttachment> DefaultRenderPipeline::sky_multiscatter_pass(vu
 }
 
 vuk::Value<vuk::ImageAttachment> DefaultRenderPipeline::sky_envmap_pass(vuk::Value<vuk::ImageAttachment>& envmap_image) {
-  auto pass = vuk::make_pass("sky_envmap_pass", [this](vuk::CommandBuffer& command_buffer, VUK_IA(vuk::eComputeRW) envmap) {
+  auto pass = vuk::make_pass("sky_envmap_pass", [this](vuk::CommandBuffer& command_buffer, VUK_IA(vuk::eColorRW) envmap) {
     const auto capture_projection = glm::perspective(glm::radians(90.0f), 1.0f, 0.1f, 90.0f);
     const Mat4 capture_views[] = {
       // POSITIVE_X
@@ -1588,7 +1586,7 @@ vuk::Value<vuk::ImageAttachment> DefaultRenderPipeline::sky_envmap_pass(vuk::Val
     return envmap;
   });
 
-  auto envmap_output = pass(envmap_image);
+  auto envmap_output = pass(envmap_image.mip(0));
 
   return vuk::generate_mips(envmap_output, envmap_image->level_count);
 }

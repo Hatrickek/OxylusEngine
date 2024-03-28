@@ -83,8 +83,6 @@ ImGuiLayer::ImGuiData ImGuiLayer::imgui_impl_vuk_init(vuk::Allocator& allocator)
   font->create_texture((unsigned)width, (unsigned)height, pixels, vuk::Format::eR8G8B8A8Srgb);
   ImGuiData data(font);
 
-  ctx.set_name(data.font_texture, "ImGui/font");
-
   io.Fonts->TexID = (ImTextureID)&data.font_texture->get_view().get();
 
   vuk::PipelineBaseCreateInfo pci;
@@ -186,16 +184,6 @@ vuk::Value<vuk::ImageAttachment> ImGuiLayer::render_draw_data(vuk::Allocator& al
     vtx_dst += cmd_list->VtxBuffer.Size;
     idx_dst += cmd_list->IdxBuffer.Size;
   }
-#if 0
-  for (auto& si : sampled_images) {
-    if (!si.is_global) {
-      resources.emplace_back(si.rg_attachment.reference.rg,
-                             si.rg_attachment.reference.name,
-                             vuk::Resource::Type::eImage,
-                             vuk::Access::eFragmentSampled);
-    }
-  }
-#endif
 
   auto imgui_pass = vuk::make_pass("imgui",
                                    [this, verts = imvert.get(), inds = imind.get(), reset_render_state](vuk::CommandBuffer& command_buffer,
@@ -253,23 +241,6 @@ vuk::Value<vuk::ImageAttachment> ImGuiLayer::render_draw_data(vuk::Allocator& al
             if (pcmd->TextureId) {
               const auto& view = *reinterpret_cast<vuk::ImageView*>(pcmd->TextureId);
               command_buffer.bind_image(0, 0, view).bind_sampler(0, 0, vuk::LinearSamplerRepeated);
-#if 0
-              if (si.is_global) {
-                command_buffer.bind_image(0, 0, si.global.iv).bind_sampler(0, 0, si.global.sci);
-              }
-              else {
-                if (si.rg_attachment.ivci) {
-                  auto ivci = *si.rg_attachment.ivci;
-                  const auto res_img = command_buffer.get_resource_image_attachment(si.rg_attachment.reference)->image;
-                  ivci.image = res_img.image;
-                  auto iv = vuk::allocate_image_view(allocator, ivci);
-                  command_buffer.bind_image(0, 0, **iv).bind_sampler(0, 0, si.rg_attachment.sci);
-                } else {
-                  command_buffer.bind_image(0, 0, *command_buffer.get_resource_image_attachment(si.rg_attachment.reference))
-                    .bind_sampler(0, 0, si.rg_attachment.sci);
-                }
-            }
-#endif
             }
 
             command_buffer.draw_indexed(pcmd->ElemCount, 1, pcmd->IdxOffset + global_idx_offset, pcmd->VtxOffset + global_vtx_offset, 0);
@@ -285,7 +256,7 @@ vuk::Value<vuk::ImageAttachment> ImGuiLayer::render_draw_data(vuk::Allocator& al
   return imgui_pass(target);
 }
 
-vuk::SampledImage* ImGuiLayer::add_sampled_image(const vuk::SampledImage& sampled_image) { return &*sampled_images.emplace(sampled_image); }
+vuk::ImageView* ImGuiLayer::add_image(const vuk::ImageView& view) { return &*sampled_images.emplace(view); }
 
 void ImGuiLayer::end() {
   OX_SCOPED_ZONE;

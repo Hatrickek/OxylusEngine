@@ -43,12 +43,12 @@ public:
 
   [[nodiscard]] vuk::Value<vuk::ImageAttachment> render_draw_data(vuk::Allocator& allocator, vuk::Value<vuk::ImageAttachment> target) const;
 
-  vuk::SampledImage* add_sampled_image(const vuk::SampledImage& sampled_image);
+  vuk::ImageView* add_image(const vuk::ImageView& view);
 
   static void apply_theme(bool dark = true);
   static void set_style();
 
-  plf::colony<vuk::SampledImage> sampled_images;
+  plf::colony<vuk::ImageView> sampled_images;
 
 private:
   ImGuiData imgui_data;

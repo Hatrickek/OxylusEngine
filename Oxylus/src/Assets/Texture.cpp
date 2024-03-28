@@ -11,7 +11,7 @@
 #include "Utils/Profiler.hpp"
 
 namespace ox {
-Shared<Texture> Texture::s_white_texture = nullptr;
+Shared<Texture> Texture::_white_texture = nullptr;
 
 Texture::Texture(const std::string& file_path) { load(file_path); }
 
@@ -25,19 +25,21 @@ Texture::Texture(const TextureLoadInfo& info) {
 Texture::~Texture() = default;
 
 void Texture::create_texture(const vuk::Extent3D extent, vuk::Format format, vuk::ImageAttachment::Preset preset) {
-  const auto ia = vuk::ImageAttachment::from_preset(preset, format, extent, vuk::Samples::e1);
+  auto ia = vuk::ImageAttachment::from_preset(preset, format, extent, vuk::Samples::e1);
   auto image = vuk::allocate_image(*VkContext::get()->superframe_allocator, ia);
+  ia.image = **image;
   auto view = vuk::allocate_image_view(*VkContext::get()->superframe_allocator, ia);
 
-  this->image = std::move(*image);
-  this->view = std::move(*view);
-  this->format = ia.format;
-  this->extent = ia.extent;
+  _image = std::move(*image);
+  _view = std::move(*view);
+  _format = ia.format;
+  _extent = ia.extent;
+  _preset = preset;
 }
 
 void Texture::create_texture(const uint32_t width, const uint32_t height, const void* data, const vuk::Format format, bool generate_mips) {
   OX_SCOPED_ZONE;
-  const auto ia = vuk::ImageAttachment::from_preset(vuk::ImageAttachment::Preset::eGeneric2D, format, extent, vuk::Samples::e1);
+  const auto ia = vuk::ImageAttachment::from_preset(vuk::ImageAttachment::Preset::eGeneric2D, format, {width, height, 1}, vuk::Samples::e1);
   auto& alloc = *VkContext::get()->superframe_allocator;
   auto [tex, view, fut] = vuk::create_image_and_view_with_data(alloc, vuk::DomainFlagBits::eTransferQueue, ia, data);
   vuk::Compiler compiler;
@@ -45,16 +47,16 @@ void Texture::create_texture(const uint32_t width, const uint32_t height, const 
 
   // TODO: generate mips
 
-  this->image = std::move(tex);
-  this->extent = {width, height, 1};
-  this->format = format;
+  _image = std::move(tex);
+  _extent = {width, height, 1};
+  _format = format;
 }
 
 void Texture::load(const std::string& file_path, const vuk::Format format, const bool generate_cubemap_from_hdr, bool generate_mips) {
   path = file_path;
 
   uint32_t x, y, chans;
-  uint8_t* data = load_stb_image(path, &x, &y, &chans);
+  const uint8_t* data = load_stb_image(path, &x, &y, &chans);
 
   create_texture(x, y, data, format, generate_mips);
 
@@ -63,10 +65,10 @@ void Texture::load(const std::string& file_path, const vuk::Format format, const
     vuk::Compiler compiler;
     auto val = fut.get(*VkContext::get()->superframe_allocator, compiler);
 
-    this->image = *val->image;
-    this->view = *val->image_view;
-    this->format = val->format;
-    this->extent = val->extent;
+    _image = vuk::Unique(*VkContext::get()->superframe_allocator, val->image);
+    _view = vuk::Unique(*VkContext::get()->superframe_allocator, val->image_view);
+    _format = val->format;
+    _extent = val->extent;
   }
 
   delete[] data;
@@ -82,18 +84,18 @@ void Texture::load_from_memory(void* initial_data, const size_t size) {
 }
 
 vuk::ImageAttachment Texture::as_attachment() const {
-  auto attch = vuk::ImageAttachment::from_preset(vuk::ImageAttachment::Preset::eGeneric2D, format, extent, vuk::Samples::e1);
-  attch.image = *image;
-  attch.image_view = *view;
+  auto attch = vuk::ImageAttachment::from_preset(_preset, _format, _extent, vuk::Samples::e1);
+  attch.image = *_image;
+  attch.image_view = *_view;
   return attch;
 }
 
 void Texture::create_white_texture() {
   OX_SCOPED_ZONE;
-  s_white_texture = create_shared<Texture>();
+  _white_texture = create_shared<Texture>();
   char white_texture_data[16 * 16 * 4];
   memset(white_texture_data, 0xff, 16 * 16 * 4);
-  s_white_texture->create_texture(16, 16, white_texture_data, vuk::Format::eR8G8B8A8Unorm, false);
+  _white_texture->create_texture(16, 16, white_texture_data, vuk::Format::eR8G8B8A8Unorm, false);
 }
 
 uint8_t* Texture::load_stb_image(const std::string& filename, uint32_t* width, uint32_t* height, uint32_t* bits, bool srgb) {

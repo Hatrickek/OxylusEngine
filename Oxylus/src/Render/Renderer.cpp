@@ -66,8 +66,10 @@ void Renderer::draw(VkContext* vkctx, ImGuiLayer* imgui_layer, LayerStack& layer
   renderer_context.viewport_size = extent;
   renderer_context.viewport_offset = rp->get_viewport_offset();
 
+  rp->set_frame_allocator(&frame_allocator);
+
   if (rp->is_swapchain_attached()) {
-    vuk::Value<vuk::ImageAttachment> result = *rp->on_render(frame_allocator, cleared_image, extent);
+    vuk::Value<vuk::ImageAttachment> result = rp->on_render(frame_allocator, cleared_image, extent);
 
     imgui_layer->begin();
     for (const auto& layer : layer_stack)
@@ -88,8 +90,8 @@ void Renderer::draw(VkContext* vkctx, ImGuiLayer* imgui_layer, LayerStack& layer
                                     .layer_count = 1};
     auto viewport_img = vuk::clear_image(vuk::declare_ia("viewport_img", att), vuk::Black<float>);
 
-    // TODO: handle this
-    vuk::Value<vuk::ImageAttachment> viewport_result = *rp->on_render(frame_allocator, viewport_img, extent); 
+    vuk::Value<vuk::ImageAttachment> viewport_result = rp->on_render(frame_allocator, viewport_img, extent); 
+    rp->set_final_image(&viewport_result);
 
     imgui_layer->begin();
     for (const auto& layer : layer_stack)

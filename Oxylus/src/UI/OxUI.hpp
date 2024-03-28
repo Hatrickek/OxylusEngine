@@ -3,16 +3,17 @@
 #include <cstdint>
 #include <string>
 
+#include <glm/gtc/type_ptr.hpp>
 #include <imgui.h>
 #include <imgui_internal.h>
-#include <glm/gtc/type_ptr.hpp>
+#include <vuk/Image.hpp>
 
 #include "Core/Base.hpp"
 
 namespace vuk {
 struct SampledImage;
 struct Texture;
-}
+} // namespace vuk
 
 namespace ox {
 class Texture;
@@ -24,7 +25,7 @@ public:
   static void push_id();
   static void pop_id();
 
-  static constexpr ImGuiTableFlags default_properties_flags = ImGuiTableFlags_BordersInnerV |  ImGuiTableFlags_SizingStretchProp;
+  static constexpr ImGuiTableFlags default_properties_flags = ImGuiTableFlags_BordersInnerV | ImGuiTableFlags_SizingStretchProp;
   static bool begin_properties(ImGuiTableFlags flags = default_properties_flags, bool fixed_width = true, float width = 0.4f);
 
   static void end_properties();
@@ -39,19 +40,10 @@ public:
   static bool property(const char* label, std::string* text, ImGuiInputFlags flags = 0, const char* tooltip = nullptr);
 
   // Dropdown
-  static bool property(const char* label,
-                       int* value,
-                       const char** dropdown_strings,
-                       int count,
-                       const char* tooltip = nullptr);
+  static bool property(const char* label, int* value, const char** dropdown_strings, int count, const char* tooltip = nullptr);
 
   template <std::integral T>
-  static bool property(const char* label,
-                       T* value,
-                       T min = 0,
-                       T max = 0,
-                       float speed = 1.0f,
-                       const char* tooltip = nullptr) {
+  static bool property(const char* label, T* value, T min = 0, T max = 0, float speed = 1.0f, const char* tooltip = nullptr) {
     begin_property_grid(label, tooltip);
     bool modified;
 
@@ -65,8 +57,7 @@ public:
         data_type = ImGuiDataType_S32;
       else if constexpr (sizeof(T) == 8)
         data_type = ImGuiDataType_S64;
-    }
-    else {
+    } else {
       if constexpr (sizeof(T) == 1)
         data_type = ImGuiDataType_U8;
       else if constexpr (sizeof(T) == 2)
@@ -126,8 +117,7 @@ public:
         modified = ImGui::ColorEdit4(id_buffer, glm::value_ptr(value));
       else
         modified = ImGui::ColorEdit3(id_buffer, glm::value_ptr(value));
-    }
-    else {
+    } else {
       modified = ImGui::DragScalarN(id_buffer, ImGuiDataType_Float, glm::value_ptr(value), component_count, delta);
     }
     end_property_grid();
@@ -138,18 +128,15 @@ public:
   static void tooltip(const char* text);
 
   // Texture
-  static bool property(const char* label,
-                       Shared<Texture>& texture,
-                       const char* tooltip = nullptr);
-  // Draw vuk::Texture
-  static void image(const vuk::Texture& texture,
+  static bool property(const char* label, Shared<Texture>& texture, const char* tooltip = nullptr);
+  static void image(const Texture& texture,
                     ImVec2 size,
                     const ImVec2& uv0 = ImVec2(0, 0),
                     const ImVec2& uv1 = ImVec2(1, 1),
                     const ImVec4& tint_col = ImVec4(1, 1, 1, 1),
                     const ImVec4& border_col = ImVec4(0, 0, 0, 0));
 
-  static void image(const vuk::SampledImage& texture,
+  static void image(const vuk::ImageView& view,
                     ImVec2 size,
                     const ImVec2& uv0 = ImVec2(0, 0),
                     const ImVec2& uv1 = ImVec2(1, 1),
@@ -158,15 +145,7 @@ public:
 
   // Draw vuk::Texture
   static bool image_button(const char* id,
-                           const vuk::Texture& texture,
-                           ImVec2 size,
-                           const ImVec2& uv0 = ImVec2(0, 0),
-                           const ImVec2& uv1 = ImVec2(1, 1),
-                           const ImVec4& tint_col = ImVec4(1, 1, 1, 1),
-                           const ImVec4& bg_col = ImVec4(0, 0, 0, 0));
-
-  static bool image_button(const char* id,
-                           const vuk::SampledImage& texture,
+                           const vuk::ImageView& view,
                            ImVec2 size,
                            const ImVec2& uv0 = ImVec2(0, 0),
                            const ImVec2& uv1 = ImVec2(1, 1),
@@ -174,10 +153,7 @@ public:
                            const ImVec4& bg_col = ImVec4(0, 0, 0, 0));
 
   // Vec3 with reset button
-  static bool draw_vec3_control(const char* label,
-                                glm::vec3& values,
-                                const char* tooltip = nullptr,
-                                float reset_value = 0.0f);
+  static bool draw_vec3_control(const char* label, glm::vec3& values, const char* tooltip = nullptr, float reset_value = 0.0f);
 
   static bool toggle_button(const char* label,
                             bool state,
@@ -221,4 +197,4 @@ public:
 
   static void draw_framerate_overlay(ImVec2 work_pos = {}, ImVec2 work_size = {}, ImVec2 padding = {}, bool* visible = nullptr);
 };
-}
+} // namespace ox

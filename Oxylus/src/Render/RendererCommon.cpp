@@ -252,7 +252,8 @@ Shared<Mesh> RendererCommon::generate_sphere() {
   return mesh_lib.sphere;
 }
 
-void RendererCommon::apply_blur(const vuk::Value<vuk::ImageAttachment>& src_attachment, const vuk::Value<vuk::ImageAttachment>& dst_attachment) {
+vuk::Value<vuk::ImageAttachment> RendererCommon::apply_blur(const vuk::Value<vuk::ImageAttachment>& src_attachment,
+                                                            const vuk::Value<vuk::ImageAttachment>& dst_attachment) {
   auto& allocator = *VkContext::get()->superframe_allocator;
   if (!allocator.get_context().is_pipeline_available("gaussian_blur_pipeline")) {
     vuk::PipelineBaseCreateInfo pci;

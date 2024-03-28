@@ -5,17 +5,16 @@
 #include <vuk/Partials.hpp>
 #include <vuk/RenderGraph.hpp>
 
-#include "EditorLayer.hpp"
 #include "Core/FileSystem.hpp"
+#include "EditorLayer.hpp"
 #include "ImGuizmo.h"
 #include "glm/gtc/type_ptr.hpp"
 
-#include "Render/Utils/VukCommon.hpp"
-#include "Render/Renderer.hpp"
-#include "Render/Vulkan/VkContext.hpp"
 #include "Render/DebugRenderer.hpp"
 #include "Render/RenderPipeline.h"
 #include "Render/RendererConfig.h"
+#include "Render/Utils/VukCommon.hpp"
+#include "Render/Vulkan/VkContext.hpp"
 
 #include "Scene/SceneRenderer.h"
 
@@ -30,10 +29,10 @@
 namespace ox {
 ViewportPanel::ViewportPanel() : EditorPanel("Viewport", ICON_MDI_TERRAIN, true) {
   OX_SCOPED_ZONE;
-  gizmo_image_map[typeid(LightComponent).hash_code()] =
-    create_shared<Texture>(TextureLoadInfo{.path = "Resources/Icons/PointLightIcon.png", .generate_mips = false});
-  gizmo_image_map[typeid(CameraComponent).hash_code()] =
-    create_shared<Texture>(TextureLoadInfo{.path = "Resources/Icons/CameraIcon.png", .generate_mips = false});
+  gizmo_image_map[typeid(LightComponent).hash_code()] = create_shared<Texture>(TextureLoadInfo{.path = "Resources/Icons/PointLightIcon.png",
+                                                                                               .generate_mips = false});
+  gizmo_image_map[typeid(CameraComponent).hash_code()] = create_shared<Texture>(TextureLoadInfo{.path = "Resources/Icons/CameraIcon.png",
+                                                                                                .generate_mips = false});
 
   auto& superframe_allocator = VkContext::get()->superframe_allocator;
   auto* task_scheduler = App::get_system<TaskScheduler>();
@@ -63,19 +62,18 @@ ViewportPanel::ViewportPanel() : EditorPanel("Viewport", ICON_MDI_TERRAIN, true)
   task_scheduler->wait_for_all();
 }
 
-bool ViewportPanel::outline_pass(const Shared<RenderPipeline>& rp, const vuk::Dimension3D& dim) const {
-  const auto rg = rp->get_frame_render_graph();
-
+vuk::Value<vuk::ImageAttachment> ViewportPanel::outline_pass(vuk::Allocator& frame_allocator,
+                                                             const vuk::Extent3D& ext,
+                                                             vuk::Value<vuk::ImageAttachment>& target) const {
   struct VsUbo {
     Mat4 projection_view;
   } vs_ubo;
 
   vs_ubo.projection_view = m_camera.get_projection_matrix() * m_camera.get_view_matrix();
-  auto [vs_buff, vs_buffer_fut] =
-    create_buffer(*rp->get_frame_allocator(), vuk::MemoryUsage::eCPUtoGPU, vuk::DomainFlagBits::eTransferOnGraphics, std::span(&vs_ubo, 1));
+  auto [vs_buff, _] = create_buffer(frame_allocator, vuk::MemoryUsage::eCPUtoGPU, vuk::DomainFlagBits::eTransferOnGraphics, std::span(&vs_ubo, 1));
   auto& vs_buffer = *vs_buff;
 
-  bool render_outline = false;
+  vuk::Value<vuk::ImageAttachment> output = target;
 
   if (m_scene_hierarchy_panel) {
     const auto entity = m_scene_hierarchy_panel->get_selected_entity();
@@ -83,38 +81,33 @@ bool ViewportPanel::outline_pass(const Shared<RenderPipeline>& rp, const vuk::Di
     if (entity != entt::null && mesh_component) {
       const auto model_matrix = EUtil::get_world_transform(context.get(), entity);
 
-      auto attachment = vuk::ImageAttachment{.extent = dim,
-                                             .format = vuk::Format::eR8G8B8A8Unorm,
-                                             .sample_count = vuk::SampleCountFlagBits::e1,
-                                             .level_count = 1,
-                                             .layer_count = 1};
-
-      rg->attach_and_clear_image("outline_image", attachment, vuk::Black<float>);
-      attachment.format = vuk::Format::eD32SfloatS8Uint;
-      rg->attach_and_clear_image("outline_depth", attachment, vuk::ClearDepthStencil{0.0f, 0});
-
-      rg->add_pass({.name = "outline_stencil_pass",
-                    .resources = {"outline_image"_image >> vuk::eColorRW >> "outline_image+", "outline_depth"_image >> vuk::eDepthStencilRW},
-                    .execute = [this, mesh_component, model_matrix, vs_buffer](vuk::CommandBuffer& command_buffer) {
-        constexpr auto stencil_state = vuk::StencilOpState{.failOp = vuk::StencilOp::eReplace,
-                                                           .passOp = vuk::StencilOp::eReplace,
-                                                           .depthFailOp = vuk::StencilOp::eReplace,
-                                                           .compareOp = vuk::CompareOp::eAlways,
-                                                           .compareMask = 0xFF,
-                                                           .writeMask = 0xFF,
-                                                           .reference = 1};
+      auto pass = vuk::make_pass("outline_pass",
+                                 [mesh_component, vs_buffer, model_matrix](vuk::CommandBuffer& command_buffer,
+                                                                           VUK_IA(vuk::eColorRW) dst,
+                                                                           VUK_IA(vuk::eDepthStencilRW) depth) {
+        constexpr auto stencil_state = vuk::StencilOpState{
+          .failOp = vuk::StencilOp::eReplace,
+          .passOp = vuk::StencilOp::eReplace,
+          .depthFailOp = vuk::StencilOp::eReplace,
+          .compareOp = vuk::CompareOp::eAlways,
+          .compareMask = 0xFF,
+          .writeMask = 0xFF,
+          .reference = 1,
+        };
 
         command_buffer.set_dynamic_state(vuk::DynamicStateFlagBits::eScissor | vuk::DynamicStateFlagBits::eViewport)
           .set_viewport(0, vuk::Rect2D::framebuffer())
           .set_scissor(0, vuk::Rect2D::framebuffer())
           .broadcast_color_blend(vuk::BlendPreset::eOff)
           .set_rasterization({.cullMode = vuk::CullModeFlagBits::eNone})
-          .set_depth_stencil(vuk::PipelineDepthStencilStateCreateInfo{.depthTestEnable = true,
-                                                                      .depthWriteEnable = true,
-                                                                      .depthCompareOp = vuk::CompareOp::eGreaterOrEqual,
-                                                                      .stencilTestEnable = true,
-                                                                      .front = stencil_state,
-                                                                      .back = stencil_state})
+          .set_depth_stencil(vuk::PipelineDepthStencilStateCreateInfo{
+            .depthTestEnable = true,
+            .depthWriteEnable = true,
+            .depthCompareOp = vuk::CompareOp::eGreaterOrEqual,
+            .stencilTestEnable = true,
+            .front = stencil_state,
+            .back = stencil_state,
+          })
           .bind_graphics_pipeline("stencil_pipeline")
           .specialize_constants(0, 0)
           .bind_buffer(0, 0, vs_buffer);
@@ -176,36 +169,52 @@ bool ViewportPanel::outline_pass(const Shared<RenderPipeline>& rp, const vuk::Di
             command_buffer.draw_indexed(primitive->index_count, 1, primitive->first_index, 0, 0);
           }
         }
-      }});
+
+        return dst;
+      });
+
+      auto attachment = vuk::ImageAttachment{
+        .extent = ext,
+        .format = vuk::Format::eR8G8B8A8Unorm,
+        .sample_count = vuk::SampleCountFlagBits::e1,
+        .level_count = 1,
+        .layer_count = 1,
+      };
+
+      auto outline_image = vuk::clear_image(vuk::declare_ia("outline_image", attachment), vuk::Black<float>);
+      attachment.format = vuk::Format::eD32SfloatS8Uint;
+      auto outline_depth = vuk::clear_image(vuk::declare_ia("outline_depth", attachment), vuk::DepthZero);
+
+      auto outline_output = pass(outline_image, outline_depth);
 
       attachment.format = vuk::Format::eR8G8B8A8Unorm;
-      rg->attach_and_clear_image("final_outlined_image", attachment, vuk::Black<float>);
+      auto final_outline_image = vuk::clear_image(vuk::declare_ia("final_outlined_image", attachment), vuk::Black<float>);
 
-      auto final_name = rp->get_final_attachment_name();
-
-      rg->add_pass({.name = "apply_outline",
-                    .resources = {"final_outlined_image"_image >> vuk::eColorRW,
-                                  vuk::Resource(final_name, vuk::Resource::Type::eImage, vuk::eFragmentSampled),
-                                  "outline_image+"_image >> vuk::eFragmentSampled},
-                    .execute = [this, final_name](vuk::CommandBuffer& command_buffer) {
+      auto apply_pass = vuk::make_pass("apply_outline",
+                                       [](vuk::CommandBuffer& command_buffer,
+                                          VUK_IA(vuk::eColorRW) target,
+                                          VUK_IA(vuk::eFragmentSampled) final_image,
+                                          VUK_IA(vuk::eFragmentSampled) outline_img) {
         command_buffer.bind_graphics_pipeline("fullscreen_pipeline")
           .set_dynamic_state(vuk::DynamicStateFlagBits::eScissor | vuk::DynamicStateFlagBits::eViewport)
           .set_viewport(0, vuk::Rect2D::framebuffer())
           .set_scissor(0, vuk::Rect2D::framebuffer())
           .broadcast_color_blend(vuk::BlendPreset::eOff)
           .set_rasterization({.cullMode = vuk::CullModeFlagBits::eNone})
-          .bind_image(0, 0, final_name)
+          .bind_image(0, 0, final_image)
           .bind_sampler(0, 0, vuk::LinearSamplerClamped)
-          .bind_image(0, 1, "outline_image+")
+          .bind_image(0, 1, outline_img)
           .bind_sampler(0, 1, vuk::LinearSamplerClamped)
           .draw(3, 1, 0, 0);
-      }});
 
-      render_outline = true;
+        return target;
+      });
+
+      output = apply_pass(final_outline_image, target, outline_output);
     }
   }
 
-  return render_outline;
+  return output;
 }
 
 void ViewportPanel::on_imgui_render() {
@@ -267,25 +276,28 @@ void ViewportPanel::on_imgui_render() {
     const auto fixed_width = m_viewport_size.y * sixteen_nine_ar;
     ImGui::SetCursorPosX((viewport_panel_size.x - fixed_width) * 0.5f);
 
-    const auto dim = vuk::Dimension3D::absolute((uint32_t)fixed_width, (uint32_t)viewport_panel_size.y);
+    const auto extent = vuk::Extent3D((uint32_t)fixed_width, (uint32_t)viewport_panel_size.y, 1);
     const auto rp = context->get_renderer()->get_render_pipeline();
 
     const auto off = (viewport_panel_size.x - fixed_width) * 0.5f; // add offset since we render image with fixed aspect ratio
     viewport_offset = {viewport_bounds[0].x + off * 0.5f, viewport_bounds[0].y};
 
-    rp->detach_swapchain(dim, viewport_offset);
-    auto final_image = rp->get_final_image();
+    rp->detach_swapchain(extent, viewport_offset);
+    vuk::Value<vuk::ImageAttachment>* final_image = rp->get_final_image();
+
+    auto* frame_allocator = rp->get_frame_allocator();
+    vuk::Compiler compiler = {};
 
     if (final_image) {
+      auto outline = outline_pass(*frame_allocator, extent, *final_image);
       if (!context->is_running()) {
-        mouse_picking_pass(rp, dim, fixed_width);
-        if (outline_pass(rp, dim)) {
-          final_image = create_shared<vuk::SampledImage>(
-            make_sampled_image(vuk::NameReference{rp->get_frame_render_graph().get(), vuk::QualifiedName({}, "final_outlined_image+")}, {}));
-        }
+        mouse_picking_pass(*frame_allocator, compiler, extent);
+        final_image = &outline;
       }
 
-      OxUI::image(*final_image, ImVec2{fixed_width, viewport_panel_size.y});
+      vuk::ImageAttachment f = *final_image->get(*frame_allocator, compiler);
+
+      OxUI::image(f.image_view, ImVec2{fixed_width, viewport_panel_size.y});
     } else {
       const auto text_width = ImGui::CalcTextSize("No render target!").x;
       ImGui::SetCursorPosX((m_viewport_size.x - text_width) * 0.5f);
@@ -422,7 +434,7 @@ void ViewportPanel::on_imgui_render() {
   }
 }
 
-void ViewportPanel::mouse_picking_pass(const Shared<RenderPipeline>& rp, const vuk::Dimension3D& dim, const float fixed_width) {
+void ViewportPanel::mouse_picking_pass(vuk::Allocator& frame_allocator, vuk::Compiler& compiler, const vuk::Extent3D& ext) {
   struct SceneMesh {
     uint32_t entity_id = 0;
     MeshComponent mesh_component = {};
@@ -430,6 +442,7 @@ void ViewportPanel::mouse_picking_pass(const Shared<RenderPipeline>& rp, const v
 
   std::vector<SceneMesh> scene_meshes = {};
 
+  // TODO: frustum cull
   const auto mesh_view = context->registry.view<TransformComponent, MeshComponent, TagComponent>();
   for (const auto&& [entity, transform, mesh_component, tag] : mesh_view.each()) {
     if (tag.enabled) {
@@ -439,31 +452,21 @@ void ViewportPanel::mouse_picking_pass(const Shared<RenderPipeline>& rp, const v
     }
   }
 
-  auto rg = rp->get_frame_render_graph();
-
-  struct VsUbo {
-    Mat4 projection_view;
-  } vs_ubo;
-
-  vs_ubo.projection_view = m_camera.get_projection_matrix() * m_camera.get_view_matrix();
-  auto [vs_buff, vs_buffer_fut] =
-    create_buffer(*rp->get_frame_allocator(), vuk::MemoryUsage::eCPUtoGPU, vuk::DomainFlagBits::eTransferOnGraphics, std::span(&vs_ubo, 1));
-  auto& vs_buffer = *vs_buff;
-
-  auto attachment = vuk::ImageAttachment{.extent = dim,
+  auto attachment = vuk::ImageAttachment{.extent = ext,
                                          .format = vuk::Format::eR32Uint,
                                          .sample_count = vuk::SampleCountFlagBits::e1,
                                          .level_count = 1,
                                          .layer_count = 1};
 
-  rg->attach_and_clear_image("id_buffer_image", attachment, vuk::Black<unsigned>);
+  auto id_buffer_image = vuk::clear_image(vuk::declare_ia("id_buffer_image", attachment), vuk::Black<uint32_t>);
   attachment.format = vuk::Format::eD32Sfloat;
-  rg->attach_and_clear_image("id_buffer_depth", attachment, vuk::DepthZero);
+  auto id_buffer_depth = vuk::clear_image(vuk::declare_ia("id_buffer_depth", attachment), vuk::DepthZero);
 
-  rg->add_pass({.name = "id_buffer_pass",
-                .resources = {"id_buffer_image"_image >> vuk::eColorRW >> "id_buffer_image_output", "id_buffer_depth"_image >> vuk::eDepthStencilRW},
-                .execute = [scene_meshes, vs_buffer, dim](vuk::CommandBuffer& command_buffer) {
-    const auto rect = vuk::Viewport{0, (float)dim.extent.height, (float)dim.extent.width, -(float)dim.extent.height, 0.0, 1.0};
+  auto id_buff_pass = vuk::make_pass("id_buffer_pass",
+                                     [ext, this, scene_meshes](vuk::CommandBuffer& command_buffer,
+                                                               VUK_IA(vuk::eColorRW) target,
+                                                               VUK_IA(vuk::eDepthStencilRW) depth) {
+    const auto rect = vuk::Viewport{0, (float)ext.height, (float)ext.width, -(float)ext.height, 0.0, 1.0};
     command_buffer.set_dynamic_state(vuk::DynamicStateFlagBits::eScissor | vuk::DynamicStateFlagBits::eViewport)
       .set_viewport(0, rect)
       .set_scissor(0, vuk::Rect2D::framebuffer())
@@ -474,8 +477,16 @@ void ViewportPanel::mouse_picking_pass(const Shared<RenderPipeline>& rp, const v
         .depthWriteEnable = true,
         .depthCompareOp = vuk::CompareOp::eGreaterOrEqual,
       })
-      .bind_graphics_pipeline("id_pipeline")
-      .bind_buffer(0, 0, vs_buffer);
+      .bind_graphics_pipeline("id_pipeline");
+
+    struct VsUbo {
+      Mat4 projection_view;
+    } vs_ubo;
+
+    vs_ubo.projection_view = m_camera.get_projection_matrix() * m_camera.get_view_matrix();
+
+    auto* buff = command_buffer.scratch_buffer<VsUbo>(0, 0);
+    *buff = vs_ubo;
 
     for (auto& mesh : scene_meshes) {
       mesh.mesh_component.mesh_base->bind_index_buffer(command_buffer);
@@ -497,19 +508,21 @@ void ViewportPanel::mouse_picking_pass(const Shared<RenderPipeline>& rp, const v
         }
       }
     }
-  }});
+
+    return target;
+  });
+
+  auto id_buff_image_output = id_buff_pass(id_buffer_image, id_buffer_depth);
 
   if (id_buffers.empty()) {
     id_buffers.reserve(VkContext::get()->num_inflight_frames);
     for (uint32_t i = 0; i < VkContext::get()->num_inflight_frames; i++)
       id_buffers.emplace_back(*allocate_buffer(*VkContext::get()->superframe_allocator,
-                                               {vuk::MemoryUsage::eGPUtoCPU, (uint64_t)(dim.extent.width * dim.extent.height * 4u), 1}));
+                                               {vuk::MemoryUsage::eGPUtoCPU, (uint64_t)(ext.width * ext.height * 4u), 1}));
   }
 
   if (VkContext::get()->num_frames < VkContext::get()->num_inflight_frames)
     return;
-
-  rg->attach_buffer("entity_id_buffer_to_copy", *id_buffers[VkContext::get()->current_frame]); // current frame buffer
 
   auto [mx, my] = ImGui::GetMousePos();
   mx -= viewport_offset.x;
@@ -519,28 +532,33 @@ void ViewportPanel::mouse_picking_pass(const Shared<RenderPipeline>& rp, const v
   int32_t mouse_x = glm::max(0, (int32_t)mx);
   int32_t mouse_y = glm::max(0, (int32_t)my);
 
-  rg->add_pass({.name = "id_copy_pass",
-                .resources = {"id_buffer_image_output"_image >> vuk::eTransferRead,
-                              "entity_id_buffer_to_copy"_buffer >> vuk::eTransferWrite >> "id_buffer_final"},
-                .execute = [dim](vuk::CommandBuffer& command_buffer) {
+  auto id_copy_pass = vuk::make_pass("id_copy_pass",
+                                     [ext](vuk::CommandBuffer& command_buffer,
+                                           VUK_IA(vuk::eTransferRead) id_buffer_image,
+                                           VUK_BA(vuk::eTransferWrite) id_buffer_output) {
     const auto params = vuk::BufferImageCopy{
       .bufferOffset = 0,
       .bufferRowLength = 0,
       .bufferImageHeight = 0,
       .imageSubresource = {.aspectMask = vuk::ImageAspectFlagBits::eColor},
       .imageOffset = {.x = 0, .y = 0, .z = 0},
-      .imageExtent = dim.extent,
+      .imageExtent = ext,
     };
 
-    command_buffer.copy_image_to_buffer("id_buffer_image_output", "entity_id_buffer_to_copy", params);
-  }});
+    command_buffer.copy_image_to_buffer(id_buffer_image, id_buffer_output, params);
+    return id_buffer_output;
+  });
 
-  auto& buffer = id_buffers[VkContext::get()->current_frame];
-  const auto buf_pos = (mouse_y * dim.extent.width + mouse_x) * 4;
+  auto id_buff_target = vuk::declare_buf("id_buffer_target", *id_buffers[VkContext::get()->current_frame]);
+  vuk::Value<vuk::Buffer> id_buff_output = id_copy_pass(id_buff_image_output, id_buff_target);
 
-  if (buf_pos + sizeof(uint32_t) <= buffer->size) {
+  vuk::Buffer buffer = *id_buff_output.get(frame_allocator, compiler);
+
+  const auto buf_pos = (mouse_y * ext.width + mouse_x) * 4;
+
+  if (buf_pos + sizeof(uint32_t) <= buffer.size) {
     uint32_t id = entt::null;
-    memcpy(&id, &buffer->mapped_ptr[buf_pos], sizeof(uint32_t));
+    memcpy(&id, &buffer.mapped_ptr[buf_pos], sizeof(uint32_t));
 
     hovered_entity = id == entt::null ? entt::null : entt::entity{id - 1u};
 
@@ -626,8 +644,12 @@ void ViewportPanel::on_update() {
                                                    m_translation_dampening,
                                                    10000.0f,
                                                    (float)App::get_timestep().get_seconds());
-    const Vec2 damped_yaw_pitch =
-      math::smooth_damp(yaw_pitch, final_yaw_pitch, m_rotation_velocity, m_rotation_dampening, 1000.0f, (float)App::get_timestep().get_seconds());
+    const Vec2 damped_yaw_pitch = math::smooth_damp(yaw_pitch,
+                                                    final_yaw_pitch,
+                                                    m_rotation_velocity,
+                                                    m_rotation_dampening,
+                                                    1000.0f,
+                                                    (float)App::get_timestep().get_seconds());
 
     m_camera.set_position(EditorCVar::cvar_camera_smooth.get() ? damped_position : final_position);
     m_camera.set_yaw(EditorCVar::cvar_camera_smooth.get() ? damped_yaw_pitch.x : final_yaw_pitch.x);

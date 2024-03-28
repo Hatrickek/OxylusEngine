@@ -254,9 +254,6 @@ void VkContext::create_context(const AppSpec& spec) {
       ctx->suspend = true;
     } else {
       ctx->swapchain = make_swapchain(*ctx->superframe_allocator, ctx->vkb_device, ctx->swapchain->surface, std::move(ctx->swapchain));
-      for (auto& iv : ctx->swapchain->images) {
-        ctx->context->set_name(iv.image_view.payload, "Swapchain ImageView");
-      }
     }
   });
 

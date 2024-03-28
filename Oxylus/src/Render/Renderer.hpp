@@ -30,8 +30,8 @@ public:
 
   static UVec2 get_viewport_size() { return {renderer_context.viewport_size.width, renderer_context.viewport_size.height}; }
   static Vec2 get_viewport_offset() { return renderer_context.viewport_offset; }
-  static unsigned get_viewport_width() { return renderer_context.viewport_size.x; }
-  static unsigned get_viewport_height() { return renderer_context.viewport_size.y; }
+  static unsigned get_viewport_width() { return renderer_context.viewport_size.width; }
+  static unsigned get_viewport_height() { return renderer_context.viewport_size.height; }
 
 private:
   // Config

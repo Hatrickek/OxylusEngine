@@ -28,11 +28,11 @@ void Material::bind_textures(vuk::CommandBuffer& command_buffer) const {
                 .bind_sampler(1, 3, vuk::LinearSamplerRepeated)
                 .bind_sampler(1, 4, vuk::LinearSamplerRepeated);
 
-  command_buffer.bind_image(1, 0, *albedo_texture->get_texture().view)
-                .bind_image(1, 1, *normal_texture->get_texture().view)
-                .bind_image(1, 2, *ao_texture->get_texture().view)
-                .bind_image(1, 3, *physical_texture->get_texture().view)
-                .bind_image(1, 4, *emissive_texture->get_texture().view);
+  command_buffer.bind_image(1, 0, *albedo_texture->get_view())
+                .bind_image(1, 1, *normal_texture->get_view())
+                .bind_image(1, 2, *ao_texture->get_view())
+                .bind_image(1, 3, *physical_texture->get_view())
+                .bind_image(1, 4, *emissive_texture->get_view());
 }
 
 #define SET_TEXTURE_ID(texture, parameter) \

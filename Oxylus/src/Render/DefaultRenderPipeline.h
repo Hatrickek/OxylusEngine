@@ -219,9 +219,9 @@ private:
 
   // PBR Resources
   Shared<Texture> cube_map = nullptr;
-  Texture brdf_texture;
-  Texture irradiance_texture;
-  Texture prefiltered_texture;
+  vuk::ImageAttachment brdf_texture;
+  vuk::ImageAttachment irradiance_texture;
+  vuk::ImageAttachment prefiltered_texture;
 
   enum Filter {
     // Include nothing:

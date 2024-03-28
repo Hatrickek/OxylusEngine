@@ -211,7 +211,7 @@ target_link_libraries(${PROJECT_NAME} PUBLIC loguru)
 set_target_properties(loguru PROPERTIES FOLDER "Vendor")
 
 # vk-bootstrap
-CPMAddPackage("gh:charles-lunarg/vk-bootstrap#8e61b2d81c3f5f84339735085ff5651f71bbe1e7")
+CPMAddPackage("gh:charles-lunarg/vk-bootstrap#a5950c070082e851e621206fca7b3b0b008dcb28")
 target_link_libraries(${PROJECT_NAME} PUBLIC vk-bootstrap)
 set_target_properties(vk-bootstrap PROPERTIES FOLDER "Vendor")
 
@@ -352,3 +352,16 @@ set_target_properties(unordered_dense PROPERTIES FOLDER "Vendor")
 # dylib
 CPMAddPackage("gh:martin-olivier/dylib#main")
 target_include_directories(${PROJECT_NAME} PUBLIC ${dylib_SOURCE_DIR}/include)
+
+# fsr
+CPMAddPackage(
+  NAME fsr
+  GIT_TAG master
+  GITHUB_REPOSITORY GPUOpen-Effects/FidelityFX-FSR2
+  DOWNLOAD_ONLY YES
+  GIT_SUBMODULES ""
+  GIT_SHALLOW ON
+)
+add_library(fsr INTERFACE)
+target_include_directories(fsr INTERFACE ${fsr_SOURCE_DIR}/src/ffx-fsr2-api)
+target_link_libraries(${PROJECT_NAME} PUBLIC fsr)
