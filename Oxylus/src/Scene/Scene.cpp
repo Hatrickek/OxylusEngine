@@ -25,7 +25,6 @@
 #include <algorithm>
 #include <glm/gtx/compatibility.hpp>
 #include <glm/gtx/matrix_decompose.hpp>
-#include <meshoptimizer.h>
 #include <simdjson.h>
 #include <sol/state.hpp>
 
@@ -43,7 +42,6 @@
 #include "UI/RmlView.hpp"
 #include "Utils/JsonWriter.hpp"
 #include "Utils/Log.hpp"
-#include "Utils/Random.hpp"
 #include "Utils/Timestep.hpp"
 
 namespace ox {
@@ -1598,6 +1596,36 @@ auto Scene::create_model_entity_async(this Scene& self, const UUID& asset_uuid) 
   self.pending_model_spawns.push_back(PendingModelSpawn{.model_uuid = asset_uuid});
 }
 
+auto Scene::create_particle_system_entity(this Scene& self, const UUID& asset_uuid) -> flecs::entity {
+  ZoneScoped;
+
+  auto& asset_man = App::mod<AssetManager>();
+
+  auto name = std::string("particle_system");
+  {
+    auto asset = asset_man.get_asset(asset_uuid);
+    if (!asset || asset->type != AssetType::ParticleSystem) {
+      OX_LOG_ERROR("Cannot create a particle system entity from invalid asset '{}'!", asset_uuid.str());
+      return {};
+    }
+
+    if (!asset->path.stem().empty()) {
+      name = asset->path.stem().string();
+    }
+  }
+
+  if (!asset_man.load_asset(asset_uuid)) {
+    return {};
+  }
+
+  auto entity = self.create_entity(name, true);
+  entity.set<ParticleSystemComponent>(ParticleSystemComponent{
+    .particle_system = asset_uuid,
+  });
+
+  return entity;
+}
+
 auto Scene::update_pending_model_spawns(this Scene& self) -> void {
   ZoneScoped;
 
@@ -2835,6 +2863,14 @@ auto Scene::set_rml_dpi_ratio(this const Scene& self, f32 ratio) -> void {
 
   if (self.rml_view) {
     self.rml_view->set_dpi_ratio(ratio);
+  }
+}
+
+auto Scene::clear_rml_dpi_ratio_override(this const Scene& self) -> void {
+  ZoneScoped;
+
+  if (self.rml_view) {
+    self.rml_view->clear_dpi_ratio_override();
   }
 }
 

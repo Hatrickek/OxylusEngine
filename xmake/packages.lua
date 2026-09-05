@@ -2,6 +2,7 @@ local fmt_version = "12.1.0"
 local fmt_configs = { header_only = false, shared = false }
 local lua_version = "v5.4.7"
 local imgui_version = "v1.92.9b-docking"
+local simdjson_version = "v4.2.4"
 
 packages = {
   ["stb 2024.06.01"] = {},
@@ -10,9 +11,7 @@ packages = {
   ["meshoptimizer v1.2"] = {},
   ["libsdl3 3.4.12"] = { configs = { x11 = true, wayland = false } },
   ["ktx-ox v4.4.0"] = { system = false, debug = false },
-  ["zstd v1.5.7"] = { system = false },
   ["shader-slang v2026.12.2"] = { configs = { shared = true }, system = false },
-  ["spirv-tools 1.4.335+0"] = { system = false },
   ["enet-ox v2.6.5"] = {
     configs = {
       test = false,
@@ -47,7 +46,7 @@ packages = {
       header_only = true,
     },
   },
-  ["simdjson v4.2.4"] = {},
+  ["simdjson " .. simdjson_version] = { system = false },
   ["joltphysics v5.6.0"] = {
     configs = {
       debug_renderer = true,
@@ -117,6 +116,16 @@ confs = {
       override = true,
       version = fmt_version,
       configs = fmt_configs,
+      system = false,
+    },
+  },
+
+  {
+    package = "simdjson",
+    override = "fastgltf-ox.simdjson",
+    configs = {
+      override = true,
+      version = simdjson_version,
       system = false,
     },
   },
