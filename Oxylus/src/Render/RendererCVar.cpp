@@ -123,14 +123,14 @@ auto RendererCVar::init(this RendererCVar& self) -> void {
   self.cvar_particles_enable.init(self.system, "rr.particles", "simulate and draw GPU particle systems", 1);
   self.cvar_particle_sort.init(self.system, "rr.particle_sort", "sort particles back to front before drawing", 1);
 
-  self.cvar_fxaa_enable.init(self.system, "pp.fxaa", "use fxaa", 1);
+  self.cvar_fxaa_enable.init(self.system, "pp.fxaa", "use fxaa", 0);
 
-  self.cvar_upscaler_backend.init(self.system, "pp.upscaler_backend", "0: None, 1: FSR3", 0);
+  self.cvar_upscaler_backend.init(self.system, "pp.upscaler_backend", "0: None, 1: FSR3", 1);
   self.cvar_upscaler_quality.init(
     self.system,
     "pp.upscaler_quality",
     "0: Native AA (1.0x), 1: Quality (1.5x), 2: Balanced (1.7x), 3: Performance (2.0x), 4: Ultra Performance (3.0x)",
-    1
+    0
   );
   self.cvar_upscaler_sharpness
     .init(self.system, "pp.upscaler_sharpness", "RCAS sharpening strength, 0 skips the sharpen pass", 0.0f);
