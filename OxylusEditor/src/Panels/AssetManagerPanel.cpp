@@ -271,10 +271,10 @@ auto AssetBrowser::draw_list(this AssetBrowser& self, const bool picking, const 
   ZoneScoped;
   memory::ScopedStack stack;
 
-  constexpr ImGuiTableFlags TABLE_FLAGS = ImGuiTableFlags_Resizable | ImGuiTableFlags_Reorderable |
-                                          ImGuiTableFlags_Hideable | ImGuiTableFlags_Sortable |
-                                          ImGuiTableFlags_BordersInnerV | ImGuiTableFlags_ScrollY |
-                                          ImGuiTableFlags_SizingStretchProp;
+  constexpr ImGuiTableFlags TABLE_FLAGS = ImGuiTableFlags_RowBg | ImGuiTableFlags_Resizable |
+                                          ImGuiTableFlags_Reorderable | ImGuiTableFlags_Hideable |
+                                          ImGuiTableFlags_Sortable | ImGuiTableFlags_BordersInnerV |
+                                          ImGuiTableFlags_ScrollY | ImGuiTableFlags_SizingStretchProp;
 
   if (!ImGui::BeginTable("AssetTable", 5, TABLE_FLAGS, {0.0f, height})) {
     return false;
@@ -352,6 +352,12 @@ auto AssetBrowser::draw_list(this AssetBrowser& self, const bool picking, const 
                                                         ImGuiSelectableFlags_AllowDoubleClick;
       const auto is_selected = asset.uuid == self.selected_uuid;
       const auto label = stack.format_char("{}  {}", asset_type_icon(asset.type), asset_name(asset));
+      if (is_selected) {
+        ImVec4 active_color = ImGui::GetStyleColorVec4(ImGuiCol_TitleBg);
+        ImVec4 hovered_color = ImGui::GetStyleColorVec4(ImGuiCol_HeaderHovered);
+        ImGui::PushStyleColor(ImGuiCol_HeaderHovered, is_selected ? active_color : hovered_color);
+        ImGui::PushStyleColor(ImGuiCol_Text, ImGui::GetStyleColorVec4(ImGuiCol_ButtonActive));
+      }
       if (ImGui::Selectable(label, is_selected, SELECTABLE_FLAGS, {0.0f, ImGui::GetFrameHeight()})) {
         self.selected_uuid = asset.uuid;
         activated |= ImGui::IsMouseDoubleClicked(ImGuiMouseButton_Left);
@@ -395,6 +401,10 @@ auto AssetBrowser::draw_list(this AssetBrowser& self, const bool picking, const 
       }
       if (ImGui::TableSetColumnIndex(4)) {
         ImGui::TextUnformatted(uuid_str.c_str());
+      }
+
+      if (is_selected) {
+        ImGui::PopStyleColor(2);
       }
 
       ImGui::PopID();
@@ -582,7 +592,9 @@ auto AssetBrowser::render_picker(
   return picked;
 }
 
-AssetManagerPanel::AssetManagerPanel() : EditorPanelState("Asset Manager", ICON_MDI_FOLDER_SYNC, false) {}
+AssetManagerPanel::AssetManagerPanel() : EditorPanelState("Asset Manager", ICON_MDI_FOLDER_SYNC, false) {
+  window_center_at_appear = true;
+}
 
 auto AssetManagerPanel::on_update(this AssetManagerPanel& self) -> void {}
 

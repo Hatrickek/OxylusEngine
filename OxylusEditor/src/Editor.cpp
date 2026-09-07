@@ -716,8 +716,8 @@ void Editor::draw_bottom_toolbar(this Editor& self, float height) {
           icon_color = Gruvbox::bright_red;
           break;
         case Notification::Loading:
-          icon_text = ICON_MDI_CHECK_BOLD;
-          icon_color = Gruvbox::bright_green;
+          icon_text = ICON_MDI_PROGRESS_CLOCK;
+          icon_color = Gruvbox::bright_aqua;
           break;
       }
 
