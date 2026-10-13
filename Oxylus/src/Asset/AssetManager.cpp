@@ -167,6 +167,7 @@ auto AssetManager::to_asset_type_sv(AssetType type) -> std::string_view {
     case AssetType::Skeleton      : return "Skeleton";
     case AssetType::Animation     : return "Animation";
     case AssetType::Cinematic     : return "Cinematic";
+    case AssetType::UI            : return "UI";
     default                       : return {};
   }
 }
@@ -367,6 +368,7 @@ auto AssetManager::acquire_ref(this AssetManager& self, ReadGuard<Asset> asset) 
     case AssetType::Terrain  :
     case AssetType::Skeleton :
     case AssetType::Cinematic:
+    case AssetType::UI       :
     case AssetType::Script   : break;
     case AssetType::Animation: {
       auto clip = self.get_animation(asset->animation_id);
@@ -437,6 +439,7 @@ auto AssetManager::release_ref(this AssetManager& self, ReadGuard<Asset> asset) 
     case AssetType::Terrain  :
     case AssetType::Skeleton :
     case AssetType::Cinematic:
+    case AssetType::UI       :
     case AssetType::Script   : break;
     case AssetType::Animation: {
       auto clip = self.get_animation(asset->animation_id);
@@ -537,7 +540,8 @@ auto AssetManager::unload_asset_impl(this AssetManager& self, const AssetType ty
     case AssetType::Cinematic     : return self.unload_cinematic(static_cast<CinematicID>(id));
     case AssetType::None          :
     case AssetType::Shader        :
-    case AssetType::Font          : return false;
+    case AssetType::Font          :
+    case AssetType::UI            : return false;
   }
 
   return false;

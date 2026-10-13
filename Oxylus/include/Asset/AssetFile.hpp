@@ -38,6 +38,7 @@ enum class AssetType : u32 {
   Skeleton,
   Animation,
   Cinematic,
+  UI,
 };
 
 struct NoneAsset {
@@ -112,6 +113,14 @@ struct SceneData {
   // the scene as the editor saved it, checked and minified by the cook. A binary form of its own would replace this,
   // and only the cooker and `Scene::load_from_file` read it
   std::string json = {};
+};
+
+struct UIData {
+  using serialize_id = zpp::bits::serialization_id<AssetType::UI>;
+
+  std::string name = {};
+  // the file as written, RmlUi parses it when a document loads
+  std::string text = {};
 };
 
 enum class ModelLightType : u32 {
@@ -276,7 +285,7 @@ static_assert(GPU::Mesh::MAX_LODS == 8);
 struct AssetFileEntry {
   PackedUUID uuid = {};
   AssetType type = AssetType::None;
-  std::variant<NoneAsset, ShaderPipelineData, TextureData, ModelData, ScriptData, SceneData> data;
+  std::variant<NoneAsset, ShaderPipelineData, TextureData, ModelData, ScriptData, SceneData, UIData> data;
 
   constexpr static auto serialize(auto& archive, auto& self) -> zpp::bits::errc {
     if constexpr (std::remove_cvref_t<decltype(archive)>::kind() == zpp::bits::kind::out) {
@@ -319,5 +328,6 @@ struct AssetFile {
   auto add_entry(this AssetFile& self, ModelData&& entry, const PackedUUID& uuid = {}) -> void;
   auto add_entry(this AssetFile& self, ScriptData&& entry, const PackedUUID& uuid = {}) -> void;
   auto add_entry(this AssetFile& self, SceneData&& entry, const PackedUUID& uuid = {}) -> void;
+  auto add_entry(this AssetFile& self, UIData&& entry, const PackedUUID& uuid = {}) -> void;
 };
 } // namespace ox

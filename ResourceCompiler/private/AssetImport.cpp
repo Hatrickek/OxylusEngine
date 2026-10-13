@@ -245,6 +245,8 @@ auto to_asset_file_type(const std::filesystem::path& path) -> AssetFileType {
     case fnv64_c(".OXPARTICLE"): return AssetFileType::OXPARTICLE;
     case fnv64_c(".OXCINE")    : return AssetFileType::OXCINE;
     case fnv64_c(".OXSCENE")   : return AssetFileType::OXSCENE;
+    case fnv64_c(".RML")       : return AssetFileType::RML;
+    case fnv64_c(".RCSS")      : return AssetFileType::RCSS;
     case fnv64_c(".WAV")       : return AssetFileType::WAV;
     case fnv64_c(".MP3")       : return AssetFileType::MP3;
     case fnv64_c(".FLAC")      : return AssetFileType::FLAC;
@@ -266,6 +268,8 @@ auto to_asset_type(AssetFileType file_type) -> AssetType {
     case AssetFileType::OXPARTICLE: return AssetType::ParticleSystem;
     case AssetFileType::OXCINE    : return AssetType::Cinematic;
     case AssetFileType::OXSCENE   : return AssetType::Scene;
+    case AssetFileType::RML       :
+    case AssetFileType::RCSS      : return AssetType::UI;
     case AssetFileType::WAV       :
     case AssetFileType::MP3       :
     case AssetFileType::FLAC      :
@@ -283,7 +287,9 @@ auto needs_compiling(AssetFileType file_type) -> bool {
     case AssetFileType::PNG    :
     case AssetFileType::JPEG   :
     case AssetFileType::LUA    :
-    case AssetFileType::OXSCENE: return true;
+    case AssetFileType::OXSCENE:
+    case AssetFileType::RML    :
+    case AssetFileType::RCSS   : return true;
     default                    : return false;
   }
 }
@@ -492,6 +498,28 @@ static auto string_to_hash(std::string_view text) -> u64 {
   }
 
   return value;
+}
+
+// what the sidecar of a file cooked on its own records: its UUID, and the hash of the source it was last cooked from
+struct SimpleMeta {
+  UUID uuid = UUID(nullptr);
+  u64 source_hash = 0;
+};
+
+static auto read_simple_meta(Session& session, const std::filesystem::path& meta_path) -> SimpleMeta {
+  ZoneScoped;
+
+  auto meta = SimpleMeta{};
+  if (auto meta_json = read_meta_file(session, meta_path)) {
+    if (auto uuid_json = meta_json->doc["uuid"].get_string(); !uuid_json.error()) {
+      meta.uuid = UUID::from_string(uuid_json.value_unsafe()).value_or(UUID(nullptr));
+    }
+    if (auto hash_json = meta_json->doc["source_hash"].get_string(); !hash_json.error()) {
+      meta.source_hash = string_to_hash(hash_json.value_unsafe());
+    }
+  }
+
+  return meta;
 }
 
 static auto mix_hash(u64 hash, u64 value) -> u64 { return (hash ^ value) * 0x100000001B3_u64; }
@@ -1010,20 +1038,9 @@ static auto import_script(Importer& importer, const std::filesystem::path& path)
 
   const auto meta_path = meta_file_path(path);
   const auto had_meta = std::filesystem::exists(meta_path);
-  auto uuid = UUID(nullptr);
-  auto recorded_hash = 0_u64;
-  if (auto meta_json = had_meta ? read_meta_file(importer.session, meta_path) : nullptr) {
-    if (auto uuid_json = meta_json->doc["uuid"].get_string(); !uuid_json.error()) {
-      uuid = UUID::from_string(uuid_json.value_unsafe()).value_or(UUID(nullptr));
-    }
-    if (auto hash_json = meta_json->doc["source_hash"].get_string(); !hash_json.error()) {
-      recorded_hash = string_to_hash(hash_json.value_unsafe());
-    }
-  }
-
-  if (!uuid) {
-    uuid = UUID::generate_random();
-  }
+  const auto meta = had_meta ? read_simple_meta(importer.session, meta_path) : SimpleMeta{};
+  const auto uuid = meta.uuid ? meta.uuid : UUID::generate_random();
+  const auto recorded_hash = meta.source_hash;
 
   // the chunk name is baked into the bytecode, so a script that moved recompiles even though its text didn't, and so
   // does every script when lua's bytecode format moves on
@@ -1099,20 +1116,9 @@ static auto import_scene(Importer& importer, const std::filesystem::path& path) 
 
   const auto meta_path = meta_file_path(path);
   const auto had_meta = std::filesystem::exists(meta_path);
-  auto uuid = UUID(nullptr);
-  auto recorded_hash = 0_u64;
-  if (auto meta_json = had_meta ? read_meta_file(importer.session, meta_path) : nullptr) {
-    if (auto uuid_json = meta_json->doc["uuid"].get_string(); !uuid_json.error()) {
-      uuid = UUID::from_string(uuid_json.value_unsafe()).value_or(UUID(nullptr));
-    }
-    if (auto hash_json = meta_json->doc["source_hash"].get_string(); !hash_json.error()) {
-      recorded_hash = string_to_hash(hash_json.value_unsafe());
-    }
-  }
-
-  if (!uuid) {
-    uuid = UUID::generate_random();
-  }
+  const auto meta = had_meta ? read_simple_meta(importer.session, meta_path) : SimpleMeta{};
+  const auto uuid = meta.uuid ? meta.uuid : UUID::generate_random();
+  const auto recorded_hash = meta.source_hash;
 
   const auto hash = source_hash(path);
   const auto pack_path = cooked_path(importer, uuid);
@@ -1168,6 +1174,56 @@ static auto import_scene(Importer& importer, const std::filesystem::path& path) 
   );
 
   return compiled ? uuid : UUID(nullptr);
+}
+
+// RmlUi documents and stylesheets, packed as written: RmlUi parses them itself when a document loads, and can't run
+// here to check them. What the pack buys is that the source stays behind, and that the text is compressed.
+static auto import_ui(Importer& importer, const std::filesystem::path& path) -> UUID {
+  ZoneScoped;
+
+  const auto meta_path = meta_file_path(path);
+  const auto had_meta = std::filesystem::exists(meta_path);
+  const auto meta = had_meta ? read_simple_meta(importer.session, meta_path) : SimpleMeta{};
+  const auto uuid = meta.uuid ? meta.uuid : UUID::generate_random();
+
+  const auto hash = source_hash(path);
+  const auto pack_path = cooked_path(importer, uuid);
+  if (meta.source_hash != hash || !std::filesystem::exists(pack_path)) {
+    auto text = File::try_to_string(path);
+    if (!text.has_value()) {
+      importer.session.push_error(fmt::format("Couldn't read '{}'.", path));
+      return UUID(nullptr);
+    }
+
+    auto file = AssetFile{};
+    file.add_entry(UIData{.name = path.filename().string(), .text = std::move(text.value())}, PackedUUID::pack(uuid));
+    if (!file.pack(pack_path)) {
+      importer.session.push_error(fmt::format("Failed to write the UI pack for '{}'.", path));
+      return UUID(nullptr);
+    }
+
+    if (!write_simple_meta(path, uuid, AssetType::UI, hash)) {
+      importer.session.push_error(fmt::format("Couldn't write {}.", meta_path));
+      return UUID(nullptr);
+    }
+
+    if (!had_meta) {
+      note_new_sidecar(importer, path);
+    }
+  }
+
+  importer.result.assets.push_back(
+    ImportedAsset{
+      .uuid = uuid,
+      .type = AssetType::UI,
+      .path = pack_path,
+      .source_path = path,
+      .origin = path,
+      .name = path.filename().string(),
+    }
+  );
+
+  return uuid;
 }
 
 // Everything that has no payload of its own to cook: a sidecar standing alone is the whole asset (a material), and a
@@ -1273,6 +1329,10 @@ static auto import_asset(Importer& importer, const std::filesystem::path& path, 
 
     if (asset_type == AssetType::Scene) {
       return import_scene(importer, path);
+    }
+
+    if (asset_type == AssetType::UI) {
+      return import_ui(importer, path);
     }
 
     return import_compiled_texture(importer, path, usage_directive);

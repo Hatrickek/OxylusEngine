@@ -360,4 +360,16 @@ auto AssetFile::add_entry(this AssetFile& self, SceneData&& entry, const PackedU
   );
 }
 
+auto AssetFile::add_entry(this AssetFile& self, UIData&& entry, const PackedUUID& uuid) -> void {
+  ZoneScoped;
+
+  self.entries.push_back(
+    AssetFileEntry{
+      .uuid = uuid,
+      .type = AssetType::UI,
+      .data = std::move(entry),
+    }
+  );
+}
+
 } // namespace ox
