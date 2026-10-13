@@ -2,6 +2,7 @@
 #include <cstdio>
 #include <gtest/gtest.h>
 #include <string_view>
+#include <vector>
 
 #include "Asset/AssetFile.hpp"
 #include "Asset/AssetManager.hpp"
@@ -117,6 +118,30 @@ TEST_F(RmlFileInterfaceTest, PrefersTheSourceToItsPack) {
   auto contents = Rml::String{};
   ASSERT_TRUE(files.LoadFile("assets_dir/UI/hud.rml", contents));
   EXPECT_EQ(contents, "<rml>hud</rml>");
+
+  EXPECT_TRUE(asset_man.deinit().has_value());
+}
+
+// a font's bytes, zeros and all, from its pack once the source is gone: how `LoadFontFace` and ImGui both get one
+TEST_F(RmlFileInterfaceTest, ReadsACookedFontByteForByte) {
+  auto asset_man = AssetManager{};
+  ASSERT_TRUE(asset_man.init().has_value());
+
+  const auto font_bytes = std::vector<u8>{0x00, 0x01, 0x00, 0x00, 0x00, 0x0A, 0xFF, 0x00};
+  const auto pack_path = directory / "font.oxpack";
+  auto pack = AssetFile{};
+  pack.add_entry(FontData{.name = "game.ttf", .bytes = font_bytes});
+  ASSERT_TRUE(pack.pack(pack_path));
+  ASSERT_TRUE(
+    asset_man.register_asset(UUID::generate_random(), AssetType::Font, pack_path, "assets_dir/Fonts/game.ttf")
+  );
+
+  const auto contents = read_ui_file(&vfs, &asset_man, "assets_dir/Fonts/game.ttf");
+  ASSERT_TRUE(contents.has_value());
+  EXPECT_EQ(std::vector<u8>(contents->begin(), contents->end()), font_bytes);
+
+  // only an asset of a type the UI reads is taken, anything else under that path is not a font
+  EXPECT_TRUE(find_rml_pack(asset_man, &vfs, "assets_dir/Fonts/game.ttf", {AssetType::Texture}).empty());
 
   EXPECT_TRUE(asset_man.deinit().has_value());
 }

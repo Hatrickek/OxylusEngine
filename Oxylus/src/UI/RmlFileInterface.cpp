@@ -32,27 +32,12 @@ static auto read_rml_pack(const std::filesystem::path& pack_path) -> option<std:
     if (auto* ui_data = std::get_if<UIData>(&entry.data)) {
       return std::move(ui_data->text);
     }
-  }
 
-  return nullopt;
-}
-
-static auto read_rml_file(const RmlFileInterface& files, std::string_view path) -> option<std::string> {
-  const auto physical_path = resolve_rml_path(files.vfs, path);
-  if (auto contents = File::try_to_string(physical_path); contents.has_value()) {
-    return std::move(contents.value());
-  }
-
-  if (files.asset_man) {
-    if (const auto pack_path = find_rml_pack(*files.asset_man, files.vfs, path, AssetType::UI); !pack_path.empty()) {
-      if (auto contents = read_rml_pack(pack_path)) {
-        return contents;
-      }
+    if (auto* font_data = std::get_if<FontData>(&entry.data)) {
+      return std::string(font_data->bytes.begin(), font_data->bytes.end());
     }
   }
 
-  // RmlUi reports the path it asked for, which says nothing about where a virtual one was looked for
-  OX_LOG_WARN("RmlUi couldn't open '{}' ({}).", path, physical_path);
   return nullopt;
 }
 
@@ -65,8 +50,9 @@ auto resolve_rml_path(const VFS* vfs, std::string_view path) -> std::filesystem:
   return vfs->to_physical(fs_path);
 }
 
-auto find_rml_pack(AssetManager& asset_man, const VFS* vfs, std::string_view path, AssetType type)
-  -> std::filesystem::path {
+auto find_rml_pack(
+  AssetManager& asset_man, const VFS* vfs, std::string_view path, std::initializer_list<AssetType> types
+) -> std::filesystem::path {
   ZoneScoped;
 
   // registered by the virtual path of its source, which is what a virtual document path already is
@@ -76,7 +62,7 @@ auto find_rml_pack(AssetManager& asset_man, const VFS* vfs, std::string_view pat
   }
 
   auto asset = asset_man.get_asset(uuid);
-  if (!asset || asset->type != type) {
+  if (!asset || std::ranges::find(types, asset->type) == types.end()) {
     return {};
   }
 
@@ -84,10 +70,30 @@ auto find_rml_pack(AssetManager& asset_man, const VFS* vfs, std::string_view pat
   return pack_path.extension() == ".oxpack" ? pack_path : std::filesystem::path{};
 }
 
+auto read_ui_file(const VFS* vfs, AssetManager* asset_man, std::string_view path) -> option<std::string> {
+  ZoneScoped;
+
+  const auto physical_path = resolve_rml_path(vfs, path);
+  if (auto contents = File::try_to_string(physical_path); contents.has_value()) {
+    return std::move(contents.value());
+  }
+
+  if (asset_man) {
+    const auto pack_path = find_rml_pack(*asset_man, vfs, path, {AssetType::UI, AssetType::Font});
+    if (auto contents = pack_path.empty() ? nullopt : read_rml_pack(pack_path)) {
+      return contents;
+    }
+  }
+
+  // the caller reports the path it asked for, which says nothing about where a virtual one was looked for
+  OX_LOG_WARN("Couldn't open '{}' ({}).", path, physical_path);
+  return nullopt;
+}
+
 auto RmlFileInterface::Open(const Rml::String& path) -> Rml::FileHandle {
   ZoneScoped;
 
-  auto contents = read_rml_file(*this, path);
+  auto contents = read_ui_file(this->vfs, this->asset_man, path);
   if (!contents.has_value()) {
     return 0;
   }
@@ -143,7 +149,7 @@ auto RmlFileInterface::Length(Rml::FileHandle file) -> usize { return to_open_fi
 auto RmlFileInterface::LoadFile(const Rml::String& path, Rml::String& out_data) -> bool {
   ZoneScoped;
 
-  auto contents = read_rml_file(*this, path);
+  auto contents = read_ui_file(this->vfs, this->asset_man, path);
   if (!contents.has_value()) {
     return false;
   }

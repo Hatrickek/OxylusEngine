@@ -247,6 +247,8 @@ auto to_asset_file_type(const std::filesystem::path& path) -> AssetFileType {
     case fnv64_c(".OXSCENE")   : return AssetFileType::OXSCENE;
     case fnv64_c(".RML")       : return AssetFileType::RML;
     case fnv64_c(".RCSS")      : return AssetFileType::RCSS;
+    case fnv64_c(".TTF")       : return AssetFileType::TTF;
+    case fnv64_c(".OTF")       : return AssetFileType::OTF;
     case fnv64_c(".WAV")       : return AssetFileType::WAV;
     case fnv64_c(".MP3")       : return AssetFileType::MP3;
     case fnv64_c(".FLAC")      : return AssetFileType::FLAC;
@@ -270,6 +272,8 @@ auto to_asset_type(AssetFileType file_type) -> AssetType {
     case AssetFileType::OXSCENE   : return AssetType::Scene;
     case AssetFileType::RML       :
     case AssetFileType::RCSS      : return AssetType::UI;
+    case AssetFileType::TTF       :
+    case AssetFileType::OTF       : return AssetType::Font;
     case AssetFileType::WAV       :
     case AssetFileType::MP3       :
     case AssetFileType::FLAC      :
@@ -289,7 +293,9 @@ auto needs_compiling(AssetFileType file_type) -> bool {
     case AssetFileType::LUA    :
     case AssetFileType::OXSCENE:
     case AssetFileType::RML    :
-    case AssetFileType::RCSS   : return true;
+    case AssetFileType::RCSS   :
+    case AssetFileType::TTF    :
+    case AssetFileType::OTF    : return true;
     default                    : return false;
   }
 }
@@ -1176,9 +1182,23 @@ static auto import_scene(Importer& importer, const std::filesystem::path& path) 
   return compiled ? uuid : UUID(nullptr);
 }
 
-// RmlUi documents and stylesheets, packed as written: RmlUi parses them itself when a document loads, and can't run
-// here to check them. What the pack buys is that the source stays behind, and that the text is compressed.
-static auto import_ui(Importer& importer, const std::filesystem::path& path) -> UUID {
+// Whether `bytes` start like a font FreeType will read: TrueType (its version tag, or Apple's), OpenType with CFF
+// outlines, or a collection. A renamed file is the likely mistake, and it would otherwise only fail in the game,
+// quietly falling back to another face.
+static auto is_font_file(std::span<const u8> bytes) -> bool {
+  constexpr u8 TRUETYPE[] = {0x00, 0x01, 0x00, 0x00};
+  constexpr u8 APPLE_TRUETYPE[] = {'t', 'r', 'u', 'e'};
+  constexpr u8 OPENTYPE[] = {'O', 'T', 'T', 'O'};
+  constexpr u8 COLLECTION[] = {'t', 't', 'c', 'f'};
+
+  return header_matches(bytes, TRUETYPE) || header_matches(bytes, APPLE_TRUETYPE) || header_matches(bytes, OPENTYPE) ||
+         header_matches(bytes, COLLECTION);
+}
+
+// Files whatever loads them reads as is: RmlUi documents and stylesheets, which RmlUi parses when a document loads and
+// can't run here to check, and fonts, which are rasterized at runtime. What the pack buys is that the source stays
+// behind, and that it is compressed.
+static auto import_as_written(Importer& importer, const std::filesystem::path& path, AssetType type) -> UUID {
   ZoneScoped;
 
   const auto meta_path = meta_file_path(path);
@@ -1189,20 +1209,32 @@ static auto import_ui(Importer& importer, const std::filesystem::path& path) -> 
   const auto hash = source_hash(path);
   const auto pack_path = cooked_path(importer, uuid);
   if (meta.source_hash != hash || !std::filesystem::exists(pack_path)) {
-    auto text = File::try_to_string(path);
-    if (!text.has_value()) {
+    auto contents = File::try_to_string(path);
+    if (!contents.has_value()) {
       importer.session.push_error(fmt::format("Couldn't read '{}'.", path));
       return UUID(nullptr);
     }
 
     auto file = AssetFile{};
-    file.add_entry(UIData{.name = path.filename().string(), .text = std::move(text.value())}, PackedUUID::pack(uuid));
+    const auto name = path.filename().string();
+    if (type == AssetType::Font) {
+      const auto bytes = std::span(reinterpret_cast<const u8*>(contents->data()), contents->size());
+      if (!is_font_file(bytes)) {
+        importer.session.push_error(fmt::format("'{}' isn't a TrueType or OpenType font.", path));
+        return UUID(nullptr);
+      }
+
+      file.add_entry(FontData{.name = name, .bytes = {bytes.begin(), bytes.end()}}, PackedUUID::pack(uuid));
+    } else {
+      file.add_entry(UIData{.name = name, .text = std::move(contents.value())}, PackedUUID::pack(uuid));
+    }
+
     if (!file.pack(pack_path)) {
-      importer.session.push_error(fmt::format("Failed to write the UI pack for '{}'.", path));
+      importer.session.push_error(fmt::format("Failed to write the pack for '{}'.", path));
       return UUID(nullptr);
     }
 
-    if (!write_simple_meta(path, uuid, AssetType::UI, hash)) {
+    if (!write_simple_meta(path, uuid, type, hash)) {
       importer.session.push_error(fmt::format("Couldn't write {}.", meta_path));
       return UUID(nullptr);
     }
@@ -1215,7 +1247,7 @@ static auto import_ui(Importer& importer, const std::filesystem::path& path) -> 
   importer.result.assets.push_back(
     ImportedAsset{
       .uuid = uuid,
-      .type = AssetType::UI,
+      .type = type,
       .path = pack_path,
       .source_path = path,
       .origin = path,
@@ -1331,8 +1363,8 @@ static auto import_asset(Importer& importer, const std::filesystem::path& path, 
       return import_scene(importer, path);
     }
 
-    if (asset_type == AssetType::UI) {
-      return import_ui(importer, path);
+    if (asset_type == AssetType::UI || asset_type == AssetType::Font) {
+      return import_as_written(importer, path, asset_type);
     }
 
     return import_compiled_texture(importer, path, usage_directive);

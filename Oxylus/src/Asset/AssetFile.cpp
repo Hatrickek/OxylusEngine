@@ -372,4 +372,16 @@ auto AssetFile::add_entry(this AssetFile& self, UIData&& entry, const PackedUUID
   );
 }
 
+auto AssetFile::add_entry(this AssetFile& self, FontData&& entry, const PackedUUID& uuid) -> void {
+  ZoneScoped;
+
+  self.entries.push_back(
+    AssetFileEntry{
+      .uuid = uuid,
+      .type = AssetType::Font,
+      .data = std::move(entry),
+    }
+  );
+}
+
 } // namespace ox

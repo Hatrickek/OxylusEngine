@@ -123,6 +123,14 @@ struct UIData {
   std::string text = {};
 };
 
+struct FontData {
+  using serialize_id = zpp::bits::serialization_id<AssetType::Font>;
+
+  std::string name = {};
+  // the font file as written, rasterized at runtime by whoever loads it (RmlUi, ImGui)
+  std::vector<u8> bytes = {};
+};
+
 enum class ModelLightType : u32 {
   Directional = 0,
   Spot,
@@ -285,7 +293,7 @@ static_assert(GPU::Mesh::MAX_LODS == 8);
 struct AssetFileEntry {
   PackedUUID uuid = {};
   AssetType type = AssetType::None;
-  std::variant<NoneAsset, ShaderPipelineData, TextureData, ModelData, ScriptData, SceneData, UIData> data;
+  std::variant<NoneAsset, ShaderPipelineData, TextureData, ModelData, ScriptData, SceneData, UIData, FontData> data;
 
   constexpr static auto serialize(auto& archive, auto& self) -> zpp::bits::errc {
     if constexpr (std::remove_cvref_t<decltype(archive)>::kind() == zpp::bits::kind::out) {
@@ -329,5 +337,6 @@ struct AssetFile {
   auto add_entry(this AssetFile& self, ScriptData&& entry, const PackedUUID& uuid = {}) -> void;
   auto add_entry(this AssetFile& self, SceneData&& entry, const PackedUUID& uuid = {}) -> void;
   auto add_entry(this AssetFile& self, UIData&& entry, const PackedUUID& uuid = {}) -> void;
+  auto add_entry(this AssetFile& self, FontData&& entry, const PackedUUID& uuid = {}) -> void;
 };
 } // namespace ox

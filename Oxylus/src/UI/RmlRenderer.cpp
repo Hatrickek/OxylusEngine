@@ -218,7 +218,7 @@ auto RmlRenderer::LoadTexture(Rml::Vector2i& texture_dimensions, const Rml::Stri
   if (std::filesystem::exists(path)) {
     texture = Texture::create({.source = path});
   } else if (App::has_mod<AssetManager>()) {
-    const auto pack_path = find_rml_pack(App::mod<AssetManager>(), &vfs, source, AssetType::Texture);
+    const auto pack_path = find_rml_pack(App::mod<AssetManager>(), &vfs, source, {AssetType::Texture});
     if (auto pack = pack_path.empty() ? nullopt : AssetFile::unpack(pack_path)) {
       for (const auto& entry : pack->entries) {
         if (const auto* texture_data = std::get_if<TextureData>(&entry.data)) {
