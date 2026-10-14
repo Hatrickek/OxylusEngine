@@ -26,6 +26,7 @@
 #include <algorithm>
 #include <ankerl/svector.h>
 #include <cmath>
+#include <cstring>
 #include <glm/gtx/compatibility.hpp>
 #include <glm/gtx/matrix_decompose.hpp>
 #include <ranges>
@@ -270,11 +271,11 @@ struct JsonEntityDeserializer : IEntitySerializer {
       return;
     }
 
+    // the field owns its string and flecs frees it with the component, so it can't point into the scratch stack
     auto result = field_result.get_string();
     if (!result.error()) {
-      auto str_view = result.value_unsafe();
-      auto* str_copy = stack.null_terminate_cstr(str_view);
-      *str = str_copy;
+      ecs_os_free(const_cast<c8*>(*str));
+      *str = ecs_os_strdup(stack.null_terminate_cstr(result.value_unsafe()));
     }
   }
 
@@ -306,21 +307,39 @@ struct JsonEntityDeserializer : IEntitySerializer {
       return;
     }
 
-    if (
-      underlying_kind == EcsOpU8 || underlying_kind == EcsOpU16 || underlying_kind == EcsOpU32 ||
-      underlying_kind == EcsOpU64
-    ) {
-      auto result = field_result.get_uint64();
-      auto current = static_cast<u64*>(ptr);
-      *current = result.value_unsafe();
-    } else if (
-      underlying_kind == EcsOpI8 || underlying_kind == EcsOpI16 || underlying_kind == EcsOpI32 ||
-      underlying_kind == EcsOpI64
-    ) {
-      auto result = field_result.get_int64();
-      auto current = static_cast<i64*>(ptr);
-      *current = result.value_unsafe();
+    // Written at the enum's own width, the low bytes of the value: a wider write runs into whatever the component
+    // holds next. Every platform the engine targets is little endian.
+    auto width = 0_sz;
+    switch (underlying_kind) {
+      case EcsOpU8 :
+      case EcsOpI8 : width = 1; break;
+      case EcsOpU16:
+      case EcsOpI16: width = 2; break;
+      case EcsOpU32:
+      case EcsOpI32: width = 4; break;
+      case EcsOpU64:
+      case EcsOpI64: width = 8; break;
+      default      : return;
     }
+
+    const auto is_signed = underlying_kind == EcsOpI8 || underlying_kind == EcsOpI16 || underlying_kind == EcsOpI32 ||
+                           underlying_kind == EcsOpI64;
+    auto value = 0_u64;
+    if (is_signed) {
+      auto result = field_result.get_int64();
+      if (result.error()) {
+        return;
+      }
+      value = static_cast<u64>(result.value_unsafe());
+    } else {
+      auto result = field_result.get_uint64();
+      if (result.error()) {
+        return;
+      }
+      value = result.value_unsafe();
+    }
+
+    std::memcpy(ptr, &value, width);
   }
 
   auto on_component(std::string_view name, flecs::id_t* component) -> void override {
