@@ -1,8 +1,9 @@
 #pragma once
 
+#include <vir/Types.hpp>
+
 #include "Core/Types.hpp"
 #include "Render/GPU/Shared.hpp"
-#include "Render/Graph/Types.hpp"
 #include "Utils/OxMath.hpp"
 
 namespace ox::GPU {

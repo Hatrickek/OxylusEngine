@@ -1,5 +1,6 @@
+#include <vir/RenderGraph.hpp>
+
 #include "Render/DebugRenderer.hpp"
-#include "Render/Graph/RenderGraph.hpp"
 #include "Render/RenderContext.hpp"
 #include "Render/RendererInstance.hpp"
 #include "Render/Utils/PushConstants.hpp"
@@ -68,26 +69,6 @@ auto RendererInstance::apply_debug_view(
   }
 
   if (debug_view == GPU::DebugView::RMVSMPointSpot) {
-    bind_vsm_pointspot_spec_constants(module
-                                        .begin_rendering(
-                                          {{dst, vir::Access::ColorWrite},
-                                           {context.depth_attachment, vir::Access::FragmentSampled},
-                                           {context.vsm_pointspot_page_table_attachment, vir::Access::FragmentSampled},
-                                           {values.camera, vir::Access::FragmentUniformRead},
-                                           {context.pointspot_views_buffer, vir::Access::FragmentRead},
-                                           {context.light_grid_buffer, vir::Access::FragmentRead}}
-                                        )
-                                        .with_name("rmvsm pointspot debug pass")
-                                        .bind_graphics_pipeline(render_context.pipeline("rmvsm_debug_pointspot")))
-      .set_viewport(0, vir::Rect2D::framebuffer())
-      .set_scissor(0, vir::Rect2D::framebuffer())
-      .bind_buffer(0, 0, values.camera)
-      .bind_buffer(0, 1, context.pointspot_views_buffer)
-      .bind_buffer(0, 2, context.light_grid_buffer)
-      .bind_image(0, 3, context.depth_attachment)
-      .bind_image(0, 4, context.vsm_pointspot_page_table_attachment)
-      .push_constants_from(prepared.debug.pointspot_push)
-      .draw(3, 1);
     std::tie(
       dst,
       context.depth_attachment,
@@ -95,31 +76,35 @@ auto RendererInstance::apply_debug_view(
       values.camera,
       context.pointspot_views_buffer,
       context.light_grid_buffer
-    ) = std::tuple_cat(module.end_rendering<6>());
+    ) = std::tuple_cat(bind_vsm_pointspot_spec_constants(module
+                                                           .begin_rendering(
+                                                             {{dst, vir::Access::ColorWrite},
+                                                              {context.depth_attachment, vir::Access::FragmentSampled},
+                                                              {context.vsm_pointspot_page_table_attachment,
+                                                               vir::Access::FragmentSampled},
+                                                              {values.camera, vir::Access::FragmentUniformRead},
+                                                              {context.pointspot_views_buffer,
+                                                               vir::Access::FragmentRead},
+                                                              {context.light_grid_buffer, vir::Access::FragmentRead}}
+                                                           )
+                                                           .with_name("rmvsm pointspot debug pass")
+                                                           .bind_graphics_pipeline(
+                                                             render_context.pipeline("rmvsm_debug_pointspot")
+                                                           ))
+                         .set_viewport(0, vir::Rect2D::framebuffer())
+                         .set_scissor(0, vir::Rect2D::framebuffer())
+                         .bind_buffer(0, 0, values.camera)
+                         .bind_buffer(0, 1, context.pointspot_views_buffer)
+                         .bind_buffer(0, 2, context.light_grid_buffer)
+                         .bind_image(0, 3, context.depth_attachment)
+                         .bind_image(0, 4, context.vsm_pointspot_page_table_attachment)
+                         .push_constants_from(prepared.debug.pointspot_push)
+                         .draw(3, 1)
+                         .end_rendering());
     return dst;
   }
 
   if (debug_view == GPU::DebugView::RMVSM) {
-    module
-      .begin_rendering(
-        {{dst, vir::Access::ColorWrite},
-         {context.depth_attachment, vir::Access::FragmentSampled},
-         {context.normal_attachment, vir::Access::FragmentSampled},
-         {context.vsm_page_table_attachment, vir::Access::FragmentSampled},
-         {values.camera, vir::Access::FragmentUniformRead},
-         {context.vsm_clipmaps_buffer, vir::Access::FragmentRead}}
-      )
-      .with_name("rmvsm debug pass")
-      .bind_graphics_pipeline(render_context.pipeline("rmvsm_debug"))
-      .set_viewport(0, vir::Rect2D::framebuffer())
-      .set_scissor(0, vir::Rect2D::framebuffer())
-      .bind_buffer(0, 0, values.camera)
-      .bind_buffer(0, 1, context.vsm_clipmaps_buffer)
-      .bind_image(0, 2, context.depth_attachment)
-      .bind_image(0, 3, context.normal_attachment)
-      .bind_image(0, 4, context.vsm_page_table_attachment)
-      .push_constants_from(prepared.debug.vsm_context)
-      .draw(3, 1);
     std::tie(
       dst,
       context.depth_attachment,
@@ -127,43 +112,30 @@ auto RendererInstance::apply_debug_view(
       context.vsm_page_table_attachment,
       values.camera,
       context.vsm_clipmaps_buffer
-    ) = std::tuple_cat(module.end_rendering<6>());
+    ) = std::tuple_cat(module
+                         .begin_rendering(
+                           {{dst, vir::Access::ColorWrite},
+                            {context.depth_attachment, vir::Access::FragmentSampled},
+                            {context.normal_attachment, vir::Access::FragmentSampled},
+                            {context.vsm_page_table_attachment, vir::Access::FragmentSampled},
+                            {values.camera, vir::Access::FragmentUniformRead},
+                            {context.vsm_clipmaps_buffer, vir::Access::FragmentRead}}
+                         )
+                         .with_name("rmvsm debug pass")
+                         .bind_graphics_pipeline(render_context.pipeline("rmvsm_debug"))
+                         .set_viewport(0, vir::Rect2D::framebuffer())
+                         .set_scissor(0, vir::Rect2D::framebuffer())
+                         .bind_buffer(0, 0, values.camera)
+                         .bind_buffer(0, 1, context.vsm_clipmaps_buffer)
+                         .bind_image(0, 2, context.depth_attachment)
+                         .bind_image(0, 3, context.normal_attachment)
+                         .bind_image(0, 4, context.vsm_page_table_attachment)
+                         .push_constants_from(prepared.debug.vsm_context)
+                         .draw(3, 1)
+                         .end_rendering());
     return dst;
   }
 
-  module
-    .begin_rendering(
-      {{dst, vir::Access::ColorWrite},
-       {context.visbuffer_attachment, vir::Access::FragmentSampled},
-       {context.depth_attachment, vir::Access::FragmentSampled},
-       {context.overdraw_attachment, vir::Access::FragmentSampled},
-       {context.albedo_attachment, vir::Access::FragmentSampled},
-       {context.normal_attachment, vir::Access::FragmentSampled},
-       {context.emissive_attachment, vir::Access::FragmentSampled},
-       {context.metallic_roughness_occlusion_attachment, vir::Access::FragmentSampled},
-       {context.ambient_occlusion_attachment, vir::Access::FragmentSampled},
-       {values.meshlet_instances, vir::Access::FragmentRead},
-       {values.mesh_instances, vir::Access::FragmentRead},
-       {values.meshes, vir::Access::FragmentRead}}
-    )
-    .with_name("debug view pass")
-    .bind_graphics_pipeline(render_context.pipeline("debug_view"))
-    .set_viewport(0, vir::Rect2D::framebuffer())
-    .set_scissor(0, vir::Rect2D::framebuffer())
-    .bind_sampler(0, 0, render_context.cached_sampler_handle(vir::LinearSamplerRepeated))
-    .bind_image(0, 1, context.visbuffer_attachment)
-    .bind_image(0, 2, context.depth_attachment)
-    .bind_image(0, 3, context.overdraw_attachment)
-    .bind_image(0, 4, context.albedo_attachment)
-    .bind_image(0, 5, context.normal_attachment)
-    .bind_image(0, 6, context.emissive_attachment)
-    .bind_image(0, 7, context.metallic_roughness_occlusion_attachment)
-    .bind_image(0, 8, context.ambient_occlusion_attachment)
-    .bind_buffer(0, 9, values.meshlet_instances)
-    .bind_buffer(0, 10, values.mesh_instances)
-    .bind_buffer(0, 11, values.meshes)
-    .push_constants(PushConstants(std::to_underlying(debug_view), DEBUG_HEATMAP_SCALE))
-    .draw(3, 1);
   std::tie(
     dst,
     context.visbuffer_attachment,
@@ -177,7 +149,40 @@ auto RendererInstance::apply_debug_view(
     values.meshlet_instances,
     values.mesh_instances,
     values.meshes
-  ) = std::tuple_cat(module.end_rendering<12>());
+  ) = std::tuple_cat(module
+                       .begin_rendering(
+                         {{dst, vir::Access::ColorWrite},
+                          {context.visbuffer_attachment, vir::Access::FragmentSampled},
+                          {context.depth_attachment, vir::Access::FragmentSampled},
+                          {context.overdraw_attachment, vir::Access::FragmentSampled},
+                          {context.albedo_attachment, vir::Access::FragmentSampled},
+                          {context.normal_attachment, vir::Access::FragmentSampled},
+                          {context.emissive_attachment, vir::Access::FragmentSampled},
+                          {context.metallic_roughness_occlusion_attachment, vir::Access::FragmentSampled},
+                          {context.ambient_occlusion_attachment, vir::Access::FragmentSampled},
+                          {values.meshlet_instances, vir::Access::FragmentRead},
+                          {values.mesh_instances, vir::Access::FragmentRead},
+                          {values.meshes, vir::Access::FragmentRead}}
+                       )
+                       .with_name("debug view pass")
+                       .bind_graphics_pipeline(render_context.pipeline("debug_view"))
+                       .set_viewport(0, vir::Rect2D::framebuffer())
+                       .set_scissor(0, vir::Rect2D::framebuffer())
+                       .bind_sampler(0, 0, render_context.cached_sampler_handle(LinearSamplerRepeated))
+                       .bind_image(0, 1, context.visbuffer_attachment)
+                       .bind_image(0, 2, context.depth_attachment)
+                       .bind_image(0, 3, context.overdraw_attachment)
+                       .bind_image(0, 4, context.albedo_attachment)
+                       .bind_image(0, 5, context.normal_attachment)
+                       .bind_image(0, 6, context.emissive_attachment)
+                       .bind_image(0, 7, context.metallic_roughness_occlusion_attachment)
+                       .bind_image(0, 8, context.ambient_occlusion_attachment)
+                       .bind_buffer(0, 9, values.meshlet_instances)
+                       .bind_buffer(0, 10, values.mesh_instances)
+                       .bind_buffer(0, 11, values.meshes)
+                       .push_constants(PushConstants(std::to_underlying(debug_view), DEBUG_HEATMAP_SCALE))
+                       .draw(3, 1)
+                       .end_rendering());
   return dst;
 }
 
@@ -199,20 +204,20 @@ auto RendererInstance::draw_debug_shapes(
 
   auto vertices = prepared.debug.vertices;
 
-  module
-    .begin_rendering(
-      {{dst, vir::Access::ColorRW},
-       {depth, vir::Access::FragmentSampled},
-       {vertices, vir::Access::AttributeRead},
-       {values.camera, vir::Access::VertexUniformRead | vir::Access::FragmentUniformRead}}
-    )
-    .with_name("debug shapes")
-    .broadcast_color_blend(vir::BlendPreset::AlphaBlend)
-    .set_viewport(0, vir::Rect2D::framebuffer())
-    .set_scissor(0, vir::Rect2D::framebuffer())
-    .bind_vertex_buffer(0, vertices)
-    .bind_buffer(0, 0, values.camera)
-    .bind_image(0, 1, depth);
+  auto pass = module
+                .begin_rendering(
+                  {{dst, vir::Access::ColorRW},
+                   {depth, vir::Access::FragmentSampled},
+                   {vertices, vir::Access::AttributeRead},
+                   {values.camera, vir::Access::VertexUniformRead | vir::Access::FragmentUniformRead}}
+                )
+                .with_name("debug shapes")
+                .broadcast_color_blend(vir::BlendPreset::AlphaBlend)
+                .set_viewport(0, vir::Rect2D::framebuffer())
+                .set_scissor(0, vir::Rect2D::framebuffer())
+                .bind_vertex_buffer(0, vertices)
+                .bind_buffer(0, 0, values.camera)
+                .bind_image(0, 1, depth);
 
   // the ranges move every frame, and an empty one draws nothing
   const auto draw_ranges = [&](bool is_lines, u32 flags) {
@@ -234,7 +239,7 @@ auto RendererInstance::draw_debug_shapes(
     .set_rasterization({.cull_mode = VK_CULL_MODE_NONE});
   draw_ranges(true, 0_u32);
 
-  std::tie(dst, std::ignore, std::ignore, values.camera) = std::tuple_cat(module.end_rendering<4>());
+  std::tie(dst, std::ignore, std::ignore, values.camera) = std::tuple_cat(pass.end_rendering());
   return dst;
 }
 } // namespace ox

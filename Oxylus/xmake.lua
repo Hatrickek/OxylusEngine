@@ -100,8 +100,7 @@ target("Oxylus")
         "loguru",
         "simdjson",
         "rmlui",
+        "vir",
         {public = true})
-
-    add_packages("vulkan-memory-allocator", {public = false})
 
 target_end()

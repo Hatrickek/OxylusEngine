@@ -1,8 +1,7 @@
 #pragma once
 
 #include <string_view>
-
-#include "Render/Graph/Types.hpp"
+#include <vir/Types.hpp>
 
 namespace ox {
 inline auto to_srgb_format(vir::Format format) -> vir::Format {

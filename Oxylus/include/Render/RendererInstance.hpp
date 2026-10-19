@@ -7,22 +7,22 @@
 #include <functional>
 #include <glm/gtc/packing.hpp>
 #include <memory>
+#include <vir/Fwd.hpp>
+#include <vir/Resource.hpp>
+#include <vir/Types.hpp>
 
 #include "Animation/Fwd.hpp"
 #include "Asset/Texture.hpp"
 #include "Render/AccelerationStructure.hpp"
 #include "Render/DebugRenderer.hpp"
 #include "Render/Fwd.hpp"
-#include "Render/Graph/Fwd.hpp"
-#include "Render/Graph/Resource.hpp"
-#include "Render/Graph/Types.hpp"
 #include "Render/Renderer.hpp"
 #include "Render/RendererCVar.hpp"
 #include "Render/Upscaler.hpp"
 #include "Scene/SceneGPU.hpp"
 #include "Scene/Terrain.hpp"
 
-namespace ox::vir {
+namespace vir {
 struct ColorBlendAttachmentState;
 }
 
@@ -522,6 +522,13 @@ struct RMVSMContext {
 };
 
 auto bind_vsm_pointspot_spec_constants(vir::Module& module) -> vir::Module&;
+
+template <typename Pass>
+  requires requires(Pass pass) { *pass.module; }
+auto bind_vsm_pointspot_spec_constants(Pass pass) -> Pass {
+  bind_vsm_pointspot_spec_constants(*pass.module);
+  return pass;
+}
 
 struct ShadowResolveContext {
   vir::ValueID directional_clipmaps_buffer = vir::ValueID::Invalid;

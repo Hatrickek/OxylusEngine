@@ -1,7 +1,8 @@
 #pragma once
 
+#include <vir/Resource.hpp>
+
 #include "EditorPanelState.hpp"
-#include "Render/Graph/Resource.hpp"
 #include "UI/RuntimeConsole.hpp"
 #include "Utils/PendingPick.hpp"
 #include "Utils/SceneManager.hpp"

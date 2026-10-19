@@ -1,14 +1,14 @@
 #include "Core/App.hpp"
 
 #include <mutex>
+#include <vir/RenderGraph.hpp>
+#include <vir/Types.hpp>
 
 #include "Asset/Texture.hpp"
 #include "Core/EventSystem.hpp"
 #include "Core/Input.hpp"
 #include "Core/JobManager.hpp"
 #include "Core/VFS.hpp"
-#include "Render/Graph/RenderGraph.hpp"
-#include "Render/Graph/Types.hpp"
 #include "Render/RenderContext.hpp"
 #include "Render/Renderer.hpp"
 #include "Render/Window.hpp"

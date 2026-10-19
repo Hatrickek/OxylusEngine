@@ -6,13 +6,13 @@
 #include <imgui_internal.h>
 #include <misc/cpp/imgui_stdlib.h>
 #include <system_error>
+#include <vir/Types.hpp>
 
 #include "Core/App.hpp"
 #include "Editor.hpp"
 #include "Panels/ContentPanel.hpp"
 #include "Panels/LoadingPanel.hpp"
 #include "Project/Project.hpp"
-#include "Render/Graph/Types.hpp"
 #include "UI/UI.hpp"
 #include "Utils/EmbeddedBanner.hpp"
 

@@ -191,8 +191,10 @@ chain.
 
 ### Rendering
 
-The renderer uses `ox::vir`, the C++ render graph in `Render/Graph/`, with a bindless descriptor set
-held by `RenderContext`. `Renderer` owns shared resources and pipelines. `RendererInstance` caches
+The renderer uses `vir`, the C++ render graph, with a bindless descriptor set held by `RenderContext`.
+vir lives in its own repo (`oxylusengine/vir`) and ships as the `vir` package in the oxylus xmake-repo,
+pinned by commit. To pick up a vir change, push it, add a version to that package, then bump the `vir`
+version in `xmake/packages.lua`. `Renderer` owns shared resources and pipelines. `RendererInstance` caches
 compile-once `vir::Program`s in an LRU keyed by `FrameShape`. Extents, feature switches and injected
 stage names determine the shape. Passes record directly into a `vir::Module`; each cached program's
 `PreparedFrame` holds its variable IDs, while `FrameData` holds current host data. `FrameRecording` is
@@ -332,7 +334,7 @@ introducing a PCH.
   name a handle.
 - **Never pull a heavy third-party header into `Oxylus/include/`** — Jolt, ImGui, sol2, flecs,
   simdjson. Existing heavy includes such as the Jolt headers in `Scene/Scene.hpp` are debt,
-  not a precedent to copy. Render headers should use `Render/Fwd.hpp` and `Render/Graph/Fwd.hpp`
+  not a precedent to copy. Render headers should use `Render/Fwd.hpp` and `<vir/Fwd.hpp>`
   for IDs and opaque graph types. Include recording and execution headers at their use sites.
   Options, in order:
   forward declaration, an opaque handle/pimpl, moving the member to the `.cpp`, or — when the

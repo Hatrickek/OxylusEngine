@@ -1,11 +1,11 @@
 #include <bit>
 #include <gtest/gtest.h>
 #include <type_traits>
+#include <vir/Resource.hpp>
+#include <vir/Types.hpp>
 #include <vulkan/vulkan_core.h>
 
 #include "Asset/AssetFile.hpp"
-#include "Render/Graph/Resource.hpp"
-#include "Render/Graph/Types.hpp"
 
 namespace ox {
 // include promoted and legacy aliases so SDK changes cannot silently alter asset values

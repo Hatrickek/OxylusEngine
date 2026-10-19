@@ -2,10 +2,10 @@
 
 #include <algorithm>
 #include <bit>
+#include <vir/Allocator.hpp>
+#include <vir/Module.hpp>
+#include <vir/Types.hpp>
 
-#include "Render/Graph/Allocator.hpp"
-#include "Render/Graph/Module.hpp"
-#include "Render/Graph/Types.hpp"
 #include "Render/RenderContext.hpp"
 #include "Utils/Log.hpp"
 
@@ -48,22 +48,22 @@ static auto record_generate(
 ) -> void {
   ZoneScoped;
 
-  module
-    .begin_compute(
-      {{maps.heightmap, vir::Access::ComputeRW},
-       {maps.ridgemap, vir::Access::ComputeRW},
-       {maps.height_edit, vir::Access::ComputeSampled},
-       {maps.region, vir::Access::ComputeRead}}
-    )
-    .with_name("terrain generate")
-    .bind_compute_pipeline(render_context.pipeline("terrain_generate"))
-    .bind_image(0, 0, maps.heightmap)
-    .bind_image(0, 1, maps.ridgemap)
-    .bind_image(0, 2, maps.height_edit)
-    .bind_buffer(0, 3, maps.region);
+  auto terrain_pass = module
+                        .begin_compute(
+                          {{maps.heightmap, vir::Access::ComputeRW},
+                           {maps.ridgemap, vir::Access::ComputeRW},
+                           {maps.height_edit, vir::Access::ComputeSampled},
+                           {maps.region, vir::Access::ComputeRead}}
+                        )
+                        .with_name("terrain generate")
+                        .bind_compute_pipeline(render_context.pipeline("terrain_generate"))
+                        .bind_image(0, 0, maps.heightmap)
+                        .bind_image(0, 1, maps.ridgemap)
+                        .bind_image(0, 2, maps.height_edit)
+                        .bind_buffer(0, 3, maps.region);
   push(module);
-  module.dispatch(groups_x, groups_y, 1);
-  std::tie(maps.heightmap, maps.ridgemap, maps.height_edit, maps.region) = std::tuple_cat(module.end_compute<4>());
+  terrain_pass.dispatch(groups_x, groups_y, 1);
+  std::tie(maps.heightmap, maps.ridgemap, maps.height_edit, maps.region) = std::tuple_cat(terrain_pass.end_compute());
 }
 
 template <typename PushF>
@@ -77,27 +77,27 @@ static auto record_derive(
 ) -> void {
   ZoneScoped;
 
-  module
-    .begin_compute(
-      {{maps.heightmap, vir::Access::ComputeSampled},
-       {maps.ridgemap, vir::Access::ComputeSampled},
-       {maps.normalmap, vir::Access::ComputeRW},
-       {maps.splatmap, vir::Access::ComputeRW},
-       {maps.splat_edit, vir::Access::ComputeRW},
-       {maps.region, vir::Access::ComputeRead}}
-    )
-    .with_name("terrain derive")
-    .bind_compute_pipeline(render_context.pipeline("terrain_derive"))
-    .bind_image(0, 0, maps.heightmap)
-    .bind_image(0, 1, maps.ridgemap)
-    .bind_image(0, 2, maps.normalmap)
-    .bind_image(0, 3, maps.splatmap)
-    .bind_image(0, 4, maps.splat_edit)
-    .bind_buffer(0, 5, maps.region);
+  auto terrain_pass = module
+                        .begin_compute(
+                          {{maps.heightmap, vir::Access::ComputeSampled},
+                           {maps.ridgemap, vir::Access::ComputeSampled},
+                           {maps.normalmap, vir::Access::ComputeRW},
+                           {maps.splatmap, vir::Access::ComputeRW},
+                           {maps.splat_edit, vir::Access::ComputeRW},
+                           {maps.region, vir::Access::ComputeRead}}
+                        )
+                        .with_name("terrain derive")
+                        .bind_compute_pipeline(render_context.pipeline("terrain_derive"))
+                        .bind_image(0, 0, maps.heightmap)
+                        .bind_image(0, 1, maps.ridgemap)
+                        .bind_image(0, 2, maps.normalmap)
+                        .bind_image(0, 3, maps.splatmap)
+                        .bind_image(0, 4, maps.splat_edit)
+                        .bind_buffer(0, 5, maps.region);
   push(module);
-  module.dispatch(groups_x, groups_y, 1);
+  terrain_pass.dispatch(groups_x, groups_y, 1);
   std::tie(maps.heightmap, maps.ridgemap, maps.normalmap, maps.splatmap, maps.splat_edit, maps.region) = std::tuple_cat(
-    module.end_compute<6>()
+    terrain_pass.end_compute()
   );
 }
 
@@ -112,20 +112,20 @@ static auto record_minmax(
 ) -> void {
   ZoneScoped;
 
-  module
-    .begin_compute(
-      {{maps.heightmap, vir::Access::ComputeSampled},
-       {maps.patch_minmax, vir::Access::ComputeRW},
-       {maps.region, vir::Access::ComputeRead}}
-    )
-    .with_name("terrain minmax")
-    .bind_compute_pipeline(render_context.pipeline("terrain_minmax"))
-    .bind_image(0, 0, maps.heightmap)
-    .bind_image(0, 1, maps.patch_minmax)
-    .bind_buffer(0, 2, maps.region);
+  auto terrain_pass = module
+                        .begin_compute(
+                          {{maps.heightmap, vir::Access::ComputeSampled},
+                           {maps.patch_minmax, vir::Access::ComputeRW},
+                           {maps.region, vir::Access::ComputeRead}}
+                        )
+                        .with_name("terrain minmax")
+                        .bind_compute_pipeline(render_context.pipeline("terrain_minmax"))
+                        .bind_image(0, 0, maps.heightmap)
+                        .bind_image(0, 1, maps.patch_minmax)
+                        .bind_buffer(0, 2, maps.region);
   push(module);
-  module.dispatch(groups_x, groups_y, 1);
-  std::tie(maps.heightmap, maps.patch_minmax, maps.region) = std::tuple_cat(module.end_compute<3>());
+  terrain_pass.dispatch(groups_x, groups_y, 1);
+  std::tie(maps.heightmap, maps.patch_minmax, maps.region) = std::tuple_cat(terrain_pass.end_compute());
 }
 
 auto record_terrain_generate(

@@ -12,12 +12,12 @@
 #include <fmt/format.h>
 #include <fmt/std.h>
 #include <mutex>
+#include <vir/Types.hpp>
 #include <vulkan/vulkan_core.h>
 
 #include "Memory/Stack.hpp"
 #include "OS/File.hpp"
 #include "Parallel.hpp"
-#include "Render/Graph/Types.hpp"
 #include "Render/Utils/TextureFormat.hpp"
 #include "Session.hpp"
 

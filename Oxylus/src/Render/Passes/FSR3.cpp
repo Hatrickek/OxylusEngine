@@ -1,5 +1,6 @@
-#include "Render/Graph/RenderGraph.hpp"
-#include "Render/Graph/Types.hpp"
+#include <vir/RenderGraph.hpp>
+#include <vir/Types.hpp>
+
 #include "Render/RenderContext.hpp"
 #include "Render/RendererInstance.hpp"
 #include "Render/Utils/PushConstants.hpp"
@@ -68,7 +69,7 @@ auto RendererInstance::sharpen_fsr3(
   return module.set_condition(
     enabled,
     [&](vir::Module& arm) {
-      arm
+      return arm
         .begin_compute(
           {{constants, vir::Access::ComputeUniformRead},
            {history, vir::Access::ComputeSampled},
@@ -82,8 +83,8 @@ auto RendererInstance::sharpen_fsr3(
         .bind_buffer(0, 2, exposure)
         .bind_image(0, 3, output)
         .push_constants_from(sharpness)
-        .dispatch_invocations_per_pixel(output);
-      return arm.end_compute<4>();
+        .dispatch_invocations_per_pixel(output)
+        .end_compute();
     },
     [&](vir::Module&) { return std::array{constants, history, exposure, output}; }
   );
@@ -202,7 +203,7 @@ auto RendererInstance::apply_fsr3(
     1
   };
   const auto display_extent = vir::Extent3D{shape.display_size.x, shape.display_size.y, 1};
-  const auto linear_clamped = render_context.cached_sampler_handle(vir::LinearSamplerClamped);
+  const auto linear_clamped = render_context.cached_sampler_handle(LinearSamplerClamped);
 
   auto constants = module.transient_buffer({
     .size = sizeof(GPU::FSR3Constants),
@@ -306,30 +307,6 @@ auto RendererInstance::apply_fsr3(
   });
 
   // --- prepare inputs: dilate depth and motion, scatter reconstructed depth, extract luma ---
-  module
-    .begin_compute(
-      {{constants, vir::Access::ComputeUniformRead},
-       {context.velocity_attachment, vir::Access::ComputeSampled},
-       {context.depth_attachment, vir::Access::ComputeSampled},
-       {context.color_attachment, vir::Access::ComputeSampled},
-       {dilated_motion_vectors, vir::Access::ComputeRW},
-       {dilated_depth, vir::Access::ComputeRW},
-       {reconstructed_prev_nearest_depth, vir::Access::ComputeRW},
-       {farthest_depth, vir::Access::ComputeRW},
-       {current_luma, vir::Access::ComputeRW}}
-    )
-    .with_name("fsr3 prepare inputs")
-    .bind_compute_pipeline(render_context.pipeline("fsr3_prepare_inputs"))
-    .bind_buffer(0, 0, constants)
-    .bind_image(0, 1, context.velocity_attachment)
-    .bind_image(0, 2, context.depth_attachment)
-    .bind_image(0, 3, context.color_attachment)
-    .bind_image(0, 4, dilated_motion_vectors)
-    .bind_image(0, 5, dilated_depth)
-    .bind_image(0, 6, reconstructed_prev_nearest_depth)
-    .bind_image(0, 7, farthest_depth)
-    .bind_image(0, 8, current_luma)
-    .dispatch_invocations_per_pixel(dilated_depth);
   std::tie(
     constants,
     context.velocity_attachment,
@@ -340,45 +317,71 @@ auto RendererInstance::apply_fsr3(
     reconstructed_prev_nearest_depth,
     farthest_depth,
     current_luma
-  ) = std::tuple_cat(module.end_compute<9>());
+  ) = std::tuple_cat(module
+                       .begin_compute(
+                         {{constants, vir::Access::ComputeUniformRead},
+                          {context.velocity_attachment, vir::Access::ComputeSampled},
+                          {context.depth_attachment, vir::Access::ComputeSampled},
+                          {context.color_attachment, vir::Access::ComputeSampled},
+                          {dilated_motion_vectors, vir::Access::ComputeRW},
+                          {dilated_depth, vir::Access::ComputeRW},
+                          {reconstructed_prev_nearest_depth, vir::Access::ComputeRW},
+                          {farthest_depth, vir::Access::ComputeRW},
+                          {current_luma, vir::Access::ComputeRW}}
+                       )
+                       .with_name("fsr3 prepare inputs")
+                       .bind_compute_pipeline(render_context.pipeline("fsr3_prepare_inputs"))
+                       .bind_buffer(0, 0, constants)
+                       .bind_image(0, 1, context.velocity_attachment)
+                       .bind_image(0, 2, context.depth_attachment)
+                       .bind_image(0, 3, context.color_attachment)
+                       .bind_image(0, 4, dilated_motion_vectors)
+                       .bind_image(0, 5, dilated_depth)
+                       .bind_image(0, 6, reconstructed_prev_nearest_depth)
+                       .bind_image(0, 7, farthest_depth)
+                       .bind_image(0, 8, current_luma)
+                       .dispatch_invocations_per_pixel(dilated_depth)
+                       .end_compute());
 
   // --- farthest depth mip 1 ---
-  module
-    .begin_compute(
-      {{constants, vir::Access::ComputeUniformRead},
-       {farthest_depth, vir::Access::ComputeSampled},
-       {farthest_depth_mip1, vir::Access::ComputeRW}}
-    )
-    .with_name("fsr3 farthest depth mip1")
-    .bind_compute_pipeline(render_context.pipeline("fsr3_farthest_depth_mip1"))
-    .bind_buffer(0, 0, constants)
-    .bind_image(0, 1, farthest_depth)
-    .bind_image(0, 2, farthest_depth_mip1)
-    .dispatch_invocations_per_pixel(farthest_depth_mip1);
-  std::tie(constants, farthest_depth, farthest_depth_mip1) = std::tuple_cat(module.end_compute<3>());
+  std::tie(constants, farthest_depth, farthest_depth_mip1) = std::tuple_cat(
+    module
+      .begin_compute(
+        {{constants, vir::Access::ComputeUniformRead},
+         {farthest_depth, vir::Access::ComputeSampled},
+         {farthest_depth_mip1, vir::Access::ComputeRW}}
+      )
+      .with_name("fsr3 farthest depth mip1")
+      .bind_compute_pipeline(render_context.pipeline("fsr3_farthest_depth_mip1"))
+      .bind_buffer(0, 0, constants)
+      .bind_image(0, 1, farthest_depth)
+      .bind_image(0, 2, farthest_depth_mip1)
+      .dispatch_invocations_per_pixel(farthest_depth_mip1)
+      .end_compute()
+  );
 
   // --- shading change pyramid: mip 0 from the luma pair, then one reduction pass per mip ---
   const auto spd_mip0 = module.mip(spd_mips, 0);
-  module
-    .begin_compute(
-      {{constants, vir::Access::ComputeUniformRead},
-       {current_luma, vir::Access::ComputeSampled},
-       {previous_luma, vir::Access::ComputeSampled},
-       {dilated_motion_vectors, vir::Access::ComputeSampled},
-       {context.exposure_buffer, vir::Access::ComputeUniformRead},
-       {spd_mip0, vir::Access::ComputeRW}}
-    )
-    .with_name("fsr3 shading change pyramid")
-    .bind_compute_pipeline(render_context.pipeline("fsr3_shading_change_pyramid"))
-    .bind_buffer(0, 0, constants)
-    .bind_image(0, 1, current_luma)
-    .bind_image(0, 2, previous_luma)
-    .bind_image(0, 3, dilated_motion_vectors)
-    .bind_buffer(0, 4, context.exposure_buffer)
-    .bind_image(0, 5, spd_mip0)
-    .dispatch_invocations(half_extent.width, half_extent.height, 1);
+  auto pass = module
+                .begin_compute(
+                  {{constants, vir::Access::ComputeUniformRead},
+                   {current_luma, vir::Access::ComputeSampled},
+                   {previous_luma, vir::Access::ComputeSampled},
+                   {dilated_motion_vectors, vir::Access::ComputeSampled},
+                   {context.exposure_buffer, vir::Access::ComputeUniformRead},
+                   {spd_mip0, vir::Access::ComputeRW}}
+                )
+                .with_name("fsr3 shading change pyramid")
+                .bind_compute_pipeline(render_context.pipeline("fsr3_shading_change_pyramid"))
+                .bind_buffer(0, 0, constants)
+                .bind_image(0, 1, current_luma)
+                .bind_image(0, 2, previous_luma)
+                .bind_image(0, 3, dilated_motion_vectors)
+                .bind_buffer(0, 4, context.exposure_buffer)
+                .bind_image(0, 5, spd_mip0)
+                .dispatch_invocations(half_extent.width, half_extent.height, 1);
   {
-    const auto results = module.end_compute<6>();
+    const auto results = pass.end_compute();
     std::tie(constants, current_luma, previous_luma, dilated_motion_vectors, context.exposure_buffer) = std::tuple(
       results[0],
       results[1],
@@ -400,66 +403,35 @@ auto RendererInstance::apply_fsr3(
     );
     const auto src = module.mip(spd_mips, mip - 1);
     const auto dst = module.mip(spd_mips, mip);
-    module.begin_compute({{src, vir::Access::ComputeSampled}, {dst, vir::Access::ComputeWrite}})
-      .with_name("fsr3 downsample")
-      .bind_compute_pipeline(render_context.pipeline("fsr3_downsample"))
-      .bind_image(0, 0, src)
-      .bind_image(0, 1, dst)
-      .push_constants(PushConstants(dst_size, src_size))
-      .dispatch_invocations(static_cast<u32>(dst_size.x), static_cast<u32>(dst_size.y), 1);
-    spd_mips = module.whole(module.end_compute<2>()[1]);
+    spd_mips = module.whole(module.begin_compute({{src, vir::Access::ComputeSampled}, {dst, vir::Access::ComputeWrite}})
+                              .with_name("fsr3 downsample")
+                              .bind_compute_pipeline(render_context.pipeline("fsr3_downsample"))
+                              .bind_image(0, 0, src)
+                              .bind_image(0, 1, dst)
+                              .push_constants(PushConstants(dst_size, src_size))
+                              .dispatch_invocations(static_cast<u32>(dst_size.x), static_cast<u32>(dst_size.y), 1)
+                              .end_compute()[1]);
   }
 
   // --- shading change ---
-  module
-    .begin_compute(
-      {{constants, vir::Access::ComputeUniformRead},
-       {spd_mips, vir::Access::ComputeSampled},
-       {shading_change, vir::Access::ComputeRW}}
-    )
-    .with_name("fsr3 shading change")
-    .bind_compute_pipeline(render_context.pipeline("fsr3_shading_change"))
-    .bind_buffer(0, 0, constants)
-    .bind_image(0, 1, spd_mips)
-    .bind_sampler(0, 2, linear_clamped)
-    .bind_image(0, 3, shading_change)
-    .dispatch_invocations_per_pixel(shading_change);
-  std::tie(constants, spd_mips, shading_change) = std::tuple_cat(module.end_compute<3>());
+  std::tie(constants, spd_mips, shading_change) = std::tuple_cat(
+    module
+      .begin_compute(
+        {{constants, vir::Access::ComputeUniformRead},
+         {spd_mips, vir::Access::ComputeSampled},
+         {shading_change, vir::Access::ComputeRW}}
+      )
+      .with_name("fsr3 shading change")
+      .bind_compute_pipeline(render_context.pipeline("fsr3_shading_change"))
+      .bind_buffer(0, 0, constants)
+      .bind_image(0, 1, spd_mips)
+      .bind_sampler(0, 2, linear_clamped)
+      .bind_image(0, 3, shading_change)
+      .dispatch_invocations_per_pixel(shading_change)
+      .end_compute()
+  );
 
   // --- prepare reactivity: disocclusion, motion divergence, accumulation, thin feature locks ---
-  module
-    .begin_compute(
-      {{constants, vir::Access::ComputeUniformRead},
-       {dilated_motion_vectors, vir::Access::ComputeSampled},
-       {dilated_depth, vir::Access::ComputeSampled},
-       {reconstructed_prev_nearest_depth, vir::Access::ComputeSampled},
-       {current_luma, vir::Access::ComputeSampled},
-       {shading_change, vir::Access::ComputeSampled},
-       {accumulation_prev, vir::Access::ComputeSampled},
-       {context.reactive_mask_attachment, vir::Access::ComputeSampled},
-       {input_transparency_mask, vir::Access::ComputeSampled},
-       {context.exposure_buffer, vir::Access::ComputeUniformRead},
-       {dilated_reactive_masks, vir::Access::ComputeRW},
-       {accumulation, vir::Access::ComputeRW},
-       {new_locks, vir::Access::ComputeRW}}
-    )
-    .with_name("fsr3 prepare reactivity")
-    .bind_compute_pipeline(render_context.pipeline("fsr3_prepare_reactivity"))
-    .bind_buffer(0, 0, constants)
-    .bind_image(0, 1, dilated_motion_vectors)
-    .bind_image(0, 2, dilated_depth)
-    .bind_image(0, 3, reconstructed_prev_nearest_depth)
-    .bind_image(0, 4, current_luma)
-    .bind_image(0, 5, shading_change)
-    .bind_image(0, 6, accumulation_prev)
-    .bind_image(0, 7, context.reactive_mask_attachment)
-    .bind_image(0, 8, input_transparency_mask)
-    .bind_buffer(0, 9, context.exposure_buffer)
-    .bind_sampler(0, 10, linear_clamped)
-    .bind_image(0, 11, dilated_reactive_masks)
-    .bind_image(0, 12, accumulation)
-    .bind_image(0, 13, new_locks)
-    .dispatch_invocations_per_pixel(dilated_reactive_masks);
   std::tie(
     constants,
     dilated_motion_vectors,
@@ -474,34 +446,42 @@ auto RendererInstance::apply_fsr3(
     dilated_reactive_masks,
     accumulation,
     new_locks
-  ) = std::tuple_cat(module.end_compute<13>());
+  ) = std::tuple_cat(module
+                       .begin_compute(
+                         {{constants, vir::Access::ComputeUniformRead},
+                          {dilated_motion_vectors, vir::Access::ComputeSampled},
+                          {dilated_depth, vir::Access::ComputeSampled},
+                          {reconstructed_prev_nearest_depth, vir::Access::ComputeSampled},
+                          {current_luma, vir::Access::ComputeSampled},
+                          {shading_change, vir::Access::ComputeSampled},
+                          {accumulation_prev, vir::Access::ComputeSampled},
+                          {context.reactive_mask_attachment, vir::Access::ComputeSampled},
+                          {input_transparency_mask, vir::Access::ComputeSampled},
+                          {context.exposure_buffer, vir::Access::ComputeUniformRead},
+                          {dilated_reactive_masks, vir::Access::ComputeRW},
+                          {accumulation, vir::Access::ComputeRW},
+                          {new_locks, vir::Access::ComputeRW}}
+                       )
+                       .with_name("fsr3 prepare reactivity")
+                       .bind_compute_pipeline(render_context.pipeline("fsr3_prepare_reactivity"))
+                       .bind_buffer(0, 0, constants)
+                       .bind_image(0, 1, dilated_motion_vectors)
+                       .bind_image(0, 2, dilated_depth)
+                       .bind_image(0, 3, reconstructed_prev_nearest_depth)
+                       .bind_image(0, 4, current_luma)
+                       .bind_image(0, 5, shading_change)
+                       .bind_image(0, 6, accumulation_prev)
+                       .bind_image(0, 7, context.reactive_mask_attachment)
+                       .bind_image(0, 8, input_transparency_mask)
+                       .bind_buffer(0, 9, context.exposure_buffer)
+                       .bind_sampler(0, 10, linear_clamped)
+                       .bind_image(0, 11, dilated_reactive_masks)
+                       .bind_image(0, 12, accumulation)
+                       .bind_image(0, 13, new_locks)
+                       .dispatch_invocations_per_pixel(dilated_reactive_masks)
+                       .end_compute());
 
   // --- luma instability ---
-  module
-    .begin_compute(
-      {{constants, vir::Access::ComputeUniformRead},
-       {dilated_motion_vectors, vir::Access::ComputeSampled},
-       {dilated_reactive_masks, vir::Access::ComputeSampled},
-       {current_luma, vir::Access::ComputeSampled},
-       {luma_history_prev, vir::Access::ComputeSampled},
-       {farthest_depth_mip1, vir::Access::ComputeSampled},
-       {context.exposure_buffer, vir::Access::ComputeUniformRead},
-       {luma_history, vir::Access::ComputeRW},
-       {luma_instability, vir::Access::ComputeRW}}
-    )
-    .with_name("fsr3 luma instability")
-    .bind_compute_pipeline(render_context.pipeline("fsr3_luma_instability"))
-    .bind_buffer(0, 0, constants)
-    .bind_image(0, 1, dilated_motion_vectors)
-    .bind_image(0, 2, dilated_reactive_masks)
-    .bind_image(0, 3, current_luma)
-    .bind_image(0, 4, luma_history_prev)
-    .bind_image(0, 5, farthest_depth_mip1)
-    .bind_buffer(0, 6, context.exposure_buffer)
-    .bind_sampler(0, 7, linear_clamped)
-    .bind_image(0, 8, luma_history)
-    .bind_image(0, 9, luma_instability)
-    .dispatch_invocations_per_pixel(luma_instability);
   std::tie(
     constants,
     dilated_motion_vectors,
@@ -512,39 +492,34 @@ auto RendererInstance::apply_fsr3(
     context.exposure_buffer,
     luma_history,
     luma_instability
-  ) = std::tuple_cat(module.end_compute<9>());
+  ) = std::tuple_cat(module
+                       .begin_compute(
+                         {{constants, vir::Access::ComputeUniformRead},
+                          {dilated_motion_vectors, vir::Access::ComputeSampled},
+                          {dilated_reactive_masks, vir::Access::ComputeSampled},
+                          {current_luma, vir::Access::ComputeSampled},
+                          {luma_history_prev, vir::Access::ComputeSampled},
+                          {farthest_depth_mip1, vir::Access::ComputeSampled},
+                          {context.exposure_buffer, vir::Access::ComputeUniformRead},
+                          {luma_history, vir::Access::ComputeRW},
+                          {luma_instability, vir::Access::ComputeRW}}
+                       )
+                       .with_name("fsr3 luma instability")
+                       .bind_compute_pipeline(render_context.pipeline("fsr3_luma_instability"))
+                       .bind_buffer(0, 0, constants)
+                       .bind_image(0, 1, dilated_motion_vectors)
+                       .bind_image(0, 2, dilated_reactive_masks)
+                       .bind_image(0, 3, current_luma)
+                       .bind_image(0, 4, luma_history_prev)
+                       .bind_image(0, 5, farthest_depth_mip1)
+                       .bind_buffer(0, 6, context.exposure_buffer)
+                       .bind_sampler(0, 7, linear_clamped)
+                       .bind_image(0, 8, luma_history)
+                       .bind_image(0, 9, luma_instability)
+                       .dispatch_invocations_per_pixel(luma_instability)
+                       .end_compute());
 
   // --- accumulate ---
-  module
-    .begin_compute(
-      {{constants, vir::Access::ComputeUniformRead},
-       {context.color_attachment, vir::Access::ComputeSampled},
-       {dilated_motion_vectors, vir::Access::ComputeSampled},
-       {dilated_reactive_masks, vir::Access::ComputeSampled},
-       {luma_instability, vir::Access::ComputeSampled},
-       {farthest_depth_mip1, vir::Access::ComputeSampled},
-       {internal_upscaled_color_prev, vir::Access::ComputeSampled},
-       {context.exposure_buffer, vir::Access::ComputeUniformRead},
-       {new_locks, vir::Access::ComputeRW},
-       {internal_upscaled_color, vir::Access::ComputeRW},
-       {upscaled_output, vir::Access::ComputeRW}}
-    )
-    .with_name("fsr3 accumulate")
-    .bind_compute_pipeline(render_context.pipeline("fsr3_accumulate"))
-    .bind_buffer(0, 0, constants)
-    .bind_image(0, 1, context.color_attachment)
-    .bind_image(0, 2, dilated_motion_vectors)
-    .bind_image(0, 3, dilated_reactive_masks)
-    .bind_image(0, 4, luma_instability)
-    .bind_image(0, 5, farthest_depth_mip1)
-    .bind_image(0, 6, internal_upscaled_color_prev)
-    .bind_buffer(0, 7, context.exposure_buffer)
-    .bind_sampler(0, 8, linear_clamped)
-    .bind_image(0, 9, new_locks)
-    .bind_image(0, 10, internal_upscaled_color)
-    .bind_image(0, 11, upscaled_output)
-    .push_constants_from(variables.accumulate_push)
-    .dispatch_invocations_per_pixel(internal_upscaled_color);
   std::tie(
     constants,
     context.color_attachment,
@@ -557,7 +532,37 @@ auto RendererInstance::apply_fsr3(
     new_locks,
     internal_upscaled_color,
     upscaled_output
-  ) = std::tuple_cat(module.end_compute<11>());
+  ) = std::tuple_cat(module
+                       .begin_compute(
+                         {{constants, vir::Access::ComputeUniformRead},
+                          {context.color_attachment, vir::Access::ComputeSampled},
+                          {dilated_motion_vectors, vir::Access::ComputeSampled},
+                          {dilated_reactive_masks, vir::Access::ComputeSampled},
+                          {luma_instability, vir::Access::ComputeSampled},
+                          {farthest_depth_mip1, vir::Access::ComputeSampled},
+                          {internal_upscaled_color_prev, vir::Access::ComputeSampled},
+                          {context.exposure_buffer, vir::Access::ComputeUniformRead},
+                          {new_locks, vir::Access::ComputeRW},
+                          {internal_upscaled_color, vir::Access::ComputeRW},
+                          {upscaled_output, vir::Access::ComputeRW}}
+                       )
+                       .with_name("fsr3 accumulate")
+                       .bind_compute_pipeline(render_context.pipeline("fsr3_accumulate"))
+                       .bind_buffer(0, 0, constants)
+                       .bind_image(0, 1, context.color_attachment)
+                       .bind_image(0, 2, dilated_motion_vectors)
+                       .bind_image(0, 3, dilated_reactive_masks)
+                       .bind_image(0, 4, luma_instability)
+                       .bind_image(0, 5, farthest_depth_mip1)
+                       .bind_image(0, 6, internal_upscaled_color_prev)
+                       .bind_buffer(0, 7, context.exposure_buffer)
+                       .bind_sampler(0, 8, linear_clamped)
+                       .bind_image(0, 9, new_locks)
+                       .bind_image(0, 10, internal_upscaled_color)
+                       .bind_image(0, 11, upscaled_output)
+                       .push_constants_from(variables.accumulate_push)
+                       .dispatch_invocations_per_pixel(internal_upscaled_color)
+                       .end_compute());
 
   // --- rcas sharpening, which owns the final write when it runs ---
   // the SDK's sharpness is in stops, exp2(-stops), the cvar is already linear
@@ -584,7 +589,7 @@ auto RendererInstance::apply_fsr3(
                        .set_condition(
                          variables.is_debugging,
                          [&](vir::Module& arm) {
-                           arm
+                           return arm
                              .begin_compute(
                                {{constants, vir::Access::ComputeUniformRead},
                                 {dilated_motion_vectors, vir::Access::ComputeSampled},
@@ -603,8 +608,8 @@ auto RendererInstance::apply_fsr3(
                              .bind_sampler(0, 5, linear_clamped)
                              .bind_image(0, 6, upscaled_output)
                              .push_constants_from(variables.debug_mode)
-                             .dispatch_invocations_per_pixel(upscaled_output);
-                           return arm.end_compute<6>();
+                             .dispatch_invocations_per_pixel(upscaled_output)
+                             .end_compute();
                          },
                          [&](vir::Module&) {
                            return std::array{

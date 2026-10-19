@@ -2,11 +2,11 @@
 
 #include <expected>
 #include <vector>
+#include <vir/Fwd.hpp>
 
 #include "Asset/TerrainEdits.hpp"
 #include "Asset/Texture.hpp"
 #include "Render/GPU/Shared.hpp"
-#include "Render/Graph/Fwd.hpp"
 
 namespace ox {
 class RenderContext;

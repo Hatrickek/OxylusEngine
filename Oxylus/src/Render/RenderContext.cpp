@@ -8,13 +8,14 @@
 #include <tuple>
 #include <type_traits>
 #include <utility>
+#include <vir/Log.hpp>
+#include <vir/RenderGraph.hpp>
+#include <vir/Types.hpp>
 
 #include "Asset/AssetFile.hpp"
 #include "Core/App.hpp"
 #include "Core/Enum.hpp"
 #include "Memory/Stack.hpp"
-#include "Render/Graph/RenderGraph.hpp"
-#include "Render/Graph/Types.hpp"
 #include "Render/RenderResources.hpp"
 #include "Render/UploadBatch.hpp"
 #include "Render/Utils/TextureFormat.hpp"
@@ -31,6 +32,18 @@ struct RenderDevice {
   VkSurfaceKHR surface = VK_NULL_HANDLE;
   bool owns_device = false;
 };
+
+static auto vir_log_sink(vir::LogLevel level, std::string_view message, const c8* file, u32 line) -> void {
+  auto verbosity = loguru::Verbosity_MAX;
+  switch (level) {
+    case vir::LogLevel::Debug: verbosity = loguru::Verbosity_MAX; break;
+    case vir::LogLevel::Warn : verbosity = loguru::Verbosity_WARNING; break;
+    case vir::LogLevel::Error: verbosity = loguru::Verbosity_ERROR; break;
+    case vir::LogLevel::Fatal: verbosity = loguru::Verbosity_FATAL; break;
+  }
+
+  loguru::log(verbosity, file, line, "{}", message);
+}
 
 static auto debug_callback(
   VkDebugUtilsMessageSeverityFlagBitsEXT severity,
@@ -223,6 +236,8 @@ RenderContext::~RenderContext() { destroy_context(); }
 auto RenderContext::create_context(this RenderContext& self, const Window& window, bool vulkan_validation_layers)
   -> void {
   ZoneScoped;
+  vir::set_log_sink(vir_log_sink);
+
   self.render_device->owns_device = true;
   vkb::InstanceBuilder builder;
   builder //

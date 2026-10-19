@@ -1,8 +1,7 @@
 #pragma once
 
 #include <memory>
-
-#include "Render/Graph/Fwd.hpp"
+#include <vir/Fwd.hpp>
 
 namespace ox {
 class RenderContext;

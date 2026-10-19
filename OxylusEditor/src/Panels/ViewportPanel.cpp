@@ -6,6 +6,9 @@
 #include <glm/gtx/matrix_decompose.hpp>
 #include <icons/IconsMaterialDesignIcons.h>
 #include <imgui.h>
+#include <vir/Allocator.hpp>
+#include <vir/RenderGraph.hpp>
+#include <vir/Types.hpp>
 
 #include "Asset/AssetImporter.hpp"
 #include "Asset/AssetManager.hpp"
@@ -18,9 +21,6 @@
 #include "Memory/Stack.hpp"
 #include "Physics/Physics.hpp"
 #include "Render/Camera.hpp"
-#include "Render/Graph/Allocator.hpp"
-#include "Render/Graph/RenderGraph.hpp"
-#include "Render/Graph/Types.hpp"
 #include "Render/RenderContext.hpp"
 #include "Render/RendererInstance.hpp"
 #include "Render/Upscaler.hpp"
@@ -1965,30 +1965,30 @@ static auto highlight_mask_stage(RenderStageContext& ctx) -> void {
     vir::ClearValue::rgba_f32(0.0f, 0.0f, 0.0f, 1.0f)
   );
 
-  module
-    .begin_compute(
-      {{silhouette_mask, vir::Access::ComputeWrite},
-       {visbuffer_attachment, vir::Access::ComputeSampled},
-       {meshlet_instances_buffer, vir::Access::ComputeRead},
-       {mesh_instances_buffer, vir::Access::ComputeRead},
-       {transform_indices, vir::Access::ComputeRead}}
-    )
-    .with_name("highlight mask")
-    .bind_compute_pipeline(render_context.pipeline("highlight_mask_generate"))
-    .bind_buffer(0, 0, meshlet_instances_buffer)
-    .bind_buffer(0, 1, mesh_instances_buffer)
-    .bind_image(0, 2, visbuffer_attachment)
-    .bind_image(0, 3, silhouette_mask)
-    .bind_buffer(0, 4, transform_indices)
-    .push_constants_from(push)
-    .dispatch_invocations_per_pixel(silhouette_mask);
   std::tie(
     silhouette_mask,
     visbuffer_attachment,
     meshlet_instances_buffer,
     mesh_instances_buffer,
     std::ignore
-  ) = std::tuple_cat(module.end_compute<5>());
+  ) = std::tuple_cat(module
+                       .begin_compute(
+                         {{silhouette_mask, vir::Access::ComputeWrite},
+                          {visbuffer_attachment, vir::Access::ComputeSampled},
+                          {meshlet_instances_buffer, vir::Access::ComputeRead},
+                          {mesh_instances_buffer, vir::Access::ComputeRead},
+                          {transform_indices, vir::Access::ComputeRead}}
+                       )
+                       .with_name("highlight mask")
+                       .bind_compute_pipeline(render_context.pipeline("highlight_mask_generate"))
+                       .bind_buffer(0, 0, meshlet_instances_buffer)
+                       .bind_buffer(0, 1, mesh_instances_buffer)
+                       .bind_image(0, 2, visbuffer_attachment)
+                       .bind_image(0, 3, silhouette_mask)
+                       .bind_buffer(0, 4, transform_indices)
+                       .push_constants_from(push)
+                       .dispatch_invocations_per_pixel(silhouette_mask)
+                       .end_compute());
 
   ctx.set_shared_image_resource("silhouette_mask", silhouette_mask)
     .set_image_resource("visbuffer_attachment", visbuffer_attachment)
@@ -2033,14 +2033,16 @@ static auto highlight_composite_stage(RenderStageContext& ctx) -> void {
     glm::uvec2 resolution = {};
     i32 radius = 8;
   };
-  module.begin_compute({{*silhouette_mask, vir::Access::ComputeSampled}, {temp_mask, vir::Access::ComputeWrite}})
-    .with_name("horizontal dilate")
-    .bind_compute_pipeline(render_context.pipeline("highlight_dilate_horizontal"))
-    .bind_image(0, 0, *silhouette_mask)
-    .bind_image(0, 1, temp_mask)
-    .push_constants(PushConstants(DilatePush{.resolution = {mask_extent.width, mask_extent.height}}))
-    .dispatch_invocations_per_pixel(temp_mask);
-  std::tie(*silhouette_mask, temp_mask) = std::tuple_cat(module.end_compute<2>());
+  std::tie(*silhouette_mask, temp_mask) = std::tuple_cat(
+    module.begin_compute({{*silhouette_mask, vir::Access::ComputeSampled}, {temp_mask, vir::Access::ComputeWrite}})
+      .with_name("horizontal dilate")
+      .bind_compute_pipeline(render_context.pipeline("highlight_dilate_horizontal"))
+      .bind_image(0, 0, *silhouette_mask)
+      .bind_image(0, 1, temp_mask)
+      .push_constants(PushConstants(DilatePush{.resolution = {mask_extent.width, mask_extent.height}}))
+      .dispatch_invocations_per_pixel(temp_mask)
+      .end_compute()
+  );
 
   // NOTE: HideBehindWalls is here for future use. Currently we render the silhoutte using main visbuffer which
   // geometry alread passes the depth test.
@@ -2061,32 +2063,32 @@ static auto highlight_composite_stage(RenderStageContext& ctx) -> void {
     module.transient_image({.extent = result_extent, .format = result_format, .name = "outlined composite"}),
     vir::ClearValue::rgba_f32(0.0f, 0.0f, 0.0f, 1.0f)
   );
-  module
-    .begin_rendering(
-      {{outline_composite, vir::Access::ColorRW},
-       {*silhouette_mask, vir::Access::FragmentSampled},
-       {temp_mask, vir::Access::FragmentSampled},
-       {depth_attachment, vir::Access::FragmentSampled},
-       {result_attachment, vir::Access::FragmentSampled}}
-    )
-    .with_name("outline composite")
-    .bind_graphics_pipeline(render_context.pipeline("highlight_composite"))
-    .broadcast_color_blend(vir::BlendPreset::AlphaBlend)
-    .set_viewport(0, vir::Rect2D::framebuffer())
-    .set_scissor(0, vir::Rect2D::framebuffer())
-    .bind_image(0, 0, *silhouette_mask)
-    .bind_image(0, 1, temp_mask)
-    .bind_image(0, 2, depth_attachment)
-    .bind_image(0, 3, result_attachment)
-    .bind_sampler(0, 4, render_context.cached_sampler_handle(vir::LinearSamplerClamped))
-    .push_constants(PushConstants(
-      CompositePush{
-        .resolution = {result_extent.width, result_extent.height},
-        .mask_resolution = {mask_extent.width, mask_extent.height},
-      }
-    ))
-    .draw(3, 1);
-  const auto composited = module.end_rendering<5>();
+  const auto composited = module
+                            .begin_rendering(
+                              {{outline_composite, vir::Access::ColorRW},
+                               {*silhouette_mask, vir::Access::FragmentSampled},
+                               {temp_mask, vir::Access::FragmentSampled},
+                               {depth_attachment, vir::Access::FragmentSampled},
+                               {result_attachment, vir::Access::FragmentSampled}}
+                            )
+                            .with_name("outline composite")
+                            .bind_graphics_pipeline(render_context.pipeline("highlight_composite"))
+                            .broadcast_color_blend(vir::BlendPreset::AlphaBlend)
+                            .set_viewport(0, vir::Rect2D::framebuffer())
+                            .set_scissor(0, vir::Rect2D::framebuffer())
+                            .bind_image(0, 0, *silhouette_mask)
+                            .bind_image(0, 1, temp_mask)
+                            .bind_image(0, 2, depth_attachment)
+                            .bind_image(0, 3, result_attachment)
+                            .bind_sampler(0, 4, render_context.cached_sampler_handle(LinearSamplerClamped))
+                            .push_constants(PushConstants(
+                              CompositePush{
+                                .resolution = {result_extent.width, result_extent.height},
+                                .mask_resolution = {mask_extent.width, mask_extent.height},
+                              }
+                            ))
+                            .draw(3, 1)
+                            .end_rendering();
 
   ctx.set_image_resource("depth_attachment", composited[3]).set_image_resource("result_attachment", composited[0]);
 }
@@ -2172,13 +2174,15 @@ auto ViewportPanel::mouse_picking_stages(
         const auto push = module.declare_bytes_var("pick 2d push", sizeof(PickPush2D));
         ctx.variables["pick readback 2d"] = readback;
         ctx.variables["pick 2d push"] = push;
-        module.begin_compute({{readback, vir::Access::ComputeWrite}, {visbuffer, vir::Access::ComputeSampled}})
-          .with_name("mouse picking 2d")
-          .bind_compute_pipeline(ctx.render_context.pipeline("entity_mouse_picking_2d"))
-          .bind_image(0, 0, visbuffer)
-          .push_constants_from(push)
-          .dispatch(1, 1, 1);
-        std::tie(readback, visbuffer) = std::tuple_cat(module.end_compute<2>());
+        std::tie(readback, visbuffer) = std::tuple_cat(
+          module.begin_compute({{readback, vir::Access::ComputeWrite}, {visbuffer, vir::Access::ComputeSampled}})
+            .with_name("mouse picking 2d")
+            .bind_compute_pipeline(ctx.render_context.pipeline("entity_mouse_picking_2d"))
+            .bind_image(0, 0, visbuffer)
+            .push_constants_from(push)
+            .dispatch(1, 1, 1)
+            .end_compute()
+        );
         module.export_to(readback, vir::Access::HostRead);
         ctx.set_image_resource("visbuffer_attachment_2d", visbuffer);
       },
@@ -2204,21 +2208,23 @@ auto ViewportPanel::mouse_picking_stages(
         const auto push = module.declare_bytes_var("pick push", sizeof(PickPush3D));
         ctx.variables["pick readback"] = readback;
         ctx.variables["pick push"] = push;
-        module
-          .begin_compute(
-            {{readback, vir::Access::ComputeWrite},
-             {visbuffer, vir::Access::ComputeSampled},
-             {meshlet_instances, vir::Access::ComputeRead},
-             {mesh_instances, vir::Access::ComputeRead}}
-          )
-          .with_name("mouse picking")
-          .bind_compute_pipeline(ctx.render_context.pipeline("entity_mouse_picking"))
-          .bind_buffer(0, 0, meshlet_instances)
-          .bind_buffer(0, 1, mesh_instances)
-          .bind_image(0, 2, visbuffer)
-          .push_constants_from(push)
-          .dispatch(1, 1, 1);
-        std::tie(readback, visbuffer, meshlet_instances, mesh_instances) = std::tuple_cat(module.end_compute<4>());
+        std::tie(readback, visbuffer, meshlet_instances, mesh_instances) = std::tuple_cat(
+          module
+            .begin_compute(
+              {{readback, vir::Access::ComputeWrite},
+               {visbuffer, vir::Access::ComputeSampled},
+               {meshlet_instances, vir::Access::ComputeRead},
+               {mesh_instances, vir::Access::ComputeRead}}
+            )
+            .with_name("mouse picking")
+            .bind_compute_pipeline(ctx.render_context.pipeline("entity_mouse_picking"))
+            .bind_buffer(0, 0, meshlet_instances)
+            .bind_buffer(0, 1, mesh_instances)
+            .bind_image(0, 2, visbuffer)
+            .push_constants_from(push)
+            .dispatch(1, 1, 1)
+            .end_compute()
+        );
         module.export_to(readback, vir::Access::HostRead);
         ctx.set_image_resource("visbuffer_attachment", visbuffer)
           .set_buffer_resource("meshlet_instances_buffer", meshlet_instances)

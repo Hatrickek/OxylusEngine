@@ -7,9 +7,9 @@
 #include <glm/vec4.hpp>
 #include <imgui.h>
 #include <memory>
+#include <vir/Fwd.hpp>
 
 #include "Asset/Texture.hpp"
-#include "Render/Graph/Fwd.hpp"
 
 namespace ox {
 class Renderer;

@@ -1,13 +1,14 @@
 #include "Render/Renderer.hpp"
 
+#include <vir/Module.hpp>
+#include <vir/Types.hpp>
+
 #include "Asset/AssetManager.hpp"
 #include "Core/App.hpp"
 #include "Core/Enum.hpp"
 #include "Core/ModuleRegistry.hpp"
 #include "Core/VFS.hpp"
 #include "Memory/Stack.hpp"
-#include "Render/Graph/Module.hpp"
-#include "Render/Graph/Types.hpp"
 #include "Render/RenderContext.hpp"
 #include "Render/RendererInstance.hpp"
 #include "Render/Utils/Samplers.hpp"
@@ -59,11 +60,11 @@ auto to_gpu_material(AssetManager& asset_man, RenderContext& render_context, con
 
     auto sampler_info = vir::SamplerInfo{};
     switch (material.sampling_mode) {
-      case SamplingMode::LinearRepeated          : sampler_info = vir::LinearSamplerRepeated; break;
-      case SamplingMode::LinearClamped           : sampler_info = vir::LinearSamplerClamped; break;
-      case SamplingMode::NearestRepeated         : sampler_info = vir::NearestSamplerRepeated; break;
-      case SamplingMode::NearestClamped          : sampler_info = vir::NearestSamplerClamped; break;
-      case SamplingMode::LinearRepeatedAnisotropy: sampler_info = vir::LinearSamplerRepeatedAnisotropy; break;
+      case SamplingMode::LinearRepeated          : sampler_info = LinearSamplerRepeated; break;
+      case SamplingMode::LinearClamped           : sampler_info = LinearSamplerClamped; break;
+      case SamplingMode::NearestRepeated         : sampler_info = NearestSamplerRepeated; break;
+      case SamplingMode::NearestClamped          : sampler_info = NearestSamplerClamped; break;
+      case SamplingMode::LinearRepeatedAnisotropy: sampler_info = LinearSamplerRepeatedAnisotropy; break;
     }
     const auto material_sampler = render_context.cached_sampler(sampler_info);
     sampler_index = SlotMap_decode_id(material_sampler).index;

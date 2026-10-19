@@ -3,12 +3,12 @@
 #include <RmlUi/Core/RenderInterface.h>
 #include <ankerl/unordered_dense.h>
 #include <glm/vec4.hpp>
+#include <vir/Fwd.hpp>
+#include <vir/Resource.hpp>
 
 #include "Asset/Texture.hpp"
 #include "Memory/SlotMap.hpp"
 #include "Render/Fwd.hpp"
-#include "Render/Graph/Fwd.hpp"
-#include "Render/Graph/Resource.hpp"
 
 namespace ox {
 struct RmlDrawCmd {

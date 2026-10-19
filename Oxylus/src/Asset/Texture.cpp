@@ -3,15 +3,15 @@
 #include <ankerl/svector.h>
 #include <basisu/encoder/basisu_enc.h>
 #include <cstring>
+#include <vir/Allocator.hpp>
+#include <vir/Module.hpp>
+#include <vir/Types.hpp>
 
 #include "Asset/AssetFile.hpp"
 #include "Core/App.hpp"
 #include "Memory/SlotMap.hpp"
 #include "Memory/Stack.hpp"
 #include "OS/File.hpp"
-#include "Render/Graph/Allocator.hpp"
-#include "Render/Graph/Module.hpp"
-#include "Render/Graph/Types.hpp"
 #include "Render/RenderContext.hpp"
 #include "Render/UploadBatch.hpp"
 #include "Render/Utils/TextureFormat.hpp"

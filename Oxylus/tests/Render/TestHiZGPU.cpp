@@ -11,18 +11,18 @@
 #include <string>
 #include <string_view>
 #include <vector>
-
-#include "Render/Graph/Types.hpp"
+#include <vir/Types.hpp>
 
 #ifdef OX_PLATFORM_LINUX
   #include <dlfcn.h>
   #include <link.h>
 #endif
 
+#include <vir/RenderGraph.hpp>
+
 #include "Asset/AssetFile.hpp"
 #include "Asset/Texture.hpp"
 #include "Core/Base.hpp"
-#include "Render/Graph/RenderGraph.hpp"
 #include "Render/RenderContext.hpp"
 #include "Render/RenderResources.hpp"
 #include "Render/RendererInstance.hpp"
@@ -227,9 +227,9 @@ TEST(HiZGPU, EveryMipMatchesOriginalSPDDepthReductionAcrossRepeatedExecutions) {
   );
   ASSERT_TRUE(sampler_set);
   render.resources->descriptor_set = std::move(*sampler_set);
-  const auto sampler = render.allocate_sampler(vir::NearestSamplerClamped, false);
+  const auto sampler = render.allocate_sampler(NearestSamplerClamped, false);
   ASSERT_TRUE(sampler);
-  render.resources->cached_samplers.emplace_back(vir::NearestSamplerClamped, *sampler);
+  render.resources->cached_samplers.emplace_back(NearestSamplerClamped, *sampler);
   const auto pack = hiz_gpu_pack();
   ASSERT_TRUE(pack) << "engine.oxpack must be built before this test";
   for (const auto& entry : pack->entries) {

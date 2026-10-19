@@ -1,8 +1,9 @@
 #include "UI/RmlRenderer.hpp"
 
+#include <vir/RenderGraph.hpp>
+#include <vir/Types.hpp>
+
 #include "Memory/SlotMap.hpp"
-#include "Render/Graph/RenderGraph.hpp"
-#include "Render/Graph/Types.hpp"
 #include "Render/RenderContext.hpp"
 #include "Utils/Log.hpp"
 
@@ -122,14 +123,14 @@ auto RmlRenderer::record(
     }
   });
 
-  module.begin_rendering({{target, vir::Access::ColorRW}})
+  return module.begin_rendering({{target, vir::Access::ColorRW}})
     .with_name("rmlui")
     .bind_graphics_pipeline(render_context.pipeline("rmlui"))
     .set_color_blend(0, blend_state)
     .set_viewport(0, vir::Rect2D::framebuffer())
     .set_scissor(0, vir::Rect2D::framebuffer())
-    .record_from(draws);
-  return module.end_rendering<1>()[0];
+    .record_from(draws)
+    .end_rendering()[0];
 }
 
 auto RmlRenderer::CompileGeometry(Rml::Span<const Rml::Vertex> vertices, Rml::Span<const int> indices)

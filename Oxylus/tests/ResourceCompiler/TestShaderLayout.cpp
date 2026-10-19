@@ -3,9 +3,9 @@
 #include <fstream>
 #include <gtest/gtest.h>
 #include <string_view>
+#include <vir/Types.hpp>
 
 #include "Asset/AssetFile.hpp"
-#include "Render/Graph/Types.hpp"
 #include "ResourceCompiler.hpp"
 
 namespace ox {

@@ -4,8 +4,7 @@
 #include <slang.h>
 #include <string>
 #include <string_view>
-
-#include "Render/Graph/ShaderLayout.hpp"
+#include <vir/ShaderLayout.hpp>
 
 namespace ox::rc {
 // everything the render graph needs to build a pipeline around this entry point, read off Slang's

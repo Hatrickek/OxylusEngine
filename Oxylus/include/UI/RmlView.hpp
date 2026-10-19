@@ -4,10 +4,10 @@
 #include <glm/vec2.hpp>
 #include <memory>
 #include <string_view>
+#include <vir/Fwd.hpp>
 
 #include "Core/Option.hpp"
 #include "Core/Types.hpp"
-#include "Render/Graph/Fwd.hpp"
 
 namespace ox {
 class RenderContext;

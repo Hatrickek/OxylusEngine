@@ -3,6 +3,7 @@
 #include <array>
 #include <filesystem>
 #include <span>
+#include <vir/ShaderLayout.hpp>
 #include <zpp_bits.h>
 
 #include "Asset/Material.hpp"
@@ -11,7 +12,6 @@
 #include "Core/Types.hpp"
 #include "Core/UUID.hpp"
 #include "Render/GPU/Shared.hpp"
-#include "Render/Graph/ShaderLayout.hpp"
 
 namespace ox {
 struct Skeleton;

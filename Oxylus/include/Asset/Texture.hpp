@@ -8,14 +8,14 @@
 #include <span>
 #include <string_view>
 #include <variant>
+#include <vir/Access.hpp>
+#include <vir/Resource.hpp>
+#include <vir/Types.hpp>
 
 #include "Core/Base.hpp"
 #include "Core/Option.hpp"
 #include "Core/Types.hpp"
 #include "Render/Fwd.hpp"
-#include "Render/Graph/Access.hpp"
-#include "Render/Graph/Resource.hpp"
-#include "Render/Graph/Types.hpp"
 
 namespace ox {
 struct UploadBatch;

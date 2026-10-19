@@ -5,6 +5,8 @@
 #include <icons/IconsMaterialDesignIcons.h>
 #include <imgui_internal.h>
 #include <implot.h>
+#include <vir/Program.hpp>
+#include <vir/RenderGraph.hpp>
 
 #include "Asset/AssetImporter.hpp"
 #include "Asset/AssetMeta.hpp"
@@ -25,8 +27,6 @@
 #include "Panels/ProjectPanel.hpp"
 #include "Panels/SceneHierarchyPanel.hpp"
 #include "Panels/TextEditorPanel.hpp"
-#include "Render/Graph/Program.hpp"
-#include "Render/Graph/RenderGraph.hpp"
 #include "Render/RenderContext.hpp"
 #include "Render/Window.hpp"
 #include "UI/ImGuiRenderer.hpp"

@@ -3,10 +3,10 @@
 #include <ankerl/unordered_dense.h>
 #include <shared_mutex>
 #include <variant>
+#include <vir/Resource.hpp>
 
 #include "Memory/SlotMap.hpp"
 #include "Render/Fwd.hpp"
-#include "Render/Graph/Resource.hpp"
 #include "Render/RenderContext.hpp"
 
 namespace ox {

@@ -5,9 +5,9 @@
 #include <glm/gtc/packing.hpp>
 #include <initializer_list>
 #include <simdjson.h>
+#include <vir/Types.hpp>
 
 #include "OS/File.hpp"
-#include "Render/Graph/Types.hpp"
 #include "Utils/JsonWriter.hpp"
 #include "Utils/Log.hpp"
 

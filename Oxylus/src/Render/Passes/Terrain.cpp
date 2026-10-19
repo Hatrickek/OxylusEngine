@@ -1,12 +1,12 @@
 #include "Scene/Terrain.hpp"
 
 #include <cmath>
+#include <vir/RenderGraph.hpp>
+#include <vir/Types.hpp>
 
 #include "Core/App.hpp"
 #include "Core/Enum.hpp"
 #include "Memory/Stack.hpp"
-#include "Render/Graph/RenderGraph.hpp"
-#include "Render/Graph/Types.hpp"
 #include "Render/RenderContext.hpp"
 #include "Render/RendererInstance.hpp"
 #include "Render/Utils/Samplers.hpp"
@@ -200,21 +200,23 @@ auto RendererInstance::apply_terrain_brush(
     std::tuple_cat(module.set_condition(
       variables.is_brush_active,
       [&](vir::Module& arm) {
-        arm
-          .begin_compute(
-            {{maps.heightmap, vir::Access::ComputeSampled},
-             {context.hit_buffer, vir::Access::ComputeWrite},
-             {maps.region, vir::Access::ComputeWrite}}
-          )
-          .with_name("terrain brush trace")
-          .bind_compute_pipeline(render_context.pipeline("terrain_brush_trace"))
-          .bind_image(0, 0, maps.heightmap)
-          .bind_sampler(0, 1, render_context.cached_sampler_handle(vir::LinearSamplerClamped))
-          .bind_buffer(0, 2, context.hit_buffer)
-          .bind_buffer(0, 3, maps.region)
-          .push_constants_from(variables.brush_params)
-          .dispatch(1, 1, 1);
-        std::tie(maps.heightmap, context.hit_buffer, maps.region) = std::tuple_cat(arm.end_compute<3>());
+        std::tie(maps.heightmap, context.hit_buffer, maps.region) = std::tuple_cat(
+          arm
+            .begin_compute(
+              {{maps.heightmap, vir::Access::ComputeSampled},
+               {context.hit_buffer, vir::Access::ComputeWrite},
+               {maps.region, vir::Access::ComputeWrite}}
+            )
+            .with_name("terrain brush trace")
+            .bind_compute_pipeline(render_context.pipeline("terrain_brush_trace"))
+            .bind_image(0, 0, maps.heightmap)
+            .bind_sampler(0, 1, render_context.cached_sampler_handle(LinearSamplerClamped))
+            .bind_buffer(0, 2, context.hit_buffer)
+            .bind_buffer(0, 3, maps.region)
+            .push_constants_from(variables.brush_params)
+            .dispatch(1, 1, 1)
+            .end_compute()
+        );
 
         const auto traced = std::array{
           context.hit_buffer,
@@ -230,23 +232,23 @@ auto RendererInstance::apply_terrain_brush(
         return arm.set_condition(
           variables.is_brush_painting,
           [&](vir::Module& paint) {
-            paint
-              .begin_compute(
-                {{maps.heightmap, vir::Access::ComputeSampled},
-                 {maps.height_edit, vir::Access::ComputeRW},
-                 {maps.splat_edit, vir::Access::ComputeRW},
-                 {context.hit_buffer, vir::Access::ComputeRead}}
-              )
-              .with_name("terrain brush apply")
-              .bind_compute_pipeline(render_context.pipeline("terrain_brush_apply"))
-              .bind_image(0, 0, maps.heightmap)
-              .bind_image(0, 1, maps.height_edit)
-              .bind_image(0, 2, maps.splat_edit)
-              .bind_buffer(0, 3, context.hit_buffer)
-              .push_constants_from(variables.brush_params)
-              .dispatch(variables.brush_apply_groups, variables.brush_apply_groups, 1);
             std::tie(maps.heightmap, maps.height_edit, maps.splat_edit, context.hit_buffer) = std::tuple_cat(
-              paint.end_compute<4>()
+              paint
+                .begin_compute(
+                  {{maps.heightmap, vir::Access::ComputeSampled},
+                   {maps.height_edit, vir::Access::ComputeRW},
+                   {maps.splat_edit, vir::Access::ComputeRW},
+                   {context.hit_buffer, vir::Access::ComputeRead}}
+                )
+                .with_name("terrain brush apply")
+                .bind_compute_pipeline(render_context.pipeline("terrain_brush_apply"))
+                .bind_image(0, 0, maps.heightmap)
+                .bind_image(0, 1, maps.height_edit)
+                .bind_image(0, 2, maps.splat_edit)
+                .bind_buffer(0, 3, context.hit_buffer)
+                .push_constants_from(variables.brush_params)
+                .dispatch(variables.brush_apply_groups, variables.brush_apply_groups, 1)
+                .end_compute()
             );
 
             record_terrain_generate(
@@ -327,26 +329,6 @@ auto RendererInstance::cull_terrain(
     std::span{reinterpret_cast<const u8*>(&draw_command), sizeof(draw_command)}
   );
 
-  module
-    .begin_compute(
-      {{context.terrain_buffer, vir::Access::ComputeUniformRead},
-       {context.patch_minmax_attachment, vir::Access::ComputeSampled},
-       {context.hiz_attachment, vir::Access::ComputeSampled},
-       {context.visible_patches_buffer, vir::Access::ComputeRW},
-       {context.patch_visibility_mask_buffer, vir::Access::ComputeRW},
-       {context.draw_cmd_buffer, vir::Access::ComputeRW}}
-    )
-    .with_name(name)
-    .bind_compute_pipeline(render_context.pipeline("terrain_cull"))
-    .bind_buffer(0, 0, context.terrain_buffer)
-    .bind_image(0, 1, context.patch_minmax_attachment)
-    .bind_image(0, 2, context.hiz_attachment)
-    .bind_buffer(0, 3, context.visible_patches_buffer)
-    .bind_buffer(0, 4, context.patch_visibility_mask_buffer)
-    .bind_buffer(0, 5, context.draw_cmd_buffer)
-    .specialize_constant(0, std::to_underlying(context.cull_flags))
-    .push_constants_from(prepared.terrain.cull_camera)
-    .dispatch_invocations(prepared.terrain.patch_total, 1, 1);
   std::tie(
     context.terrain_buffer,
     context.patch_minmax_attachment,
@@ -354,7 +336,27 @@ auto RendererInstance::cull_terrain(
     context.visible_patches_buffer,
     context.patch_visibility_mask_buffer,
     context.draw_cmd_buffer
-  ) = std::tuple_cat(module.end_compute<6>());
+  ) = std::tuple_cat(module
+                       .begin_compute(
+                         {{context.terrain_buffer, vir::Access::ComputeUniformRead},
+                          {context.patch_minmax_attachment, vir::Access::ComputeSampled},
+                          {context.hiz_attachment, vir::Access::ComputeSampled},
+                          {context.visible_patches_buffer, vir::Access::ComputeRW},
+                          {context.patch_visibility_mask_buffer, vir::Access::ComputeRW},
+                          {context.draw_cmd_buffer, vir::Access::ComputeRW}}
+                       )
+                       .with_name(name)
+                       .bind_compute_pipeline(render_context.pipeline("terrain_cull"))
+                       .bind_buffer(0, 0, context.terrain_buffer)
+                       .bind_image(0, 1, context.patch_minmax_attachment)
+                       .bind_image(0, 2, context.hiz_attachment)
+                       .bind_buffer(0, 3, context.visible_patches_buffer)
+                       .bind_buffer(0, 4, context.patch_visibility_mask_buffer)
+                       .bind_buffer(0, 5, context.draw_cmd_buffer)
+                       .specialize_constant(0, std::to_underlying(context.cull_flags))
+                       .push_constants_from(prepared.terrain.cull_camera)
+                       .dispatch_invocations(prepared.terrain.patch_total, 1, 1)
+                       .end_compute());
 }
 
 auto RendererInstance::draw_terrain_for_visbuffer(
@@ -373,30 +375,6 @@ auto RendererInstance::draw_terrain_for_visbuffer(
   static constexpr auto sampled_access = vir::Access::VertexSampled | vir::Access::TessellationControlSampled |
                                          vir::Access::TessellationEvaluationSampled;
 
-  module
-    .begin_rendering(
-      {{context.draw_cmd_buffer, vir::Access::IndirectRead},
-       {values.camera, uniform_access},
-       {context.terrain_buffer, uniform_access},
-       {context.visible_patches_buffer, patch_access},
-       {context.heightmap_attachment, sampled_access},
-       {context.visbuffer_attachment, vir::Access::ColorRW},
-       {context.depth_attachment, vir::Access::DepthStencilRW}}
-    )
-    .with_name(stack.format("terrain vis encode {}", is_late ? "late" : "early"))
-    .bind_graphics_pipeline(render_context.pipeline("terrain_visbuffer"))
-    .set_rasterization({.cull_mode = VK_CULL_MODE_BACK_BIT})
-    .set_depth({.is_test_enabled = true, .is_write_enabled = true, .compare_op = VK_COMPARE_OP_GREATER_OR_EQUAL})
-    .set_primitive_topology(VK_PRIMITIVE_TOPOLOGY_PATCH_LIST)
-    .set_patch_control_points(4)
-    .set_viewport(0, vir::Rect2D::framebuffer())
-    .set_scissor(0, vir::Rect2D::framebuffer())
-    .bind_buffer(0, 0, values.camera)
-    .bind_buffer(0, 1, context.terrain_buffer)
-    .bind_buffer(0, 2, context.visible_patches_buffer)
-    .bind_image(0, 3, context.heightmap_attachment)
-    .bind_sampler(0, 4, render_context.cached_sampler_handle(vir::LinearSamplerClamped))
-    .draw_indirect(context.draw_cmd_buffer, 1);
   std::tie(
     std::ignore,
     values.camera,
@@ -405,7 +383,35 @@ auto RendererInstance::draw_terrain_for_visbuffer(
     context.heightmap_attachment,
     context.visbuffer_attachment,
     context.depth_attachment
-  ) = std::tuple_cat(module.end_rendering<7>());
+  ) = std::tuple_cat(module
+                       .begin_rendering(
+                         {{context.draw_cmd_buffer, vir::Access::IndirectRead},
+                          {values.camera, uniform_access},
+                          {context.terrain_buffer, uniform_access},
+                          {context.visible_patches_buffer, patch_access},
+                          {context.heightmap_attachment, sampled_access},
+                          {context.visbuffer_attachment, vir::Access::ColorRW},
+                          {context.depth_attachment, vir::Access::DepthStencilRW}}
+                       )
+                       .with_name(stack.format("terrain vis encode {}", is_late ? "late" : "early"))
+                       .bind_graphics_pipeline(render_context.pipeline("terrain_visbuffer"))
+                       .set_rasterization({.cull_mode = VK_CULL_MODE_BACK_BIT})
+                       .set_depth(
+                         {.is_test_enabled = true,
+                          .is_write_enabled = true,
+                          .compare_op = VK_COMPARE_OP_GREATER_OR_EQUAL}
+                       )
+                       .set_primitive_topology(VK_PRIMITIVE_TOPOLOGY_PATCH_LIST)
+                       .set_patch_control_points(4)
+                       .set_viewport(0, vir::Rect2D::framebuffer())
+                       .set_scissor(0, vir::Rect2D::framebuffer())
+                       .bind_buffer(0, 0, values.camera)
+                       .bind_buffer(0, 1, context.terrain_buffer)
+                       .bind_buffer(0, 2, context.visible_patches_buffer)
+                       .bind_image(0, 3, context.heightmap_attachment)
+                       .bind_sampler(0, 4, render_context.cached_sampler_handle(LinearSamplerClamped))
+                       .draw_indirect(context.draw_cmd_buffer, 1)
+                       .end_rendering());
 }
 
 auto RendererInstance::decode_terrain(
@@ -415,36 +421,6 @@ auto RendererInstance::decode_terrain(
   auto& values = recording.values;
 
   auto& render_context = *self.renderer.render_context;
-  module
-    .begin_rendering(
-      {{values.camera, vir::Access::FragmentUniformRead},
-       {values.materials, vir::Access::FragmentRead},
-       {context.terrain_buffer, vir::Access::FragmentUniformRead},
-       {context.brush_hit_buffer, vir::Access::FragmentRead},
-       {context.visbuffer_attachment, vir::Access::FragmentSampled},
-       {context.depth_attachment, vir::Access::FragmentSampled},
-       {context.normalmap_attachment, vir::Access::FragmentSampled},
-       {context.splatmap_attachment, vir::Access::FragmentSampled},
-       {context.albedo_attachment, vir::Access::ColorRW},
-       {context.normal_attachment, vir::Access::ColorRW},
-       {context.emissive_attachment, vir::Access::ColorRW},
-       {context.metallic_roughness_occlusion_attachment, vir::Access::ColorRW},
-       {context.velocity_attachment, vir::Access::ColorRW}}
-    )
-    .with_name("terrain decode")
-    .bind_graphics_pipeline(render_context.pipeline("terrain_decode"))
-    .set_viewport(0, vir::Rect2D::framebuffer())
-    .set_scissor(0, vir::Rect2D::framebuffer())
-    .bind_buffer(0, 0, values.camera)
-    .bind_buffer(0, 1, values.materials)
-    .bind_buffer(0, 2, context.terrain_buffer)
-    .bind_image(0, 3, context.visbuffer_attachment)
-    .bind_image(0, 4, context.depth_attachment)
-    .bind_image(0, 5, context.normalmap_attachment)
-    .bind_image(0, 6, context.splatmap_attachment)
-    .bind_sampler(0, 7, render_context.cached_sampler_handle(vir::LinearSamplerClamped))
-    .bind_buffer(0, 8, context.brush_hit_buffer)
-    .draw_range(3, 1, 0, 1);
   std::tie(
     values.camera,
     values.materials,
@@ -459,6 +435,36 @@ auto RendererInstance::decode_terrain(
     context.emissive_attachment,
     context.metallic_roughness_occlusion_attachment,
     context.velocity_attachment
-  ) = std::tuple_cat(module.end_rendering<13>());
+  ) = std::tuple_cat(module
+                       .begin_rendering(
+                         {{values.camera, vir::Access::FragmentUniformRead},
+                          {values.materials, vir::Access::FragmentRead},
+                          {context.terrain_buffer, vir::Access::FragmentUniformRead},
+                          {context.brush_hit_buffer, vir::Access::FragmentRead},
+                          {context.visbuffer_attachment, vir::Access::FragmentSampled},
+                          {context.depth_attachment, vir::Access::FragmentSampled},
+                          {context.normalmap_attachment, vir::Access::FragmentSampled},
+                          {context.splatmap_attachment, vir::Access::FragmentSampled},
+                          {context.albedo_attachment, vir::Access::ColorRW},
+                          {context.normal_attachment, vir::Access::ColorRW},
+                          {context.emissive_attachment, vir::Access::ColorRW},
+                          {context.metallic_roughness_occlusion_attachment, vir::Access::ColorRW},
+                          {context.velocity_attachment, vir::Access::ColorRW}}
+                       )
+                       .with_name("terrain decode")
+                       .bind_graphics_pipeline(render_context.pipeline("terrain_decode"))
+                       .set_viewport(0, vir::Rect2D::framebuffer())
+                       .set_scissor(0, vir::Rect2D::framebuffer())
+                       .bind_buffer(0, 0, values.camera)
+                       .bind_buffer(0, 1, values.materials)
+                       .bind_buffer(0, 2, context.terrain_buffer)
+                       .bind_image(0, 3, context.visbuffer_attachment)
+                       .bind_image(0, 4, context.depth_attachment)
+                       .bind_image(0, 5, context.normalmap_attachment)
+                       .bind_image(0, 6, context.splatmap_attachment)
+                       .bind_sampler(0, 7, render_context.cached_sampler_handle(LinearSamplerClamped))
+                       .bind_buffer(0, 8, context.brush_hit_buffer)
+                       .draw_range(3, 1, 0, 1)
+                       .end_rendering());
 }
 } // namespace ox

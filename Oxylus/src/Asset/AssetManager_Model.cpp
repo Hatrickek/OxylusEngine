@@ -1,15 +1,15 @@
 #include <glm/gtc/type_ptr.hpp>
 #include <glm/gtx/quaternion.hpp>
 #include <ranges>
+#include <vir/Allocator.hpp>
+#include <vir/Module.hpp>
+#include <vir/Resource.hpp>
 
 #include "Animation/AnimationClip.hpp"
 #include "Animation/Skeleton.hpp"
 #include "Asset/AssetManager.hpp"
 #include "Core/App.hpp"
 #include "Render/AccelerationStructure.hpp"
-#include "Render/Graph/Allocator.hpp"
-#include "Render/Graph/Module.hpp"
-#include "Render/Graph/Resource.hpp"
 #include "Render/RenderContext.hpp"
 #include "Render/UploadBatch.hpp"
 

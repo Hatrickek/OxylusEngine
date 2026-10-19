@@ -12,12 +12,12 @@
 #include <glm/common.hpp>
 #include <imgui_internal.h>
 #include <span>
+#include <vir/RenderGraph.hpp>
+#include <vir/Types.hpp>
 
 #include "Core/App.hpp"
 #include "Memory/SlotMap.hpp"
 #include "Memory/Stack.hpp"
-#include "Render/Graph/RenderGraph.hpp"
-#include "Render/Graph/Types.hpp"
 #include "Render/RenderContext.hpp"
 #include "Render/Window.hpp"
 #include "Utils/Log.hpp"
@@ -485,7 +485,7 @@ auto ImGuiRenderer::record(
     }
   );
 
-  module
+  return module
     .begin_rendering(
       {{target, vir::Access::ColorRW}, {vertices, vir::Access::VertexRead}, {indices, vir::Access::IndexRead}}
     )
@@ -494,8 +494,8 @@ auto ImGuiRenderer::record(
     .set_color_blend(0, vir::BlendPreset::AlphaBlend)
     .set_viewport(0, vir::Rect2D::framebuffer())
     .set_scissor(0, vir::Rect2D::framebuffer())
-    .record_from(draws);
-  return module.end_rendering<3>()[0];
+    .record_from(draws)
+    .end_rendering()[0];
 }
 
 auto ImGuiRenderer::build_window_shadows(this ImGuiRenderer& self, ImDrawData* draw_data) -> void {

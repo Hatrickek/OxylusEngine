@@ -1,9 +1,9 @@
 #pragma once
 
 #include <glm/vec2.hpp>
+#include <vir/Types.hpp>
 
 #include "Asset/Texture.hpp"
-#include "Render/Graph/Types.hpp"
 #include "Utils/Log.hpp"
 
 namespace ox {

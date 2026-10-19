@@ -3,10 +3,10 @@
 #include <filesystem>
 #include <flecs.h>
 #include <sol/environment.hpp>
+#include <vir/Types.hpp>
 
 #include "Core/Option.hpp"
 #include "Core/Types.hpp"
-#include "Render/Graph/Types.hpp"
 #include "Scripting/LuaScript.hpp"
 
 namespace JPH {

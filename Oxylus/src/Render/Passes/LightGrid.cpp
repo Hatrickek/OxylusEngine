@@ -1,5 +1,6 @@
-#include "Render/Graph/RenderGraph.hpp"
-#include "Render/Graph/Types.hpp"
+#include <vir/RenderGraph.hpp>
+#include <vir/Types.hpp>
+
 #include "Render/RenderContext.hpp"
 #include "Render/RendererInstance.hpp"
 #include "Render/Utils/PushConstants.hpp"
@@ -44,14 +45,18 @@ auto RendererInstance::build_light_grid(
   auto& variables = prepared.light_grid;
   variables.push = module.declare_bytes_var("light grid push", sizeof(LightGridPush));
 
-  module
-    .begin_compute({{values.lights, vir::Access::ComputeRead}, {context.light_grid_buffer, vir::Access::ComputeWrite}})
-    .with_name("light grid")
-    .bind_compute_pipeline(render_context.pipeline("light_grid"))
-    .bind_buffer(0, 0, values.lights)
-    .bind_buffer(0, 1, context.light_grid_buffer)
-    .push_constants_from(prepared.light_grid.push)
-    .dispatch_invocations(GPU::LIGHT_GRID_CELL_COUNT, 1, 1);
-  std::tie(values.lights, context.light_grid_buffer) = std::tuple_cat(module.end_compute<2>());
+  std::tie(values.lights, context.light_grid_buffer) = std::tuple_cat(
+    module
+      .begin_compute(
+        {{values.lights, vir::Access::ComputeRead}, {context.light_grid_buffer, vir::Access::ComputeWrite}}
+      )
+      .with_name("light grid")
+      .bind_compute_pipeline(render_context.pipeline("light_grid"))
+      .bind_buffer(0, 0, values.lights)
+      .bind_buffer(0, 1, context.light_grid_buffer)
+      .push_constants_from(prepared.light_grid.push)
+      .dispatch_invocations(GPU::LIGHT_GRID_CELL_COUNT, 1, 1)
+      .end_compute()
+  );
 }
 } // namespace ox

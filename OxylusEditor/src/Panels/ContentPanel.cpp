@@ -12,6 +12,7 @@
 #include <imspinner.h>
 #include <misc/cpp/imgui_stdlib.h>
 #include <mutex>
+#include <vir/Types.hpp>
 
 #include "Asset/AssetImporter.hpp"
 #include "Asset/AssetManager.hpp"
@@ -24,7 +25,6 @@
 #include "Memory/Stack.hpp"
 #include "OS/OS.hpp"
 #include "ParticleEditorPanel.hpp"
-#include "Render/Graph/Types.hpp"
 #include "UI/PayloadData.hpp"
 #include "UI/UI.hpp"
 

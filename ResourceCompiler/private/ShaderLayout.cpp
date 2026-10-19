@@ -3,9 +3,9 @@
 #include <algorithm>
 #include <fmt/format.h>
 #include <slang-com-ptr.h>
+#include <vir/Types.hpp>
 
 #include "Core/Option.hpp"
-#include "Render/Graph/Types.hpp"
 
 namespace ox::rc {
 static auto to_graph_stage(SlangStage stage) -> option<vir::ShaderStage> {

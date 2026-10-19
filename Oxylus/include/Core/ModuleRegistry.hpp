@@ -5,8 +5,8 @@
 #include <memory>
 #include <tracy/Tracy.hpp>
 #include <typeindex>
+#include <vir/Types.hpp>
 
-#include "Render/Graph/Types.hpp"
 #include "Utils/Log.hpp"
 #include "Utils/Timestep.hpp"
 

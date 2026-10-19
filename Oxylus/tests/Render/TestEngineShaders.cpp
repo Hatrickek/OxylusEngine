@@ -1,8 +1,8 @@
 #include <filesystem>
 #include <gtest/gtest.h>
+#include <vir/Pipeline.hpp>
 
 #include "Asset/AssetFile.hpp"
-#include "Render/Graph/Pipeline.hpp"
 
 namespace ox {
 static auto shader_pack(std::string_view name) -> option<std::filesystem::path> {

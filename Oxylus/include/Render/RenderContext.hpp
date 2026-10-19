@@ -7,11 +7,11 @@
 #include <string>
 #include <string_view>
 #include <vector>
+#include <vir/Types.hpp>
 #include <vulkan/vulkan_core.h>
 
 #include "Render/ContextCVar.hpp"
 #include "Render/Fwd.hpp"
-#include "Render/Graph/Types.hpp"
 
 namespace ox {
 struct Window;

@@ -8,11 +8,11 @@
 #include <filesystem>
 #include <fstream>
 #include <gtest/gtest.h>
+#include <vir/RenderGraph.hpp>
+#include <vir/Types.hpp>
 
 #include "Asset/AssetFile.hpp"
 #include "Asset/Texture.hpp"
-#include "Render/Graph/RenderGraph.hpp"
-#include "Render/Graph/Types.hpp"
 #include "Render/RenderContext.hpp"
 #include "Render/RenderResources.hpp"
 #include "Render/RendererInstance.hpp"
@@ -299,8 +299,7 @@ TEST(RenderContext, ProgramsBindBuffersAndReadCurrentCallbackDataWithoutRecordin
   const auto written = module.set_condition(
     condition,
     [&](vir::Module& arm) -> vir::ValueID {
-      arm.begin_compute({{target, vir::Access::Clear}}).record_from(body);
-      return arm.end_compute<1>()[0];
+      return arm.begin_compute({{target, vir::Access::Clear}}).record_from(body).end_compute()[0];
     },
     [&](vir::Module&) -> vir::ValueID { return target; }
   );
@@ -345,8 +344,10 @@ TEST(RenderContext, RecordedUploadsSynchronizeFillsAndCopiesBeforeTaskShaderRead
       consumer_barrier_count = device.capture.memory.size();
     }
   );
-  module.begin_compute({{uploaded, vir::Access::TaskRW}}).record_from(consumer);
-  module.export_to(module.end_compute<1>()[0], vir::Access::MemoryRW);
+  module.export_to(
+    module.begin_compute({{uploaded, vir::Access::TaskRW}}).record_from(consumer).end_compute()[0],
+    vir::Access::MemoryRW
+  );
   auto compiled = device.context.compile(std::move(module));
   ASSERT_TRUE(compiled.has_value());
   auto& program = *compiled;
@@ -437,9 +438,9 @@ TEST(RenderContext, HiZUsesOriginalSpdInOneDispatch) {
       }
     }
     device.bindless();
-    const auto sampler = device.context.allocate_sampler(vir::NearestSamplerClamped, false);
+    const auto sampler = device.context.allocate_sampler(NearestSamplerClamped, false);
     ASSERT_TRUE(sampler);
-    device.context.resources->cached_samplers.emplace_back(vir::NearestSamplerClamped, *sampler);
+    device.context.resources->cached_samplers.emplace_back(NearestSamplerClamped, *sampler);
     auto module = vir::Module{};
     const auto extent = vir::Extent3D{std::bit_ceil((size.width + 1) / 2), std::bit_ceil((size.height + 1) / 2), 1};
     const auto mip_count = Texture::calculate_mip_count(extent);
@@ -505,7 +506,7 @@ TEST(RenderContext, DescriptorFailuresReleasePreviouslyCreatedObjects) {
 TEST(RenderContext, RetiredBindlessSlotsStayReservedUntilTheirLastSubmissionFinishes) {
   auto device = ContextDevice{};
   device.bindless(2);
-  const auto sampler = device.context.allocate_sampler(vir::LinearSamplerRepeated);
+  const auto sampler = device.context.allocate_sampler(LinearSamplerRepeated);
   ASSERT_TRUE(sampler);
   const auto handle = device.context.sampler(*sampler).handle;
   const auto program = device.context.compile(context_fill_module(0));
@@ -517,16 +518,16 @@ TEST(RenderContext, RetiredBindlessSlotsStayReservedUntilTheirLastSubmissionFini
   EXPECT_EQ(device.context.sampler(*sampler).handle, VK_NULL_HANDLE);
   device.context.collect_retired();
   EXPECT_TRUE(device.capture.destroyed_samplers.empty());
-  const auto second = device.context.allocate_sampler(vir::NearestSamplerClamped);
+  const auto second = device.context.allocate_sampler(NearestSamplerClamped);
   ASSERT_TRUE(second);
   EXPECT_NE(SlotMap_decode_id(*sampler).index, SlotMap_decode_id(*second).index);
-  EXPECT_FALSE(device.context.allocate_sampler(vir::LinearSamplerBorder));
+  EXPECT_FALSE(device.context.allocate_sampler(LinearSamplerBorder));
   // the frame recording when it was destroyed is the one that seals it
   device.context.seal_retirements(*ticket);
   ASSERT_TRUE(device.context.wait(*ticket));
   device.context.collect_retired();
   EXPECT_EQ(std::ranges::count(device.capture.destroyed_samplers, handle), 1);
-  const auto reused = device.context.allocate_sampler(vir::LinearSamplerBorder);
+  const auto reused = device.context.allocate_sampler(LinearSamplerBorder);
   ASSERT_TRUE(reused);
   EXPECT_EQ(SlotMap_decode_id(*reused).index, SlotMap_decode_id(*sampler).index);
   EXPECT_NE(*reused, *sampler);
@@ -536,7 +537,7 @@ TEST(RenderContext, RetiredBindlessSlotsStayReservedUntilTheirLastSubmissionFini
 TEST(RenderContext, RetiredResourcesOutliveACompletedTimelineUntilAFrameSealsThem) {
   auto device = ContextDevice{};
   device.bindless(2);
-  const auto sampler = device.context.allocate_sampler(vir::LinearSamplerRepeated);
+  const auto sampler = device.context.allocate_sampler(LinearSamplerRepeated);
   ASSERT_TRUE(sampler);
   const auto handle = device.context.sampler(*sampler).handle;
   const auto program = device.context.compile(context_fill_module(0));
@@ -626,9 +627,9 @@ TEST(RenderContext, ModulesRecordedBeforeAResizeCannotBeCompiledAgainstTheNewSwa
 TEST(RenderContext, ShutdownDestroysLiveSlotsBeyondHolesAndIsIdempotent) {
   auto device = ContextDevice{};
   device.bindless();
-  const auto first = device.context.allocate_sampler(vir::LinearSamplerRepeated);
-  const auto middle = device.context.allocate_sampler(vir::NearestSamplerClamped);
-  const auto last = device.context.allocate_sampler(vir::LinearSamplerBorder);
+  const auto first = device.context.allocate_sampler(LinearSamplerRepeated);
+  const auto middle = device.context.allocate_sampler(NearestSamplerClamped);
+  const auto last = device.context.allocate_sampler(LinearSamplerBorder);
   ASSERT_TRUE(first);
   ASSERT_TRUE(middle);
   ASSERT_TRUE(last);
@@ -669,9 +670,9 @@ TEST(RenderContext, RawFormatConversionsAndSamplerPresetsMatchTheirVulkanValues)
   EXPECT_EQ(apply_srgb_preference(vir::Format::BC7UnormBlock, true), vir::Format::BC7SrgbBlock);
   EXPECT_EQ(apply_srgb_preference(vir::Format::BC7SrgbBlock, false), vir::Format::BC7UnormBlock);
   EXPECT_EQ(apply_srgb_preference(vir::Format::BC5UnormBlock, true), vir::Format::BC5UnormBlock);
-  EXPECT_EQ(vir::NearestSamplerClamped.min_filter, VK_FILTER_NEAREST);
-  EXPECT_EQ(vir::LinearSamplerRepeated.address_mode_u, VK_SAMPLER_ADDRESS_MODE_REPEAT);
-  EXPECT_EQ(vir::CmpDepthSampler.compare_op, VK_COMPARE_OP_GREATER_OR_EQUAL);
+  EXPECT_EQ(NearestSamplerClamped.min_filter, VK_FILTER_NEAREST);
+  EXPECT_EQ(LinearSamplerRepeated.address_mode_u, VK_SAMPLER_ADDRESS_MODE_REPEAT);
+  EXPECT_EQ(CmpDepthSampler.compare_op, VK_COMPARE_OP_GREATER_OR_EQUAL);
   const auto constants = PushConstants(u32{2}, u64{3});
   EXPECT_EQ(constants.size(), 12);
 }
@@ -701,8 +702,8 @@ TEST(RenderContext, Fsr3SharpeningKeepsTheOutputAndItsPostProcessingBarriersInBo
   const auto enabled = module.declare_bool_var("sharpening", false);
   const auto sharpness = module.declare_bytes_var("sharpness", sizeof(f32));
   const auto accumulate = module.declare_callback_var("accumulate");
-  module.begin_compute({{output, vir::Access::ComputeRW}}).record_from(accumulate);
-  const auto accumulated = module.end_compute<1>()[0];
+  const auto
+    accumulated = module.begin_compute({{output, vir::Access::ComputeRW}}).record_from(accumulate).end_compute()[0];
   const auto result = RendererInstance::sharpen_fsr3(
     module,
     device.context,

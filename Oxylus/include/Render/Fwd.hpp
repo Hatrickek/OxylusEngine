@@ -1,7 +1,9 @@
 #pragma once
 
-#include "Render/Graph/Fwd.hpp"
-#include "Render/Graph/Types.hpp"
+#include <vir/Fwd.hpp>
+#include <vir/Types.hpp>
+
+#include "Core/Types.hpp"
 
 namespace ox {
 enum class BufferID : u64 { Invalid = ~0_u64 };

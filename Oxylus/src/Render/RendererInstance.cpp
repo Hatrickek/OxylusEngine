@@ -5,6 +5,8 @@
 #include <bit>
 #include <cstdlib>
 #include <ranges>
+#include <vir/RenderGraph.hpp>
+#include <vir/Types.hpp>
 
 #include "Asset/AssetManager.hpp"
 #include "Asset/Model.hpp"
@@ -14,8 +16,6 @@
 #include "Core/Enum.hpp"
 #include "Memory/Stack.hpp"
 #include "Render/DebugRenderer.hpp"
-#include "Render/Graph/RenderGraph.hpp"
-#include "Render/Graph/Types.hpp"
 #include "Render/RenderContext.hpp"
 #include "Render/Utils/PushConstants.hpp"
 #include "Render/Utils/Samplers.hpp"
@@ -393,10 +393,10 @@ static auto record_transform_upload(
       );
     }
   });
-  module.begin_compute({{staging, vir::Access::CopyRead}, {dst, vir::Access::CopyWrite}})
+  return module.begin_compute({{staging, vir::Access::CopyRead}, {dst, vir::Access::CopyWrite}})
     .with_name(name)
-    .record_from(body);
-  return module.end_compute<2>()[1];
+    .record_from(body)
+    .end_compute()[1];
 }
 
 auto RendererInstance::record_upload(
@@ -1449,30 +1449,30 @@ auto RendererInstance::record_acceleration_structures(
   prepared.tlas_instance_count = module.declare_u32_var("tlas instance count", 0);
   prepared.tlas_instance_counts = module.declare_bytes_var("tlas instance counts", sizeof(glm::uvec2));
   auto instances = prepared.tlas_instances;
-  module
-    .begin_compute(
-      {{instances, vir::Access::ComputeWrite},
-       {values.mesh_instances, vir::Access::ComputeRead},
-       {values.transforms_world, vir::Access::ComputeRead},
-       {values.blas_addresses, vir::Access::ComputeRead},
-       {values.skinned_blas_addresses, vir::Access::ComputeRead}}
-    )
-    .with_name("tlas write instances")
-    .bind_compute_pipeline(render_context.pipeline("tlas_write_instances"))
-    .bind_buffer(0, 0, values.mesh_instances)
-    .bind_buffer(0, 1, values.transforms_world)
-    .bind_buffer(0, 2, values.blas_addresses)
-    .bind_buffer(0, 3, instances)
-    .bind_buffer(0, 4, values.skinned_blas_addresses)
-    .push_constants_from(prepared.tlas_instance_counts)
-    .dispatch_invocations(prepared.tlas_instance_count, 1, 1);
   std::tie(
     instances,
     values.mesh_instances,
     values.transforms_world,
     values.blas_addresses,
     values.skinned_blas_addresses
-  ) = std::tuple_cat(module.end_compute<5>());
+  ) = std::tuple_cat(module
+                       .begin_compute(
+                         {{instances, vir::Access::ComputeWrite},
+                          {values.mesh_instances, vir::Access::ComputeRead},
+                          {values.transforms_world, vir::Access::ComputeRead},
+                          {values.blas_addresses, vir::Access::ComputeRead},
+                          {values.skinned_blas_addresses, vir::Access::ComputeRead}}
+                       )
+                       .with_name("tlas write instances")
+                       .bind_compute_pipeline(render_context.pipeline("tlas_write_instances"))
+                       .bind_buffer(0, 0, values.mesh_instances)
+                       .bind_buffer(0, 1, values.transforms_world)
+                       .bind_buffer(0, 2, values.blas_addresses)
+                       .bind_buffer(0, 3, instances)
+                       .bind_buffer(0, 4, values.skinned_blas_addresses)
+                       .push_constants_from(prepared.tlas_instance_counts)
+                       .dispatch_invocations(prepared.tlas_instance_count, 1, 1)
+                       .end_compute());
 
   prepared.tlas = module.declare_buffer_var("tlas", STRUCTURE_REST);
   prepared.tlas_scratch = module.declare_buffer_var("tlas scratch", STRUCTURE_REST);
@@ -1729,18 +1729,20 @@ auto RendererInstance::record_frame(
 
   {
     const auto extent = glm::uvec2(render_extent.width, render_extent.height);
-    module
-      .begin_compute(
-        {{visbuffer_attachment, vir::Access::ComputeWrite}, {overdraw_attachment, vir::Access::ComputeWrite}}
-      )
-      .with_name("vis clear")
-      .bind_compute_pipeline(render_context.pipeline("visbuffer_clear"))
-      .specialize_constant(0, is_overdraw)
-      .bind_image(0, 0, visbuffer_attachment)
-      .bind_image(0, 1, overdraw_attachment)
-      .push_constants(PushConstants(extent))
-      .dispatch_invocations_per_pixel(visbuffer_attachment);
-    std::tie(visbuffer_attachment, overdraw_attachment) = std::tuple_cat(module.end_compute<2>());
+    std::tie(visbuffer_attachment, overdraw_attachment) = std::tuple_cat(
+      module
+        .begin_compute(
+          {{visbuffer_attachment, vir::Access::ComputeWrite}, {overdraw_attachment, vir::Access::ComputeWrite}}
+        )
+        .with_name("vis clear")
+        .bind_compute_pipeline(render_context.pipeline("visbuffer_clear"))
+        .specialize_constant(0, is_overdraw)
+        .bind_image(0, 0, visbuffer_attachment)
+        .bind_image(0, 1, overdraw_attachment)
+        .push_constants(PushConstants(extent))
+        .dispatch_invocations_per_pixel(visbuffer_attachment)
+        .end_compute()
+    );
   }
 
   auto shadows_attachment = module.transient_image(
@@ -2013,22 +2015,24 @@ auto RendererInstance::record_frame(
     }
 
     prepared.shadow.contact_push = module.declare_bytes_var("contact shadows push", sizeof(ContactShadowsPush));
-    module
-      .begin_compute(
-        {{shadows_attachment, vir::Access::ComputeRW},
-         {depth_attachment, vir::Access::ComputeSampled},
-         {values.camera, vir::Access::ComputeUniformRead}}
-      )
-      .with_name("contact shadows")
-      .bind_compute_pipeline(render_context.pipeline("contact_shadows"))
-      .bind_image(0, 0, depth_attachment)
-      .bind_image(0, 1, shadows_attachment)
-      .bind_buffer(0, 2, values.camera)
-      .bind_sampler(0, 3, render_context.cached_sampler_handle(vir::NearestSamplerClamped))
-      .bind_sampler(0, 4, render_context.cached_sampler_handle(vir::LinearSamplerClamped))
-      .push_constants_from(prepared.shadow.contact_push)
-      .dispatch_invocations_per_pixel(shadows_attachment);
-    std::tie(shadows_attachment, depth_attachment, values.camera) = std::tuple_cat(module.end_compute<3>());
+    std::tie(shadows_attachment, depth_attachment, values.camera) = std::tuple_cat(
+      module
+        .begin_compute(
+          {{shadows_attachment, vir::Access::ComputeRW},
+           {depth_attachment, vir::Access::ComputeSampled},
+           {values.camera, vir::Access::ComputeUniformRead}}
+        )
+        .with_name("contact shadows")
+        .bind_compute_pipeline(render_context.pipeline("contact_shadows"))
+        .bind_image(0, 0, depth_attachment)
+        .bind_image(0, 1, shadows_attachment)
+        .bind_buffer(0, 2, values.camera)
+        .bind_sampler(0, 3, render_context.cached_sampler_handle(NearestSamplerClamped))
+        .bind_sampler(0, 4, render_context.cached_sampler_handle(LinearSamplerClamped))
+        .push_constants_from(prepared.shadow.contact_push)
+        .dispatch_invocations_per_pixel(shadows_attachment)
+        .end_compute()
+    );
   }
 
   if (!shape.has_meshes && !shape.has_terrain) {
@@ -2223,25 +2227,6 @@ auto RendererInstance::record_frame(
       .compare_op = VK_COMPARE_OP_GREATER_OR_EQUAL,
     };
 
-    module
-      .begin_rendering(
-        {{visbuffer_2d_attachment, vir::Access::ColorWrite},
-         {depth_attachment, vir::Access::DepthStencilRW},
-         {sprites, vir::Access::VertexRead},
-         {values.materials, vir::Access::VertexRead | vir::Access::FragmentRead},
-         {values.camera, vir::Access::VertexRead},
-         {values.transforms_world, vir::Access::VertexRead}}
-      )
-      .with_name("2d forward vis")
-      .bind_graphics_pipeline(render_context.pipeline("2d_forward_vis"))
-      .set_depth(sprite_depth)
-      .set_viewport(0, vir::Rect2D::framebuffer())
-      .set_scissor(0, vir::Rect2D::framebuffer())
-      .push_constant_address(0, values.materials)
-      .push_constant_address(8, values.camera)
-      .push_constant_address(16, values.transforms_world)
-      .push_constant_address(24, sprites)
-      .record_from(module.declare_callback_var("2d forward vis batches", draw_batches));
     std::tie(
       visbuffer_2d_attachment,
       depth_attachment,
@@ -2249,30 +2234,27 @@ auto RendererInstance::record_frame(
       values.materials,
       values.camera,
       values.transforms_world
-    ) = std::tuple_cat(module.end_rendering<6>());
+    ) = std::tuple_cat(module
+                         .begin_rendering(
+                           {{visbuffer_2d_attachment, vir::Access::ColorWrite},
+                            {depth_attachment, vir::Access::DepthStencilRW},
+                            {sprites, vir::Access::VertexRead},
+                            {values.materials, vir::Access::VertexRead | vir::Access::FragmentRead},
+                            {values.camera, vir::Access::VertexRead},
+                            {values.transforms_world, vir::Access::VertexRead}}
+                         )
+                         .with_name("2d forward vis")
+                         .bind_graphics_pipeline(render_context.pipeline("2d_forward_vis"))
+                         .set_depth(sprite_depth)
+                         .set_viewport(0, vir::Rect2D::framebuffer())
+                         .set_scissor(0, vir::Rect2D::framebuffer())
+                         .push_constant_address(0, values.materials)
+                         .push_constant_address(8, values.camera)
+                         .push_constant_address(16, values.transforms_world)
+                         .push_constant_address(24, sprites)
+                         .record_from(module.declare_callback_var("2d forward vis batches", draw_batches))
+                         .end_rendering());
 
-    module
-      .begin_rendering(
-        {{final_attachment, vir::Access::ColorRW},
-         {reactive_mask_attachment, vir::Access::ColorRW},
-         {depth_attachment, vir::Access::DepthStencilRW},
-         {sprites, vir::Access::VertexRead},
-         {values.materials, vir::Access::VertexRead | vir::Access::FragmentRead},
-         {values.camera, vir::Access::VertexRead},
-         {values.transforms_world, vir::Access::VertexRead}}
-      )
-      .with_name("2d forward")
-      .bind_graphics_pipeline(render_context.pipeline("2d_forward"))
-      .set_depth(sprite_depth)
-      .set_color_blend(0, vir::BlendPreset::AlphaBlend)
-      .set_color_blend(1, reactive_mask_blend_state())
-      .set_viewport(0, vir::Rect2D::framebuffer())
-      .set_scissor(0, vir::Rect2D::framebuffer())
-      .push_constant_address(0, values.materials)
-      .push_constant_address(8, values.camera)
-      .push_constant_address(16, values.transforms_world)
-      .push_constant_address(24, sprites)
-      .record_from(module.declare_callback_var("2d forward batches", draw_batches));
     std::tie(
       final_attachment,
       reactive_mask_attachment,
@@ -2281,7 +2263,29 @@ auto RendererInstance::record_frame(
       values.materials,
       values.camera,
       values.transforms_world
-    ) = std::tuple_cat(module.end_rendering<7>());
+    ) = std::tuple_cat(module
+                         .begin_rendering(
+                           {{final_attachment, vir::Access::ColorRW},
+                            {reactive_mask_attachment, vir::Access::ColorRW},
+                            {depth_attachment, vir::Access::DepthStencilRW},
+                            {sprites, vir::Access::VertexRead},
+                            {values.materials, vir::Access::VertexRead | vir::Access::FragmentRead},
+                            {values.camera, vir::Access::VertexRead},
+                            {values.transforms_world, vir::Access::VertexRead}}
+                         )
+                         .with_name("2d forward")
+                         .bind_graphics_pipeline(render_context.pipeline("2d_forward"))
+                         .set_depth(sprite_depth)
+                         .set_color_blend(0, vir::BlendPreset::AlphaBlend)
+                         .set_color_blend(1, reactive_mask_blend_state())
+                         .set_viewport(0, vir::Rect2D::framebuffer())
+                         .set_scissor(0, vir::Rect2D::framebuffer())
+                         .push_constant_address(0, values.materials)
+                         .push_constant_address(8, values.camera)
+                         .push_constant_address(16, values.transforms_world)
+                         .push_constant_address(24, sprites)
+                         .record_from(module.declare_callback_var("2d forward batches", draw_batches))
+                         .end_rendering());
   }
 
   {
@@ -2355,17 +2359,20 @@ auto RendererInstance::record_frame(
     auto fxaa_attachment = module.transient_image({.extent = render_extent, .format = hdr_format, .name = "fxaa"});
     fxaa_attachment = module.clear(fxaa_attachment, black);
     const auto inverse_screen_size = 1.0f / glm::vec2(render_extent.width, render_extent.height);
-    module
-      .begin_rendering({{fxaa_attachment, vir::Access::ColorWrite}, {final_attachment, vir::Access::FragmentSampled}})
-      .with_name("fxaa")
-      .bind_graphics_pipeline(render_context.pipeline("fxaa"))
-      .set_viewport(0, vir::Rect2D::framebuffer())
-      .set_scissor(0, vir::Rect2D::framebuffer())
-      .bind_image(0, 0, final_attachment)
-      .bind_sampler(0, 1, render_context.cached_sampler_handle(vir::LinearSamplerClamped))
-      .push_constants(PushConstants(inverse_screen_size))
-      .draw(3, 1);
-    final_attachment = module.end_rendering<2>()[0];
+    final_attachment = module
+                         .begin_rendering(
+                           {{fxaa_attachment, vir::Access::ColorWrite},
+                            {final_attachment, vir::Access::FragmentSampled}}
+                         )
+                         .with_name("fxaa")
+                         .bind_graphics_pipeline(render_context.pipeline("fxaa"))
+                         .set_viewport(0, vir::Rect2D::framebuffer())
+                         .set_scissor(0, vir::Rect2D::framebuffer())
+                         .bind_image(0, 0, final_attachment)
+                         .bind_sampler(0, 1, render_context.cached_sampler_handle(LinearSamplerClamped))
+                         .push_constants(PushConstants(inverse_screen_size))
+                         .draw(3, 1)
+                         .end_rendering()[0];
   }
 
   // --- post processing ---
@@ -2410,19 +2417,22 @@ auto RendererInstance::record_frame(
       {.extent = display_extent, .format = vir::Format::D32Sfloat, .name = "depth display"}
     );
     upscaled_depth = module.clear(upscaled_depth, vir::ClearValue::depth(0.0f));
-    module
-      .begin_rendering(
-        {{upscaled_depth, vir::Access::DepthStencilRW}, {depth_attachment, vir::Access::FragmentSampled}}
-      )
-      .with_name("depth upscale")
-      .bind_graphics_pipeline(render_context.pipeline("depth_upscale"))
-      .set_depth({.is_test_enabled = true, .is_write_enabled = true, .compare_op = VK_COMPARE_OP_ALWAYS})
-      .set_viewport(0, vir::Rect2D::framebuffer())
-      .set_scissor(0, vir::Rect2D::framebuffer())
-      .bind_image(0, 0, depth_attachment)
-      .bind_sampler(0, 1, render_context.cached_sampler_handle(vir::NearestSamplerClamped))
-      .draw(3, 1);
-    depth_attachment = module.end_rendering<2>()[0];
+    depth_attachment = module
+                         .begin_rendering(
+                           {{upscaled_depth, vir::Access::DepthStencilRW},
+                            {depth_attachment, vir::Access::FragmentSampled}}
+                         )
+                         .with_name("depth upscale")
+                         .bind_graphics_pipeline(render_context.pipeline("depth_upscale"))
+                         .set_depth(
+                           {.is_test_enabled = true, .is_write_enabled = true, .compare_op = VK_COMPARE_OP_ALWAYS}
+                         )
+                         .set_viewport(0, vir::Rect2D::framebuffer())
+                         .set_scissor(0, vir::Rect2D::framebuffer())
+                         .bind_image(0, 0, depth_attachment)
+                         .bind_sampler(0, 1, render_context.cached_sampler_handle(NearestSamplerClamped))
+                         .draw(3, 1)
+                         .end_rendering()[0];
   }
 
   {

@@ -3,13 +3,13 @@
 #include <ankerl/unordered_dense.h>
 #include <span>
 #include <vector>
+#include <vir/Access.hpp>
 
 #include "Animation/Fwd.hpp"
 #include "Core/Types.hpp"
 #include "Render/Fwd.hpp"
-#include "Render/Graph/Access.hpp"
 
-namespace ox::vir {
+namespace vir {
 struct AccelerationStructureBuild;
 }
 

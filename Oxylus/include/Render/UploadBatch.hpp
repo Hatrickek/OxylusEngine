@@ -3,12 +3,12 @@
 #include <memory>
 #include <shared_mutex>
 #include <vector>
+#include <vir/Fwd.hpp>
+#include <vir/Resource.hpp>
 #include <vulkan/vulkan_core.h>
 
 #include "Core/Arc.hpp"
 #include "Core/Types.hpp"
-#include "Render/Graph/Fwd.hpp"
-#include "Render/Graph/Resource.hpp"
 
 namespace ox {
 class RenderContext;

@@ -1,13 +1,13 @@
 #pragma once
 
 #include <atomic>
+#include <vir/Fwd.hpp>
 
 #include "Core/EventSystem.hpp"
 #include "Panels/EditorPanelRegistry.hpp"
 #include "Panels/MainViewportPanel.hpp"
 #include "Panels/SceneHierarchyPanel.hpp"
 #include "Project/Project.hpp"
-#include "Render/Graph/Fwd.hpp"
 #include "UI/ImGuiRenderer.hpp"
 #include "Utils/Command.hpp"
 #include "Utils/EditorCVar.hpp"

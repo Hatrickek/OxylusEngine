@@ -6,8 +6,8 @@
 
 #define TRACY_VK_USE_SYMBOL_TABLE
 #include <tracy/TracyVulkan.hpp>
+#include <vir/RenderGraph.hpp>
 
-#include "Render/Graph/RenderGraph.hpp"
 #include "Render/RenderContext.hpp"
 #include "Utils/Log.hpp"
 

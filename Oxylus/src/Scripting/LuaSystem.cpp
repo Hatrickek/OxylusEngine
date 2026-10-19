@@ -4,9 +4,9 @@
 #include <Jolt/Physics/Body/Body.h>
 #include <Jolt/Physics/Collision/ContactListener.h>
 #include <sol/state.hpp>
+#include <vir/Types.hpp>
 
 #include "Core/App.hpp"
-#include "Render/Graph/Types.hpp"
 #include "Scene/Scene.hpp"
 #include "Scripting/LuaManager.hpp"
 
