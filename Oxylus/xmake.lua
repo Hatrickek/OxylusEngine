@@ -85,7 +85,7 @@ target("Oxylus")
         "flecs",
         "imgui",
         "vk-bootstrap",
-        "vuk",
+        "vulkan-headers",
         "unordered_dense",
         "svector",
         "tracy",
@@ -100,6 +100,7 @@ target("Oxylus")
         "loguru",
         "simdjson",
         "rmlui",
+        "vir",
         {public = true})
 
 target_end()

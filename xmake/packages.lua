@@ -3,6 +3,20 @@ local fmt_configs = { header_only = false, shared = false }
 local lua_version = "v5.4.7"
 local imgui_version = "v1.92.9b-docking"
 local simdjson_version = "v4.2.4"
+local vulkan_headers_version = "1.4.335+0"
+local vma_version = "v3.1.0"
+local unordered_dense_version = "v4.8.1"
+local svector_version = "v1.0.3"
+local tracy_version = "v0.13.1"
+local tracy_configs = {
+  tracy_enable = has_config("profile"),
+  on_demand = true,
+  callstack = true,
+  callstack_inlines = false,
+  code_transfer = true,
+  exit = true,
+  system_tracing = true,
+}
 
 packages = {
   ["miniaudio 0.11.25"] = {},
@@ -35,12 +49,8 @@ packages = {
     system = false,
   },
   ["vk-bootstrap v1.4.354"] = { system = false, debug = is_mode("debug") },
-  ["vuk 2026.08.25"] = {
-    configs = {
-      debug_allocations = false,
-    },
-    debug = is_mode("debug"),
-  },
+  ["vulkan-headers " .. vulkan_headers_version] = { system = false },
+  ["vir 2026.10.19"] = { debug = is_mode("debug"), system = false },
   ["toml++ v3.4.0"] = {
     configs = {
       header_only = true,
@@ -59,21 +69,11 @@ packages = {
       tzcnt = true,
     },
   },
-  ["tracy v0.13.1"] = {
-    configs = {
-      tracy_enable = has_config("profile"),
-      on_demand = true,
-      callstack = true,
-      callstack_inlines = false,
-      code_transfer = true,
-      exit = true,
-      system_tracing = true,
-    },
-  },
+  ["tracy " .. tracy_version] = { configs = tracy_configs },
   ["lua " .. lua_version] = {},
   ["sol2 c1f95a773c6f8f4fde8ca3efe872e7286afe4444"] = { configs = { includes_lua = false } },
-  ["unordered_dense v4.8.1"] = {},
-  ["svector v1.0.3"] = {},
+  ["unordered_dense " .. unordered_dense_version] = {},
+  ["svector " .. svector_version] = {},
   ["plf_colony v7.41"] = {},
   ["simdutf v8.2.0"] = {},
   ["rmlui f7b297e2c8fc44c5e85df498dbae91762c0769a5"] = {
@@ -110,17 +110,6 @@ confs = {
   },
 
   {
-    package = "fmt",
-    override = "vuk.fmt",
-    configs = {
-      override = true,
-      version = fmt_version,
-      configs = fmt_configs,
-      system = false,
-    },
-  },
-
-  {
     package = "simdjson",
     override = "fastgltf-ox.simdjson",
     configs = {
@@ -138,7 +127,66 @@ confs = {
       version = lua_version,
       system = false,
     }
-  }
+  },
+
+  {
+    package = "fmt",
+    override = "vir.fmt",
+    configs = {
+      override = true,
+      version = fmt_version,
+      configs = fmt_configs,
+      system = false,
+    },
+  },
+
+  {
+    package = "tracy",
+    override = "vir.tracy",
+    configs = {
+      override = true,
+      version = tracy_version,
+      configs = tracy_configs,
+    },
+  },
+
+  {
+    package = "vulkan-headers",
+    override = "vir.vulkan-headers",
+    configs = {
+      override = true,
+      version = vulkan_headers_version,
+      system = false,
+    },
+  },
+
+  {
+    package = "vulkan-memory-allocator",
+    override = "vir.vulkan-memory-allocator",
+    configs = {
+      override = true,
+      version = vma_version,
+      system = false,
+    },
+  },
+
+  {
+    package = "unordered_dense",
+    override = "vir.unordered_dense",
+    configs = {
+      override = true,
+      version = unordered_dense_version,
+    },
+  },
+
+  {
+    package = "svector",
+    override = "vir.svector",
+    configs = {
+      override = true,
+      version = svector_version,
+    },
+  },
 }
 
 function require_packages()
