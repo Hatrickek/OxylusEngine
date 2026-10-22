@@ -584,9 +584,9 @@ auto Editor::cook_assets_into(this Editor& self, const std::filesystem::path& fo
 
   auto& job_man = App::get_job_manager();
   job_man.push_job_name("Cooking assets");
-  job_man.submit(Job::create([&self, assets_dir = std::move(assets_dir), output_dir = std::move(output_dir)]() {
-    if (!cook_project_assets(assets_dir, output_dir)) {
-      OX_LOG_ERROR("Cooking assets into {} failed, see the errors above.", output_dir);
+  job_man.submit(Job::create([&self, ad = std::move(assets_dir), od = std::move(output_dir)]() {
+    if (!cook_project_assets(ad, od)) {
+      OX_LOG_ERROR("Cooking assets into {} failed, see the errors above.", od);
     }
 
     self.cooking_assets.store(false, std::memory_order_release);

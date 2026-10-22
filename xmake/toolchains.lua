@@ -67,19 +67,8 @@ toolchain("mac-clang")
         local unwinddir = path.join(prefix, "lib", "unwind")
         import("core.project.config")
         if config.get("runtimes") == "c++_static" then
-            -- clang ignores -static-libstdc++ on darwin and ld64 takes the dylib over the archive beside it, which
-            -- would tie the binary to this machine's homebrew. Link the archives by path instead, libSystem unwinds
-            local archives = {}
-            for _, name in ipairs({"libc++.a", "libc++abi.a", "libc++experimental.a"}) do
-                local archive = path.join(libcxxdir, name)
-                if os.isfile(archive) then
-                    table.insert(archives, archive)
-                end
-            end
-            for _, kind in ipairs({"ldflags", "shflags"}) do
-                toolchain:add(kind, "-nostdlib++")
-                toolchain:add(kind, table.unpack(archives))
-            end
+            -- no static libc++ on darwin: apple frameworks load /usr/lib/libc++ and dyld coalesces weak symbols across
+            -- images, so a second copy gets half its iostream/locale calls rebound. link the system dylib, not homebrew's
             return
         end
         for _, kind in ipairs({"ldflags", "shflags"}) do
