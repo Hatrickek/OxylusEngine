@@ -22,6 +22,10 @@ changes, so an unchanged build stays incremental. No Git commands run at applica
 Without the engine's own Git metadata or a working Git executable, the revision is `unknown` and the
 version is printed as `0.1.0+unknown`; dirty status is unavailable in that case.
 
+In the editor, **Help > About** shows the same build information alongside the platform, GPU and
+supported Vulkan API version. Use **Copy build info** to copy these details, including the full
+revision and source tree status, for a bug report.
+
 ## Runtime API
 
 Game code can inspect the same information without creating an `App`:

@@ -7,13 +7,13 @@
 #include <misc/cpp/imgui_stdlib.h>
 #include <system_error>
 
+#include "Asset/Texture.hpp"
 #include "Core/App.hpp"
 #include "Editor.hpp"
 #include "Panels/ContentPanel.hpp"
 #include "Panels/LoadingPanel.hpp"
 #include "Project/Project.hpp"
 #include "UI/UI.hpp"
-#include "Utils/EmbeddedBanner.hpp"
 
 namespace ox {
 auto validate_new_project_form(
@@ -67,13 +67,6 @@ auto validate_new_project_form(
 }
 
 ProjectPanel::ProjectPanel() : EditorPanelState("Projects", ICON_MDI_ACCOUNT_BADGE, true) {
-  engine_banner = Texture::create({
-    .format = vuk::Format::eR8G8B8A8Srgb,
-    .extent = vuk::Extent3D{.width = editor_bannerWidth, .height = editor_bannerHeight, .depth = 1u},
-    .usage = vuk::ImageUsageFlagBits::eSampled,
-  });
-  engine_banner.upload(std::span(editor_banner), vuk::eFragmentSampled);
-
   std::error_code error;
   new_project_location = std::filesystem::current_path(error).string();
 }
@@ -138,7 +131,8 @@ auto ProjectPanel::on_render(this ProjectPanel& self, vuk::ImageAttachment) -> v
   constexpr auto flags = ImGuiWindowFlags_NoSavedSettings | ImGuiWindowFlags_NoDecoration | ImGuiWindowFlags_NoDocking |
                          ImGuiWindowFlags_NoBackground;
 
-  const auto banner_size = self.engine_banner.get_extent();
+  const auto& theme = App::mod<Editor>().editor_theme;
+  const auto banner_size = theme.engine_banner->get_extent();
 
   UI::center_next_window();
   ImGui::PushStyleColor(ImGuiCol_ModalWindowDimBg, ImVec4(0.0f, 0.0f, 0.0f, 0.7f));
@@ -147,15 +141,7 @@ auto ProjectPanel::on_render(this ProjectPanel& self, vuk::ImageAttachment) -> v
     const auto& window = App::get_window();
 
     if (!self.creating_project) {
-      constexpr f32 banner_left_padding = 50.0f;
-      constexpr f32 banner_right_padding = 79.0f;
-      const auto banner_width = ImGui::GetContentRegionAvail().x;
-      const auto banner_height = banner_width * static_cast<f32>(banner_size.height) /
-                                 static_cast<f32>(banner_size.width);
-      const auto banner_center_offset = (banner_right_padding - banner_left_padding) * 0.5f * banner_width /
-                                        static_cast<f32>(banner_size.width);
-      ImGui::SetCursorPosX(ImGui::GetCursorPosX() + banner_center_offset);
-      UI::image(self.engine_banner.view(), {banner_width, banner_height});
+      theme.draw_banner(ImGui::GetContentRegionAvail().x);
       UI::spacing(2);
     }
 

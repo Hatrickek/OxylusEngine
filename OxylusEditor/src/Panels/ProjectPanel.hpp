@@ -4,8 +4,11 @@
 #include <string>
 #include <string_view>
 
-#include "Asset/Texture.hpp"
 #include "EditorPanelState.hpp"
+
+namespace vuk {
+struct ImageAttachment;
+}
 
 namespace ox {
 class ProjectPanel : public EditorPanelState {
@@ -22,8 +25,6 @@ public:
   auto show_error(this ProjectPanel& self, std::string message) -> void;
 
 private:
-  Texture engine_banner = {};
-
   bool creating_project = false;
   bool close_requested = false;
 
