@@ -74,8 +74,7 @@ auto AboutPanel::on_render(this AboutPanel& self, vuk::ImageAttachment) -> void 
 
   const auto content_x = ImGui::GetCursorPosX();
   const auto content_width = ImGui::GetContentRegionAvail().x;
-  const auto banner_width = std::min(content_width, UI::scale(420.0f));
-  ImGui::SetCursorPosX(content_x + (content_width - banner_width) * 0.5f);
+  const auto banner_width = std::min(content_width, UI::scale(220.0f));
   theme.draw_banner(banner_width);
   ImGui::SetCursorPosX(content_x);
 

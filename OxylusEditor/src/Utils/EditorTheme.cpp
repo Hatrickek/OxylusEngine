@@ -99,15 +99,18 @@ auto EditorTheme::init(this EditorTheme& self) -> void {
 auto EditorTheme::draw_banner(this const EditorTheme& self, const f32 width) -> void {
   ZoneScoped;
 
-  const auto extent = self.engine_banner->get_extent();
-  const auto scale = width / static_cast<f32>(extent.width);
   const auto cursor_x = ImGui::GetCursorPosX();
-  // the embedded artwork has uneven left and right padding
-  constexpr auto center_offset = (79.0f - 50.0f) * 0.5f;
-  ImGui::SetCursorPosX(cursor_x + center_offset * scale);
-  UI::image(self.engine_banner->view(), {width, static_cast<f32>(extent.height) * scale});
-  ImGui::SetCursorPosX(cursor_x);
-}
+  const auto available_width = ImGui::GetContentRegionAvail().x;
+  const auto banner_width = std::min(width, available_width);
+
+  ImGui::SetCursorPosX(cursor_x + (available_width - banner_width) * 0.5f);
+  UI::image(
+    self.engine_banner->view(),
+    {banner_width, banner_width * 92.0f / 203.0f},
+    {50.0f / 332.0f, 13.0f / 119.0f},
+    {253.0f / 332.0f, 105.0f / 119.0f}
+  );
+  ImGui::SetCursorPosX(cursor_x);}
 
 void EditorTheme::apply_theme(bool dark) {
   ImVec4* colors = ImGui::GetStyle().Colors;
